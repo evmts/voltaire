@@ -805,11 +805,11 @@ test "tracer captures basic frame state with writer" {
     defer output.deinit();
     
     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
-    const log = try tracer.snapshot(Frame, &test_frame);
+    const log = try tracer.snapshot(4, 0x01, Frame, &test_frame); // PC=4, opcode=ADD
     defer allocator.free(log.stack);
     
     // Verify snapshot
-    try std.testing.expectEqual(@as(u64, 0), log.pc); // PC is managed by plan now, expected 0
+    try std.testing.expectEqual(@as(u64, 4), log.pc);
     try std.testing.expectEqualStrings("ADD", log.op);
     try std.testing.expectEqual(@as(u64, 950), log.gas);
     try std.testing.expectEqual(@as(u32, 1), log.depth);
@@ -835,7 +835,7 @@ test "tracer writes JSON to writer" {
     defer output.deinit();
     
     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
-    try tracer.writeSnapshot(Frame, &test_frame);
+    try tracer.writeSnapshot(4, 0x01, Frame, &test_frame); // PC=4, opcode=ADD
     
     const json = output.items;
     try std.testing.expect(std.mem.indexOf(u8, json, "\"pc\":4") != null);

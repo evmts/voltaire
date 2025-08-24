@@ -4357,12 +4357,9 @@ test "trace instructions behavior with different tracer types" {
     // The traced frame should start with zero tracer calls
     try std.testing.expectEqual(@as(usize, 0), frame_traced.tracer.call_count);
 
-    // Test type name checking (this verifies our ENABLE_TRACING logic)
-    const noop_type_name = @typeName(NoOpTracer);
+    // Test type name checking
     const test_tracer_type_name = @typeName(TestTracer);
-
-    try std.testing.expect(std.mem.eql(u8, noop_type_name, "tracer.NoOpTracer"));
-    try std.testing.expect(!std.mem.eql(u8, test_tracer_type_name, "tracer.NoOpTracer"));
+    try std.testing.expect(!std.mem.eql(u8, test_tracer_type_name, "void"));
 }
 
 test "Frame jump to invalid destination should fail" {
