@@ -23,7 +23,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     
     const FrameInterpreter = struct {
         pub const WordType = config.WordType;
-        pub const Error = Frame.Error || error{OutOfMemory, TruncatedPush, InvalidJumpDestination, MissingJumpDestMetadata};
+        pub const Error = Frame.Error || error{OutOfMemory, TruncatedPush, InvalidJumpDestination, MissingJumpDestMetadata, InitcodeTooLarge};
         
         const Self = @This();
         

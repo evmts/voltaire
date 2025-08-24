@@ -425,7 +425,7 @@ pub fn Tracer(comptime Writer: type) type {
             // Capture stack
             const stack_size = frame_instance.stack.size();
             const stack_copy = try self.allocator.alloc(u256, stack_size);
-            const stack_slice = frame_instance.stack.getSlice();
+            const stack_slice = frame_instance.stack.get_slice();
             @memcpy(stack_copy, stack_slice);
             
             // Get current opcode - PC is now managed by plan, so we can't get it from frame
