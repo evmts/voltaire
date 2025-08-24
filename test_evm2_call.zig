@@ -290,3 +290,51 @@ test "call method rejects calls exceeding max depth" {
     try testing.expect(!result.success);
     try testing.expectEqual(@as(u64, 0), result.gas_left);
 }
+
+test "call method handles precompiled contracts - IDENTITY precompile" {
+    // Create test database
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Call IDENTITY precompile (address 0x04) with test data
+    const identity_address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x04 };
+    const test_data = "Hello, World!";
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = identity_address,
+            .value = 0,
+            .input = test_data,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    try testing.expect(result.success);
+    try testing.expect(result.gas_left > 0);
+    
+    // IDENTITY precompile should return input data unchanged
+    try testing.expectEqualSlices(u8, test_data, result.output);
+}
