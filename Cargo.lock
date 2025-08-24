@@ -2695,6 +2695,7 @@ dependencies = [
  "alloy-primitives 0.8.25",
  "cbindgen",
  "hex",
+ "keccak-asm",
  "libc",
  "revm",
  "revm-primitives",

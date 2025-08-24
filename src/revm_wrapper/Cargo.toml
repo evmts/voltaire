@@ -13,6 +13,8 @@ revm-primitives = "10.0"
 alloy-primitives = "0.8"
 libc = "0.2"
 hex = "0.4"
+# High-performance assembly-optimized KECCAK256
+keccak-asm = "0.1"
 
 [build-dependencies]
 cbindgen = "0.24"
