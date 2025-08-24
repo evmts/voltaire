@@ -980,7 +980,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
     
     // Test PUSH1 through PUSH8 (values that fit inline)
     {
-        const bytecode = [_]u8{
+        _ = [_]u8{
             @intFromEnum(Opcode.PUSH1), 0xFF,
             @intFromEnum(Opcode.PUSH2), 0x12, 0x34,
             @intFromEnum(Opcode.PUSH3), 0xAB, 0xCD, 0xEF,
@@ -1039,7 +1039,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
 test "PlanMinimal getNextInstruction advances correctly" {
     const allocator = std.testing.allocator;
     
-    const bytecode = [_]u8{
+    _ = [_]u8{
         @intFromEnum(Opcode.ADD),          // PC 0: no metadata
         @intFromEnum(Opcode.PUSH1), 0x42,  // PC 1: 1 byte metadata
         @intFromEnum(Opcode.MUL),          // PC 3: no metadata
@@ -1093,7 +1093,7 @@ test "PlanMinimal JUMPDEST detection with PUSH data" {
     const allocator = std.testing.allocator;
     
     // Test that 0x5B inside PUSH data is not detected as JUMPDEST
-    const bytecode = [_]u8{
+    _ = [_]u8{
         @intFromEnum(Opcode.PUSH2), 0x5B, 0x5B, // 0x5B bytes should not be JUMPDEST
         @intFromEnum(Opcode.JUMPDEST),          // This should be detected
         @intFromEnum(Opcode.PUSH1), 0x5B,        // This 0x5B should not be JUMPDEST
@@ -1126,7 +1126,7 @@ test "PlanMinimal edge cases" {
     
     // Test empty bytecode
     {
-        const bytecode = [_]u8{};
+        _ = [_]u8{};
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
@@ -1142,7 +1142,7 @@ test "PlanMinimal edge cases" {
     
     // Test single opcode
     {
-        const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+        _ = [_]u8{@intFromEnum(Opcode.STOP)};
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
@@ -1164,7 +1164,7 @@ test "PlanMinimal edge cases" {
     
     // Test truncated PUSH
     {
-        const bytecode = [_]u8{
+        _ = [_]u8{
             @intFromEnum(Opcode.PUSH3), 0xAB, // Missing 2 bytes
         };
         const Planner = @import("planner.zig").createPlanner(.{});
@@ -1209,7 +1209,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
         }
     }.handler;
     
-    const bytecode = [_]u8{
+    _ = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x42,
         @intFromEnum(Opcode.ADD),
         @intFromEnum(Opcode.MUL),
@@ -1254,7 +1254,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
 test "PlanMinimal PC opcode returns correct value" {
     const allocator = std.testing.allocator;
     
-    const bytecode = [_]u8{
+    _ = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x42,  // PC 0
         @intFromEnum(Opcode.PC),           // PC 2
         @intFromEnum(Opcode.PUSH2), 0x12, 0x34, // PC 3
@@ -1957,7 +1957,7 @@ test "Plan comprehensive deinit behavior" {
 test "PlanMinimal JUMPDEST metadata" {
     const allocator = std.testing.allocator;
     
-    const bytecode = [_]u8{
+    _ = [_]u8{
         @intFromEnum(Opcode.JUMPDEST),     // PC 0
         @intFromEnum(Opcode.PUSH1), 0x05,  // PC 1
         @intFromEnum(Opcode.JUMP),         // PC 3
@@ -2249,7 +2249,7 @@ test "Plan memory fragmentation resistance" {
     // Create all plans
     for (0..num_plans) |i| {
         const PlannerType = @import("planner.zig").createPlanner(.{});
-        planners[i] = try PlannerType.init(allocator, &bytecode);
+        planners[i] = try PlannerType.init(allocator, 100);
         plans[i] = try planners[i].create_plan(allocator, handlers);
     }
     
@@ -2426,7 +2426,7 @@ test "Plan instruction stream integrity validation" {
     const allocator = std.testing.allocator;
     
     // Create complex bytecode with nested patterns
-    const bytecode = [_]u8{
+    _ = [_]u8{
         // Pattern 1: Multiple PUSH operations
         @intFromEnum(Opcode.PUSH1), 0x01,
         @intFromEnum(Opcode.PUSH2), 0x02, 0x03,
@@ -2500,7 +2500,7 @@ test "Plan extreme configuration edge cases" {
     const Planner = @import("planner.zig").createPlanner(min_config);
     
     // Minimal valid bytecode
-    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    _ = [_]u8{@intFromEnum(Opcode.STOP)};
     var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
@@ -2723,7 +2723,7 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
     };
     
     // Simple bytecode for testing
-    const bytecode = [_]u8{
+    _ = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x42,
         @intFromEnum(Opcode.DUP1),
         @intFromEnum(Opcode.ADD),
@@ -3431,7 +3431,7 @@ test "Plan caching and lifecycle management validation" {
     
     // Function that creates and returns a plan (simulating ownership transfer)
     const createAndTransferPlan = struct {
-        fn create(alloc: std.mem.Allocator, bytecode: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
+        fn create(alloc: std.mem.Allocator, _: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
             const TransferPlanner = @import("planner.zig").createPlanner(.{});
             var transfer_planner = try TransferPlanner.init(alloc, 100);
             return try transfer_planner.create_plan(alloc, plan_handlers);
