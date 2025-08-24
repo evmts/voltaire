@@ -831,6 +831,22 @@ pub fn build(b: *std.Build) void {
     const evm_core_test_step = b.step("test-evm-core", "Run evm.zig tests");
     evm_core_test_step.dependOn(&run_evm_core_test.step);
 
+    // Add Frame integration tests
+    const frame_integration_test = b.addTest(.{
+        .name = "frame-integration-test",
+        .root_source_file = b.path("src/evm/frame_integration_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    frame_integration_test.root_module.addImport("evm", evm_mod);
+    frame_integration_test.root_module.addImport("primitives", primitives_mod);
+    frame_integration_test.root_module.addImport("crypto", crypto_mod);
+    frame_integration_test.root_module.addImport("build_options", build_options_mod);
+    frame_integration_test.addIncludePath(b.path("src/bn254_wrapper"));
+    const run_frame_integration_test = b.addRunArtifact(frame_integration_test);
+    const frame_integration_test_step = b.step("test-frame-integration", "Run Frame integration tests");
+    frame_integration_test_step.dependOn(&run_frame_integration_test.step);
+
     // EVM E2E tests removed - file no longer exists
 
     // Comprehensive Differential tests removed - file no longer exists
@@ -1726,6 +1742,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_newevm_test.step);
     // Stack validation, jump table, config, differential, staticcall, and interpret2 tests removed
     test_step.dependOn(&run_evm_core_test.step);
+    test_step.dependOn(&run_frame_integration_test.step);
     // benchmark runner test removed - file no longer exists
 
     // Inline ops test removed - file no longer exists
