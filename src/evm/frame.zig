@@ -1944,6 +1944,34 @@ pub fn Frame(comptime config: FrameConfig) type {
 
         // System transaction opcodes
 
+        /// Calculate gas cost for CALL operations based on EIP-150 and EIP-2929
+        /// 
+        /// ## Parameters
+        /// - `target_address`: Target contract address
+        /// - `value`: Value being transferred (0 for no value transfer)
+        /// - `is_static`: Whether this is a static call context
+        /// 
+        /// ## Returns
+        /// - Gas cost for the call operation before gas forwarding
+        fn _calculate_call_gas(self: *Self, target_address: Address, value: u256, is_static: bool) u64 {
+            _ = self; // Currently unused but will be needed for database/access list checks
+            _ = target_address; // Currently unused but will be needed for account existence checks
+            
+            // Check if target account exists (simplified - in reality this would check database)
+            // For now, assume account exists (new_account = false)
+            const new_account = false;
+            
+            // Check if this is a cold access (simplified - in reality this would check access list)
+            // For now, assume warm access (cold_access = false)
+            const cold_access = false;
+            
+            // Value transfer check
+            const value_transfer = value > 0 and !is_static;
+            
+            // Calculate base call cost using the centralized gas calculation function
+            return GasConstants.call_gas_cost(value_transfer, new_account, cold_access);
+        }
+
         /// CALL opcode (0xF1) - Call another contract
         /// Calls the contract at the given address with the provided value, input data, and gas.
         /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
@@ -2003,6 +2031,18 @@ pub fn Frame(comptime config: FrameConfig) type {
                 &[_]u8{}
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
+
+            // Calculate base call gas cost (EIP-150 & EIP-2929)
+            const base_call_gas = self._calculate_call_gas(address, value, self.is_static);
+            
+            // Check if we have enough gas for the base call cost
+            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
+                try self.stack.push(0);
+                return;
+            }
+            
+            // Consume base call gas
+            self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
             const gas_stipend = if (value > 0) @as(u64, 2300) else 0; // Gas stipend for value transfer
@@ -2102,6 +2142,18 @@ pub fn Frame(comptime config: FrameConfig) type {
                 &[_]u8{}
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
+
+            // Calculate base call gas cost (EIP-150 & EIP-2929) - DELEGATECALL never transfers value
+            const base_call_gas = self._calculate_call_gas(address, 0, false);
+            
+            // Check if we have enough gas for the base call cost
+            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
+                try self.stack.push(0);
+                return;
+            }
+            
+            // Consume base call gas
+            self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
             const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
