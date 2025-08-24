@@ -6,6 +6,7 @@ const plan_mod = @import("plan.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const primitives = @import("primitives");
+const CallParams = @import("call_params.zig").CallParams;
 
 /// Create a FrameInterpreter with the given configuration
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
@@ -198,7 +199,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             inline for (0xa5..0xf0) |i| {
                 handlers[i] = &op_invalid_handler;
             }
-            handlers[@intFromEnum(Opcode.CREATE)] = &op_invalid_handler; // Needs additional context
+            handlers[@intFromEnum(Opcode.CREATE)] = &op_create_handler;
             handlers[@intFromEnum(Opcode.CALL)] = &op_invalid_handler; // Needs additional context
             handlers[@intFromEnum(Opcode.CALLCODE)] = &op_invalid_handler; // Deprecated
             handlers[@intFromEnum(Opcode.RETURN)] = &op_invalid_handler; // Needs return handling
@@ -2330,6 +2331,96 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.log4(interpreter.allocator);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG4));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_create_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Pop values from stack: value, offset, size
+            const size = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const value = try self.stack.pop();
+            
+            // Check if we have a host
+            if (self.host == null) {
+                return Error.InvalidOpcode; // No host, can't create contract
+            }
+            
+            // Get opcode info for base gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.CREATE)];
+            
+            // Consume base gas (32000)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Calculate init code cost (200 per byte, EIP-3860)
+            if (size > std.math.maxInt(u64)) {
+                return Error.OutOfGas;
+            }
+            const size_u64 = @as(u64, @intCast(size));
+            const init_code_cost = size_u64 *% 200; // 200 gas per byte of init code
+            
+            if (self.gas_remaining < @as(Frame.GasType, @intCast(init_code_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(Frame.GasType, @intCast(init_code_cost));
+            
+            // Check maximum init code size (EIP-3860)
+            const max_init_code_size: u64 = 49152; // 48KB
+            if (size_u64 > max_init_code_size) {
+                return Error.BytecodeTooLarge;
+            }
+            
+            // Calculate memory expansion cost
+            if (offset > std.math.maxInt(u64) or size > std.math.maxInt(u64)) {
+                return Error.OutOfBounds;
+            }
+            const offset_u64 = @as(u64, @intCast(offset));
+            const memory_expansion_cost = try self.memory.expansion_cost(offset_u64, size_u64);
+            
+            if (self.gas_remaining < @as(Frame.GasType, @intCast(memory_expansion_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(Frame.GasType, @intCast(memory_expansion_cost));
+            
+            // Get init code from memory
+            const init_code = try self.memory.get_slice_evm(offset_u64, size_u64);
+            
+            // Calculate gas for subcall (all but 1/64th of remaining gas)
+            const gas_for_call = @divFloor(self.gas_remaining * 63, 64);
+            if (gas_for_call < 0) {
+                return Error.OutOfGas;
+            }
+            
+            // Create call parameters
+            const params = CallParams{ .create = .{
+                .caller = self.contract_address,
+                .value = value,
+                .init_code = init_code,
+                .gas = @as(u64, @intCast(gas_for_call)),
+            }};
+            
+            // Execute CREATE through host
+            const result = try self.host.?.inner_call(params);
+            
+            // Update gas remaining
+            self.gas_remaining = @as(GasType, @intCast(result.gas_left));
+            
+            // Push result to stack (new contract address or 0 on failure)
+            if (result.success and result.output.len >= 20) {
+                // Convert returned address bytes to u256
+                var address_bytes: [20]u8 = undefined;
+                @memcpy(&address_bytes, result.output[0..20]);
+                const address = primitives.Address.to_u256(address_bytes);
+                try self.stack.push(address);
+            } else {
+                // Push 0 on failure
+                try self.stack.push(0);
+            }
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CREATE));
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
     };
