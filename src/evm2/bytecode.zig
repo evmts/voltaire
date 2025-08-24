@@ -32,6 +32,65 @@ pub const Stats = struct {
         pc: usize,
         target: u256,
     };
+    
+    pub fn pretty_print(self: Stats) void {
+        std.log.warn("\n=== Bytecode Statistics ===\n", .{});
+        
+        // Print opcode summary
+        std.log.warn("Opcode counts:", .{});
+        var total_opcodes: u32 = 0;
+        for (self.opcode_counts, 0..) |count, op| {
+            if (count > 0) {
+                const opcode_enum = std.meta.intToEnum(Opcode, op) catch {
+                    std.log.warn("  UNKNOWN(0x{x:0>2}): {}", .{ op, count });
+                    continue;
+                };
+                std.log.warn("  {s}: {}", .{ @tagName(opcode_enum), count });
+                total_opcodes += count;
+            }
+        }
+        std.log.warn("Total opcodes: {}\n", .{total_opcodes});
+        
+        // Print push values
+        if (self.push_values.len > 0) {
+            std.log.warn("Push values ({} total):", .{self.push_values.len});
+            for (self.push_values) |pv| {
+                std.log.warn("  PC {}: 0x{x}", .{ pv.pc, pv.value });
+            }
+            std.log.warn("", .{});
+        }
+        
+        // Print potential fusions
+        if (self.potential_fusions.len > 0) {
+            std.log.warn("Potential fusions ({} total):", .{self.potential_fusions.len});
+            for (self.potential_fusions) |fusion| {
+                std.log.warn("  PC {}: PUSH + {s}", .{ fusion.pc, @tagName(fusion.second_opcode) });
+            }
+            std.log.warn("", .{});
+        }
+        
+        // Print jump analysis
+        if (self.jumpdests.len > 0) {
+            std.log.warn("Jump destinations ({} total):", .{self.jumpdests.len});
+            for (self.jumpdests) |dest| {
+                std.log.warn("  PC {}", .{dest});
+            }
+            std.log.warn("", .{});
+        }
+        
+        if (self.jumps.len > 0) {
+            std.log.warn("Jumps ({} total, {} backwards):", .{ self.jumps.len, self.backwards_jumps });
+            for (self.jumps) |jump| {
+                const direction = if (jump.target < jump.pc) "↑" else "↓";
+                std.log.warn("  PC {} {} target 0x{x}", .{ jump.pc, direction, jump.target });
+            }
+            std.log.warn("", .{});
+        }
+        
+        // Print contract type
+        std.log.warn("Contract type: {s}", .{if (self.is_create_code) "Create/Deploy code" else "Runtime code"});
+        std.log.warn("======================\n", .{});
+    }
 };
 
 /// Factory function to create a Bytecode type with the given configuration
@@ -444,8 +503,10 @@ pub const Bytecode = createBytecode(.{});
 
 // Tests copied and adapted from existing test patterns
 test "Bytecode.init and basic getters" {
+    const allocator = std.testing.allocator;
     const code = [_]u8{ 0x60, 0x40, 0x60, 0x80 }; // PUSH1 0x40 PUSH1 0x80
-    const bytecode = Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     try std.testing.expectEqual(@as(usize, 4), bytecode.len());
     try std.testing.expectEqualSlices(u8, &code, bytecode.raw());
