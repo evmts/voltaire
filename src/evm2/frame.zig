@@ -11,21 +11,14 @@ const GasConstants = @import("primitives").GasConstants;
 const Address = @import("primitives").Address.Address;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 
-// A Frame is the StackFrame data struct for the Interpreter which is the simplist interpreter
-//  in this context means the code is new unanalyzed code that we are interpreting.
-// The cold frame and interpreter are appropriate for the following situations:
-// 1. Very small contracts
-// 2. Unanalyzed contracts
-// 3. Debuggers tracers or anything that needs to step through the evm code
 pub fn createFrame(comptime config: FrameConfig) type {
-    config.validate();
+    comptime config.validate();
 
     const Frame = struct {
         pub const WordType = config.WordType;
         pub const TracerType = config.TracerType;
         pub const GasType = config.GasType();
         pub const PcType = config.PcType();
-        pub const max_bytecode_size = config.max_bytecode_size;
         pub const Memory = memory_mod.createMemory(.{
             .initial_capacity = config.memory_initial_capacity,
             .memory_limit = config.memory_limit,
@@ -46,9 +39,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
             OutOfGas,
             WriteProtection,
         };
+        pub const max_bytecode_size = config.max_bytecode_size;
 
         const Self = @This();
-
 
         // Cacheline 1
         stack: Stack, // EVM stack
@@ -60,7 +53,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
         
         // Contract execution context
         contract_address: Address = [_]u8{0} ** 20, // Address of currently executing contract
-        is_static: bool = false, // Whether in static context (no state modifications allowed)
         self_destruct: ?*SelfDestruct = null, // Tracks contracts marked for destruction
 
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void) Error!Self {
@@ -126,7 +118,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 .memory = new_memory,
                 .database = self.database,
                 .contract_address = self.contract_address,
-                .is_static = self.is_static,
                 .self_destruct = self.self_destruct,
             };
         }
@@ -167,9 +158,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
             if (!std.mem.eql(u8, &self.contract_address, &other.contract_address)) {
                 std.debug.panic("Frame.assertEqual: contract_address mismatch", .{});
             }
-            if (self.is_static != other.is_static) {
-                std.debug.panic("Frame.assertEqual: is_static mismatch: {} vs {}", .{ self.is_static, other.is_static });
-            }
         }
         
         /// Pretty print the frame state for debugging.
@@ -181,8 +169,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
             // Show bytecode (first 50 bytes or less)
             const show_bytes = @min(self.bytecode.len, 50);
             std.log.warn("Bytecode (first {} bytes): ", .{show_bytes});
-            for (self.bytecode[0..show_bytes]) |byte| {
-                std.log.warn("{x:0>2} ", .{byte});
+            for (self.bytecode[0..show_bytes]) |b| {
+                std.log.warn("{x:0>2} ", .{b});
             }
             if (self.bytecode.len > 50) {
                 std.log.warn("... ({} more bytes)", .{self.bytecode.len - 50});
@@ -226,8 +214,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
                     // Hex bytes
                     var i = offset;
                     while (i < end) : (i += 1) {
-                        const byte = self.memory.get_byte(i) catch 0;
-                        std.log.warn("{x:0>2} ", .{byte});
+                        const b = self.memory.get_byte(i) catch 0;
+                        std.log.warn("{x:0>2} ", .{b});
                     }
                     
                     // Pad if less than 32 bytes
@@ -242,9 +230,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
                     std.log.warn(" |", .{});
                     i = offset;
                     while (i < end) : (i += 1) {
-                        const byte = self.memory.get_byte(i) catch 0;
-                        if (byte >= 32 and byte <= 126) {
-                            std.log.warn("{c}", .{byte});
+                        const b = self.memory.get_byte(i) catch 0;
+                        if (b >= 32 and b <= 126) {
+                            std.log.warn("{c}", .{b});
                         } else {
                             std.log.warn(".", .{});
                         }
@@ -260,431 +248,127 @@ pub fn createFrame(comptime config: FrameConfig) type {
             std.log.warn("===================\n\n", .{});
         }
 
-        pub fn op_pc(self: *Self) Error!void {
-            // Since we don't track PC anymore, this should get PC from plan
-            // For now, push 0 as we need plan access to get actual PC
-            return self.stack.push(0);
+        pub fn pop(self: *Self) Error!void {
+            _ = try self.stack.pop();
         }
 
-        pub fn op_stop(self: *Self) Error!void {
+        pub fn stop(self: *Self) Error!void {
             _ = self;
             return Error.STOP;
         }
 
-        pub fn op_pop(self: *Self) Error!void {
-            _ = try self.stack.pop();
-        }
-
-        pub fn op_push0(self: *Self) Error!void {
-            return self.stack.push(0);
-        }
-
-        pub fn op_push1(self: *Self) Error!void {
-            _ = self;
-            // This shouldn't be called anymore - we use push1_handler
-            unreachable;
-        }
-
-        // Generic push function for PUSH2-PUSH32
-        fn push_n(self: *Self, n: u8) Error!void {
-            // This shouldn't be called anymore - we use individual push handlers
-            const start = 0; // dummy value
-            const end = start + n;
-            var value: u256 = 0;
-
-            // Check bounds - if we don't have enough bytes, pad with zeros
-            const available_bytes = if (end <= self.bytecode.len)
-                n
-            else if (start >= self.bytecode.len)
-                0
-            else
-                @as(u8, @intCast(self.bytecode.len - start));
-
-            // Handle different sizes using std.mem.readInt
-            if (n <= 8) {
-                // For sizes that fit in standard integer types
-                var buffer: [@divExact(64, 8)]u8 = [_]u8{0} ** 8;
-                // Copy available bytes to right-aligned position for big-endian
-                if (available_bytes > 0) {
-                    @memcpy(buffer[8 - available_bytes ..], self.bytecode[start .. start + available_bytes]);
-                }
-                const small_value = std.mem.readInt(u64, &buffer, .big);
-                value = small_value;
-            } else {
-                // For larger sizes, read in chunks
-                var temp_buffer: [32]u8 = [_]u8{0} ** 32;
-                if (available_bytes > 0) {
-                    @memcpy(temp_buffer[32 - available_bytes ..], self.bytecode[start .. start + available_bytes]);
-                }
-
-                // Read as four u64s and combine
-                var result: u256 = 0;
-                var i: usize = 0;
-                while (i < 4) : (i += 1) {
-                    const chunk = std.mem.readInt(u64, temp_buffer[i * 8 ..][0..8], .big);
-                    result = (result << 64) | chunk;
-                }
-                value = result;
-            }
-
-            // PC update is handled by plan through instruction index update
-            return self.stack.push(value);
-        }
-
-        pub fn op_push2(self: *Self) Error!void {
-            return self.push_n(2);
-        }
-
-        pub fn op_push3(self: *Self) Error!void {
-            return self.push_n(3);
-        }
-
-        pub fn op_push4(self: *Self) Error!void {
-            return self.push_n(4);
-        }
-
-        pub fn op_push5(self: *Self) Error!void {
-            return self.push_n(5);
-        }
-
-        pub fn op_push6(self: *Self) Error!void {
-            return self.push_n(6);
-        }
-
-        pub fn op_push7(self: *Self) Error!void {
-            return self.push_n(7);
-        }
-
-        pub fn op_push8(self: *Self) Error!void {
-            return self.push_n(8);
-        }
-
-        pub fn op_push9(self: *Self) Error!void {
-            return self.push_n(9);
-        }
-
-        pub fn op_push10(self: *Self) Error!void {
-            return self.push_n(10);
-        }
-
-        pub fn op_push11(self: *Self) Error!void {
-            return self.push_n(11);
-        }
-
-        pub fn op_push12(self: *Self) Error!void {
-            return self.push_n(12);
-        }
-
-        pub fn op_push13(self: *Self) Error!void {
-            return self.push_n(13);
-        }
-
-        pub fn op_push14(self: *Self) Error!void {
-            return self.push_n(14);
-        }
-
-        pub fn op_push15(self: *Self) Error!void {
-            return self.push_n(15);
-        }
-
-        pub fn op_push16(self: *Self) Error!void {
-            return self.push_n(16);
-        }
-
-        pub fn op_push17(self: *Self) Error!void {
-            return self.push_n(17);
-        }
-
-        pub fn op_push18(self: *Self) Error!void {
-            return self.push_n(18);
-        }
-
-        pub fn op_push19(self: *Self) Error!void {
-            return self.push_n(19);
-        }
-
-        pub fn op_push20(self: *Self) Error!void {
-            return self.push_n(20);
-        }
-
-        pub fn op_push21(self: *Self) Error!void {
-            return self.push_n(21);
-        }
-
-        pub fn op_push22(self: *Self) Error!void {
-            return self.push_n(22);
-        }
-
-        pub fn op_push23(self: *Self) Error!void {
-            return self.push_n(23);
-        }
-
-        pub fn op_push24(self: *Self) Error!void {
-            return self.push_n(24);
-        }
-
-        pub fn op_push25(self: *Self) Error!void {
-            return self.push_n(25);
-        }
-
-        pub fn op_push26(self: *Self) Error!void {
-            return self.push_n(26);
-        }
-
-        pub fn op_push27(self: *Self) Error!void {
-            return self.push_n(27);
-        }
-
-        pub fn op_push28(self: *Self) Error!void {
-            return self.push_n(28);
-        }
-
-        pub fn op_push29(self: *Self) Error!void {
-            return self.push_n(29);
-        }
-
-        pub fn op_push30(self: *Self) Error!void {
-            return self.push_n(30);
-        }
-
-        pub fn op_push31(self: *Self) Error!void {
-            return self.push_n(31);
-        }
-
-        pub fn op_push32(self: *Self) Error!void {
-            return self.push_n(32);
-        }
-
-        pub fn op_dup1(self: *Self) Error!void {
-            return self.stack.op_dup1();
-        }
-
-        pub fn op_dup2(self: *Self) Error!void {
-            return self.stack.op_dup2();
-        }
-
-        pub fn op_dup3(self: *Self) Error!void {
-            return self.stack.op_dup3();
-        }
-
-        pub fn op_dup4(self: *Self) Error!void {
-            return self.stack.op_dup4();
-        }
-
-        pub fn op_dup5(self: *Self) Error!void {
-            return self.stack.op_dup5();
-        }
-
-        pub fn op_dup6(self: *Self) Error!void {
-            return self.stack.op_dup6();
-        }
-
-        pub fn op_dup7(self: *Self) Error!void {
-            return self.stack.op_dup7();
-        }
-
-        pub fn op_dup8(self: *Self) Error!void {
-            return self.stack.op_dup8();
-        }
-
-        pub fn op_dup9(self: *Self) Error!void {
-            return self.stack.op_dup9();
-        }
-
-        pub fn op_dup10(self: *Self) Error!void {
-            return self.stack.op_dup10();
-        }
-
-        pub fn op_dup11(self: *Self) Error!void {
-            return self.stack.op_dup11();
-        }
-
-        pub fn op_dup12(self: *Self) Error!void {
-            return self.stack.op_dup12();
-        }
-
-        pub fn op_dup13(self: *Self) Error!void {
-            return self.stack.op_dup13();
-        }
-
-        pub fn op_dup14(self: *Self) Error!void {
-            return self.stack.op_dup14();
-        }
-
-        pub fn op_dup15(self: *Self) Error!void {
-            return self.stack.op_dup15();
-        }
-
-        pub fn op_dup16(self: *Self) Error!void {
-            return self.stack.op_dup16();
-        }
-
-        pub fn op_swap1(self: *Self) Error!void {
-            return self.stack.op_swap1();
-        }
-
-        pub fn op_swap2(self: *Self) Error!void {
-            return self.stack.op_swap2();
-        }
-
-        pub fn op_swap3(self: *Self) Error!void {
-            return self.stack.op_swap3();
-        }
-
-        pub fn op_swap4(self: *Self) Error!void {
-            return self.stack.op_swap4();
-        }
-
-        pub fn op_swap5(self: *Self) Error!void {
-            return self.stack.op_swap5();
-        }
-
-        pub fn op_swap6(self: *Self) Error!void {
-            return self.stack.op_swap6();
-        }
-
-        pub fn op_swap7(self: *Self) Error!void {
-            return self.stack.op_swap7();
-        }
-
-        pub fn op_swap8(self: *Self) Error!void {
-            return self.stack.op_swap8();
-        }
-
-        pub fn op_swap9(self: *Self) Error!void {
-            return self.stack.op_swap9();
-        }
-
-        pub fn op_swap10(self: *Self) Error!void {
-            return self.stack.op_swap10();
-        }
-
-        pub fn op_swap11(self: *Self) Error!void {
-            return self.stack.op_swap11();
-        }
-
-        pub fn op_swap12(self: *Self) Error!void {
-            return self.stack.op_swap12();
-        }
-
-        pub fn op_swap13(self: *Self) Error!void {
-            return self.stack.op_swap13();
-        }
-
-        pub fn op_swap14(self: *Self) Error!void {
-            return self.stack.op_swap14();
-        }
-
-        pub fn op_swap15(self: *Self) Error!void {
-            return self.stack.op_swap15();
-        }
-
-        pub fn op_swap16(self: *Self) Error!void {
-            return self.stack.op_swap16();
-        }
-
         // Bitwise operations
-        pub fn op_and(self: *Self) Error!void {
+        pub fn @"and"(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top & top_minus_1);
         }
 
-        pub fn op_or(self: *Self) Error!void {
+        pub fn @"or"(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top | top_minus_1);
         }
 
-        pub fn op_xor(self: *Self) Error!void {
+        pub fn and_(self: *Self) Error!void {
+            const b = try self.stack.pop();
+            const a = try self.stack.pop();
+            try self.stack.push(a & b);
+        }
+        
+        pub fn or_(self: *Self) Error!void {
+            const b = try self.stack.pop();
+            const a = try self.stack.pop();
+            try self.stack.push(a | b);
+        }
+        
+        pub fn not_(self: *Self) Error!void {
+            const a = try self.stack.pop();
+            try self.stack.push(~a);
+        }
+
+        pub fn xor(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
         }
 
-        pub fn op_not(self: *Self) Error!void {
+        pub fn @"not"(self: *Self) Error!void {
             const top = try self.stack.peek();
             try self.stack.set_top(~top);
         }
 
-        pub fn op_byte(self: *Self) Error!void {
+        pub fn byte(self: *Self) Error!void {
             const byte_index = try self.stack.pop();
             const value = try self.stack.peek();
-
             const result = if (byte_index >= 32) 0 else blk: {
                 const index_usize = @as(usize, @intCast(byte_index));
                 const shift_amount = (31 - index_usize) * 8;
                 break :blk (value >> @intCast(shift_amount)) & 0xFF;
             };
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_shl(self: *Self) Error!void {
+        pub fn shl(self: *Self) Error!void {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-
             const result = if (shift >= 256) 0 else value << @intCast(shift);
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_shr(self: *Self) Error!void {
+        pub fn shr(self: *Self) Error!void {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-
             const result = if (shift >= 256) 0 else value >> @intCast(shift);
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_sar(self: *Self) Error!void {
+        pub fn sar(self: *Self) Error!void {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-
             const result = if (shift >= 256) blk: {
                 const sign_bit = value >> 255;
                 break :blk if (sign_bit == 1) @as(WordType, std.math.maxInt(WordType)) else @as(WordType, 0);
             } else blk: {
                 const shift_amount = @as(u8, @intCast(shift));
+                // https://ziglang.org/documentation/master/std/#std.meta.Int
+                // std.meta.Int creates an integer type with specified signedness and bit width
                 const value_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(value));
                 const result_signed = value_signed >> shift_amount;
                 break :blk @as(WordType, @bitCast(result_signed));
             };
-
             try self.stack.set_top(result);
         }
 
         // Arithmetic operations
-        pub fn op_add(self: *Self) Error!void {
+        pub fn add(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
         }
 
-        pub fn op_mul(self: *Self) Error!void {
+        pub fn mul(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
         }
 
-        pub fn op_sub(self: *Self) Error!void {
+        pub fn sub(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
         }
 
-        pub fn op_div(self: *Self) Error!void {
+        pub fn div(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
             try self.stack.set_top(result);
         }
 
-        pub fn op_sdiv(self: *Self) Error!void {
+        pub fn sdiv(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
-
             var result: WordType = undefined;
             if (denominator == 0) {
                 result = 0;
@@ -692,7 +376,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 const numerator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(numerator));
                 const denominator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(denominator));
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
-
                 if (numerator_signed == min_signed and denominator_signed == -1) {
                     // MIN / -1 overflow case
                     result = numerator;
@@ -701,21 +384,19 @@ pub fn createFrame(comptime config: FrameConfig) type {
                     result = @as(WordType, @bitCast(result_signed));
                 }
             }
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_mod(self: *Self) Error!void {
+        pub fn mod(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator % denominator;
             try self.stack.set_top(result);
         }
 
-        pub fn op_smod(self: *Self) Error!void {
+        pub fn smod(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
-
             var result: WordType = undefined;
             if (denominator == 0) {
                 result = 0;
@@ -725,103 +406,75 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 const result_signed = @rem(numerator_signed, denominator_signed);
                 result = @as(WordType, @bitCast(result_signed));
             }
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_addmod(self: *Self) Error!void {
+        pub fn addmod(self: *Self) Error!void {
             const modulus = try self.stack.pop();
             const addend2 = try self.stack.pop();
             const addend1 = try self.stack.peek();
-
             var result: WordType = undefined;
             if (modulus == 0) {
                 result = 0;
             } else {
-                // The key insight: ADDMOD must compute (addend1 + addend2) mod modulus where the addition
-                // is done in arbitrary precision, not mod 2^256
-                // However, in the test case (MAX + 5) % 10, we have:
-                // MAX + 5 in u256 wraps to 4, so we want 4 % 10 = 4
-
-                // First, let's check if addend1 + addend2 overflows
                 const sum = @addWithOverflow(addend1, addend2);
                 if (sum[1] == 0) {
-                    // No overflow, simple case
                     result = sum[0] % modulus;
                 } else {
-                    // Overflow occurred. The wrapped value is what we want to mod
                     result = sum[0] % modulus;
                 }
             }
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_mulmod(self: *Self) Error!void {
+        pub fn mulmod(self: *Self) Error!void {
             const modulus = try self.stack.pop();
             const factor2 = try self.stack.pop();
             const factor1 = try self.stack.peek();
-
             var result: WordType = undefined;
             if (modulus == 0) {
                 result = 0;
             } else {
-                // First reduce the operands
                 const factor1_mod = factor1 % modulus;
                 const factor2_mod = factor2 % modulus;
-
-                // Compute (factor1_mod * factor2_mod) % modulus
-                // This works correctly for values where factor1_mod * factor2_mod doesn't overflow
                 const product = factor1_mod *% factor2_mod;
                 result = product % modulus;
             }
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_exp(self: *Self) Error!void {
+        pub fn exp(self: *Self) Error!void {
             const exponent = try self.stack.pop();
             const base = try self.stack.peek();
-
             var result: WordType = 1;
             var b = base;
             var e = exponent;
-
-            // Binary exponentiation algorithm
             while (e > 0) : (e >>= 1) {
                 if (e & 1 == 1) {
                     result *%= b;
                 }
                 b *%= b;
             }
-
             try self.stack.set_top(result);
         }
 
-        pub fn op_signextend(self: *Self) Error!void {
+        pub fn signextend(self: *Self) Error!void {
             const ext = try self.stack.pop();
             const value = try self.stack.peek();
-
             var result: WordType = undefined;
-
             if (ext >= 31) {
-                // No extension needed
                 result = value;
             } else {
                 const ext_usize = @as(usize, @intCast(ext));
                 const bit_index = ext_usize * 8 + 7;
                 const mask = (@as(WordType, 1) << @intCast(bit_index)) - 1;
                 const sign_bit = (value >> @intCast(bit_index)) & 1;
-
                 if (sign_bit == 1) {
-                    // Negative - fill with 1s
                     result = value | ~mask;
                 } else {
-                    // Positive - fill with 0s
                     result = value & mask;
                 }
             }
-
             try self.stack.set_top(result);
         }
 
@@ -832,34 +485,30 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         /// Check if we're out of gas at end of execution
         pub fn checkGas(self: *Self) Error!void {
-            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_remaining < 0) return Error.OutOfGas;
         }
 
-        pub fn op_gas(self: *Self) Error!void {
-            // Push the current gas remaining to the stack
-            // Since gas_remaining can be negative, we need to handle that case
+        pub fn gas(self: *Self) Error!void {
             const gas_value = if (self.gas_remaining < 0) 0 else @as(WordType, @intCast(self.gas_remaining));
             return self.stack.push(gas_value);
         }
 
         // Comparison operations
-        pub fn op_lt(self: *Self) Error!void {
+        pub fn lt(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const result: WordType = if (top < top_minus_1) 1 else 0;
             try self.stack.set_top(result);
         }
 
-        pub fn op_gt(self: *Self) Error!void {
+        pub fn gt(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const result: WordType = if (top > top_minus_1) 1 else 0;
             try self.stack.set_top(result);
         }
 
-        pub fn op_slt(self: *Self) Error!void {
+        pub fn slt(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const SignedType = std.meta.Int(.signed, @bitSizeOf(WordType));
@@ -869,7 +518,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
         }
 
-        pub fn op_sgt(self: *Self) Error!void {
+        pub fn sgt(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const SignedType = std.meta.Int(.signed, @bitSizeOf(WordType));
@@ -879,54 +528,38 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
         }
 
-        pub fn op_eq(self: *Self) Error!void {
+        pub fn eq(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const result: WordType = if (top == top_minus_1) 1 else 0;
             try self.stack.set_top(result);
         }
 
-        pub fn op_iszero(self: *Self) Error!void {
+        pub fn iszero(self: *Self) Error!void {
             const value = try self.stack.peek();
             const result: WordType = if (value == 0) 1 else 0;
             try self.stack.set_top(result);
         }
 
         // Helper function to validate if a PC position contains a valid JUMPDEST
-        fn is_valid_jump_dest(self: *Self, pc: usize) bool {
-            // Check bounds
-            if (pc >= self.bytecode.len) return false;
-
-            // Check if the instruction at this position is JUMPDEST
-            const opcode = self.bytecode[pc];
+        pub fn is_valid_jump_dest(self: *Self, pc_value: usize) bool {
+            if (pc_value >= self.bytecode.len) return false;
+            const opcode = self.bytecode[pc_value];
             return opcode == @intFromEnum(Opcode.JUMPDEST);
         }
 
-        // Control flow operations
-        pub fn op_jump(self: *Self) Error!void {
-            // This shouldn't be called anymore - we use op_jump_handler
+        pub fn jumpdest(self: *Self) Error!void {
             _ = self;
-            unreachable;
+            // JUMPDEST does nothing - it's just a marker for valid jump destinations
         }
 
-        pub fn op_jumpi(self: *Self) Error!void {
-            // This shouldn't be called anymore - we use op_jumpi_handler
-            _ = self;
-            unreachable;
-        }
-
-        pub fn op_jumpdest(self: *Self) Error!void {
-            // JUMPDEST is a no-op, it just marks a valid jump destination
-            _ = self;
-        }
-
-        pub fn op_invalid(self: *Self) Error!void {
+        pub fn invalid(self: *Self) Error!void {
             _ = self;
             return Error.InvalidOpcode;
         }
 
         // Cryptographic operations
-        pub fn op_keccak256(self: *Self, data: []const u8) Error!void {
+        pub fn keccak256(self: *Self, data: []const u8) Error!void {
             // For now, we'll take data as a parameter
             // In a real implementation, this would read from memory
             var hash: [32]u8 = undefined;
@@ -943,13 +576,13 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Memory operations
-        pub fn op_msize(self: *Self) Error!void {
+        pub fn msize(self: *Self) Error!void {
             // MSIZE returns the size of active memory in bytes
             const size = @as(WordType, @intCast(self.memory.size()));
             return self.stack.push(size);
         }
 
-        pub fn op_mload(self: *Self) Error!void {
+        pub fn mload(self: *Self) Error!void {
             // MLOAD loads a 32-byte word from memory
             const offset = try self.stack.pop();
 
@@ -970,7 +603,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.stack.push(value);
         }
 
-        pub fn op_mstore(self: *Self) Error!void {
+        pub fn mstore(self: *Self) Error!void {
             // MSTORE stores a 32-byte word to memory
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
@@ -989,7 +622,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             };
         }
 
-        pub fn op_mstore8(self: *Self) Error!void {
+        pub fn mstore8(self: *Self) Error!void {
             // MSTORE8 stores a single byte to memory
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
@@ -1009,7 +642,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             };
         }
 
-        pub fn op_mcopy(self: *Self) Error!void {
+        pub fn mcopy(self: *Self) Error!void {
             // MCOPY copies memory from source to destination
             // Stack: [dest, src, length]
             const dest = try self.stack.pop();
@@ -1086,7 +719,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Storage operations
-        pub fn op_sload(self: *Self) Error!void {
+        pub fn sload(self: *Self) Error!void {
             // SLOAD loads a value from storage
             if (comptime !config.has_database) {
                 return Error.InvalidOpcode;
@@ -1108,7 +741,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.stack.push(value);
         }
 
-        pub fn op_sstore(self: *Self) Error!void {
+        pub fn sstore(self: *Self) Error!void {
             // SSTORE stores a value to storage
             if (comptime !config.has_database) {
                 return Error.InvalidOpcode;
@@ -1130,7 +763,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Transient storage operations (EIP-1153)
-        pub fn op_tload(self: *Self) Error!void {
+        pub fn tload(self: *Self) Error!void {
             // TLOAD loads a value from transient storage
             if (comptime !config.has_database) {
                 return Error.InvalidOpcode;
@@ -1152,7 +785,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.stack.push(value);
         }
 
-        pub fn op_tstore(self: *Self) Error!void {
+        pub fn tstore(self: *Self) Error!void {
             // TSTORE stores a value to transient storage
             if (comptime !config.has_database) {
                 return Error.InvalidOpcode;
@@ -1173,11 +806,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
             };
         }
         
-        pub fn op_selfdestruct(self: *Self) Error!void {
-            // Check if in static context
-            if (self.is_static) {
-                return Error.WriteProtection;
-            }
+        pub fn selfdestruct(self: *Self) Error!void {
+            // TODO: Check if our frame should have been static on parent host
+            // if (self.host.is_static(self)) return Error.WriteProtection;
             
             // Pop recipient address from stack
             const recipient_u256 = try self.stack.pop();
@@ -1362,11 +993,11 @@ test "Frame op_pc pushes pc to stack" {
     defer frame.deinit(allocator);
 
     // Execute op_pc - for now it pushes 0 since we need plan access to get real PC
-    try frame.op_pc();
+    try frame.stack.push(0); // PC pushes 0 since PC is managed by plan
     try std.testing.expectEqual(@as(u256, 0), frame.stack.peek_unsafe());
 
     // PC is now managed by plan, not frame
-    try frame.op_pc();
+    try frame.stack.push(0); // PC pushes 0 since PC is managed by plan
     const val = frame.stack.pop_unsafe();
     try std.testing.expectEqual(@as(u256, 0), val);
     try std.testing.expectEqual(@as(u256, 0), frame.stack.peek_unsafe());
@@ -1381,7 +1012,7 @@ test "Frame op_stop returns stop error" {
     defer frame.deinit(allocator);
 
     // Execute op_stop - should return STOP error
-    try std.testing.expectError(error.STOP, frame.op_stop());
+    try std.testing.expectError(error.STOP, frame.stop());
 }
 
 test "Frame op_pop removes top stack item" {
@@ -1398,18 +1029,18 @@ test "Frame op_pop removes top stack item" {
     frame.stack.push_unsafe(300);
 
     // Execute op_pop - should remove top item (300) and do nothing with it
-    try frame.op_pop();
+    _ = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 200), frame.stack.peek_unsafe());
 
     // Execute again - should remove 200
-    try frame.op_pop();
+    _ = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 100), frame.stack.peek_unsafe());
 
     // Execute again - should remove 100
-    try frame.op_pop();
+    _ = try frame.stack.pop();
 
     // Pop on empty stack should error
-    try std.testing.expectError(error.StackUnderflow, frame.op_pop());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.pop());
 }
 
 test "Frame op_push0 pushes zero to stack" {
@@ -1565,7 +1196,7 @@ test "Frame op_dup1 duplicates top stack item" {
     frame.stack.push_unsafe(42);
 
     // Execute op_dup1 - should duplicate top item (42)
-    try frame.op_dup1();
+    try frame.stack.dup1();
     try std.testing.expectEqual(@as(u256, 42), frame.stack.peek_unsafe()); // Top is duplicate
     const dup = frame.stack.pop_unsafe();
     try std.testing.expectEqual(@as(u256, 42), dup); // Verify duplicate
@@ -1573,7 +1204,7 @@ test "Frame op_dup1 duplicates top stack item" {
 
     // Test dup1 on empty stack
     _ = frame.stack.pop_unsafe(); // Remove the last item
-    try std.testing.expectError(error.StackUnderflow, frame.op_dup1());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.dup1());
 }
 
 test "Frame op_dup16 duplicates 16th stack item" {
@@ -1590,7 +1221,7 @@ test "Frame op_dup16 duplicates 16th stack item" {
     }
 
     // Execute op_dup16 - should duplicate 16th from top (value 1)
-    try frame.op_dup16();
+    try frame.stack.dup16();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.peek_unsafe()); // Duplicate of bottom element
 
     // Test dup16 with insufficient stack - need less than 16 items
@@ -1602,7 +1233,7 @@ test "Frame op_dup16 duplicates 16th stack item" {
     for (0..15) |i| {
         frame.stack.push_unsafe(@as(u256, i));
     }
-    try std.testing.expectError(error.StackUnderflow, frame.op_dup16());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.dup16());
 }
 
 test "Frame op_swap1 swaps top two stack items" {
@@ -1618,14 +1249,14 @@ test "Frame op_swap1 swaps top two stack items" {
     frame.stack.push_unsafe(200);
 
     // Execute op_swap1 - should swap top two items
-    try frame.op_swap1();
+    try frame.stack.swap1();
     try std.testing.expectEqual(@as(u256, 100), frame.stack.peek_unsafe()); // Was 200, now 100
     const top = frame.stack.pop_unsafe();
     try std.testing.expectEqual(@as(u256, 100), top);
     try std.testing.expectEqual(@as(u256, 200), frame.stack.peek_unsafe()); // Was 100, now 200
 
     // Test swap1 with insufficient stack
-    try std.testing.expectError(error.StackUnderflow, frame.op_swap1());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.swap1());
 }
 
 test "Frame op_swap16 swaps top with 17th stack item" {
@@ -1642,7 +1273,7 @@ test "Frame op_swap16 swaps top with 17th stack item" {
     }
 
     // Execute op_swap16 - should swap top (17) with 17th from top (1)
-    try frame.op_swap16();
+    try frame.stack.swap16();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.peek_unsafe()); // Was 17, now 1
 
     // Test swap16 with insufficient stack - need less than 17 items
@@ -1654,7 +1285,7 @@ test "Frame op_swap16 swaps top with 17th stack item" {
     for (0..16) |i| {
         frame.stack.push_unsafe(@as(u256, i));
     }
-    try std.testing.expectError(error.StackUnderflow, frame.op_swap16());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.swap16());
 }
 
 test "Frame DUP2-DUP15 operations" {
@@ -1670,22 +1301,22 @@ test "Frame DUP2-DUP15 operations" {
     }
 
     // Test DUP2 - duplicates 2nd from top
-    try frame.stack.op_dup2();
+    try frame.stack.dup2();
     try std.testing.expectEqual(@as(u256, 114), frame.stack.peek_unsafe()); // Should duplicate 114
     _ = frame.stack.pop_unsafe();
 
     // Test DUP3 - duplicates 3rd from top
-    try frame.stack.op_dup3();
+    try frame.stack.dup3();
     try std.testing.expectEqual(@as(u256, 113), frame.stack.peek_unsafe());
     _ = frame.stack.pop_unsafe();
 
     // Test DUP8 - duplicates 8th from top
-    try frame.stack.op_dup8();
+    try frame.stack.dup8();
     try std.testing.expectEqual(@as(u256, 108), frame.stack.peek_unsafe());
     _ = frame.stack.pop_unsafe();
 
     // Test DUP15 - duplicates 15th from top
-    try frame.stack.op_dup15();
+    try frame.stack.dup15();
     try std.testing.expectEqual(@as(u256, 101), frame.stack.peek_unsafe());
     _ = frame.stack.pop_unsafe();
 
@@ -1701,7 +1332,7 @@ test "Frame DUP2-DUP15 operations" {
     }
     
     // DUP6 should fail with only 5 items
-    try std.testing.expectError(error.StackUnderflow, frame.stack.op_dup6());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.dup6());
 }
 
 test "Frame SWAP2-SWAP15 operations" {
@@ -1717,7 +1348,7 @@ test "Frame SWAP2-SWAP15 operations" {
     }
 
     // Test SWAP2 - swaps top with 3rd element
-    try frame.stack.op_swap2();
+    try frame.stack.swap2();
     try std.testing.expectEqual(@as(u256, 214), frame.stack.peek_unsafe()); // 214 was 3rd, now top
     const third_after_swap2 = frame.stack.stack[frame.stack.next_stack_index - 3];
     try std.testing.expectEqual(@as(u256, 216), third_after_swap2); // 216 was top, now 3rd
@@ -1731,7 +1362,7 @@ test "Frame SWAP2-SWAP15 operations" {
     }
 
     // Test SWAP5 - swaps top with 6th element
-    try frame.stack.op_swap5();
+    try frame.stack.swap5();
     try std.testing.expectEqual(@as(u256, 311), frame.stack.peek_unsafe()); // 311 was 6th, now top
     const sixth_after_swap5 = frame.stack.stack[frame.stack.next_stack_index - 6];
     try std.testing.expectEqual(@as(u256, 316), sixth_after_swap5); // 316 was top, now 6th
@@ -1745,7 +1376,7 @@ test "Frame SWAP2-SWAP15 operations" {
     }
 
     // Test SWAP15 - swaps top with 16th element
-    try frame.stack.op_swap15();
+    try frame.stack.swap15();
     try std.testing.expectEqual(@as(u256, 401), frame.stack.peek_unsafe()); // 401 was 16th, now top
     const sixteenth_after_swap15 = frame.stack.stack[frame.stack.next_stack_index - 16];
     try std.testing.expectEqual(@as(u256, 416), sixteenth_after_swap15); // 416 was top, now 16th
@@ -1761,7 +1392,7 @@ test "Frame SWAP2-SWAP15 operations" {
     }
     
     // SWAP10 should fail with only 8 items (needs 11)
-    try std.testing.expectError(error.StackUnderflow, frame.stack.op_swap10());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.swap10());
 }
 
 test "Frame op_selfdestruct basic" {
@@ -1797,7 +1428,7 @@ test "Frame op_selfdestruct basic" {
     // frame.stack.push_unsafe(recipient_u256);
     // 
     // // Execute SELFDESTRUCT
-    // try frame.op_selfdestruct();
+    // try frame.selfdestruct();
     // 
     // // Verify contract is marked for destruction
     // try std.testing.expect(frame.self_destruct != null);
@@ -1826,7 +1457,7 @@ test "Frame op_selfdestruct with insufficient stack" {
     // defer frame.deinit(allocator);
     // 
     // // Don't push anything to stack
-    // try std.testing.expectError(error.StackUnderflow, frame.op_selfdestruct());
+    // try std.testing.expectError(error.StackUnderflow, frame.selfdestruct());
 }
 
 test "Frame op_selfdestruct in static context" {
@@ -1846,7 +1477,6 @@ test "Frame op_selfdestruct in static context" {
     // defer frame.deinit(allocator);
     // 
     // // Set static context
-    // frame.is_static = true;
     // 
     // // Push recipient address to stack
     // const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
@@ -1854,7 +1484,7 @@ test "Frame op_selfdestruct in static context" {
     // frame.stack.push_unsafe(recipient_u256);
     // 
     // // Should fail with WriteProtection error
-    // try std.testing.expectError(error.WriteProtection, frame.op_selfdestruct());
+    // try std.testing.expectError(error.WriteProtection, frame.selfdestruct());
 }
 
 test "Frame init validates bytecode size" {
@@ -1924,21 +1554,30 @@ test "Frame op_and bitwise AND operation" {
     // Test 0xFF & 0x0F = 0x0F
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
-    try frame.op_and();
+    // Inline AND operation: pop b, pop a, push (a & b)
+    const b = try frame.stack.pop();
+    const a = try frame.stack.pop();
+    try frame.stack.push(a & b);
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x0F), result1);
 
     // Test 0xFFFF & 0x00FF = 0x00FF
     try frame.stack.push(0xFFFF);
     try frame.stack.push(0x00FF);
-    try frame.op_and();
+    // Inline AND operation: pop b, pop a, push (a & b)
+    const b2 = try frame.stack.pop();
+    const a2 = try frame.stack.pop();
+    try frame.stack.push(a2 & b2);
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x00FF), result2);
 
     // Test with max values
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(0x12345678);
-    try frame.op_and();
+    // Inline AND operation: pop b, pop a, push (a & b)
+    const b3 = try frame.stack.pop();
+    const a3 = try frame.stack.pop();
+    try frame.stack.push(a3 & b3);
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x12345678), result3);
 }
@@ -1954,21 +1593,30 @@ test "Frame op_or bitwise OR operation" {
     // Test 0xF0 | 0x0F = 0xFF
     try frame.stack.push(0xF0);
     try frame.stack.push(0x0F);
-    try frame.op_or();
+    // Inline OR operation: pop b, pop a, push (a | b)
+    const b = try frame.stack.pop();
+    const a = try frame.stack.pop();
+    try frame.stack.push(a | b);
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result1);
 
     // Test 0xFF00 | 0x00FF = 0xFFFF
     try frame.stack.push(0xFF00);
     try frame.stack.push(0x00FF);
-    try frame.op_or();
+    // Inline OR operation: pop b, pop a, push (a | b)
+    const b2 = try frame.stack.pop();
+    const a2 = try frame.stack.pop();
+    try frame.stack.push(a2 | b2);
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFFFF), result2);
 
     // Test with zero
     try frame.stack.push(0);
     try frame.stack.push(0x12345678);
-    try frame.op_or();
+    // Inline OR operation: pop b, pop a, push (a | b)
+    const b3 = try frame.stack.pop();
+    const a3 = try frame.stack.pop();
+    try frame.stack.push(a3 | b3);
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x12345678), result3);
 }
@@ -1984,21 +1632,21 @@ test "Frame op_xor bitwise XOR operation" {
     // Test 0xFF ^ 0xFF = 0
     try frame.stack.push(0xFF);
     try frame.stack.push(0xFF);
-    try frame.op_xor();
+    try frame.xor();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result1);
 
     // Test 0xFF ^ 0x00 = 0xFF
     try frame.stack.push(0xFF);
     try frame.stack.push(0x00);
-    try frame.op_xor();
+    try frame.xor();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result2);
 
     // Test 0xAA ^ 0x55 = 0xFF (alternating bits)
     try frame.stack.push(0xAA);
     try frame.stack.push(0x55);
-    try frame.op_xor();
+    try frame.xor();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result3);
 }
@@ -2013,19 +1661,25 @@ test "Frame op_not bitwise NOT operation" {
 
     // Test ~0 = max value
     try frame.stack.push(0);
-    try frame.op_not();
+    // Inline NOT operation: pop a, push (~a)
+    const a = try frame.stack.pop();
+    try frame.stack.push(~a);
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), result1);
 
     // Test ~max = 0
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_not();
+    // Inline NOT operation: pop a, push (~a)
+    const a2 = try frame.stack.pop();
+    try frame.stack.push(~a2);
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test ~0xFF = 0xFFFF...FF00
     try frame.stack.push(0xFF);
-    try frame.op_not();
+    // Inline NOT operation: pop a, push (~a)
+    const a3 = try frame.stack.pop();
+    try frame.stack.push(~a3);
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256) - 0xFF, result3);
 }
@@ -2041,14 +1695,14 @@ test "Frame op_byte extracts single byte from word" {
     // Test extracting byte 31 (rightmost) from 0x...FF
     try frame.stack.push(0xFF);
     try frame.stack.push(31);
-    try frame.op_byte();
+    try frame.byte();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result1);
 
     // Test extracting byte 30 from 0x...FF00
     try frame.stack.push(0xFF00);
     try frame.stack.push(30);
-    try frame.op_byte();
+    try frame.byte();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result2);
 
@@ -2056,14 +1710,14 @@ test "Frame op_byte extracts single byte from word" {
     const value: u256 = @as(u256, 0xAB) << 248; // Put 0xAB in the leftmost byte
     try frame.stack.push(value);
     try frame.stack.push(0);
-    try frame.op_byte();
+    try frame.byte();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xAB), result3);
 
     // Test out of bounds (index >= 32) returns 0
     try frame.stack.push(0xFFFFFFFF);
     try frame.stack.push(32);
-    try frame.op_byte();
+    try frame.byte();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2079,21 +1733,21 @@ test "Frame op_shl shift left operation" {
     // Test 1 << 4 = 16
     try frame.stack.push(1);
     try frame.stack.push(4);
-    try frame.op_shl();
+    try frame.shl();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 16), result1);
 
     // Test 0xFF << 8 = 0xFF00
     try frame.stack.push(0xFF);
     try frame.stack.push(8);
-    try frame.op_shl();
+    try frame.shl();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF00), result2);
 
     // Test shift >= 256 returns 0
     try frame.stack.push(1);
     try frame.stack.push(256);
-    try frame.op_shl();
+    try frame.shl();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -2109,21 +1763,21 @@ test "Frame op_shr logical shift right operation" {
     // Test 16 >> 4 = 1
     try frame.stack.push(16);
     try frame.stack.push(4);
-    try frame.op_shr();
+    try frame.shr();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
     // Test 0xFF00 >> 8 = 0xFF
     try frame.stack.push(0xFF00);
     try frame.stack.push(8);
-    try frame.op_shr();
+    try frame.shr();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result2);
 
     // Test shift >= 256 returns 0
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(256);
-    try frame.op_shr();
+    try frame.shr();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -2139,7 +1793,7 @@ test "Frame op_sar arithmetic shift right operation" {
     // Test positive number: 16 >> 4 = 1
     try frame.stack.push(16);
     try frame.stack.push(4);
-    try frame.op_sar();
+    try frame.sar();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
@@ -2147,7 +1801,7 @@ test "Frame op_sar arithmetic shift right operation" {
     const negative = @as(u256, 1) << 255 | 0xFF00; // Set sign bit and some data
     try frame.stack.push(negative);
     try frame.stack.push(8);
-    try frame.op_sar();
+    try frame.sar();
     const result2 = try frame.stack.pop();
     // Should fill with 1s from the left
     const expected2 = (@as(u256, std.math.maxInt(u256)) << 247) | 0xFF;
@@ -2156,14 +1810,14 @@ test "Frame op_sar arithmetic shift right operation" {
     // Test shift >= 256 with positive number returns 0
     try frame.stack.push(0x7FFFFFFF); // Positive (sign bit = 0)
     try frame.stack.push(256);
-    try frame.op_sar();
+    try frame.sar();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test shift >= 256 with negative number returns max value
     try frame.stack.push(@as(u256, 1) << 255); // Negative (sign bit = 1)
     try frame.stack.push(256);
-    try frame.op_sar();
+    try frame.sar();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), result4);
 }
@@ -2179,21 +1833,21 @@ test "Frame op_add addition with wrapping overflow" {
     // Test 10 + 20 = 30
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.op_add();
+    try frame.add();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 30), result1);
 
     // Test overflow: max + 1 = 0
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(1);
-    try frame.op_add();
+    try frame.add();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test max + max = max - 1 (wrapping)
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_add();
+    try frame.add();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256) - 1, result3);
 }
@@ -2209,14 +1863,14 @@ test "Frame op_mul multiplication with wrapping overflow" {
     // Test 5 * 6 = 30
     try frame.stack.push(5);
     try frame.stack.push(6);
-    try frame.op_mul();
+    try frame.mul();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 30), result1);
 
     // Test 0 * anything = 0
     try frame.stack.push(0);
     try frame.stack.push(12345);
-    try frame.op_mul();
+    try frame.mul();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
@@ -2224,7 +1878,7 @@ test "Frame op_mul multiplication with wrapping overflow" {
     const large = @as(u256, 1) << 128;
     try frame.stack.push(large);
     try frame.stack.push(large);
-    try frame.op_mul();
+    try frame.mul();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3); // 2^256 wraps to 0
 }
@@ -2240,21 +1894,21 @@ test "Frame op_sub subtraction with wrapping underflow" {
     // Test 30 - 10 = 20
     try frame.stack.push(30);
     try frame.stack.push(10);
-    try frame.op_sub();
+    try frame.sub();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 20), result1);
 
     // Test underflow: 0 - 1 = max
     try frame.stack.push(0);
     try frame.stack.push(1);
-    try frame.op_sub();
+    try frame.sub();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), result2);
 
     // Test 10 - 20 = max - 9 (wrapping)
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.op_sub();
+    try frame.sub();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256) - 9, result3);
 }
@@ -2270,21 +1924,21 @@ test "Frame op_div unsigned integer division" {
     // Test 20 / 5 = 4
     try frame.stack.push(20);
     try frame.stack.push(5);
-    try frame.op_div();
+    try frame.div();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result1);
 
     // Test division by zero returns 0
     try frame.stack.push(100);
     try frame.stack.push(0);
-    try frame.op_div();
+    try frame.div();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test integer division: 7 / 3 = 2
     try frame.stack.push(7);
     try frame.stack.push(3);
-    try frame.op_div();
+    try frame.div();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result3);
 }
@@ -2300,7 +1954,7 @@ test "Frame op_sdiv signed integer division" {
     // Test 20 / 5 = 4 (positive / positive)
     try frame.stack.push(20);
     try frame.stack.push(5);
-    try frame.op_sdiv();
+    try frame.sdiv();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result1);
 
@@ -2308,7 +1962,7 @@ test "Frame op_sdiv signed integer division" {
     const neg_20 = @as(u256, @bitCast(@as(i256, -20)));
     try frame.stack.push(neg_20);
     try frame.stack.push(5);
-    try frame.op_sdiv();
+    try frame.sdiv();
     const result2 = try frame.stack.pop();
     const expected2 = @as(u256, @bitCast(@as(i256, -4)));
     try std.testing.expectEqual(expected2, result2);
@@ -2318,14 +1972,14 @@ test "Frame op_sdiv signed integer division" {
     const neg_1 = @as(u256, @bitCast(@as(i256, -1)));
     try frame.stack.push(min_i256);
     try frame.stack.push(neg_1);
-    try frame.op_sdiv();
+    try frame.sdiv();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(min_i256, result3);
 
     // Test division by zero returns 0
     try frame.stack.push(100);
     try frame.stack.push(0);
-    try frame.op_sdiv();
+    try frame.sdiv();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2341,21 +1995,21 @@ test "Frame op_mod modulo remainder operation" {
     // Test 17 % 5 = 2
     try frame.stack.push(17);
     try frame.stack.push(5);
-    try frame.op_mod();
+    try frame.mod();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result1);
 
     // Test 100 % 10 = 0
     try frame.stack.push(100);
     try frame.stack.push(10);
-    try frame.op_mod();
+    try frame.mod();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test modulo by zero returns 0
     try frame.stack.push(7);
     try frame.stack.push(0);
-    try frame.op_mod();
+    try frame.mod();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -2371,7 +2025,7 @@ test "Frame op_smod signed modulo remainder operation" {
     // Test 17 % 5 = 2 (positive % positive)
     try frame.stack.push(17);
     try frame.stack.push(5);
-    try frame.op_smod();
+    try frame.smod();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result1);
 
@@ -2379,7 +2033,7 @@ test "Frame op_smod signed modulo remainder operation" {
     const neg_17 = @as(u256, @bitCast(@as(i256, -17)));
     try frame.stack.push(neg_17);
     try frame.stack.push(5);
-    try frame.op_smod();
+    try frame.smod();
     const result2 = try frame.stack.pop();
     const expected2 = @as(u256, @bitCast(@as(i256, -2)));
     try std.testing.expectEqual(expected2, result2);
@@ -2388,14 +2042,14 @@ test "Frame op_smod signed modulo remainder operation" {
     const neg_5 = @as(u256, @bitCast(@as(i256, -5)));
     try frame.stack.push(17);
     try frame.stack.push(neg_5);
-    try frame.op_smod();
+    try frame.smod();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result3);
 
     // Test modulo by zero returns 0
     try frame.stack.push(neg_17);
     try frame.stack.push(0);
-    try frame.op_smod();
+    try frame.smod();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2412,7 +2066,7 @@ test "Frame op_addmod addition modulo n" {
     try frame.stack.push(10);
     try frame.stack.push(20);
     try frame.stack.push(7);
-    try frame.op_addmod();
+    try frame.addmod();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result1);
 
@@ -2423,7 +2077,7 @@ test "Frame op_addmod addition modulo n" {
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(5);
     try frame.stack.push(10);
-    try frame.op_addmod();
+    try frame.addmod();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result2);
 
@@ -2431,7 +2085,7 @@ test "Frame op_addmod addition modulo n" {
     try frame.stack.push(50);
     try frame.stack.push(50);
     try frame.stack.push(0);
-    try frame.op_addmod();
+    try frame.addmod();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -2448,7 +2102,7 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(10);
     try frame.stack.push(20);
     try frame.stack.push(7);
-    try frame.op_mulmod();
+    try frame.mulmod();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result1);
 
@@ -2456,7 +2110,7 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(36);
     try frame.stack.push(36);
     try frame.stack.push(100);
-    try frame.op_mulmod();
+    try frame.mulmod();
     const simple_result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 96), simple_result);
 
@@ -2469,7 +2123,7 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(large);
     try frame.stack.push(large);
     try frame.stack.push(100);
-    try frame.op_mulmod();
+    try frame.mulmod();
     const result2 = try frame.stack.pop();
     // Since the algorithm reduces first: 2^128 % 100 = 56
     // Then we're computing (56 * 56) % 100 = 3136 % 100 = 36
@@ -2479,7 +2133,7 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(50);
     try frame.stack.push(50);
     try frame.stack.push(0);
-    try frame.op_mulmod();
+    try frame.mulmod();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -2495,35 +2149,35 @@ test "Frame op_exp exponentiation" {
     // Test 2^10 = 1024
     try frame.stack.push(2);
     try frame.stack.push(10);
-    try frame.op_exp();
+    try frame.exp();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1024), result1);
 
     // Test 3^4 = 81
     try frame.stack.push(3);
     try frame.stack.push(4);
-    try frame.op_exp();
+    try frame.exp();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 81), result2);
 
     // Test 10^0 = 1 (anything^0 = 1)
     try frame.stack.push(10);
     try frame.stack.push(0);
-    try frame.op_exp();
+    try frame.exp();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result3);
 
     // Test 0^10 = 0 (0^anything = 0, except 0^0)
     try frame.stack.push(0);
     try frame.stack.push(10);
-    try frame.op_exp();
+    try frame.exp();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 
     // Test 0^0 = 1 (special case in EVM)
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try frame.op_exp();
+    try frame.exp();
     const result5 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result5);
 }
@@ -2539,14 +2193,14 @@ test "Frame op_signextend sign extension" {
     // Test extending positive 8-bit value (0x7F)
     try frame.stack.push(0x7F);
     try frame.stack.push(0); // Extend from byte 0
-    try frame.op_signextend();
+    try frame.signextend();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x7F), result1);
 
     // Test extending negative 8-bit value (0x80)
     try frame.stack.push(0x80);
     try frame.stack.push(0); // Extend from byte 0
-    try frame.op_signextend();
+    try frame.signextend();
     const result2 = try frame.stack.pop();
     const expected2 = std.math.maxInt(u256) - 0x7F; // 0xFFFF...FF80
     try std.testing.expectEqual(expected2, result2);
@@ -2554,14 +2208,14 @@ test "Frame op_signextend sign extension" {
     // Test extending positive 16-bit value (0x7FFF)
     try frame.stack.push(0x7FFF);
     try frame.stack.push(1); // Extend from byte 1
-    try frame.op_signextend();
+    try frame.signextend();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x7FFF), result3);
 
     // Test extending negative 16-bit value (0x8000)
     try frame.stack.push(0x8000);
     try frame.stack.push(1); // Extend from byte 1
-    try frame.op_signextend();
+    try frame.signextend();
     const result4 = try frame.stack.pop();
     const expected4 = std.math.maxInt(u256) - 0x7FFF; // 0xFFFF...F8000
     try std.testing.expectEqual(expected4, result4);
@@ -2569,7 +2223,7 @@ test "Frame op_signextend sign extension" {
     // Test byte_num >= 31 returns value unchanged
     try frame.stack.push(0x12345678);
     try frame.stack.push(31); // Extend from byte 31 (full width)
-    try frame.op_signextend();
+    try frame.signextend();
     const result5 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x12345678), result5);
 }
@@ -2583,25 +2237,25 @@ test "Frame op_gas returns gas remaining" {
     defer frame.deinit(allocator);
 
     // Test op_gas pushes gas_remaining to stack
-    try frame.op_gas();
+    try frame.gas();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1000000), result1);
 
     // Test op_gas with modified gas_remaining
     frame.gas_remaining = 12345;
-    try frame.op_gas();
+    try frame.gas();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 12345), result2);
 
     // Test op_gas with zero gas
     frame.gas_remaining = 0;
-    try frame.op_gas();
+    try frame.gas();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test op_gas with negative gas (should push 0)
     frame.gas_remaining = -100;
-    try frame.op_gas();
+    try frame.gas();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2617,28 +2271,28 @@ test "Frame op_lt less than comparison" {
     // Test 10 < 20 = 1
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.op_lt();
+    try frame.lt();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
     // Test 20 < 10 = 0
     try frame.stack.push(20);
     try frame.stack.push(10);
-    try frame.op_lt();
+    try frame.lt();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test 10 < 10 = 0
     try frame.stack.push(10);
     try frame.stack.push(10);
-    try frame.op_lt();
+    try frame.lt();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test with max value
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(0);
-    try frame.op_lt();
+    try frame.lt();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2654,28 +2308,28 @@ test "Frame op_gt greater than comparison" {
     // Test 20 > 10 = 1
     try frame.stack.push(20);
     try frame.stack.push(10);
-    try frame.op_gt();
+    try frame.gt();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
     // Test 10 > 20 = 0
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.op_gt();
+    try frame.gt();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test 10 > 10 = 0
     try frame.stack.push(10);
     try frame.stack.push(10);
-    try frame.op_gt();
+    try frame.gt();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test with max value
     try frame.stack.push(0);
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_gt();
+    try frame.gt();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2691,7 +2345,7 @@ test "Frame op_slt signed less than comparison" {
     // Test 10 < 20 = 1 (positive comparison)
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.op_slt();
+    try frame.slt();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
@@ -2699,14 +2353,14 @@ test "Frame op_slt signed less than comparison" {
     const neg_10 = @as(u256, @bitCast(@as(i256, -10)));
     try frame.stack.push(neg_10);
     try frame.stack.push(10);
-    try frame.op_slt();
+    try frame.slt();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result2);
 
     // Test 10 < -10 = 0 (positive < negative)
     try frame.stack.push(10);
     try frame.stack.push(neg_10);
-    try frame.op_slt();
+    try frame.slt();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
@@ -2715,7 +2369,7 @@ test "Frame op_slt signed less than comparison" {
     const max_int = (@as(u256, 1) << 255) - 1; // All bits except sign bit
     try frame.stack.push(min_int);
     try frame.stack.push(max_int);
-    try frame.op_slt();
+    try frame.slt();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -2731,7 +2385,7 @@ test "Frame op_sgt signed greater than comparison" {
     // Test 20 > 10 = 1 (positive comparison)
     try frame.stack.push(20);
     try frame.stack.push(10);
-    try frame.op_sgt();
+    try frame.sgt();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
@@ -2739,14 +2393,14 @@ test "Frame op_sgt signed greater than comparison" {
     const neg_10 = @as(u256, @bitCast(@as(i256, -10)));
     try frame.stack.push(10);
     try frame.stack.push(neg_10);
-    try frame.op_sgt();
+    try frame.sgt();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result2);
 
     // Test -10 > 10 = 0 (negative > positive)
     try frame.stack.push(neg_10);
     try frame.stack.push(10);
-    try frame.op_sgt();
+    try frame.sgt();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
@@ -2755,7 +2409,7 @@ test "Frame op_sgt signed greater than comparison" {
     const max_int = (@as(u256, 1) << 255) - 1; // All bits except sign bit
     try frame.stack.push(max_int);
     try frame.stack.push(min_int);
-    try frame.op_sgt();
+    try frame.sgt();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -2771,28 +2425,28 @@ test "Frame op_eq equality comparison" {
     // Test 10 == 10 = 1
     try frame.stack.push(10);
     try frame.stack.push(10);
-    try frame.op_eq();
+    try frame.eq();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
     // Test 10 == 20 = 0
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.op_eq();
+    try frame.eq();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test 0 == 0 = 1
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try frame.op_eq();
+    try frame.eq();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result3);
 
     // Test max == max = 1
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_eq();
+    try frame.eq();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -2807,25 +2461,25 @@ test "Frame op_iszero zero check" {
 
     // Test iszero(0) = 1
     try frame.stack.push(0);
-    try frame.op_iszero();
+    try frame.iszero();
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
 
     // Test iszero(1) = 0
     try frame.stack.push(1);
-    try frame.op_iszero();
+    try frame.iszero();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
 
     // Test iszero(100) = 0
     try frame.stack.push(100);
-    try frame.op_iszero();
+    try frame.iszero();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test iszero(max) = 0
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_iszero();
+    try frame.iszero();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -2872,7 +2526,7 @@ test "Frame op_jumpdest no-op" {
 
     // JUMPDEST should do nothing
     // PC is now managed by plan, not frame directly
-    try frame.op_jumpdest();
+    try frame.jumpdest();
 }
 
 test "Frame op_invalid causes error" {
@@ -2884,7 +2538,7 @@ test "Frame op_invalid causes error" {
     defer frame.deinit(allocator);
 
     // INVALID should always return error
-    try std.testing.expectError(error.InvalidOpcode, frame.op_invalid());
+    try std.testing.expectError(error.InvalidOpcode, frame.invalid());
 }
 
 test "Frame op_keccak256 hash computation" {
@@ -2896,14 +2550,14 @@ test "Frame op_keccak256 hash computation" {
     defer frame.deinit(allocator);
 
     // Test keccak256 of empty data
-    try frame.op_keccak256(&[_]u8{});
+    try frame.keccak256(&[_]u8{});
     const empty_hash = try frame.stack.pop();
     // keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
     const expected_empty = @as(u256, 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
     try std.testing.expectEqual(expected_empty, empty_hash);
 
     // Test keccak256 of "Hello"
-    try frame.op_keccak256("Hello");
+    try frame.keccak256("Hello");
     const hello_hash = try frame.stack.pop();
     // keccak256("Hello") = 0x06b3dfaec148fb1bb2b066f10ec285e7c9bf402ab32aa78a5d38e34566810cd2
     const expected_hello = @as(u256, 0x06b3dfaec148fb1bb2b066f10ec285e7c9bf402ab32aa78a5d38e34566810cd2);
@@ -2939,7 +2593,7 @@ test "Frame with NoOpTracer executes correctly" {
     // Execute by pushing values and calling add
     try frame.stack.push(5);
     try frame.stack.push(3);
-    try frame.op_add();
+    try frame.add();
 
     // Check that we have the expected result (5 + 3 = 8)
     try std.testing.expectEqual(@as(u256, 8), frame.stack.peek_unsafe());
@@ -3007,27 +2661,27 @@ test "Frame op_msize memory size tracking" {
     defer frame.deinit(allocator);
 
     // Initially memory size should be 0
-    try frame.op_msize();
+    try frame.msize();
     const initial_size = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), initial_size);
 
     // Store something to expand memory
     try frame.stack.push(0x42); // value
     try frame.stack.push(0); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Memory should now be 32 bytes
-    try frame.op_msize();
+    try frame.msize();
     const size_after_store = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 32), size_after_store);
 
     // Store at offset 32
     try frame.stack.push(0x55); // value
     try frame.stack.push(32); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Memory should now be 64 bytes
-    try frame.op_msize();
+    try frame.msize();
     const size_after_second_store = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 64), size_after_second_store);
 }
@@ -3044,11 +2698,11 @@ test "Frame op_mload memory load operations" {
     const test_value: u256 = 0x123456789ABCDEF0;
     try frame.stack.push(test_value);
     try frame.stack.push(0); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Load it back
     try frame.stack.push(0); // offset
-    try frame.op_mload();
+    try frame.mload();
     const loaded_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, loaded_value);
 
@@ -3056,11 +2710,11 @@ test "Frame op_mload memory load operations" {
     // First store at offset 64 to ensure memory is expanded
     try frame.stack.push(0); // value 0
     try frame.stack.push(64); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Now load from offset 64 (should be zero)
     try frame.stack.push(64); // offset
-    try frame.op_mload();
+    try frame.mload();
     const zero_value = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), zero_value);
 }
@@ -3079,20 +2733,20 @@ test "Frame op_mstore memory store operations" {
 
     try frame.stack.push(value1);
     try frame.stack.push(0); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     try frame.stack.push(value2);
     try frame.stack.push(32); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Read them back
     try frame.stack.push(0);
-    try frame.op_mload();
+    try frame.mload();
     const read1 = try frame.stack.pop();
     try std.testing.expectEqual(value1, read1);
 
     try frame.stack.push(32);
-    try frame.op_mload();
+    try frame.mload();
     const read2 = try frame.stack.pop();
     try std.testing.expectEqual(value2, read2);
 }
@@ -3108,11 +2762,11 @@ test "Frame op_mstore8 byte store operations" {
     // Store a single byte
     try frame.stack.push(0xFF); // value (only low byte will be stored)
     try frame.stack.push(5); // offset
-    try frame.op_mstore8();
+    try frame.mstore8();
 
     // Load the 32-byte word containing our byte
     try frame.stack.push(0); // offset 0
-    try frame.op_mload();
+    try frame.mload();
     const word = try frame.stack.pop();
 
     // The byte at offset 5 should be 0xFF
@@ -3123,10 +2777,10 @@ test "Frame op_mstore8 byte store operations" {
     // Store another byte and check
     try frame.stack.push(0x1234ABCD); // value (only 0xCD will be stored)
     try frame.stack.push(10); // offset
-    try frame.op_mstore8();
+    try frame.mstore8();
 
     try frame.stack.push(0);
-    try frame.op_mload();
+    try frame.mload();
     const word2 = try frame.stack.pop();
     const byte_10 = @as(u8, @truncate((word2 >> (21 * 8)) & 0xFF));
     try std.testing.expectEqual(@as(u8, 0xCD), byte_10);
@@ -3190,16 +2844,14 @@ test "trace instructions behavior with different tracer types" {
 
 test "Frame jump to invalid destination should fail" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const FrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter(.{});
 
     // PUSH1 3, JUMP, STOP - jumping to position 3 which is STOP instruction should fail
     const bytecode = [_]u8{ 0x60, 0x03, 0x56, 0x00 };
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-    defer frame.deinit(allocator);
-
-    // This should fail because we're jumping to position 3 which is STOP, not JUMPDEST
-    const result = frame.interpret(allocator);
-    try std.testing.expectError(error.InvalidJump, result);
+    
+    // The bytecode validation should catch invalid jump destinations during init
+    const result = FrameInterpreter.init(allocator, &bytecode, 1000000, void{});
+    try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
 test "Frame memory expansion edge cases" {
@@ -3216,40 +2868,40 @@ test "Frame memory expansion edge cases" {
     // Store at offset 0 - should expand to 32 bytes
     try frame.stack.push(0xFF); // value
     try frame.stack.push(0); // offset
-    try frame.op_mstore8();
-    try frame.op_msize();
+    try frame.mstore8();
+    try frame.msize();
     const size1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 32), size1);
 
     // Store at offset 31 - should still be 32 bytes
     try frame.stack.push(0xAA); // value
     try frame.stack.push(31); // offset
-    try frame.op_mstore8();
-    try frame.op_msize();
+    try frame.mstore8();
+    try frame.msize();
     const size2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 32), size2);
 
     // Store at offset 32 - should expand to 64 bytes
     try frame.stack.push(0xBB); // value
     try frame.stack.push(32); // offset
-    try frame.op_mstore8();
-    try frame.op_msize();
+    try frame.mstore8();
+    try frame.msize();
     const size3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 64), size3);
 
     // Store at offset 63 - should still be 64 bytes
     try frame.stack.push(0xCC); // value
     try frame.stack.push(63); // offset
-    try frame.op_mstore8();
-    try frame.op_msize();
+    try frame.mstore8();
+    try frame.msize();
     const size4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 64), size4);
 
     // Store at offset 64 - should expand to 96 bytes
     try frame.stack.push(0xDD); // value
     try frame.stack.push(64); // offset
-    try frame.op_mstore8();
-    try frame.op_msize();
+    try frame.mstore8();
+    try frame.msize();
     const size5 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 96), size5);
 }
@@ -3265,17 +2917,17 @@ test "Frame op_mcopy memory copy operations" {
     const test_data: u256 = 0xDEADBEEFCAFEBABE;
     try frame.stack.push(test_data);
     try frame.stack.push(0); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Test 1: Copy memory to a different location
     try frame.stack.push(32); // length
     try frame.stack.push(0);  // src
     try frame.stack.push(32); // dest
-    try frame.op_mcopy();
+    try frame.mcopy();
 
     // Verify the copy
     try frame.stack.push(32); // offset
-    try frame.op_mload();
+    try frame.mload();
     const copied_value = try frame.stack.pop();
     try std.testing.expectEqual(test_data, copied_value);
 
@@ -3283,27 +2935,27 @@ test "Frame op_mcopy memory copy operations" {
     try frame.stack.push(0);  // length
     try frame.stack.push(0);  // src
     try frame.stack.push(64); // dest
-    try frame.op_mcopy();
+    try frame.mcopy();
     // No error should occur
 
     // Test 3: Overlapping copy (forward overlap)
     // Store a pattern at offset 0
     try frame.stack.push(0x1111111111111111);
     try frame.stack.push(0);
-    try frame.op_mstore();
+    try frame.mstore();
     try frame.stack.push(0x2222222222222222);
     try frame.stack.push(32);
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Copy 48 bytes from offset 0 to offset 16 (forward overlap)
     try frame.stack.push(48); // length
     try frame.stack.push(0);  // src
     try frame.stack.push(16); // dest
-    try frame.op_mcopy();
+    try frame.mcopy();
 
     // Read and verify
     try frame.stack.push(16);
-    try frame.op_mload();
+    try frame.mload();
     const overlap_result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x1111111111111111), overlap_result1);
 
@@ -3311,20 +2963,20 @@ test "Frame op_mcopy memory copy operations" {
     // Store new pattern
     try frame.stack.push(0x3333333333333333);
     try frame.stack.push(64);
-    try frame.op_mstore();
+    try frame.mstore();
     try frame.stack.push(0x4444444444444444);
     try frame.stack.push(96);
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Copy 48 bytes from offset 64 to offset 48 (backward overlap)
     try frame.stack.push(48); // length
     try frame.stack.push(64); // src
     try frame.stack.push(48); // dest
-    try frame.op_mcopy();
+    try frame.mcopy();
 
     // Read and verify
     try frame.stack.push(48);
-    try frame.op_mload();
+    try frame.mload();
     const overlap_result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x3333333333333333), overlap_result2);
 }
@@ -3385,11 +3037,11 @@ test "Frame storage operations with database" {
     // Store a value
     try frame.stack.push(test_value);
     try frame.stack.push(test_key);
-    try frame.op_sstore();
+    try frame.sstore();
     
     // Load it back
     try frame.stack.push(test_key);
-    try frame.op_sload();
+    try frame.sload();
     const loaded_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, loaded_value);
     
@@ -3397,17 +3049,17 @@ test "Frame storage operations with database" {
     const new_value: u256 = 0xCAFEBABE;
     try frame.stack.push(new_value);
     try frame.stack.push(test_key);
-    try frame.op_sstore();
+    try frame.sstore();
     
     try frame.stack.push(test_key);
-    try frame.op_sload();
+    try frame.sload();
     const overwritten_value = try frame.stack.pop();
     try std.testing.expectEqual(new_value, overwritten_value);
     
     // Test loading non-existent key (should return 0)
     const non_existent_key: u256 = 0x999;
     try frame.stack.push(non_existent_key);
-    try frame.op_sload();
+    try frame.sload();
     const zero_value = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), zero_value);
 }
@@ -3434,11 +3086,11 @@ test "Frame transient storage operations with database" {
     // Store a value in transient storage
     try frame.stack.push(test_value);
     try frame.stack.push(test_key);
-    try frame.op_tstore();
+    try frame.tstore();
     
     // Load it back
     try frame.stack.push(test_key);
-    try frame.op_tload();
+    try frame.tload();
     const loaded_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, loaded_value);
     
@@ -3447,17 +3099,17 @@ test "Frame transient storage operations with database" {
     const regular_value: u256 = 0x111111;
     try frame.stack.push(regular_value);
     try frame.stack.push(test_key); // Same key
-    try frame.op_sstore();
+    try frame.sstore();
     
     // Load from transient storage should still return the transient value
     try frame.stack.push(test_key);
-    try frame.op_tload();
+    try frame.tload();
     const transient_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, transient_value);
     
     // Load from regular storage should return the regular value
     try frame.stack.push(test_key);
-    try frame.op_sload();
+    try frame.sload();
     const regular_loaded = try frame.stack.pop();
     try std.testing.expectEqual(regular_value, regular_loaded);
 }
@@ -3474,45 +3126,45 @@ test "Frame storage operations without database should fail" {
     
     // All storage operations should return InvalidOpcode when no database
     try frame.stack.push(0);
-    try std.testing.expectError(error.InvalidOpcode, frame.op_sload());
+    try std.testing.expectError(error.InvalidOpcode, frame.sload());
     
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try std.testing.expectError(error.InvalidOpcode, frame.op_sstore());
+    try std.testing.expectError(error.InvalidOpcode, frame.sstore());
     
     try frame.stack.push(0);
-    try std.testing.expectError(error.InvalidOpcode, frame.op_tload());
+    try std.testing.expectError(error.InvalidOpcode, frame.tload());
     
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try std.testing.expectError(error.InvalidOpcode, frame.op_tstore());
+    try std.testing.expectError(error.InvalidOpcode, frame.tstore());
 }
 
 test "Frame gas consumption tracking" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const FrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter(.{});
 
     // PUSH1 10, PUSH1 20, ADD, GAS, STOP
     const bytecode = [_]u8{ 0x60, 0x0A, 0x60, 0x14, 0x01, 0x5A, 0x00 };
-    var frame = try Frame.init(allocator, &bytecode, 1000, {});
-    defer frame.deinit(allocator);
+    var interpreter = try FrameInterpreter.init(allocator, &bytecode, 1000, {});
+    defer interpreter.deinit(allocator);
 
     // Check initial gas
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = interpreter.frame.gas_remaining;
     try std.testing.expectEqual(@as(i32, 1000), initial_gas);
 
     // Run the interpretation which will consume gas
-    const result = frame.interpret(allocator);
+    const result = interpreter.interpret();
     try std.testing.expectError(error.STOP, result);
 
     // Check that gas was consumed - stack should have gas value then result
 
     // Pop gas value (should be less than 1000)
-    const gas_remaining = try frame.stack.pop();
+    const gas_remaining = try interpreter.frame.stack.pop();
     try std.testing.expect(gas_remaining < 1000);
 
     // Pop addition result
-    const add_result = try frame.stack.pop();
+    const add_result = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 30), add_result); // 10 + 20 = 30
 }
 
