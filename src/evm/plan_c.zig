@@ -8,7 +8,9 @@ const Plan = evm.Plan;
 const createPlan = evm.createPlan;
 const PlanConfig = evm.PlanConfig;
 const JumpDestMetadata = evm.JumpDestMetadata;
-const InstructionElement = evm.InstructionElement;
+// InstructionElement is defined in plan.zig, import it from there
+const plan_mod = @import("plan.zig");
+const InstructionElement = plan_mod.InstructionElement;
 
 const allocator = std.heap.c_allocator;
 
