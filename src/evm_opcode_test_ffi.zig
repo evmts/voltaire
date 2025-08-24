@@ -8,9 +8,12 @@ const CallParams = Evm.CallParams;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
+// Use default EVM configuration
+const DefaultEvm = Evm.DefaultEvm;
+
 // Wrapper to own the EVM and its backing in-memory DB for testing
 const EvmWrapper = struct {
-    evm: *Evm.Evm,
+    evm: *DefaultEvm,
     memory_db: *Evm.MemoryDatabase,
 };
 
@@ -60,13 +63,29 @@ export fn zigEvmCreate() ?*anyopaque {
     memory_db.* = Evm.MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
 
-    const evm = allocator.create(Evm.Evm) catch {
+    const evm = allocator.create(DefaultEvm) catch {
         memory_db.deinit();
         allocator.destroy(memory_db);
         return null;
     };
 
-    evm.* = Evm.Evm.init(allocator, db_interface, null, null, null, null) catch {
+    const block_info = Evm.BlockInfo{
+        .number = 1,
+        .timestamp = 1640995200,
+        .gas_limit = 30_000_000,
+        .difficulty = 0,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    evm.* = DefaultEvm.init(allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN) catch {
         memory_db.deinit();
         allocator.destroy(memory_db);
         allocator.destroy(evm);
@@ -122,16 +141,14 @@ export fn zigEvmCall(evm_ptr: ?*anyopaque, req: *const CCallRequest, res: *CCall
 
     var out_ptr: [*]u8 = undefined;
     var out_len: usize = 0;
-    if (result.output) |output| {
-        if (output.len > 0) {
-            const duped = allocator.alloc(u8, output.len) catch {
-                res.* = .{ .success = result.success, .gas_left = result.gas_left, .output = .{ .ptr = undefined, .len = 0 } };
-                return 0;
-            };
-            @memcpy(duped, output);
-            out_ptr = duped.ptr;
-            out_len = duped.len;
-        }
+    if (result.output.len > 0) {
+        const duped = allocator.alloc(u8, result.output.len) catch {
+            res.* = .{ .success = result.success, .gas_left = result.gas_left, .output = .{ .ptr = undefined, .len = 0 } };
+            return 0;
+        };
+        @memcpy(duped, result.output);
+        out_ptr = duped.ptr;
+        out_len = duped.len;
     }
 
     res.* = .{ .success = result.success, .gas_left = result.gas_left, .output = .{ .ptr = out_ptr, .len = out_len } };

@@ -28,6 +28,129 @@ pub const BytecodeStats = struct {
     backwards_jumps: usize,
     is_create_code: bool,
     
+    /// Analyze bytecode and return statistics
+    pub fn analyze(allocator: std.mem.Allocator, bytecode: []const u8) !BytecodeStats {
+        var opcode_counts = [_]u32{0} ** 256;
+        var push_values = std.ArrayList(PushValue).init(allocator);
+        errdefer push_values.deinit();
+        var potential_fusions = std.ArrayList(Fusion).init(allocator);
+        errdefer potential_fusions.deinit();
+        var jumpdests = std.ArrayList(usize).init(allocator);
+        errdefer jumpdests.deinit();
+        var jumps = std.ArrayList(Jump).init(allocator);
+        errdefer jumps.deinit();
+        var backwards_jumps: usize = 0;
+        
+        var pc: usize = 0;
+        while (pc < bytecode.len) {
+            const opcode_byte = bytecode[pc];
+            opcode_counts[opcode_byte] += 1;
+            
+            const opcode = std.meta.intToEnum(Opcode, opcode_byte) catch {
+                // Invalid opcode
+                pc += 1;
+                continue;
+            };
+            
+            // Track JUMPDEST locations
+            if (opcode == .JUMPDEST) {
+                try jumpdests.append(pc);
+            }
+            
+            // Check for PUSH opcodes
+            if (@intFromEnum(opcode) >= @intFromEnum(Opcode.PUSH1) and 
+                @intFromEnum(opcode) <= @intFromEnum(Opcode.PUSH32)) {
+                const push_size = @intFromEnum(opcode) - @intFromEnum(Opcode.PUSH1) + 1;
+                
+                if (pc + push_size < bytecode.len) {
+                    // Extract push value
+                    var value: u256 = 0;
+                    for (1..push_size + 1) |i| {
+                        if (pc + i < bytecode.len) {
+                            value = (value << 8) | bytecode[pc + i];
+                        }
+                    }
+                    try push_values.append(.{ .pc = pc, .value = value });
+                    
+                    // Check for potential fusion with next opcode
+                    const next_pc = pc + 1 + push_size;
+                    if (next_pc < bytecode.len) {
+                        const next_opcode = std.meta.intToEnum(Opcode, bytecode[next_pc]) catch {
+                            pc += 1 + push_size;
+                            continue;
+                        };
+                        
+                        // Common fusion patterns
+                        switch (next_opcode) {
+                            .ADD, .MUL, .SUB, .DIV, .JUMP, .JUMPI, .GT, .LT, .EQ => {
+                                try potential_fusions.append(.{ .pc = pc, .second_opcode = next_opcode });
+                            },
+                            else => {},
+                        }
+                    }
+                }
+                
+                pc += 1 + push_size;
+            } else if (opcode == .JUMP or opcode == .JUMPI) {
+                // For static analysis, we can only track JUMP after PUSH
+                if (pc > 0) {
+                    // Check if previous instruction was a PUSH
+                    var push_pc = pc - 1;
+                    var found_push = false;
+                    var jump_target: u256 = 0;
+                    
+                    // Scan backwards for PUSH instruction
+                    while (push_pc > 0 and pc - push_pc < 33) : (push_pc -= 1) {
+                        const prev_opcode = std.meta.intToEnum(Opcode, bytecode[push_pc]) catch continue;
+                        if (@intFromEnum(prev_opcode) >= @intFromEnum(Opcode.PUSH1) and 
+                            @intFromEnum(prev_opcode) <= @intFromEnum(Opcode.PUSH32)) {
+                            const push_size = @intFromEnum(prev_opcode) - @intFromEnum(Opcode.PUSH1) + 1;
+                            if (push_pc + 1 + push_size == pc) {
+                                // This PUSH feeds into our JUMP
+                                jump_target = 0;
+                                for (1..push_size + 1) |i| {
+                                    if (push_pc + i < bytecode.len) {
+                                        jump_target = (jump_target << 8) | bytecode[push_pc + i];
+                                    }
+                                }
+                                found_push = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (found_push) {
+                        try jumps.append(.{ .pc = pc, .target = jump_target });
+                        if (jump_target < pc) {
+                            backwards_jumps += 1;
+                        }
+                    }
+                }
+                pc += 1;
+            } else {
+                pc += 1;
+            }
+        }
+        
+        return BytecodeStats{
+            .opcode_counts = opcode_counts,
+            .push_values = try push_values.toOwnedSlice(),
+            .potential_fusions = try potential_fusions.toOwnedSlice(),
+            .jumpdests = try jumpdests.toOwnedSlice(),
+            .jumps = try jumps.toOwnedSlice(),
+            .backwards_jumps = backwards_jumps,
+            .is_create_code = false, // TODO: Detect create code patterns
+        };
+    }
+    
+    /// Deallocate statistics data
+    pub fn deinit(self: *BytecodeStats, allocator: std.mem.Allocator) void {
+        allocator.free(self.push_values);
+        allocator.free(self.potential_fusions);
+        allocator.free(self.jumpdests);
+        allocator.free(self.jumps);
+    }
+    
     pub fn formatStats(self: BytecodeStats, allocator: std.mem.Allocator) ![]const u8 {
         // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
         var list = ArrayList(u8, null).init(allocator);
