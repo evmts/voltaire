@@ -4,37 +4,7 @@ const std = @import("std");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
-
-/// Synthetic opcodes for fused operations.
-/// These values are chosen to avoid conflicts with standard EVM opcodes.
-/// The compile-time check below ensures no conflicts exist.
-pub const SyntheticOpcode = enum(u8) {
-    PUSH_ADD_INLINE = 0xB0,
-    PUSH_ADD_POINTER = 0xB1,
-    PUSH_MUL_INLINE = 0xB2,
-    PUSH_MUL_POINTER = 0xB3,
-    PUSH_DIV_INLINE = 0xB4,
-    PUSH_DIV_POINTER = 0xB5,
-    PUSH_JUMP_INLINE = 0xB6,
-    PUSH_JUMP_POINTER = 0xB7,
-    PUSH_JUMPI_INLINE = 0xB8,
-    PUSH_JUMPI_POINTER = 0xB9,
-};
-
-
-// Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
-comptime {
-    @setEvalBranchQuota(10000);
-    for (@typeInfo(SyntheticOpcode).@"enum".fields) |syn_field| {
-        // Try to convert the synthetic opcode value to a regular Opcode
-        if (std.meta.intToEnum(Opcode, syn_field.value) catch null) |conflicting_opcode| {
-            @compileError(std.fmt.comptimePrint(
-                "Synthetic opcode {s} (0x{X}) conflicts with normal opcode {s}",
-                .{ syn_field.name, syn_field.value, @tagName(conflicting_opcode) }
-            ));
-        } 
-    }
-}
+const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
@@ -138,12 +108,12 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
                     *const WordType,
                 
                 // Synthetic fusion opcodes
-                @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), 
-                @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), 
-                @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) => usize,
-                @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER), 
-                @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER), 
-                @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => *const WordType,
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE), 
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE), 
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => usize,
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER), 
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER), 
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => *const WordType,
                 
                 // JUMPDEST returns metadata struct or pointer
                 @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
@@ -206,14 +176,14 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
                 },
                 
                 // Synthetic fusion opcodes - inline values
-                @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), 
-                @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), 
-                @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) => metadata_elem.inline_value,
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE), 
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE), 
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => metadata_elem.inline_value,
                 
                 // Synthetic fusion opcodes - pointer values
-                @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER), 
-                @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER), 
-                @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => blk: {
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER), 
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER), 
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => blk: {
                     const idx_val = metadata_elem.pointer_index;
                     break :blk &self.u256_constants[idx_val];
                 },
@@ -262,11 +232,11 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
                 @intFromEnum(Opcode.PUSH25), @intFromEnum(Opcode.PUSH26), @intFromEnum(Opcode.PUSH27), @intFromEnum(Opcode.PUSH28),
                 @intFromEnum(Opcode.PUSH29), @intFromEnum(Opcode.PUSH30), @intFromEnum(Opcode.PUSH31), @intFromEnum(Opcode.PUSH32),
                 // Synthetic fusion opcodes all have metadata
-                @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
-                @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
-                @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-                @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
-                @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
                 // JUMPDEST has metadata
                 @intFromEnum(Opcode.JUMPDEST),
                 // PC has metadata (the original PC value)
@@ -658,40 +628,6 @@ fn testHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
     unreachable; // Test handlers don't actually execute
 }
 
-test "SyntheticOpcode values are unique and non-conflicting" {
-    // Test that all synthetic opcodes have unique values
-    const opcodes = [_]u8{
-        @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER),
-    };
-    
-    // Check for duplicates
-    for (opcodes, 0..) |op1, i| {
-        for (opcodes[i+1..]) |op2| {
-            try std.testing.expect(op1 != op2);
-        }
-    }
-    
-    // Verify expected values
-    try std.testing.expectEqual(@as(u8, 0xB0), @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB1), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB2), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB3), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB4), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB5), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB6), @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB7), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB8), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER));
-}
 
 test "JumpDestMetadata size and alignment" {
     // Test that JumpDestMetadata is properly packed
@@ -922,13 +858,13 @@ test "Plan getMetadata for synthetic opcodes" {
     
     // Test PUSH_ADD_INLINE
     var idx: Plan.InstructionIndexType = 0;
-    const inline_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
+    const inline_val = plan.getMetadata(&idx, @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
     try std.testing.expectEqual(@as(usize, 999), inline_val);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test PUSH_MUL_POINTER
     idx = 2; // Move to next handler position
-    const ptr_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
+    const ptr_val = plan.getMetadata(&idx, @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER));
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), ptr_val.*);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
 }
