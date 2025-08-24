@@ -4720,7 +4720,8 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     // Deploy factory with initialization value 123
     var deploy_data = std.ArrayList(u8).init(allocator);
     defer deploy_data.deinit();
-    try deploy_data.appendSlice(&([31]u8{0} ** 31 ++ [_]u8{123})); // 123 as uint256
+    const init_value = [_]u8{0} ** 31 ++ [_]u8{123}; // 123 as uint256
+    try deploy_data.appendSlice(&init_value);
     
     const factory_result = try evm_instance.call(.{
         .create = .{
