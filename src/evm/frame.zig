@@ -242,7 +242,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             return Self{
                 .stack = new_stack,
                 .bytecode = self.bytecode, // Bytecode is immutable, share reference
-                .gas_manager = self.gas_manager, // Copy gas manager state
+                .gas_remaining = self.gas_remaining, // Copy gas remaining state
                 .tracer = if (config.TracerType) |_| self.tracer else {},
                 .memory = new_memory,
                 .database = self.database,
@@ -542,27 +542,27 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Arithmetic operations
         
         /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn add(self: *Self) Error!void {
+        pub fn op_add(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
         }
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
-        pub fn mul(self: *Self) Error!void {
+        pub fn op_mul(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
         }
 
-        pub fn sub(self: *Self) Error!void {
+        pub fn op_sub(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
         }
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
-        pub fn div(self: *Self) Error!void {
+        pub fn op_div(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
@@ -705,12 +705,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 else => return Error.AllocationError,
             };
             try self.stack.push(result);
-        }
-
-        /// Test helper: KECCAK256 opcode that reads offset and size from stack
-        /// Same as op_keccak256 but accessible as a simple method for tests.
-        pub fn keccak256(self: *Self) Error!void {
-            return self.op_keccak256();
         }
 
         // Comparison operations
@@ -4498,8 +4492,6 @@ test "Frame op_keccak256 hash computation" {
     try std.testing.expectEqual(expected_hello, hello_hash);
 }
 
-// NOTE: JUMP and JUMPI tests removed - these operations are handled by the Plan layer, not Frame
-// Frame is responsible for stack operations, but PC/jump management is handled by the planner
 
 test "Frame with NoOpTracer executes correctly" {
     const allocator = std.testing.allocator;
