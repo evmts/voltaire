@@ -6,8 +6,8 @@ const std = @import("std");
 pub const StackConfig = @import("stack_config.zig").StackConfig;
 pub const Stack = @import("stack.zig").Stack;
 pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
-// pub const Planner = @import("planner.zig").Planner;
-// pub const createPlanner = @import("planner.zig").createPlanner;
+pub const Planner = @import("planner.zig").Planner;
+pub const createPlanner = @import("planner.zig").createPlanner;
 // pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
 // pub const createPlan = @import("plan.zig").createPlan;
 // pub const PlanConfig = @import("plan_config.zig").PlanConfig;
@@ -35,6 +35,7 @@ pub const CallResult = @import("call_result.zig").CallResult;
 pub const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 pub const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 pub const Account = @import("database_interface_account.zig").Account;
+pub const AccessList = @import("access_list.zig").AccessList;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
 pub const Memory = @import("memory.zig").Memory;
@@ -53,7 +54,7 @@ test {
     // _ = Frame;
     _ = StackConfig;
     _ = Stack;
-    // _ = Planner;
+    _ = Planner;
     // _ = Interpreter;
     _ = Evm;
     _ = Tracer;
@@ -76,6 +77,7 @@ test {
     _ = opcode_synthetic;
     _ = SelfDestruct;
     _ = Account;
+    _ = AccessList;
     // _ = createPlanMinimal;
     // _ = createFrameInterpreter;
     

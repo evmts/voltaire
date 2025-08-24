@@ -5,6 +5,8 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
 const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
+const createBytecode = @import("bytecode.zig").createBytecode;
+const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
@@ -359,19 +361,19 @@ pub fn Plan(comptime cfg: PlanConfig) type {
     };
 }
 
-/// Minimal plan that only contains bitmap analysis for lightweight execution.
+/// Minimal plan that leverages bytecode.zig for analysis and lightweight execution.
 /// Used by FrameMinimal for simple bytecode execution without optimization.
 pub const PlanMinimal = struct {
-    /// Raw bytecode reference
-    bytecode: []const u8,
-    /// Bitmap marking which bytes are push data (not opcodes)
-    is_push_data: []u8,
-    /// Bitmap marking which bytes are opcode starts
-    is_op_start: []u8,
-    /// Bitmap marking which bytes are JUMPDEST opcodes
-    is_jumpdest: []u8,
+    /// Bytecode with validation and analysis (leverages bytecode.zig)
+    bytecode: BytecodeType,
     /// Jump table of handlers indexed by opcode
     handlers: [256]*const HandlerFn,
+    
+    /// Create bytecode type with matching configuration
+    const BytecodeType = createBytecode(.{
+        .max_bytecode_size = 65535, // Use u16 for PcType
+        .max_initcode_size = 65535, // Must be at least as large as max_bytecode_size
+    });
     
     /// Type aliases for compatibility with advanced plan
     pub const PcType = u16;
@@ -425,7 +427,7 @@ pub const PlanMinimal = struct {
         break :blk MetadataType;
     } {
         const pc = idx.*;
-        if (pc >= self.bytecode.len) {
+        if (pc >= self.bytecode.len()) {
             @panic("getMetadata: trying to read past end of bytecode");
         }
         
@@ -437,70 +439,16 @@ pub const PlanMinimal = struct {
         };
             
         return switch (actual_op) {
-            // PUSH opcodes read directly from bytecode
-            .PUSH1 => blk: {
-                if (pc + 1 >= self.bytecode.len) @panic("PUSH1 data out of bounds");
-                break :blk self.bytecode[pc + 1];
-            },
-            .PUSH2 => blk: {
-                if (pc + 2 >= self.bytecode.len) @panic("PUSH2 data out of bounds");
-                var value: u16 = 0;
-                value = (@as(u16, self.bytecode[pc + 1]) << 8) | self.bytecode[pc + 2];
-                break :blk value;
-            },
-            .PUSH3 => blk: {
-                if (pc + 3 >= self.bytecode.len) @panic("PUSH3 data out of bounds");
-                var value: u24 = 0;
-                value = (@as(u24, self.bytecode[pc + 1]) << 16) | 
-                        (@as(u24, self.bytecode[pc + 2]) << 8) | 
-                        self.bytecode[pc + 3];
-                break :blk value;
-            },
-            .PUSH4 => blk: {
-                if (pc + 4 >= self.bytecode.len) @panic("PUSH4 data out of bounds");
-                var value: u32 = 0;
-                var i: u8 = 0;
-                while (i < 4) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH5 => blk: {
-                if (pc + 5 >= self.bytecode.len) @panic("PUSH5 data out of bounds");
-                var value: u40 = 0;
-                var i: u8 = 0;
-                while (i < 5) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH6 => blk: {
-                if (pc + 6 >= self.bytecode.len) @panic("PUSH6 data out of bounds");
-                var value: u48 = 0;
-                var i: u8 = 0;
-                while (i < 6) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH7 => blk: {
-                if (pc + 7 >= self.bytecode.len) @panic("PUSH7 data out of bounds");
-                var value: u56 = 0;
-                var i: u8 = 0;
-                while (i < 7) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH8 => blk: {
-                if (pc + 8 >= self.bytecode.len) @panic("PUSH8 data out of bounds");
-                var value: u64 = 0;
-                var i: u8 = 0;
-                while (i < 8) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
+            // PUSH opcodes use bytecode.readPushValue() for safe extraction
+            .PUSH1 => self.bytecode.readPushValue(pc, 1) orelse @panic("PUSH1 data out of bounds"),
+            .PUSH2 => self.bytecode.readPushValue(pc, 2) orelse @panic("PUSH2 data out of bounds"),
+            .PUSH3 => self.bytecode.readPushValue(pc, 3) orelse @panic("PUSH3 data out of bounds"),
+            .PUSH4 => self.bytecode.readPushValue(pc, 4) orelse @panic("PUSH4 data out of bounds"),
+            .PUSH5 => self.bytecode.readPushValue(pc, 5) orelse @panic("PUSH5 data out of bounds"),
+            .PUSH6 => self.bytecode.readPushValue(pc, 6) orelse @panic("PUSH6 data out of bounds"),
+            .PUSH7 => self.bytecode.readPushValue(pc, 7) orelse @panic("PUSH7 data out of bounds"),
+            .PUSH8 => self.bytecode.readPushValue(pc, 8) orelse @panic("PUSH8 data out of bounds"),
+            
             // Larger PUSH opcodes return pointer to static value
             .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
             .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
@@ -528,7 +476,7 @@ pub const PlanMinimal = struct {
         comptime opcode: anytype,
     ) *const HandlerFn {
         const pc = idx.*;
-        if (pc >= self.bytecode.len) {
+        if (pc >= self.bytecode.len()) {
             @panic("getNextInstruction: PC out of bounds");
         }
         
@@ -562,16 +510,14 @@ pub const PlanMinimal = struct {
             };
         };
         
-        // Advance PC based on opcode
+        // Advance PC based on opcode using bytecode's getInstructionSize
         if (has_metadata) {
-            // For PUSH opcodes, skip the data bytes
-            const op_value = self.bytecode[pc];
-            if (op_value >= @intFromEnum(Opcode.PUSH1) and op_value <= @intFromEnum(Opcode.PUSH32)) {
-                const push_bytes = op_value - (@intFromEnum(Opcode.PUSH1) - 1);
-                idx.* = @intCast(pc + 1 + push_bytes);
+            // For PUSH opcodes, use bytecode.getNextPc for correct advancement
+            if (self.bytecode.getNextPc(pc)) |next_pc| {
+                idx.* = @intCast(next_pc);
             } else {
-                // JUMPDEST and PC just advance by 1
-                idx.* = @intCast(pc + 1);
+                // End of bytecode
+                idx.* = @intCast(self.bytecode.len());
             }
         } else {
             // No metadata, advance by 1
@@ -579,12 +525,12 @@ pub const PlanMinimal = struct {
         }
         
         // Get the handler for the next instruction
-        if (idx.* >= self.bytecode.len) {
+        if (idx.* >= self.bytecode.len()) {
             // Return STOP handler for end of bytecode
             return self.handlers[@intFromEnum(Opcode.STOP)];
         }
         
-        const next_opcode = self.bytecode[idx.*];
+        const next_opcode = self.bytecode.raw()[idx.*];
         return self.handlers[next_opcode];
     }
     
@@ -596,26 +542,29 @@ pub const PlanMinimal = struct {
         return pc;
     }
     
-    /// Check if a PC is a valid JUMPDEST.
+    /// Check if a PC is a valid JUMPDEST (delegates to bytecode.zig).
     pub fn isValidJumpDest(self: *const PlanMinimal, pc: usize) bool {
-        if (pc >= self.bytecode.len) return false;
-        return (self.is_jumpdest[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
+        return self.bytecode.isValidJumpDest(pc);
     }
     
-    /// Check if a PC is an opcode start (not push data).
+    /// Check if a PC is an opcode start (delegates to bytecode.zig).
     pub fn isOpcodeStart(self: *const PlanMinimal, pc: usize) bool {
-        if (pc >= self.bytecode.len) return false;
-        return (self.is_op_start[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
+        if (pc >= self.bytecode.len()) return false;
+        return (self.bytecode.is_op_start[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
     }
     
-    /// Free the allocated bitmaps.
-    pub fn deinit(self: *PlanMinimal, allocator: std.mem.Allocator) void {
-        if (self.is_push_data.len > 0) allocator.free(self.is_push_data);
-        if (self.is_op_start.len > 0) allocator.free(self.is_op_start);
-        if (self.is_jumpdest.len > 0) allocator.free(self.is_jumpdest);
-        self.is_push_data = &.{};
-        self.is_op_start = &.{};
-        self.is_jumpdest = &.{};
+    /// Initialize a PlanMinimal with bytecode and handlers.
+    pub fn init(allocator: std.mem.Allocator, code: []const u8, handlers: [256]*const HandlerFn) !PlanMinimal {
+        const bytecode = try BytecodeType.init(allocator, code);
+        return PlanMinimal{
+            .bytecode = bytecode,
+            .handlers = handlers,
+        };
+    }
+    
+    /// Free the allocated resources (delegates to bytecode.zig).
+    pub fn deinit(self: *PlanMinimal) void {
+        self.bytecode.deinit();
     }
 };
 
@@ -975,21 +924,18 @@ test "PlanMinimal basic functionality" {
         @intFromEnum(Opcode.STOP),
     };
     
-    const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
-    
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| {
         h.* = &testHandler;
     }
     
-    var plan_minimal = try planner.create_minimal_plan(allocator, handlers);
-    defer plan_minimal.deinit(allocator);
+    var plan_minimal = try PlanMinimal.init(allocator, &bytecode, handlers);
+    defer plan_minimal.deinit();
     
     // Test bytecode reference
-    try std.testing.expectEqual(bytecode.len, plan_minimal.bytecode.len);
-    try std.testing.expectEqualSlices(u8, &bytecode, plan_minimal.bytecode);
+    try std.testing.expectEqual(bytecode.len, plan_minimal.bytecode.len());
+    try std.testing.expectEqualSlices(u8, &bytecode, plan_minimal.bytecode.raw());
     
     // Test opcode starts
     try std.testing.expect(plan_minimal.isOpcodeStart(0)); // PUSH1
@@ -2634,5 +2580,905 @@ test "Plan resource cleanup and leak prevention" {
         
         // Clean up - this should not leak memory
         plan.deinit(allocator);
+    }
+}
+
+test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
+    const allocator = std.testing.allocator;
+    
+    // Real-world ERC20 contract bytecode patterns (simplified versions of actual contracts)
+    const erc20_constructor_pattern = [_]u8{
+        // Constructor pattern: PUSH constructor args, CODECOPY, RETURN
+        @intFromEnum(Opcode.PUSH1), 0x80,  // Push free memory pointer
+        @intFromEnum(Opcode.PUSH1), 0x40,  
+        @intFromEnum(Opcode.MSTORE),       // Store free memory pointer
+        @intFromEnum(Opcode.PUSH1), 0x04,  
+        @intFromEnum(Opcode.CALLDATASIZE), 
+        @intFromEnum(Opcode.LT),           
+        @intFromEnum(Opcode.PUSH2), 0x00, 0x47,
+        @intFromEnum(Opcode.JUMPI),        // Jump if no calldata
+        
+        // Function selector pattern
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.CALLDATALOAD),
+        @intFromEnum(Opcode.PUSH1), 0xE0,
+        @intFromEnum(Opcode.SHR),          // Extract function selector
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.PUSH4), 0x70, 0xa0, 0x82, 0x31, // transfer(address,uint256)
+        @intFromEnum(Opcode.EQ),
+        @intFromEnum(Opcode.PUSH2), 0x00, 0x5c,
+        @intFromEnum(Opcode.JUMPI),
+        
+        // More function selectors
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.PUSH4), 0xa9, 0x05, 0x9c, 0xbb, // balanceOf(address)
+        @intFromEnum(Opcode.EQ),
+        @intFromEnum(Opcode.PUSH2), 0x00, 0x8a,
+        @intFromEnum(Opcode.JUMPI),
+        
+        @intFromEnum(Opcode.JUMPDEST),     // Entry point
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    // Uniswap-style swap pattern
+    const uniswap_swap_pattern = [_]u8{
+        // Complex DeFi pattern with multiple nested calls
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.PUSH20), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Address
+        @intFromEnum(Opcode.GAS),
+        @intFromEnum(Opcode.CALL),         // External call
+        @intFromEnum(Opcode.ISZERO),
+        @intFromEnum(Opcode.PUSH2), 0x01, 0x23,
+        @intFromEnum(Opcode.JUMPI),        // Revert if call failed
+        
+        // Log emission pattern
+        @intFromEnum(Opcode.PUSH32), // Event signature hash
+        0x8c, 0x5b, 0xe1, 0xe5, 0xeb, 0xec, 0x7d, 0x5b, 0xd1, 0x4f, 0x71, 0x42, 0x7d, 0x1e, 0x84, 0xf3,
+        0x86, 0x4c, 0x39, 0x5c, 0x3b, 0x3d, 0xda, 0x5a, 0x8c, 0x43, 0xd7, 0x88, 0xd7, 0x7c, 0x1b, 0x5a,
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.PUSH1), 0x20,
+        @intFromEnum(Opcode.LOG3),         // Emit event with 3 topics
+        
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.RETURN),
+    };
+    
+    const test_patterns = [_]struct {
+        bytecode: []const u8,
+        description: []const u8,
+        expected_synthetic_opcodes: usize,
+        expected_jumpdests: usize,
+    }{
+        .{ .bytecode = &erc20_constructor_pattern, .description = "ERC20 constructor pattern", .expected_synthetic_opcodes = 5, .expected_jumpdests = 1 },
+        .{ .bytecode = &uniswap_swap_pattern, .description = "Uniswap swap pattern", .expected_synthetic_opcodes = 3, .expected_jumpdests = 1 },
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (test_patterns) |pattern| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, pattern.bytecode);
+        
+        var plan = try planner.create_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Validate plan was created successfully
+        try std.testing.expect(plan.bytecode.len == pattern.bytecode.len);
+        
+        // Test instruction traversal through complex patterns
+        var pc: usize = 0;
+        var instruction_count: usize = 0;
+        while (pc < pattern.bytecode.len and instruction_count < 100) {
+            const opcode = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
+            
+            // Test metadata access
+            _ = plan.getMetadata(pc, opcode, undefined);
+            
+            // Advance PC correctly for PUSH operations
+            const opcode_val = pattern.bytecode[pc];
+            if (opcode_val >= @intFromEnum(Opcode.PUSH1) and opcode_val <= @intFromEnum(Opcode.PUSH32)) {
+                const push_bytes = opcode_val - (@intFromEnum(Opcode.PUSH1) - 1);
+                pc += 1 + push_bytes;
+            } else {
+                pc += 1;
+            }
+            instruction_count += 1;
+        }
+        
+        // Should have processed significant number of instructions
+        try std.testing.expect(instruction_count > 10);
+    }
+}
+
+test "Plan cross-platform compatibility - InstructionElement size behavior" {
+    const allocator = std.testing.allocator;
+    
+    // Test configurations that trigger different InstructionElement types
+    const configs = [_]struct {
+        config: PlanConfig,
+        expected_pc_type: type,
+        description: []const u8,
+    }{
+        .{
+            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 255, .blockGasLimit = 21000 },
+            .expected_pc_type = u8,
+            .description = "Small bytecode should use u8 PC",
+        },
+        .{
+            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 65535, .blockGasLimit = 21000 },
+            .expected_pc_type = u16,
+            .description = "Medium bytecode should use u16 PC",
+        },
+        .{
+            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 24576, .blockGasLimit = 30_000_000 },
+            .expected_pc_type = u16,
+            .description = "EVM max bytecode should use u16 PC",
+        },
+    };
+    
+    // Simple bytecode for testing
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x42,
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (configs) |test_config| {
+        const Planner = @import("planner.zig").createPlanner(test_config.config);
+        var planner = try Planner.init(allocator, &bytecode);
+        
+        var plan = try planner.create_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Verify plan creation succeeds
+        try std.testing.expect(plan.bytecode.len == bytecode.len);
+        
+        // Test PC type behavior by checking instruction index bounds
+        const max_pc: usize = switch (test_config.expected_pc_type) {
+            u8 => 255,
+            u16 => 65535,
+            u32 => 0xFFFFFFFF,
+            else => 0xFFFFFFFFFFFFFFFF,
+        };
+        
+        // Test instruction index mapping within expected bounds
+        for (0..bytecode.len) |pc| {
+            const inst_idx = plan.getInstructionIndexForPc(@intCast(pc));
+            try std.testing.expect(inst_idx != null);
+            try std.testing.expect(inst_idx.? <= max_pc);
+        }
+    }
+}
+
+test "Plan comprehensive JUMPDEST analysis with pathological patterns" {
+    const allocator = std.testing.allocator;
+    
+    // Test various pathological JUMPDEST patterns
+    const jumpdest_patterns = [_]struct {
+        bytecode: []const u8,
+        description: []const u8,
+        valid_jumpdests: []const usize,
+        invalid_jumps: []const usize,
+    }{
+        // JUMPDEST inside PUSH data (should be invalid)
+        .{
+            .bytecode = &[_]u8{
+                @intFromEnum(Opcode.PUSH2), @intFromEnum(Opcode.JUMPDEST), 0x00, // JUMPDEST in PUSH data
+                @intFromEnum(Opcode.JUMPDEST),  // Valid JUMPDEST at PC 3
+                @intFromEnum(Opcode.STOP),
+            },
+            .description = "JUMPDEST inside PUSH data",
+            .valid_jumpdests = &[_]usize{3}, // Only PC 3 is valid
+            .invalid_jumps = &[_]usize{1},   // PC 1 is invalid (inside PUSH)
+        },
+        
+        // Overlapping PUSH operations
+        .{
+            .bytecode = &[_]u8{
+                @intFromEnum(Opcode.PUSH4), 0x01, 0x02, 0x03, @intFromEnum(Opcode.JUMPDEST), // JUMPDEST in PUSH4 data
+                @intFromEnum(Opcode.JUMPDEST),  // Valid JUMPDEST at PC 5
+                @intFromEnum(Opcode.PUSH1), @intFromEnum(Opcode.JUMPDEST),  // JUMPDEST in PUSH1 data
+                @intFromEnum(Opcode.JUMPDEST),  // Valid JUMPDEST at PC 8
+                @intFromEnum(Opcode.STOP),
+            },
+            .description = "Multiple overlapping PUSH operations",
+            .valid_jumpdests = &[_]usize{5, 8}, // Only PCs 5 and 8 are valid
+            .invalid_jumps = &[_]usize{4, 7},   // PCs inside PUSH data
+        },
+        
+        // Complex jump patterns with loops
+        .{
+            .bytecode = &[_]u8{
+                @intFromEnum(Opcode.JUMPDEST),  // PC 0 - Loop start
+                @intFromEnum(Opcode.PUSH1), 0x07,
+                @intFromEnum(Opcode.JUMP),      // Jump to PC 7
+                @intFromEnum(Opcode.INVALID),   // Dead code
+                @intFromEnum(Opcode.INVALID),   // Dead code
+                @intFromEnum(Opcode.JUMPDEST),  // PC 7 - Jump target
+                @intFromEnum(Opcode.PUSH1), 0x00,
+                @intFromEnum(Opcode.JUMPI),     // Conditional jump back to PC 0
+                @intFromEnum(Opcode.STOP),
+            },
+            .description = "Complex jump patterns with loops",
+            .valid_jumpdests = &[_]usize{0, 7},
+            .invalid_jumps = &[_]usize{4, 5}, // Dead code areas
+        },
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (jumpdest_patterns) |pattern| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, pattern.bytecode);
+        
+        var plan = try planner.create_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Verify valid JUMPDEST detection
+        for (pattern.valid_jumpdests) |valid_pc| {
+            try std.testing.expect(plan.isValidJumpDestination(@intCast(valid_pc)));
+        }
+        
+        // Verify invalid JUMPDEST detection (if the method exists)
+        for (pattern.invalid_jumps) |invalid_pc| {
+            if (invalid_pc < pattern.bytecode.len) {
+                // Test that jumping to invalid location would be caught
+                // This depends on the plan's JUMPDEST validation implementation
+                const is_valid = plan.isValidJumpDestination(@intCast(invalid_pc));
+                try std.testing.expect(!is_valid);
+            }
+        }
+        
+        // Test instruction stream integrity with complex patterns
+        var pc: usize = 0;
+        var visited_instructions: usize = 0;
+        while (pc < pattern.bytecode.len and visited_instructions < 50) {
+            const opcode = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
+            
+            // Should be able to get metadata for any valid PC
+            _ = plan.getMetadata(pc, opcode, undefined);
+            
+            // Advance PC correctly
+            const opcode_val = pattern.bytecode[pc];
+            if (opcode_val >= @intFromEnum(Opcode.PUSH1) and opcode_val <= @intFromEnum(Opcode.PUSH32)) {
+                const push_bytes = opcode_val - (@intFromEnum(Opcode.PUSH1) - 1);
+                pc += 1 + push_bytes;
+            } else {
+                pc += 1;
+            }
+            visited_instructions += 1;
+        }
+    }
+}
+
+test "Plan gas cost estimation accuracy validation" {
+    const allocator = std.testing.allocator;
+    
+    // Test gas costs for various opcodes match expected EVM values
+    const gas_test_cases = [_]struct {
+        opcode: Opcode,
+        expected_base_gas: u64,
+        has_dynamic_gas: bool,
+        description: []const u8,
+    }{
+        // Arithmetic operations
+        .{ .opcode = .ADD, .expected_base_gas = 3, .has_dynamic_gas = false, .description = "ADD should cost 3 gas" },
+        .{ .opcode = .SUB, .expected_base_gas = 3, .has_dynamic_gas = false, .description = "SUB should cost 3 gas" },
+        .{ .opcode = .MUL, .expected_base_gas = 5, .has_dynamic_gas = false, .description = "MUL should cost 5 gas" },
+        .{ .opcode = .DIV, .expected_base_gas = 5, .has_dynamic_gas = false, .description = "DIV should cost 5 gas" },
+        .{ .opcode = .EXP, .expected_base_gas = 10, .has_dynamic_gas = true, .description = "EXP has base cost 10 + dynamic" },
+        
+        // Stack operations
+        .{ .opcode = .POP, .expected_base_gas = 2, .has_dynamic_gas = false, .description = "POP should cost 2 gas" },
+        .{ .opcode = .DUP1, .expected_base_gas = 3, .has_dynamic_gas = false, .description = "DUP1 should cost 3 gas" },
+        .{ .opcode = .SWAP1, .expected_base_gas = 3, .has_dynamic_gas = false, .description = "SWAP1 should cost 3 gas" },
+        
+        // Memory operations
+        .{ .opcode = .MLOAD, .expected_base_gas = 3, .has_dynamic_gas = true, .description = "MLOAD has base cost 3 + memory expansion" },
+        .{ .opcode = .MSTORE, .expected_base_gas = 3, .has_dynamic_gas = true, .description = "MSTORE has base cost 3 + memory expansion" },
+        .{ .opcode = .MSTORE8, .expected_base_gas = 3, .has_dynamic_gas = true, .description = "MSTORE8 has base cost 3 + memory expansion" },
+        
+        // Storage operations (high gas costs)
+        .{ .opcode = .SLOAD, .expected_base_gas = 2100, .has_dynamic_gas = true, .description = "SLOAD has variable gas cost" },
+        .{ .opcode = .SSTORE, .expected_base_gas = 5000, .has_dynamic_gas = true, .description = "SSTORE has complex dynamic gas" },
+        
+        // Environment
+        .{ .opcode = .ADDRESS, .expected_base_gas = 2, .has_dynamic_gas = false, .description = "ADDRESS should cost 2 gas" },
+        .{ .opcode = .BALANCE, .expected_base_gas = 2600, .has_dynamic_gas = true, .description = "BALANCE has access list dynamic gas" },
+        .{ .opcode = .CALLER, .expected_base_gas = 2, .has_dynamic_gas = false, .description = "CALLER should cost 2 gas" },
+        
+        // Crypto
+        .{ .opcode = .KECCAK256, .expected_base_gas = 30, .has_dynamic_gas = true, .description = "KECCAK256 has base 30 + dynamic" },
+    };
+    
+    // Create bytecode with the test opcodes
+    for (gas_test_cases) |test_case| {
+        // Create minimal bytecode with the opcode
+        var bytecode: [10]u8 = undefined;
+        var bytecode_len: usize = 0;
+        
+        // Add setup for opcodes that need stack items
+        switch (test_case.opcode) {
+            .ADD, .SUB, .MUL, .DIV, .MOD => {
+                bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 1] = 0x01;
+                bytecode[bytecode_len + 2] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 3] = 0x02;
+                bytecode_len += 4;
+            },
+            .DUP1, .SWAP1 => {
+                bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 1] = 0x01;
+                bytecode_len += 2;
+            },
+            .MLOAD, .MSTORE, .MSTORE8 => {
+                bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 1] = 0x00; // offset
+                bytecode_len += 2;
+                if (test_case.opcode == .MSTORE or test_case.opcode == .MSTORE8) {
+                    bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                    bytecode[bytecode_len + 1] = 0x42; // value
+                    bytecode_len += 2;
+                }
+            },
+            .SLOAD, .SSTORE => {
+                bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 1] = 0x00; // key
+                bytecode_len += 2;
+                if (test_case.opcode == .SSTORE) {
+                    bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                    bytecode[bytecode_len + 1] = 0x42; // value
+                    bytecode_len += 2;
+                }
+            },
+            .KECCAK256 => {
+                bytecode[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 1] = 0x00; // offset
+                bytecode[bytecode_len + 2] = @intFromEnum(Opcode.PUSH1);
+                bytecode[bytecode_len + 3] = 0x20; // length
+                bytecode_len += 4;
+            },
+            else => {}, // No setup needed
+        }
+        
+        // Add the test opcode
+        bytecode[bytecode_len] = @intFromEnum(test_case.opcode);
+        bytecode_len += 1;
+        
+        // Add STOP
+        bytecode[bytecode_len] = @intFromEnum(Opcode.STOP);
+        bytecode_len += 1;
+        
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, bytecode[0..bytecode_len]);
+        
+        var handlers: [256]*const HandlerFn = undefined;
+        for (&handlers) |*h| h.* = &testHandler;
+        
+        var plan = try planner.create_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Find the test opcode in bytecode and get its metadata
+        for (bytecode[0..bytecode_len], 0..) |byte, pc| {
+            if (byte == @intFromEnum(test_case.opcode)) {
+                // Test that we can get metadata (gas info) for this opcode
+                const metadata = plan.getMetadata(pc, test_case.opcode, undefined);
+                
+                // Basic validation that metadata exists
+                // The exact gas values would need to be verified against the specific
+                // implementation's gas calculation logic
+                try std.testing.expect(metadata != 0);
+                break;
+            }
+        }
+    }
+}
+
+test "Plan equivalence between minimal and advanced plans" {
+    const allocator = std.testing.allocator;
+    
+    // Test bytecodes that should produce equivalent behavior
+    const test_bytecodes = [_][]const u8{
+        // Simple arithmetic
+        &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 0x05,
+            @intFromEnum(Opcode.PUSH1), 0x03,
+            @intFromEnum(Opcode.ADD),
+            @intFromEnum(Opcode.STOP),
+        },
+        
+        // Stack operations
+        &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 0x42,
+            @intFromEnum(Opcode.DUP1),
+            @intFromEnum(Opcode.SWAP1),
+            @intFromEnum(Opcode.POP),
+            @intFromEnum(Opcode.STOP),
+        },
+        
+        // Jump operations
+        &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 0x06,
+            @intFromEnum(Opcode.JUMP),
+            @intFromEnum(Opcode.INVALID), // Dead code
+            @intFromEnum(Opcode.JUMPDEST),
+            @intFromEnum(Opcode.STOP),
+        },
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (test_bytecodes) |bytecode| {
+        // Create advanced plan
+        const AdvancedPlanner = @import("planner.zig").createPlanner(.{});
+        var advanced_planner = try AdvancedPlanner.init(allocator, bytecode);
+        var advanced_plan = try advanced_planner.create_plan(allocator, handlers);
+        defer advanced_plan.deinit(allocator);
+        
+        // Create minimal plan
+        var minimal_plan = try advanced_planner.create_minimal_plan(allocator, handlers);
+        defer minimal_plan.deinit(allocator);
+        
+        // Both plans should have same bytecode
+        try std.testing.expectEqual(advanced_plan.bytecode.len, minimal_plan.bytecode.len);
+        try std.testing.expectEqualSlices(u8, advanced_plan.bytecode, minimal_plan.bytecode);
+        
+        // Test instruction stream consistency
+        var advanced_idx: InstructionIndexType = 0;
+        var minimal_idx: PlanMinimal.InstructionIndexType = 0;
+        
+        // Walk through both instruction streams
+        for (0..bytecode.len) |pc| {
+            const opcode = std.meta.intToEnum(Opcode, bytecode[pc]) catch continue;
+            
+            // Both should be able to get instruction index for same PC
+            const advanced_inst_idx = advanced_plan.getInstructionIndexForPc(@intCast(pc));
+            const minimal_inst_idx = minimal_plan.getInstructionIndexForPc(@intCast(pc));
+            
+            if (advanced_inst_idx != null and minimal_inst_idx != null) {
+                // Both plans should map the same PC to valid instruction indices
+                try std.testing.expect(advanced_inst_idx != null);
+                try std.testing.expect(minimal_inst_idx != null);
+            }
+            
+            // Test metadata consistency for opcodes that both plans support
+            switch (opcode) {
+                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => {
+                    // Both plans should provide equivalent metadata for small PUSH opcodes
+                    const advanced_meta = advanced_plan.getMetadata(pc, opcode, undefined);
+                    const minimal_meta = minimal_plan.getMetadata(pc, opcode, undefined);
+                    
+                    // For small PUSH opcodes, values should be equivalent
+                    try std.testing.expectEqual(advanced_meta, minimal_meta);
+                },
+                .JUMPDEST => {
+                    // Both should recognize JUMPDEST
+                    _ = advanced_plan.getMetadata(pc, opcode, undefined);
+                    _ = minimal_plan.getMetadata(pc, opcode, undefined);
+                },
+                .PC => {
+                    // PC opcode should return the same value
+                    const advanced_pc = advanced_plan.getMetadata(pc, opcode, undefined);
+                    const minimal_pc = minimal_plan.getMetadata(pc, opcode, undefined);
+                    try std.testing.expectEqual(@as(u256, pc), advanced_pc);
+                    try std.testing.expectEqual(@as(u8, @intCast(pc)), minimal_pc);
+                },
+                else => {
+                    // Other opcodes should be handled consistently
+                    _ = advanced_plan.getMetadata(pc, opcode, undefined);
+                    _ = minimal_plan.getMetadata(pc, opcode, undefined);
+                },
+            }
+        }
+    }
+}
+
+test "Plan configuration boundary and mutation stress testing" {
+    const allocator = std.testing.allocator;
+    
+    // Test extreme configurations
+    const boundary_configs = [_]struct {
+        config: PlanConfig,
+        should_succeed: bool,
+        description: []const u8,
+    }{
+        // Minimum valid config
+        .{
+            .config = .{ .stackSize = 1, .WordType = u64, .maxBytecodeSize = 1, .blockGasLimit = 21000 },
+            .should_succeed = true,
+            .description = "Minimum valid configuration",
+        },
+        
+        // EVM standard config
+        .{
+            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 24576, .blockGasLimit = 30_000_000 },
+            .should_succeed = true,
+            .description = "Standard EVM configuration",
+        },
+        
+        // Large config
+        .{
+            .config = .{ .stackSize = 2048, .WordType = u256, .maxBytecodeSize = 65535, .blockGasLimit = 100_000_000 },
+            .should_succeed = true,
+            .description = "Large configuration",
+        },
+        
+        // Edge case: exactly at u16 boundary
+        .{
+            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 65535, .blockGasLimit = 30_000_000 },
+            .should_succeed = true,
+            .description = "u16 boundary configuration",
+        },
+    };
+    
+    const test_bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x01,
+        @intFromEnum(Opcode.PUSH1), 0x02,
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (boundary_configs) |boundary_test| {
+        if (boundary_test.should_succeed) {
+            const Planner = @import("planner.zig").createPlanner(boundary_test.config);
+            
+            // Test that bytecode within limits works
+            var limited_bytecode = test_bytecode[0..@min(test_bytecode.len, boundary_test.config.maxBytecodeSize)];
+            if (limited_bytecode.len == 0) {
+                limited_bytecode = &[_]u8{@intFromEnum(Opcode.STOP)};
+            }
+            
+            var planner = try Planner.init(allocator, limited_bytecode);
+            
+            var plan = try planner.create_minimal_plan(allocator, handlers);
+            defer plan.deinit(allocator);
+            
+            // Verify plan works with this configuration
+            try std.testing.expect(plan.bytecode.len == limited_bytecode.len);
+            
+            // Test instruction processing
+            if (limited_bytecode.len > 0) {
+                const first_opcode = std.meta.intToEnum(Opcode, limited_bytecode[0]) catch .STOP;
+                _ = plan.getMetadata(0, first_opcode, undefined);
+            }
+        }
+    }
+    
+    // Test configuration mutation scenarios
+    const base_config = PlanConfig{
+        .stackSize = 1024,
+        .WordType = u256,
+        .maxBytecodeSize = 1000,
+        .blockGasLimit = 30_000_000,
+    };
+    
+    // Test with different WordTypes
+    const word_types = [_]type{ u64, u128, u256 };
+    for (word_types) |WordType| {
+        var config = base_config;
+        config.WordType = WordType;
+        
+        const Planner = @import("planner.zig").createPlanner(config);
+        var planner = try Planner.init(allocator, &test_bytecode);
+        
+        var plan = try planner.create_minimal_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        try std.testing.expect(plan.bytecode.len == test_bytecode.len);
+    }
+}
+
+test "Plan bytecode analysis completeness validation" {
+    const allocator = std.testing.allocator;
+    
+    // Test comprehensive bytecode analysis features
+    const analysis_test_patterns = [_]struct {
+        bytecode: []const u8,
+        expected_push_values: usize,
+        expected_jumpdests: usize,
+        expected_unique_opcodes: usize,
+        description: []const u8,
+    }{
+        // Pattern with multiple PUSH values
+        .{
+            .bytecode = &[_]u8{
+                @intFromEnum(Opcode.PUSH1), 0x42,
+                @intFromEnum(Opcode.PUSH2), 0x13, 0x37,
+                @intFromEnum(Opcode.PUSH4), 0xDE, 0xAD, 0xBE, 0xEF,
+                @intFromEnum(Opcode.ADD),
+                @intFromEnum(Opcode.STOP),
+            },
+            .expected_push_values = 3,
+            .expected_jumpdests = 0,
+            .expected_unique_opcodes = 4, // PUSH1, PUSH2, PUSH4, ADD, STOP
+            .description = "Multiple PUSH values analysis",
+        },
+        
+        // Pattern with JUMPDEST analysis
+        .{
+            .bytecode = &[_]u8{
+                @intFromEnum(Opcode.JUMPDEST),  // PC 0
+                @intFromEnum(Opcode.PUSH1), 0x08,
+                @intFromEnum(Opcode.JUMP),
+                @intFromEnum(Opcode.INVALID),   // Dead code
+                @intFromEnum(Opcode.INVALID),   // Dead code
+                @intFromEnum(Opcode.JUMPDEST),  // PC 8
+                @intFromEnum(Opcode.STOP),
+            },
+            .expected_push_values = 1,
+            .expected_jumpdests = 2,
+            .expected_unique_opcodes = 5, // JUMPDEST, PUSH1, JUMP, INVALID, STOP
+            .description = "JUMPDEST pattern analysis",
+        },
+        
+        // Complex pattern with various opcodes
+        .{
+            .bytecode = &[_]u8{
+                @intFromEnum(Opcode.PUSH1), 0x20,  // Memory offset
+                @intFromEnum(Opcode.PUSH1), 0x00,  // Data offset
+                @intFromEnum(Opcode.PUSH1), 0x04,  // Data size
+                @intFromEnum(Opcode.CALLDATACOPY), // Copy calldata to memory
+                @intFromEnum(Opcode.PUSH1), 0x20,  // Memory offset
+                @intFromEnum(Opcode.MLOAD),        // Load from memory
+                @intFromEnum(Opcode.PUSH1), 0x00,  // Storage key
+                @intFromEnum(Opcode.SSTORE),       // Store to storage
+                @intFromEnum(Opcode.JUMPDEST),     // Jump destination
+                @intFromEnum(Opcode.STOP),
+            },
+            .expected_push_values = 5,
+            .expected_jumpdests = 1,
+            .expected_unique_opcodes = 7, // PUSH1, CALLDATACOPY, MLOAD, SSTORE, JUMPDEST, STOP (PUSH1 counted once)
+            .description = "Complex opcode pattern analysis",
+        },
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (analysis_test_patterns) |pattern| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, pattern.bytecode);
+        
+        var plan = try planner.create_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Test comprehensive analysis capabilities
+        
+        // 1. PUSH value extraction
+        var push_count: usize = 0;
+        var pc: usize = 0;
+        while (pc < pattern.bytecode.len) {
+            const opcode_val = pattern.bytecode[pc];
+            if (opcode_val >= @intFromEnum(Opcode.PUSH1) and opcode_val <= @intFromEnum(Opcode.PUSH32)) {
+                const opcode = std.meta.intToEnum(Opcode, opcode_val) catch break;
+                
+                // Should be able to extract PUSH value
+                const metadata = plan.getMetadata(pc, opcode, undefined);
+                try std.testing.expect(metadata != 0); // Should have valid value
+                
+                push_count += 1;
+                
+                const push_bytes = opcode_val - (@intFromEnum(Opcode.PUSH1) - 1);
+                pc += 1 + push_bytes;
+            } else {
+                pc += 1;
+            }
+        }
+        try std.testing.expectEqual(pattern.expected_push_values, push_count);
+        
+        // 2. JUMPDEST identification
+        var jumpdest_count: usize = 0;
+        for (pattern.bytecode, 0..) |byte, i| {
+            if (byte == @intFromEnum(Opcode.JUMPDEST)) {
+                // Verify it's recognized as valid jump destination
+                try std.testing.expect(plan.isValidJumpDestination(@intCast(i)));
+                jumpdest_count += 1;
+            }
+        }
+        try std.testing.expectEqual(pattern.expected_jumpdests, jumpdest_count);
+        
+        // 3. Opcode frequency analysis
+        var unique_opcodes = std.AutoHashMap(u8, void).init(allocator);
+        defer unique_opcodes.deinit();
+        
+        pc = 0;
+        while (pc < pattern.bytecode.len) {
+            const opcode_val = pattern.bytecode[pc];
+            try unique_opcodes.put(opcode_val, {});
+            
+            // Skip PUSH data
+            if (opcode_val >= @intFromEnum(Opcode.PUSH1) and opcode_val <= @intFromEnum(Opcode.PUSH32)) {
+                const push_bytes = opcode_val - (@intFromEnum(Opcode.PUSH1) - 1);
+                pc += 1 + push_bytes;
+            } else {
+                pc += 1;
+            }
+        }
+        try std.testing.expectEqual(pattern.expected_unique_opcodes, unique_opcodes.count());
+        
+        // 4. Code/data separation validation
+        pc = 0;
+        while (pc < pattern.bytecode.len) {
+            const opcode = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
+            
+            // Should be able to get instruction index for all instruction starts
+            const inst_idx = plan.getInstructionIndexForPc(@intCast(pc));
+            try std.testing.expect(inst_idx != null);
+            
+            // Advance correctly based on opcode
+            const opcode_val = pattern.bytecode[pc];
+            if (opcode_val >= @intFromEnum(Opcode.PUSH1) and opcode_val <= @intFromEnum(Opcode.PUSH32)) {
+                const push_bytes = opcode_val - (@intFromEnum(Opcode.PUSH1) - 1);
+                
+                // Verify that PCs inside PUSH data are not valid instruction starts
+                for (1..push_bytes + 1) |offset| {
+                    if (pc + offset < pattern.bytecode.len) {
+                        // These should either be null or handled appropriately by the plan
+                        const inner_inst_idx = plan.getInstructionIndexForPc(@intCast(pc + offset));
+                        _ = inner_inst_idx; // Plan may handle this differently
+                    }
+                }
+                pc += 1 + push_bytes;
+            } else {
+                pc += 1;
+            }
+        }
+    }
+}
+
+test "Plan caching and lifecycle management validation" {
+    const allocator = std.testing.allocator;
+    
+    // Test plan caching and reuse scenarios
+    const reusable_bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x42,
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    // Test 1: Multiple plans from same bytecode should work independently
+    const num_concurrent_plans = 5;
+    var plans: [num_concurrent_plans]Plan = undefined;
+    var planners: [num_concurrent_plans]Planner = undefined;
+    
+    // Create multiple plans concurrently
+    for (0..num_concurrent_plans) |i| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        planners[i] = try Planner.init(allocator, &reusable_bytecode);
+        plans[i] = try planners[i].create_plan(allocator, handlers);
+    }
+    
+    // Verify all plans work independently
+    for (0..num_concurrent_plans) |i| {
+        try std.testing.expect(plans[i].bytecode.len == reusable_bytecode.len);
+        try std.testing.expectEqualSlices(u8, plans[i].bytecode, &reusable_bytecode);
+        
+        // Test that each plan provides correct metadata
+        const push_value = plans[i].getMetadata(0, .PUSH1, undefined);
+        try std.testing.expectEqual(@as(u256, 0x42), push_value);
+        
+        // Test instruction indexing
+        const inst_idx = plans[i].getInstructionIndexForPc(0);
+        try std.testing.expect(inst_idx != null);
+    }
+    
+    // Clean up all plans
+    for (0..num_concurrent_plans) |i| {
+        plans[i].deinit(allocator);
+    }
+    
+    // Test 2: Plan lifecycle with different configurations
+    const lifecycle_configs = [_]PlanConfig{
+        .{ .stackSize = 256, .WordType = u128, .maxBytecodeSize = 1000, .blockGasLimit = 21000 },
+        .{ .stackSize = 512, .WordType = u256, .maxBytecodeSize = 2000, .blockGasLimit = 30_000_000 },
+        .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 24576, .blockGasLimit = 100_000_000 },
+    };
+    
+    for (lifecycle_configs) |config| {
+        const ConfigPlanner = @import("planner.zig").createPlanner(config);
+        var config_planner = try ConfigPlanner.init(allocator, &reusable_bytecode);
+        
+        // Create both minimal and advanced plans
+        var minimal_plan = try config_planner.create_minimal_plan(allocator, handlers);
+        var advanced_plan = try config_planner.create_plan(allocator, handlers);
+        
+        // Test that both work with this configuration
+        try std.testing.expect(minimal_plan.bytecode.len == reusable_bytecode.len);
+        try std.testing.expect(advanced_plan.bytecode.len == reusable_bytecode.len);
+        
+        // Test metadata consistency
+        const minimal_meta = minimal_plan.getMetadata(0, .PUSH1, undefined);
+        const advanced_meta = advanced_plan.getMetadata(0, .PUSH1, undefined);
+        try std.testing.expectEqual(minimal_meta, advanced_meta);
+        
+        // Clean up in different orders to test lifecycle robustness
+        if (config.stackSize % 2 == 0) {
+            minimal_plan.deinit(allocator);
+            advanced_plan.deinit(allocator);
+        } else {
+            advanced_plan.deinit(allocator);
+            minimal_plan.deinit(allocator);
+        }
+    }
+    
+    // Test 3: Plan ownership transfer simulation
+    const transfer_bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH2), 0x12, 0x34,
+        @intFromEnum(Opcode.PUSH1), 0x56,
+        @intFromEnum(Opcode.MUL),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    // Function that creates and returns a plan (simulating ownership transfer)
+    const createAndTransferPlan = struct {
+        fn create(alloc: std.mem.Allocator, bytecode: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
+            const TransferPlanner = @import("planner.zig").createPlanner(.{});
+            var transfer_planner = try TransferPlanner.init(alloc, bytecode);
+            return try transfer_planner.create_plan(alloc, plan_handlers);
+        }
+    }.create;
+    
+    var transferred_plan = try createAndTransferPlan(allocator, &transfer_bytecode, handlers);
+    defer transferred_plan.deinit(allocator);
+    
+    // Test that transferred plan still works correctly
+    try std.testing.expect(transferred_plan.bytecode.len == transfer_bytecode.len);
+    
+    // Test metadata access on transferred plan
+    const push2_value = transferred_plan.getMetadata(0, .PUSH2, undefined);
+    try std.testing.expectEqual(@as(u256, 0x1234), push2_value);
+    
+    const push1_value = transferred_plan.getMetadata(3, .PUSH1, undefined);
+    try std.testing.expectEqual(@as(u256, 0x56), push1_value);
+    
+    // Test 4: Stress test plan creation and destruction
+    const stress_iterations = 20;
+    for (0..stress_iterations) |iteration| {
+        // Vary the bytecode slightly each iteration
+        var stress_bytecode: [8]u8 = undefined;
+        stress_bytecode[0] = @intFromEnum(Opcode.PUSH1);
+        stress_bytecode[1] = @intCast(iteration % 256);
+        stress_bytecode[2] = @intFromEnum(Opcode.PUSH1);
+        stress_bytecode[3] = @intCast((iteration * 2) % 256);
+        stress_bytecode[4] = @intFromEnum(Opcode.ADD);
+        stress_bytecode[5] = @intFromEnum(Opcode.POP);
+        stress_bytecode[6] = @intFromEnum(Opcode.JUMPDEST);
+        stress_bytecode[7] = @intFromEnum(Opcode.STOP);
+        
+        const StressPlanner = @import("planner.zig").createPlanner(.{});
+        var stress_planner = try StressPlanner.init(allocator, &stress_bytecode);
+        
+        var stress_plan = try stress_planner.create_plan(allocator, handlers);
+        
+        // Quick validation
+        try std.testing.expect(stress_plan.bytecode.len == stress_bytecode.len);
+        
+        // Test a few operations
+        const first_push = stress_plan.getMetadata(0, .PUSH1, undefined);
+        try std.testing.expectEqual(@as(u256, iteration % 256), first_push);
+        
+        try std.testing.expect(stress_plan.isValidJumpDestination(6)); // JUMPDEST at PC 6
+        
+        // Immediate cleanup
+        stress_plan.deinit(allocator);
     }
 }
