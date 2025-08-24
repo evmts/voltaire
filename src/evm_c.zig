@@ -137,32 +137,30 @@ export fn evm_execute(
     const caller_bytes = caller_ptr[0..20];
     const caller_address = caller_bytes.*;
 
-    // Create contract for execution
-    const target_address = primitives.Address.ZERO_ADDRESS; // Use zero address for contract execution
-    // Calculate code hash
-    var code_hash: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash(bytecode, &code_hash, .{});
-    
-    var contract = Contract.init(
-        caller_address,
-        @as(u256, value),
-        bytecode,
-        gas_limit
-    );
-    defer contract.deinit(allocator, null);
+    // Create a temporary address for the code execution
+    const target_address = primitives.ZERO_ADDRESS; // Use zero address for contract execution
 
     // Set bytecode in state
-    vm.state.set_code(target_address, bytecode) catch |err| {
+    vm.db.set_code(target_address, bytecode) catch |err| {
         log(.err, .evm_c, "Failed to set bytecode: {}", .{err});
         result_ptr.success = 0;
         result_ptr.error_code = @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
         return @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
     };
 
-    // Caller and value are now passed to Contract.init
+    // Create call parameters
+    const call_params = CallParams{
+        .call = .{
+            .caller = caller_address,
+            .to = target_address,
+            .value = @as(u256, value),
+            .input = &[_]u8{},
+            .gas = gas_limit,
+        },
+    };
 
-    // Execute bytecode
-    const run_result = vm.interpret(&contract, &[_]u8{}, false) catch |err| {
+    // Execute call
+    const run_result = vm.call(call_params) catch |err| {
         log(.err, .evm_c, "Execution failed: {}", .{err});
         result_ptr.success = 0;
         result_ptr.error_code = @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
@@ -170,11 +168,11 @@ export fn evm_execute(
     };
 
     // Fill result structure
-    result_ptr.success = if (run_result.status == .Success) 1 else 0;
+    result_ptr.success = if (run_result.is_success()) 1 else 0;
     result_ptr.gas_used = run_result.gas_used;
-    if (run_result.output) |output| {
-        result_ptr.return_data_ptr = output.ptr;
-        result_ptr.return_data_len = output.len;
+    if (run_result.return_data.len > 0) {
+        result_ptr.return_data_ptr = run_result.return_data.ptr;
+        result_ptr.return_data_len = run_result.return_data.len;
     } else {
         const empty: []const u8 = &[_]u8{};
         result_ptr.return_data_ptr = empty.ptr;
@@ -182,7 +180,7 @@ export fn evm_execute(
     }
     result_ptr.error_code = @intFromEnum(EvmError.EVM_OK);
 
-    log(.info, .evm_c, "Execution completed: status={}, gas_used={}", .{ run_result.status, run_result.gas_used });
+    log(.info, .evm_c, "Execution completed: success={}, gas_used={}", .{ run_result.is_success(), run_result.gas_used });
     return @intFromEnum(EvmError.EVM_OK);
 }
 
@@ -335,41 +333,35 @@ export fn guillotine_execute(
     const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
     const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
     
-    // Create contract for execution
-    // Calculate code hash for empty code (for call target)
-    var empty_code_hash: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash(&[_]u8{}, &empty_code_hash, .{});
-    
-    var contract = Contract.init(
-        from_addr,
-        value_u256,
-        &[_]u8{},         // empty code for calls
-        gas_limit
-    );
-    defer contract.deinit(state.allocator, null);
-    
-    // Frame is not needed - interpret takes the contract directly
-    contract.value = value_u256;
+    // Create call parameters
+    const to_addr = if (to) |t| t.bytes else primitives.ZERO_ADDRESS;
+    const call_params = CallParams{
+        .call = .{
+            .caller = from_addr,
+            .to = to_addr,
+            .value = value_u256,
+            .input = input_slice,
+            .gas = gas_limit,
+        },
+    };
     
     // Execute
-    const exec_result = state.vm.interpret(&contract, input_slice, false) catch |err| {
+    const exec_result = state.vm.call(call_params) catch |err| {
         const err_msg = @errorName(err);
         const err_c_str = state.allocator.dupeZ(u8, err_msg) catch return result;
         result.error_message = err_c_str.ptr;
         return result;
     };
     
-    result.success = exec_result.status == .Success;
+    result.success = exec_result.is_success();
     result.gas_used = exec_result.gas_used;
     
     // Copy output if any
-    if (exec_result.output) |output| {
-        if (output.len > 0) {
-            const output_copy = state.allocator.alloc(u8, output.len) catch return result;
-            @memcpy(output_copy, output);
-            result.output = output_copy.ptr;
-            result.output_len = output_copy.len;
-        }
+    if (exec_result.return_data.len > 0) {
+        const output_copy = state.allocator.alloc(u8, exec_result.return_data.len) catch return result;
+        @memcpy(output_copy, exec_result.return_data);
+        result.output = output_copy.ptr;
+        result.output_len = output_copy.len;
     }
     
     return result;
