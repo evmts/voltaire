@@ -1640,7 +1640,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_number(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const block_info = host.get_block_info();
-            try self.stack.push(@as(u256, @intCast(block_info.number)));
+            const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
+            try self.stack.push(block_number_word);
         }
 
         /// DIFFICULTY opcode (0x44) - Get block difficulty or prevrandao
@@ -1665,7 +1666,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_gaslimit(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const block_info = host.get_block_info();
-            try self.stack.push(@as(u256, @intCast(block_info.gas_limit)));
+            const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
+            try self.stack.push(gas_limit_word);
         }
 
         /// BASEFEE opcode (0x48) - Get current block base fee
