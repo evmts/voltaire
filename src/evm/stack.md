@@ -1,8 +1,19 @@
-# Stack Documentation
+# Stack
 
-## Overview
+High-performance 256-bit word stack for EVM operations.
 
-The EVM stack is a high-performance implementation of the Ethereum Virtual Machine's 256-bit word stack. It uses a pointer-based downward-growing design with cache alignment for optimal CPU performance and supports up to 1024 elements as per EVM specification.
+## Synopsis
+
+```zig
+const StackType = Stack(config);
+var stack = try StackType.init(allocator);
+try stack.push(value);
+const result = try stack.pop();
+```
+
+## Description
+
+Pointer-based downward-growing stack with cache alignment. Supports up to 1024 elements per EVM specification. Provides safe and unsafe operation variants for performance optimization.
 
 ## Architecture & Design
 

@@ -1,8 +1,18 @@
-# Frame Documentation
+# Frame
 
-## Overview
+Core execution context for EVM opcode operations.
 
-The Frame is the core execution context for EVM operations, providing a lightweight, high-performance environment for bytecode execution. It combines stack, memory, and gas tracking with extensive opcode support, while maintaining strict separation of concerns with upper-layer components like PC management, call operations, and blockchain environment access.
+## Synopsis
+
+```zig
+const FrameType = Frame(config);
+var frame = try FrameType.init(allocator, bytecode, gas_remaining, database, host);
+defer frame.deinit(allocator);
+```
+
+## Description
+
+Lightweight execution environment for EVM bytecode. Handles stack, memory, and gas tracking with comprehensive opcode support. Maintains separation from PC management, call operations, and blockchain environment access.
 
 ## Architecture & Design
 

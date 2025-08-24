@@ -1,8 +1,19 @@
-# Memory Documentation
+# Memory
 
-## Overview
+EVM-compliant memory system with lazy expansion and hierarchical isolation.
 
-The EVM Memory system implements the Ethereum Virtual Machine's memory model with lazy expansion, hierarchical isolation for nested calls, and gas-aware operations. It provides EVM-compliant memory management with word-boundary alignment, zero-initialization semantics, and quadratic gas cost calculation for resource limitation.
+## Synopsis
+
+```zig
+const MemoryType = Memory(config);
+var memory = try MemoryType.init(allocator);
+try memory.set_u256_evm(offset, value);
+const data = try memory.get_slice_evm(offset, length);
+```
+
+## Description
+
+Implements EVM memory model with lazy expansion, hierarchical isolation for nested calls, and gas-aware operations. Features word-boundary alignment, zero-initialization semantics, and quadratic gas cost calculation.
 
 ## Architecture & Design
 
