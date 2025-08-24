@@ -861,29 +861,66 @@ pub const Evm = struct {
 
 ### Relationship with Plan
 
-The Frame executes opcodes while the Plan manages program flow:
+The Frame executes opcodes while the Plan manages program flow. The Frame is designed to work with any plan implementation through a unified interface:
+
+#### Unified Interface Pattern
+
+The frame interpreter uses a single codebase to work with different plan strategies:
 
 ```zig
-// Plan handles PC and jump logic
-while (plan.pc < bytecode.len) {
-    const instruction = plan.get_instruction(plan.pc);
+// All plans implement these core methods
+pub fn getMetadata(idx: *InstructionIndexType, opcode) MetadataType     // Get opcode metadata
+pub fn getNextInstruction(idx: *InstructionIndexType, opcode) *HandlerFn // Get next handler
+pub fn isValidJumpDest(pc: PcType) bool                                 // Validate jump targets
+```
+
+#### How Different Plans Work
+
+**PlanMinimal**: Direct bytecode execution
+- `idx` is the actual PC in bytecode
+- Reads opcodes/data from bytecode at runtime
+- Simple handler lookup table
+- Minimal preprocessing
+
+**Plan (Advanced)**: Optimized execution
+- `idx` is instruction stream index
+- Pre-processed handler pointers + metadata
+- Supports opcode fusion
+- PC to instruction mapping for jumps
+
+#### Execution Flow
+
+```zig
+// Frame Interpreter execution model (simplified)
+pub fn execute(frame: *Frame, plan: *Plan) !void {
+    var idx: InstructionIndexType = 0;
     
-    // Frame executes the opcode
-    switch (instruction.opcode) {
-        0x01 => try frame.add(),
-        0x02 => try frame.mul(),
-        0x20 => try frame.op_keccak256(),
-        // ... other opcodes
-        
-        // Plan handles jumps
-        0x56 => { // JUMP
-            const target = try frame.stack.pop();
-            plan.pc = plan.resolve_jump_target(@intCast(target));
-            continue;
-        },
+    // Get first handler from plan
+    var handler = plan.getNextInstruction(&idx, .START);
+    
+    // Tail-call based execution
+    while (true) {
+        // Handler executes opcode and gets next handler
+        handler = @call(.always_tail, handler, .{ frame, plan });
     }
+}
+```
+
+The beauty of this design is that the same handler code works with both simple and optimized plans:
+
+```zig
+fn push1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+    const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+    const interpreter = @as(*Self, @fieldParentPtr("frame", self));
     
-    plan.pc = plan.next_pc();
+    // Works for both PlanMinimal (reads from bytecode) and Plan (reads from stream)
+    const value = plan_ptr.getMetadata(&interpreter.instruction_idx, .PUSH1);
+    try self.stack.push(value);
+    
+    // Works for both plans - handles index advancement differently internally
+    const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH1);
+    return @call(.always_tail, next_handler, .{ self, plan_ptr });
 }
 ```
 

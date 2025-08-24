@@ -54,7 +54,13 @@ Bytecode analysis and optimization engine:
 - Platform-specific optimizations
 - Multiple strategies: minimal, advanced, debug
 
-#### 6. **Database Interface** (`database_interface.zig`)
+#### 6. **Frame Interpreter** (`frame_interpreter.zig`)
+Unified execution engine that works with different plan strategies:
+- Single interpreter codebase for all plan types
+- Tail-call based execution model
+- Zero-cost abstraction through unified plan interface
+
+#### 7. **Database Interface** (`database_interface.zig`)
 Type-safe storage abstraction:
 - VTable-based polymorphism for zero overhead
 - Support for accounts, storage, transient storage
@@ -120,6 +126,60 @@ const result = try vm.call(.{
     .is_static = false,
 });
 ```
+
+## Unified Plan Interface
+
+The EVM uses a unified interface pattern that allows the same frame interpreter code to work with different plan implementations (minimal, advanced, debug). This achieves zero-cost abstraction while supporting different optimization strategies.
+
+### How It Works
+
+All plan types implement the same core interface:
+
+```zig
+// Common interface methods all plans must implement
+pub fn getMetadata(self: *const Self, idx: *InstructionIndexType, comptime opcode: anytype) MetadataType
+pub fn getNextInstruction(self: *const Self, idx: *InstructionIndexType, comptime opcode: anytype) *const HandlerFn
+pub fn isValidJumpDest(self: *const Self, pc: PcType) bool
+```
+
+### Key Differences Between Plans
+
+**PlanMinimal**:
+- `idx` represents the actual PC (program counter) in bytecode
+- Reads opcodes and data directly from bytecode at runtime
+- No preprocessing or optimization
+- Minimal memory footprint
+
+**Plan (Advanced)**:
+- `idx` represents an index into an optimized instruction stream
+- Pre-processes bytecode into handler pointers + inline metadata
+- Supports opcode fusion and constant inlining
+- PC to instruction index mapping for jumps
+
+### Handler Pattern
+
+All opcode handlers follow the same pattern regardless of plan type:
+
+```zig
+fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+    const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+    const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+    
+    // Execute opcode operation
+    try self.stack.push(value);
+    
+    // Get next handler - works with any plan type
+    const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .OPCODE);
+    return @call(.always_tail, next_handler, .{ self, plan_ptr });
+}
+```
+
+This design enables:
+- Single interpreter implementation for all strategies
+- Runtime selection of optimization level
+- Easy addition of new plan strategies
+- Zero overhead through compile-time dispatch
 
 ## Optimization Features
 
