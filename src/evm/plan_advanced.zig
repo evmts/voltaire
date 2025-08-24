@@ -1107,6 +1107,7 @@ test "PlanMinimal edge cases" {
         for (&handlers) |*h| h.* = &testHandler;
         
         const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        _ = plan;
         
     }
     
@@ -2080,6 +2081,7 @@ test "Plan fuzzing with random bytecode generation" {
                 else => return err,
             }
         };
+        _ = plan;
         
         // Basic sanity checks
     }
@@ -2116,6 +2118,7 @@ test "Plan performance and memory efficiency benchmarking" {
     for (&handlers) |*h| h.* = &testHandler;
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    _ = plan;    _ = plan;
     
     const end_time = std.time.nanoTimestamp();
     const duration_ns = end_time - start_time;
@@ -2218,7 +2221,7 @@ test "Plan memory fragmentation resistance" {
     const FinalPlanner = @import("planner.zig").createPlanner(.{});
     var final_planner = try FinalPlanner.init(allocator, 100);
     const final_plan = try final_planner.getOrAnalyze(&bytecode, handlers);
-    
+    _ = final_plan;    
 }
 
 test "Plan bytecode validation and malformed input handling" {
@@ -2249,7 +2252,7 @@ test "Plan bytecode validation and malformed input handling" {
         // Should be able to create plan even with malformed bytecode
         const plan = try planner.getOrAnalyze(test_case.bytecode, handlers);
         
-        // Basic validation that plan was created
+        _ = plan;        // Basic validation that plan was created
     }
 }
 
@@ -2317,7 +2320,7 @@ test "Plan complete opcode coverage validation" {
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
-    // Verify plan was created successfully with all opcodes
+    _ = plan;    // Verify plan was created successfully with all opcodes
 }
 
 test "Plan concurrent access simulation" {
@@ -2455,7 +2458,7 @@ test "Plan extreme configuration edge cases" {
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
 }
-
+    _ = plan;
 test "Plan error recovery and resilience testing" {
     const allocator = std.testing.allocator;
     
@@ -3121,7 +3124,7 @@ test "Plan configuration boundary and mutation stress testing" {
         
     }
 }
-
+        _ = plan;
 test "Plan bytecode analysis completeness validation" {
     const allocator = std.testing.allocator;
     
