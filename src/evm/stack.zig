@@ -142,18 +142,8 @@ pub fn Stack(comptime config: StackConfig) type {
             return self.push(value);
         }
 
-        // Generate DUP1-DUP16 operations using comptime
-        comptime {
-            for (1..17) |i| {
-                const func_name = std.fmt.comptimePrint("dup{d}", .{i});
-                const DupFunc = struct {
-                    pub fn call(self: *Self) Error!void {
-                        return self.dup_n(@intCast(i));
-                    }
-                };
-                @field(Self, func_name) = DupFunc.call;
-            }
-        }
+        // Comptime-generated DUP1-DUP16 operations
+        usingnamespace generateDupFunctions(Self);
 
         // Generic swap function for SWAP1-SWAP16
         pub fn swap_n(self: *Self, n: u8) Error!void {
@@ -168,18 +158,8 @@ pub fn Stack(comptime config: StackConfig) type {
             std.mem.swap(WordType, &self.stack_ptr[0], &self.stack_ptr[n]);
         }
 
-        // Generate SWAP1-SWAP16 operations using comptime
-        comptime {
-            for (1..17) |i| {
-                const func_name = std.fmt.comptimePrint("swap{d}", .{i});
-                const SwapFunc = struct {
-                    pub fn call(self: *Self) Error!void {
-                        return self.swap_n(@intCast(i));
-                    }
-                };
-                @field(Self, func_name) = SwapFunc.call;
-            }
-        }
+        // Comptime-generated SWAP1-SWAP16 operations
+        usingnamespace generateSwapFunctions(Self);
         
         // Accessors for tracer
         pub fn size(self: *const Self) usize {
