@@ -1711,3 +1711,711 @@ test "Debug planner instruction stream creation" {
     }
     std.log.warn("==================\n", .{});
 }
+
+test "FrameInterpreter arithmetic edge cases - division by zero" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test DIV by zero: PUSH1 0, PUSH1 5, DIV -> should return 0
+    const bytecode_div = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x04, 0x00 }; // PUSH1 0, PUSH1 5, DIV, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_div, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe()); // 5 / 0 = 0 per EVM spec
+
+    // Test SDIV by zero: should also return 0
+    const bytecode_sdiv = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x05, 0x00 }; // PUSH1 0, PUSH1 5, SDIV, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_sdiv, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter arithmetic edge cases - modulo by zero" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test MOD by zero: PUSH1 0, PUSH1 7, MOD -> should return 0
+    const bytecode_mod = [_]u8{ 0x60, 0x00, 0x60, 0x07, 0x06, 0x00 }; // PUSH1 0, PUSH1 7, MOD, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_mod, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe()); // 7 % 0 = 0 per EVM spec
+
+    // Test SMOD by zero: should also return 0
+    const bytecode_smod = [_]u8{ 0x60, 0x00, 0x60, 0x07, 0x07, 0x00 }; // PUSH1 0, PUSH1 7, SMOD, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_smod, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter arithmetic edge cases - signed division" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test SDIV with negative dividend: -10 / 3 = -3
+    // -10 in two's complement u256 is 2^256 - 10
+    const neg_ten: u256 = (~@as(u256, 9)) + 1; // Two's complement of 10
+    
+    // Create bytecode: PUSH32 (neg_ten), PUSH1 3, SDIV, STOP
+    var bytecode: [36]u8 = undefined;
+    bytecode[0] = 0x7F; // PUSH32
+    std.mem.writeInt(u256, bytecode[1..33], neg_ten, .big);
+    bytecode[33] = 0x60; // PUSH1
+    bytecode[34] = 0x03; // 3
+    bytecode[35] = 0x05; // SDIV
+    const bytecode_with_stop = bytecode ++ [_]u8{0x00}; // Add STOP
+
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_with_stop, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    
+    // Result should be -3 in two's complement
+    const neg_three: u256 = (~@as(u256, 2)) + 1;
+    try std.testing.expectEqual(neg_three, interpreter.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter arithmetic edge cases - ADDMOD and MULMOD with zero modulus" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test ADDMOD with zero modulus: (5 + 3) % 0 -> should return 0
+    const bytecode_addmod = [_]u8{ 0x60, 0x00, 0x60, 0x03, 0x60, 0x05, 0x08, 0x00 }; // PUSH1 0, PUSH1 3, PUSH1 5, ADDMOD, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_addmod, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
+
+    // Test MULMOD with zero modulus: (5 * 3) % 0 -> should return 0  
+    const bytecode_mulmod = [_]u8{ 0x60, 0x00, 0x60, 0x03, 0x60, 0x05, 0x09, 0x00 }; // PUSH1 0, PUSH1 3, PUSH1 5, MULMOD, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_mulmod, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter arithmetic edge cases - large ADDMOD and MULMOD" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test ADDMOD with large values that would overflow: (2^255 + 2^255) % 7
+    const large_val: u256 = 1 << 255; // 2^255
+    
+    // Create bytecode: PUSH32 (large_val), PUSH32 (large_val), PUSH1 7, ADDMOD, STOP
+    var bytecode: [70]u8 = undefined;
+    var idx: usize = 0;
+    
+    // First PUSH32 for large_val
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    // Second PUSH32 for large_val
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    // PUSH1 7
+    bytecode[idx] = 0x60; idx += 1;
+    bytecode[idx] = 0x07; idx += 1;
+    // ADDMOD
+    bytecode[idx] = 0x08; idx += 1;
+    // STOP
+    bytecode[idx] = 0x00;
+
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    
+    // (2^255 + 2^255) % 7 = (2^256) % 7 = 0 % 7 = 0 (since 2^256 wraps to 0)
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter comparison operations - LT and GT boundary values" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test LT with equal values: 5 < 5 -> false (0)
+    const bytecode_lt_equal = [_]u8{ 0x60, 0x05, 0x60, 0x05, 0x10, 0x00 }; // PUSH1 5, PUSH1 5, LT, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_lt_equal, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
+
+    // Test LT with different values: 3 < 5 -> true (1)
+    const bytecode_lt_true = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x10, 0x00 }; // PUSH1 5, PUSH1 3, LT, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_lt_true, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
+
+    // Test GT with max u256: max > (max-1) -> true (1)
+    const max_u256: u256 = std.math.maxInt(u256);
+    const almost_max: u256 = max_u256 - 1;
+    
+    var bytecode: [68]u8 = undefined;
+    var idx: usize = 0;
+    
+    // PUSH32 (almost_max)
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], almost_max, .big); idx += 32;
+    // PUSH32 (max_u256)
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], max_u256, .big); idx += 32;
+    // GT
+    bytecode[idx] = 0x11; idx += 1;
+    // STOP
+    bytecode[idx] = 0x00;
+
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter3.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test SLT with negative vs positive: -1 < 1 -> true (1)
+    // -1 in two's complement is all 1s (max u256)
+    const neg_one: u256 = std.math.maxInt(u256);
+    
+    var bytecode: [68]u8 = undefined;
+    var idx: usize = 0;
+    
+    // PUSH1 1 (positive)
+    bytecode[idx] = 0x60; idx += 1;
+    bytecode[idx] = 0x01; idx += 1;
+    // PUSH32 (neg_one)
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], neg_one, .big); idx += 32;
+    // SLT
+    bytecode[idx] = 0x12; idx += 1;
+    // STOP
+    bytecode[idx] = 0x00;
+
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
+
+    // Test SGT with two negative values: -5 > -10 -> true (1)
+    const neg_five: u256 = (~@as(u256, 4)) + 1;
+    const neg_ten: u256 = (~@as(u256, 9)) + 1;
+    
+    var bytecode2: [68]u8 = undefined;
+    idx = 0;
+    
+    // PUSH32 (neg_ten)
+    bytecode2[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode2[idx..idx+32], neg_ten, .big); idx += 32;
+    // PUSH32 (neg_five)
+    bytecode2[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode2[idx..idx+32], neg_five, .big); idx += 32;
+    // SGT
+    bytecode2[idx] = 0x13; idx += 1;
+    // STOP
+    bytecode2[idx] = 0x00;
+
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode2, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter comparison operations - EQ and ISZERO" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test EQ with large equal values
+    const large_val: u256 = 0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0;
+    
+    var bytecode: [68]u8 = undefined;
+    var idx: usize = 0;
+    
+    // PUSH32 (large_val)
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    // PUSH32 (large_val) - same value
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    // EQ
+    bytecode[idx] = 0x14; idx += 1;
+    // STOP
+    bytecode[idx] = 0x00;
+
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
+
+    // Test ISZERO with zero: 0 == 0 -> true (1)
+    const bytecode_iszero_true = [_]u8{ 0x60, 0x00, 0x15, 0x00 }; // PUSH1 0, ISZERO, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_iszero_true, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
+
+    // Test ISZERO with non-zero: 42 == 0 -> false (0)
+    const bytecode_iszero_false = [_]u8{ 0x60, 0x2A, 0x15, 0x00 }; // PUSH1 42, ISZERO, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_iszero_false, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bitwise operations - AND, OR, XOR with patterns" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test AND with all bits set: 0xFF & 0x0F -> 0x0F
+    const bytecode_and = [_]u8{ 0x60, 0x0F, 0x60, 0xFF, 0x16, 0x00 }; // PUSH1 0x0F, PUSH1 0xFF, AND, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_and, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 0x0F), interpreter.frame.stack.peek_unsafe());
+
+    // Test OR with disjoint patterns: 0xF0 | 0x0F -> 0xFF
+    const bytecode_or = [_]u8{ 0x60, 0x0F, 0x60, 0xF0, 0x17, 0x00 }; // PUSH1 0x0F, PUSH1 0xF0, OR, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_or, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0xFF), interpreter2.frame.stack.peek_unsafe());
+
+    // Test XOR with same value: 0xAA ^ 0xAA -> 0
+    const bytecode_xor = [_]u8{ 0x60, 0xAA, 0x60, 0xAA, 0x18, 0x00 }; // PUSH1 0xAA, PUSH1 0xAA, XOR, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_xor, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bitwise operations - NOT operation" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test NOT with zero: ~0 -> max u256
+    const bytecode_not_zero = [_]u8{ 0x60, 0x00, 0x19, 0x00 }; // PUSH1 0, NOT, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_not_zero, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(std.math.maxInt(u256), interpreter.frame.stack.peek_unsafe());
+
+    // Test NOT with max value: ~max -> 0
+    const max_u256: u256 = std.math.maxInt(u256);
+    
+    var bytecode: [35]u8 = undefined;
+    bytecode[0] = 0x7F; // PUSH32
+    std.mem.writeInt(u256, bytecode[1..33], max_u256, .big);
+    bytecode[33] = 0x19; // NOT
+    bytecode[34] = 0x00; // STOP
+
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bitwise operations - BYTE operation edge cases" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test BYTE with index 0 (most significant byte): BYTE(0, 0xFF00) -> 0xFF
+    const bytecode_byte_0 = [_]u8{ 0x61, 0xFF, 0x00, 0x60, 0x00, 0x1A, 0x00 }; // PUSH2 0xFF00, PUSH1 0, BYTE, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_byte_0, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 0x00), interpreter.frame.stack.peek_unsafe()); // byte 0 of 0xFF00 is 0x00
+
+    // Test BYTE with index 1: BYTE(1, 0xFF00) -> 0x00
+    const bytecode_byte_1 = [_]u8{ 0x61, 0xFF, 0x00, 0x60, 0x01, 0x1A, 0x00 }; // PUSH2 0xFF00, PUSH1 1, BYTE, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_byte_1, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0xFF), interpreter2.frame.stack.peek_unsafe());
+
+    // Test BYTE with out-of-bounds index: BYTE(32, value) -> 0
+    const bytecode_byte_oob = [_]u8{ 0x60, 0xFF, 0x60, 0x20, 0x1A, 0x00 }; // PUSH1 0xFF, PUSH1 32, BYTE, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_byte_oob, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bitwise operations - shift operations SHL, SHR, SAR" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test SHL with small shift: 1 << 4 -> 16
+    const bytecode_shl = [_]u8{ 0x60, 0x01, 0x60, 0x04, 0x1B, 0x00 }; // PUSH1 1, PUSH1 4, SHL, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_shl, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 16), interpreter.frame.stack.peek_unsafe());
+
+    // Test SHR with logical shift: 16 >> 4 -> 1
+    const bytecode_shr = [_]u8{ 0x60, 0x10, 0x60, 0x04, 0x1C, 0x00 }; // PUSH1 16, PUSH1 4, SHR, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_shr, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
+
+    // Test SHL with large shift (should wrap to 0): any_value << 256 -> 0
+    const bytecode_shl_overflow = [_]u8{ 0x60, 0xFF, 0x61, 0x01, 0x00, 0x1B, 0x00 }; // PUSH1 255, PUSH2 256, SHL, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_shl_overflow, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
+
+    // Test SAR with negative number: -8 >> 1 should preserve sign
+    const neg_eight: u256 = (~@as(u256, 7)) + 1; // Two's complement of 8
+    
+    var bytecode: [36]u8 = undefined;
+    var idx: usize = 0;
+    
+    // PUSH32 (neg_eight)
+    bytecode[idx] = 0x7F; idx += 1;
+    std.mem.writeInt(u256, bytecode[idx..idx+32], neg_eight, .big); idx += 32;
+    // PUSH1 1 (shift amount)
+    bytecode[idx] = 0x60; idx += 1;
+    bytecode[idx] = 0x01; idx += 1;
+    // SAR
+    bytecode[idx] = 0x1D; idx += 1;
+    // STOP
+    bytecode[idx] = 0x00;
+
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter4.deinit(allocator);
+    try interpreter4.interpret();
+    
+    // SAR(-8, 1) should be -4 (arithmetic right shift preserves sign bit)
+    const neg_four: u256 = (~@as(u256, 3)) + 1;
+    try std.testing.expectEqual(neg_four, interpreter4.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter stack error conditions - stack underflow" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test POP on empty stack - should cause underflow error
+    const bytecode_pop_empty = [_]u8{ 0x50, 0x00 }; // POP, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_pop_empty, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return stack underflow error
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.StackUnderflow, result);
+}
+
+test "FrameInterpreter stack error conditions - ADD with insufficient stack" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test ADD with only one value on stack - should cause underflow
+    const bytecode_add_underflow = [_]u8{ 0x60, 0x05, 0x01, 0x00 }; // PUSH1 5, ADD, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_add_underflow, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return stack underflow error
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.StackUnderflow, result);
+}
+
+test "FrameInterpreter stack error conditions - DUP with insufficient stack" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test DUP2 with only one value on stack - should cause underflow
+    const bytecode_dup_underflow = [_]u8{ 0x60, 0x05, 0x81, 0x00 }; // PUSH1 5, DUP2, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_dup_underflow, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return stack underflow error
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.StackUnderflow, result);
+}
+
+test "FrameInterpreter stack error conditions - SWAP with insufficient stack" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test SWAP1 with empty stack - should cause underflow
+    const bytecode_swap_underflow = [_]u8{ 0x90, 0x00 }; // SWAP1, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_swap_underflow, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return stack underflow error
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.StackUnderflow, result);
+}
+
+test "FrameInterpreter stack operations - DUP1 through DUP16 functionality" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test DUP1: duplicates top stack item
+    const bytecode_dup1 = [_]u8{ 0x60, 0x42, 0x80, 0x00 }; // PUSH1 0x42, DUP1, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_dup1, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    
+    // Should have two copies of 0x42 on stack
+    try std.testing.expectEqual(@as(u256, 0x42), interpreter.frame.stack.peek_unsafe());
+    
+    // Test DUP2: duplicates second stack item
+    // Create stack: [0x10, 0x20] then DUP2 -> [0x10, 0x20, 0x10]  
+    const bytecode_dup2 = [_]u8{ 0x60, 0x10, 0x60, 0x20, 0x81, 0x00 }; // PUSH1 0x10, PUSH1 0x20, DUP2, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_dup2, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    
+    // Top of stack should be 0x10 (duplicated from position 2)
+    try std.testing.expectEqual(@as(u256, 0x10), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter stack operations - SWAP1 through SWAP16 functionality" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test SWAP1: swaps top two stack items
+    // Create stack: [0x10, 0x20] then SWAP1 -> [0x20, 0x10]
+    const bytecode_swap1 = [_]u8{ 0x60, 0x10, 0x60, 0x20, 0x90, 0x00 }; // PUSH1 0x10, PUSH1 0x20, SWAP1, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_swap1, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    
+    // Top of stack should now be 0x10 (swapped from second position)
+    try std.testing.expectEqual(@as(u256, 0x10), interpreter.frame.stack.peek_unsafe());
+
+    // Test SWAP2: swaps top with third item  
+    // Create stack: [0x10, 0x20, 0x30] then SWAP2 -> [0x30, 0x20, 0x10]
+    const bytecode_swap2 = [_]u8{ 0x60, 0x10, 0x60, 0x20, 0x60, 0x30, 0x91, 0x00 }; // PUSH1 0x10, PUSH1 0x20, PUSH1 0x30, SWAP2, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_swap2, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    
+    // Top of stack should now be 0x10 (swapped from third position)
+    try std.testing.expectEqual(@as(u256, 0x10), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter jump operations - invalid jump destinations" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test JUMP to invalid destination (out of bounds)
+    const bytecode_jump_oob = [_]u8{ 0x61, 0xFF, 0xFF, 0x56, 0x00 }; // PUSH2 0xFFFF, JUMP, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jump_oob, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return InvalidJump error for out-of-bounds destination
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.InvalidJump, result);
+}
+
+test "FrameInterpreter jump operations - jump to middle of PUSH data" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Create bytecode: PUSH2 data, PUSH1 1, JUMP
+    // Trying to jump to PC=1 which is middle of PUSH2 data (invalid)
+    const bytecode_jump_push_data = [_]u8{ 0x61, 0x12, 0x34, 0x60, 0x01, 0x56, 0x00 }; // PUSH2 0x1234, PUSH1 1, JUMP, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jump_push_data, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return InvalidJump error for jumping into PUSH data
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.InvalidJump, result);
+}
+
+test "FrameInterpreter jump operations - valid JUMP to JUMPDEST" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Create valid jump: PUSH1 4, JUMP, JUMPDEST, PUSH1 0x42, STOP
+    // Jump destination (PC=4) is a valid JUMPDEST
+    const bytecode_valid_jump = [_]u8{ 0x60, 0x04, 0x56, 0xFF, 0x5B, 0x60, 0x42, 0x00 }; // PUSH1 4, JUMP, INVALID, JUMPDEST, PUSH1 0x42, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_valid_jump, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    
+    // Should have 0x42 on stack after successful jump
+    try std.testing.expectEqual(@as(u256, 0x42), interpreter.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter jump operations - JUMPI conditional behavior" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test JUMPI with false condition (0) - should not jump
+    // PUSH1 7 (dest), PUSH1 0 (condition), JUMPI, PUSH1 0x11, STOP, JUMPDEST, PUSH1 0x22, STOP
+    const bytecode_jumpi_false = [_]u8{ 0x60, 0x07, 0x60, 0x00, 0x57, 0x60, 0x11, 0x00, 0x5B, 0x60, 0x22, 0x00 };
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jumpi_false, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    
+    // Should have 0x11 on stack (did not jump)
+    try std.testing.expectEqual(@as(u256, 0x11), interpreter.frame.stack.peek_unsafe());
+
+    // Test JUMPI with true condition (non-zero) - should jump
+    const bytecode_jumpi_true = [_]u8{ 0x60, 0x08, 0x60, 0x01, 0x57, 0x60, 0x11, 0x00, 0x5B, 0x60, 0x22, 0x00 };
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_jumpi_true, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+
+    try interpreter2.interpret();
+    
+    // Should have 0x22 on stack (jumped successfully)
+    try std.testing.expectEqual(@as(u256, 0x22), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter jump operations - JUMPI with invalid destination when condition is true" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test JUMPI with true condition but invalid destination
+    const bytecode_jumpi_invalid = [_]u8{ 0x61, 0xFF, 0xFF, 0x60, 0x01, 0x57, 0x00 }; // PUSH2 0xFFFF, PUSH1 1, JUMPI, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jumpi_invalid, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    // Should return InvalidJump error when condition is true and destination is invalid
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.InvalidJump, result);
+}
+
+test "FrameInterpreter jump operations - PC opcode returns correct program counter" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test PC opcode: PUSH1 0x42, PC, STOP
+    // PC should return 2 (position after PUSH1 instruction)
+    const bytecode_pc = [_]u8{ 0x60, 0x42, 0x58, 0x00 }; // PUSH1 0x42, PC, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_pc, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    try interpreter.interpret();
+    
+    // Top of stack should be the PC value (2)
+    try std.testing.expectEqual(@as(u256, 2), interpreter.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter environment operations - ADDRESS, CALLER, ORIGIN, CALLVALUE" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test ADDRESS opcode - should return current contract address (0x00 for default)
+    const bytecode_address = [_]u8{ 0x30, 0x00 }; // ADDRESS, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_address, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    
+    // Default address should be 0
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
+
+    // Test CALLER opcode - should return caller address (0x00 for default)
+    const bytecode_caller = [_]u8{ 0x33, 0x00 }; // CALLER, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_caller, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    
+    // Default caller should be 0
+    try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
+
+    // Test ORIGIN opcode - should return transaction origin (0x00 for default)
+    const bytecode_origin = [_]u8{ 0x32, 0x00 }; // ORIGIN, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_origin, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    
+    // Default origin should be 0
+    try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
+
+    // Test CALLVALUE opcode - should return value sent with call (0x00 for default)
+    const bytecode_callvalue = [_]u8{ 0x34, 0x00 }; // CALLVALUE, STOP
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_callvalue, 1000000, void{});
+    defer interpreter4.deinit(allocator);
+    try interpreter4.interpret();
+    
+    // Default call value should be 0
+    try std.testing.expectEqual(@as(u256, 0), interpreter4.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter EXP operation with edge cases" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test EXP with small values: 2^3 = 8
+    const bytecode_exp_small = [_]u8{ 0x60, 0x03, 0x60, 0x02, 0x0A, 0x00 }; // PUSH1 3, PUSH1 2, EXP, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_exp_small, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(u256, 8), interpreter.frame.stack.peek_unsafe());
+
+    // Test EXP with zero exponent: 5^0 = 1
+    const bytecode_exp_zero = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x0A, 0x00 }; // PUSH1 0, PUSH1 5, EXP, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
+
+    // Test EXP with zero base: 0^5 = 0
+    const bytecode_exp_zero_base = [_]u8{ 0x60, 0x05, 0x60, 0x00, 0x0A, 0x00 }; // PUSH1 5, PUSH1 0, EXP, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero_base, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
+
+    // Test EXP edge case: 0^0 = 1 (per EVM spec)
+    const bytecode_exp_zero_zero = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0x0A, 0x00 }; // PUSH1 0, PUSH1 0, EXP, STOP
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero_zero, 1000000, void{});
+    defer interpreter4.deinit(allocator);
+    try interpreter4.interpret();
+    try std.testing.expectEqual(@as(u256, 1), interpreter4.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter SIGNEXTEND operation with all byte positions" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test SIGNEXTEND with byte position 0: sign extend from bit 7 (0x80 -> 0xFF...FF80)
+    const bytecode_signext_0 = [_]u8{ 0x60, 0x80, 0x60, 0x00, 0x0B, 0x00 }; // PUSH1 0x80, PUSH1 0, SIGNEXTEND, STOP
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_signext_0, 1000000, void{});
+    defer interpreter.deinit(allocator);
+    try interpreter.interpret();
+    
+    // 0x80 sign extended from byte 0 should be all 1s in upper bytes
+    const expected_signext_0: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF80;
+    try std.testing.expectEqual(expected_signext_0, interpreter.frame.stack.peek_unsafe());
+
+    // Test SIGNEXTEND with positive value: 0x7F -> 0x7F (no sign extension needed)
+    const bytecode_signext_pos = [_]u8{ 0x60, 0x7F, 0x60, 0x00, 0x0B, 0x00 }; // PUSH1 0x7F, PUSH1 0, SIGNEXTEND, STOP
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_signext_pos, 1000000, void{});
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
+    try std.testing.expectEqual(@as(u256, 0x7F), interpreter2.frame.stack.peek_unsafe());
+
+    // Test SIGNEXTEND with byte position 1: sign extend from bit 15
+    const bytecode_signext_1 = [_]u8{ 0x61, 0x80, 0x00, 0x60, 0x01, 0x0B, 0x00 }; // PUSH2 0x8000, PUSH1 1, SIGNEXTEND, STOP
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_signext_1, 1000000, void{});
+    defer interpreter3.deinit(allocator);
+    try interpreter3.interpret();
+    
+    // 0x8000 sign extended from byte 1 should have all 1s in upper bytes
+    const expected_signext_1: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8000;
+    try std.testing.expectEqual(expected_signext_1, interpreter3.frame.stack.peek_unsafe());
+
+    // Test SIGNEXTEND with out-of-bounds byte position (>= 32) - should return value unchanged
+    const bytecode_signext_oob = [_]u8{ 0x60, 0x80, 0x60, 0x20, 0x0B, 0x00 }; // PUSH1 0x80, PUSH1 32, SIGNEXTEND, STOP
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_signext_oob, 1000000, void{});
+    defer interpreter4.deinit(allocator);
+    try interpreter4.interpret();
+    
+    // Should return original value unchanged when byte position >= 32
+    try std.testing.expectEqual(@as(u256, 0x80), interpreter4.frame.stack.peek_unsafe());
+}
