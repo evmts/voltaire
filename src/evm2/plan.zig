@@ -757,3 +757,6 @@ test "Plan deinit frees resources" {
     try std.testing.expectEqual(@as(?std.AutoHashMap(TestPlan.PcType, TestPlan.InstructionIndexType), null), plan.pc_to_instruction_idx);
 }
 
+
+// Export the factory function for creating Plan types
+pub const createPlan = Plan;

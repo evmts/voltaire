@@ -15,7 +15,7 @@ pub const JumpDestMetadata = packed struct(u64) {
 };
 
 /// Factory function to create a PlanMinimal type with the given configuration.
-pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
+pub fn PlanMinimal(comptime cfg: PlanConfig) type {
     comptime cfg.validate();
     
     // Create bytecode type with matching configuration
@@ -23,7 +23,7 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
         .max_bytecode_size = cfg.maxBytecodeSize,
     });
     
-    const PlanMinimal = struct {
+    return struct {
         /// Bytecode with validation and analysis
         bytecode: BytecodeType,
         /// Jump table of handlers indexed by opcode
@@ -225,8 +225,6 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
             self.bytecode.deinit();
         }
     };
-    
-    return PlanMinimal;
 }
 
 // Test handler function that does nothing (for testing)
@@ -238,7 +236,7 @@ fn testHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
 
 test "PlanMinimal basic initialization" {
     const allocator = std.testing.allocator;
-    const PlanMinimal = createPlanMinimal(.{});
+    const PlanMinimalType = PlanMinimal(.{});
     
     // Simple bytecode: PUSH1 0x42 STOP
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x42, @intFromEnum(Opcode.STOP) };
@@ -249,7 +247,7 @@ test "PlanMinimal basic initialization" {
         h.* = &testHandler;
     }
     
-    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Test isOpcodeStart
@@ -260,7 +258,7 @@ test "PlanMinimal basic initialization" {
 
 test "PlanMinimal getMetadata for PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const PlanMinimal = createPlanMinimal(.{});
+    const PlanMinimalType = PlanMinimal(.{});
     
     // Bytecode with various PUSH instructions
     const bytecode = [_]u8{
@@ -276,11 +274,11 @@ test "PlanMinimal getMetadata for PUSH opcodes" {
         h.* = &testHandler;
     }
     
-    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Test PUSH1
-    var idx: PlanMinimal.InstructionIndexType = 0;
+    var idx: PlanMinimalType.InstructionIndexType = 0;
     const push1_val = plan.getMetadata(&idx, .PUSH1);
     try std.testing.expectEqual(@as(u8, 0x42), push1_val);
     
@@ -297,7 +295,7 @@ test "PlanMinimal getMetadata for PUSH opcodes" {
 
 test "PlanMinimal getNextInstruction" {
     const allocator = std.testing.allocator;
-    const PlanMinimal = createPlanMinimal(.{});
+    const PlanMinimalType = PlanMinimal(.{});
     
     // Bytecode: PUSH1 0x42 ADD STOP
     const bytecode = [_]u8{
@@ -312,26 +310,26 @@ test "PlanMinimal getNextInstruction" {
         h.* = &testHandler;
     }
     
-    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Start at PC 0 (PUSH1)
-    var idx: PlanMinimal.InstructionIndexType = 0;
+    var idx: PlanMinimalType.InstructionIndexType = 0;
     
     // Get next after PUSH1 (should skip the data byte)
     const handler1 = plan.getNextInstruction(&idx, .PUSH1);
-    try std.testing.expectEqual(@as(PlanMinimal.InstructionIndexType, 2), idx); // Should point to ADD
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 2), idx); // Should point to ADD
     try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler1));
     
     // Get next after ADD
     const handler2 = plan.getNextInstruction(&idx, .ADD);
-    try std.testing.expectEqual(@as(PlanMinimal.InstructionIndexType, 3), idx); // Should point to STOP
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 3), idx); // Should point to STOP
     try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler2));
 }
 
 test "PlanMinimal PC metadata" {
     const allocator = std.testing.allocator;
-    const PlanMinimal = createPlanMinimal(.{});
+    const PlanMinimalType = PlanMinimal(.{});
     
     // Simple bytecode with PC opcode
     const bytecode = [_]u8{
@@ -345,23 +343,23 @@ test "PlanMinimal PC metadata" {
         h.* = &testHandler;
     }
     
-    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Test PC metadata returns current PC
-    var idx: PlanMinimal.InstructionIndexType = 0;
+    var idx: PlanMinimalType.InstructionIndexType = 0;
     const pc_val = plan.getMetadata(&idx, .PC);
-    try std.testing.expectEqual(@as(PlanMinimal.PcType, 0), pc_val);
+    try std.testing.expectEqual(@as(PlanMinimalType.PcType, 0), pc_val);
     
     // Test from different PC
     idx = 1;
     const pc_val2 = plan.getMetadata(&idx, .PC);
-    try std.testing.expectEqual(@as(PlanMinimal.PcType, 1), pc_val2);
+    try std.testing.expectEqual(@as(PlanMinimalType.PcType, 1), pc_val2);
 }
 
 test "PlanMinimal isValidJumpDest" {
     const allocator = std.testing.allocator;
-    const PlanMinimal = createPlanMinimal(.{});
+    const PlanMinimalType = PlanMinimal(.{});
     
     // Bytecode with JUMPDEST
     const bytecode = [_]u8{
@@ -377,7 +375,7 @@ test "PlanMinimal isValidJumpDest" {
         h.* = &testHandler;
     }
     
-    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Test isValidJumpDest

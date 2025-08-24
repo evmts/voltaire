@@ -120,8 +120,8 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
         pub const HandlerFn = plan_mod.HandlerFn;
         
         const Self = @This();
-        const AdvancedPlan = plan_mod.createPlan(cfg);
-        const MinimalPlan = plan_minimal_mod.createPlanMinimal(cfg);
+        const AdvancedPlan = plan_mod.Plan(cfg);
+        const MinimalPlan = plan_minimal_mod.PlanMinimal(cfg);
         
         /// The advanced plan with optimizations
         advanced_plan: AdvancedPlan,

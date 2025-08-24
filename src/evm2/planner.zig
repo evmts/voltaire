@@ -45,7 +45,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             next: ?*@This(),
             prev: ?*@This(),
         };
-        const PlanType = plan_mod.createPlan(PlanCfg);
+        const PlanType = plan_mod.Plan(PlanCfg);
         const BytecodeType = createBytecode(.{ .max_bytecode_size = Cfg.maxBytecodeSize });
 
         const Self = @This();
@@ -595,11 +595,11 @@ fn testFusionHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noretur
 
 test "planner: bitmaps mark push-data and jumpdest correctly" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
 
     // Bytecode: PUSH2 0xAA 0xBB; JUMPDEST; STOP
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH2), 0xAA, 0xBB, @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.STOP) };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
 
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
@@ -612,10 +612,10 @@ test "planner: bitmaps mark push-data and jumpdest correctly" {
 
 test "planner: blocks and lookupInstrIdx basic" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     // Bytecode: PUSH1 0x01; JUMPDEST; STOP
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.STOP) };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
 
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
@@ -624,7 +624,7 @@ test "planner: blocks and lookupInstrIdx basic" {
     defer plan.deinit(allocator);
 
     // JumpDestMetadata is now stored inline in the instruction stream
-    // const idx_opt = plan.lookupInstructionIdx(@as(Planner.PcTypeT, 2));
+    // const idx_opt = plan.lookupInstructionIdx(@as(Planner(.{}).PcTypeT, 2));
     // try std.testing.expect(idx_opt != null);
     // try std.testing.expectEqual(@as(usize, 2), idx_opt.?);
 }
@@ -673,8 +673,7 @@ test "planner: static gas charge and stack height ranges" {
         @intFromEnum(Opcode.STOP),
     };
 
-    const PlannerType = Planner(.{});
-    var planner = try Planner.init(allocator, &bc);
+    var planner = try Planner(.{}).init(allocator, &bc);
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
@@ -695,8 +694,7 @@ test "planner: lookupInstructionIdx returns null for non-dest" {
     const allocator = std.testing.allocator;
     // No JUMPDESTs at all
     const bc = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
-    const PlannerType = Planner(.{});
-    var planner = try Planner.init(allocator, &bc);
+    var planner = try Planner(.{}).init(allocator, &bc);
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
@@ -707,10 +705,10 @@ test "planner: lookupInstructionIdx returns null for non-dest" {
 
 test "planner: init with allocator" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     defer planner.deinit();
     
     try std.testing.expect(planner.bytecode.len() == 3);
@@ -772,15 +770,15 @@ test "metadata structs: proper sizing and fields" {
 test "getMetadata: PUSH0 has no metadata" {
     // This test should fail to compile because PUSH0 has no metadata
     // Uncomment to verify compile error:
-    // const PlannerType = Planner(.{});
-    // var plan = Planner.Plan{ .instructionStream = &.{}, .u256_constants = &.{} };
-    // var idx: Planner.InstructionIndexT = 0;
+    // const Planner(.{}) = Planner(.{});
+    // var plan = Planner(.{}).Plan{ .instructionStream = &.{}, .u256_constants = &.{} };
+    // var idx: Planner(.{}).InstructionIndexT = 0;
     // const metadata = plan.getMetadata(&idx, .PUSH0); // Should @compileError
 }
 
 test "getMetadata: PUSH opcodes return correct granular types" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Test that enum literal handling works
     // @compileLog(@TypeOf(.PUSH1)); // This would show it's @Type(.enum_literal)
@@ -793,14 +791,14 @@ test "getMetadata: PUSH opcodes return correct granular types" {
             .{ .handler = &testMockHandler } 
         };
         
-        var plan = PlannerType.Plan{
+        var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
-        var idx: Planner.InstructionIndexT = 0;
+        var idx: Planner(.{}).InstructionIndexT = 0;
         const metadata = plan.getMetadata(&idx, .PUSH1);
         try std.testing.expectEqual(@as(u8, 0xFF), metadata);
     }
@@ -813,14 +811,14 @@ test "getMetadata: PUSH opcodes return correct granular types" {
             .{ .handler = &testMockHandler } 
         };
         
-        var plan = PlannerType.Plan{
+        var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
-        var idx: Planner.InstructionIndexT = 0;
+        var idx: Planner(.{}).InstructionIndexT = 0;
         const metadata = plan.getMetadata(&idx, .PUSH2);
         try std.testing.expectEqual(@as(u16, 0xFFFF), metadata);
     }
@@ -833,14 +831,14 @@ test "getMetadata: PUSH opcodes return correct granular types" {
             .{ .handler = &testMockHandler } 
         };
         
-        var plan = PlannerType.Plan{
+        var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
-        var idx: Planner.InstructionIndexT = 0;
+        var idx: Planner(.{}).InstructionIndexT = 0;
         const metadata = plan.getMetadata(&idx, .PUSH8);
         try std.testing.expectEqual(@as(u64, 0xFFFFFFFFFFFFFFFF), metadata);
     }
@@ -848,7 +846,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
 
 test "getMetadata: large PUSH opcodes return pointer to u256" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Test PUSH32 returns *const u256
     const big_value: u256 = std.math.maxInt(u256);
@@ -864,7 +862,7 @@ test "getMetadata: large PUSH opcodes return pointer to u256" {
     defer allocator.free(constants);
     constants[0] = big_value;
     
-    var plan = Planner.Plan{
+    var plan = Planner(.{}).Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -876,14 +874,14 @@ test "getMetadata: large PUSH opcodes return pointer to u256" {
         plan.u256_constants = &.{};
     }
     
-    var idx: Planner.InstructionIndexT = 0;
+    var idx: Planner(.{}).InstructionIndexT = 0;
     const metadata_ptr = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(big_value, metadata_ptr.*);
 }
 
 test "getMetadata: PC returns PcType" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     const stream = [_]InstructionElement{ 
         .{ .handler = &testMockHandler }, 
@@ -891,21 +889,21 @@ test "getMetadata: PC returns PcType" {
         .{ .handler = &testMockHandler } 
     };
     
-    var plan = Planner.Plan{
+    var plan = Planner(.{}).Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
-    var idx: Planner.InstructionIndexT = 0;
+    var idx: Planner(.{}).InstructionIndexT = 0;
     const pc = plan.getMetadata(&idx, .PC);
-    try std.testing.expectEqual(@as(Planner.PcTypeT, 42), pc);
+    try std.testing.expectEqual(@as(Planner(.{}).PcTypeT, 42), pc);
 }
 
 test "getMetadata: fusion opcodes" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Test PUSH_ADD_INLINE fusion - should work like PUSH1
     {
@@ -915,7 +913,7 @@ test "getMetadata: fusion opcodes" {
             .{ .handler = &testMockHandler } 
         };
         
-        var plan = PlannerType.Plan{
+        var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
             .pc_to_instruction_idx = null,
@@ -923,7 +921,7 @@ test "getMetadata: fusion opcodes" {
         defer plan.deinit(allocator);
         
         // Test fusion opcode metadata
-        var idx: Planner.InstructionIndexT = 0;
+        var idx: Planner(.{}).InstructionIndexT = 0;
         const metadata = plan.getMetadata(&idx, @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
         try std.testing.expectEqual(@as(usize, 5), metadata);
     }
@@ -931,7 +929,7 @@ test "getMetadata: fusion opcodes" {
 
 test "getNextInstruction: fusion opcodes advance correctly" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     const stream = [_]InstructionElement{ 
         .{ .handler = &testFusionHandler }, // PUSH_ADD_INLINE
@@ -939,7 +937,7 @@ test "getNextInstruction: fusion opcodes advance correctly" {
         .{ .handler = &testMockHandler },    // next instruction
     };
     
-    var plan = Planner.Plan{
+    var plan = Planner(.{}).Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -947,15 +945,15 @@ test "getNextInstruction: fusion opcodes advance correctly" {
     defer plan.deinit(allocator);
     
     // Test fusion opcode advances correctly
-    var idx: Planner.InstructionIndexT = 0;
+    var idx: Planner(.{}).InstructionIndexT = 0;
     const handler = plan.getNextInstruction(&idx, @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
     try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(handler));
-    try std.testing.expectEqual(@as(Planner.InstructionIndexT, 2), idx);
+    try std.testing.expectEqual(@as(Planner(.{}).InstructionIndexT, 2), idx);
 }
 
 test "create_instruction_stream: basic handler array" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -965,7 +963,7 @@ test "create_instruction_stream: basic handler array" {
     
     // Simple bytecode: PUSH1 5
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x05 };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -979,7 +977,7 @@ test "create_instruction_stream: basic handler array" {
 
 test "PUSH inline vs pointer: small values stored inline" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -989,7 +987,7 @@ test "PUSH inline vs pointer: small values stored inline" {
     
     // PUSH8 with value that fits in usize (8 bytes = 64 bits)
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH8), 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -1007,7 +1005,7 @@ test "PUSH inline vs pointer: small values stored inline" {
 
 test "PUSH inline vs pointer: large values use pointer" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1018,7 +1016,7 @@ test "PUSH inline vs pointer: large values use pointer" {
     // PUSH32 with large value
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
         [_]u8{0xFF} ** 32; // 32 bytes of 0xFF
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -1039,7 +1037,7 @@ test "PUSH inline vs pointer: large values use pointer" {
 
 test "fusion detection: PUSH+ADD inline" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array with special fusion handler
     var handlers: [256]*const HandlerFn = undefined;
@@ -1051,7 +1049,7 @@ test "fusion detection: PUSH+ADD inline" {
     
     // PUSH1 5; ADD
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD) };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -1068,7 +1066,7 @@ test "fusion detection: PUSH+ADD inline" {
 
 test "fusion detection: PUSH+ADD pointer" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array with special fusion handler
     var handlers: [256]*const HandlerFn = undefined;
@@ -1082,7 +1080,7 @@ test "fusion detection: PUSH+ADD pointer" {
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
         [_]u8{0xFF} ** 32 ++ // 32 bytes
         [_]u8{ @intFromEnum(Opcode.ADD) };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -1102,7 +1100,7 @@ test "fusion detection: PUSH+ADD pointer" {
 
 test "fusion detection: PUSH+JUMP inline" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array with special fusion handler
     var handlers: [256]*const HandlerFn = undefined;
@@ -1119,7 +1117,7 @@ test "fusion detection: PUSH+JUMP inline" {
         @intFromEnum(Opcode.JUMPDEST), // PC=4
         @intFromEnum(Opcode.STOP)
     };
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -1136,7 +1134,7 @@ test "fusion detection: PUSH+JUMP inline" {
 
 test "fusion detection: PUSH+JUMP pointer" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array with special fusion handler
     var handlers: [256]*const HandlerFn = undefined;
@@ -1152,7 +1150,7 @@ test "fusion detection: PUSH+JUMP pointer" {
         [_]u8{@intFromEnum(Opcode.STOP)} ** 36 ++ // padding
         [_]u8{ @intFromEnum(Opcode.JUMPDEST) }; // PC=40
         
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
@@ -1173,7 +1171,7 @@ test "fusion detection: PUSH+JUMP pointer" {
 
 test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1188,7 +1186,7 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
         @intFromEnum(Opcode.STOP),         // PC 3: STOP
     };
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     
@@ -1223,7 +1221,7 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
 
 test "dynamic jump table: unfused JUMP can lookup instruction index" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1241,7 +1239,7 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
         @intFromEnum(Opcode.STOP),         // PC 7: stop
     };
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     
@@ -1263,7 +1261,7 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
 
 test "fusion detection: PUSH+MUL fusion" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1279,7 +1277,7 @@ test "fusion detection: PUSH+MUL fusion" {
         @intFromEnum(Opcode.MUL),
     };
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     
@@ -1291,7 +1289,7 @@ test "fusion detection: PUSH+MUL fusion" {
 
 test "fusion detection: PUSH+DIV fusion" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1307,7 +1305,7 @@ test "fusion detection: PUSH+DIV fusion" {
         @intFromEnum(Opcode.DIV),
     };
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     
@@ -1319,7 +1317,7 @@ test "fusion detection: PUSH+DIV fusion" {
 
 test "fusion detection: PUSH+JUMPI fusion" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1339,7 +1337,7 @@ test "fusion detection: PUSH+JUMPI fusion" {
         @intFromEnum(Opcode.STOP),
     };
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     
@@ -1365,10 +1363,10 @@ test "fusion detection: PUSH+JUMPI fusion" {
 
 test "analysis cache: stores and reuses plans" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create planner with cache
-    var planner = try Planner.initWithCache(allocator, 2);
+    var planner = try Planner(.{}).initWithCache(allocator, 2);
     defer planner.deinit();
     
     // Create handler array
@@ -1395,7 +1393,7 @@ test "analysis cache: stores and reuses plans" {
 
 test "integration: complex bytecode with all features" {
     const allocator = std.testing.allocator;
-    const PlannerType = Planner(.{});
+    _ = Planner(.{});
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1465,7 +1463,7 @@ test "integration: complex bytecode with all features" {
         @intFromEnum(Opcode.STOP),         // PC 59: stop
     };
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try Planner(.{}).init(allocator, &bytecode);
     var plan = try planner.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     
@@ -1507,3 +1505,6 @@ test "integration: complex bytecode with all features" {
     // Just verify we have a valid instruction stream
     try std.testing.expect(plan.instructionStream.len > 0);
 }
+
+// Export the factory function for creating Planner types
+pub const createPlanner = Planner;

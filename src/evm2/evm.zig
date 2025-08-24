@@ -38,7 +38,7 @@ pub const EvmConfig = struct {
 };
 
 pub fn Evm(comptime config: EvmConfig) type {
-    const FrameInterpreter = frame_interpreter_mod.createFrameInterpreter(config.frame_config);
+    const FrameInterpreter = frame_interpreter_mod.FrameInterpreter(config.frame_config);
     const DepthType = config.get_depth_type();
     
     return struct {

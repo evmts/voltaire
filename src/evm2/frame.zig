@@ -2811,7 +2811,7 @@ test "Frame with NoOpTracer executes correctly" {
     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 };
 
     const F = Frame(.{});
-    var frame = try F.init(allocator, &bytecode, 1000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000, void{}, null);
     defer frame.deinit(allocator);
 
     // Execute by pushing values and calling add
@@ -2863,7 +2863,7 @@ test "Frame tracer type can be changed at compile time" {
     // Simple bytecode: PUSH1 0x05
     const bytecode = [_]u8{ 0x60, 0x05 };
 
-    var frame = try F.init(allocator, &bytecode, 1000, {});
+    var frame = try F.init(allocator, &bytecode, 1000, {}, null);
     defer frame.deinit(allocator);
 
     // Check that our test tracer was initialized
@@ -3047,7 +3047,7 @@ test "trace instructions behavior with different tracer types" {
     // Verify both frame types can be instantiated
     const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5, STOP
 
-    var frame_noop = try FrameNoOp.init(allocator, &bytecode, 1000, {});
+    var frame_noop = try FrameNoOp.init(allocator, &bytecode, 1000, {}, null);
     defer frame_noop.deinit(allocator);
 
     var frame_traced = try FrameWithTestTracer.init(allocator, &bytecode, 1000, {});
@@ -3068,7 +3068,7 @@ test "trace instructions behavior with different tracer types" {
 
 test "Frame jump to invalid destination should fail" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter(.{});
+    const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter(.{});
 
     // PUSH1 3, JUMP, STOP - jumping to position 3 which is STOP instruction should fail
     const bytecode = [_]u8{ 0x60, 0x03, 0x56, 0x00 };
@@ -3251,7 +3251,7 @@ test "Frame storage operations with database" {
     const db_interface = db.to_database_interface();
     
     const bytecode = [_]u8{ 0x54, 0x00 }; // SLOAD STOP
-    var frame = try FrameWithDb.init(allocator, &bytecode, 1000000, db_interface);
+    var frame = try FrameWithDb.init(allocator, &bytecode, 1000000, db_interface, null);
     defer frame.deinit(allocator);
     
     // Test SSTORE followed by SLOAD
@@ -3300,7 +3300,7 @@ test "Frame transient storage operations with database" {
     const db_interface = db.to_database_interface();
     
     const bytecode = [_]u8{ 0x5c, 0x00 }; // TLOAD STOP
-    var frame = try FrameWithDb.init(allocator, &bytecode, 1000000, db_interface);
+    var frame = try FrameWithDb.init(allocator, &bytecode, 1000000, db_interface, null);
     defer frame.deinit(allocator);
     
     // Test TSTORE followed by TLOAD
@@ -3366,7 +3366,7 @@ test "Frame storage operations without database should fail" {
 
 test "Frame gas consumption tracking" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter(.{});
+    const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter(.{});
 
     // PUSH1 10, PUSH1 20, ADD, GAS, STOP
     const bytecode = [_]u8{ 0x60, 0x0A, 0x60, 0x14, 0x01, 0x5A, 0x00 };
@@ -3702,7 +3702,7 @@ test "Frame LOG gas consumption" {
     
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     const initial_gas: i32 = 10000;
-    var frame = try F.init(allocator, &bytecode, initial_gas, void{});
+    var frame = try F.init(allocator, &bytecode, initial_gas, void{}, null);
     defer frame.deinit(allocator);
     
     // Store some data in memory

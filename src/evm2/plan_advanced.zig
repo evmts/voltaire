@@ -51,10 +51,10 @@ comptime {
 
 
 /// Factory function to create a Plan type with the given configuration.
-pub fn createPlan(comptime cfg: PlanConfig) type {
+pub fn Plan(comptime cfg: PlanConfig) type {
     comptime cfg.validate();
     
-    const Plan = struct {
+    return struct {
         pub const PcType = cfg.PcType();
         pub const InstructionIndexType = PcType; // Can only have as many instructions as PCs
         pub const WordType = cfg.WordType;
@@ -357,8 +357,6 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             self.u256_constants = &.{};
         }
     };
-    
-    return Plan;
 }
 
 /// Minimal plan that only contains bitmap analysis for lightweight execution.
@@ -677,7 +675,7 @@ test "PlanConfig validation" {
 
 test "Plan getMetadata for PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const PlanType = Plan(.{});
     
     // Create a plan with test data
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -723,7 +721,7 @@ test "Plan getMetadata for PUSH opcodes" {
 
 test "Plan getMetadata for large PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     // Create constants array
     var constants = try allocator.alloc(Plan.WordType, 2);
@@ -769,7 +767,7 @@ test "Plan getMetadata for large PUSH opcodes" {
 
 test "Plan getMetadata for JUMPDEST" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -803,7 +801,7 @@ test "Plan getMetadata for JUMPDEST" {
 
 test "Plan getMetadata for PC opcode" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -827,7 +825,7 @@ test "Plan getMetadata for PC opcode" {
 
 test "Plan getMetadata for synthetic opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     // Create constants
     var constants = try allocator.alloc(Plan.WordType, 1);
@@ -871,7 +869,7 @@ test "Plan getMetadata for synthetic opcodes" {
 
 test "Plan getNextInstruction without metadata" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -898,7 +896,7 @@ test "Plan getNextInstruction without metadata" {
 
 test "Plan getNextInstruction with metadata" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -926,7 +924,7 @@ test "Plan getNextInstruction with metadata" {
 
 test "Plan deinit" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const Plan = Plan(.{});
     
     var plan = Plan{
         .instructionStream = try allocator.alloc(InstructionElement, 10),
@@ -949,19 +947,19 @@ test "Plan deinit" {
 }
 
 test "Plan with different WordType" {
-    const Plan128 = createPlan(.{ .WordType = u128 });
+    const Plan128 = Plan(.{ .WordType = u128 });
     try std.testing.expectEqual(u128, Plan128.WordType);
     
-    const Plan512 = createPlan(.{ .WordType = u512 });
+    const Plan512 = Plan(.{ .WordType = u512 });
     try std.testing.expectEqual(u512, Plan512.WordType);
 }
 
 test "Plan PcType selection based on maxBytecodeSize" {
-    const SmallPlan = createPlan(.{ .maxBytecodeSize = 1000 });
+    const SmallPlan = Plan(.{ .maxBytecodeSize = 1000 });
     try std.testing.expectEqual(u16, SmallPlan.PcType);
     try std.testing.expectEqual(u16, SmallPlan.InstructionIndexType);
     
-    const LargePlan = createPlan(.{ .maxBytecodeSize = 65535 });
+    const LargePlan = Plan(.{ .maxBytecodeSize = 65535 });
     try std.testing.expectEqual(u16, LargePlan.PcType);
     try std.testing.expectEqual(u16, LargePlan.InstructionIndexType);
 }

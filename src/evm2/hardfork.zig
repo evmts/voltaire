@@ -83,4 +83,84 @@ pub const Hardfork = enum {
     /// Default hardfork for new chains.
     /// Set to latest stable fork (currently CANCUN).
     pub const DEFAULT = Hardfork.CANCUN;
+    
+    /// Convert hardfork to its numeric representation for version comparisons
+    pub fn toInt(self: Hardfork) u32 {
+        return @intFromEnum(self);
+    }
+    
+    /// Check if this hardfork is at least the specified version
+    pub fn isAtLeast(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() >= target.toInt();
+    }
+    
+    /// Check if this hardfork is before the specified version
+    pub fn isBefore(self: Hardfork, target: Hardfork) bool {
+        return self.toInt() < target.toInt();
+    }
 };
+
+const std = @import("std");
+
+test "hardfork enum ordering" {
+    try std.testing.expect(@intFromEnum(Hardfork.FRONTIER) < @intFromEnum(Hardfork.HOMESTEAD));
+    try std.testing.expect(@intFromEnum(Hardfork.HOMESTEAD) < @intFromEnum(Hardfork.BYZANTIUM));
+    try std.testing.expect(@intFromEnum(Hardfork.BYZANTIUM) < @intFromEnum(Hardfork.CANCUN));
+}
+
+test "hardfork default is cancun" {
+    try std.testing.expectEqual(Hardfork.CANCUN, Hardfork.DEFAULT);
+}
+
+test "hardfork toInt conversion" {
+    try std.testing.expect(Hardfork.FRONTIER.toInt() == 0);
+    try std.testing.expect(Hardfork.HOMESTEAD.toInt() == 1);
+    try std.testing.expect(Hardfork.CANCUN.toInt() > Hardfork.FRONTIER.toInt());
+}
+
+test "hardfork isAtLeast comparison" {
+    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.FRONTIER));
+    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.CANCUN));
+    try std.testing.expect(!Hardfork.FRONTIER.isAtLeast(Hardfork.CANCUN));
+    
+    try std.testing.expect(Hardfork.BERLIN.isAtLeast(Hardfork.BERLIN));
+    try std.testing.expect(Hardfork.LONDON.isAtLeast(Hardfork.BERLIN));
+    try std.testing.expect(!Hardfork.HOMESTEAD.isAtLeast(Hardfork.BERLIN));
+}
+
+test "hardfork isBefore comparison" {
+    try std.testing.expect(Hardfork.FRONTIER.isBefore(Hardfork.CANCUN));
+    try std.testing.expect(!Hardfork.CANCUN.isBefore(Hardfork.FRONTIER));
+    try std.testing.expect(!Hardfork.CANCUN.isBefore(Hardfork.CANCUN));
+    
+    try std.testing.expect(Hardfork.HOMESTEAD.isBefore(Hardfork.BERLIN));
+    try std.testing.expect(!Hardfork.BERLIN.isBefore(Hardfork.HOMESTEAD));
+}
+
+test "hardfork version comparisons edge cases" {
+    // Test adjacent forks
+    try std.testing.expect(Hardfork.BERLIN.isBefore(Hardfork.LONDON));
+    try std.testing.expect(Hardfork.LONDON.isAtLeast(Hardfork.BERLIN));
+    
+    // Test same fork
+    try std.testing.expect(!Hardfork.ISTANBUL.isBefore(Hardfork.ISTANBUL));
+    try std.testing.expect(Hardfork.ISTANBUL.isAtLeast(Hardfork.ISTANBUL));
+}
+
+test "hardfork major milestone checks" {
+    // Pre-Byzantium (no REVERT opcode)
+    try std.testing.expect(Hardfork.HOMESTEAD.isBefore(Hardfork.BYZANTIUM));
+    try std.testing.expect(Hardfork.TANGERINE_WHISTLE.isBefore(Hardfork.BYZANTIUM));
+    
+    // Post-Berlin (warm/cold access)
+    try std.testing.expect(Hardfork.BERLIN.isAtLeast(Hardfork.BERLIN));
+    try std.testing.expect(Hardfork.LONDON.isAtLeast(Hardfork.BERLIN));
+    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.BERLIN));
+    
+    // Shanghai introduces PUSH0
+    try std.testing.expect(Hardfork.SHANGHAI.isAtLeast(Hardfork.SHANGHAI));
+    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.SHANGHAI));
+    
+    // Cancun introduces transient storage
+    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.CANCUN));
+}
