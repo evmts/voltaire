@@ -1492,15 +1492,11 @@ test "EVM staticcall handler prevents state changes" {
         .gas = 1000000,
     };
     
-    // For now this will return error.InvalidJump as it's not implemented
-    const result = evm.staticcall_handler(params) catch |err| {
-        try testing.expectEqual(DefaultEvm.Error.InvalidJump, err);
-        return;
-    };
+    // This should now work with the implemented handler
+    const result = try evm.staticcall_handler(params);
     
-    // Once implemented, staticcall with SSTORE should fail
-    // try testing.expect(!result.success);
-    _ = result;
+    // Staticcall with SSTORE should fail due to static context restrictions
+    try testing.expect(!result.success);
 }
 
 test "EVM delegatecall handler preserves caller context" {
@@ -1564,16 +1560,11 @@ test "EVM delegatecall handler preserves caller context" {
         .gas = 1000000,
     };
     
-    // For now this will return error.InvalidJump as it's not implemented
-    const result = evm.delegatecall_handler(params) catch |err| {
-        try testing.expectEqual(DefaultEvm.Error.InvalidJump, err);
-        return;
-    };
+    // This should now work with the implemented handler
+    const result = try evm.delegatecall_handler(params);
     
-    // Once implemented:
-    // try testing.expect(result.success);
-    // The returned address should be original_caller, not contract_address
-    _ = result;
+    // Delegatecall with empty code should succeed
+    try testing.expect(result.success);
 }
 
 test "Evm creation with custom config" {

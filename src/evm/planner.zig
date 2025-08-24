@@ -137,7 +137,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             
             // Check cache
             if (self.cache_map.get(key)) |node| {
-                // Cache hit
+                // Cache hit - hint this is the likely path for warm caches
+                @branchHint(.likely);
                 self.cache_hits += 1;
                 self.moveToFront(node);
                 return &node.plan;
