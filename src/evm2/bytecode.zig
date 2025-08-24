@@ -934,6 +934,9 @@ const default_config = BytecodeConfig{};
 pub const BytecodeDefault = Bytecode(default_config);
 pub const BytecodeValidationError = BytecodeDefault.ValidationError;
 
+// Export the factory function for creating Bytecode types
+pub const createBytecode = Bytecode;
+
 test "Bytecode.init and basic getters" {
     const allocator = std.testing.allocator;
     const code = [_]u8{ 0x60, 0x40, 0x60, 0x80 }; // PUSH1 0x40 PUSH1 0x80
@@ -1015,14 +1018,14 @@ test "Bytecode.getInstructionSize and getNextPc" {
     for (4..36) |i| code[i] = @intCast(i);
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    try std.testing.expectEqual(@as(Bytecode.PcType, 2), bytecode.getInstructionSize(0)); // PUSH1
-    try std.testing.expectEqual(@as(Bytecode.PcType, 1), bytecode.getInstructionSize(2)); // ADD
-    try std.testing.expectEqual(@as(Bytecode.PcType, 33), bytecode.getInstructionSize(3)); // PUSH32
-    try std.testing.expectEqual(@as(Bytecode.PcType, 0), bytecode.getInstructionSize(100)); // Out of bounds
-    try std.testing.expectEqual(@as(?Bytecode.PcType, 2), bytecode.getNextPc(0)); // After PUSH1
-    try std.testing.expectEqual(@as(?Bytecode.PcType, 3), bytecode.getNextPc(2)); // After ADD
-    try std.testing.expectEqual(@as(?Bytecode.PcType, 36), bytecode.getNextPc(3)); // After PUSH32
-    try std.testing.expectEqual(@as(?Bytecode.PcType, null), bytecode.getNextPc(100)); // Out of bounds
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 2), bytecode.getInstructionSize(0)); // PUSH1
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 1), bytecode.getInstructionSize(2)); // ADD
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 33), bytecode.getInstructionSize(3)); // PUSH32
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 0), bytecode.getInstructionSize(100)); // Out of bounds
+    try std.testing.expectEqual(@as(?BytecodeDefault.PcType, 2), bytecode.getNextPc(0)); // After PUSH1
+    try std.testing.expectEqual(@as(?BytecodeDefault.PcType, 3), bytecode.getNextPc(2)); // After ADD
+    try std.testing.expectEqual(@as(?BytecodeDefault.PcType, 36), bytecode.getNextPc(3)); // After PUSH32
+    try std.testing.expectEqual(@as(?BytecodeDefault.PcType, null), bytecode.getNextPc(100)); // Out of bounds
 }
 
 test "Bytecode.analyzeJumpDests" {
@@ -1038,17 +1041,17 @@ test "Bytecode.analyzeJumpDests" {
     defer bytecode.deinit();
     const Context = struct {
         // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
-        jumpdests: ArrayList(Bytecode.PcType, null),
-        fn callback(self: *@This(), pc: Bytecode.PcType) void {
+        jumpdests: ArrayList(BytecodeDefault.PcType, null),
+        fn callback(self: *@This(), pc: BytecodeDefault.PcType) void {
             self.jumpdests.append(pc) catch unreachable;
         }
     };
-    var context = Context{ .jumpdests = ArrayList(Bytecode.PcType, null).init(std.testing.allocator) };
+    var context = Context{ .jumpdests = ArrayList(BytecodeDefault.PcType, null).init(std.testing.allocator) };
     defer context.jumpdests.deinit();
     bytecode.analyzeJumpDests(&context, Context.callback);
     try std.testing.expectEqual(@as(usize, 2), context.jumpdests.items.len);
-    try std.testing.expectEqual(@as(Bytecode.PcType, 3), context.jumpdests.items[0]);
-    try std.testing.expectEqual(@as(Bytecode.PcType, 7), context.jumpdests.items[1]);
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 3), context.jumpdests.items[0]);
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 7), context.jumpdests.items[1]);
 }
 
 test "Bytecode validation - invalid opcode" {
@@ -1312,7 +1315,7 @@ test "Bytecode SIMD opcode validation" {
     
     // Test bytecode with all valid opcodes
     const valid_code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
-    var bytecode = try Bytecode.init(allocator, &valid_code);
+    var bytecode = try BytecodeDefault.init(allocator, &valid_code);
     defer bytecode.deinit();
     
     // Should pass validation
@@ -1336,7 +1339,7 @@ test "Bytecode initcode validation - EIP-3860" {
     defer allocator.free(max_initcode);
     @memset(max_initcode, 0x00);
     
-    var bytecode2 = try Bytecode.initFromInitcode(allocator, max_initcode);
+    var bytecode2 = try BytecodeDefault.initFromInitcode(allocator, max_initcode);
     defer bytecode2.deinit();
     try std.testing.expectEqual(@as(usize, default_config.max_initcode_size), bytecode2.len());
     
@@ -1345,7 +1348,7 @@ test "Bytecode initcode validation - EIP-3860" {
     defer allocator.free(oversized_initcode);
     @memset(oversized_initcode, 0x00);
     
-    const result = Bytecode.initFromInitcode(allocator, oversized_initcode);
+    const result = BytecodeDefault.initFromInitcode(allocator, oversized_initcode);
     try std.testing.expectError(error.InitcodeTooLarge, result);
 }
 
@@ -1353,25 +1356,25 @@ test "Bytecode calculateInitcodeGas - EIP-3860" {
     // Test gas calculation for various initcode sizes
     
     // Empty initcode = 0 words = 0 gas
-    try std.testing.expectEqual(@as(u64, 0), Bytecode.calculateInitcodeGas(0));
+    try std.testing.expectEqual(@as(u64, 0), BytecodeDefault.calculateInitcodeGas(0));
     
     // 1 byte = 1 word = 2 gas
-    try std.testing.expectEqual(@as(u64, 2), Bytecode.calculateInitcodeGas(1));
+    try std.testing.expectEqual(@as(u64, 2), BytecodeDefault.calculateInitcodeGas(1));
     
     // 32 bytes = 1 word = 2 gas
-    try std.testing.expectEqual(@as(u64, 2), Bytecode.calculateInitcodeGas(32));
+    try std.testing.expectEqual(@as(u64, 2), BytecodeDefault.calculateInitcodeGas(32));
     
     // 33 bytes = 2 words = 4 gas
-    try std.testing.expectEqual(@as(u64, 4), Bytecode.calculateInitcodeGas(33));
+    try std.testing.expectEqual(@as(u64, 4), BytecodeDefault.calculateInitcodeGas(33));
     
     // 64 bytes = 2 words = 4 gas
-    try std.testing.expectEqual(@as(u64, 4), Bytecode.calculateInitcodeGas(64));
+    try std.testing.expectEqual(@as(u64, 4), BytecodeDefault.calculateInitcodeGas(64));
     
     // 1000 bytes = 32 words (31.25 rounded up) = 64 gas
-    try std.testing.expectEqual(@as(u64, 64), Bytecode.calculateInitcodeGas(1000));
+    try std.testing.expectEqual(@as(u64, 64), BytecodeDefault.calculateInitcodeGas(1000));
     
     // Maximum initcode size: 49,152 bytes = 1536 words = 3072 gas
-    try std.testing.expectEqual(@as(u64, 3072), Bytecode.calculateInitcodeGas(default_config.max_initcode_size));
+    try std.testing.expectEqual(@as(u64, 3072), BytecodeDefault.calculateInitcodeGas(default_config.max_initcode_size));
 }
 
 test "Bytecode SIMD fusion pattern detection" {
@@ -1468,22 +1471,22 @@ test "Bytecode.countBitsInRange - basic functionality" {
     bitmap[3] = 0b10000000; // bit 23
     
     // Test full range
-    try std.testing.expectEqual(@as(usize, 6), Bytecode.countBitsInRange(bitmap, 0, 32));
+    try std.testing.expectEqual(@as(usize, 6), BytecodeDefault.countBitsInRange(bitmap, 0, 32));
     
     // Test partial ranges
-    try std.testing.expectEqual(@as(usize, 2), Bytecode.countBitsInRange(bitmap, 0, 8));
-    try std.testing.expectEqual(@as(usize, 2), Bytecode.countBitsInRange(bitmap, 8, 16));
-    try std.testing.expectEqual(@as(usize, 1), Bytecode.countBitsInRange(bitmap, 16, 20));
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 0, 8));
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 8, 16));
+    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 16, 20));
     
     // Test single bit ranges
-    try std.testing.expectEqual(@as(usize, 1), Bytecode.countBitsInRange(bitmap, 0, 1));
-    try std.testing.expectEqual(@as(usize, 0), Bytecode.countBitsInRange(bitmap, 1, 2));
+    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 0, 1));
+    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 1, 2));
     
     // Test empty range
-    try std.testing.expectEqual(@as(usize, 0), Bytecode.countBitsInRange(bitmap, 10, 10));
+    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 10, 10));
 }
 
-test "Bytecode.findNextSetBit - basic functionality" {
+test "BytecodeDefault.findNextSetBit - basic functionality" {
     const allocator = std.testing.allocator;
     // Create a simple bitmap for testing
     var bitmap = try allocator.alloc(u8, 4);
@@ -1497,25 +1500,25 @@ test "Bytecode.findNextSetBit - basic functionality" {
     bitmap[3] = 0b10000000; // bit 23
     
     // Find from start
-    try std.testing.expectEqual(@as(?usize, 0), Bytecode.findNextSetBit(bitmap, 0));
+    try std.testing.expectEqual(@as(?usize, 0), BytecodeDefault.findNextSetBit(bitmap, 0));
     
     // Find from after first bit
-    try std.testing.expectEqual(@as(?usize, 2), Bytecode.findNextSetBit(bitmap, 1));
+    try std.testing.expectEqual(@as(?usize, 2), BytecodeDefault.findNextSetBit(bitmap, 1));
     
     // Find from after second bit
-    try std.testing.expectEqual(@as(?usize, 8), Bytecode.findNextSetBit(bitmap, 3));
+    try std.testing.expectEqual(@as(?usize, 8), BytecodeDefault.findNextSetBit(bitmap, 3));
     
     // Find from middle of byte
-    try std.testing.expectEqual(@as(?usize, 15), Bytecode.findNextSetBit(bitmap, 9));
+    try std.testing.expectEqual(@as(?usize, 15), BytecodeDefault.findNextSetBit(bitmap, 9));
     
     // Find last bit
-    try std.testing.expectEqual(@as(?usize, 23), Bytecode.findNextSetBit(bitmap, 18));
+    try std.testing.expectEqual(@as(?usize, 23), BytecodeDefault.findNextSetBit(bitmap, 18));
     
     // No more bits after last
-    try std.testing.expectEqual(@as(?usize, null), Bytecode.findNextSetBit(bitmap, 24));
+    try std.testing.expectEqual(@as(?usize, null), BytecodeDefault.findNextSetBit(bitmap, 24));
     
     // Start beyond bitmap
-    try std.testing.expectEqual(@as(?usize, null), Bytecode.findNextSetBit(bitmap, 100));
+    try std.testing.expectEqual(@as(?usize, null), BytecodeDefault.findNextSetBit(bitmap, 100));
 }
 
 test "Bytecode cache-aligned allocations" {
@@ -1562,7 +1565,7 @@ test "Bytecode.parseSolidityMetadata" {
         0x00, 0x33, // metadata length: 51 bytes
     };
     
-    var bytecode = try Bytecode.init(allocator, &code_with_metadata);
+    var bytecode = try BytecodeDefault.init(allocator, &code_with_metadata);
     defer bytecode.deinit();
     
     // Parse metadata
@@ -1586,7 +1589,7 @@ test "Bytecode.parseSolidityMetadata" {
     
     // Test with bytecode that has no metadata
     const code_no_metadata = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x00 };
-    var bytecode2 = try Bytecode.init(allocator, &code_no_metadata);
+    var bytecode2 = try BytecodeDefault.init(allocator, &code_no_metadata);
     defer bytecode2.deinit();
     
     const no_metadata = bytecode2.parseSolidityMetadata();
