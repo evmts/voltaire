@@ -6265,7 +6265,7 @@ test "Frame op_return and op_revert memory bounds handling" {
     try frame2.stack.push(return_data.len); // size
 
     const result2 = frame2.op_revert();
-    try std.testing.expectError(error.STOP, result2);
+    try std.testing.expectError(error.REVERT, result2);
 }
 
 test "Frame system opcodes gas accounting" {

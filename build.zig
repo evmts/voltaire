@@ -154,6 +154,12 @@ pub fn build(b: *std.Build) void {
     const c_kzg_lib = c_kzg_dep.artifact("c_kzg_4844");
     primitives_mod.linkLibrary(c_kzg_lib);
 
+    // Add zbench dependency
+    const zbench_dep = b.dependency("zbench", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Create the main evm module that exports everything
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -163,6 +169,8 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("primitives", primitives_mod);
     evm_mod.addImport("crypto", crypto_mod);
     evm_mod.addImport("build_options", build_options_mod);
+    evm_mod.addImport("zbench", zbench_dep.module("zbench"));
+    evm_mod.addIncludePath(b.path("src/revm_wrapper"));
 
     // Link BN254 Rust library to EVM module (native targets only, if enabled)
     if (bn254_lib) |bn254| {
@@ -341,33 +349,33 @@ pub fn build(b: *std.Build) void {
         .dest_sub_path = "guillotine-evm.wasm",
     }, wasm_evm_lib_mod);
     
-    // EVM2 WASM build
-    const wasm_evm2_mod = wasm.createWasmModule(b, "src/evm2/root.zig", wasm_target, wasm_optimize);
-    wasm_evm2_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_evm2_mod.addImport("evm", wasm_evm_mod);
-    wasm_evm2_mod.addImport("crypto", wasm_crypto_mod);
-    wasm_evm2_mod.addImport("build_options", build_options_mod);
+    // EVM WASM build
+    const wasm_evm_mod = wasm.createWasmModule(b, "src/evm/root.zig", wasm_target, wasm_optimize);
+    wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_evm_mod.addImport("evm", wasm_evm_mod);
+    wasm_evm_mod.addImport("crypto", wasm_crypto_mod);
+    wasm_evm_mod.addImport("build_options", build_options_mod);
     
-    const wasm_evm2_lib_mod = wasm.createWasmModule(b, "src/evm2/root_c.zig", wasm_target, wasm_optimize);
-    wasm_evm2_lib_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_evm2_lib_mod.addImport("evm", wasm_evm_mod);
-    wasm_evm2_lib_mod.addImport("evm2", wasm_evm2_mod);
+    const wasm_evm_lib_mod = wasm.createWasmModule(b, "src/evm/root_c.zig", wasm_target, wasm_optimize);
+    wasm_evm_lib_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
+    wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
     
-    const wasm_evm2_build = wasm.buildWasmExecutable(b, .{
-        .name = "guillotine-evm2",
-        .root_source_file = "src/evm2/root_c.zig",
-        .dest_sub_path = "guillotine-evm2.wasm",
-    }, wasm_evm2_lib_mod);
+    const wasm_evm_build = wasm.buildWasmExecutable(b, .{
+        .name = "guillotine-evm",
+        .root_source_file = "src/evm/root_c.zig",
+        .dest_sub_path = "guillotine-evm.wasm",
+    }, wasm_evm_lib_mod);
 
     // Add step to report WASM bundle sizes for all builds
     const wasm_size_step = wasm.addWasmSizeReportStep(
         b,
-        &[_][]const u8{ "guillotine.wasm", "guillotine-primitives.wasm", "guillotine-evm.wasm", "guillotine-evm2.wasm" },
+        &[_][]const u8{ "guillotine.wasm", "guillotine-primitives.wasm", "guillotine-evm.wasm" },
         &[_]*std.Build.Step{
             &wasm_lib_build.install.step,
             &wasm_primitives_build.install.step,
             &wasm_evm_build.install.step,
-            &wasm_evm2_build.install.step,
+            &wasm_evm_build.install.step,
         },
     );
 
@@ -381,8 +389,8 @@ pub fn build(b: *std.Build) void {
     const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
     wasm_evm_step.dependOn(&wasm_evm_build.install.step);
     
-    const wasm_evm2_step = b.step("wasm-evm2", "Build EVM2-only WASM library");
-    wasm_evm2_step.dependOn(&wasm_evm2_build.install.step);
+    const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
+    wasm_evm_step.dependOn(&wasm_evm_build.install.step);
 
     // Debug WASM build for analysis
     const wasm_debug_mod = wasm.createWasmModule(b, "src/root.zig", wasm_target, .Debug);
@@ -1964,183 +1972,146 @@ pub fn build(b: *std.Build) void {
     const test3_step = b.step("test3", "Run register-based EVM tests");
     test3_step.dependOn(&run_test3.step);
 
-    // Add zbench dependency
-    const zbench_dep = b.dependency("zbench", .{
+
+    // Test EVM
+    const test_evm = b.addTest(.{
+        .name = "test-evm",
+        .root_source_file = b.path("src/evm/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-
-    // Add EVM2 module
-    const evm2_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm2/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    evm2_mod.addImport("primitives", primitives_mod);
-    evm2_mod.addImport("evm", evm_mod);
-    evm2_mod.addImport("build_options", build_options_mod);
-    evm2_mod.addImport("crypto", crypto_mod);
-    evm2_mod.addImport("zbench", zbench_dep.module("zbench"));
-    evm2_mod.addIncludePath(b.path("src/revm_wrapper"));
-
-    // Build EVM2 library
-    const evm2_lib = b.addLibrary(.{
-        .linkage = .static,
-        .name = "evm2",
-        .root_module = evm2_mod,
-    });
-    
-    // Link REVM Rust library to EVM2 if available
-    if (revm_lib) |revm| {
-        evm2_lib.linkLibrary(revm);
-        evm2_lib.addIncludePath(b.path("src/revm_wrapper"));
-    }
-    
-    b.installArtifact(evm2_lib);
-
-    // Build EVM2 step
-    const evm2_build_step = b.step("evm2", "Build EVM2 library");
-    evm2_build_step.dependOn(&evm2_lib.step);
-
-    // Test EVM2
-    const test_evm2 = b.addTest(.{
-        .name = "test-evm2",
-        .root_source_file = b.path("src/evm2/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    test_evm2.root_module.addImport("primitives", primitives_mod);
-    test_evm2.root_module.addImport("evm", evm_mod);
-    test_evm2.root_module.addImport("build_options", build_options_mod);
-    test_evm2.root_module.addImport("crypto", crypto_mod);
-    test_evm2.root_module.addIncludePath(b.path("src/revm_wrapper"));
+    test_evm.root_module.addImport("primitives", primitives_mod);
+    test_evm.root_module.addImport("evm", evm_mod);
+    test_evm.root_module.addImport("build_options", build_options_mod);
+    test_evm.root_module.addImport("crypto", crypto_mod);
+    test_evm.root_module.addIncludePath(b.path("src/revm_wrapper"));
     
     // Link REVM library to tests if available
     if (revm_lib) |revm| {
-        test_evm2.linkLibrary(revm);
+        test_evm.linkLibrary(revm);
     }
     
-    const run_test_evm2 = b.addRunArtifact(test_evm2);
-    const test_evm2_step = b.step("test-evm2", "Run EVM2 tests");
-    test_evm2_step.dependOn(&run_test_evm2.step);
+    const run_test_evm = b.addRunArtifact(test_evm);
+    const test_evm_step = b.step("test-evm-new", "Run EVM tests");
+    test_evm_step.dependOn(&run_test_evm.step);
     
     // Add isolated call method test
-    const test_evm2_call = b.addTest(.{
-        .name = "test-evm2-call",
-        .root_source_file = b.path("test_evm2_call.zig"),
+    const test_evm_call = b.addTest(.{
+        .name = "test-evm-new-call",
+        .root_source_file = b.path("test_evm_call.zig"),
     });
-    test_evm2_call.root_module.addImport("primitives", primitives_mod);
-    test_evm2_call.root_module.addImport("evm", evm_mod);
-    test_evm2_call.root_module.addImport("evm2", evm2_mod);
-    test_evm2_call.root_module.addImport("build_options", build_options_mod);
-    test_evm2_call.root_module.addImport("crypto", crypto_mod);
-    test_evm2_call.root_module.addIncludePath(b.path("src/revm_wrapper"));
+    test_evm_call.root_module.addImport("primitives", primitives_mod);
+    test_evm_call.root_module.addImport("evm", evm_mod);
+    test_evm_call.root_module.addImport("evm", evm_mod);
+    test_evm_call.root_module.addImport("build_options", build_options_mod);
+    test_evm_call.root_module.addImport("crypto", crypto_mod);
+    test_evm_call.root_module.addIncludePath(b.path("src/revm_wrapper"));
     
     // Link REVM library if available
     if (revm_lib) |revm| {
-        test_evm2_call.linkLibrary(revm);
+        test_evm_call.linkLibrary(revm);
     }
     
-    const run_test_evm2_call = b.addRunArtifact(test_evm2_call);
-    const test_evm2_call_step = b.step("test-evm2-call", "Run EVM2 call method tests");
-    test_evm2_call_step.dependOn(&run_test_evm2_call.step);
+    const run_test_evm_call = b.addRunArtifact(test_evm_call);
+    const test_evm_call_step = b.step("test-evm-new-call", "Run EVM call method tests");
+    test_evm_call_step.dependOn(&run_test_evm_call.step);
 
-    // EVM2 CREATE operations tests
-    const test_evm2_create = b.addTest(.{
-        .name = "test-evm2-create",
-        .root_source_file = b.path("test_evm2_create.zig"),
+    // EVM CREATE operations tests
+    const test_evm_create = b.addTest(.{
+        .name = "test-evm-new-create",
+        .root_source_file = b.path("test_evm_create.zig"),
     });
-    test_evm2_create.root_module.addImport("primitives", primitives_mod);
-    test_evm2_create.root_module.addImport("evm", evm_mod);
-    test_evm2_create.root_module.addImport("evm2", evm2_mod);
-    test_evm2_create.root_module.addImport("build_options", build_options_mod);
-    test_evm2_create.root_module.addImport("crypto", crypto_mod);
-    test_evm2_create.root_module.addIncludePath(b.path("src/revm_wrapper"));
+    test_evm_create.root_module.addImport("primitives", primitives_mod);
+    test_evm_create.root_module.addImport("evm", evm_mod);
+    test_evm_create.root_module.addImport("evm", evm_mod);
+    test_evm_create.root_module.addImport("build_options", build_options_mod);
+    test_evm_create.root_module.addImport("crypto", crypto_mod);
+    test_evm_create.root_module.addIncludePath(b.path("src/revm_wrapper"));
     
     // Link REVM library if available
     if (revm_lib) |revm| {
-        test_evm2_create.linkLibrary(revm);
+        test_evm_create.linkLibrary(revm);
     }
     
-    const run_test_evm2_create = b.addRunArtifact(test_evm2_create);
-    const test_evm2_create_step = b.step("test-evm2-create", "Run EVM2 CREATE/CREATE2 tests");
-    test_evm2_create_step.dependOn(&run_test_evm2_create.step);
+    const run_test_evm_create = b.addRunArtifact(test_evm_create);
+    const test_evm_create_step = b.step("test-evm-new-create", "Run EVM CREATE/CREATE2 tests");
+    test_evm_create_step.dependOn(&run_test_evm_create.step);
 
-    // EVM2 Benchmark Runner executable (ReleaseFast)
-    const evm2_runner_exe = b.addExecutable(.{
-        .name = "evm2-runner",
-        .root_source_file = b.path("bench/official/evms/zig2/src/main.zig"),
+    // EVM Benchmark Runner executable (ReleaseFast)
+    const evm_runner_exe = b.addExecutable(.{
+        .name = "evm-runner-new",
+        .root_source_file = b.path("bench/official/evms/zig/src/main.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
-    evm2_runner_exe.root_module.addImport("evm2", evm2_mod);
-    evm2_runner_exe.root_module.addImport("primitives", primitives_mod);
-    evm2_runner_exe.root_module.addImport("crypto", crypto_mod);
+    evm_runner_exe.root_module.addImport("evm", evm_mod);
+    evm_runner_exe.root_module.addImport("primitives", primitives_mod);
+    evm_runner_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(evm2_runner_exe);
+    b.installArtifact(evm_runner_exe);
 
-    const run_evm2_runner_cmd = b.addRunArtifact(evm2_runner_exe);
+    const run_evm_runner_cmd = b.addRunArtifact(evm_runner_exe);
     if (b.args) |args| {
-        run_evm2_runner_cmd.addArgs(args);
+        run_evm_runner_cmd.addArgs(args);
     }
 
-    const evm2_runner_step = b.step("evm2-runner", "Run the EVM2 benchmark runner");
-    evm2_runner_step.dependOn(&run_evm2_runner_cmd.step);
+    const evm_runner_step = b.step("evm-runner-new", "Run the EVM benchmark runner");
+    evm_runner_step.dependOn(&run_evm_runner_cmd.step);
 
-    const build_evm2_runner_step = b.step("build-evm2-runner", "Build the EVM2 benchmark runner (ReleaseFast)");
-    build_evm2_runner_step.dependOn(&b.addInstallArtifact(evm2_runner_exe, .{}).step);
+    const build_evm_runner_step = b.step("build-evm-runner-new", "Build the EVM benchmark runner (ReleaseFast)");
+    build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
 
-    // EVM2 zbench Benchmarks
-    const evm2_bench_exe = b.addExecutable(.{
-        .name = "evm2-bench",
-        .root_source_file = b.path("src/evm2/bench/evm_zbench_simple.zig"),
+    // EVM zbench Benchmarks
+    const evm_bench_exe = b.addExecutable(.{
+        .name = "evm-bench",
+        .root_source_file = b.path("src/evm/bench/evm_zbench_simple.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
-    evm2_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    evm2_bench_exe.root_module.addImport("primitives", primitives_mod);
-    evm2_bench_exe.root_module.addImport("crypto", crypto_mod);
+    evm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    evm_bench_exe.root_module.addImport("primitives", primitives_mod);
+    evm_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(evm2_bench_exe);
+    b.installArtifact(evm_bench_exe);
 
-    const run_evm2_bench_cmd = b.addRunArtifact(evm2_bench_exe);
-    const evm2_bench_step = b.step("evm2-bench", "Run EVM2 zbench benchmarks");
-    evm2_bench_step.dependOn(&run_evm2_bench_cmd.step);
+    const run_evm_bench_cmd = b.addRunArtifact(evm_bench_exe);
+    const evm_bench_step = b.step("evm-bench", "Run EVM zbench benchmarks");
+    evm_bench_step.dependOn(&run_evm_bench_cmd.step);
 
-    const build_evm2_bench_step = b.step("build-evm2-bench", "Build EVM2 zbench benchmarks");
-    build_evm2_bench_step.dependOn(&b.addInstallArtifact(evm2_bench_exe, .{}).step);
+    const build_evm_bench_step = b.step("build-evm-bench", "Build EVM zbench benchmarks");
+    build_evm_bench_step.dependOn(&b.addInstallArtifact(evm_bench_exe, .{}).step);
 
-    // EVM2 comprehensive performance benchmarks
-    const evm2_comprehensive_bench_exe = b.addExecutable(.{
-        .name = "evm2-comprehensive-bench",
-        .root_source_file = b.path("src/evm2/bench/evm_zbench_comprehensive.zig"),
+    // EVM comprehensive performance benchmarks
+    const evm_comprehensive_bench_exe = b.addExecutable(.{
+        .name = "evm-comprehensive-bench",
+        .root_source_file = b.path("src/evm/bench/evm_zbench_comprehensive.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
-    evm2_comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    evm2_comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
-    evm2_comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
+    evm_comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    evm_comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
+    evm_comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(evm2_comprehensive_bench_exe);
+    b.installArtifact(evm_comprehensive_bench_exe);
 
-    const run_evm2_comprehensive_bench_cmd = b.addRunArtifact(evm2_comprehensive_bench_exe);
-    const evm2_comprehensive_bench_step = b.step("evm2-comprehensive-bench", "Run EVM2 comprehensive performance benchmarks");
-    evm2_comprehensive_bench_step.dependOn(&run_evm2_comprehensive_bench_cmd.step);
+    const run_evm_comprehensive_bench_cmd = b.addRunArtifact(evm_comprehensive_bench_exe);
+    const evm_comprehensive_bench_step = b.step("evm-comprehensive-bench", "Run EVM comprehensive performance benchmarks");
+    evm_comprehensive_bench_step.dependOn(&run_evm_comprehensive_bench_cmd.step);
 
-    const build_evm2_comprehensive_bench_step = b.step("build-evm2-comprehensive-bench", "Build EVM2 comprehensive benchmarks");
-    build_evm2_comprehensive_bench_step.dependOn(&b.addInstallArtifact(evm2_comprehensive_bench_exe, .{}).step);
+    const build_evm_comprehensive_bench_step = b.step("build-evm-comprehensive-bench", "Build EVM comprehensive benchmarks");
+    build_evm_comprehensive_bench_step.dependOn(&b.addInstallArtifact(evm_comprehensive_bench_exe, .{}).step);
 
     // EVM vs REVM direct comparison benchmarks
     const evm_revm_comparison_bench_exe = b.addExecutable(.{
         .name = "evm-revm-comparison-bench",
-        .root_source_file = b.path("src/evm2/bench/evm_revm_zbench_comparison.zig"),
+        .root_source_file = b.path("src/evm/bench/evm_revm_zbench_comparison.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
     evm_revm_comparison_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     evm_revm_comparison_bench_exe.root_module.addImport("primitives", primitives_mod);
     evm_revm_comparison_bench_exe.root_module.addImport("evm", evm_mod);
-    evm_revm_comparison_bench_exe.root_module.addImport("evm2", evm2_mod);
+    evm_revm_comparison_bench_exe.root_module.addImport("evm", evm_mod);
     evm_revm_comparison_bench_exe.root_module.addImport("revm", revm_mod);
     evm_revm_comparison_bench_exe.root_module.addImport("crypto", crypto_mod);
 
@@ -2153,39 +2124,39 @@ pub fn build(b: *std.Build) void {
     const build_evm_revm_comparison_bench_step = b.step("build-evm-revm-comparison-bench", "Build EVM vs REVM comparison benchmarks");
     build_evm_revm_comparison_bench_step.dependOn(&b.addInstallArtifact(evm_revm_comparison_bench_exe, .{}).step);
 
-    // Simple EVM2 vs REVM comparison benchmark (working version)
+    // Simple EVM vs REVM comparison benchmark (working version)
     const simple_evm_revm_bench_exe = b.addExecutable(.{
         .name = "simple-evm-revm-bench",
-        .root_source_file = b.path("src/evm2/bench/simple_evm_revm_comparison.zig"),
+        .root_source_file = b.path("src/evm/bench/simple_evm_revm_comparison.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
     simple_evm_revm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     simple_evm_revm_bench_exe.root_module.addImport("primitives", primitives_mod);
-    simple_evm_revm_bench_exe.root_module.addImport("evm2", evm2_mod);
+    simple_evm_revm_bench_exe.root_module.addImport("evm", evm_mod);
     simple_evm_revm_bench_exe.root_module.addImport("revm", revm_mod);
     simple_evm_revm_bench_exe.root_module.addImport("crypto", crypto_mod);
 
     b.installArtifact(simple_evm_revm_bench_exe);
 
     const run_simple_evm_revm_bench_cmd = b.addRunArtifact(simple_evm_revm_bench_exe);
-    const simple_evm_revm_bench_step = b.step("simple-evm-revm-bench", "Run simple EVM2 vs REVM comparison benchmarks");
+    const simple_evm_revm_bench_step = b.step("simple-evm-revm-bench", "Run simple EVM vs REVM comparison benchmarks");
     simple_evm_revm_bench_step.dependOn(&run_simple_evm_revm_bench_cmd.step);
 
-    const build_simple_evm_revm_bench_step = b.step("build-simple-evm-revm-bench", "Build simple EVM2 vs REVM comparison benchmarks");
+    const build_simple_evm_revm_bench_step = b.step("build-simple-evm-revm-bench", "Build simple EVM vs REVM comparison benchmarks");
     build_simple_evm_revm_bench_step.dependOn(&b.addInstallArtifact(simple_evm_revm_bench_exe, .{}).step);
 
     // Comprehensive EVM comparison benchmarks
     const comprehensive_bench_exe = b.addExecutable(.{
         .name = "comprehensive-evm-bench",
-        .root_source_file = b.path("src/evm2/bench/comprehensive_evm_bench.zig"),
+        .root_source_file = b.path("src/evm/bench/comprehensive_evm_bench.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
     comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
     comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
-    comprehensive_bench_exe.root_module.addImport("evm2", evm2_mod);
+    comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
     comprehensive_bench_exe.root_module.addImport("revm", revm_mod);
     comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
     comprehensive_bench_exe.root_module.addImport("build_options", build_options_mod);
@@ -2200,67 +2171,67 @@ pub fn build(b: *std.Build) void {
     build_comprehensive_bench_step.dependOn(&b.addInstallArtifact(comprehensive_bench_exe, .{}).step);
 
     // ========================================================================
-    // EVM2 C API Library
+    // EVM C API Library
     // ========================================================================
 
     // Create C API module
-    const evm2_c_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm2/root_c.zig"),
+    const evm_c_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm/root_c.zig"),
         .target = target,
         .optimize = optimize,
     });
-    evm2_c_mod.addImport("primitives", primitives_mod);
-    evm2_c_mod.addImport("evm", evm_mod);
-    evm2_c_mod.addImport("build_options", build_options_mod);
-    evm2_c_mod.addImport("crypto", crypto_mod);
+    evm_c_mod.addImport("primitives", primitives_mod);
+    evm_c_mod.addImport("evm", evm_mod);
+    evm_c_mod.addImport("build_options", build_options_mod);
+    evm_c_mod.addImport("crypto", crypto_mod);
 
     // Create C API static library
-    const evm2_c_static = b.addLibrary(.{
-        .name = "evm2_c",
+    const evm_c_static = b.addLibrary(.{
+        .name = "evm_c",
         .linkage = .static,
-        .root_module = evm2_c_mod,
+        .root_module = evm_c_mod,
     });
-    b.installArtifact(evm2_c_static);
+    b.installArtifact(evm_c_static);
 
     // Create C API shared library
-    const evm2_c_shared = b.addLibrary(.{
-        .name = "evm2_c",
+    const evm_c_shared = b.addLibrary(.{
+        .name = "evm_c",
         .linkage = .dynamic,
-        .root_module = evm2_c_mod,
+        .root_module = evm_c_mod,
     });
-    b.installArtifact(evm2_c_shared);
+    b.installArtifact(evm_c_shared);
 
     // Build steps for C libraries
-    const evm2_c_static_step = b.step("evm2-c-static", "Build EVM2 C API static library");
-    evm2_c_static_step.dependOn(&evm2_c_static.step);
+    const evm_c_static_step = b.step("evm-c-static", "Build EVM C API static library");
+    evm_c_static_step.dependOn(&evm_c_static.step);
 
-    const evm2_c_shared_step = b.step("evm2-c-shared", "Build EVM2 C API shared library");
-    evm2_c_shared_step.dependOn(&evm2_c_shared.step);
+    const evm_c_shared_step = b.step("evm-c-shared", "Build EVM C API shared library");
+    evm_c_shared_step.dependOn(&evm_c_shared.step);
 
-    const evm2_c_step = b.step("evm2-c", "Build EVM2 C API static library (for Go CLI)");
-    evm2_c_step.dependOn(&evm2_c_static.step);
+    const evm_c_step = b.step("evm-c", "Build EVM C API static library (for Go CLI)");
+    evm_c_step.dependOn(&evm_c_static.step);
 
     // C API Tests
-    const test_evm2_c = b.addTest(.{
-        .name = "test-evm2-c",
-        .root_module = evm2_c_mod,
+    const test_evm_c = b.addTest(.{
+        .name = "test-evm-new-c",
+        .root_module = evm_c_mod,
     });
-    const run_test_evm2_c = b.addRunArtifact(test_evm2_c);
-    const test_evm2_c_step = b.step("test-evm2-c", "Run EVM2 C API tests");
-    test_evm2_c_step.dependOn(&run_test_evm2_c.step);
+    const run_test_evm_c = b.addRunArtifact(test_evm_c);
+    const test_evm_c_step = b.step("test-evm-new-c", "Run EVM C API tests");
+    test_evm_c_step.dependOn(&run_test_evm_c.step);
 
     // =============================================================================
     // CLI BUILD TARGET
     // =============================================================================
 
-    // Create a custom step to find and copy the EVM2 C library to a known location for Go CGO
+    // Create a custom step to find and copy the EVM C library to a known location for Go CGO
     const find_and_copy_lib_cmd = b.addSystemCommand(&[_][]const u8{
         "sh", "-c", 
-        "mkdir -p zig-cache/lib && find .zig-cache/o -name 'libevm2_c.a' -exec cp {} zig-cache/lib/libevm2_c.a \\;"
+        "mkdir -p zig-cache/lib && find .zig-cache/o -name 'libevm_c.a' -exec cp {} zig-cache/lib/libevm_c.a \\;"
     });
-    find_and_copy_lib_cmd.step.dependOn(&evm2_c_static.step);
+    find_and_copy_lib_cmd.step.dependOn(&evm_c_static.step);
 
-    // CLI build command that builds the Go debugger with EVM2 integration
+    // CLI build command that builds the Go debugger with EVM integration
     const cli_cmd = blk: {
         // Output binary name based on target platform
         const exe_name = if (target.result.os.tag == .windows) "evm-debugger.exe" else "evm-debugger";
@@ -2297,7 +2268,7 @@ pub fn build(b: *std.Build) void {
         cmd.setEnvironmentVariable("CGO_CFLAGS", cflags);
         
         // Use the copied library in a fixed location
-        const ldflags = "-L../../zig-cache/lib -levm2_c";
+        const ldflags = "-L../../zig-cache/lib -levm_c";
         cmd.setEnvironmentVariable("CGO_LDFLAGS", ldflags);
         
         break :blk cmd;
@@ -2306,7 +2277,7 @@ pub fn build(b: *std.Build) void {
     // CLI build depends on the library being copied to the known location
     cli_cmd.step.dependOn(&find_and_copy_lib_cmd.step);
     
-    const cli_step = b.step("cli", "Build the EVM debugger CLI with EVM2 integration");
+    const cli_step = b.step("cli", "Build the EVM debugger CLI with EVM integration");
     cli_step.dependOn(&cli_cmd.step);
 
     // CLI clean command
