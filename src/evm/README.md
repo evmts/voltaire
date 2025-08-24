@@ -42,10 +42,10 @@ Type-safe storage abstraction. VTable-based polymorphism with zero overhead. Sup
 
 ## Configuration
 
-The EVM is highly configurable through compile-time parameters:
+Configure EVM through compile-time parameters:
 
 ```zig
-const evm_config = EvmConfig{
+const config = EvmConfig{
     .frame_config = .{
         .stack_size = 1024,
         .WordType = u256,
@@ -55,34 +55,26 @@ const evm_config = EvmConfig{
         .TracerType = NoOpTracer,
     },
     .max_call_depth = 1024,
-    .planner_strategy = .standard,
+    .planner_strategy = .minimal,
 };
-
-const EvmType = Evm(evm_config);
+const EvmType = Evm(config);
 ```
 
-## Usage Example
+## Usage
+
+Initialize and execute:
 
 ```zig
-const std = @import("std");
-const evm = @import("evm");
-
 // Create database
 var memory_db = evm.MemoryDatabase.init(allocator);
 defer memory_db.deinit();
 
-// Create EVM instance
+// Create EVM
 const EvmType = evm.Evm(.{});
-var vm = try EvmType.init(
-    allocator,
-    memory_db.database(),
-    .{}, // Transaction context
-    .{}, // Block info
-);
+var vm = try EvmType.init(allocator, memory_db.database(), context, block_info);
 defer vm.deinit();
 
 // Deploy contract
-const bytecode = &[_]u8{ /* ... */ };
 try vm.database.set_account(contract_address, .{
     .balance = 0,
     .nonce = 0,
@@ -100,38 +92,27 @@ const result = try vm.call(.{
 });
 ```
 
-## Unified Plan Interface
+## Plan Interface
 
-The EVM uses a unified interface pattern that allows the same frame interpreter code to work with different plan implementations (minimal, advanced, debug). This achieves zero-cost abstraction while supporting different optimization strategies.
+Unified interface enables same frame interpreter code to work with different plan implementations (minimal, advanced, debug). Provides zero-cost abstraction across optimization strategies.
 
-### How It Works
-
-All plan types implement the same core interface:
+### Interface Methods
 
 ```zig
-// Common interface methods all plans must implement
 pub fn getMetadata(self: *const Self, idx: *InstructionIndexType, comptime opcode: anytype) MetadataType
 pub fn getNextInstruction(self: *const Self, idx: *InstructionIndexType, comptime opcode: anytype) *const HandlerFn
 pub fn isValidJumpDest(self: *const Self, pc: PcType) bool
 ```
 
-### Key Differences Between Plans
+### Plan Types
 
-**PlanMinimal**:
-- `idx` represents the actual PC (program counter) in bytecode
-- Reads opcodes and data directly from bytecode at runtime
-- No preprocessing or optimization
-- Minimal memory footprint
+**PlanMinimal**: `idx` represents actual PC in bytecode. Reads opcodes directly at runtime. No preprocessing. Minimal memory footprint.
 
-**Plan (Advanced)**:
-- `idx` represents an index into an optimized instruction stream
-- Pre-processes bytecode into handler pointers + inline metadata
-- Supports opcode fusion and constant inlining
-- PC to instruction index mapping for jumps
+**Plan (Advanced)**: `idx` represents instruction stream index. Pre-processes bytecode into handler pointers with inline metadata. Supports opcode fusion and constant inlining.
 
 ### Handler Pattern
 
-All opcode handlers follow the same pattern regardless of plan type:
+Standard opcode handler pattern:
 
 ```zig
 fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -139,75 +120,60 @@ fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
     const interpreter = @as(*Self, @fieldParentPtr("frame", self));
     
-    // Execute opcode operation
     try self.stack.push(value);
     
-    // Get next handler - works with any plan type
     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .OPCODE);
     return @call(.always_tail, next_handler, .{ self, plan_ptr });
 }
 ```
 
-This design enables:
-- Single interpreter implementation for all strategies
-- Runtime selection of optimization level
-- Easy addition of new plan strategies
-- Zero overhead through compile-time dispatch
-
-## Optimization Features
+## Optimizations
 
 ### Opcode Fusion
-The planner can detect and fuse common opcode patterns:
-- `PUSH + ADD` → `PUSH_ADD_INLINE`
-- `PUSH + MUL` → `PUSH_MUL_INLINE`
-- `PUSH + JUMP` → `PUSH_JUMP_INLINE`
+Fuses common patterns: `PUSH + ADD` → `PUSH_ADD_INLINE`, `PUSH + MUL` → `PUSH_MUL_INLINE`, `PUSH + JUMP` → `PUSH_JUMP_INLINE`.
 
 ### Constant Inlining
-Small constants are embedded directly in the instruction stream, reducing memory accesses.
+Embeds small constants directly in instruction stream to reduce memory accesses.
 
-### Platform-Specific Optimizations
-- 64-bit platforms: Larger inline constants, more aggressive fusion
-- 32-bit platforms: Optimized for smaller memory footprint
+### Platform Adaptation
+- 64-bit: Larger inline constants, aggressive fusion
+- 32-bit: Optimized memory footprint
 
-## Tracing and Debugging
+## Tracing
 
-Multiple tracer implementations are available:
-- **NoOpTracer**: Zero overhead for production use
-- **DebuggingTracer**: Full execution history with breakpoints
-- **LoggingTracer**: Structured logging to stdout
-- **FileTracer**: High-performance file output
+Available tracer implementations:
 
-Enable tracing by configuring the Frame:
+- `NoOpTracer`: Zero overhead for production
+- `DebuggingTracer`: Full execution history with breakpoints  
+- `LoggingTracer`: Structured logging to stdout
+- `FileTracer`: High-performance file output
+
+Configure in Frame:
 ```zig
 .TracerType = DebuggingTracer,
 ```
 
 ## Testing
 
-The module includes comprehensive tests colocated with implementation files. Run tests with:
+Run tests:
 ```bash
 zig build test
 ```
 
-## Performance Considerations
+Tests colocated with implementation files.
 
-1. **Cache-Conscious Design**: Hot data structures are aligned and grouped
-2. **Unsafe Operations**: Use `_unsafe` variants when bounds are pre-validated
-3. **Memory Pooling**: Reuse allocations where possible
-4. **Branch Hints**: Critical paths use `@branchHint` for better prediction
+## Performance Notes
 
-## Future Improvements
+- Cache-conscious design with aligned data structures
+- Use `_unsafe` variants when bounds pre-validated
+- Memory pooling for allocation reuse
+- Branch hints on critical paths
 
-- Complete advanced planner implementation
-- SIMD optimizations for bulk operations
-- JIT compilation for hot paths
-- More sophisticated opcode fusion patterns
-- Tail call optimization investigation
+## Building
 
-## Contributing
-
-See the main project's CONTRIBUTING.md for guidelines. Key points:
-- Follow Zig naming conventions
-- Write tests for new features
-- Maintain backward compatibility
-- Document complex optimizations
+Standard Zig build:
+```bash
+zig build
+zig build test
+zig build bench
+```

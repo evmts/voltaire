@@ -9002,7 +9002,7 @@ test "_calculate_call_gas existing account costs - account with code" {
     // Pre-create an account with code (non-empty code hash)
     const existing_address = Address.from_u256(0x98765);
     const code_hash = primitives.keccak256(&[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }); // Simple contract code
-    const account = database_interface.Account{
+    const account = DatabaseInterface.Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -9011,14 +9011,14 @@ test "_calculate_call_gas existing account costs - account with code" {
     try memory_db.set_account(existing_address, account);
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface, null, null);
-    defer vm.deinit();
-
-    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
-    defer contract.deinit(allocator, null);
-
-    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-    defer frame.deinit();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
 
     const gas_cost = frame._calculate_call_gas(existing_address, 0, false);
     
@@ -9035,7 +9035,7 @@ test "_calculate_call_gas existing account costs - account with nonce" {
 
     // Pre-create an account with non-zero nonce (but zero balance and empty code)
     const existing_address = Address.from_u256(0x11111);
-    const account = database_interface.Account{
+    const account = DatabaseInterface.Account{
         .nonce = 5,
         .balance = 0,
         .code_hash = primitives.EMPTY_CODE_HASH,
@@ -9044,14 +9044,14 @@ test "_calculate_call_gas existing account costs - account with nonce" {
     try memory_db.set_account(existing_address, account);
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface, null, null);
-    defer vm.deinit();
-
-    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
-    defer contract.deinit(allocator, null);
-
-    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-    defer frame.deinit();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
 
     const gas_cost = frame._calculate_call_gas(existing_address, 0, false);
     
@@ -9065,20 +9065,17 @@ test "_calculate_call_gas database error handling" {
     // Implementation will handle database errors gracefully
     const allocator = std.testing.allocator;
     
-    // For now, we'll just verify that the function exists and compiles
-    // The actual database error testing will be implemented once we have the database integration
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-
     const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface, null, null);
-    defer vm.deinit();
-
-    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
-    defer contract.deinit(allocator, null);
-
-    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-    defer frame.deinit();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
 
     const test_address = Address.from_u256(0x999);
     const gas_cost = frame._calculate_call_gas(test_address, 0, false);

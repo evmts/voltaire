@@ -1,8 +1,18 @@
-# EVM Documentation
+# EVM
 
-## Overview
+Transaction execution orchestrator for Ethereum smart contracts.
 
-The EVM (Ethereum Virtual Machine) is the main transaction execution orchestrator that provides comprehensive smart contract execution capabilities. It manages call stacks, state transitions, gas accounting, and coordinates between Frame execution contexts, Host interfaces, and database storage. The EVM serves as the central authority for transaction-level operations including nested calls, contract creation, and blockchain environment access.
+## Synopsis
+
+```zig
+const EvmType = Evm(config);
+var evm = try EvmType.init(allocator, database, block_info, context, gas_price, origin, hardfork);
+const result = try evm.call(call_params);
+```
+
+## Description
+
+Manages transaction-level execution, call stacks, state transitions, and gas accounting. Coordinates Frame execution contexts, Host interfaces, and database storage for complete EVM operation.
 
 ## Architecture & Design
 
