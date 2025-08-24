@@ -259,8 +259,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         }
         
         pub fn interpret(self: *Self) !void {
-            // Debug print the plan in debug builds
-            if (builtin.mode == .Debug) {
+            // Debug print the plan in debug builds (disabled for WASM)
+            if (builtin.mode == .Debug and builtin.target.cpu.arch != .wasm32) {
                 self.plan.debugPrint();
             }
             
