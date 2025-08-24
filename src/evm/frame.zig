@@ -125,10 +125,12 @@ pub fn Frame(comptime config: FrameConfig) type {
             var output_data = std.ArrayList(u8).init(allocator);
             errdefer output_data.deinit();
 
+            var gas_mgr = try GasManagerType.init(gas_remaining);
+            
             return Self{
                 .stack = stack,
                 .bytecode = bytecode,
-                .gas_remaining = gas_remaining,
+                .gas_manager = gas_mgr,
                 .tracer = if (config.TracerType) |T| T.init() else {},
                 .memory = memory,
                 .database = database,
@@ -238,7 +240,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             return Self{
                 .stack = new_stack,
                 .bytecode = self.bytecode, // Bytecode is immutable, share reference
-                .gas_remaining = self.gas_remaining,
+                .gas_manager = self.gas_manager, // Copy gas manager state
                 .tracer = if (config.TracerType) |_| self.tracer else {},
                 .memory = new_memory,
                 .database = self.database,
@@ -255,9 +257,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Used by DebugPlan to validate execution.
         pub fn assertEqual(self: *const Self, other: *const Self) void {
             // Compare gas
-            if (self.gas_remaining != other.gas_remaining) {
+            if (self.gas_manager.rawRemaining() != other.gas_manager.rawRemaining()) {
                 if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
-                    std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_remaining, other.gas_remaining });
+                    std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_manager.rawRemaining(), other.gas_manager.rawRemaining() });
                 }
             }
 

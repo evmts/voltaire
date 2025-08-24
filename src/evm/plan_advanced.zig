@@ -999,8 +999,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Test PUSH1
         var idx: PlanMinimal.InstructionIndexType = 0;
@@ -1055,8 +1054,7 @@ test "PlanMinimal getNextInstruction advances correctly" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     var idx: PlanMinimal.InstructionIndexType = 0;
     
@@ -1107,8 +1105,7 @@ test "PlanMinimal JUMPDEST detection with PUSH data" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Check JUMPDEST detection
     try std.testing.expect(!plan.isValidJumpDest(0)); // PUSH2
@@ -1134,8 +1131,7 @@ test "PlanMinimal edge cases" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         try std.testing.expectEqual(@as(usize, 0), plan.bytecode.len);
     }
@@ -1150,8 +1146,7 @@ test "PlanMinimal edge cases" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         try std.testing.expect(plan.isOpcodeStart(0));
         try std.testing.expect(!plan.isValidJumpDest(0));
@@ -1174,8 +1169,7 @@ test "PlanMinimal edge cases" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Should mark available bytes as push data
         try std.testing.expect(plan.isOpcodeStart(0));  // PUSH3
@@ -1225,8 +1219,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
     handlers[@intFromEnum(Opcode.MUL)] = &mulHandler;
     handlers[@intFromEnum(Opcode.STOP)] = &stopHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     var idx: PlanMinimal.InstructionIndexType = 0;
     
@@ -1268,8 +1261,7 @@ test "PlanMinimal PC opcode returns correct value" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Test PC at position 2
     var idx: PlanMinimal.InstructionIndexType = 2;
@@ -1827,8 +1819,7 @@ test "Plan and PlanMinimal interoperability" {
     var planner = try Planner.init(allocator, 100);
     defer planner.deinit();
     
-    var minimal_plan = try planner.create_minimal_plan(allocator, handlers);
-    defer minimal_plan.deinit(allocator);
+    const minimal_plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Test that both plans identify the same opcode starts
     const expected_opcode_positions = [_]usize{ 0, 2, 5, 6, 7 };
@@ -1972,8 +1963,7 @@ test "PlanMinimal JUMPDEST metadata" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Test JUMPDEST metadata (should be dummy values)
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -2035,8 +2025,7 @@ test "PlanMinimal simulated execution flow" {
     handlers[@intFromEnum(Opcode.ADD)] = &addHandler;
     handlers[@intFromEnum(Opcode.STOP)] = &stopHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Simulate execution flow
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -2154,8 +2143,7 @@ test "Plan performance and memory efficiency benchmarking" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     const end_time = std.time.nanoTimestamp();
     const duration_ns = end_time - start_time;
@@ -2212,8 +2200,7 @@ test "Plan synthetic opcode edge cases and error handling" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Verify the synthetic opcode is detected and metadata is available
         const metadata = plan.getMetadata(0, test_case.synthetic, undefined);
@@ -2295,8 +2282,7 @@ test "Plan bytecode validation and malformed input handling" {
         var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan even with malformed bytecode
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Basic validation that plan was created
         try std.testing.expect(plan.bytecode.len == test_case.bytecode.len);
@@ -2365,8 +2351,7 @@ test "Plan complete opcode coverage validation" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Verify plan was created successfully with all opcodes
     try std.testing.expect(plan.bytecode.len == bytecode.len);
@@ -2394,8 +2379,7 @@ test "Plan concurrent access simulation" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Simulate multiple "threads" accessing the same plan
     const num_simulated_threads = 10;
@@ -2451,8 +2435,7 @@ test "Plan instruction stream integrity validation" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Validate instruction stream integrity
     var expected_pc: usize = 0;
@@ -2506,8 +2489,7 @@ test "Plan extreme configuration edge cases" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    var plan = try planner.create_minimal_plan(allocator, handlers);
-    defer plan.deinit(allocator);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     try std.testing.expect(plan.bytecode.len == 1);
     try std.testing.expectEqual(@as(u8, @intFromEnum(Opcode.STOP)), plan.bytecode[0]);
@@ -2536,8 +2518,7 @@ test "Plan error recovery and resilience testing" {
         var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan without crashing
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Basic integrity check
         try std.testing.expect(plan.bytecode.len == test_bytecode.len);
@@ -2665,8 +2646,7 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        var plan = try planner.create_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Validate plan was created successfully
         try std.testing.expect(plan.bytecode.len == pattern.bytecode.len);
@@ -2737,8 +2717,7 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
         const Planner = @import("planner.zig").createPlanner(test_config.config);
         var planner = try Planner.init(allocator, 100);
         
-        var plan = try planner.create_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Verify plan creation succeeds
         try std.testing.expect(plan.bytecode.len == bytecode.len);
@@ -2822,8 +2801,7 @@ test "Plan comprehensive JUMPDEST analysis with pathological patterns" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        var plan = try planner.create_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Verify valid JUMPDEST detection
         for (pattern.valid_jumpdests) |valid_pc| {
@@ -2966,8 +2944,7 @@ test "Plan gas cost estimation accuracy validation" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Find the test opcode in bytecode and get its metadata
         for (bytecode[0..bytecode_len], 0..) |byte, pc| {
@@ -3176,8 +3153,7 @@ test "Plan configuration boundary and mutation stress testing" {
         const Planner = @import("planner.zig").createPlanner(config);
         var planner = try Planner.init(allocator, 100);
         
-        var plan = try planner.create_minimal_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         try std.testing.expect(plan.bytecode.len == test_bytecode.len);
     }
@@ -3254,8 +3230,7 @@ test "Plan bytecode analysis completeness validation" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        var plan = try planner.create_plan(allocator, handlers);
-        defer plan.deinit(allocator);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Test comprehensive analysis capabilities
         
