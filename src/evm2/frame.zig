@@ -1086,7 +1086,7 @@ test "Frame stack operations" {
     const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test push operations through stack
@@ -1117,7 +1117,7 @@ test "Frame stack pop operations" {
     const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with some values
@@ -1145,7 +1145,7 @@ test "Frame stack set_top operations" {
     const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with some values
@@ -1177,7 +1177,7 @@ test "Frame stack peek operations" {
     const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with values
@@ -1229,7 +1229,7 @@ test "Frame op_stop returns stop error" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Execute op_stop - should return STOP error
@@ -1241,7 +1241,7 @@ test "Frame op_pop removes top stack item" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ @intFromEnum(Opcode.POP), @intFromEnum(Opcode.STOP) };
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with some values
@@ -1269,7 +1269,7 @@ test "Frame op_push0 pushes zero to stack" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH0), @intFromEnum(Opcode.STOP) };
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH0 using push0_handler
@@ -1282,7 +1282,7 @@ test "Frame PUSH1 through interpreter" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x60, 0x42, 0x60, 0xFF, 0x00 }; // PUSH1 0x42 PUSH1 0xFF STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH1 opcodes using push1_handler
@@ -1299,7 +1299,7 @@ test "Frame PUSH2 through interpreter" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x61, 0x12, 0x34, 0x00 }; // PUSH2 0x1234 STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH2 opcodes using push2_handler
@@ -1320,7 +1320,7 @@ test "Frame op_push32 reads 32 bytes from bytecode" {
     }
     bytecode[33] = 0x00; // STOP
 
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH32 using push32_handler
@@ -1333,7 +1333,7 @@ test "Frame op_push3 reads 3 bytes from bytecode" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x62, 0xAB, 0xCD, 0xEF, 0x00 }; // PUSH3 0xABCDEF STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH3 using push3_handler
@@ -1347,7 +1347,7 @@ test "Frame op_push7 reads 7 bytes from bytecode" {
 
     // PUSH7 with specific pattern
     const bytecode = [_]u8{ 0x66, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0x00 }; // PUSH7 STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH7 using push7_handler
@@ -1367,7 +1367,7 @@ test "Frame op_push16 reads 16 bytes from bytecode" {
     }
     bytecode[17] = 0x00; // STOP
 
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Calculate expected value
@@ -1394,7 +1394,7 @@ test "Frame op_push31 reads 31 bytes from bytecode" {
     }
     bytecode[32] = 0x00; // STOP
 
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH31 using push31_handler
@@ -1410,7 +1410,7 @@ test "Frame op_dup1 duplicates top stack item" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x80, 0x00 }; // DUP1 STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with value
@@ -1433,7 +1433,7 @@ test "Frame op_dup16 duplicates 16th stack item" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x8f, 0x00 }; // DUP16 STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with values 1-16
@@ -1462,7 +1462,7 @@ test "Frame op_swap1 swaps top two stack items" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x90, 0x00 }; // SWAP1 STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with values
@@ -1485,7 +1485,7 @@ test "Frame op_swap16 swaps top with 17th stack item" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x9f, 0x00 }; // SWAP16 STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Setup stack with values 1-17
@@ -1513,7 +1513,7 @@ test "Frame DUP2-DUP15 operations" {
     const allocator = std.testing.allocator;
     const F = Frame(.{});
     const bytecode = [_]u8{0x00}; // STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Push 16 distinct values
@@ -1560,7 +1560,7 @@ test "Frame SWAP2-SWAP15 operations" {
     const allocator = std.testing.allocator;
     const F = Frame(.{});
     const bytecode = [_]u8{0x00}; // STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Push 17 distinct values to test all SWAP operations
@@ -1772,7 +1772,7 @@ test "Frame op_and bitwise AND operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x16, 0x00 }; // AND STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 0xFF & 0x0F = 0x0F
@@ -1811,7 +1811,7 @@ test "Frame op_or bitwise OR operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x17, 0x00 }; // OR STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 0xF0 | 0x0F = 0xFF
@@ -1850,7 +1850,7 @@ test "Frame op_xor bitwise XOR operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x18, 0x00 }; // XOR STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 0xFF ^ 0xFF = 0
@@ -1880,7 +1880,7 @@ test "Frame op_not bitwise NOT operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x19, 0x00 }; // NOT STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test ~0 = max value
@@ -1913,7 +1913,7 @@ test "Frame op_byte extracts single byte from word" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1A, 0x00 }; // BYTE STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test extracting byte 31 (rightmost) from 0x...FF
@@ -1951,7 +1951,7 @@ test "Frame op_shl shift left operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1B, 0x00 }; // SHL STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 1 << 4 = 16
@@ -1981,7 +1981,7 @@ test "Frame op_shr logical shift right operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1C, 0x00 }; // SHR STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 16 >> 4 = 1
@@ -2011,7 +2011,7 @@ test "Frame op_sar arithmetic shift right operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1D, 0x00 }; // SAR STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test positive number: 16 >> 4 = 1
@@ -2051,7 +2051,7 @@ test "Frame op_add addition with wrapping overflow" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x01, 0x00 }; // ADD STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 10 + 20 = 30
@@ -2081,7 +2081,7 @@ test "Frame op_mul multiplication with wrapping overflow" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x02, 0x00 }; // MUL STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 5 * 6 = 30
@@ -2112,7 +2112,7 @@ test "Frame op_sub subtraction with wrapping underflow" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x03, 0x00 }; // SUB STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 30 - 10 = 20
@@ -2142,7 +2142,7 @@ test "Frame op_div unsigned integer division" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x04, 0x00 }; // DIV STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 20 / 5 = 4
@@ -2172,7 +2172,7 @@ test "Frame op_sdiv signed integer division" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x05, 0x00 }; // SDIV STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 20 / 5 = 4 (positive / positive)
@@ -2213,7 +2213,7 @@ test "Frame op_mod modulo remainder operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x06, 0x00 }; // MOD STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 17 % 5 = 2
@@ -2243,7 +2243,7 @@ test "Frame op_smod signed modulo remainder operation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x07, 0x00 }; // SMOD STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 17 % 5 = 2 (positive % positive)
@@ -2283,7 +2283,7 @@ test "Frame op_addmod addition modulo n" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x08, 0x00 }; // ADDMOD STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test (10 + 20) % 7 = 2
@@ -2319,7 +2319,7 @@ test "Frame op_mulmod multiplication modulo n" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x09, 0x00 }; // MULMOD STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test (10 * 20) % 7 = 200 % 7 = 4
@@ -2367,7 +2367,7 @@ test "Frame op_exp exponentiation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x0A, 0x00 }; // EXP STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 2^10 = 1024
@@ -2411,7 +2411,7 @@ test "Frame op_signextend sign extension" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x0B, 0x00 }; // SIGNEXTEND STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test extending positive 8-bit value (0x7F)
@@ -2457,7 +2457,7 @@ test "Frame op_gas returns gas remaining" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x5A, 0x00 }; // GAS STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Test op_gas pushes gas_remaining to stack
@@ -2489,7 +2489,7 @@ test "Frame op_lt less than comparison" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x10, 0x00 }; // LT STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 10 < 20 = 1
@@ -2526,7 +2526,7 @@ test "Frame op_gt greater than comparison" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x11, 0x00 }; // GT STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 20 > 10 = 1
@@ -2563,7 +2563,7 @@ test "Frame op_slt signed less than comparison" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x12, 0x00 }; // SLT STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 10 < 20 = 1 (positive comparison)
@@ -2603,7 +2603,7 @@ test "Frame op_sgt signed greater than comparison" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x13, 0x00 }; // SGT STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 20 > 10 = 1 (positive comparison)
@@ -2643,7 +2643,7 @@ test "Frame op_eq equality comparison" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x14, 0x00 }; // EQ STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test 10 == 10 = 1
@@ -2680,7 +2680,7 @@ test "Frame op_iszero zero check" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x15, 0x00 }; // ISZERO STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test iszero(0) = 1
@@ -2714,7 +2714,7 @@ test "Frame JUMP through interpreter" {
 
     // JUMP STOP JUMPDEST STOP (positions: 0=JUMP, 1=STOP, 2=JUMPDEST, 3=STOP)
     const bytecode = [_]u8{ 0x56, 0x00, 0x5B, 0x00 };
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle JUMP opcodes using op_jump_handler
@@ -2730,7 +2730,7 @@ test "Frame JUMPI through interpreter" {
 
     // JUMPI STOP JUMPDEST STOP (positions: 0=JUMPI, 1=STOP, 2=JUMPDEST, 3=STOP)
     const bytecode = [_]u8{ 0x57, 0x00, 0x5B, 0x00 };
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle JUMPI opcodes using op_jumpi_handler
@@ -2745,7 +2745,7 @@ test "Frame op_jumpdest no-op" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x5B, 0x00 }; // JUMPDEST STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // JUMPDEST should do nothing
@@ -2758,7 +2758,7 @@ test "Frame op_invalid causes error" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0xFE, 0x00 }; // INVALID STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // INVALID should always return error
@@ -2770,7 +2770,7 @@ test "Frame op_keccak256 hash computation" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x20, 0x00 }; // KECCAK256 STOP
-    var frame = try F.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {}, null);
     defer frame.deinit(allocator);
 
     // Test keccak256 of empty data
@@ -2881,7 +2881,7 @@ test "Frame op_msize memory size tracking" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x59, 0x00 }; // MSIZE STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Initially memory size should be 0
@@ -2915,7 +2915,7 @@ test "Frame op_mload memory load operations" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x51, 0x00 }; // MLOAD STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Store a value first
@@ -2948,7 +2948,7 @@ test "Frame op_mstore memory store operations" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x52, 0x00 }; // MSTORE STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Store multiple values at different offsets
@@ -2980,7 +2980,7 @@ test "Frame op_mstore8 byte store operations" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x53, 0x00 }; // MSTORE8 STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Store a single byte
@@ -3083,7 +3083,7 @@ test "Frame memory expansion edge cases" {
     const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x53, 0x00 }; // MSTORE8 STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // Test memory expansion with MSTORE8 at various offsets
@@ -3134,7 +3134,7 @@ test "Frame op_mcopy memory copy operations" {
     const allocator = std.testing.allocator;
     const F = Frame(.{});
     const bytecode = [_]u8{ 0x5e, 0x00 }; // MCOPY STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // First, set up some data in memory
@@ -3226,7 +3226,7 @@ test "Frame JUMPDEST validation comprehensive" {
         0x60, 0x02, // PUSH1 2 (offset 14-15)
         0x00, // STOP (offset 16)
     };
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
     // The interpreter would handle JUMP/JUMPI opcodes with proper JUMPDEST validation
@@ -3345,7 +3345,7 @@ test "Frame storage operations without database should fail" {
     const F = Frame(.{});
     
     const bytecode = [_]u8{ 0x54, 0x00 }; // SLOAD STOP
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // All storage operations should return InvalidOpcode when no database
@@ -3554,7 +3554,7 @@ test "Frame LOG0 operation" {
     const F = Frame(.{});
     
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // Store some data in memory
@@ -3588,7 +3588,7 @@ test "Frame LOG1 operation with topic" {
     const F = Frame(.{});
     
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // Store some data in memory
@@ -3627,7 +3627,7 @@ test "Frame LOG4 operation with multiple topics" {
     const F = Frame(.{});
     
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // Topics for LOG4
@@ -3666,7 +3666,7 @@ test "Frame LOG in static context fails" {
     const F = Frame(.{});
     
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // Set static context
@@ -3685,7 +3685,7 @@ test "Frame LOG with out of bounds memory access" {
     const F = Frame(.{});
     
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // Push data for LOG0 with huge offset
