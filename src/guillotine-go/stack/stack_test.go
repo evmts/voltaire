@@ -161,7 +161,7 @@ func TestStack_PeekOperations(t *testing.T) {
 		// Should error when peeking beyond stack size
 		_, err := stack.PeekAt(10)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "index")
+		assert.Contains(t, err.Error(), "underflow")
 	})
 }
 

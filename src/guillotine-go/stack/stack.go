@@ -331,7 +331,13 @@ func (s *Stack) Dup(depth uint32) error {
 		return ErrStackClosed
 	}
 
-	result := C.evm_stack_dup(s.handle, C.uint32_t(depth))
+	// Convert from 1-based EVM convention to 0-based C API convention
+	if depth == 0 {
+		return ErrInvalidIndex
+	}
+	cDepth := depth - 1
+
+	result := C.evm_stack_dup(s.handle, C.uint32_t(cDepth))
 	return cErrorToGoError(result)
 }
 
