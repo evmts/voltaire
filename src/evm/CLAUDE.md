@@ -1,11 +1,11 @@
-# CLAUDE.md - EVM2 Module Development Guide
+# CLAUDE.md - EVM Module Development Guide
 
-This document provides comprehensive development guidelines for the EVM2 module, a high-performance implementation of the Ethereum Virtual Machine in Zig designed for production use and research.
+This document provides comprehensive development guidelines for the EVM module, a high-performance implementation of the Ethereum Virtual Machine in Zig designed for production use and research.
 
-## EVM2 Architecture Overview
+## EVM Architecture Overview
 
-EVM2 is a ground-up reimplementation of the EVM with the following design goals:
-- **High Performance**: Tail call optimization, cache-conscious data structures, and optimized bytecode planning
+The EVM is a ground-up implementation with the following design goals:
+- **High Performance**: Cache-conscious data structures, pointer-based stack, and optimized bytecode planning
 - **Modularity**: Pluggable components (database, tracer, planner) with clear interfaces
 - **Type Safety**: Compile-time configuration validation and platform-specific optimizations
 - **Correctness**: Comprehensive test coverage and EVM specification compliance
@@ -33,11 +33,14 @@ EVM2 is a ground-up reimplementation of the EVM with the following design goals:
 ### Build and Test Commands
 
 ```bash
-# Build the EVM2 module
-zig build evm2
+# Build the entire project including EVM
+zig build
 
-# Run EVM2 tests
-zig build test-evm2
+# Run all tests including EVM tests
+zig build test
+
+# Run benchmarks
+zig build bench
 ```
 
 **IMPORTANT**: After every code change, run both commands to ensure:
@@ -456,51 +459,58 @@ pub const Error = error{
 4. **Benchmark Critical Paths** - Use `zig build bench` to measure performance impact
 5. **Documentation** - Document complex optimizations and their rationale
 
-## EVM2 Module Structure Reference
+## EVM Module Structure Reference
 
 ### File Organization
 
 ```
-src/evm2/
-├── root.zig                    # Module exports and documentation
-├── evm.zig                     # Main EVM implementation with transaction context
-├── frame.zig                   # Execution context (~2000 lines - see navigation guide)
-├── frame_config.zig           # Frame configuration parameters
-├── frame_interpreter.zig      # Frame-based interpreter implementation
-├── stack.zig                   # High-performance EVM stack
-├── stack_config.zig           # Stack configuration
-├── memory.zig                  # EVM-compliant memory management  
-├── memory_config.zig          # Memory configuration
-├── database_interface.zig     # Pluggable storage interface
+src/evm/
+├── root.zig                       # Module exports and documentation
+├── evm.zig                        # Main EVM implementation with transaction context
+├── evm_config.zig                 # EVM configuration
+├── frame.zig                      # Execution context (~2000 lines - see navigation guide)
+├── frame_config.zig               # Frame configuration parameters
+├── frame_interpreter.zig          # Frame-based interpreter implementation
+├── stack.zig                      # High-performance EVM stack
+├── stack_config.zig               # Stack configuration
+├── memory.zig                     # EVM-compliant memory management  
+├── memory_config.zig              # Memory configuration
+├── database_interface.zig         # Pluggable storage interface
 ├── database_interface_account.zig # Account data structures
-├── memory_database.zig        # In-memory database implementation
-├── tracer.zig                 # Execution tracing system
-├── host.zig                   # External operations interface
-├── planner.zig                # Bytecode analysis and optimization
-├── planner_config.zig         # Planner configuration  
-├── plan.zig                   # Runtime execution plan structure
-├── plan_config.zig            # Plan configuration
-├── plan_advanced.zig          # Advanced planning strategies
-├── plan_minimal.zig           # Minimal planning implementation
-├── plan_debug.zig             # Debug planning with validation
-├── bytecode.zig               # Bytecode representation
-├── bytecode_config.zig        # Bytecode configuration
-├── bytecode_stats.zig         # Bytecode analysis statistics
-├── opcode.zig                 # EVM opcode enumeration
-├── opcode_data.zig            # Opcode metadata and gas costs
-├── opcode_synthetic.zig       # Synthetic fused opcodes
-├── hardfork.zig               # Ethereum hard fork support
-├── access_list.zig            # EIP-2929 access list implementation
-├── self_destruct.zig          # SELFDESTRUCT tracking
-├── created_contracts.zig      # Contract creation tracking
-├── call_params.zig            # Call operation parameters
-├── call_result.zig            # Call operation results
-├── block_info.zig             # Block information context
-├── keccak_asm.zig             # Optimized Keccak-256 implementation
-└── bench/                     # Performance benchmarks
-    ├── comprehensive_evm_bench.zig
-    ├── evm_zbench.zig
-    └── evm_zbench_simple.zig
+├── memory_database.zig            # In-memory database implementation
+├── journal.zig                    # State change tracking for reverts
+├── journal_entry.zig              # Journal entry types
+├── journal_config.zig             # Journal configuration
+├── tracer.zig                     # Execution tracing system
+├── host.zig                       # External operations interface
+├── planner.zig                    # Bytecode analysis and optimization
+├── planner_config.zig             # Planner configuration
+├── planner_strategy.zig           # Planner strategy selection
+├── plan.zig                       # Runtime execution plan structure
+├── plan_config.zig                # Plan configuration
+├── plan_advanced.zig              # Advanced planning strategies
+├── plan_minimal.zig               # Minimal planning implementation
+├── plan_debug.zig                 # Debug planning with validation
+├── bytecode.zig                   # Bytecode representation
+├── bytecode_config.zig            # Bytecode configuration
+├── bytecode_stats.zig             # Bytecode analysis statistics
+├── opcode.zig                     # EVM opcode enumeration
+├── opcode_data.zig                # Opcode metadata and gas costs
+├── opcode_synthetic.zig           # Synthetic fused opcodes
+├── hardfork.zig                   # Ethereum hard fork support
+├── access_list.zig                # EIP-2929 access list implementation
+├── access_list_config.zig         # Access list configuration
+├── self_destruct.zig              # SELFDESTRUCT tracking
+├── created_contracts.zig          # Contract creation tracking
+├── call_params.zig                # Call operation parameters
+├── call_result.zig                # Call operation results
+├── block_info.zig                 # Block information context
+├── block_info_config.zig          # Block info configuration
+├── transaction_context.zig        # Transaction-level context
+├── logs.zig                       # Event log management
+├── keccak_asm.zig                 # Optimized Keccak-256 implementation
+├── precompiles.zig                # Precompiled contracts
+└── test/                          # EVM-specific tests (if any)
 ```
 
 ### Key Type Relationships
@@ -522,11 +532,12 @@ Evm
 ## Future Development Roadmap
 
 ### Near-term Improvements
-- **Tail Call Interpreter**: Full tail call optimization for zero stack growth
+- **Complete Advanced Planner**: Fix compilation issues in plan_advanced.zig and plan_debug.zig
 - **Advanced Fusion**: More sophisticated opcode combination patterns
 - **SIMD Optimization**: Vector operations for bulk memory/storage operations
 - **JIT Compilation**: Dynamic compilation of hot execution paths
 - **Size-Optimized Build**: Complete implementation of plan_minimal module to enable ReleaseSmall builds that exclude advanced optimization code paths
+- **Tail Call Interpreter**: Investigate tail call optimization opportunities
 
 ### Long-term Research Directions
 - **Execution Strategies**: Different execution models (threaded code, subroutining)

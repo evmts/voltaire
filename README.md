@@ -33,7 +33,15 @@ Despite its early status, it's already very fast and vrey tiny.
 
 ## 🚧 Development Status
 
-We’re wrapping up the **Alpha release**. We will be testing vs all ethereum hardforks and doing extensive benchmarking. Expect benchmarks and bundle size reports **within a week**. Stay tuned!
+**Current Status**: The EVM implementation has been completely redesigned with a new architecture focused on performance and modularity. Key features include:
+- ✅ Configurable frame-based execution
+- ✅ Optimized bytecode planning with opcode fusion
+- ✅ High-performance pointer-based stack
+- ✅ Pluggable database interface
+- ✅ Comprehensive tracing support
+- 🚧 Advanced planner strategies (in progress)
+
+We're actively testing against all Ethereum hardforks and conducting extensive benchmarking.
 
 ---
 
@@ -53,6 +61,7 @@ Compared to other EVM implementations
 
 Guillotine is a modular Ethereum stack in Zig:
 
+* [`evm`](./src/evm/) — High-performance EVM implementation with pluggable components
 * [`primitives`](./src/primitives/) — Low-level Ethereum utilities (like Alloy or Ethers.js in Zig)
 * [`compilers`](./src/compilers/) — Zig bindings for the Foundry compiler (Rust)
 * [`crypto`](./src/crypto/) — 🧪 Zig-based crypto lib (unaudited)
@@ -77,11 +86,12 @@ It also unlocks **Solidity and Vyper** compatibility for the `tevm` compiler.
 
 ## ✨ Key Features
 
-* 🏎️ **Fast & Small** — Zig = uncompromising performance and minimal footprint
+* 🏎️ **Fast & Small** — Cache-conscious design with pointer-based stack and optimized instruction dispatch
 * 🧩 **C FFI Compatible** — Use it from Python, Rust, Go, Swift, etc.
-* 🖥️ **Multi-target builds** — Native + WASM (x86 / ARM)
-* 🏗️ **Builder pattern** — Intuitive API for managing VM execution
+* 🖥️ **Multi-target builds** — Native + WASM (x86 / ARM) with platform-specific optimizations
+* 🔌 **Pluggable Architecture** — Configurable components: database, tracer, planner strategies
 * 🧪 **Reliable** — Unit, integration, fuzz, E2E, and benchmark test suite
+* 🔍 **Advanced Bytecode Optimization** — Opcode fusion, constant inlining, and jump validation
 
 ---
 
@@ -129,7 +139,7 @@ pub fn main() !void {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
     const bytecode = [_]u8{

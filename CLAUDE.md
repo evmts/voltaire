@@ -357,73 +357,83 @@ This is a high-performance Ethereum Virtual Machine (EVM) implementation written
 
 ### Module System (defined in build.zig)
 - **`Guillotine_lib`** - Main library module (src/root.zig)
-- **`evm`** - EVM implementation module (src/evm/root.zig)
-- **`Address`** - Ethereum address utilities (src/address/address.zig)
-- **`Rlp`** - RLP encoding/decoding (src/rlp/rlp.zig)
+- **`evm`** - High-performance EVM implementation module (src/evm/root.zig)
+- **`primitives`** - Ethereum primitives (Address, u256, RLP, Hex)
+- **`crypto`** - Cryptographic functions (Keccak256, secp256k1, etc.)
+- **`bn254_wrapper`** - BN254 elliptic curve operations (temporary Rust wrapper)
 
 ### Core EVM Components (`src/evm/`)
 
 #### Virtual Machine Core
-- `evm.zig` - Main VM implementation and execution engine
-- `root.zig` - Module exports and documentation
+- `evm.zig` - Main VM implementation orchestrating execution and state management
+- `root.zig` - Module exports and comprehensive documentation
+- `evm_config.zig` - EVM configuration parameters
 
 #### Execution Framework
-- `frame/` - Execution context management
-  - `frame.zig` - Call frame implementation
-  - `contract.zig` - Contract code and metadata
-  - `analysis2.zig` - Simplified bytecode analysis for tailcall dispatch
-  - `bitvec.zig` - Bit vector for valid jump destinations
+- `frame.zig` - Lightweight execution context with stack, memory, and gas tracking
+- `frame_config.zig` - Frame configuration for compile-time optimization
+- `frame_interpreter.zig` - Frame-based interpreter implementation
+- `stack.zig` - High-performance 256-bit word stack (pointer-based, downward growth)
+- `stack_config.zig` - Stack configuration and type selection
+- `memory.zig` - EVM-compliant memory with hierarchical isolation and lazy expansion
+- `memory_config.zig` - Memory configuration and limits
 
-#### Opcodes and Operations
-- `opcodes/` - Opcode definitions and metadata
-  - `opcode.zig` - Opcode enumeration
-  - `operation.zig` - Operation metadata (gas, stack effects)
-- `jump_table/` - Opcode dispatch
-  - `jump_table.zig` - Maps opcodes to implementations
-- `execution/` - Opcode implementations organized by category
-  - `arithmetic.zig` - ADD, SUB, MUL, DIV, etc.
-  - `stack.zig` - PUSH, POP, DUP, SWAP
-  - `memory.zig` - MLOAD, MSTORE, MSIZE
-  - `storage.zig` - SLOAD, SSTORE
-  - `control.zig` - JUMP, JUMPI, PC, STOP
-  - `system.zig` - CALL, CREATE, RETURN, REVERT
-  - `environment.zig` - ADDRESS, BALANCE, ORIGIN
-  - `block.zig` - BLOCKHASH, COINBASE, TIMESTAMP
-  - `crypto.zig` - KECCAK256
-  - `log.zig` - LOG0, LOG1, LOG2, LOG3, LOG4
+#### Bytecode Analysis and Optimization
+- `planner.zig` - Bytecode analysis and optimization system
+- `planner_config.zig` - Planner configuration
+- `planner_strategy.zig` - Strategy selection (minimal vs advanced)
+- `plan.zig` - Runtime execution plan with instruction stream
+- `plan_config.zig` - Plan configuration
+- `plan_minimal.zig` - Minimal planning implementation
+- `plan_advanced.zig` - Advanced optimization with opcode fusion
+- `plan_debug.zig` - Debug planning with validation
+- `bytecode.zig` - Bytecode representation and utilities
+- `bytecode_config.zig` - Bytecode configuration
+- `bytecode_stats.zig` - Bytecode analysis statistics
+
+#### Opcodes and Instructions
+- `opcode.zig` - EVM opcode enumeration
+- `opcode_data.zig` - Opcode metadata (gas costs, stack effects)
+- `opcode_synthetic.zig` - Synthetic fused opcodes for optimization
 
 #### State Management
-- `state/` - Blockchain state handling
-  - `state.zig` - Main state implementation
-  - `database_interface.zig` - Abstract database interface
-  - `memory_database.zig` - In-memory implementation
-  - `journal.zig` - State change tracking for reverts
+- `database_interface.zig` - Pluggable vtable-based storage interface
+- `database_interface_account.zig` - Account data structures
+- `memory_database.zig` - In-memory database implementation
+- `journal.zig` - State change tracking for transaction reverts
+- `journal_entry.zig` - Individual journal entry types
+- `journal_config.zig` - Journal configuration
+- `access_list.zig` - EIP-2929 warm/cold access tracking
+- `access_list_config.zig` - Access list configuration
 
-#### Memory and Stack
-- `memory/` - Byte-addressable memory
-  - `memory.zig` - Main memory implementation
-  - `read.zig`, `write.zig` - Memory operations
-- `stack/` - 256-bit word stack
-  - `stack.zig` - Stack implementation (max 1024 elements)
-  - `stack_validation.zig` - Stack depth validation
+#### External Interfaces
+- `host.zig` - Host interface for external operations (calls, creates, environment)
+- `call_params.zig` - Parameters for different call types
+- `call_result.zig` - Call operation results
+- `created_contracts.zig` - Contract creation tracking (EIP-6780)
+- `self_destruct.zig` - Self-destruct tracking
+- `logs.zig` - Event log management
 
-#### Gas and Fees
-- `constants/` - EVM constants
-  - `gas_constants.zig` - Gas costs for operations
-  - `memory_limits.zig` - Memory expansion limits
+#### Transaction and Block Context
+- `transaction_context.zig` - Transaction-level context
+- `block_info.zig` - Block information with configurable storage
+- `block_info_config.zig` - Block info configuration
 
 #### Precompiled Contracts
-- `precompiles/` - Built-in contracts
-  - `ecrecover.zig` - Signature recovery
-  - `sha256.zig`, `ripemd160.zig` - Hash functions
-  - `identity.zig` - Data copy
-  - `modexp.zig` - Modular exponentiation
-  - And more...
+- `precompiles.zig` - Standard Ethereum precompiled contracts
 
 #### Hard Fork Support
-- `hardforks/` - Fork-specific behavior
-  - `hardfork.zig` - Fork enumeration
-  - `chain_rules.zig` - Fork-specific validation
+- `hardfork.zig` - Ethereum hard fork enumeration and rules
+
+#### Tracing and Debugging
+- `tracer.zig` - Configurable execution tracing system
+  - NoOpTracer (zero overhead)
+  - DebuggingTracer (step-by-step debugging)
+  - LoggingTracer (structured logging)
+  - FileTracer (file output)
+
+#### Performance Utilities
+- `keccak_asm.zig` - Optimized Keccak-256 implementation
 
 ### Test Organization
 - **Unit tests**: Colocated with implementation files
@@ -644,14 +654,14 @@ Creating .bak files or commenting out code/tests demonstrates unprofessional dev
 
 ### EVM Module Structure
 
-The EVM implementation follows a modular architecture with clear separation of concerns:
+The EVM implementation is a ground-up redesign with configurable, high-performance components:
 
 #### Core Components
-- **Evm (evm.zig)**: Main virtual machine orchestrating execution
-- **Frame/StackFrame**: Execution contexts for calls and creates
-- **Stack**: 256-bit word stack (max 1024 elements)
-- **Memory**: Byte-addressable memory with hierarchical isolation
-- **State**: Account and storage management with journaling
+- **Evm (evm.zig)**: Transaction-level execution orchestrator with pluggable components
+- **Frame**: Lightweight execution context - handles opcodes but NOT PC/jumps or calls
+- **Stack**: Cache-aligned pointer-based stack with downward growth for optimal performance
+- **Memory**: EVM-compliant memory with lazy expansion and hierarchical checkpoints
+- **DatabaseInterface**: Type-safe vtable-based storage abstraction with zero overhead
 
 #### Key Design Patterns
 
@@ -757,30 +767,15 @@ The EVM implementation follows a modular architecture with clear separation of c
 
 ### Advanced Architectural Patterns
 
-#### 1. Tail Call Recursion for Zero-Overhead Dispatch
+#### 1. Separation of Concerns - Frame vs Plan vs Host
 
-The EVM uses Zig's `@call(.always_tail, ...)` for optimal interpreter performance:
+The new architecture clearly separates responsibilities:
 
-```zig
-// interpret2.zig - Start execution with tail call
-const first_op = frame.ops[0];
-return try (@call(.always_tail, first_op, .{frame}));
+- **Frame**: Executes individual opcodes with stack/memory/storage operations
+- **Plan**: Manages PC, jump validation, and instruction dispatch via optimized instruction stream
+- **Host**: Handles external operations (calls, creates, environment queries)
 
-// Each opcode handler tail calls to the next
-pub fn op_add(frame: *StackFrame) Error!noreturn {
-    // Perform operation
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe();
-    frame.stack.set_top_unsafe(a +% b);
-    
-    // Tail call to next instruction
-    frame.ip += 1;
-    const next_op = frame.ops[frame.ip];
-    return @call(.always_tail, next_op, .{frame});
-}
-```
-
-This eliminates call stack growth and enables CPU return prediction optimization.
+This separation enables better optimization opportunities and cleaner interfaces.
 
 #### 2. Data-Driven Design with Jump Tables
 
@@ -806,30 +801,24 @@ Benefits:
 - Hot data (functions, gas) in contiguous cache lines
 - Cold data separated to avoid cache pollution
 
-#### 3. Generic Plan Interface for Bytecode Analysis
+#### 3. Advanced Bytecode Optimization via Planner
 
-The Planner system provides configurable bytecode analysis:
+The Planner transforms raw bytecode into optimized execution plans:
 
 ```zig
-pub fn createPlanner(comptime Cfg: PlannerConfig) type {
-    // Returns a specialized planner based on config
-    return struct {
-        const PcType = Cfg.PcType();
-        const Plan = plan_mod.createPlan(PlanCfg);
-        
-        pub fn create_instruction_stream(...) !Plan {
-            // Analyzes bytecode and produces optimized instruction stream
-            // Identifies jump destinations, fuses opcodes, inline constants
-        }
-    };
-}
+pub const Plan = struct {
+    instructionStream: []InstructionElement,    // Handler pointers + inline data
+    u256_constants: []WordType,                 // Large constants array
+    pc_to_instruction_idx: ?HashMap(PcType, InstructionIndexType), // Jump mapping
+};
 ```
 
-The plan includes:
-- Pre-validated jump destinations
-- Fused opcode sequences (PUSH+ADD → PUSH_ADD)
-- Inline constants for common patterns
-- Block metadata for gas calculation
+**Optimization Strategies**:
+- **Opcode Fusion**: Common patterns detected and fused (PUSH+ADD → PUSH_ADD_INLINE)
+- **Constant Inlining**: Small values embedded directly in instruction stream
+- **Platform-Specific**: Different strategies for 32-bit vs 64-bit architectures
+- **Jump Validation**: Pre-validated JUMPDEST locations for O(1) jump checking
+- **Synthetic Opcodes**: Extended instruction set for optimized patterns
 
 #### 4. Cache-Conscious Struct Layout
 
@@ -894,37 +883,34 @@ const ExecutionError = @import("execution/execution_error.zig");
 
 ### EVM Module Organization
 
-The EVM is organized into functional modules:
+The new EVM architecture is organized as a flat module structure:
 
-1. **Core Execution** (`src/evm/`):
-   - `evm.zig` - Main VM with Host interface
-   - `stack_frame.zig` - Execution contexts
-   - `interpret2.zig` - Tailcall interpreter
+1. **Core Execution**:
+   - `evm.zig` - Transaction-level orchestrator
+   - `frame.zig` - Opcode execution context (~2000 lines)
+   - `frame_interpreter.zig` - Frame-based interpreter
+   - `host.zig` - External operations interface
 
-2. **Opcodes** (`src/evm/execution/`):
-   - `arithmetic.zig` - ADD, MUL, DIV, MOD
-   - `stack.zig` - PUSH, POP, DUP, SWAP
-   - `memory.zig` - MLOAD, MSTORE, MSIZE
-   - `storage.zig` - SLOAD, SSTORE
-   - `control.zig` - JUMP, JUMPI, PC, STOP
-   - `system.zig` - CALL, CREATE, RETURN
-   - `crypto.zig` - KECCAK256
-   - `log.zig` - LOG0-LOG4
+2. **Performance Components**:
+   - `stack.zig` - Pointer-based stack with cache alignment
+   - `memory.zig` - Hierarchical memory with lazy expansion
+   - `planner.zig` - Bytecode optimization engine
+   - `plan_*.zig` - Different planning strategies
 
-3. **State Management** (`src/evm/state/`):
-   - `state.zig` - Account and storage state
-   - `database_interface.zig` - Pluggable storage
-   - `journal.zig` - Revertible state changes
-   - `memory_database.zig` - In-memory implementation
+3. **State Management**:
+   - `database_interface.zig` - Zero-cost vtable abstraction
+   - `memory_database.zig` - Reference implementation
+   - `journal.zig` - Transaction revert tracking
+   - `access_list.zig` - EIP-2929 implementation
 
-4. **Analysis** (`src/evm/`):
-   - `analysis2.zig` - Jump destination validation
-   - `jumpdest_validation.zig` - JUMPDEST analysis
-   - `bitvec.zig` - Efficient jump tracking
+4. **Opcodes and Data**:
+   - `opcode.zig` - Standard EVM opcodes
+   - `opcode_synthetic.zig` - Fused optimization opcodes
+   - `opcode_data.zig` - Gas costs and stack effects
 
-5. **Precompiles** (`src/evm/precompiles/`):
-   - Standard Ethereum precompiled contracts
-   - Each with gas calculation and implementation
+5. **Configuration**:
+   - `*_config.zig` - Compile-time configuration for each component
+   - Enables platform-specific optimization and type selection
 
 ### Working with EVM State
 
@@ -947,57 +933,40 @@ The EVM is organized into functional modules:
    - Reduces gas costs for repeated access
    - Pre-warming for transaction access lists
 
-## EVM2 Frame.zig Navigation Guide
+## Frame.zig Navigation Guide
 
-### File Structure Overview for `src/evm2/frame.zig` (~2000+ lines)
+### File Structure Overview for `src/evm/frame.zig` (~2000+ lines)
 
-**CRITICAL**: This file is too large to read in one operation. Use targeted reads with offset/limit or Grep for specific sections.
+**CRITICAL**: This file contains all opcode implementations. Use targeted reads with offset/limit or Grep for specific sections.
 
-#### Key Line Number Ranges:
-- **Lines 1-90**: Imports, FrameConfig struct, and configuration validation
-- **Lines 91-165**: Frame struct definition, Error enum, init/deinit functions
-- **Lines 166-583**: `interpret()` function - instruction array building and execution loop
-- **Lines 584-898**: Instruction handlers (op_stop_handler, op_add_handler, etc.)
-- **Lines 900-975**: Core opcode implementations (op_pc, op_stop, op_pop, push_n helper)
-- **Lines 976-1098**: PUSH opcode implementations (op_push0 through op_push32)
-- **Lines 1099-1186**: DUP/SWAP and bitwise operations (op_dup1, op_and, op_or, etc.)
-- **Lines 1187-1356**: Arithmetic operations (op_add, op_mul, op_div, op_exp, etc.)
-- **Lines 1357-1375**: Gas management (consumeGasUnchecked, checkGas, op_gas)
-- **Lines 1376-1471**: Comparison and control flow (op_lt, op_jump, op_jumpi, op_invalid)
-- **Lines 1472-1555**: Memory and crypto operations (op_keccak256, op_mload, op_mstore)
-- **Lines 1560+**: Extensive test suite
+#### Key Components in Frame:
+- **Configuration**: Generic Frame type parameterized by FrameConfig
+- **Stack Operations**: All PUSH, POP, DUP, SWAP operations
+- **Arithmetic**: ADD, SUB, MUL, DIV, MOD, EXP, etc.
+- **Bitwise**: AND, OR, XOR, NOT, SHL, SHR, SAR
+- **Comparison**: LT, GT, EQ, ISZERO
+- **Memory**: MLOAD, MSTORE, MSIZE, MCOPY
+- **Storage**: SLOAD, SSTORE, TLOAD, TSTORE (via database interface)
+- **Hashing**: KECCAK256
+- **Logging**: LOG0-LOG4
 
 #### Common Search Patterns:
 ```bash
 # Find specific opcode implementation
-grep -n "pub fn op_[opcode_name]" src/evm2/frame.zig
+grep -n "pub fn op_[opcode_name]" src/evm/frame.zig
 
-# Find handler functions
-grep -n "_handler.*fn" src/evm2/frame.zig
+# Find all opcodes
+grep -n "pub fn op_" src/evm/frame.zig | head -20
 
-# Find test for specific functionality
-grep -n "test.*[functionality]" src/evm2/frame.zig
+# Find gas consumption patterns
+grep -n "gas_remaining" src/evm/frame.zig
 ```
 
-#### Efficient Reading Strategies:
-1. **For opcode implementations**: Read lines 900-1555
-2. **For handler dispatch**: Read lines 584-898
-3. **For configuration**: Read lines 1-165
-4. **For tests**: Use Grep to find specific test, then read with offset/limit
-5. **For interpret loop**: Read lines 166-583
-
-#### Key Functions by Purpose:
-- **Initialization**: `init()` (~line 137), `deinit()` (~line 160)
-- **Execution**: `interpret()` (~line 166), `execute_instruction()` (~line 585)
-- **Stack Operations**: `push_unsafe()`, `pop_unsafe()`, `peek_unsafe()`, `set_top_unsafe()`
-- **Memory**: `op_mload()` (~line 1497), `op_mstore()` (~line 1518)
-- **Arithmetic**: `op_add()` (~line 1189), `op_mul()` (~line 1195), etc.
-- **Control Flow**: `op_jump()` (~line 1436), `op_jumpi()` (~line 1448)
-
-#### Configuration Types:
-- **FrameConfig**: Lines 9-64, defines stack size, word type, memory limits
-- **Frame struct**: Lines 91+, contains stack, bytecode, pc, gas_remaining, memory
-- **Error enum**: Lines 94-104, defines all possible execution errors
+#### Important Notes:
+- Frame does NOT handle PC, JUMP/JUMPI (managed by Plan)
+- Frame does NOT handle CALL/CREATE (managed by Host/EVM)
+- All opcode functions follow pattern: `pub fn op_name(self: *Self) Error!void`
+- Unsafe stack operations used when bounds pre-validated by planner
 
 ## Essential Documentation References
 

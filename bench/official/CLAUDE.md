@@ -26,6 +26,7 @@ The benchmarking system is a multi-layered architecture designed to compare EVM 
    - Each runner implements: `--contract-code-path`, `--calldata`, `--num-runs`
    - Output format: One timing per line in milliseconds
    - Exit code 0 on success, non-zero on failure
+   - Guillotine runner uses the new EVM implementation from `src/evm/`
 
 ### Test Case Format
 
@@ -68,8 +69,16 @@ for (test_cases) |tc| {
 
 CRITICAL: Use absolute paths for reliability:
 ```zig
-const cases_path = "/Users/williamcory/Guillotine/bench/official/cases";
+const cases_path = "/Users/williamcory/guillotine/bench/official/cases";
 ```
+
+### EVM Integration
+
+The benchmark runner integrates with the new EVM architecture:
+- Uses `evm.zig` for transaction-level execution
+- Leverages the optimized `Frame` for opcode execution
+- Benefits from the `Planner` bytecode optimization
+- Utilizes the high-performance pointer-based `Stack`
 
 ### JSON Parsing
 
@@ -173,6 +182,8 @@ When a runner fails:
 3. Test runner manually with known-good inputs
 4. Check for adequate gas limits
 5. Verify contract deployment succeeds before execution
+6. For Guillotine EVM: Check frame configuration matches requirements
+7. Ensure database interface is properly initialized
 
 ## Performance Optimization Tips
 
