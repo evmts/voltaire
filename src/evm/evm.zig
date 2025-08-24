@@ -220,9 +220,123 @@ pub fn Evm(comptime config: EvmConfig) type {
         
         /// Regular CALL operation
         pub fn call_regular(self: *Self, params: anytype) Error!CallResult {
-            _ = self;
-            _ = params;
-            return error.InvalidJump; // Placeholder
+            // Validate gas
+            if (params.gas == 0) {
+                return CallResult.failure(0);
+            }
+            
+            // Check depth
+            if (self.depth >= config.max_call_depth) {
+                return CallResult.failure(0);
+            }
+            
+            // Create snapshot for state reversion
+            const snapshot_id = self.journal.create_snapshot();
+            
+            // Check if caller has sufficient balance for value transfer
+            if (params.value > 0) {
+                const caller_account = self.database.get_account(params.caller) catch |err| {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return switch (err) {
+                        else => CallResult.failure(0),
+                    };
+                };
+                
+                if (caller_account == null or caller_account.?.balance < params.value) {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return CallResult.failure(0);
+                }
+            }
+            
+            // Check if it's a precompile
+            if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
+                const result = self.execute_precompile_call(params.to, params.input, params.gas, false) catch |err| {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return switch (err) {
+                        else => CallResult.failure(0),
+                    };
+                };
+                
+                if (!result.success) {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                }
+                
+                return result;
+            }
+            
+            // Get contract code
+            const code = self.database.get_code_by_address(params.to) catch &.{};
+            
+            // If no code, it's a simple value transfer
+            if (code.len == 0) {
+                // Transfer value if needed
+                if (params.value > 0) {
+                    // Deduct from caller
+                    var caller_account = self.database.get_account(params.caller) catch |err| {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return switch (err) {
+                            else => CallResult.failure(0),
+                        };
+                    } orelse unreachable;
+                    
+                    caller_account.balance -= params.value;
+                    self.database.set_account(params.caller, caller_account) catch |err| {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return switch (err) {
+                            else => CallResult.failure(0),
+                        };
+                    };
+                    
+                    // Add to recipient
+                    var to_account = self.database.get_account(params.to) catch |err| {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return switch (err) {
+                            else => CallResult.failure(0),
+                        };
+                    } orelse Account{
+                        .balance = 0,
+                        .nonce = 0,
+                        .code = &.{},
+                        .code_hash = [_]u8{0} ** 32,
+                    };
+                    
+                    to_account.balance += params.value;
+                    self.database.set_account(params.to, to_account) catch |err| {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return switch (err) {
+                            else => CallResult.failure(0),
+                        };
+                    };
+                }
+                
+                // Empty call success
+                return CallResult.success_empty(params.gas);
+            }
+            
+            // Execute contract code
+            const result = self.execute_frame(
+                code,
+                params.input,
+                params.gas,
+                params.to,
+                params.caller,
+                params.value,
+                false, // is_static
+                snapshot_id,
+            ) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return switch (err) {
+                    error.Stop => CallResult.success_empty(0),
+                    error.RevertExecution => CallResult.failure(0),
+                    else => CallResult.failure(0),
+                };
+            };
+            
+            if (!result.success) {
+                self.journal.revert_to_snapshot(snapshot_id);
+            }
+            
+            return result;
         }
         
         /// CALLCODE operation
@@ -258,6 +372,52 @@ pub fn Evm(comptime config: EvmConfig) type {
             _ = self;
             _ = params;
             return error.InvalidJump; // Placeholder
+        }
+        
+        /// Execute frame - replaces execute_bytecode with cleaner interface
+        fn execute_frame(
+            self: *Self,
+            code: []const u8,
+            input: []const u8,
+            gas: u64,
+            address: Address,
+            caller: Address,
+            value: u256,
+            is_static: bool,
+            snapshot_id: JournalType.SnapshotIdType,
+        ) Error!CallResult {
+            _ = snapshot_id;
+            
+            // Increment depth
+            self.depth += 1;
+            defer self.depth -= 1;
+            
+            // Create frame interpreter
+            var interpreter = try frame_interpreter_mod.FrameInterpreter(config.frame_config).init(
+                self.allocator,
+                code,
+                gas,
+                self.database,
+                self,
+                address,
+                caller,
+                value,
+                input,
+                is_static,
+            );
+            defer interpreter.deinit();
+            
+            // Execute the frame
+            const exec_result = interpreter.execute() catch |err| {
+                return switch (err) {
+                    error.Stop => CallResult.success_with_output(interpreter.frame.gas_remaining, interpreter.frame.output_data.items),
+                    error.RevertExecution => CallResult.revert_with_data(interpreter.frame.gas_remaining, interpreter.frame.output_data.items),
+                    error.OutOfGas => CallResult.failure(0),
+                    else => CallResult.failure(0),
+                };
+            };
+            
+            return exec_result;
         }
         
         // Old implementation for reference - to be removed
