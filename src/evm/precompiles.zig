@@ -566,8 +566,9 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
         };
     }
 
-    // TODO: Implement proper BN254 pairing check
-    // For now, return false (placeholder implementation)
+    // NOTE: Full BN254 pairing implementation needed
+    // Currently placeholder - returns false for non-empty input
+    // See GitHub issue for BN254 pairing implementation
     // output[31] remains 0 (false)
 
     return PrecompileOutput{
