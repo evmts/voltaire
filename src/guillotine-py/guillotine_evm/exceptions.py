@@ -31,6 +31,11 @@ class InvalidAddressError(GuillotineError):
     pass
 
 
+class ValidationError(GuillotineError):
+    """Raised when input validation fails."""
+    pass
+
+
 class InvalidHashError(GuillotineError):
     """Raised when an invalid hash is provided."""
     pass

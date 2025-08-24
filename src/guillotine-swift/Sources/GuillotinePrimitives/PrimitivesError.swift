@@ -7,6 +7,7 @@ public enum PrimitivesError: Error, Sendable {
     case invalidHexString(String)
     case overflow
     case underflow
+    case divisionByZero
 }
 
 extension PrimitivesError: LocalizedError {
@@ -22,6 +23,8 @@ extension PrimitivesError: LocalizedError {
             return "Arithmetic overflow"
         case .underflow:
             return "Arithmetic underflow"
+        case .divisionByZero:
+            return "Division by zero"
         }
     }
 }
