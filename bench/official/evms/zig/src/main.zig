@@ -151,7 +151,7 @@ pub fn main() !void {
         // Debug: Print gas usage info
         const gas_used = 100000 - result.gas_left;
         if (run_idx == 0) { // Only print for first run
-            std.log.warn("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}", 
+            std.debug.print("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", 
                 .{result.success, 100000, result.gas_left, gas_used, result.output.len});
         }
         
