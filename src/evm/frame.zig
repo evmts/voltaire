@@ -8124,7 +8124,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(to_u256(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
-    try frame.staticcall();
+    try frame.op_staticcall();
     const gas_used_staticcall = gas_before_static - frame.gas_manager.gasRemaining();
     
     // STATICCALL to warm address: base cost + warm account access
@@ -9956,6 +9956,7 @@ test "_calculate_call_gas E2E: Complete call flow validation" {
         .nonce = 5,
         .balance = 2000,
         .code_hash = EMPTY_CODE_HASH,
+        .storage_root = EMPTY_TRIE_ROOT,
     });
     
     var mock_host = MockHostWithAccessList.init(allocator);
