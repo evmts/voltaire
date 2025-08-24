@@ -21,7 +21,7 @@ pub fn PlanMinimal(comptime cfg: PlanConfig) type {
     // Create bytecode type with matching configuration
     const BytecodeType = createBytecode(.{
         .max_bytecode_size = cfg.maxBytecodeSize,
-        .max_initcode_size = 49152, // EIP-3860 limit
+        .max_initcode_size = @max(cfg.maxBytecodeSize, 49152), // EIP-3860 limit, but must be >= max_bytecode_size
     });
     
     return struct {
