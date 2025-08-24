@@ -17,15 +17,16 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-// Imports temporarily disabled due to module availability issues in test contexts
-// TODO: Re-enable when precompile implementation is complete
-// const crypto = @import("crypto");
-// const build_options = @import("build_options");
+// Use fallback modules for now - TODO: Re-enable when module dependency issues resolved
+// const crypto_real = @import("crypto");
+// const build_options_real = @import("build_options");
+const crypto = crypto_fallback;
+const build_options = build_options_fallback;
 
-// Temporary fallback crypto module
-const crypto = struct {
+// Temporary fallback crypto module with proper signatures
+const crypto_fallback = struct {
     pub const secp256k1 = struct {
-        pub fn unaudited_recover_address(hash: []const u8, recovery_id: u8, r: []const u8, s: []const u8) !Address {
+        pub fn unaudited_recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !Address {
             _ = hash; _ = recovery_id; _ = r; _ = s;
             return error.NotImplemented;
         }
@@ -34,7 +35,7 @@ const crypto = struct {
         pub const RIPEMD160 = struct {
             pub fn init() @This() { return .{}; }
             pub fn update(self: *@This(), data: []const u8) void { _ = self; _ = data; }
-            pub fn final(self: *@This(), out: []u8) void { _ = self; @memset(out, 0); }
+            pub fn final(self: *@This()) [20]u8 { _ = self; return [_]u8{0} ** 20; }
         };
     };
     pub const ModExp = struct {
@@ -52,17 +53,28 @@ const crypto = struct {
             x: FpMont = .{},
             y: FpMont = .{},
             z: FpMont = .{},
+            
+            pub fn isOnCurve(self: @This()) bool { _ = self; return false; }
+            pub fn add(self: @This(), other: *const @This()) @This() { _ = self; _ = other; return .{}; }
+            pub fn mul(self: @This(), scalar: u256) @This() { _ = self; _ = scalar; return .{}; }
+            pub fn mul_by_int(self: @This(), scalar: u256) @This() { _ = self; _ = scalar; return .{}; }
+            pub fn toAffine(self: @This()) struct { 
+                x: struct { pub fn toStandardRepresentation(s: @This()) u256 { _ = s; return 0; } }, 
+                y: struct { pub fn toStandardRepresentation(s: @This()) u256 { _ = s; return 0; } } 
+            } { 
+                _ = self; 
+                return .{ .x = .{}, .y = .{} }; 
+            }
         };
     };
     pub const Blake2 = struct {
-        pub fn unaudited_blake2f_compress(h: *[8]u64, m: *[16]u64, t: u64, f: bool, rounds: u32) void {
+        pub fn unaudited_blake2f_compress(h: *[8]u64, m: *[16]u64, t: [2]u64, f: bool, rounds: u32) void {
             _ = h; _ = m; _ = t; _ = f; _ = rounds;
         }
     };
 };
 
-// Temporary fallback constants  
-const build_options = struct {
+const build_options_fallback = struct {
     pub const no_precompiles = false;
     pub const no_bn254 = false;
     pub const enable_tracing = false;

@@ -808,7 +808,8 @@ test "tracer captures basic frame state with writer" {
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
     // PC is now managed by plan, not frame
-    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 950);
+    const gas_to_consume1 = @as(u64, @intCast(test_frame.gas_manager.remaining - 950));
+    try test_frame.gas_manager.consume(gas_to_consume1);
     
     // Create tracer with array list writer
     var output = std.ArrayList(u8).init(allocator);
@@ -838,7 +839,8 @@ test "tracer writes JSON to writer" {
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
     // PC is now managed by plan, not frame
-    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 950);
+    const gas_to_consume2 = @as(u64, @intCast(test_frame.gas_manager.remaining - 950));
+    try test_frame.gas_manager.consume(gas_to_consume2);
     
     // Create tracer with array list writer
     var output = std.ArrayList(u8).init(allocator);
@@ -890,7 +892,8 @@ test "file tracer writes to file" {
     defer test_frame.deinit(allocator);
     
     // PC is now managed by plan, not frame
-    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 997);
+    const gas_to_consume3 = @as(u64, @intCast(test_frame.gas_manager.remaining - 997));
+    try test_frame.gas_manager.consume(gas_to_consume3);
     
     // Create file tracer and write
     var tracer = try FileTracer.init(allocator, file_path);
@@ -924,19 +927,22 @@ test "tracer with gas cost computation" {
     );
     
     // First snapshot - no previous gas, so cost should be 0
-    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 1000);
+    const gas_to_consume4 = @as(u64, @intCast(test_frame.gas_manager.remaining - 1000));
+    try test_frame.gas_manager.consume(gas_to_consume4);
     const log1 = try tracer.snapshot(0, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log1.stack);
     try std.testing.expectEqual(@as(u64, 0), log1.gasCost);
     
     // Second snapshot - gas decreased by 3
-    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 997);
+    const gas_to_consume5 = @as(u64, @intCast(test_frame.gas_manager.remaining - 997));
+    try test_frame.gas_manager.consume(gas_to_consume5);
     const log2 = try tracer.snapshot(1, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log2.stack);
     try std.testing.expectEqual(@as(u64, 3), log2.gasCost);
     
     // Third snapshot - gas decreased by 21
-    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 976);
+    const gas_to_consume6 = @as(u64, @intCast(test_frame.gas_manager.remaining - 976));
+    try test_frame.gas_manager.consume(gas_to_consume6);
     const log3 = try tracer.snapshot(2, 0x01, Frame, &test_frame); // ADD
     defer allocator.free(log3.stack);
     try std.testing.expectEqual(@as(u64, 21), log3.gasCost);
@@ -1041,11 +1047,15 @@ test "DebuggingTracer memory management" {
         bytecode: []const u8,
         next_stack_index: usize,
         stack: [16]u256,
+        gas_manager: struct {
+            pub fn gasRemaining(self: @This()) u64 { _ = self; return 1000; }
+        },
         
         fn init() @This() {
             return .{
                 .gas_remaining = 1000,
                 .bytecode = &[_]u8{0x60, 0x05}, // PUSH1 5
+                .gas_manager = .{},
                 .next_stack_index = 0,
                 .stack = [_]u256{0} ** 16,
             };
