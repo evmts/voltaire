@@ -819,12 +819,14 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
 
             // Compute keccak256 hash using assembly-optimized implementation
-            const result = keccak_asm.keccak256_u256(data) catch |err| switch (err) {
+            const result_u256 = keccak_asm.keccak256_u256(data) catch |err| switch (err) {
                 keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
                 keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
                 else => return Error.AllocationError,
             };
 
+            // Convert result to WordType (truncate if necessary for smaller word types)
+            const result = @as(WordType, @truncate(result_u256));
             try self.stack.push(result);
         }
 
@@ -847,12 +849,14 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
 
             // Read 32 bytes from memory (EVM-compliant with automatic expansion)
-            const value = self.memory.get_u256_evm(offset_usize) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(offset_usize) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
 
+            // Convert to WordType (truncate if necessary for smaller word types)
+            const value = @as(WordType, @truncate(value_u256));
             try self.stack.push(value);
         }
 
@@ -1283,7 +1287,9 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            try self.stack.push(word);
+            // Convert to WordType (truncate if necessary for smaller word types)
+            const result = @as(WordType, @truncate(word));
+            try self.stack.push(result);
         }
 
         /// CALLDATASIZE opcode (0x36) - Get size of input data

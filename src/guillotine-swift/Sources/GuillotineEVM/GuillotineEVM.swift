@@ -26,7 +26,7 @@ public actor GuillotineEVM {
     
     deinit {
         if let vmPtr = vmPtr {
-            guillotine_vm_destroy(UnsafeMutablePointer<GuillotineVm>(vmPtr))
+            guillotine_vm_destroy(vmPtr)
         }
         if isInitialized {
             guillotine_deinit()
@@ -67,7 +67,7 @@ public actor GuillotineEVM {
         }
         
         // Get the contract code first
-        let vm = UnsafeMutablePointer<GuillotineVm>(vmPtr)
+        let vm = vmPtr
         
         // For now, we'll execute using the provided parameters
         // In a full implementation, we'd retrieve the code from state
@@ -205,7 +205,7 @@ public actor GuillotineEVM {
             throw ExecutionError.internalError("VM not initialized")
         }
         
-        let vm = UnsafeMutablePointer<GuillotineVm>(vmPtr)
+        let vm = vmPtr
         var cAddress = address.toCAddress()
         var cBalance = balance.toCU256()
         
@@ -221,7 +221,7 @@ public actor GuillotineEVM {
             throw ExecutionError.internalError("VM not initialized")
         }
         
-        let vm = UnsafeMutablePointer<GuillotineVm>(vmPtr)
+        let vm = vmPtr
         var cAddress = address.toCAddress()
         let codeBytes = code.bytes
         
@@ -259,7 +259,7 @@ extension GuillotineEVM {
         gasLimit: UInt64,
         vm: OpaquePointer
     ) async throws -> ExecutionResult {
-        let vmPtr = UnsafeMutablePointer<GuillotineVm>(vm)
+        let vmPtr = vm
         
         // Convert Swift types to C types
         var cCaller = caller.toCAddress()
@@ -334,7 +334,7 @@ extension GuillotineEVM {
         value: U256,
         from: Address,
         gasLimit: UInt64,
-        vm: UnsafeMutablePointer<GuillotineVm>
+        vm: OpaquePointer
     ) async throws -> ExecutionResult {
         // Convert Swift types to C types
         var cCaller = from.toCAddress()
@@ -398,17 +398,17 @@ extension GuillotineEVM {
 
 private func mapCErrorToExecutionError(_ errorCode: Int32) -> ExecutionError {
     switch errorCode {
-    case GUILLOTINE_ERROR_MEMORY.rawValue:
+    case Int32(GUILLOTINE_ERROR_MEMORY.rawValue):
         return .outOfMemory
-    case GUILLOTINE_ERROR_INVALID_PARAM.rawValue:
+    case Int32(GUILLOTINE_ERROR_INVALID_PARAM.rawValue):
         return .invalidTransaction("Invalid parameter")
-    case GUILLOTINE_ERROR_VM_NOT_INITIALIZED.rawValue:
+    case Int32(GUILLOTINE_ERROR_VM_NOT_INITIALIZED.rawValue):
         return .internalError("VM not initialized")
-    case GUILLOTINE_ERROR_EXECUTION_FAILED.rawValue:
+    case Int32(GUILLOTINE_ERROR_EXECUTION_FAILED.rawValue):
         return .internalError("Execution failed")
-    case GUILLOTINE_ERROR_INVALID_ADDRESS.rawValue:
+    case Int32(GUILLOTINE_ERROR_INVALID_ADDRESS.rawValue):
         return .invalidTransaction("Invalid address")
-    case GUILLOTINE_ERROR_INVALID_BYTECODE.rawValue:
+    case Int32(GUILLOTINE_ERROR_INVALID_BYTECODE.rawValue):
         return .invalidTransaction("Invalid bytecode")
     default:
         return .internalError("Unknown error code: \(errorCode)")
