@@ -22,7 +22,46 @@ const Address = primitives.Address.Address;
 // const crypto = @import("crypto");
 // const build_options = @import("build_options");
 
-// Temporary fallback constants
+// Temporary fallback crypto module
+const crypto = struct {
+    pub const secp256k1 = struct {
+        pub fn unaudited_recover_address(hash: []const u8, recovery_id: u8, r: []const u8, s: []const u8) !Address {
+            _ = hash; _ = recovery_id; _ = r; _ = s;
+            return error.NotImplemented;
+        }
+    };
+    pub const Ripemd160 = struct {
+        pub const RIPEMD160 = struct {
+            pub fn init() @This() { return .{}; }
+            pub fn update(self: *@This(), data: []const u8) void { _ = self; _ = data; }
+            pub fn final(self: *@This(), out: []u8) void { _ = self; @memset(out, 0); }
+        };
+    };
+    pub const ModExp = struct {
+        pub fn unaudited_modexp(allocator: std.mem.Allocator, base: []const u8, exp: []const u8, mod: []const u8, output: []u8) !void {
+            _ = allocator; _ = base; _ = exp; _ = mod; _ = output;
+            return error.NotImplemented;
+        }
+    };
+    pub const bn254 = struct {
+        pub const FpMont = struct {
+            pub const ONE = FpMont{};
+            pub fn init(val: u256) FpMont { _ = val; return .{}; }
+        };
+        pub const G1 = struct {
+            x: FpMont = .{},
+            y: FpMont = .{},
+            z: FpMont = .{},
+        };
+    };
+    pub const Blake2 = struct {
+        pub fn unaudited_blake2f_compress(h: *[8]u64, m: *[16]u64, t: u64, f: bool, rounds: u32) void {
+            _ = h; _ = m; _ = t; _ = f; _ = rounds;
+        }
+    };
+};
+
+// Temporary fallback constants  
 const build_options = struct {
     pub const no_precompiles = false;
     pub const no_bn254 = false;

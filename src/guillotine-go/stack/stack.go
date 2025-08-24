@@ -423,7 +423,7 @@ func (s *Stack) GetContents() ([]primitives.U256, error) {
 		&count,
 	)
 
-	if err := cErrorToGoError(int(result)); err != nil {
+	if err := cErrorToGoError(result); err != nil {
 		return nil, err
 	}
 
