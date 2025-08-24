@@ -1,14 +1,15 @@
-/// EVM-compliant memory management with lazy expansion and hierarchical isolation
-/// 
-/// Implements the EVM memory model with:
-/// - Lazy expansion: memory only allocated when accessed
-/// - Word-boundary alignment: expands to 32-byte boundaries per EVM spec
-/// - Hierarchical isolation: child memory contexts for nested calls
-/// - Gas-aware operations: tracks expansion costs for gas accounting
-/// - Zero-initialization: all memory starts as zero per EVM semantics
-/// 
-/// Memory grows dynamically but never shrinks within a single execution context.
-/// Gas costs increase quadratically with memory size to limit resource consumption.
+//! EVM-compliant memory management.
+//!
+//! Provides byte-addressable memory with lazy expansion and hierarchical
+//! isolation for nested execution contexts. Memory expands to 32-byte
+//! word boundaries as per EVM specification.
+//!
+//! Key features:
+//! - Lazy allocation on first access
+//! - Zero-initialization guarantee
+//! - Checkpoint system for nested calls
+//! - Cached gas cost calculations
+//! - Configurable memory limits
 const std = @import("std");
 const builtin = @import("builtin");
 pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
@@ -19,6 +20,10 @@ pub const MemoryError = error{
     OutOfBounds,
 };
 
+/// Creates a configured memory type.
+///
+/// Memory configuration controls initial capacity and maximum size limits.
+/// The implementation uses ArrayList for dynamic growth with efficient resizing.
 pub fn Memory(comptime config: MemoryConfig) type {
     config.validate();
     
@@ -38,6 +43,10 @@ pub fn Memory(comptime config: MemoryConfig) type {
             last_cost: u64,
         } = .{ .last_size = 0, .last_words = 0, .last_cost = 0 },
         
+        /// Initialize a new memory instance.
+        ///
+        /// Pre-allocates initial capacity to reduce early reallocations.
+        /// The memory buffer is owned and will be freed on deinit.
         pub fn init(allocator: std.mem.Allocator) !Self {
             const buffer_ptr = try allocator.create(std.ArrayList(u8));
             errdefer allocator.destroy(buffer_ptr);
