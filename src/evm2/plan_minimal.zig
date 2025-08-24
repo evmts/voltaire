@@ -18,15 +18,14 @@ pub const JumpDestMetadata = packed struct(u64) {
 pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
     comptime cfg.validate();
     
+    // Create bytecode type with matching configuration
+    const BytecodeType = createBytecode(.{
+        .max_bytecode_size = cfg.max_bytecode_size,
+    });
+    
     const PlanMinimal = struct {
-        /// Raw bytecode reference
-        bytecode: []const u8,
-        /// Bitmap marking which bytes are push data (not opcodes)
-        is_push_data: []u8,
-        /// Bitmap marking which bytes are opcode starts
-        is_op_start: []u8,
-        /// Bitmap marking which bytes are JUMPDEST opcodes
-        is_jumpdest: []u8,
+        /// Bytecode with validation and analysis
+        bytecode: BytecodeType,
         /// Jump table of handlers indexed by opcode
         handlers: [256]*const HandlerFn,
         
@@ -84,7 +83,7 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
         break :blk MetadataType;
     } {
         const pc = idx.*;
-        if (pc >= self.bytecode.len) {
+        if (pc >= self.bytecode.len()) {
             @panic("getMetadata: trying to read past end of bytecode");
         }
         
@@ -97,69 +96,14 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
             
         return switch (actual_op) {
             // PUSH opcodes read directly from bytecode
-            .PUSH1 => blk: {
-                if (pc + 1 >= self.bytecode.len) @panic("PUSH1 data out of bounds");
-                break :blk self.bytecode[pc + 1];
-            },
-            .PUSH2 => blk: {
-                if (pc + 2 >= self.bytecode.len) @panic("PUSH2 data out of bounds");
-                var value: u16 = 0;
-                value = (@as(u16, self.bytecode[pc + 1]) << 8) | self.bytecode[pc + 2];
-                break :blk value;
-            },
-            .PUSH3 => blk: {
-                if (pc + 3 >= self.bytecode.len) @panic("PUSH3 data out of bounds");
-                var value: u24 = 0;
-                value = (@as(u24, self.bytecode[pc + 1]) << 16) | 
-                        (@as(u24, self.bytecode[pc + 2]) << 8) | 
-                        self.bytecode[pc + 3];
-                break :blk value;
-            },
-            .PUSH4 => blk: {
-                if (pc + 4 >= self.bytecode.len) @panic("PUSH4 data out of bounds");
-                var value: u32 = 0;
-                var i: u8 = 0;
-                while (i < 4) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH5 => blk: {
-                if (pc + 5 >= self.bytecode.len) @panic("PUSH5 data out of bounds");
-                var value: u40 = 0;
-                var i: u8 = 0;
-                while (i < 5) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH6 => blk: {
-                if (pc + 6 >= self.bytecode.len) @panic("PUSH6 data out of bounds");
-                var value: u48 = 0;
-                var i: u8 = 0;
-                while (i < 6) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH7 => blk: {
-                if (pc + 7 >= self.bytecode.len) @panic("PUSH7 data out of bounds");
-                var value: u56 = 0;
-                var i: u8 = 0;
-                while (i < 7) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
-            .PUSH8 => blk: {
-                if (pc + 8 >= self.bytecode.len) @panic("PUSH8 data out of bounds");
-                var value: u64 = 0;
-                var i: u8 = 0;
-                while (i < 8) : (i += 1) {
-                    value = (value << 8) | self.bytecode[pc + 1 + i];
-                }
-                break :blk value;
-            },
+            .PUSH1 => self.bytecode.readPushValue(pc, 1) orelse @panic("PUSH1 data out of bounds"),
+            .PUSH2 => self.bytecode.readPushValue(pc, 2) orelse @panic("PUSH2 data out of bounds"),
+            .PUSH3 => self.bytecode.readPushValue(pc, 3) orelse @panic("PUSH3 data out of bounds"),
+            .PUSH4 => self.bytecode.readPushValue(pc, 4) orelse @panic("PUSH4 data out of bounds"),
+            .PUSH5 => self.bytecode.readPushValue(pc, 5) orelse @panic("PUSH5 data out of bounds"),
+            .PUSH6 => self.bytecode.readPushValue(pc, 6) orelse @panic("PUSH6 data out of bounds"),
+            .PUSH7 => self.bytecode.readPushValue(pc, 7) orelse @panic("PUSH7 data out of bounds"),
+            .PUSH8 => self.bytecode.readPushValue(pc, 8) orelse @panic("PUSH8 data out of bounds"),
             // Larger PUSH opcodes return pointer to static value
             .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
             .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
@@ -187,7 +131,7 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
         comptime opcode: anytype,
     ) *const HandlerFn {
         const pc = idx.*;
-        if (pc >= self.bytecode.len) {
+        if (pc >= self.bytecode.len()) {
             @panic("getNextInstruction: PC out of bounds");
         }
         
@@ -224,7 +168,7 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
         // Advance PC based on opcode
         if (has_metadata) {
             // For PUSH opcodes, skip the data bytes
-            const op_value = self.bytecode[pc];
+            const op_value = self.bytecode.raw()[pc];
             if (op_value >= @intFromEnum(Opcode.PUSH1) and op_value <= @intFromEnum(Opcode.PUSH32)) {
                 const push_bytes = op_value - (@intFromEnum(Opcode.PUSH1) - 1);
                 idx.* = @intCast(pc + 1 + push_bytes);
@@ -238,12 +182,12 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
         }
         
         // Get the handler for the next instruction
-        if (idx.* >= self.bytecode.len) {
+        if (idx.* >= self.bytecode.len()) {
             // Return STOP handler for end of bytecode
             return self.handlers[@intFromEnum(Opcode.STOP)];
         }
         
-        const next_opcode = self.bytecode[idx.*];
+        const next_opcode = self.bytecode.raw()[idx.*];
         return self.handlers[next_opcode];
     }
     
@@ -257,24 +201,28 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
     
     /// Check if a PC is a valid JUMPDEST.
     pub fn isValidJumpDest(self: *const Self, pc: usize) bool {
-        if (pc >= self.bytecode.len) return false;
-        return (self.is_jumpdest[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
+        if (pc >= self.bytecode.len()) return false;
+        return (self.bytecode.is_jumpdest[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
     }
     
     /// Check if a PC is an opcode start (not push data).
     pub fn isOpcodeStart(self: *const Self, pc: usize) bool {
-        if (pc >= self.bytecode.len) return false;
-        return (self.is_op_start[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
+        if (pc >= self.bytecode.len()) return false;
+        return (self.bytecode.is_op_start[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
     }
     
-        /// Free the allocated bitmaps.
-        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            if (self.is_push_data.len > 0) allocator.free(self.is_push_data);
-            if (self.is_op_start.len > 0) allocator.free(self.is_op_start);
-            if (self.is_jumpdest.len > 0) allocator.free(self.is_jumpdest);
-            self.is_push_data = &.{};
-            self.is_op_start = &.{};
-            self.is_jumpdest = &.{};
+        /// Initialize a PlanMinimal with bytecode and handlers.
+        pub fn init(allocator: std.mem.Allocator, code: []const u8, handlers: [256]*const HandlerFn) !Self {
+            const bytecode = try BytecodeType.init(allocator, code);
+            return Self{
+                .bytecode = bytecode,
+                .handlers = handlers,
+            };
+        }
+    
+        /// Free the allocated resources.
+        pub fn deinit(self: *Self) void {
+            self.bytecode.deinit();
         }
     };
     
@@ -301,32 +249,8 @@ test "PlanMinimal basic initialization" {
         h.* = &testHandler;
     }
     
-    // Allocate bitmaps
-    const bitmap_size = (bytecode.len + 7) / 8;
-    const is_push_data = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_push_data);
-    const is_op_start = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_op_start);
-    const is_jumpdest = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_jumpdest);
-    
-    // Initialize bitmaps (simplified for test)
-    @memset(is_push_data, 0);
-    @memset(is_op_start, 0);
-    @memset(is_jumpdest, 0);
-    
-    // Mark opcode starts
-    is_op_start[0] = 0b101; // Bits 0 and 2 are opcode starts (PUSH1 and STOP)
-    is_push_data[0] = 0b010; // Bit 1 is push data (0x42)
-    
-    var plan = PlanMinimal{
-        .bytecode = &bytecode,
-        .is_push_data = is_push_data,
-        .is_op_start = is_op_start,
-        .is_jumpdest = is_jumpdest,
-        .handlers = handlers,
-    };
-    defer plan.deinit(allocator);
+    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
     
     // Test isOpcodeStart
     try std.testing.expect(plan.isOpcodeStart(0)); // PUSH1
