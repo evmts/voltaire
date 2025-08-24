@@ -93,8 +93,8 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
 }
 const MemoryDatabase = evm_root.MemoryDatabase;
 const BlockInfo = evm_root.BlockInfo;
-const ZERO_ADDRESS = evm_root.ZERO_ADDRESS;
 const Address = primitives.Address.Address;
+const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 
 // Global allocator for WASM environment
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -147,14 +147,14 @@ export fn guillotine_init() c_int {
         .timestamp = 0,
         .difficulty = 0,
         .gas_limit = 30_000_000,
-        .coinbase = evm_root.ZERO_ADDRESS,
+        .coinbase = ZERO_ADDRESS,
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
     
     const tx_context = evm_root.DefaultEvm.TransactionContext{
         .gas_limit = 30_000_000,
-        .coinbase = evm_root.ZERO_ADDRESS,
+        .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
     
@@ -164,7 +164,7 @@ export fn guillotine_init() c_int {
         block_info,
         tx_context,
         0, // gas_price
-        evm_root.ZERO_ADDRESS, // origin
+        ZERO_ADDRESS, // origin
         .CANCUN // hardfork
     ) catch |err| {
         log(.err, .guillotine_c, "Failed to initialize VM: {}", .{err});
