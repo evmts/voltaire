@@ -268,7 +268,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Route to appropriate handler based on call type
             var result = switch (params) {
-                .call => |p| try self.call_regular(p),
+                .call => |p| try self.call_handler(p),
                 .callcode => |p| try self.callcode_handler(p),
                 .delegatecall => |p| try self.delegatecall_handler(p),
                 .staticcall => |p| try self.staticcall_handler(p),
@@ -281,12 +281,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             return result;
         }
         
-        /// Execute a regular CALL operation.
+        /// CALL operation
         ///
         /// Transfers value from caller to target and executes target contract code.
         /// Creates a new execution context with the target's storage. Supports
         /// precompiled contracts and handles state reverts on failure.
-        pub fn call_regular(self: *Self, params: anytype) Error!CallResult {
+        pub fn call_handler(self: *Self, params: anytype) Error!CallResult {
             // Validate gas
             if (params.gas == 0) {
                 return CallResult.failure(0);
@@ -837,7 +837,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn inner_call(self: *Self, params: CallParams) !CallResult {
             // Don't reset depth to 0 for inner calls - just use call handlers
             switch (params) {
-                .call => |p| return try self.call_regular(p),
+                .call => |p| return try self.call_handler(p),
                 .callcode => |p| return try self.callcode_handler(p),
                 .delegatecall => |p| return try self.delegatecall_handler(p),
                 .staticcall => |p| return try self.staticcall_handler(p),

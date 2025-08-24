@@ -2651,10 +2651,14 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Marks the current contract for destruction and transfers its balance to the recipient.
         /// Stack: [recipient] → []
         pub fn selfdestruct(self: *Self) Error!void {
-            const host = self.host orelse return Error.InvalidOpcode;
+            const host = self.host orelse {
+                @branchHint(.unlikely);
+                return Error.InvalidOpcode;
+            };
 
             // Check static context - SELFDESTRUCT is not allowed in static context
             if (self.is_static) {
+                @branchHint(.unlikely);
                 return Error.WriteProtection;
             }
 

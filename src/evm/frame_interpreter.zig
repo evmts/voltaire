@@ -165,7 +165,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             // Generate SWAP handlers using comptime
             const swap_handlers = comptime blk: {
-                var result: [16]HandlerFnType = undefined;
+                var result: [16]HandlerFn = undefined;
                 var i: u8 = 1;
                 while (i <= 16) : (i += 1) {
                     result[i - 1] = generateSwapHandler(i);
@@ -353,7 +353,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         }
         
         // Comptime DUP handler generation
-        fn generateDupHandler(comptime n: u8) HandlerFnType {
+        fn generateDupHandler(comptime n: u8) HandlerFn {
             const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.DUP1) + n - 1));
             return struct {
                 fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -370,7 +370,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         }
         
         // Comptime SWAP handler generation
-        fn generateSwapHandler(comptime n: u8) HandlerFnType {
+        fn generateSwapHandler(comptime n: u8) HandlerFn {
             const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.SWAP1) + n - 1));
             return struct {
                 fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {

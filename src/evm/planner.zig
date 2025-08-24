@@ -1691,7 +1691,8 @@ test "cache hit ratio tracking" {
     const bytecode1 = [_]u8{0x60, 0x01, 0x00}; // PUSH1 1, STOP
     const bytecode2 = [_]u8{0x60, 0x02, 0x00}; // PUSH1 2, STOP
     
-    var handlers = testHandlerTable();
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
     
     // Initial stats - no requests yet
     var stats = planner.getCacheStats();
