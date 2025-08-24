@@ -23,7 +23,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     
     const FrameInterpreter = struct {
         pub const WordType = config.WordType;
-        pub const Error = Frame.Error;
+        pub const Error = Frame.Error || error{OutOfMemory, TruncatedPush, InvalidJumpDestination, MissingJumpDestMetadata};
         
         const Self = @This();
         
@@ -36,7 +36,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void) Error!Self {
             var frame = try Frame.init(allocator, bytecode, gas_remaining, database);
             errdefer frame.deinit(allocator);
-            var planner = Planner.init(bytecode);
+            var planner = try Planner.init(allocator, bytecode);
             var handlers: [256]*const HandlerFn = undefined;
             
             // Initialize all handlers to invalid by default
@@ -293,7 +293,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             std.log.warn("Instruction stream length: {}", .{plan_ptr.instructionStream.len});
             std.log.warn("==================\n", .{});
             
-            self.op_invalid() catch |err| return err;
+            self.invalid() catch |err| return err;
             unreachable;
         }
         
@@ -304,7 +304,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Check final gas before stopping
             try self.checkGas();
 
-            self.op_stop() catch |err| return err;
+            self.stop() catch |err| return err;
             unreachable;
         }
         
@@ -347,7 +347,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
             // Execute the operation
-            try self.op_add();
+            try self.add();
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ADD);
@@ -366,7 +366,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
             // Execute the operation
-            try self.op_mul();
+            try self.mul();
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MUL);
@@ -398,38 +398,38 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         }
 
         // Define all the simple handlers using the macro
-        const op_sub_handler = makeSimpleHandler(Frame.op_sub, .SUB);
-        const op_div_handler = makeSimpleHandler(Frame.op_div, .DIV);
-        const op_sdiv_handler = makeSimpleHandler(Frame.op_sdiv, .SDIV);
-        const op_mod_handler = makeSimpleHandler(Frame.op_mod, .MOD);
-        const op_smod_handler = makeSimpleHandler(Frame.op_smod, .SMOD);
-        const op_addmod_handler = makeSimpleHandler(Frame.op_addmod, .ADDMOD);
-        const op_mulmod_handler = makeSimpleHandler(Frame.op_mulmod, .MULMOD);
-        const op_exp_handler = makeSimpleHandler(Frame.op_exp, .EXP);
-        const op_signextend_handler = makeSimpleHandler(Frame.op_signextend, .SIGNEXTEND);
-        const op_lt_handler = makeSimpleHandler(Frame.op_lt, .LT);
-        const op_gt_handler = makeSimpleHandler(Frame.op_gt, .GT);
-        const op_slt_handler = makeSimpleHandler(Frame.op_slt, .SLT);
-        const op_sgt_handler = makeSimpleHandler(Frame.op_sgt, .SGT);
-        const op_eq_handler = makeSimpleHandler(Frame.op_eq, .EQ);
-        const op_iszero_handler = makeSimpleHandler(Frame.op_iszero, .ISZERO);
-        const op_and_handler = makeSimpleHandler(Frame.op_and, .AND);
-        const op_or_handler = makeSimpleHandler(Frame.op_or, .OR);
-        const op_xor_handler = makeSimpleHandler(Frame.op_xor, .XOR);
-        const op_not_handler = makeSimpleHandler(Frame.op_not, .NOT);
-        const op_byte_handler = makeSimpleHandler(Frame.op_byte, .BYTE);
-        const op_shl_handler = makeSimpleHandler(Frame.op_shl, .SHL);
-        const op_shr_handler = makeSimpleHandler(Frame.op_shr, .SHR);
-        const op_sar_handler = makeSimpleHandler(Frame.op_sar, .SAR);
-        const op_pop_handler = makeSimpleHandler(Frame.op_pop, .POP);
-        const op_mload_handler = makeSimpleHandler(Frame.op_mload, .MLOAD);
-        const op_mstore_handler = makeSimpleHandler(Frame.op_mstore, .MSTORE);
-        const op_mstore8_handler = makeSimpleHandler(Frame.op_mstore8, .MSTORE8);
-        const op_mcopy_handler = makeSimpleHandler(Frame.op_mcopy, .MCOPY);
-        const op_sload_handler = makeSimpleHandler(Frame.op_sload, .SLOAD);
-        const op_sstore_handler = makeSimpleHandler(Frame.op_sstore, .SSTORE);
-        const op_tload_handler = makeSimpleHandler(Frame.op_tload, .TLOAD);
-        const op_tstore_handler = makeSimpleHandler(Frame.op_tstore, .TSTORE);
+        const op_sub_handler = makeSimpleHandler(Frame.sub, .SUB);
+        const op_div_handler = makeSimpleHandler(Frame.div, .DIV);
+        const op_sdiv_handler = makeSimpleHandler(Frame.sdiv, .SDIV);
+        const op_mod_handler = makeSimpleHandler(Frame.mod, .MOD);
+        const op_smod_handler = makeSimpleHandler(Frame.smod, .SMOD);
+        const op_addmod_handler = makeSimpleHandler(Frame.addmod, .ADDMOD);
+        const op_mulmod_handler = makeSimpleHandler(Frame.mulmod, .MULMOD);
+        const op_exp_handler = makeSimpleHandler(Frame.exp, .EXP);
+        const op_signextend_handler = makeSimpleHandler(Frame.signextend, .SIGNEXTEND);
+        const op_lt_handler = makeSimpleHandler(Frame.lt, .LT);
+        const op_gt_handler = makeSimpleHandler(Frame.gt, .GT);
+        const op_slt_handler = makeSimpleHandler(Frame.slt, .SLT);
+        const op_sgt_handler = makeSimpleHandler(Frame.sgt, .SGT);
+        const op_eq_handler = makeSimpleHandler(Frame.eq, .EQ);
+        const op_iszero_handler = makeSimpleHandler(Frame.iszero, .ISZERO);
+        const op_and_handler = makeSimpleHandler(Frame.and_, .AND);
+        const op_or_handler = makeSimpleHandler(Frame.or_, .OR);
+        const op_xor_handler = makeSimpleHandler(Frame.xor, .XOR);
+        const op_not_handler = makeSimpleHandler(Frame.not_, .NOT);
+        const op_byte_handler = makeSimpleHandler(Frame.byte, .BYTE);
+        const op_shl_handler = makeSimpleHandler(Frame.shl, .SHL);
+        const op_shr_handler = makeSimpleHandler(Frame.shr, .SHR);
+        const op_sar_handler = makeSimpleHandler(Frame.sar, .SAR);
+        const op_pop_handler = makeSimpleHandler(Frame.pop, .POP);
+        const op_mload_handler = makeSimpleHandler(Frame.mload, .MLOAD);
+        const op_mstore_handler = makeSimpleHandler(Frame.mstore, .MSTORE);
+        const op_mstore8_handler = makeSimpleHandler(Frame.mstore8, .MSTORE8);
+        const op_mcopy_handler = makeSimpleHandler(Frame.mcopy, .MCOPY);
+        const op_sload_handler = makeSimpleHandler(Frame.sload, .SLOAD);
+        const op_sstore_handler = makeSimpleHandler(Frame.sstore, .SSTORE);
+        const op_tload_handler = makeSimpleHandler(Frame.tload, .TLOAD);
+        const op_tstore_handler = makeSimpleHandler(Frame.tstore, .TSTORE);
         fn op_jump_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
@@ -508,9 +508,9 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PC);
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
-        const op_msize_handler = makeSimpleHandler(Frame.op_msize, .MSIZE);
-        const op_gas_handler = makeSimpleHandler(Frame.op_gas, .GAS);
-        const op_jumpdest_handler = makeSimpleHandler(Frame.op_jumpdest, .JUMPDEST);
+        const op_msize_handler = makeSimpleHandler(Frame.msize, .MSIZE);
+        const op_gas_handler = makeSimpleHandler(Frame.gas, .GAS);
+        const op_jumpdest_handler = makeSimpleHandler(Frame.jumpdest, .JUMPDEST);
         
         // Push handlers
         fn push2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -1431,7 +1431,7 @@ test "FrameInterpreter basic execution" {
     interpreter.pretty_print();
 
     // Check final stack state
-    try std.testing.expectEqual(@as(primitives.u256, 52), interpreter.frame.stack.peek_unsafe()); // 42 + 10 = 52
+    try std.testing.expectEqual(@as(u256, 52), interpreter.frame.stack.peek_unsafe()); // 42 + 10 = 52
 }
 
 test "FrameInterpreter OUT_OF_BOUNDS error" {
@@ -1446,7 +1446,7 @@ test "FrameInterpreter OUT_OF_BOUNDS error" {
 
     // Should execute normally
     try interpreter.interpret();
-    try std.testing.expectEqual(@as(primitives.u256, 5), interpreter.frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@as(u256, 5), interpreter.frame.stack.peek_unsafe());
 }
 
 test "FrameInterpreter invalid opcode" {
@@ -1475,7 +1475,7 @@ test "FrameInterpreter PUSH values metadata" {
     try interpreter.interpret(); // Handles STOP internally
 
     // Check that 255 was pushed
-    try std.testing.expectEqual(@as(primitives.u256, 255), interpreter.frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@as(u256, 255), interpreter.frame.stack.peek_unsafe());
 }
 
 test "FrameInterpreter complex bytecode sequence" {
@@ -1491,7 +1491,7 @@ test "FrameInterpreter complex bytecode sequence" {
     try interpreter.interpret(); // Handles STOP internally
 
     // Check final result
-    try std.testing.expectEqual(@as(primitives.u256, 16), interpreter.frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@as(u256, 16), interpreter.frame.stack.peek_unsafe());
 }
 
 test "FrameInterpreter handles all PUSH opcodes correctly" {
@@ -1507,7 +1507,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         std.log.warn("\n=== PUSH3 Test Starting ===", .{});
         std.log.warn("Bytecode: {any}", .{bytecode});
         try interpreter.interpret(); // Handles STOP internally
-        try std.testing.expectEqual(@as(primitives.u256, 0x123456), interpreter.frame.stack.peek_unsafe());
+        try std.testing.expectEqual(@as(u256, 0x123456), interpreter.frame.stack.peek_unsafe());
     }
 
     // Test PUSH10 through interpreter
@@ -1524,9 +1524,9 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
 
         try interpreter.interpret(); // Handles STOP internally
 
-        var expected: primitives.u256 = 0;
+        var expected: u256 = 0;
         for (1..11) |i| {
-            expected = (expected << 8) | @as(primitives.u256, i);
+            expected = (expected << 8) | @as(u256, i);
         }
         try std.testing.expectEqual(expected, interpreter.frame.stack.peek_unsafe());
     }
@@ -1561,7 +1561,7 @@ test "Debug planner instruction stream creation" {
     };
     const PlannerType = planner_mod.createPlanner(PlannerConfig);
     
-    var planner = PlannerType.init(&bytecode);
+    var planner = try PlannerType.init(allocator, &bytecode);
     
     // Create handler array with debug logging
     var handlers: [256]*const plan_mod.HandlerFn = undefined;

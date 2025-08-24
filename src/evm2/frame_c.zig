@@ -160,7 +160,7 @@ export fn evm_frame_execute(frame_ptr: ?*anyopaque) c_int {
 export fn evm_frame_push_u64(frame_ptr: ?*anyopaque, value: u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    handle.frame.push(@as(u256, value)) catch |err| {
+    handle.frame.stack.push(@as(u256, value)) catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -171,7 +171,7 @@ export fn evm_frame_push_u64(frame_ptr: ?*anyopaque, value: u64) c_int {
 export fn evm_frame_push_u32(frame_ptr: ?*anyopaque, value: u32) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    handle.frame.push(@as(u256, value)) catch |err| {
+    handle.frame.stack.push(@as(u256, value)) catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -192,7 +192,7 @@ export fn evm_frame_push_bytes(frame_ptr: ?*anyopaque, bytes: [*]const u8, len: 
         value = (value << 8) | byte;
     }
 
-    handle.frame.push(value) catch |err| {
+    handle.frame.stack.push(value) catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -203,7 +203,7 @@ export fn evm_frame_push_bytes(frame_ptr: ?*anyopaque, bytes: [*]const u8, len: 
 export fn evm_frame_pop_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.pop() catch |err| {
+    const result = handle.frame.stack.pop() catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -215,7 +215,7 @@ export fn evm_frame_pop_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
 export fn evm_frame_pop_u32(frame_ptr: ?*anyopaque, value_out: *u32) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.pop() catch |err| {
+    const result = handle.frame.stack.pop() catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -227,7 +227,7 @@ export fn evm_frame_pop_u32(frame_ptr: ?*anyopaque, value_out: *u32) c_int {
 export fn evm_frame_pop_bytes(frame_ptr: ?*anyopaque, bytes_out: [*]u8) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.pop() catch |err| {
+    const result = handle.frame.stack.pop() catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -247,7 +247,7 @@ export fn evm_frame_pop_bytes(frame_ptr: ?*anyopaque, bytes_out: [*]u8) c_int {
 export fn evm_frame_peek_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.peek() catch |err| {
+    const result = handle.frame.stack.peek() catch |err| {
         return zigErrorToCError(err);
     };
 
