@@ -6,6 +6,7 @@ use revm::{
     },
     Evm,
 };
+use keccak_asm::Digest;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 use std::time::Instant;
@@ -1036,6 +1037,175 @@ fn deploy_contract(
     }
 }
 
+/// KECCAK256 hash using assembly-optimized implementation
+/// 
+/// This function provides a high-performance KECCAK256 hash using the assembly-optimized
+/// keccak-asm crate, which is significantly faster than the standard library implementation.
+#[no_mangle]
+pub unsafe extern "C" fn keccak256_asm(
+    data_ptr: *const u8,
+    data_len: usize,
+    out_hash: *mut u8, // Must be exactly 32 bytes
+    out_error: *mut *mut RevmError,
+) -> i32 {
+    *out_error = ptr::null_mut();
+
+    if data_ptr.is_null() && data_len > 0 {
+        *out_error = RevmError::new(
+            RevmErrorCode::InvalidInput,
+            "Data pointer cannot be null with non-zero length".to_string(),
+        );
+        return 0;
+    }
+
+    if out_hash.is_null() {
+        *out_error = RevmError::new(
+            RevmErrorCode::InvalidInput,
+            "Output hash pointer cannot be null".to_string(),
+        );
+        return 0;
+    }
+
+    let data = if data_len == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(data_ptr, data_len)
+    };
+
+    let hash = keccak_asm::Keccak256::digest(data);
+    
+    // Copy hash to output buffer
+    std::ptr::copy_nonoverlapping(hash.as_ptr(), out_hash, 32);
+
+    1
+}
+
+/// Batch KECCAK256 hash multiple inputs using assembly optimization
+/// 
+/// This function hashes multiple inputs in a single call, which can be more efficient
+/// than calling keccak256_asm multiple times due to reduced FFI overhead.
+#[no_mangle]
+pub unsafe extern "C" fn keccak256_asm_batch(
+    inputs_ptr: *const *const u8,      // Array of data pointers
+    inputs_len: *const usize,          // Array of data lengths
+    num_inputs: usize,
+    out_hashes: *mut u8,               // Buffer for output hashes (32 * num_inputs bytes)
+    out_error: *mut *mut RevmError,
+) -> i32 {
+    *out_error = ptr::null_mut();
+
+    if inputs_ptr.is_null() || inputs_len.is_null() || out_hashes.is_null() {
+        *out_error = RevmError::new(
+            RevmErrorCode::InvalidInput,
+            "Input arrays and output buffer cannot be null".to_string(),
+        );
+        return 0;
+    }
+
+    if num_inputs == 0 {
+        return 1; // Success, no work to do
+    }
+
+    let input_ptrs = std::slice::from_raw_parts(inputs_ptr, num_inputs);
+    let input_lens = std::slice::from_raw_parts(inputs_len, num_inputs);
+    
+    for i in 0..num_inputs {
+        let data = if input_lens[i] == 0 {
+            &[]
+        } else {
+            if input_ptrs[i].is_null() {
+                *out_error = RevmError::new(
+                    RevmErrorCode::InvalidInput,
+                    format!("Input {} pointer cannot be null with non-zero length", i),
+                );
+                return 0;
+            }
+            std::slice::from_raw_parts(input_ptrs[i], input_lens[i])
+        };
+
+        let hash = keccak_asm::Keccak256::digest(data);
+        
+        // Copy hash to output buffer at correct offset
+        let output_offset = i * 32;
+        std::ptr::copy_nonoverlapping(
+            hash.as_ptr(),
+            out_hashes.add(output_offset),
+            32
+        );
+    }
+
+    1
+}
+
+/// Convenience function to hash a hex string and return the result as hex
+/// 
+/// This is useful for testing and situations where you have hex-encoded data.
+#[no_mangle]
+pub unsafe extern "C" fn keccak256_hex(
+    hex_input: *const c_char,
+    out_hex_hash: *mut c_char,
+    out_hex_len: usize,                // Must be at least 67 bytes (0x + 64 chars + null)
+    out_error: *mut *mut RevmError,
+) -> i32 {
+    *out_error = ptr::null_mut();
+
+    if hex_input.is_null() || out_hex_hash.is_null() {
+        *out_error = RevmError::new(
+            RevmErrorCode::InvalidInput,
+            "Input and output cannot be null".to_string(),
+        );
+        return 0;
+    }
+
+    if out_hex_len < 67 {
+        *out_error = RevmError::new(
+            RevmErrorCode::InvalidInput,
+            "Output buffer must be at least 67 bytes".to_string(),
+        );
+        return 0;
+    }
+
+    let hex_str = match CStr::from_ptr(hex_input).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            *out_error = RevmError::new(
+                RevmErrorCode::InvalidInput,
+                "Invalid hex string encoding".to_string(),
+            );
+            return 0;
+        }
+    };
+
+    let hex_str = hex_str.trim_start_matches("0x");
+    let data = match hex::decode(hex_str) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            *out_error = RevmError::new(
+                RevmErrorCode::InvalidInput,
+                format!("Invalid hex data: {:?}", e),
+            );
+            return 0;
+        }
+    };
+
+    let hash = keccak_asm::Keccak256::digest(&data);
+    let hash_hex = format!("0x{}", hex::encode(hash));
+
+    if hash_hex.len() + 1 > out_hex_len {
+        *out_error = RevmError::new(
+            RevmErrorCode::MemoryError,
+            "Output buffer too small".to_string(),
+        );
+        return 0;
+    }
+
+    let c_hash = CString::new(hash_hex).unwrap();
+    let bytes = c_hash.as_bytes_with_nul();
+    std::ptr::copy_nonoverlapping(bytes.as_ptr() as *const c_char, out_hex_hash, bytes.len());
+
+    1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1151,6 +1321,120 @@ mod tests {
             assert!(result.success, "Benchmark should succeed: {:?}", result.error_message);
             assert!(result.execution_time_micros >= 0.0, "Execution time should be non-negative");
             assert!(result.gas_used > 0, "Gas should be consumed");
+        }
+    }
+
+    #[test]
+    fn test_keccak256_asm() {
+        unsafe {
+            // Test empty string hash
+            let empty_data: &[u8] = &[];
+            let mut hash_out = [0u8; 32];
+            let mut error_ptr: *mut RevmError = ptr::null_mut();
+            
+            let result = keccak256_asm(
+                empty_data.as_ptr(),
+                empty_data.len(),
+                hash_out.as_mut_ptr(),
+                &mut error_ptr
+            );
+            
+            assert_eq!(result, 1);
+            assert!(error_ptr.is_null());
+            
+            // Expected hash for empty string
+            let expected = hex::decode("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").unwrap();
+            assert_eq!(hash_out.to_vec(), expected);
+            
+            // Test "Hello" string hash
+            let hello_data = b"Hello";
+            let result = keccak256_asm(
+                hello_data.as_ptr(),
+                hello_data.len(),
+                hash_out.as_mut_ptr(),
+                &mut error_ptr
+            );
+            
+            assert_eq!(result, 1);
+            assert!(error_ptr.is_null());
+            
+            // Expected hash for "Hello"
+            let expected_hello = hex::decode("06b3dfaec148fb1bb2b066f10ec285e7c9bf402ab32aa78a5d38e34566810cd2").unwrap();
+            assert_eq!(hash_out.to_vec(), expected_hello);
+        }
+    }
+
+    #[test]
+    fn test_keccak256_hex() {
+        unsafe {
+            let input = CString::new("48656c6c6f").unwrap(); // "Hello" in hex
+            let mut output = [0u8; 67];
+            let mut error_ptr: *mut RevmError = ptr::null_mut();
+            
+            let result = keccak256_hex(
+                input.as_ptr(),
+                output.as_mut_ptr() as *mut c_char,
+                output.len(),
+                &mut error_ptr
+            );
+            
+            assert_eq!(result, 1);
+            assert!(error_ptr.is_null());
+            
+            let result_str = CStr::from_ptr(output.as_ptr() as *const c_char).to_str().unwrap();
+            assert_eq!(result_str, "0x06b3dfaec148fb1bb2b066f10ec285e7c9bf402ab32aa78a5d38e34566810cd2");
+        }
+    }
+
+    #[test]
+    fn test_keccak256_asm_batch() {
+        unsafe {
+            // Test data
+            let data1 = b"Hello";
+            let data2 = b"World";
+            let data3: &[u8] = &[];
+            
+            // Set up input arrays
+            let input_ptrs = [data1.as_ptr(), data2.as_ptr(), data3.as_ptr()];
+            let input_lens = [data1.len(), data2.len(), data3.len()];
+            let mut output_hashes = [0u8; 96]; // 3 * 32 bytes
+            let mut error_ptr: *mut RevmError = ptr::null_mut();
+            
+            let result = keccak256_asm_batch(
+                input_ptrs.as_ptr(),
+                input_lens.as_ptr(),
+                3,
+                output_hashes.as_mut_ptr(),
+                &mut error_ptr
+            );
+            
+            assert_eq!(result, 1);
+            assert!(error_ptr.is_null());
+            
+            // Verify individual hashes by computing them individually first
+            let mut expected_hello = [0u8; 32];
+            let mut expected_world = [0u8; 32];
+            let mut expected_empty = [0u8; 32];
+            let mut error_ptr: *mut RevmError = ptr::null_mut();
+            
+            // Get expected hash for "Hello"
+            let result1 = keccak256_asm(data1.as_ptr(), data1.len(), expected_hello.as_mut_ptr(), &mut error_ptr);
+            assert_eq!(result1, 1);
+            assert!(error_ptr.is_null());
+            
+            // Get expected hash for "World"
+            let result2 = keccak256_asm(data2.as_ptr(), data2.len(), expected_world.as_mut_ptr(), &mut error_ptr);
+            assert_eq!(result2, 1);
+            assert!(error_ptr.is_null());
+            
+            // Get expected hash for empty
+            let result3 = keccak256_asm(data3.as_ptr(), data3.len(), expected_empty.as_mut_ptr(), &mut error_ptr);
+            assert_eq!(result3, 1);
+            assert!(error_ptr.is_null());
+            
+            assert_eq!(&output_hashes[0..32], expected_hello.as_slice());
+            assert_eq!(&output_hashes[32..64], expected_world.as_slice());
+            assert_eq!(&output_hashes[64..96], expected_empty.as_slice());
         }
     }
 }

@@ -145,4 +145,37 @@ int32_t revm_get_balance(struct RevmVm *vm,
                          uintptr_t outBalanceLen,
                          struct RevmError **outError);
 
+/**
+ * KECCAK256 hash using assembly-optimized implementation
+ *
+ * This function provides a high-performance KECCAK256 hash using the assembly-optimized
+ * keccak-asm crate, which is significantly faster than the standard library implementation.
+ */
+int32_t keccak256_asm(const uint8_t *dataPtr,
+                      uintptr_t dataLen,
+                      uint8_t *outHash,
+                      struct RevmError **outError);
+
+/**
+ * Batch KECCAK256 hash multiple inputs using assembly optimization
+ *
+ * This function hashes multiple inputs in a single call, which can be more efficient
+ * than calling keccak256_asm multiple times due to reduced FFI overhead.
+ */
+int32_t keccak256_asm_batch(const uint8_t *const *inputsPtr,
+                            const uintptr_t *inputsLen,
+                            uintptr_t numInputs,
+                            uint8_t *outHashes,
+                            struct RevmError **outError);
+
+/**
+ * Convenience function to hash a hex string and return the result as hex
+ *
+ * This is useful for testing and situations where you have hex-encoded data.
+ */
+int32_t keccak256_hex(const char *hexInput,
+                      char *outHexHash,
+                      uintptr_t outHexLen,
+                      struct RevmError **outError);
+
 #endif /* REVM_WRAPPER_H */
