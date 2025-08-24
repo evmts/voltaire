@@ -2991,12 +2991,13 @@ test "Plan equivalence between minimal and advanced plans" {
         // Create advanced plan
         const AdvancedPlanner = @import("planner.zig").createPlanner(.{});
         var advanced_planner = try AdvancedPlanner.init(allocator, 100);
-        var advanced_plan = try advanced_planner.create_plan(allocator, handlers);
-        defer advanced_plan.deinit(allocator);
+        const advanced_plan = try advanced_planner.getOrAnalyze(bytecode, handlers);
         
-        // Create minimal plan
-        var minimal_plan = try advanced_planner.create_minimal_plan(allocator, handlers);
-        defer minimal_plan.deinit(allocator);
+        // For minimal plan, we need to set bytecode first
+        advanced_planner.bytecode = try AdvancedPlanner.Bytecode.init(allocator, bytecode);
+        defer advanced_planner.bytecode.deinit(allocator);
+        try advanced_planner.create_minimal_plan(allocator, handlers);
+        const minimal_plan = &advanced_planner;
         
         // Both plans should have same bytecode
         try std.testing.expectEqual(advanced_plan.bytecode.len, minimal_plan.bytecode.len);

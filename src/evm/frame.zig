@@ -673,16 +673,16 @@ pub fn Frame(comptime config: FrameConfig) type {
 
         /// Consume gas without checking (for use after static analysis)
         pub fn consumeGasUnchecked(self: *Self, amount: u64) void {
-            self.gas_remaining -= @as(GasType, @intCast(amount));
+            self.gas_manager.consumeUnchecked(amount);
         }
 
         /// Check if we're out of gas at end of execution
         pub fn checkGas(self: *Self) Error!void {
-            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_remaining < 0) return Error.OutOfGas;
+            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_manager.isOutOfGas()) return Error.OutOfGas;
         }
 
         pub fn gas(self: *Self) Error!void {
-            const gas_value = if (self.gas_remaining < 0) 0 else @as(WordType, @intCast(self.gas_remaining));
+            const gas_value = @as(WordType, self.gas_manager.gasRemaining());
             return self.stack.push(gas_value);
         }
 
@@ -930,10 +930,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
             const copy_gas_typed = @as(GasType, @intCast(copy_gas));
 
-            self.gas_remaining = self.gas_remaining - copy_gas_typed;
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            try self.gas_manager.consume(copy_gas);
 
             // Get memory buffer slice
             const mem_buffer = self.memory.get_buffer_ref();

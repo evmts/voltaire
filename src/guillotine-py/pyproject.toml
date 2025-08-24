@@ -84,4 +84,4 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--strict-markers --strict-config --cov=guillotine_evm --cov-report=term-missing"
+addopts = "--strict-markers --strict-config"
