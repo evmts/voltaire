@@ -7781,11 +7781,11 @@ test "SSTORE gas costs and refunds - EIP-2200/3529" {
 
     // Test 2: Update existing non-zero value (warm access)
     // Should cost 5000 gas (warm access)
-    const gas_before_update = frame.gas_manager.gasRemaining();
+    const gas_before_update = @max(frame.gas_remaining, 0);
     try frame.stack.push(0xDEAD); // new value
     try frame.stack.push(storage_key); // same key
     try frame.sstore();
-    const gas_used_update = gas_before_update - frame.gas_manager.gasRemaining();
+    const gas_used_update = gas_before_update - @max(frame.gas_remaining, 0);
 
     // Warm SSTORE (update): 5000 gas
     const expected_warm_sstore = 5000;
@@ -7793,11 +7793,11 @@ test "SSTORE gas costs and refunds - EIP-2200/3529" {
 
     // Test 3: Set to zero (should provide refund) - EIP-3529
     // Setting non-zero to zero provides refund
-    const gas_before_zero = frame.gas_manager.gasRemaining();
+    const gas_before_zero = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // value = 0
     try frame.stack.push(storage_key); // same key
     try frame.sstore();
-    const gas_used_zero = gas_before_zero - frame.gas_manager.gasRemaining();
+    const gas_used_zero = gas_before_zero - @max(frame.gas_remaining, 0);
 
     // Setting to zero: 5000 gas, but refund should be provided
     // The frame doesn't track refunds directly, but gas cost is still 5000
@@ -7822,19 +7822,19 @@ test "SSTORE gas costs - Multiple slots and refund scenarios" {
     // Test multiple storage slots with different scenarios
 
     // Slot 1: Zero → Non-zero (new slot)
-    const initial_gas_1 = frame.gas_manager.gasRemaining();
+    const initial_gas_1 = @max(frame.gas_remaining, 0);
     try frame.stack.push(0x1111); // value
     try frame.stack.push(0x01); // key
     try frame.sstore();
-    const gas_used_1 = initial_gas_1 - frame.gas_manager.gasRemaining();
+    const gas_used_1 = initial_gas_1 - @max(frame.gas_remaining, 0);
     try std.testing.expectEqual(@as(u64, 22100), gas_used_1); // Cold SSTORE
 
     // Slot 2: Zero → Non-zero (another new slot)
-    const initial_gas_2 = frame.gas_manager.gasRemaining();
+    const initial_gas_2 = @max(frame.gas_remaining, 0);
     try frame.stack.push(0x2222); // value
     try frame.stack.push(0x02); // key
     try frame.sstore();
-    const gas_used_2 = initial_gas_2 - frame.gas_manager.gasRemaining();
+    const gas_used_2 = initial_gas_2 - @max(frame.gas_remaining, 0);
     try std.testing.expectEqual(@as(u64, 22100), gas_used_2); // Cold SSTORE
 
     // Slot 1: Non-zero → Different non-zero (warm access)
