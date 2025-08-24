@@ -6651,7 +6651,7 @@ test "Frame system opcodes gas accounting" {
     try frame.op_call();
 
     // Gas should have been deducted
-    try std.testing.expect(frame.gas_manager.gasRemaining() < initial_gas);
+    try std.testing.expect(@max(frame.gas_remaining, 0) < initial_gas);
 
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
@@ -7163,7 +7163,7 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
     try std.testing.expectEqual(@as(u256, 0x0F0F), frame.stack.pop_unsafe());
 
     // Verify gas was consumed
-    try std.testing.expect(frame.gas_manager.gasRemaining() < initial_gas);
+    try std.testing.expect(@max(frame.gas_remaining, 0) < initial_gas);
 
     // Verify memory state
     try std.testing.expect(frame.memory.size() >= 32);
@@ -7550,7 +7550,7 @@ test "Frame LOG opcodes - gas consumption" {
 
     // LOG0 base cost is 375 + 8 * 4 = 407
     const expected_gas = 375 + 8 * 4;
-    try std.testing.expectEqual(initial_gas - expected_gas, frame.gas_manager.gasRemaining());
+    try std.testing.expectEqual(initial_gas - expected_gas, @max(frame.gas_remaining, 0));
 }
 
 test "Frame LOG opcodes - static context check" {
@@ -7665,7 +7665,7 @@ test "Memory expansion gas costs - MCOPY operations" {
     try frame.stack.push(0); // source
     try frame.stack.push(64); // destination - expands to 96 bytes
     try frame.mcopy();
-    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used = initial_gas - @max(frame.gas_remaining, 0);
 
     // MCOPY base cost (3 gas) + dynamic cost (3 per word) + expansion cost
     // Dynamic cost = 3 * ceil(32/32) = 3 * 1 = 3
@@ -7689,7 +7689,7 @@ test "Memory expansion gas costs - CALLDATACOPY operations" {
     try frame.stack.push(0); // calldata offset
     try frame.stack.push(0); // memory offset - first expansion
     try frame.op_calldatacopy();
-    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used = initial_gas - @max(frame.gas_remaining, 0);
 
     // CALLDATACOPY base cost (3 gas) + dynamic cost (3 per word) + expansion
     // Dynamic cost = 3 * ceil(32/32) = 3 * 1 = 3
@@ -7711,7 +7711,7 @@ test "Memory expansion gas costs - CODECOPY operations" {
     try frame.stack.push(0); // code offset
     try frame.stack.push(0); // memory offset
     try frame.op_codecopy();
-    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used = initial_gas - @max(frame.gas_remaining, 0);
 
     // CODECOPY base cost (3 gas) + dynamic cost (3 per word) + expansion
     // Dynamic cost = 3 * ceil(2/32) = 3 * 1 = 3
@@ -7731,7 +7731,7 @@ test "Memory expansion gas costs - Large memory operations" {
     const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(10000); // offset - large memory access
     try frame.mload();
-    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used = initial_gas - @max(frame.gas_remaining, 0);
 
     // Memory size = 10032 bytes = 314 words (rounded up)
     // Memory cost = 314^2/512 + 3*314 = 98596/512 + 942 = 192.57... + 942 = 1134
@@ -7739,10 +7739,10 @@ test "Memory expansion gas costs - Large memory operations" {
     try std.testing.expect(gas_used >= expected_minimum);
 
     // Verify the cost increases quadratically for even larger access
-    const gas_before_larger = frame.gas_manager.gasRemaining();
+    const gas_before_larger = @max(frame.gas_remaining, 0);
     try frame.stack.push(50000); // Much larger offset
     try frame.mload();
-    const gas_used_larger = gas_before_larger - frame.gas_manager.gasRemaining();
+    const gas_used_larger = gas_before_larger - @max(frame.gas_remaining, 0);
 
     // This should cost significantly more due to quadratic nature
     try std.testing.expect(gas_used_larger > gas_used * 2);
