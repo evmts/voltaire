@@ -10,13 +10,15 @@ public actor GuillotineEVM {
     
     /// Initialize the EVM instance
     public init() throws {
-        let result = guillotine_init()
-        guard result == GUILLOTINE_OK.rawValue else {
-            throw mapCErrorToExecutionError(result)
+        // CRITICAL FIX: Check if already initialized to prevent double-initialization hang
+        if guillotine_is_initialized() == 0 {
+            let result = guillotine_init()
+            guard result == GUILLOTINE_OK.rawValue else {
+                throw mapCErrorToExecutionError(result)
+            }
         }
         
         guard let vm = guillotine_vm_create() else {
-            guillotine_deinit()
             throw ExecutionError.internalError("Failed to create VM instance")
         }
         

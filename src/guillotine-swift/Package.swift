@@ -90,8 +90,9 @@ let package = Package(
         .executableTarget(
             name: "BasicTest",
             dependencies: [
-                "GuillotineEVM",
+                "GuillotineC",
                 "GuillotinePrimitives"
+                // Remove GuillotineEVM to test if async main works
             ],
             path: "Sources/BasicTest",
             swiftSettings: [
