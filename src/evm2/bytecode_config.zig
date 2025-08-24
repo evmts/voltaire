@@ -7,6 +7,8 @@ pub const BytecodeConfig = struct {
     const Self = @This();
     /// The maximum amount of bytes allowed in contract code
     max_bytecode_size: u32 = 24576,
+    /// The maximum amount of bytes allowed in initcode (EIP-3860)
+    max_initcode_size: u32 = 49152,
     // @see https://ziglang.org/documentation/master/std/#std.simd.suggestVectorLengthForCpu
     /// How big of a vector length to use for simd operations. 0 if simd should not be used
     vector_length: comptime_int = std.simd.suggestVectorLengthForCpu(u8, builtin.cpu) orelse 0,
@@ -34,6 +36,12 @@ pub const BytecodeConfig = struct {
         }
         if (self.max_bytecode_size > std.math.maxInt(u16)) {
             @compileError("max_bytecode_size too large. Currently only u16 is tested and officially supported");
+        }
+        if (self.max_initcode_size == 0) {
+            @compileError("max_initcode_size must be greater than 0");
+        }
+        if (self.max_initcode_size < self.max_bytecode_size) {
+            @compileError("max_initcode_size must be at least as large as max_bytecode_size");
         }
     }
 };
