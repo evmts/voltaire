@@ -573,12 +573,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return switch (err) {
                     else => CallResult.failure(0),
                 };
-            } orelse Account{
-                .balance = 0,
-                .nonce = 0,
-                .code_hash = [_]u8{0} ** 32,
-                .storage_root = [_]u8{0} ** 32,
-            };
+            } orelse DEFAULT_ACCOUNT;
             
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
@@ -686,12 +681,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return switch (err) {
                     else => CallResult.failure(0),
                 };
-            } orelse Account{
-                .balance = 0,
-                .nonce = 0,
-                .code_hash = [_]u8{0} ** 32,
-                .storage_root = [_]u8{0} ** 32,
-            };
+            } orelse DEFAULT_ACCOUNT;
             
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {

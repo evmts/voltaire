@@ -369,8 +369,26 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }.handler;
         }
         
+        // Comptime SWAP handler generation
+        fn generateSwapHandler(comptime n: u8) HandlerFnType {
+            const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.SWAP1) + n - 1));
+            return struct {
+                fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+                    const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+                    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+                    const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+                    
+                    try self.stack.swap_n(n);
+                    
+                    const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
+                    return dispatchNext(next_handler, self, plan_ptr);
+                }
+            }.handler;
+        }
+        
         // PUSH handlers are now generated at comptime in the init function
         // DUP handlers are now generated at comptime in the init function
+        // SWAP handlers are now generated at comptime in the init function
         
         // Individual PUSH handlers (old implementations for reference)
         fn push0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
