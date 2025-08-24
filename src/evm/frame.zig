@@ -2254,6 +2254,18 @@ pub fn Frame(comptime config: FrameConfig) type {
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
 
+            // Calculate base call gas cost (EIP-150 & EIP-2929) - STATICCALL never transfers value 
+            const base_call_gas = self._calculate_call_gas(address, 0, true);
+            
+            // Check if we have enough gas for the base call cost
+            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
+                try self.stack.push(0);
+                return;
+            }
+            
+            // Consume base call gas
+            self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
+
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
             const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas);
