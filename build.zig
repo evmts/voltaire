@@ -1938,6 +1938,20 @@ pub fn build(b: *std.Build) void {
     const run_test_evm2 = b.addRunArtifact(test_evm2);
     const test_evm2_step = b.step("test-evm2", "Run EVM2 tests");
     test_evm2_step.dependOn(&run_test_evm2.step);
+    
+    // Add isolated call method test
+    const test_evm2_call = b.addTest(.{
+        .name = "test-evm2-call",
+        .root_source_file = b.path("test_evm2_call.zig"),
+    });
+    test_evm2_call.root_module.addImport("primitives", primitives_mod);
+    test_evm2_call.root_module.addImport("evm", evm_mod);
+    test_evm2_call.root_module.addImport("evm2", evm2_mod);
+    test_evm2_call.root_module.addImport("build_options", build_options_mod);
+    test_evm2_call.root_module.addImport("crypto", crypto_mod);
+    const run_test_evm2_call = b.addRunArtifact(test_evm2_call);
+    const test_evm2_call_step = b.step("test-evm2-call", "Run EVM2 call method tests");
+    test_evm2_call_step.dependOn(&run_test_evm2_call.step);
 
     // EVM2 Benchmark Runner executable (ReleaseFast)
     const evm2_runner_exe = b.addExecutable(.{
