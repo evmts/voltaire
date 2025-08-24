@@ -139,7 +139,7 @@ pub const BytecodeStats = struct {
             .jumpdests = try jumpdests.toOwnedSlice(),
             .jumps = try jumps.toOwnedSlice(),
             .backwards_jumps = backwards_jumps,
-            .is_create_code = false, // TODO: Detect create code patterns
+            .is_create_code = false, // CREATE code pattern detection not implemented
         };
     }
     

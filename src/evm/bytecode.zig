@@ -132,6 +132,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         pub inline fn len(self: Self) PcType {
             // https://ziglang.org/documentation/master/#intCast
             // @intCast converts between integer types, runtime safety-checked
+            if (self.runtime_code.len > std.math.maxInt(PcType)) {
+                std.debug.panic("Bytecode length {} exceeds max PcType value {}\n", .{ self.runtime_code.len, std.math.maxInt(PcType) });
+            }
             return @intCast(self.runtime_code.len);
         }
         
