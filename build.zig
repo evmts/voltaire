@@ -2153,6 +2153,28 @@ pub fn build(b: *std.Build) void {
     const build_evm_revm_comparison_bench_step = b.step("build-evm-revm-comparison-bench", "Build EVM vs REVM comparison benchmarks");
     build_evm_revm_comparison_bench_step.dependOn(&b.addInstallArtifact(evm_revm_comparison_bench_exe, .{}).step);
 
+    // Simple EVM2 vs REVM comparison benchmark (working version)
+    const simple_evm_revm_bench_exe = b.addExecutable(.{
+        .name = "simple-evm-revm-bench",
+        .root_source_file = b.path("src/evm2/bench/simple_evm_revm_comparison.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+    simple_evm_revm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    simple_evm_revm_bench_exe.root_module.addImport("primitives", primitives_mod);
+    simple_evm_revm_bench_exe.root_module.addImport("evm2", evm2_mod);
+    simple_evm_revm_bench_exe.root_module.addImport("revm", revm_mod);
+    simple_evm_revm_bench_exe.root_module.addImport("crypto", crypto_mod);
+
+    b.installArtifact(simple_evm_revm_bench_exe);
+
+    const run_simple_evm_revm_bench_cmd = b.addRunArtifact(simple_evm_revm_bench_exe);
+    const simple_evm_revm_bench_step = b.step("simple-evm-revm-bench", "Run simple EVM2 vs REVM comparison benchmarks");
+    simple_evm_revm_bench_step.dependOn(&run_simple_evm_revm_bench_cmd.step);
+
+    const build_simple_evm_revm_bench_step = b.step("build-simple-evm-revm-bench", "Build simple EVM2 vs REVM comparison benchmarks");
+    build_simple_evm_revm_bench_step.dependOn(&b.addInstallArtifact(simple_evm_revm_bench_exe, .{}).step);
+
     // Comprehensive EVM comparison benchmarks
     const comprehensive_bench_exe = b.addExecutable(.{
         .name = "comprehensive-evm-bench",

@@ -1045,8 +1045,8 @@ test "DebuggingTracer memory management" {
     var mock_frame = MockFrame.init();
     
     // Test beforeOp and afterOp
-    tracer.beforeOp(MockFrame, &mock_frame);
-    tracer.afterOp(MockFrame, &mock_frame);
+    tracer.beforeOp(0, 0x60, MockFrame, &mock_frame); // PC=0, PUSH1
+    tracer.afterOp(0, 0x60, MockFrame, &mock_frame);
     
     // Verify step was recorded
     try std.testing.expectEqual(@as(usize, 1), tracer.steps.items.len);
