@@ -6,7 +6,6 @@ const plan_mod = @import("plan.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const primitives = @import("primitives");
-const u256 = primitives.u256;
 
 // FrameInterpreter combines a Frame with a Plan to execute EVM bytecode
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
@@ -1396,7 +1395,7 @@ test "FrameInterpreter basic execution" {
     interpreter.pretty_print();
 
     // Check final stack state
-    try std.testing.expectEqual(@as(u256, 52), interpreter.frame.stack.peek_unsafe()); // 42 + 10 = 52
+    try std.testing.expectEqual(@as(primitives.u256, 52), interpreter.frame.stack.peek_unsafe()); // 42 + 10 = 52
 }
 
 test "FrameInterpreter OUT_OF_BOUNDS error" {
@@ -1411,7 +1410,7 @@ test "FrameInterpreter OUT_OF_BOUNDS error" {
 
     // Should execute normally
     try interpreter.interpret();
-    try std.testing.expectEqual(@as(u256, 5), interpreter.frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@as(primitives.u256, 5), interpreter.frame.stack.peek_unsafe());
 }
 
 test "FrameInterpreter invalid opcode" {
@@ -1440,7 +1439,7 @@ test "FrameInterpreter PUSH values metadata" {
     try interpreter.interpret(); // Handles STOP internally
 
     // Check that 255 was pushed
-    try std.testing.expectEqual(@as(u256, 255), interpreter.frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@as(primitives.u256, 255), interpreter.frame.stack.peek_unsafe());
 }
 
 test "FrameInterpreter complex bytecode sequence" {
@@ -1456,7 +1455,7 @@ test "FrameInterpreter complex bytecode sequence" {
     try interpreter.interpret(); // Handles STOP internally
 
     // Check final result
-    try std.testing.expectEqual(@as(u256, 16), interpreter.frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@as(primitives.u256, 16), interpreter.frame.stack.peek_unsafe());
 }
 
 test "FrameInterpreter handles all PUSH opcodes correctly" {
@@ -1472,7 +1471,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         std.log.warn("\n=== PUSH3 Test Starting ===", .{});
         std.log.warn("Bytecode: {any}", .{bytecode});
         try interpreter.interpret(); // Handles STOP internally
-        try std.testing.expectEqual(@as(u256, 0x123456), interpreter.frame.stack.peek_unsafe());
+        try std.testing.expectEqual(@as(primitives.u256, 0x123456), interpreter.frame.stack.peek_unsafe());
     }
 
     // Test PUSH10 through interpreter
@@ -1489,9 +1488,9 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
 
         try interpreter.interpret(); // Handles STOP internally
 
-        var expected: u256 = 0;
+        var expected: primitives.u256 = 0;
         for (1..11) |i| {
-            expected = (expected << 8) | @as(u256, i);
+            expected = (expected << 8) | @as(primitives.u256, i);
         }
         try std.testing.expectEqual(expected, interpreter.frame.stack.peek_unsafe());
     }
