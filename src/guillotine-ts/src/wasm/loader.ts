@@ -9,10 +9,10 @@ export interface GuillotineWasm {
   memory: WebAssembly.Memory;
   
   // Core functions
-  guillotine_init(): number;
-  guillotine_deinit(): void;
-  guillotine_is_initialized(): number;
-  guillotine_version(): number; // Returns pointer to string
+  evm_init(): number;
+  evm_deinit(): void;
+  evm_is_initialized(): number;
+  evm_version(): number; // Returns pointer to string
   
   // VM management
   guillotine_vm_create(): number; // Returns pointer to VM
@@ -265,15 +265,33 @@ export class WasmLoader {
 
     if (typeof window !== 'undefined') {
       // Browser environment
-      const wasmUrl = wasmPath || '/wasm/guillotine.wasm';
+      const wasmUrl = wasmPath || '/wasm/guillotine-evm.wasm';
       const response = await fetch(wasmUrl);
       wasmBinary = new Uint8Array(await response.arrayBuffer());
     } else {
       // Node.js environment
       const fs = await import('fs');
       const path = await import('path');
-      const defaultPath = path.join(__dirname, '../wasm/guillotine.wasm');
-      const finalPath = wasmPath || defaultPath;
+      // Try multiple paths to find the WASM file
+      const possiblePaths = [
+        wasmPath,
+        path.join(__dirname, '../wasm/guillotine-evm.wasm'),
+        path.join(__dirname, '../../../../zig-out/bin/guillotine-evm.wasm'),
+        path.join(process.cwd(), 'zig-out/bin/guillotine-evm.wasm'),
+      ].filter(Boolean);
+      
+      let finalPath: string | undefined;
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p!)) {
+          finalPath = p;
+          break;
+        }
+      }
+      
+      if (!finalPath) {
+        throw new Error('Could not find guillotine-evm.wasm file');
+      }
+      
       wasmBinary = new Uint8Array(fs.readFileSync(finalPath));
     }
 
@@ -285,11 +303,24 @@ export class WasmLoader {
         console_warn: this.consoleWarn.bind(this),
         console_error: this.consoleError.bind(this),
       },
+      wasi_snapshot_preview1: {
+        // Provide minimal WASI imports if needed
+        proc_exit: (code: number) => { throw new Error(`Process exited with code ${code}`); },
+        fd_write: () => 0,
+        fd_close: () => 0,
+        fd_seek: () => 0,
+      },
     });
 
-    this.wasmModule = wasmModule.instance.exports as GuillotineWasm;
-    this.exports = this.wasmModule;
-    this.memory = new WasmMemory(this.wasmModule.memory, this.wasmModule);
+    const exports = wasmModule.instance.exports as any;
+    this.wasmModule = exports;
+    this.exports = exports;
+    
+    // Debug: Log available exports
+    console.log('WASM exports:', Object.keys(exports));
+    console.log('WASM export types:', Object.entries(exports).map(([k, v]) => [k, typeof v]));
+    
+    this.memory = new WasmMemory(exports.memory || new WebAssembly.Memory({ initial: 256 }), exports);
     
     // Update memory views
     this.memoryViews = {
@@ -298,9 +329,13 @@ export class WasmLoader {
     };
 
     // Initialize the EVM
-    const result = this.wasmModule.guillotine_init();
-    if (result !== 0) {
-      throw new Error('Failed to initialize Guillotine EVM');
+    if (this.wasmModule.evm_init) {
+      const result = this.wasmModule.evm_init();
+      if (result !== 0) {
+        throw new Error('Failed to initialize Guillotine EVM');
+      }
+    } else {
+      console.warn('evm_init function not found in WASM exports');
     }
   }
 
@@ -311,7 +346,7 @@ export class WasmLoader {
     if (!this.wasmModule) {
       throw new Error('WASM module not loaded. Call load() first.');
     }
-    return this;
+    return this.wasmModule;
   }
 
   /**
@@ -388,7 +423,7 @@ export class WasmLoader {
    */
   cleanup(): void {
     if (this.wasmModule) {
-      this.wasmModule.guillotine_deinit();
+      this.wasmModule.evm_deinit();
       this.wasmModule = null;
       this.memory = null;
       this.exports = null;
