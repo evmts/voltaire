@@ -253,10 +253,9 @@ pub fn execute_ripemd160(allocator: std.mem.Allocator, input: []const u8, gas_li
     @memset(output, 0);
 
     // Use the actual RIPEMD160 implementation from crypto module
-    var hasher = crypto.Ripemd160.init();
+    var hasher = crypto.Ripemd160.RIPEMD160.init();
     hasher.update(input);
-    var hash: [20]u8 = undefined;
-    hasher.final(&hash);
+    const hash = hasher.final();
     
     // Copy the 20-byte hash to the output with 12 bytes of padding at the front
     @memcpy(output[12..32], &hash);
@@ -410,38 +409,10 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const output = try allocator.alloc(u8, 64);
     
     // Use the actual BN254 implementation from crypto module
-    const g1_x1 = crypto.bn254.FpMont.from_int(x1) catch {
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = true,
-        };
-    };
-    const g1_y1 = crypto.bn254.FpMont.from_int(y1) catch {
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = true,
-        };
-    };
-    const g1_x2 = crypto.bn254.FpMont.from_int(x2) catch {
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = true,
-        };
-    };
-    const g1_y2 = crypto.bn254.FpMont.from_int(y2) catch {
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = true,
-        };
-    };
+    const g1_x1 = crypto.bn254.FpMont.init(x1);
+    const g1_y1 = crypto.bn254.FpMont.init(y1);
+    const g1_x2 = crypto.bn254.FpMont.init(x2);
+    const g1_y2 = crypto.bn254.FpMont.init(y2);
     
     // Create G1 points
     const point1 = crypto.bn254.G1{ .x = g1_x1, .y = g1_y1, .z = crypto.bn254.FpMont.ONE };
@@ -462,8 +433,8 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     
     // Convert back to affine coordinates and bytes
     const result_affine = result.toAffine();
-    const result_x = result_affine.x.to_int();
-    const result_y = result_affine.y.to_int();
+    const result_x = result_affine.x.toStandardRepresentation();
+    const result_y = result_affine.y.toStandardRepresentation();
     
     u256ToBytes(result_x, output[0..32]);
     u256ToBytes(result_y, output[32..64]);
@@ -512,22 +483,8 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const output = try allocator.alloc(u8, 64);
     
     // Use the actual BN254 implementation from crypto module
-    const g1_x = crypto.bn254.FpMont.from_int(x) catch {
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = true,
-        };
-    };
-    const g1_y = crypto.bn254.FpMont.from_int(y) catch {
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = true,
-        };
-    };
+    const g1_x = crypto.bn254.FpMont.init(x);
+    const g1_y = crypto.bn254.FpMont.init(y);
     
     // Create G1 point
     const point = crypto.bn254.G1{ .x = g1_x, .y = g1_y, .z = crypto.bn254.FpMont.ONE };
@@ -547,8 +504,8 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     
     // Convert back to affine coordinates and bytes
     const result_affine = result.toAffine();
-    const result_x = result_affine.x.to_int();
-    const result_y = result_affine.y.to_int();
+    const result_x = result_affine.x.toStandardRepresentation();
+    const result_y = result_affine.y.toStandardRepresentation();
     
     u256ToBytes(result_x, output[0..32]);
     u256ToBytes(result_y, output[32..64]);
