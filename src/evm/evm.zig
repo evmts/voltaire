@@ -579,7 +579,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Gas cost for CREATE2
             const GasConstants = primitives.GasConstants;
             const create_gas = GasConstants.CreateGas; // 32000
-            const hash_cost = @as(u64, @intCast(params.init_code.len)) * GasConstants.Sha3WordGas / 32;
+            const hash_cost = @as(u64, @intCast(params.init_code.len)) * GasConstants.Keccak256WordGas / 32;
             const total_gas = create_gas + hash_cost;
             
             if (params.gas < total_gas) {
@@ -669,7 +669,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 gas_i32,
                 self.database,
             );
-            defer interpreter.deinit();
+            defer interpreter.deinit(self.allocator);
             
             // Execute the frame
             interpreter.interpret() catch |err| {
@@ -691,6 +691,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     error.InvalidJumpDestination => CallResult.failure(0),
                     error.MissingJumpDestMetadata => CallResult.failure(0),
                     error.InitcodeTooLarge => CallResult.failure(0),
+                    else => CallResult.failure(0),
                 };
             };
             
@@ -1453,20 +1454,20 @@ test "EVM error type definition" {
     
     // Test that error set contains expected errors
     comptime {
-        _ = error.StackUnderflow;
-        _ = error.StackOverflow;
-        _ = error.ContractNotFound;
-        _ = error.PrecompileError;
-        _ = error.MemoryError;
-        _ = error.StorageError;
-        _ = error.CallDepthExceeded;
-        _ = error.InsufficientBalance;
-        _ = error.ContractCollision;
-        _ = error.InvalidBytecode;
-        _ = error.StaticCallViolation;
-        _ = error.InvalidOpcode;
-        _ = error.RevertExecution;
-        _ = error.Stop;
+        _ = DefaultEvm.Error.StackUnderflow;
+        _ = DefaultEvm.Error.StackOverflow;
+        _ = DefaultEvm.Error.ContractNotFound;
+        _ = DefaultEvm.Error.PrecompileError;
+        _ = DefaultEvm.Error.MemoryError;
+        _ = DefaultEvm.Error.StorageError;
+        _ = DefaultEvm.Error.CallDepthExceeded;
+        _ = DefaultEvm.Error.InsufficientBalance;
+        _ = DefaultEvm.Error.ContractCollision;
+        _ = DefaultEvm.Error.InvalidBytecode;
+        _ = DefaultEvm.Error.StaticCallViolation;
+        _ = DefaultEvm.Error.InvalidOpcode;
+        _ = DefaultEvm.Error.RevertExecution;
+        _ = DefaultEvm.Error.Stop;
     }
 }
 
@@ -1496,7 +1497,7 @@ test "EVM call() entry point method" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
     
     // Test that call method exists and has correct signature
@@ -1549,7 +1550,7 @@ test "EVM call() method routes to different handlers" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
     
     // Test CALL routing
@@ -1662,7 +1663,7 @@ test "EVM call_regular handler basic functionality" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
     
     // Test call_regular directly (once it's implemented)
@@ -1735,7 +1736,7 @@ test "EVM staticcall handler prevents state changes" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
     
     // Test staticcall directly  
@@ -1802,12 +1803,12 @@ test "EVM delegatecall handler preserves caller context" {
     
     const original_caller: Address = [_]u8{0xAA} ++ [_]u8{0} ** 19;
     const tx_context = TransactionContext{
-        .caller = original_caller,
-        .origin = original_caller,
-        .gas_price = 0,
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
     
     // Test delegatecall - should preserve original caller
