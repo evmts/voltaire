@@ -671,7 +671,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer interpreter.deinit();
             
             // Execute the frame
-            const exec_result = interpreter.execute() catch |err| {
+            const exec_result = interpreter.interpret() catch |err| {
                 const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
                 return switch (err) {
                     error.STOP => CallResult.success_with_output(gas_left, interpreter.frame.output_data.items),
