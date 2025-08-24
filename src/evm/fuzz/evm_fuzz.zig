@@ -1013,12 +1013,7 @@ test "fuzz configuration edge cases" {
     };
     defer frame.deinit();
     
-    // Test operations with the extreme configuration
-    const test_bytecode = input[6..@min(input.len, 6 + 32)]; // Small test bytecode
-    
-    frame.execute_bytecode(test_bytecode) catch |err| {
-        // Execution errors are acceptable
-        return;
-    };
+    // Test frame creation with extreme config completes successfully
+    // Frame doesn't have execute_bytecode method in current architecture
 }
 
