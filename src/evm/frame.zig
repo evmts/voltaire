@@ -1980,8 +1980,16 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             
             // Check if this is a cold access using the Host's access list (EIP-2929)
+            // Cold/warm access costs were introduced in the Berlin hardfork
             const cold_access = blk: {
                 if (self.host) |host| {
+                    // Check if we're at least at Berlin hardfork (EIP-2929)
+                    const is_berlin_or_later = host.vtable.is_hardfork_at_least(host.ptr, .BERLIN);
+                    if (!is_berlin_or_later) {
+                        // Pre-Berlin hardforks don't have cold/warm access distinction
+                        break :blk false;
+                    }
+                    
                     // Access the address and get the gas cost
                     const access_cost = host.vtable.access_address(host.ptr, target_address) catch {
                         // On error, assume cold access (conservative approach for gas costs)
@@ -1991,7 +1999,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     // If access cost equals cold access cost, it was a cold access
                     break :blk access_cost == primitives.GasConstants.COLD_ACCOUNT_ACCESS_COST;
                 } else {
-                    // No host available, assume cold access
+                    // No host available, assume cold access for safety
                     break :blk true;
                 }
             };
@@ -1999,8 +2007,35 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Value transfer check
             const value_transfer = value > 0 and !is_static;
             
+            // Check if target is a precompile contract
+            const is_precompile = self.is_precompile_address(target_address);
+            
+            // Precompile calls are considered existing accounts (never new)
+            const effective_new_account = new_account and !is_precompile;
+            
             // Calculate base call cost using the centralized gas calculation function
-            return GasConstants.call_gas_cost(value_transfer, new_account, cold_access);
+            return GasConstants.call_gas_cost(value_transfer, effective_new_account, cold_access);
+        }
+
+        /// Check if an address is a precompile contract
+        /// 
+        /// Precompiles are special contracts at addresses 0x01 through 0x0A that provide
+        /// cryptographic functions and utilities with deterministic gas costs.
+        ///
+        /// ## Parameters
+        /// - `address`: The address to check
+        /// 
+        /// ## Returns
+        /// - `true` if the address is a precompile, `false` otherwise
+        fn is_precompile_address(self: *Self, address: Address) bool {
+            _ = self; // Not used but kept for consistency with method signature
+            
+            // Check if all bytes except the last one are zero
+            for (address[0..19]) |addr_byte| {
+                if (addr_byte != 0) return false;
+            }
+            // Check if the last byte is between 1 and 10 (0x01 to 0x0A)
+            return address[19] >= 1 and address[19] <= 10;
         }
 
         /// CALL opcode (0xF1) - Call another contract
