@@ -166,7 +166,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 Rust library to EVM module (native targets only, if enabled)
     if (bn254_lib) |bn254| {
-        evm_mod.linkLibrary(revm);
+        evm_mod.linkLibrary(bn254);
         evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -253,7 +253,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 Rust library to the library artifact (if enabled)
     if (bn254_lib) |bn254| {
-        lib.linkLibrary(revm);
+        lib.linkLibrary(bn254);
         lib.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -273,7 +273,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 Rust library to the shared library artifact (if enabled)
     if (bn254_lib) |bn254| {
-        shared_lib.linkLibrary(revm);
+        shared_lib.linkLibrary(bn254);
         shared_lib.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -719,7 +719,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 library if available
     if (bn254_lib) |bn254| {
-        opcode_test_lib.linkLibrary(revm);
+        opcode_test_lib.linkLibrary(bn254);
         opcode_test_lib.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -792,7 +792,7 @@ pub fn build(b: *std.Build) void {
     interpret_test.root_module.addImport("evm", evm_mod);
     interpret_test.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        interpret_test.linkLibrary(revm);
+        interpret_test.linkLibrary(bn254);
         interpret_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     interpret_test.root_module.addImport("revm_wrapper", revm_mod);
@@ -825,7 +825,7 @@ pub fn build(b: *std.Build) void {
     control_test.root_module.addImport("evm", evm_mod);
     control_test.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        control_test.linkLibrary(revm);
+        control_test.linkLibrary(bn254);
         control_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -843,7 +843,7 @@ pub fn build(b: *std.Build) void {
     system_test.root_module.addImport("evm", evm_mod);
     system_test.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        system_test.linkLibrary(revm);
+        system_test.linkLibrary(bn254);
         system_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -861,7 +861,7 @@ pub fn build(b: *std.Build) void {
     tailcall_benchmark.root_module.addImport("evm", evm_mod);
     tailcall_benchmark.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        tailcall_benchmark.linkLibrary(revm);
+        tailcall_benchmark.linkLibrary(bn254);
         tailcall_benchmark.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -1250,7 +1250,7 @@ pub fn build(b: *std.Build) void {
     evm_e2e_test.root_module.addImport("crypto", crypto_mod);
     evm_e2e_test.root_module.addImport("build_options", build_options_mod);
     if (bn254_lib) |bn254| {
-        evm_e2e_test.linkLibrary(revm);
+        evm_e2e_test.linkLibrary(bn254);
         evm_e2e_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -1271,7 +1271,7 @@ pub fn build(b: *std.Build) void {
     comprehensive_differential_test.root_module.addImport("build_options", build_options_mod);
     comprehensive_differential_test.root_module.addImport("revm", revm_mod);
     if (bn254_lib) |bn254| {
-        comprehensive_differential_test.linkLibrary(revm);
+        comprehensive_differential_test.linkLibrary(bn254);
         comprehensive_differential_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -1827,7 +1827,7 @@ pub fn build(b: *std.Build) void {
     bn254_comparison_fuzz_test.root_module.addImport("crypto", crypto_mod);
     bn254_comparison_fuzz_test.root_module.addImport("evm", evm_mod);
     if (bn254_lib) |bn254| {
-        bn254_comparison_fuzz_test.linkLibrary(revm);
+        bn254_comparison_fuzz_test.linkLibrary(bn254);
     }
 
     const run_bn254_comparison_fuzz_test = b.addRunArtifact(bn254_comparison_fuzz_test);
@@ -2087,6 +2087,26 @@ pub fn build(b: *std.Build) void {
 
     const build_evm2_bench_step = b.step("build-evm2-bench", "Build EVM2 zbench benchmarks");
     build_evm2_bench_step.dependOn(&b.addInstallArtifact(evm2_bench_exe, .{}).step);
+
+    // EVM2 comprehensive performance benchmarks
+    const evm2_comprehensive_bench_exe = b.addExecutable(.{
+        .name = "evm2-comprehensive-bench",
+        .root_source_file = b.path("src/evm2/bench/evm_zbench_comprehensive.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+    evm2_comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    evm2_comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
+    evm2_comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
+
+    b.installArtifact(evm2_comprehensive_bench_exe);
+
+    const run_evm2_comprehensive_bench_cmd = b.addRunArtifact(evm2_comprehensive_bench_exe);
+    const evm2_comprehensive_bench_step = b.step("evm2-comprehensive-bench", "Run EVM2 comprehensive performance benchmarks");
+    evm2_comprehensive_bench_step.dependOn(&run_evm2_comprehensive_bench_cmd.step);
+
+    const build_evm2_comprehensive_bench_step = b.step("build-evm2-comprehensive-bench", "Build EVM2 comprehensive benchmarks");
+    build_evm2_comprehensive_bench_step.dependOn(&b.addInstallArtifact(evm2_comprehensive_bench_exe, .{}).step);
 
     // Comprehensive EVM comparison benchmarks
     const comprehensive_bench_exe = b.addExecutable(.{
