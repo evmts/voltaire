@@ -355,7 +355,7 @@ pub fn execute_modexp(allocator: std.mem.Allocator, input: []const u8, gas_limit
     const output = try allocator.alloc(u8, mod_len);
     
     // Use the actual modexp implementation from crypto module
-    crypto.modexp.unaudited_modexp(allocator, base, exp, mod, output) catch {
+    crypto.ModExp.unaudited_modexp(allocator, base, exp, mod, output) catch {
         // On error, return zeros (following EVM spec)
         @memset(output, 0);
         return PrecompileOutput{
@@ -679,7 +679,7 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
     t[1] = std.mem.readInt(u64, t_bytes[8..16], .little);
     
     // Use the actual blake2f implementation from crypto module
-    crypto.blake2.unaudited_blake2f_compress(&h, &m, t, f != 0, rounds);
+    crypto.Blake2.unaudited_blake2f_compress(&h, &m, t, f != 0, rounds);
     
     // Convert result back to bytes (little-endian)
     for (0..8) |i| {
