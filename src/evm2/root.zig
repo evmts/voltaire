@@ -8,7 +8,7 @@ pub const createStack = @import("stack.zig").createStack;
 pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
 pub const createPlanner = @import("planner.zig").createPlanner;
 pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
-pub const createPlan = @import("plan.zig").createPlan;
+// pub const createPlan = @import("plan.zig").createPlan; // TODO: plan.zig doesn't export createPlan
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
 // pub const Interpreter = @import("interpreter.zig").Interpreter; // TODO: Add when interpreter.zig is created
 pub const Evm = @import("evm.zig").Evm;
@@ -35,15 +35,14 @@ pub const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 pub const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
-pub const Memory = @import("memory.zig").Memory;
+pub const createMemory = @import("memory.zig").createMemory;
+pub const MemoryError = @import("memory.zig").MemoryError;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const Opcode = @import("opcode.zig").Opcode;
-pub const OpcodeRange = @import("opcode.zig").OpcodeRange;
 pub const opcode_synthetic = @import("opcode_synthetic.zig");
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
-pub const createPlanAdvanced = @import("plan_advanced.zig").createPlanAdvanced;
 pub const createPlanMinimal = @import("plan_minimal.zig").createPlanMinimal;
-pub const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
+pub const createFrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter;
 
 // Run all tests
 test {
@@ -69,15 +68,13 @@ test {
     _ = DatabaseInterface;
     _ = Hardfork;
     _ = Host;
-    _ = Memory;
+    _ = createMemory;
     _ = MemoryDatabase;
     _ = Opcode;
-    _ = OpcodeRange;
     _ = opcode_synthetic;
     _ = SelfDestruct;
-    _ = createPlanAdvanced;
     _ = createPlanMinimal;
-    _ = FrameInterpreter;
+    _ = createFrameInterpreter;
     
     // Test config modules
     _ = MemoryConfig;
@@ -89,6 +86,6 @@ test {
     _ = FileTracer;
     _ = NoOpTracer;
     _ = DebuggingTracer;
-    _ = createPlan;
+    // _ = createPlan;
     _ = opcode_data;
 }

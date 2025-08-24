@@ -87,7 +87,7 @@ export fn evm2_test_simple_execution() c_int {
     // Check that we have one value on stack (15)
     if (handle.frame.next_stack_index != 1) return -100;
 
-    const value = handle.frame.pop() catch return -101;
+    const value = handle.frame.stack.pop() catch return -101;
     if (value != 15) return -102;
 
     return frame_c.EVM_SUCCESS;
@@ -124,15 +124,15 @@ export fn evm2_test_stack_operations() c_int {
     }
 
     // Test push/pop operations
-    handle.frame.push(42) catch return -1;
-    handle.frame.push(100) catch return -2;
+    handle.frame.stack.push(42) catch return -1;
+    handle.frame.stack.push(100) catch return -2;
 
     if (handle.frame.next_stack_index != 2) return -3;
 
-    const value1 = handle.frame.pop() catch return -4;
+    const value1 = handle.frame.stack.pop() catch return -4;
     if (value1 != 100) return -5;
 
-    const value2 = handle.frame.pop() catch return -6;
+    const value2 = handle.frame.stack.pop() catch return -6;
     if (value2 != 42) return -7;
 
     if (handle.frame.next_stack_index != 0) return -8;
