@@ -45,7 +45,7 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
             prev: ?*@This(),
         };
         const PlanType = plan_mod.createPlan(PlanCfg);
-        const BytecodeType = createBytecode(.{ .max_bytecode_size = Cfg.max_bytecode_size });
+        const BytecodeType = createBytecode(.{ .max_bytecode_size = Cfg.maxBytecodeSize });
 
         const Self = @This();
         // Expose types for callers/tests.
@@ -70,9 +70,10 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
         start: JumpDestMetadata,
 
         /// Create a planner instance over immutable bytecode (no cache).
-        pub fn init(bytecode: []const u8) Self {
+        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8) !Self {
+            const bytecodeObj = try BytecodeType.init(allocator, bytecode);
             return .{ 
-                .bytecode = BytecodeType.init(bytecode),
+                .bytecode = bytecodeObj,
                 .allocator = null,
                 .cache_capacity = 0,
                 .cache_map = null,
@@ -86,7 +87,7 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
         /// Create a planner with LRU cache.
         pub fn initWithCache(allocator: std.mem.Allocator, cache_capacity: usize) !Self {
             return .{
-                .bytecode = BytecodeType.init(&.{}), // Will be set per request
+                .bytecode = undefined, // Will be set per request
                 .allocator = allocator,
                 .cache_capacity = cache_capacity,
                 .cache_map = std.AutoHashMap(u64, *CacheNode).init(allocator),
@@ -99,6 +100,10 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
         
         /// Deinitialize the planner and free cache.
         pub fn deinit(self: *Self) void {
+            // Deinit bytecode
+            self.bytecode.deinit();
+            
+            // Deinit cache if present
             if (self.cache_map) |*map| {
                 var node = self.cache_head;
                 while (node) |n| {
@@ -115,7 +120,7 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
         pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const PlanType {
             if (self.cache_map == null) {
                 // No cache - analyze directly
-                self.bytecode = BytecodeType.init(bytecode);
+                self.bytecode = try BytecodeType.init(self.allocator orelse return error.NoAllocator, bytecode);
                 _ = try self.create_instruction_stream(self.allocator orelse return error.NoAllocator, handlers);
                 return error.NotImplemented; // Need to store plan somewhere
             }
@@ -130,7 +135,7 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
             }
             
             // Miss - analyze
-            self.bytecode = bytecode;
+            self.bytecode = try BytecodeType.init(self.allocator.?, bytecode);
             const plan = try self.create_instruction_stream(self.allocator.?, handlers);
             
             // Add to cache
@@ -700,14 +705,15 @@ test "planner: lookupInstructionIdx returns null for non-dest" {
     // No jump_table in runtime plan anymore
 }
 
-test "planner: init without allocator" {
+test "planner: init with allocator" {
+    const allocator = std.testing.allocator;
     const Planner = createPlanner(.{});
     
-    // This test expects Plan.init(bytecode) without allocator
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
-    const planner = Planner.init(&bytecode);
-    // No deinit should be needed
-    try std.testing.expect(planner.bytecode.len == 3);
+    var planner = try Planner.init(allocator, &bytecode);
+    defer planner.deinit();
+    
+    try std.testing.expect(planner.bytecode.len() == 3);
 }
 
 test "synthetic opcodes: constants defined" {
