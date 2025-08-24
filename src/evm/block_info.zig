@@ -36,7 +36,7 @@ pub const BlockInfo = struct {
             .timestamp = 0,
             .difficulty = 0,
             .gas_limit = 30_000_000,
-            .coinbase = Address.ZERO,
+            .coinbase = primitives.ZERO_ADDRESS,
             .base_fee = 0,
             .prev_randao = [_]u8{0} ** 32,
         };
@@ -65,7 +65,7 @@ test "block info initialization" {
     try std.testing.expectEqual(@as(u64, 0), block.timestamp);
     try std.testing.expectEqual(@as(u256, 0), block.difficulty);
     try std.testing.expectEqual(@as(u64, 30_000_000), block.gas_limit);
-    try std.testing.expectEqual(Address.ZERO, block.coinbase);
+    try std.testing.expectEqual(primitives.ZERO_ADDRESS, block.coinbase);
     try std.testing.expectEqual(@as(u256, 0), block.base_fee);
     try std.testing.expectEqual([_]u8{0} ** 32, block.prev_randao);
 }
@@ -143,7 +143,7 @@ test "block info edge cases" {
         .timestamp = std.math.maxInt(u64),
         .difficulty = std.math.maxInt(u256),
         .gas_limit = 30_000_000,
-        .coinbase = Address.ZERO,
+        .coinbase = primitives.ZERO_ADDRESS,
         .base_fee = std.math.maxInt(u256),
         .prev_randao = [_]u8{0xff} ** 32,
     };
@@ -156,7 +156,7 @@ test "block info edge cases" {
         .timestamp = 1438269973, // Ethereum genesis
         .difficulty = 0,
         .gas_limit = 1,
-        .coinbase = Address.ZERO,
+        .coinbase = primitives.ZERO_ADDRESS,
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };

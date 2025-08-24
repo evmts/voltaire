@@ -162,7 +162,7 @@ test "AccessList - pre-warming addresses" {
     defer access_list.deinit();
 
     const addresses = [_]Address{
-        primitives.Address.ZERO_ADDRESS,
+        primitives.ZERO_ADDRESS,
         [_]u8{1} ** 20,
         [_]u8{2} ** 20,
     };

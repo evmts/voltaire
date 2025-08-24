@@ -163,7 +163,7 @@ test "SelfDestruct - basic marking and checking" {
     var self_destruct = SelfDestruct.init(allocator);
     defer self_destruct.deinit();
 
-    const contract_addr = primitives.Address.ZERO_ADDRESS;
+    const contract_addr = primitives.ZERO_ADDRESS;
     const recipient_addr = [_]u8{0x01} ++ [_]u8{0} ** 19;
 
     // Initially not marked
@@ -188,7 +188,7 @@ test "SelfDestruct - multiple contracts" {
     var self_destruct = SelfDestruct.init(allocator);
     defer self_destruct.deinit();
 
-    const contract1 = primitives.Address.ZERO_ADDRESS;
+    const contract1 = primitives.ZERO_ADDRESS;
     const contract2 = [_]u8{0x02} ++ [_]u8{0} ** 19;
     const recipient1 = [_]u8{0x01} ++ [_]u8{0} ** 19;
     const recipient2 = [_]u8{0x03} ++ [_]u8{0} ** 19;
@@ -216,7 +216,7 @@ test "SelfDestruct - iterator functionality" {
     var self_destruct = SelfDestruct.init(allocator);
     defer self_destruct.deinit();
 
-    const contract1 = primitives.Address.ZERO_ADDRESS;
+    const contract1 = primitives.ZERO_ADDRESS;
     const contract2 = [_]u8{0x02} ++ [_]u8{0} ** 19;
     const recipient1 = [_]u8{0x01} ++ [_]u8{0} ** 19;
     const recipient2 = [_]u8{0x03} ++ [_]u8{0} ** 19;
@@ -239,7 +239,7 @@ test "SelfDestruct - unmark and clear" {
     var self_destruct = SelfDestruct.init(allocator);
     defer self_destruct.deinit();
 
-    const contract_addr = primitives.Address.ZERO_ADDRESS;
+    const contract_addr = primitives.ZERO_ADDRESS;
     const recipient_addr = [_]u8{0x01} ++ [_]u8{0} ** 19;
 
     // Mark and verify

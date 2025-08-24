@@ -149,12 +149,12 @@ test "created contracts zero address" {
     defer created.deinit();
     
     // Test with zero address
-    try created.mark_created(Address.ZERO);
-    try std.testing.expect(created.was_created_in_tx(Address.ZERO));
+    try created.mark_created(primitives.ZERO_ADDRESS);
+    try std.testing.expect(created.was_created_in_tx(primitives.ZERO_ADDRESS));
     try std.testing.expectEqual(@as(u32, 1), created.count());
     
-    try std.testing.expect(created.remove(Address.ZERO));
-    try std.testing.expect(!created.was_created_in_tx(Address.ZERO));
+    try std.testing.expect(created.remove(primitives.ZERO_ADDRESS));
+    try std.testing.expect(!created.was_created_in_tx(primitives.ZERO_ADDRESS));
     try std.testing.expectEqual(@as(u32, 0), created.count());
 }
 
@@ -178,7 +178,7 @@ test "created contracts edge case addresses" {
     // Verify specific addresses
     try std.testing.expect(created.was_created_in_tx(max_addr));
     try std.testing.expect(created.was_created_in_tx(min_addr));
-    try std.testing.expect(!created.was_created_in_tx(Address.ZERO));
+    try std.testing.expect(!created.was_created_in_tx(primitives.ZERO_ADDRESS));
 }
 
 test "created contracts large number of addresses" {

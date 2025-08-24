@@ -119,7 +119,7 @@ pub const CallParams = union(enum) {
 const std = @import("std");
 
 test "call params gas access" {
-    const caller = Address.ZERO;
+    const caller = primitives.ZERO_ADDRESS;
     const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{0x42};
     
@@ -164,7 +164,7 @@ test "call params caller access" {
 }
 
 test "call params input access" {
-    const caller = Address.ZERO;
+    const caller = primitives.ZERO_ADDRESS;
     const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input_data = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb }; // transfer(address,uint256) selector
     
@@ -188,7 +188,7 @@ test "call params input access" {
 }
 
 test "call params has value checks" {
-    const caller = Address.ZERO;
+    const caller = primitives.ZERO_ADDRESS;
     const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{};
     
@@ -241,7 +241,7 @@ test "call params has value checks" {
 }
 
 test "call params read only checks" {
-    const caller = Address.ZERO;
+    const caller = primitives.ZERO_ADDRESS;
     const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{};
     
@@ -275,7 +275,7 @@ test "call params read only checks" {
 }
 
 test "call params create checks" {
-    const caller = Address.ZERO;
+    const caller = primitives.ZERO_ADDRESS;
     const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const init_code = &[_]u8{0x60, 0x00, 0x60, 0x00, 0xf3};
     
