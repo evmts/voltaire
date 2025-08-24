@@ -24,4 +24,7 @@ require (
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
+	github.com/evmts/guillotine/bindings/go v0.0.0-00010101000000-000000000000
 )
+
+replace github.com/evmts/guillotine/bindings/go => ../guillotine-go
