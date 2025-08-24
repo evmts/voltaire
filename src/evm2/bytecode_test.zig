@@ -3,74 +3,88 @@ const createBytecode = @import("bytecode.zig").createBytecode;
 const Bytecode = @import("bytecode.zig").Bytecode;
 
 test "Bytecode validation - invalid opcode" {
+    const allocator = std.testing.allocator;
     // Test bytecode with invalid opcode 0xFE
     const code = [_]u8{ 0x60, 0x01, 0xFE }; // PUSH1 0x01 INVALID
-    const result = Bytecode.init(&code);
+    const result = Bytecode.init(allocator, &code);
     try std.testing.expectError(error.InvalidOpcode, result);
 }
 
 test "Bytecode validation - PUSH extends past end" {
+    const allocator = std.testing.allocator;
     // PUSH2 but only 1 byte of data available
     const code = [_]u8{ 0x61, 0x42 }; // PUSH2 with only 1 byte
-    const result = Bytecode.init(&code);
+    const result = Bytecode.init(allocator, &code);
     try std.testing.expectError(error.TruncatedPush, result);
 }
 
 test "Bytecode validation - PUSH32 extends past end" {
+    const allocator = std.testing.allocator;
     // PUSH32 but not enough data
     var code: [32]u8 = undefined;
     code[0] = 0x7f; // PUSH32
     for (1..32) |i| {
         code[i] = @intCast(i);
     }
-    const result = Bytecode.init(&code); // Only 32 bytes, needs 33
+    const result = Bytecode.init(allocator, &code); // Only 32 bytes, needs 33
     try std.testing.expectError(error.TruncatedPush, result);
 }
 
 test "Bytecode validation - Jump to invalid destination" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x10 JUMP but no JUMPDEST at 0x10
     const code = [_]u8{ 0x60, 0x10, 0x56, 0x00 }; // PUSH1 0x10 JUMP STOP
-    const result = Bytecode.init(&code);
+    const result = Bytecode.init(allocator, &code);
     try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
 test "Bytecode validation - Jump to valid JUMPDEST" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x04 JUMP JUMPDEST STOP
     const code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x00 };
-    const bytecode = try Bytecode.init(&code);
-    try std.testing.expect(bytecode.is_jumpdest != null);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    try std.testing.expect(bytecode.is_jumpdest.len > 0);
 }
 
 test "Bytecode validation - JUMPI to invalid destination" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x10 PUSH1 0x01 JUMPI but no JUMPDEST at 0x10
     const code = [_]u8{ 0x60, 0x10, 0x60, 0x01, 0x57 }; // PUSH1 0x10 PUSH1 0x01 JUMPI
-    const result = Bytecode.init(&code);
+    const result = Bytecode.init(allocator, &code);
     try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
 test "Bytecode validation - empty bytecode is valid" {
+    const allocator = std.testing.allocator;
     const code = [_]u8{};
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     try std.testing.expectEqual(@as(usize, 0), bytecode.len());
 }
 
 test "Bytecode validation - only STOP is valid" {
+    const allocator = std.testing.allocator;
     const code = [_]u8{0x00};
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     try std.testing.expectEqual(@as(usize, 1), bytecode.len());
 }
 
 test "Bytecode validation - JUMPDEST inside PUSH data is invalid jump target" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x03 JUMP [0x5b inside push] JUMPDEST
     const code = [_]u8{ 0x60, 0x03, 0x56, 0x62, 0x5b, 0x5b, 0x5b }; // PUSH1 0x03 JUMP PUSH3 0x5b5b5b
-    const result = Bytecode.init(&code);
+    const result = Bytecode.init(allocator, &code);
     try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
 test "Bytecode.getStats - basic stats" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x05 PUSH1 0x03 ADD STOP
     const code = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x00 };
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
@@ -88,9 +102,11 @@ test "Bytecode.getStats - basic stats" {
 }
 
 test "Bytecode.getStats - potential fusions" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x04 JUMP JUMPDEST PUSH1 0x10 ADD STOP
     const code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x60, 0x10, 0x01, 0x00 };
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
@@ -105,6 +121,7 @@ test "Bytecode.getStats - potential fusions" {
 }
 
 test "Bytecode.getStats - jumpdests and jumps" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x08 JUMP PUSH1 0x00 PUSH1 0x00 REVERT JUMPDEST PUSH1 0x0C JUMP JUMPDEST STOP
     const code = [_]u8{ 
         0x60, 0x08, 0x56,       // PUSH1 0x08 JUMP
@@ -114,7 +131,8 @@ test "Bytecode.getStats - jumpdests and jumps" {
         0x5b,                   // JUMPDEST at PC 12
         0x00                    // STOP
     };
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
@@ -127,7 +145,7 @@ test "Bytecode.getStats - jumpdests and jumps" {
     try std.testing.expectEqual(@as(usize, 2), stats.jumps.len);
     try std.testing.expectEqual(@as(usize, 2), stats.jumps[0].pc); // JUMP at PC 2
     try std.testing.expectEqual(@as(u256, 0x08), stats.jumps[0].target);
-    try std.testing.expectEqual(@as(usize, 10), stats.jumps[1].pc); // JUMP at PC 10
+    try std.testing.expectEqual(@as(usize, 11), stats.jumps[1].pc); // JUMP at PC 11
     try std.testing.expectEqual(@as(u256, 0x0C), stats.jumps[1].target);
     
     // Check backwards jumps (none in this example)
@@ -135,6 +153,7 @@ test "Bytecode.getStats - jumpdests and jumps" {
 }
 
 test "Bytecode.getStats - backwards jumps (loops)" {
+    const allocator = std.testing.allocator;
     // JUMPDEST PUSH1 0x01 PUSH1 0x00 JUMP (infinite loop)
     const code = [_]u8{ 
         0x5b,             // JUMPDEST at PC 0
@@ -142,7 +161,8 @@ test "Bytecode.getStats - backwards jumps (loops)" {
         0x60, 0x00,       // PUSH1 0x00
         0x56              // JUMP (back to 0)
     };
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
@@ -154,6 +174,7 @@ test "Bytecode.getStats - backwards jumps (loops)" {
 }
 
 test "Bytecode.getStats - create code detection" {
+    const allocator = std.testing.allocator;
     // Bytecode that starts with constructor pattern (returns runtime code)
     // PUSH1 0x10 PUSH1 0x20 PUSH1 0x00 CODECOPY PUSH1 0x10 PUSH1 0x00 RETURN
     const code = [_]u8{ 
@@ -165,7 +186,8 @@ test "Bytecode.getStats - create code detection" {
         0x60, 0x00,       // PUSH1 0x00 (offset in memory)
         0xf3              // RETURN
     };
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
@@ -174,9 +196,11 @@ test "Bytecode.getStats - create code detection" {
 }
 
 test "Bytecode.getStats - runtime code detection" {
+    const allocator = std.testing.allocator;
     // Normal runtime code (no CODECOPY + RETURN pattern)
     const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
@@ -185,6 +209,7 @@ test "Bytecode.getStats - runtime code detection" {
 }
 
 test "Bytecode.getStats - all opcode types counted" {
+    const allocator = std.testing.allocator;
     // Use various opcodes
     const code = [_]u8{ 
         0x60, 0x01,   // PUSH1 1
@@ -196,7 +221,8 @@ test "Bytecode.getStats - all opcode types counted" {
         0x51,         // MLOAD
         0x00          // STOP
     };
-    const bytecode = try Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const stats = bytecode.getStats();
     
