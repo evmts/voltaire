@@ -608,18 +608,18 @@ test "PlanConfig validation" {
     // Valid configs should not cause compile errors
     const valid_cfg = PlanConfig{
         .WordType = u256,
-        .maxBytecodeSize = 24_576,
+        .max_bytecode_size = 24_576,
     };
     comptime valid_cfg.validate();
     
     // Test PcType selection
     const small_cfg = PlanConfig{
-        .maxBytecodeSize = 100,
+        .max_bytecode_size = 100,
     };
     try std.testing.expectEqual(u16, small_cfg.PcType());
     
     const large_cfg = PlanConfig{
-        .maxBytecodeSize = 65_535,
+        .max_bytecode_size = 65_535,
     };
     try std.testing.expectEqual(u16, large_cfg.PcType());
 }
@@ -900,12 +900,12 @@ test "Plan with different WordType" {
     try std.testing.expectEqual(u512, Plan512.WordType);
 }
 
-test "Plan PcType selection based on maxBytecodeSize" {
-    const SmallPlan = Plan(.{ .maxBytecodeSize = 1000 });
+test "Plan PcType selection based on max_bytecode_size" {
+    const SmallPlan = Plan(.{ .max_bytecode_size = 1000 });
     try std.testing.expectEqual(u16, SmallPlan.PcType);
     try std.testing.expectEqual(u16, SmallPlan.InstructionIndexType);
     
-    const LargePlan = Plan(.{ .maxBytecodeSize = 65535 });
+    const LargePlan = Plan(.{ .max_bytecode_size = 65535 });
     try std.testing.expectEqual(u16, LargePlan.PcType);
     try std.testing.expectEqual(u16, LargePlan.InstructionIndexType);
 }
@@ -1655,11 +1655,11 @@ test "Plan configuration validation comprehensive" {
         .{}, // Default
         .{ .WordType = u128 },
         .{ .WordType = u512 },
-        .{ .maxBytecodeSize = 1000 },
-        .{ .maxBytecodeSize = 65535 },
-        .{ .maxBytecodeSize = 100000 },
-        .{ .WordType = u128, .maxBytecodeSize = 10000 },
-        .{ .WordType = u512, .maxBytecodeSize = 50000 },
+        .{ .max_bytecode_size = 1000 },
+        .{ .max_bytecode_size = 65535 },
+        .{ .max_bytecode_size = 100000 },
+        .{ .WordType = u128, .max_bytecode_size = 10000 },
+        .{ .WordType = u512, .max_bytecode_size = 50000 },
     };
     
     inline for (valid_configs) |cfg| {
@@ -1668,7 +1668,7 @@ test "Plan configuration validation comprehensive" {
         
         // Test type selections
         try std.testing.expectEqual(cfg.WordType, PlanType.WordType);
-        if (cfg.maxBytecodeSize <= 65535) {
+        if (cfg.max_bytecode_size <= 65535) {
             try std.testing.expectEqual(u16, Plan.PcType);
         } else {
             try std.testing.expectEqual(u32, Plan.PcType);
@@ -2491,9 +2491,9 @@ test "Plan extreme configuration edge cases" {
     
     // Test with minimum valid configuration
     const min_config = PlanConfig{
-        .stackSize = 1,
+        .stack_size = 1,
         .WordType = u64,
-        .maxBytecodeSize = 1,
+        .max_bytecode_size = 1,
         .blockGasLimit = 21000,
     };
     
@@ -2706,17 +2706,17 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
         description: []const u8,
     }{
         .{
-            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 255, .blockGasLimit = 21000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 255, .blockGasLimit = 21000 },
             .expected_pc_type = u8,
             .description = "Small bytecode should use u8 PC",
         },
         .{
-            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 65535, .blockGasLimit = 21000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 65535, .blockGasLimit = 21000 },
             .expected_pc_type = u16,
             .description = "Medium bytecode should use u16 PC",
         },
         .{
-            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 24576, .blockGasLimit = 30_000_000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .blockGasLimit = 30_000_000 },
             .expected_pc_type = u16,
             .description = "EVM max bytecode should use u16 PC",
         },
@@ -3096,28 +3096,28 @@ test "Plan configuration boundary and mutation stress testing" {
     }{
         // Minimum valid config
         .{
-            .config = .{ .stackSize = 1, .WordType = u64, .maxBytecodeSize = 1, .blockGasLimit = 21000 },
+            .config = .{ .stack_size = 1, .WordType = u64, .max_bytecode_size = 1, .blockGasLimit = 21000 },
             .should_succeed = true,
             .description = "Minimum valid configuration",
         },
         
         // EVM standard config
         .{
-            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 24576, .blockGasLimit = 30_000_000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .blockGasLimit = 30_000_000 },
             .should_succeed = true,
             .description = "Standard EVM configuration",
         },
         
         // Large config
         .{
-            .config = .{ .stackSize = 2048, .WordType = u256, .maxBytecodeSize = 65535, .blockGasLimit = 100_000_000 },
+            .config = .{ .stack_size = 2048, .WordType = u256, .max_bytecode_size = 65535, .blockGasLimit = 100_000_000 },
             .should_succeed = true,
             .description = "Large configuration",
         },
         
         // Edge case: exactly at u16 boundary
         .{
-            .config = .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 65535, .blockGasLimit = 30_000_000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 65535, .blockGasLimit = 30_000_000 },
             .should_succeed = true,
             .description = "u16 boundary configuration",
         },
@@ -3138,7 +3138,7 @@ test "Plan configuration boundary and mutation stress testing" {
             const Planner = @import("planner.zig").createPlanner(boundary_test.config);
             
             // Test that bytecode within limits works
-            var limited_bytecode = test_bytecode[0..@min(test_bytecode.len, boundary_test.config.maxBytecodeSize)];
+            var limited_bytecode = test_bytecode[0..@min(test_bytecode.len, boundary_test.config.max_bytecode_size)];
             if (limited_bytecode.len == 0) {
                 limited_bytecode = &[_]u8{@intFromEnum(Opcode.STOP)};
             }
@@ -3161,9 +3161,9 @@ test "Plan configuration boundary and mutation stress testing" {
     
     // Test configuration mutation scenarios
     const base_config = PlanConfig{
-        .stackSize = 1024,
+        .stack_size = 1024,
         .WordType = u256,
-        .maxBytecodeSize = 1000,
+        .max_bytecode_size = 1000,
         .blockGasLimit = 30_000_000,
     };
     
@@ -3389,9 +3389,9 @@ test "Plan caching and lifecycle management validation" {
     
     // Test 2: Plan lifecycle with different configurations
     const lifecycle_configs = [_]PlanConfig{
-        .{ .stackSize = 256, .WordType = u128, .maxBytecodeSize = 1000, .blockGasLimit = 21000 },
-        .{ .stackSize = 512, .WordType = u256, .maxBytecodeSize = 2000, .blockGasLimit = 30_000_000 },
-        .{ .stackSize = 1024, .WordType = u256, .maxBytecodeSize = 24576, .blockGasLimit = 100_000_000 },
+        .{ .stack_size = 256, .WordType = u128, .max_bytecode_size = 1000, .blockGasLimit = 21000 },
+        .{ .stack_size = 512, .WordType = u256, .max_bytecode_size = 2000, .blockGasLimit = 30_000_000 },
+        .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .blockGasLimit = 100_000_000 },
     };
     
     for (lifecycle_configs) |config| {
@@ -3412,7 +3412,7 @@ test "Plan caching and lifecycle management validation" {
         try std.testing.expectEqual(minimal_meta, advanced_meta);
         
         // Clean up in different orders to test lifecycle robustness
-        if (config.stackSize % 2 == 0) {
+        if (config.stack_size % 2 == 0) {
             minimal_plan.deinit(allocator);
             advanced_plan.deinit(allocator);
         } else {

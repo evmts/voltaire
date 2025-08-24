@@ -1979,9 +1979,22 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             };
             
-            // Check if this is a cold access (simplified - in reality this would check access list)
-            // For now, assume warm access (cold_access = false)
-            const cold_access = false;
+            // Check if this is a cold access using the Host's access list (EIP-2929)
+            const cold_access = blk: {
+                if (self.host) |host| {
+                    // Access the address and get the gas cost
+                    const access_cost = host.vtable.access_address(host.ptr, target_address) catch {
+                        // On error, assume cold access (conservative approach for gas costs)
+                        break :blk true;
+                    };
+                    
+                    // If access cost equals cold access cost, it was a cold access
+                    break :blk access_cost == primitives.GasConstants.COLD_ACCOUNT_ACCESS_COST;
+                } else {
+                    // No host available, assume cold access
+                    break :blk true;
+                }
+            };
             
             // Value transfer check
             const value_transfer = value > 0 and !is_static;
