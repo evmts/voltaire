@@ -9537,6 +9537,11 @@ const MockHostWithAccessList = struct {
     pub fn set_address_cold(self: *MockHostWithAccessList, address: Address) !void {
         try self.cold_addresses.put(address, {});
     }
+    
+    pub fn mark_warm(self: *MockHostWithAccessList, address: Address) void {
+        // Remove from cold list to mark as warm
+        _ = self.cold_addresses.remove(address);
+    }
 
     pub fn to_host(self: *MockHostWithAccessList) Host {
         const vtable = &Host.VTable{
@@ -9985,7 +9990,7 @@ test "_calculate_call_gas E2E: Complete call flow validation" {
     try frame.gas_manager.consume(expected_gas);
     
     // Verify gas was consumed correctly
-    try std.testing.expectEqual(initial_gas - expected_gas, frame.gas_manager.remaining);
+    try std.testing.expectEqual(initial_gas - @as(i64, @intCast(expected_gas)), frame.gas_manager.remaining);
 }
 
 test "_calculate_call_gas E2E: Real world scenario - contract calling contract" {
@@ -10015,6 +10020,7 @@ test "_calculate_call_gas E2E: Real world scenario - contract calling contract" 
             std.crypto.hash.sha3.Keccak256.hash(&token_code, &hash, .{});
             break :blk hash;
         },
+        .storage_root = EMPTY_TRIE_ROOT,
     });
     
     // Create a precompile call to ECRECOVER
