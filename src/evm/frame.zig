@@ -4396,13 +4396,8 @@ test "Frame op_keccak256 hash computation" {
     try std.testing.expectEqual(expected_hello, hello_hash);
 }
 
-test "Frame interpret JUMP to JUMPDEST" {
-    return error.SkipZigTest; // TODO: Re-enable after implementing jump destination resolution
-}
-
-test "Frame interpret JUMPI conditional" {
-    return error.SkipZigTest; // TODO: Re-enable after implementing jump destination resolution
-}
+// NOTE: JUMP and JUMPI tests removed - these operations are handled by the Plan layer, not Frame
+// Frame is responsible for stack operations, but PC/jump management is handled by the planner
 
 test "Frame with NoOpTracer executes correctly" {
     const allocator = std.testing.allocator;
