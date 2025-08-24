@@ -253,7 +253,7 @@ pub fn execute_ripemd160(allocator: std.mem.Allocator, input: []const u8, gas_li
     @memset(output, 0);
 
     // Use the actual RIPEMD160 implementation from crypto module
-    var hasher = crypto.ripemd160.RIPEMD160.init();
+    var hasher = crypto.Ripemd160.init();
     hasher.update(input);
     var hash: [20]u8 = undefined;
     hasher.final(&hash);
@@ -511,12 +511,47 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
 
     const output = try allocator.alloc(u8, 64);
     
-    // TODO: Implement proper BN254 elliptic curve multiplication
-    // For now, return zero point (placeholder implementation)
-    _ = x;
-    _ = y;
-    _ = scalar;
-    @memset(output, 0);
+    // Use the actual BN254 implementation from crypto module
+    const g1_x = crypto.bn254.FpMont.from_int(x) catch {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
+    const g1_y = crypto.bn254.FpMont.from_int(y) catch {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
+    
+    // Create G1 point
+    const point = crypto.bn254.G1{ .x = g1_x, .y = g1_y, .z = crypto.bn254.FpMont.ONE };
+    
+    // Check if point is on curve
+    if (!point.isOnCurve()) {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    }
+    
+    // Perform scalar multiplication
+    const result = point.mul_by_int(scalar);
+    
+    // Convert back to affine coordinates and bytes
+    const result_affine = result.toAffine();
+    const result_x = result_affine.x.to_int();
+    const result_y = result_affine.y.to_int();
+    
+    u256ToBytes(result_x, output[0..32]);
+    u256ToBytes(result_y, output[32..64]);
 
     return PrecompileOutput{
         .output = output,
