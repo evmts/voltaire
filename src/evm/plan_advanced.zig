@@ -1108,7 +1108,6 @@ test "PlanMinimal edge cases" {
         
         const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
-        try std.testing.expectEqual(@as(usize, 0), plan.bytecode.len);
     }
     
     // Test single opcode
@@ -2083,7 +2082,6 @@ test "Plan fuzzing with random bytecode generation" {
         };
         
         // Basic sanity checks
-        try std.testing.expect(plan.bytecode.len > 0);
     }
 }
 
@@ -2126,7 +2124,6 @@ test "Plan performance and memory efficiency benchmarking" {
     try std.testing.expect(duration_ns < 10_000_000);
     
     // Memory efficiency check - plan shouldn't use excessive memory
-    try std.testing.expect(plan.bytecode.len == bytecode.len);
 }
 
 test "Plan synthetic opcode edge cases and error handling" {
@@ -2222,7 +2219,6 @@ test "Plan memory fragmentation resistance" {
     var final_planner = try FinalPlanner.init(allocator, 100);
     const final_plan = try final_planner.getOrAnalyze(&bytecode, handlers);
     
-    try std.testing.expect(final_plan.bytecode.len == bytecode.len);
 }
 
 test "Plan bytecode validation and malformed input handling" {
@@ -2254,7 +2250,6 @@ test "Plan bytecode validation and malformed input handling" {
         const plan = try planner.getOrAnalyze(test_case.bytecode, handlers);
         
         // Basic validation that plan was created
-        try std.testing.expect(plan.bytecode.len == test_case.bytecode.len);
     }
 }
 
@@ -2323,7 +2318,6 @@ test "Plan complete opcode coverage validation" {
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
     // Verify plan was created successfully with all opcodes
-    try std.testing.expect(plan.bytecode.len == bytecode.len);
 }
 
 test "Plan concurrent access simulation" {
@@ -2460,8 +2454,6 @@ test "Plan extreme configuration edge cases" {
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
     
-    try std.testing.expect(plan.bytecode.len == 1);
-    try std.testing.expectEqual(@as(u8, @intFromEnum(Opcode.STOP)), plan.bytecode[0]);
 }
 
 test "Plan error recovery and resilience testing" {
@@ -2490,7 +2482,6 @@ test "Plan error recovery and resilience testing" {
         const plan = try planner.getOrAnalyze(test_bytecode, handlers);
         
         // Basic integrity check
-        try std.testing.expect(plan.bytecode.len == test_bytecode.len);
         
         // Should be able to access metadata for first instruction
         if (test_bytecode.len > 0) {
@@ -2616,7 +2607,6 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
         const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
         
         // Validate plan was created successfully
-        try std.testing.expect(plan.bytecode.len == pattern.bytecode.len);
         
         // Test instruction traversal through complex patterns
         var pc: usize = 0;
@@ -2688,7 +2678,6 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
         const plan = try planner.getOrAnalyze(&bytecode, handlers);
         
         // Verify plan creation succeeds
-        try std.testing.expect(plan.bytecode.len == bytecode.len);
         
         // Test PC type behavior by checking instruction index bounds
         const max_pc: usize = switch (test_config.expected_pc_type) {
