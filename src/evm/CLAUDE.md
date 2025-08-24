@@ -1,15 +1,15 @@
-# CLAUDE.md - EVM Module Development Guide
+# EVM Module Development Guide
 
-This document provides comprehensive development guidelines for the EVM module, a high-performance implementation of the Ethereum Virtual Machine in Zig designed for production use and research.
+Development guidelines for high-performance EVM implementation in Zig.
 
-## EVM Architecture Overview
+## Architecture
 
-The EVM is a ground-up implementation with the following design goals:
-- **High Performance**: Cache-conscious data structures, pointer-based stack, and optimized bytecode planning
-- **Modularity**: Pluggable components (database, tracer, planner) with clear interfaces
-- **Type Safety**: Compile-time configuration validation and platform-specific optimizations
-- **Correctness**: Comprehensive test coverage and EVM specification compliance
-- **Research-Friendly**: Easy to extend with new opcodes, optimizations, and execution strategies
+Ground-up EVM implementation targeting:
+- High performance through cache-conscious design and optimized bytecode planning
+- Modularity via pluggable components with clear interfaces  
+- Type safety through compile-time configuration and platform optimization
+- Correctness via comprehensive testing and EVM specification compliance
+- Research extensibility for new opcodes and execution strategies
 
 ### Key Architectural Components
 

@@ -993,7 +993,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
         };
         
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, &bytecode);
+        var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
@@ -1050,7 +1050,7 @@ test "PlanMinimal getNextInstruction advances correctly" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1102,7 +1102,7 @@ test "PlanMinimal JUMPDEST detection with PUSH data" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1128,7 +1128,7 @@ test "PlanMinimal edge cases" {
     {
         const bytecode = [_]u8{};
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, &bytecode);
+        var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
@@ -1144,7 +1144,7 @@ test "PlanMinimal edge cases" {
     {
         const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, &bytecode);
+        var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
@@ -1168,7 +1168,7 @@ test "PlanMinimal edge cases" {
             @intFromEnum(Opcode.PUSH3), 0xAB, // Missing 2 bytes
         };
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, &bytecode);
+        var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
@@ -1217,7 +1217,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1263,7 +1263,7 @@ test "PlanMinimal PC opcode returns correct value" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1824,7 +1824,7 @@ test "Plan and PlanMinimal interoperability" {
     
     // Create PlanMinimal
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     defer planner.deinit();
     
     var minimal_plan = try planner.create_minimal_plan(allocator, handlers);
@@ -1967,7 +1967,7 @@ test "PlanMinimal JUMPDEST metadata" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -2001,7 +2001,7 @@ test "PlanMinimal simulated execution flow" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     // Create handler tracking array
     var handler_calls = std.ArrayList(u8).init(allocator);
@@ -2105,7 +2105,7 @@ test "Plan fuzzing with random bytecode generation" {
         
         // Try to create plan with random bytecode - should not crash
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -2149,7 +2149,7 @@ test "Plan performance and memory efficiency benchmarking" {
     const start_time = std.time.nanoTimestamp();
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -2207,7 +2207,7 @@ test "Plan synthetic opcode edge cases and error handling" {
         bytecode[3] = @intFromEnum(Opcode.STOP);
         
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, bytecode[0..4]);
+        var planner = try Planner.init(allocator, 100);
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -2262,7 +2262,7 @@ test "Plan memory fragmentation resistance" {
     
     // Create one more plan to ensure allocator still works
     const FinalPlanner = @import("planner.zig").createPlanner(.{});
-    var final_planner = try FinalPlanner.init(allocator, &bytecode);
+    var final_planner = try FinalPlanner.init(allocator, 100);
     var final_plan = try final_planner.create_plan(allocator, handlers);
     defer final_plan.deinit(allocator);
     
@@ -2292,7 +2292,7 @@ test "Plan bytecode validation and malformed input handling" {
     
     for (invalid_bytecodes) |test_case| {
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, test_case.bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan even with malformed bytecode
         var plan = try planner.create_minimal_plan(allocator, handlers);
@@ -2360,7 +2360,7 @@ test "Plan complete opcode coverage validation" {
     bytecode = bytecode[0..bytecode_idx];
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -2389,7 +2389,7 @@ test "Plan concurrent access simulation" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -2446,7 +2446,7 @@ test "Plan instruction stream integrity validation" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -2501,7 +2501,7 @@ test "Plan extreme configuration edge cases" {
     
     // Minimal valid bytecode
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var planner = try Planner.init(allocator, &bytecode);
+    var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -2533,7 +2533,7 @@ test "Plan error recovery and resilience testing" {
     
     for (edge_bytecodes) |test_bytecode| {
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, test_bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan without crashing
         var plan = try planner.create_minimal_plan(allocator, handlers);
@@ -2568,7 +2568,7 @@ test "Plan resource cleanup and leak prevention" {
         }
         
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -2663,7 +2663,7 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
     
     for (test_patterns) |pattern| {
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, pattern.bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var plan = try planner.create_plan(allocator, handlers);
         defer plan.deinit(allocator);
@@ -2735,7 +2735,7 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
     
     for (configs) |test_config| {
         const Planner = @import("planner.zig").createPlanner(test_config.config);
-        var planner = try Planner.init(allocator, &bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var plan = try planner.create_plan(allocator, handlers);
         defer plan.deinit(allocator);
@@ -2820,7 +2820,7 @@ test "Plan comprehensive JUMPDEST analysis with pathological patterns" {
     
     for (jumpdest_patterns) |pattern| {
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, pattern.bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var plan = try planner.create_plan(allocator, handlers);
         defer plan.deinit(allocator);
@@ -2961,7 +2961,7 @@ test "Plan gas cost estimation accuracy validation" {
         bytecode_len += 1;
         
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, bytecode[0..bytecode_len]);
+        var planner = try Planner.init(allocator, 100);
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -3023,7 +3023,7 @@ test "Plan equivalence between minimal and advanced plans" {
     for (test_bytecodes) |bytecode| {
         // Create advanced plan
         const AdvancedPlanner = @import("planner.zig").createPlanner(.{});
-        var advanced_planner = try AdvancedPlanner.init(allocator, bytecode);
+        var advanced_planner = try AdvancedPlanner.init(allocator, 100);
         var advanced_plan = try advanced_planner.create_plan(allocator, handlers);
         defer advanced_plan.deinit(allocator);
         
@@ -3143,7 +3143,7 @@ test "Plan configuration boundary and mutation stress testing" {
                 limited_bytecode = &[_]u8{@intFromEnum(Opcode.STOP)};
             }
             
-            var planner = try Planner.init(allocator, limited_bytecode);
+            var planner = try Planner.init(allocator, 100);
             
             var plan = try planner.create_minimal_plan(allocator, handlers);
             defer plan.deinit(allocator);
@@ -3174,7 +3174,7 @@ test "Plan configuration boundary and mutation stress testing" {
         config.WordType = WordType;
         
         const Planner = @import("planner.zig").createPlanner(config);
-        var planner = try Planner.init(allocator, &test_bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var plan = try planner.create_minimal_plan(allocator, handlers);
         defer plan.deinit(allocator);
@@ -3252,7 +3252,7 @@ test "Plan bytecode analysis completeness validation" {
     
     for (analysis_test_patterns) |pattern| {
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = try Planner.init(allocator, pattern.bytecode);
+        var planner = try Planner.init(allocator, 100);
         
         var plan = try planner.create_plan(allocator, handlers);
         defer plan.deinit(allocator);
@@ -3396,7 +3396,7 @@ test "Plan caching and lifecycle management validation" {
     
     for (lifecycle_configs) |config| {
         const ConfigPlanner = @import("planner.zig").createPlanner(config);
-        var config_planner = try ConfigPlanner.init(allocator, &reusable_bytecode);
+        var config_planner = try ConfigPlanner.init(allocator, 100);
         
         // Create both minimal and advanced plans
         var minimal_plan = try config_planner.create_minimal_plan(allocator, handlers);
@@ -3433,7 +3433,7 @@ test "Plan caching and lifecycle management validation" {
     const createAndTransferPlan = struct {
         fn create(alloc: std.mem.Allocator, bytecode: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
             const TransferPlanner = @import("planner.zig").createPlanner(.{});
-            var transfer_planner = try TransferPlanner.init(alloc, bytecode);
+            var transfer_planner = try TransferPlanner.init(alloc, 100);
             return try transfer_planner.create_plan(alloc, plan_handlers);
         }
     }.create;
@@ -3466,7 +3466,7 @@ test "Plan caching and lifecycle management validation" {
         stress_bytecode[7] = @intFromEnum(Opcode.STOP);
         
         const StressPlanner = @import("planner.zig").createPlanner(.{});
-        var stress_planner = try StressPlanner.init(allocator, &stress_bytecode);
+        var stress_planner = try StressPlanner.init(allocator, 100);
         
         var stress_plan = try stress_planner.create_plan(allocator, handlers);
         
