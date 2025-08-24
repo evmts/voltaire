@@ -11,12 +11,23 @@ evmone/
 .crush/
 
 .scratch/
+# Worktrees directory is temporarily ignored but compiled artifacts should still be prevented
 worktrees/
 
 macos
 
 /target/
 **/*.rs.bk
+
+# Compiled object files and libraries (ensure comprehensive coverage)
+*.o
+*.o.o  
+*.a
+*.a.o
+*.so
+*.dylib
+*.dll
+*.rlib
 
 # Tevm cache
 **/.tevm
@@ -76,17 +87,8 @@ _
 
 *.node
 
-/target/
-**/*.rs.bk
 ./debug/
 **/*.pdb
-*.o
-*.a
-*.a.o
-*.so
-*.dylib
-*.dll
-*.rlib
 
 # zig
 .zig-cache/
