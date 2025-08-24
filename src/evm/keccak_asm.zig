@@ -1,3 +1,13 @@
+/// Optimized Keccak-256 hash function implementation for EVM
+/// 
+/// Provides high-performance Keccak-256 hashing for the KECCAK256 opcode:
+/// - Platform-optimized implementations
+/// - SIMD acceleration where available
+/// - Fallback to standard library implementation
+/// - EVM-compliant output format
+/// 
+/// Keccak-256 is used extensively in Ethereum for state tree hashes,
+/// transaction hashes, and smart contract operations.
 const std = @import("std");
 const builtin = @import("builtin");
 const c = if (builtin.target.cpu.arch != .wasm32) @cImport({

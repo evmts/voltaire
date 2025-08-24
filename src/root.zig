@@ -369,8 +369,12 @@ export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const Guillotine
     const addr: Address = address.?.bytes;
     const value = u256_from_bytes(&balance.?.bytes);
 
-    state.vm.state.set_balance(addr, value) catch return false;
-    return true;
+    // TODO: The new EVM API doesn't have direct set_balance method
+    // Need to update this to use the new database interface
+    _ = state;
+    _ = addr;
+    _ = value;
+    return false;
 }
 
 export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAddress, code: ?[*]const u8, code_len: usize) bool {
@@ -380,8 +384,12 @@ export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAdd
     const addr: Address = address.?.bytes;
 
     const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
-    state.vm.state.set_code(addr, code_slice) catch return false;
-    return true;
+    // TODO: The new EVM API doesn't have direct set_code method
+    // Need to update this to use the new database interface
+    _ = state;
+    _ = addr;
+    _ = code_slice;
+    return false;
 }
 
 // Execution - using the new API that accepts frames directly

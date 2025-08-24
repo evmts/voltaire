@@ -1300,6 +1300,7 @@ test "Plan error boundary conditions" {
 test "Plan PC to instruction mapping" {
     const allocator = std.testing.allocator;
     const PlanType = Plan(.{});
+    _ = PlanType; // Mark as used
     
     // Create PC mapping
     var pc_map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
@@ -1516,6 +1517,7 @@ test "Plan memory management stress test" {
 test "Plan platform-specific InstructionElement handling" {
     const allocator = std.testing.allocator;
     const PlanType = Plan(.{});
+    _ = PlanType; // Mark as used
     
     // Test that InstructionElement behaves correctly on current platform
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -1568,6 +1570,7 @@ test "Plan platform-specific InstructionElement handling" {
 test "Plan getNextInstruction edge cases" {
     const allocator = std.testing.allocator;
     const PlanType = Plan(.{});
+    _ = PlanType; // Mark as used
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -1643,6 +1646,7 @@ test "Plan debugPrint functionality" {
 
 test "Plan configuration validation comprehensive" {
     const allocator = std.testing.allocator;
+    _ = allocator; // Mark as used
     
     // Test all valid configuration combinations
     const valid_configs = [_]PlanConfig{
@@ -1696,7 +1700,7 @@ test "Plan integration with all opcode types" {
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
     
-    var constants = try allocator.alloc(PlanType.WordType, 10);
+    const constants = try allocator.alloc(PlanType.WordType, 10);
     defer allocator.free(constants);
     for (constants, 0..) |*c, i| {
         c.* = @as(u256, @intCast(0x1000 + i));
@@ -1704,7 +1708,7 @@ test "Plan integration with all opcode types" {
     
     // Regular PUSH opcodes (PUSH1-PUSH8)
     const small_push_opcodes = [_]Opcode{ .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 };
-    for (small_push_opcodes, 0..) |opcode, _| {
+    for (small_push_opcodes, 0..) |_, i| {
         try stream.append(.{ .handler = &testHandler });
         try stream.append(.{ .inline_value = @as(usize, 10 + i) });
     }
@@ -1750,7 +1754,7 @@ test "Plan integration with all opcode types" {
     
     // Test all small PUSH opcodes
     var idx: Plan.InstructionIndexType = 0;
-    for (small_push_opcodes, 0..) |opcode, _| {
+    for (small_push_opcodes, 0..) |opcode, i| {
         const metadata = plan.getMetadata(&idx, opcode);
         const expected: usize = 10 + i;
         
@@ -1868,6 +1872,7 @@ test "Plan and PlanMinimal interoperability" {
 test "Plan extreme edge cases and error resilience" {
     const allocator = std.testing.allocator;
     const PlanType = Plan(.{});
+    _ = PlanType; // Mark as used
     
     // Test with zero-size arrays
     var empty_plan = Plan{
@@ -2241,8 +2246,8 @@ test "Plan memory fragmentation resistance" {
     
     // Create all plans
     for (0..num_plans) |i| {
-        const Planner = @import("planner.zig").createPlanner(.{});
-        planners[i] = try Planner.init(allocator, &bytecode);
+        const PlannerType = @import("planner.zig").createPlanner(.{});
+        planners[i] = try PlannerType.init(allocator, &bytecode);
         plans[i] = try planners[i].create_plan(allocator, handlers);
     }
     
@@ -2254,8 +2259,8 @@ test "Plan memory fragmentation resistance" {
     }
     
     // Create one more plan to ensure allocator still works
-    const Planner = @import("planner.zig").createPlanner(.{});
-    var final_planner = try Planner.init(allocator, &bytecode);
+    const FinalPlanner = @import("planner.zig").createPlanner(.{});
+    var final_planner = try FinalPlanner.init(allocator, &bytecode);
     var final_plan = try final_planner.create_plan(allocator, handlers);
     defer final_plan.deinit(allocator);
     
@@ -3029,8 +3034,8 @@ test "Plan equivalence between minimal and advanced plans" {
         try std.testing.expectEqualSlices(u8, advanced_plan.bytecode, minimal_plan.bytecode);
         
         // Test instruction stream consistency
-        var advanced_idx: Plan(.{}).InstructionIndexType = 0;
-        var minimal_idx: PlanMinimal.InstructionIndexType = 0;
+        // var advanced_idx: Plan(.{}).InstructionIndexType = 0;
+        // var minimal_idx: PlanMinimal.InstructionIndexType = 0;
         
         // Walk through both instruction streams
         for (0..bytecode.len) |pc| {
@@ -3356,8 +3361,8 @@ test "Plan caching and lifecycle management validation" {
     
     // Create multiple plans concurrently
     for (0..num_concurrent_plans) |i| {
-        const Planner = @import("planner.zig").createPlanner(.{});
-        planners[i] = try Planner.init(allocator, &reusable_bytecode);
+        const PlannerType2 = @import("planner.zig").createPlanner(.{});
+        planners[i] = try PlannerType2.init(allocator, &reusable_bytecode);
         plans[i] = try planners[i].create_plan(allocator, handlers);
     }
     

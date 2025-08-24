@@ -1,3 +1,14 @@
+/// EVM-compliant memory management with lazy expansion and hierarchical isolation
+/// 
+/// Implements the EVM memory model with:
+/// - Lazy expansion: memory only allocated when accessed
+/// - Word-boundary alignment: expands to 32-byte boundaries per EVM spec
+/// - Hierarchical isolation: child memory contexts for nested calls
+/// - Gas-aware operations: tracks expansion costs for gas accounting
+/// - Zero-initialization: all memory starts as zero per EVM semantics
+/// 
+/// Memory grows dynamically but never shrinks within a single execution context.
+/// Gas costs increase quadratically with memory size to limit resource consumption.
 const std = @import("std");
 const builtin = @import("builtin");
 pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;

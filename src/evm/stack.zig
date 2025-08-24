@@ -1,3 +1,14 @@
+/// High-performance EVM stack with pointer-based downward growth
+/// 
+/// Implements the EVM stack model with:
+/// - Downward growth: stack pointer moves toward lower addresses
+/// - Cache alignment: 64-byte alignment for optimal CPU performance
+/// - Bounds checking: both safe and unsafe variants for performance
+/// - Smart sizing: automatically selects index type based on stack capacity
+/// - Zero-overhead abstractions: unsafe operations when bounds pre-validated
+/// 
+/// The stack supports up to 1024 256-bit words as per EVM specification.
+/// Growth pattern: push decrements pointer, pop increments pointer.
 const std = @import("std");
 
 const StackConfig = @import("stack_config.zig").StackConfig;

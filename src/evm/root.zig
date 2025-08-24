@@ -1,3 +1,18 @@
+/// EVM module root - High-performance Ethereum Virtual Machine implementation
+/// 
+/// This module provides a complete EVM implementation with pluggable components:
+/// - Frame-based execution contexts with configurable stack and memory
+/// - Bytecode analysis and optimization via the Planner system
+/// - Pluggable database interface for state management
+/// - Comprehensive tracing and debugging capabilities
+/// - Support for all Ethereum hard forks and EIPs
+/// 
+/// Key components:
+/// - `Evm`: Main virtual machine orchestrating execution
+/// - `Frame`: Execution context with stack, memory, and gas tracking
+/// - `Planner`: Bytecode analysis and optimization
+/// - `DatabaseInterface`: Pluggable state storage abstraction
+/// - `Host`: External operations interface for calls and environment queries
 const std = @import("std");
 
 // Core frame and execution modules
@@ -54,6 +69,9 @@ pub const OpcodeData = @import("opcode_data.zig");
 pub const OpcodeSynthetic = @import("opcode_synthetic.zig");
 pub const opcode_synthetic = @import("opcode_synthetic.zig");
 
+// Precompiles module
+pub const precompiles = @import("precompiles.zig");
+
 // Database and state modules
 pub const BlockInfo = @import("block_info.zig").BlockInfo;
 pub const CallParams = @import("call_params.zig").CallParams;
@@ -66,6 +84,7 @@ pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
+pub const Log = @import("logs.zig").Log;
 
 // Run all tests
 test {
@@ -90,8 +109,8 @@ test {
     _ = createPlan;
     _ = PlanConfig;
     _ = PlanMinimal;
-    // _ = PlanAdvanced; // TODO: Fix compilation errors in tests
-    // _ = PlanDebug; // TODO: Fix compilation errors
+    // _ = PlanAdvanced; // NOTE: Module has compilation errors that need to be fixed
+    // _ = PlanDebug; // NOTE: Module has compilation errors that need to be fixed
     
     // Test EVM
     _ = Evm;

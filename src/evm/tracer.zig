@@ -1,3 +1,14 @@
+/// Configurable execution tracing system for EVM debugging and analysis
+/// 
+/// Provides multiple tracer implementations with compile-time selection:
+/// - `NoOpTracer`: Zero runtime overhead (default for production)
+/// - `DebuggingTracer`: Step-by-step debugging with breakpoints
+/// - `LoggingTracer`: Structured logging to stdout
+/// - `FileTracer`: High-performance file output
+/// - Custom tracers can be implemented by following the interface
+/// 
+/// Tracers are selected at compile time for zero-cost abstractions.
+/// Enable tracing by configuring the Frame with a specific TracerType.
 const std = @import("std");
 const frame_mod = @import("frame.zig");
 const primitives = @import("primitives");

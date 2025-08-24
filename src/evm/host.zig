@@ -1,7 +1,7 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const hardfork = @import("evm").hardforks.hardfork;
+const Hardfork = @import("hardfork.zig").Hardfork;
 const CallResult = @import("call_result.zig").CallResult;
 const CallParams = @import("call_params.zig").CallParams;
 const BlockInfo = @import("block_info.zig").BlockInfo;
@@ -49,8 +49,8 @@ pub const Host = struct {
         /// Get current call input/calldata
         get_input: *const fn (ptr: *anyopaque) []const u8,
         /// Hardfork helpers
-        is_hardfork_at_least: *const fn (ptr: *anyopaque, target: hardfork.Hardfork) bool,
-        get_hardfork: *const fn (ptr: *anyopaque) hardfork.Hardfork,
+        is_hardfork_at_least: *const fn (ptr: *anyopaque, target: Hardfork) bool,
+        get_hardfork: *const fn (ptr: *anyopaque) Hardfork,
         /// Get metadata for the current frame
         get_is_static: *const fn (ptr: *anyopaque) bool,
         get_depth: *const fn (ptr: *anyopaque) u11,
@@ -151,12 +151,12 @@ pub const Host = struct {
                 return self.get_input();
             }
 
-            fn vtable_is_hardfork_at_least(ptr: *anyopaque, target: hardfork.Hardfork) bool {
+            fn vtable_is_hardfork_at_least(ptr: *anyopaque, target: Hardfork) bool {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.is_hardfork_at_least(target);
             }
 
-            fn vtable_get_hardfork(ptr: *anyopaque) hardfork.Hardfork {
+            fn vtable_get_hardfork(ptr: *anyopaque) Hardfork {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_hardfork();
             }
@@ -295,11 +295,11 @@ pub const Host = struct {
     }
 
     /// Hardfork helpers
-    pub fn is_hardfork_at_least(self: Host, target: hardfork.Hardfork) bool {
+    pub fn is_hardfork_at_least(self: Host, target: Hardfork) bool {
         return self.vtable.is_hardfork_at_least(self.ptr, target);
     }
 
-    pub fn get_hardfork(self: Host) hardfork.Hardfork {
+    pub fn get_hardfork(self: Host) Hardfork {
         return self.vtable.get_hardfork(self.ptr);
     }
 
@@ -511,14 +511,14 @@ pub const MockHost = struct {
         return &.{};
     }
 
-    pub fn is_hardfork_at_least(self: *MockHost, target: hardfork.Hardfork) bool {
+    pub fn is_hardfork_at_least(self: *MockHost, target: Hardfork) bool {
         _ = self;
         _ = target;
         // Mock implementation - always return true
         return true;
     }
 
-    pub fn get_hardfork(self: *MockHost) hardfork.Hardfork {
+    pub fn get_hardfork(self: *MockHost) Hardfork {
         _ = self;
         // Mock implementation - return latest hardfork
         return .CANCUN;

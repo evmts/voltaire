@@ -1,3 +1,12 @@
+/// Opcode metadata and gas cost information for EVM operations
+/// 
+/// Provides structured data about each EVM opcode including:
+/// - Gas costs (base costs, some opcodes have dynamic costs calculated at runtime)
+/// - Stack requirements (inputs consumed and outputs produced)
+/// - Opcode categories and properties
+/// - Hard fork compatibility information
+/// 
+/// This data drives the jump table dispatch system and bytecode validation.
 const std = @import("std");
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
