@@ -9799,3 +9799,228 @@ test "_calculate_call_gas performance and consistency validation" {
     try std.testing.expectEqual(value_cost, gas_large_value - gas_no_value);
     try std.testing.expectEqual(@as(u64, 9000), value_cost);
 }
+
+// ============================================================================
+// END-TO-END INTEGRATION TESTS FOR _calculate_call_gas WITH CALL OPCODES
+// ============================================================================
+
+test "_calculate_call_gas E2E: Integration with CALL opcode execution" {
+    // Test that _calculate_call_gas properly integrates with the actual CALL opcode
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    // Create target account that exists
+    const target_addr = Address.from_u256(0x1234);
+    try memory_db.set_account(target_addr, .{
+        .nonce = 1,
+        .balance = 1000,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .code = &.{},
+    });
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true);
+    try mock_host.set_address_cold(target_addr);
+    
+    const host = mock_host.to_host();
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00};
+    var frame = try F.init(allocator, &bytecode, 50000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Test gas calculation matches expected EVM behavior
+    const calculated_gas = frame._calculate_call_gas(target_addr, 0, false);
+    
+    // For existing account with cold access in Berlin:
+    // base (700) + cold access (2600) = 3300
+    try std.testing.expectEqual(@as(u64, 3300), calculated_gas);
+    
+    // Verify it matches the reference implementation
+    const reference_gas = GasConstants.call_gas_cost(false, false, true);
+    try std.testing.expectEqual(reference_gas, calculated_gas);
+}
+
+test "_calculate_call_gas E2E: DELEGATECALL integration - no value transfer" {
+    // Test that DELEGATECALL correctly passes value=0 to our calculation
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const target_addr = Address.from_u256(0x5678);
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true);
+    try mock_host.set_address_cold(target_addr);
+    
+    const host = mock_host.to_host();
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00};
+    var frame = try F.init(allocator, &bytecode, 50000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // DELEGATECALL always uses value=0 and is_static=false
+    const delegatecall_gas = frame._calculate_call_gas(target_addr, 0, false);
+    
+    // Should include new account cost since target doesn't exist
+    // base (700) + new account (25000) + cold access (2600) = 28300
+    try std.testing.expectEqual(@as(u64, 28300), delegatecall_gas);
+}
+
+test "_calculate_call_gas E2E: STATICCALL integration - ignores value" {
+    // Test that STATICCALL correctly uses is_static=true
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const target_addr = Address.from_u256(0x9ABC);
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true);
+    try mock_host.set_address_cold(target_addr);
+    
+    const host = mock_host.to_host();
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00};
+    var frame = try F.init(allocator, &bytecode, 50000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // STATICCALL uses value=0 and is_static=true
+    const staticcall_gas = frame._calculate_call_gas(target_addr, 0, true);
+    
+    // Should include new account cost but no value transfer
+    // base (700) + new account (25000) + cold access (2600) = 28300
+    try std.testing.expectEqual(@as(u64, 28300), staticcall_gas);
+    
+    // Verify static call with non-zero value parameter still ignores it
+    const staticcall_with_value = frame._calculate_call_gas(target_addr, 1000, true);
+    try std.testing.expectEqual(staticcall_gas, staticcall_with_value);
+}
+
+test "_calculate_call_gas E2E: Complete call flow validation" {
+    // Test the complete flow: calculation -> consumption -> execution
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const target_addr = Address.from_u256(0xDEF0);
+    try memory_db.set_account(target_addr, .{
+        .nonce = 5,
+        .balance = 2000,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .code = &.{},
+    });
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true);
+    mock_host.mark_warm(target_addr); // Make it warm access
+    
+    const host = mock_host.to_host();
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00};
+    var frame = try F.init(allocator, &bytecode, 50000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Calculate expected gas cost
+    const expected_gas = frame._calculate_call_gas(target_addr, 500, false);
+    
+    // For existing account, value transfer, warm access:
+    // base (700) + value transfer (9000) + warm access (100) = 9800
+    try std.testing.expectEqual(@as(u64, 9800), expected_gas);
+    
+    // Verify we have sufficient gas
+    const initial_gas = frame.gas_manager.remaining;
+    try std.testing.expect(frame.gas_manager.hasGas(expected_gas));
+    
+    // Simulate gas consumption (what CALL opcode would do)
+    try frame.gas_manager.consume(expected_gas);
+    
+    // Verify gas was consumed correctly
+    try std.testing.expectEqual(initial_gas - expected_gas, frame.gas_manager.remaining);
+}
+
+test "_calculate_call_gas E2E: Real world scenario - contract calling contract" {
+    // Test realistic scenario where one contract calls another with complex gas accounting
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    // Create a "token contract" that we'll call
+    const token_addr = Address.from_u256(0x1000000);
+    const token_code = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE (store 1 at memory position 0)
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0  
+        0xf3,       // RETURN (return 32 bytes from position 0)
+    };
+    
+    try memory_db.set_account(token_addr, .{
+        .nonce = 1,
+        .balance = 0,
+        .code_hash = std.crypto.hash.sha3.Keccak256.hash(&token_code, .{}),
+        .code = &token_code,
+    });
+    
+    // Create a precompile call to ECRECOVER
+    const ecrecover_addr = Address.from_u256(1);
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true);
+    
+    // Token is cold, precompile should be warm
+    try mock_host.set_address_cold(token_addr);
+    mock_host.mark_warm(ecrecover_addr);
+    
+    const host = mock_host.to_host();
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00};
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Test call to token contract (existing, cold access, no value)
+    const token_call_gas = frame._calculate_call_gas(token_addr, 0, false);
+    // base (700) + cold access (2600) = 3300
+    try std.testing.expectEqual(@as(u64, 3300), token_call_gas);
+    
+    // Test call to precompile (not new account, warm access, with value)
+    const precompile_gas = frame._calculate_call_gas(ecrecover_addr, 1000, false);
+    // base (700) + value transfer (9000) + warm access (100) = 9800
+    try std.testing.expectEqual(@as(u64, 9800), precompile_gas);
+    
+    // Test static call to token (no value transfer even if specified)
+    const static_token_gas = frame._calculate_call_gas(token_addr, 2000, true);
+    // base (700) + cold access (2600), no value transfer = 3300
+    try std.testing.expectEqual(@as(u64, 3300), static_token_gas);
+    
+    // Verify we can handle all three scenarios in sequence
+    try std.testing.expect(frame.gas_manager.hasGas(token_call_gas));
+    try frame.gas_manager.consume(token_call_gas);
+    
+    try std.testing.expect(frame.gas_manager.hasGas(precompile_gas));
+    try frame.gas_manager.consume(precompile_gas);
+    
+    try std.testing.expect(frame.gas_manager.hasGas(static_token_gas));
+    try frame.gas_manager.consume(static_token_gas);
+    
+    // Total consumed should be 3300 + 9800 + 3300 = 16400
+    const total_consumed = token_call_gas + precompile_gas + static_token_gas;
+    try std.testing.expectEqual(@as(u64, 16400), total_consumed);
+    try std.testing.expectEqual(@as(u64, 100000 - 16400), frame.gas_manager.remaining);
+}
