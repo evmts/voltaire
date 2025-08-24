@@ -9114,7 +9114,8 @@ test "_calculate_call_gas existing account costs - account with code" {
 
     // Pre-create an account with code (non-empty code hash)
     const existing_address = from_u256(0x98765);
-    const code_hash = keccak_asm.keccak256(&[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }); // Simple contract code
+    var code_hash: [32]u8 = undefined;
+    try keccak_asm.keccak256(&[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }, &code_hash); // Simple contract code
     const account = Account{
         .nonce = 0,
         .balance = 0,
@@ -9310,7 +9311,8 @@ test "_calculate_call_gas account states - complex contract account" {
     // Complex contract with code, balance, and nonce
     const contract_address = from_u256(0x444444);
     const contract_code = [_]u8{ 0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3 }; // Returns 0x42
-    const code_hash = keccak_asm.keccak256(&contract_code);
+    var code_hash: [32]u8 = undefined;
+    try keccak_asm.keccak256(&contract_code, &code_hash);
     const contract_account = Account{
         .nonce = 1,
         .balance = 1000000,
@@ -9583,7 +9585,7 @@ const MockHostWithAccessList = struct {
             return primitives.GasConstants.ColdAccountAccessCost;
         } else {
             // Already warm
-            return primitives.GasConstants.WARM_ACCOUNT_ACCESS_COST;
+            return 100; // Warm account access cost
         }
     }
 
