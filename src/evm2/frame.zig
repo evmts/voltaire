@@ -11,19 +11,56 @@ const GasConstants = @import("primitives").GasConstants;
 const Address = @import("primitives").Address.Address;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 
-pub fn createFrame(comptime config: FrameConfig) type {
+/// Simple log structure for Frame
+pub const Log = struct {
+    address: Address,
+    topics: []const u256,
+    data: []const u8,
+};
+
+/// Frame is a lightweight execution context for EVM operations.
+/// 
+/// ## Limitations
+/// 
+/// Frame does NOT support the following operations as they are managed by other components:
+/// 
+/// - **PC tracking and JUMP operations**: The Program Counter (PC) and jump destinations are 
+///   managed by the Plan during execution. JUMP/JUMPI validation happens at the Plan level.
+/// 
+/// - **CALL/CREATE operations**: Nested execution contexts and contract creation are handled 
+///   by the Host or EVM instance, not the Frame itself.
+/// 
+/// - **Environment operations**: Block information (BLOCKHASH, COINBASE, TIMESTAMP, etc.) and 
+///   transaction context (ORIGIN, GASPRICE, etc.) are provided by the Host interface.
+/// 
+/// - **Block operations**: BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, 
+///   CHAINID, SELFBALANCE, BASEFEE operations require Host context.
+/// 
+/// ## Supported Operations
+/// 
+/// Frame provides direct support for:
+/// - Stack operations (PUSH, POP, DUP, SWAP)
+/// - Arithmetic operations (ADD, SUB, MUL, DIV, etc.)
+/// - Bitwise operations (AND, OR, XOR, NOT, etc.)
+/// - Comparison operations (LT, GT, EQ, etc.)
+/// - Memory operations (MLOAD, MSTORE, MSIZE, MCOPY)
+/// - Storage operations (SLOAD, SSTORE, TLOAD, TSTORE) when database is configured
+/// - Hashing operations (KECCAK256)
+/// - LOG operations (LOG0-LOG4)
+/// 
+pub fn Frame(comptime config: FrameConfig) type {
     comptime config.validate();
 
-    const Frame = struct {
+    return struct {
         pub const WordType = config.WordType;
         pub const TracerType = config.TracerType;
         pub const GasType = config.GasType();
         pub const PcType = config.PcType();
-        pub const Memory = memory_mod.createMemory(.{
+        pub const Memory = memory_mod.Memory(.{
             .initial_capacity = config.memory_initial_capacity,
             .memory_limit = config.memory_limit,
         });
-        pub const Stack = stack_mod.createStack(.{
+        pub const Stack = stack_mod.Stack(.{
             .stack_size = config.stack_size,
             .WordType = config.WordType,
         });
@@ -54,6 +91,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
         // Contract execution context
         contract_address: Address = [_]u8{0} ** 20, // Address of currently executing contract
         self_destruct: ?*SelfDestruct = null, // Tracks contracts marked for destruction
+        logs: std.ArrayList(Log), // Event logs emitted during execution
+        is_static: bool = false, // Whether frame is in static context (no state modifications)
 
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void) Error!Self {
             if (bytecode.len > max_bytecode_size) return Error.BytecodeTooLarge;
@@ -68,6 +107,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
             };
             errdefer memory.deinit();
 
+            var logs = std.ArrayList(Log).init(allocator);
+            errdefer logs.deinit();
+
             return Self{
                 .stack = stack,
                 .bytecode = bytecode,
@@ -75,12 +117,19 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 .tracer = TracerType.init(),
                 .memory = memory,
                 .database = database,
+                .logs = logs,
             };
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.stack.deinit(allocator);
             self.memory.deinit();
+            // Free log data
+            for (self.logs.items) |log| {
+                allocator.free(log.topics);
+                allocator.free(log.data);
+            }
+            self.logs.deinit();
         }
         
         /// Create a deep copy of the frame.
@@ -110,6 +159,35 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 @memcpy(new_memory.data()[0..self.memory.len()], self.memory.data()[0..self.memory.len()]);
             }
             
+            // Copy logs
+            var new_logs = std.ArrayList(Log).init(allocator);
+            errdefer new_logs.deinit();
+            
+            for (self.logs.items) |log| {
+                // Allocate and copy topics
+                const topics_copy = allocator.alloc(u256, log.topics.len) catch {
+                    return Error.AllocationError;
+                };
+                @memcpy(topics_copy, log.topics);
+                
+                // Allocate and copy data
+                const data_copy = allocator.alloc(u8, log.data.len) catch {
+                    allocator.free(topics_copy);
+                    return Error.AllocationError;
+                };
+                @memcpy(data_copy, log.data);
+                
+                new_logs.append(Log{
+                    .address = log.address,
+                    .topics = topics_copy,
+                    .data = data_copy,
+                }) catch {
+                    allocator.free(topics_copy);
+                    allocator.free(data_copy);
+                    return Error.AllocationError;
+                };
+            }
+            
             return Self{
                 .stack = new_stack,
                 .bytecode = self.bytecode, // Bytecode is immutable, share reference
@@ -119,6 +197,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 .database = self.database,
                 .contract_address = self.contract_address,
                 .self_destruct = self.self_destruct,
+                .logs = new_logs,
+                .is_static = self.is_static,
             };
         }
         
@@ -157,6 +237,32 @@ pub fn createFrame(comptime config: FrameConfig) type {
             // Compare execution context
             if (!std.mem.eql(u8, &self.contract_address, &other.contract_address)) {
                 std.debug.panic("Frame.assertEqual: contract_address mismatch", .{});
+            }
+            
+            // Compare is_static
+            if (self.is_static != other.is_static) {
+                std.debug.panic("Frame.assertEqual: is_static mismatch: {} vs {}", .{ self.is_static, other.is_static });
+            }
+            
+            // Compare logs
+            if (self.logs.items.len != other.logs.items.len) {
+                std.debug.panic("Frame.assertEqual: logs count mismatch: {} vs {}", .{ self.logs.items.len, other.logs.items.len });
+            }
+            for (self.logs.items, other.logs.items) |self_log, other_log| {
+                if (!std.mem.eql(u8, &self_log.address, &other_log.address)) {
+                    std.debug.panic("Frame.assertEqual: log address mismatch", .{});
+                }
+                if (self_log.topics.len != other_log.topics.len) {
+                    std.debug.panic("Frame.assertEqual: log topics count mismatch", .{});
+                }
+                for (self_log.topics, other_log.topics) |self_topic, other_topic| {
+                    if (self_topic != other_topic) {
+                        std.debug.panic("Frame.assertEqual: log topic mismatch", .{});
+                    }
+                }
+                if (!std.mem.eql(u8, self_log.data, other_log.data)) {
+                    std.debug.panic("Frame.assertEqual: log data mismatch", .{});
+                }
             }
         }
         
@@ -245,6 +351,33 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 }
             }
             
+            // Log state
+            std.log.warn("\nLogs (count={}):\n", .{self.logs.items.len});
+            if (self.logs.items.len == 0) {
+                std.log.warn("  [empty]\n", .{});
+            } else {
+                for (self.logs.items, 0..) |log, i| {
+                    std.log.warn("  Log[{}]:\n", .{i});
+                    std.log.warn("    Address: 0x", .{});
+                    for (log.address) |b| {
+                        std.log.warn("{x:0>2}", .{b});
+                    }
+                    std.log.warn("\n", .{});
+                    std.log.warn("    Topics ({}):\n", .{log.topics.len});
+                    for (log.topics, 0..) |topic, j| {
+                        std.log.warn("      [{}] 0x{x:0>64}\n", .{ j, topic });
+                    }
+                    std.log.warn("    Data ({} bytes): 0x", .{log.data.len});
+                    const show_data = @min(log.data.len, 64);
+                    for (log.data[0..show_data]) |b| {
+                        std.log.warn("{x:0>2}", .{b});
+                    }
+                    if (log.data.len > 64) {
+                        std.log.warn("... ({} more bytes)", .{log.data.len - 64});
+                    }
+                    std.log.warn("\n", .{});
+                }
+            }
             
             std.log.warn("===================\n\n", .{});
         }
@@ -271,22 +404,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(top | top_minus_1);
         }
 
-        pub fn and_(self: *Self) Error!void {
-            const b = try self.stack.pop();
-            const a = try self.stack.pop();
-            try self.stack.push(a & b);
-        }
-        
-        pub fn or_(self: *Self) Error!void {
-            const b = try self.stack.pop();
-            const a = try self.stack.pop();
-            try self.stack.push(a | b);
-        }
-        
-        pub fn not_(self: *Self) Error!void {
-            const a = try self.stack.pop();
-            try self.stack.push(~a);
-        }
 
         pub fn xor(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
@@ -837,16 +954,133 @@ pub fn createFrame(comptime config: FrameConfig) type {
             // SELFDESTRUCT terminates execution
             return Error.STOP;
         }
+        
+        // LOG operations
+        fn make_log(self: *Self, comptime num_topics: u8, allocator: std.mem.Allocator) Error!void {
+            // Check if we're in a static call
+            if (self.is_static) {
+                @branchHint(.unlikely);
+                return Error.WriteProtection;
+            }
+            
+            // Pop offset and size
+            const offset = try self.stack.pop();
+            const size = try self.stack.pop();
+            
+            // Early bounds checking
+            if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
+                return Error.OutOfBounds;
+            }
+            
+            // Stack-allocated topics array
+            var topics: [4]u256 = undefined;
+            // Pop N topics in reverse order (LIFO stack order)
+            for (0..num_topics) |i| {
+                topics[num_topics - 1 - i] = try self.stack.pop();
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const size_usize = @as(usize, @intCast(size));
+            
+            // Handle empty data case
+            if (size_usize == 0) {
+                @branchHint(.unlikely);
+                // Emit empty log without memory operations
+                const topics_slice = allocator.alloc(u256, num_topics) catch return Error.AllocationError;
+                @memcpy(topics_slice, topics[0..num_topics]);
+                
+                const empty_data = allocator.alloc(u8, 0) catch {
+                    allocator.free(topics_slice);
+                    return Error.AllocationError;
+                };
+                
+                self.logs.append(Log{
+                    .address = self.contract_address,
+                    .topics = topics_slice,
+                    .data = empty_data,
+                }) catch {
+                    allocator.free(topics_slice);
+                    allocator.free(empty_data);
+                    return Error.AllocationError;
+                };
+                return;
+            }
+            
+            // Note: Base LOG gas (375) and topic gas (375 * N) are handled by jump table as constant_gas
+            // We only need to handle dynamic costs: memory expansion and data bytes
+            
+            // 1. Ensure memory is available for the data
+            const new_size = offset_usize + size_usize;
+            self.memory.ensure_capacity(new_size) catch |err| switch (err) {
+                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
+                else => return Error.AllocationError,
+            };
+            
+            // 2. Dynamic gas for data
+            const byte_cost = GasConstants.LogDataGas * size_usize;
+            if (byte_cost > std.math.maxInt(GasType)) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(GasType, @intCast(byte_cost));
+            if (self.gas_remaining < 0) {
+                return Error.OutOfGas;
+            }
+            
+            // Get log data
+            const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
+            
+            // Allocate and copy topics
+            const topics_slice = allocator.alloc(u256, num_topics) catch return Error.AllocationError;
+            @memcpy(topics_slice, topics[0..num_topics]);
+            
+            // Allocate and copy data
+            const data_copy = allocator.alloc(u8, size_usize) catch {
+                allocator.free(topics_slice);
+                return Error.AllocationError;
+            };
+            @memcpy(data_copy, data);
+            
+            // Emit log with data
+            self.logs.append(Log{
+                .address = self.contract_address,
+                .topics = topics_slice,
+                .data = data_copy,
+            }) catch {
+                allocator.free(topics_slice);
+                allocator.free(data_copy);
+                return Error.AllocationError;
+            };
+        }
+        
+        pub fn log0(self: *Self, allocator: std.mem.Allocator) Error!void {
+            return self.make_log(0, allocator);
+        }
+        
+        pub fn log1(self: *Self, allocator: std.mem.Allocator) Error!void {
+            return self.make_log(1, allocator);
+        }
+        
+        pub fn log2(self: *Self, allocator: std.mem.Allocator) Error!void {
+            return self.make_log(2, allocator);
+        }
+        
+        pub fn log3(self: *Self, allocator: std.mem.Allocator) Error!void {
+            return self.make_log(3, allocator);
+        }
+        
+        pub fn log4(self: *Self, allocator: std.mem.Allocator) Error!void {
+            return self.make_log(4, allocator);
+        }
     };
-    return Frame;
 }
 
 test "Frame stack operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try Frame.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test push operations through stack
@@ -874,10 +1108,10 @@ test "Frame stack operations" {
 
 test "Frame stack pop operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try Frame.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with some values
@@ -902,10 +1136,10 @@ test "Frame stack pop operations" {
 
 test "Frame stack set_top operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try Frame.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with some values
@@ -934,10 +1168,10 @@ test "Frame stack set_top operations" {
 
 test "Frame stack peek operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try Frame.init(allocator, &dummy_bytecode, 0, {});
+    var frame = try F.init(allocator, &dummy_bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with values
@@ -966,7 +1200,7 @@ test "Frame with bytecode" {
     const allocator = std.testing.allocator;
 
     // Test with small bytecode (fits in u8)
-    const SmallFrame = createFrame(.{ .max_bytecode_size = 255 });
+    const SmallFrame = Frame(.{ .max_bytecode_size = 255 });
     const small_bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.PUSH1), 0x02, @intFromEnum(Opcode.STOP) };
 
     var small_frame = try SmallFrame.init(allocator, &small_bytecode, 1000000, {});
@@ -975,41 +1209,21 @@ test "Frame with bytecode" {
     try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), small_frame.bytecode[0]);
 
     // Test with medium bytecode (fits in u16)
-    const MediumFrame = createFrame(.{ .max_bytecode_size = 65535 });
-    const medium_bytecode = [_]u8{ @intFromEnum(Opcode.PC), @intFromEnum(Opcode.STOP) };
+    const MediumFrame = Frame(.{ .max_bytecode_size = 65535 });
+    const medium_bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0xFF, @intFromEnum(Opcode.STOP) };
 
     var medium_frame = try MediumFrame.init(allocator, &medium_bytecode, 1000000, {});
     defer medium_frame.deinit(allocator);
 
-    // We no longer track PC in Frame
-    try std.testing.expectEqual(@intFromEnum(Opcode.PC), medium_frame.bytecode[0]);
-}
-
-test "Frame op_pc pushes pc to stack" {
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
-
-    const bytecode = [_]u8{ @intFromEnum(Opcode.PC), @intFromEnum(Opcode.STOP) };
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
-    defer frame.deinit(allocator);
-
-    // Execute op_pc - for now it pushes 0 since we need plan access to get real PC
-    try frame.stack.push(0); // PC pushes 0 since PC is managed by plan
-    try std.testing.expectEqual(@as(u256, 0), frame.stack.peek_unsafe());
-
-    // PC is now managed by plan, not frame
-    try frame.stack.push(0); // PC pushes 0 since PC is managed by plan
-    const val = frame.stack.pop_unsafe();
-    try std.testing.expectEqual(@as(u256, 0), val);
-    try std.testing.expectEqual(@as(u256, 0), frame.stack.peek_unsafe());
+    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), medium_frame.bytecode[0]);
 }
 
 test "Frame op_stop returns stop error" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Execute op_stop - should return STOP error
@@ -1018,10 +1232,10 @@ test "Frame op_stop returns stop error" {
 
 test "Frame op_pop removes top stack item" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ @intFromEnum(Opcode.POP), @intFromEnum(Opcode.STOP) };
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with some values
@@ -1046,10 +1260,10 @@ test "Frame op_pop removes top stack item" {
 
 test "Frame op_push0 pushes zero to stack" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH0), @intFromEnum(Opcode.STOP) };
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH0 using push0_handler
@@ -1059,10 +1273,10 @@ test "Frame op_push0 pushes zero to stack" {
 
 test "Frame PUSH1 through interpreter" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x60, 0x42, 0x60, 0xFF, 0x00 }; // PUSH1 0x42 PUSH1 0xFF STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH1 opcodes using push1_handler
@@ -1076,10 +1290,10 @@ test "Frame PUSH1 through interpreter" {
 
 test "Frame PUSH2 through interpreter" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x61, 0x12, 0x34, 0x00 }; // PUSH2 0x1234 STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH2 opcodes using push2_handler
@@ -1090,7 +1304,7 @@ test "Frame PUSH2 through interpreter" {
 
 test "Frame op_push32 reads 32 bytes from bytecode" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // PUSH32 with max value (32 bytes of 0xFF)
     var bytecode: [34]u8 = undefined;
@@ -1100,7 +1314,7 @@ test "Frame op_push32 reads 32 bytes from bytecode" {
     }
     bytecode[33] = 0x00; // STOP
 
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH32 using push32_handler
@@ -1110,10 +1324,10 @@ test "Frame op_push32 reads 32 bytes from bytecode" {
 
 test "Frame op_push3 reads 3 bytes from bytecode" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x62, 0xAB, 0xCD, 0xEF, 0x00 }; // PUSH3 0xABCDEF STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH3 using push3_handler
@@ -1123,11 +1337,11 @@ test "Frame op_push3 reads 3 bytes from bytecode" {
 
 test "Frame op_push7 reads 7 bytes from bytecode" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // PUSH7 with specific pattern
     const bytecode = [_]u8{ 0x66, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0x00 }; // PUSH7 STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH7 using push7_handler
@@ -1137,7 +1351,7 @@ test "Frame op_push7 reads 7 bytes from bytecode" {
 
 test "Frame op_push16 reads 16 bytes from bytecode" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // PUSH16 with specific pattern
     var bytecode: [18]u8 = undefined;
@@ -1147,7 +1361,7 @@ test "Frame op_push16 reads 16 bytes from bytecode" {
     }
     bytecode[17] = 0x00; // STOP
 
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Calculate expected value
@@ -1164,7 +1378,7 @@ test "Frame op_push16 reads 16 bytes from bytecode" {
 
 test "Frame op_push31 reads 31 bytes from bytecode" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // PUSH31 with specific pattern
     var bytecode: [33]u8 = undefined;
@@ -1174,7 +1388,7 @@ test "Frame op_push31 reads 31 bytes from bytecode" {
     }
     bytecode[32] = 0x00; // STOP
 
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // The interpreter would handle PUSH31 using push31_handler
@@ -1187,10 +1401,10 @@ test "Frame op_push31 reads 31 bytes from bytecode" {
 
 test "Frame op_dup1 duplicates top stack item" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x80, 0x00 }; // DUP1 STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with value
@@ -1210,10 +1424,10 @@ test "Frame op_dup1 duplicates top stack item" {
 
 test "Frame op_dup16 duplicates 16th stack item" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x8f, 0x00 }; // DUP16 STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with values 1-16
@@ -1239,10 +1453,10 @@ test "Frame op_dup16 duplicates 16th stack item" {
 
 test "Frame op_swap1 swaps top two stack items" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x90, 0x00 }; // SWAP1 STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with values
@@ -1262,10 +1476,10 @@ test "Frame op_swap1 swaps top two stack items" {
 
 test "Frame op_swap16 swaps top with 17th stack item" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x9f, 0x00 }; // SWAP16 STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Setup stack with values 1-17
@@ -1291,9 +1505,9 @@ test "Frame op_swap16 swaps top with 17th stack item" {
 
 test "Frame DUP2-DUP15 operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
     const bytecode = [_]u8{0x00}; // STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Push 16 distinct values
@@ -1338,9 +1552,9 @@ test "Frame DUP2-DUP15 operations" {
 
 test "Frame SWAP2-SWAP15 operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
     const bytecode = [_]u8{0x00}; // STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Push 17 distinct values to test all SWAP operations
@@ -1495,7 +1709,7 @@ test "Frame init validates bytecode size" {
     const allocator = std.testing.allocator;
 
     // Test with valid bytecode size
-    const SmallFrame = createFrame(.{ .max_bytecode_size = 100 });
+    const SmallFrame = Frame(.{ .max_bytecode_size = 100 });
     const small_bytecode = [_]u8{ 0x60, 0x01, 0x00 }; // PUSH1 1 STOP
 
     const stack_memory = try allocator.create([1024]u256);
@@ -1549,10 +1763,10 @@ test "Frame get_requested_alloc calculates correctly" {
 
 test "Frame op_and bitwise AND operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x16, 0x00 }; // AND STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 0xFF & 0x0F = 0x0F
@@ -1588,10 +1802,10 @@ test "Frame op_and bitwise AND operation" {
 
 test "Frame op_or bitwise OR operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x17, 0x00 }; // OR STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 0xF0 | 0x0F = 0xFF
@@ -1627,10 +1841,10 @@ test "Frame op_or bitwise OR operation" {
 
 test "Frame op_xor bitwise XOR operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x18, 0x00 }; // XOR STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 0xFF ^ 0xFF = 0
@@ -1657,10 +1871,10 @@ test "Frame op_xor bitwise XOR operation" {
 
 test "Frame op_not bitwise NOT operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x19, 0x00 }; // NOT STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test ~0 = max value
@@ -1690,10 +1904,10 @@ test "Frame op_not bitwise NOT operation" {
 
 test "Frame op_byte extracts single byte from word" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1A, 0x00 }; // BYTE STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test extracting byte 31 (rightmost) from 0x...FF
@@ -1728,10 +1942,10 @@ test "Frame op_byte extracts single byte from word" {
 
 test "Frame op_shl shift left operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1B, 0x00 }; // SHL STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 1 << 4 = 16
@@ -1758,10 +1972,10 @@ test "Frame op_shl shift left operation" {
 
 test "Frame op_shr logical shift right operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1C, 0x00 }; // SHR STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 16 >> 4 = 1
@@ -1788,10 +2002,10 @@ test "Frame op_shr logical shift right operation" {
 
 test "Frame op_sar arithmetic shift right operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x1D, 0x00 }; // SAR STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test positive number: 16 >> 4 = 1
@@ -1828,10 +2042,10 @@ test "Frame op_sar arithmetic shift right operation" {
 
 test "Frame op_add addition with wrapping overflow" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x01, 0x00 }; // ADD STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 10 + 20 = 30
@@ -1858,10 +2072,10 @@ test "Frame op_add addition with wrapping overflow" {
 
 test "Frame op_mul multiplication with wrapping overflow" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x02, 0x00 }; // MUL STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 5 * 6 = 30
@@ -1889,10 +2103,10 @@ test "Frame op_mul multiplication with wrapping overflow" {
 
 test "Frame op_sub subtraction with wrapping underflow" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x03, 0x00 }; // SUB STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 30 - 10 = 20
@@ -1919,10 +2133,10 @@ test "Frame op_sub subtraction with wrapping underflow" {
 
 test "Frame op_div unsigned integer division" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x04, 0x00 }; // DIV STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 20 / 5 = 4
@@ -1949,10 +2163,10 @@ test "Frame op_div unsigned integer division" {
 
 test "Frame op_sdiv signed integer division" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x05, 0x00 }; // SDIV STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 20 / 5 = 4 (positive / positive)
@@ -1990,10 +2204,10 @@ test "Frame op_sdiv signed integer division" {
 
 test "Frame op_mod modulo remainder operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x06, 0x00 }; // MOD STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 17 % 5 = 2
@@ -2020,10 +2234,10 @@ test "Frame op_mod modulo remainder operation" {
 
 test "Frame op_smod signed modulo remainder operation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x07, 0x00 }; // SMOD STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 17 % 5 = 2 (positive % positive)
@@ -2060,10 +2274,10 @@ test "Frame op_smod signed modulo remainder operation" {
 
 test "Frame op_addmod addition modulo n" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x08, 0x00 }; // ADDMOD STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test (10 + 20) % 7 = 2
@@ -2096,10 +2310,10 @@ test "Frame op_addmod addition modulo n" {
 
 test "Frame op_mulmod multiplication modulo n" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x09, 0x00 }; // MULMOD STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test (10 * 20) % 7 = 200 % 7 = 4
@@ -2144,10 +2358,10 @@ test "Frame op_mulmod multiplication modulo n" {
 
 test "Frame op_exp exponentiation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x0A, 0x00 }; // EXP STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 2^10 = 1024
@@ -2188,10 +2402,10 @@ test "Frame op_exp exponentiation" {
 
 test "Frame op_signextend sign extension" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x0B, 0x00 }; // SIGNEXTEND STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test extending positive 8-bit value (0x7F)
@@ -2234,10 +2448,10 @@ test "Frame op_signextend sign extension" {
 
 test "Frame op_gas returns gas remaining" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x5A, 0x00 }; // GAS STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Test op_gas pushes gas_remaining to stack
@@ -2266,10 +2480,10 @@ test "Frame op_gas returns gas remaining" {
 
 test "Frame op_lt less than comparison" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x10, 0x00 }; // LT STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 10 < 20 = 1
@@ -2303,10 +2517,10 @@ test "Frame op_lt less than comparison" {
 
 test "Frame op_gt greater than comparison" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x11, 0x00 }; // GT STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 20 > 10 = 1
@@ -2340,10 +2554,10 @@ test "Frame op_gt greater than comparison" {
 
 test "Frame op_slt signed less than comparison" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x12, 0x00 }; // SLT STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 10 < 20 = 1 (positive comparison)
@@ -2380,10 +2594,10 @@ test "Frame op_slt signed less than comparison" {
 
 test "Frame op_sgt signed greater than comparison" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x13, 0x00 }; // SGT STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 20 > 10 = 1 (positive comparison)
@@ -2420,10 +2634,10 @@ test "Frame op_sgt signed greater than comparison" {
 
 test "Frame op_eq equality comparison" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x14, 0x00 }; // EQ STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test 10 == 10 = 1
@@ -2457,10 +2671,10 @@ test "Frame op_eq equality comparison" {
 
 test "Frame op_iszero zero check" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x15, 0x00 }; // ISZERO STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test iszero(0) = 1
@@ -2490,11 +2704,11 @@ test "Frame op_iszero zero check" {
 
 test "Frame JUMP through interpreter" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // JUMP STOP JUMPDEST STOP (positions: 0=JUMP, 1=STOP, 2=JUMPDEST, 3=STOP)
     const bytecode = [_]u8{ 0x56, 0x00, 0x5B, 0x00 };
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // The interpreter would handle JUMP opcodes using op_jump_handler
@@ -2506,11 +2720,11 @@ test "Frame JUMP through interpreter" {
 
 test "Frame JUMPI through interpreter" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // JUMPI STOP JUMPDEST STOP (positions: 0=JUMPI, 1=STOP, 2=JUMPDEST, 3=STOP)
     const bytecode = [_]u8{ 0x57, 0x00, 0x5B, 0x00 };
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // The interpreter would handle JUMPI opcodes using op_jumpi_handler
@@ -2522,10 +2736,10 @@ test "Frame JUMPI through interpreter" {
 
 test "Frame op_jumpdest no-op" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x5B, 0x00 }; // JUMPDEST STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // JUMPDEST should do nothing
@@ -2535,10 +2749,10 @@ test "Frame op_jumpdest no-op" {
 
 test "Frame op_invalid causes error" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0xFE, 0x00 }; // INVALID STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // INVALID should always return error
@@ -2547,10 +2761,10 @@ test "Frame op_invalid causes error" {
 
 test "Frame op_keccak256 hash computation" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x20, 0x00 }; // KECCAK256 STOP
-    var frame = try Frame.init(allocator, &bytecode, 0, {});
+    var frame = try F.init(allocator, &bytecode, 0, {});
     defer frame.deinit(allocator);
 
     // Test keccak256 of empty data
@@ -2586,12 +2800,12 @@ test "Frame with NoOpTracer executes correctly" {
     const allocator = std.testing.allocator;
 
     // Create frame with default NoOpTracer
-    const Frame = createFrame(.{});
 
     // Simple bytecode: PUSH1 0x05, PUSH1 0x03, ADD
     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 };
 
-    var frame = try Frame.init(allocator, &bytecode, 1000, {});
+    const F = Frame(.{});
+    var frame = try F.init(allocator, &bytecode, 1000, void{});
     defer frame.deinit(allocator);
 
     // Execute by pushing values and calling add
@@ -2638,12 +2852,12 @@ test "Frame tracer type can be changed at compile time" {
         .TracerType = TestTracer,
     };
 
-    const Frame = createFrame(config);
+    const F = Frame(config);
 
     // Simple bytecode: PUSH1 0x05
     const bytecode = [_]u8{ 0x60, 0x05 };
 
-    var frame = try Frame.init(allocator, &bytecode, 1000, {});
+    var frame = try F.init(allocator, &bytecode, 1000, {});
     defer frame.deinit(allocator);
 
     // Check that our test tracer was initialized
@@ -2658,10 +2872,10 @@ test "Frame tracer type can be changed at compile time" {
 
 test "Frame op_msize memory size tracking" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x59, 0x00 }; // MSIZE STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Initially memory size should be 0
@@ -2692,10 +2906,10 @@ test "Frame op_msize memory size tracking" {
 
 test "Frame op_mload memory load operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x51, 0x00 }; // MLOAD STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Store a value first
@@ -2725,10 +2939,10 @@ test "Frame op_mload memory load operations" {
 
 test "Frame op_mstore memory store operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x52, 0x00 }; // MSTORE STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Store multiple values at different offsets
@@ -2757,10 +2971,10 @@ test "Frame op_mstore memory store operations" {
 
 test "Frame op_mstore8 byte store operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x53, 0x00 }; // MSTORE8 STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Store a single byte
@@ -2819,8 +3033,8 @@ test "trace instructions behavior with different tracer types" {
     const allocator = std.testing.allocator;
 
     // Test that frames with different tracer types compile successfully
-    const FrameNoOp = createFrame(.{});
-    const FrameWithTestTracer = createFrame(.{
+    const FrameNoOp = Frame(.{});
+    const FrameWithTestTracer = Frame(.{
         .TracerType = TestTracer,
     });
 
@@ -2860,10 +3074,10 @@ test "Frame jump to invalid destination should fail" {
 
 test "Frame memory expansion edge cases" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     const bytecode = [_]u8{ 0x53, 0x00 }; // MSTORE8 STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // Test memory expansion with MSTORE8 at various offsets
@@ -2912,9 +3126,9 @@ test "Frame memory expansion edge cases" {
 
 test "Frame op_mcopy memory copy operations" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
     const bytecode = [_]u8{ 0x5e, 0x00 }; // MCOPY STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // First, set up some data in memory
@@ -2987,7 +3201,7 @@ test "Frame op_mcopy memory copy operations" {
 
 test "Frame JUMPDEST validation comprehensive" {
     const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
 
     // Complex bytecode with valid and invalid jump destinations
     // PUSH1 8, JUMPI, INVALID, PUSH1 12, JUMP, INVALID, JUMPDEST, PUSH1 1, STOP, INVALID, JUMPDEST, PUSH1 2, STOP
@@ -3006,7 +3220,7 @@ test "Frame JUMPDEST validation comprehensive" {
         0x60, 0x02, // PUSH1 2 (offset 14-15)
         0x00, // STOP (offset 16)
     };
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
 
     // The interpreter would handle JUMP/JUMPI opcodes with proper JUMPDEST validation
@@ -3023,7 +3237,7 @@ test "Frame storage operations with database" {
     const allocator = std.testing.allocator;
     
     // Create a frame with database support
-    const FrameWithDb = createFrame(.{ .has_database = true });
+    const FrameWithDb = Frame(.{ .has_database = true });
     
     // Create a test database
     var db = @import("memory_database.zig").MemoryDatabase.init(allocator);
@@ -3072,7 +3286,7 @@ test "Frame transient storage operations with database" {
     const allocator = std.testing.allocator;
     
     // Create a frame with database support
-    const FrameWithDb = createFrame(.{ .has_database = true });
+    const FrameWithDb = Frame(.{ .has_database = true });
     
     // Create a test database
     var db = @import("memory_database.zig").MemoryDatabase.init(allocator);
@@ -3122,10 +3336,10 @@ test "Frame storage operations without database should fail" {
     const allocator = std.testing.allocator;
     
     // Create a frame without database support (default)
-    const Frame = createFrame(.{});
+    const F = Frame(.{});
     
     const bytecode = [_]u8{ 0x54, 0x00 }; // SLOAD STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
     defer frame.deinit(allocator);
     
     // All storage operations should return InvalidOpcode when no database
@@ -3327,5 +3541,182 @@ fn mock_jump_handler(self: *anyopaque, stream: []usize, idx: usize) !void {
     _ = stream;
     _ = idx;
     unreachable; // Not executed in this test
+}
+
+test "Frame LOG0 operation" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    defer frame.deinit(allocator);
+    
+    // Store some data in memory
+    const test_data = "Hello, Ethereum!";
+    const data_offset: usize = 32;
+    
+    // Write data to memory
+    for (test_data, 0..) |byte, i| {
+        frame.memory.set_byte_evm(data_offset + i, byte) catch unreachable;
+    }
+    
+    // Push data location and size for LOG0
+    try frame.stack.push(@as(u256, data_offset)); // offset
+    try frame.stack.push(test_data.len); // size
+    
+    // Execute LOG0
+    try frame.log0(allocator);
+    
+    // Verify log was created
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    const log = frame.logs.items[0];
+    
+    // Check log properties
+    try std.testing.expectEqual(frame.contract_address, log.address);
+    try std.testing.expectEqual(@as(usize, 0), log.topics.len); // LOG0 has no topics
+    try std.testing.expectEqualSlices(u8, test_data, log.data);
+}
+
+test "Frame LOG1 operation with topic" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    defer frame.deinit(allocator);
+    
+    // Store some data in memory
+    const test_data = [_]u8{0x12, 0x34, 0x56, 0x78};
+    const data_offset: usize = 0;
+    
+    // Write data to memory
+    for (test_data, 0..) |byte, i| {
+        frame.memory.set_byte_evm(data_offset + i, byte) catch unreachable;
+    }
+    
+    // Topic for LOG1
+    const topic1: u256 = 0xDEADBEEF;
+    
+    // Push data for LOG1: topic, offset, size
+    try frame.stack.push(topic1); // topic
+    try frame.stack.push(@as(u256, data_offset)); // offset
+    try frame.stack.push(test_data.len); // size
+    
+    // Execute LOG1
+    try frame.log1(allocator);
+    
+    // Verify log was created
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    const log = frame.logs.items[0];
+    
+    // Check log properties
+    try std.testing.expectEqual(frame.contract_address, log.address);
+    try std.testing.expectEqual(@as(usize, 1), log.topics.len);
+    try std.testing.expectEqual(topic1, log.topics[0]);
+    try std.testing.expectEqualSlices(u8, &test_data, log.data);
+}
+
+test "Frame LOG4 operation with multiple topics" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    defer frame.deinit(allocator);
+    
+    // Topics for LOG4
+    const topic1: u256 = 0x1111111111111111;
+    const topic2: u256 = 0x2222222222222222;
+    const topic3: u256 = 0x3333333333333333;
+    const topic4: u256 = 0x4444444444444444;
+    
+    // Push data for LOG4: topics (in reverse order), offset, size
+    try frame.stack.push(topic4);
+    try frame.stack.push(topic3);
+    try frame.stack.push(topic2);
+    try frame.stack.push(topic1);
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size (empty data)
+    
+    // Execute LOG4
+    try frame.log4(allocator);
+    
+    // Verify log was created
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    const log = frame.logs.items[0];
+    
+    // Check log properties
+    try std.testing.expectEqual(frame.contract_address, log.address);
+    try std.testing.expectEqual(@as(usize, 4), log.topics.len);
+    try std.testing.expectEqual(topic1, log.topics[0]);
+    try std.testing.expectEqual(topic2, log.topics[1]);
+    try std.testing.expectEqual(topic3, log.topics[2]);
+    try std.testing.expectEqual(topic4, log.topics[3]);
+    try std.testing.expectEqual(@as(usize, 0), log.data.len); // Empty data
+}
+
+test "Frame LOG in static context fails" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    defer frame.deinit(allocator);
+    
+    // Set static context
+    frame.is_static = true;
+    
+    // Push data for LOG0
+    try frame.stack.push(0); // offset
+    try frame.stack.push(10); // size
+    
+    // Execute LOG0 should fail
+    try std.testing.expectError(error.WriteProtection, frame.log0(allocator));
+}
+
+test "Frame LOG with out of bounds memory access" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{});
+    defer frame.deinit(allocator);
+    
+    // Push data for LOG0 with huge offset
+    try frame.stack.push(std.math.maxInt(u256)); // offset too large
+    try frame.stack.push(10); // size
+    
+    // Execute LOG0 should fail
+    try std.testing.expectError(error.OutOfBounds, frame.log0(allocator));
+}
+
+test "Frame LOG gas consumption" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    const initial_gas: i32 = 10000;
+    var frame = try F.init(allocator, &bytecode, initial_gas, void{});
+    defer frame.deinit(allocator);
+    
+    // Store some data in memory
+    const test_data = "Test log data";
+    const data_offset: usize = 0;
+    
+    // Write data to memory
+    for (test_data, 0..) |byte, i| {
+        frame.memory.set_byte_evm(data_offset + i, byte) catch unreachable;
+    }
+    
+    // Push data for LOG0
+    try frame.stack.push(@as(u256, data_offset)); // offset
+    try frame.stack.push(test_data.len); // size
+    
+    // Execute LOG0
+    try frame.log0(allocator);
+    
+    // Verify gas was consumed for data bytes
+    const expected_gas_consumed = @as(i32, @intCast(GasConstants.LogDataGas * test_data.len));
+    try std.testing.expectEqual(initial_gas - expected_gas_consumed, frame.gas_remaining);
 }
 
