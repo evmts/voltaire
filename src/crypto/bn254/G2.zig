@@ -66,8 +66,6 @@ pub fn isOnCurve(self: *const G2) bool {
 pub fn isInSubgroup(self: *const G2) bool {
     // For BN254, G2 points are in the correct subgroup if [r]P = O
     // where r is the order of the scalar field (FR_MOD) and O is infinity
-    const curve_parameters = @import("curve_parameters.zig");
-    const Fr = @import("Fr.zig");
     
     // If point is infinity, it's in the subgroup
     if (self.isInfinity()) {
