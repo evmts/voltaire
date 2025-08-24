@@ -8071,7 +8071,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(0); // value
-    try frame.stack.push(@intFromEnum(another_cold_addr)); // different cold address
+    try frame.stack.push(to_u256(another_cold_addr)); // different cold address
     try frame.stack.push(30000); // gas
     try frame.op_call();
     const gas_used_another_cold = gas_before_another_cold - frame.gas_manager.gasRemaining();
