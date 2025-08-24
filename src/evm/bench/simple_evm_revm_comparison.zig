@@ -3,13 +3,15 @@ const zbench = @import("zbench");
 const primitives = @import("primitives");
 const evm_mod = @import("evm");
 const revm = @import("revm");
+const crypto = @import("crypto");
+const HashUtils = crypto.HashUtils;
 const Address = primitives.Address.Address;
-const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
+const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 
 // Test configuration
 const BENCHMARK_GAS_LIMIT: u64 = 1_000_000;
-const TEST_ADDRESS_1 = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-const TEST_ADDRESS_2 = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+const TEST_ADDRESS_1: Address = [_]u8{0x11} ** 20;
+const TEST_ADDRESS_2: Address = [_]u8{0x22} ** 20;
 
 // ============================================================================
 // Simple Contract Bytecodes for Testing
@@ -96,8 +98,20 @@ fn benchmark_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
         },
     };
     
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &ARITHMETIC_CONTRACT) catch return;
+    // Set contract code and get the hash
+    const code_hash = db_interface.set_code(&ARITHMETIC_CONTRACT) catch return;
+    
+    // Get existing account or create new one
+    var account = db_interface.get_account(TEST_ADDRESS_2) catch null orelse evm_mod.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = HashUtils.EMPTY_KECCAK256,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    
+    // Update account with code hash
+    account.code_hash = code_hash;
+    db_interface.set_account(TEST_ADDRESS_2, account) catch return;
     
     const result = vm.call(call_params) catch return;
     _ = result;
@@ -138,8 +152,20 @@ fn benchmark_evm_storage_contract(allocator: std.mem.Allocator) void {
         },
     };
     
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &STORAGE_CONTRACT) catch return;
+    // Set contract code and get the hash
+    const code_hash = db_interface.set_code(&STORAGE_CONTRACT) catch return;
+    
+    // Get existing account or create new one
+    var account = db_interface.get_account(TEST_ADDRESS_2) catch null orelse evm_mod.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = HashUtils.EMPTY_KECCAK256,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    
+    // Update account with code hash
+    account.code_hash = code_hash;
+    db_interface.set_account(TEST_ADDRESS_2, account) catch return;
     
     const result = vm.call(call_params) catch return;
     _ = result;
@@ -180,8 +206,20 @@ fn benchmark_evm_stack_contract(allocator: std.mem.Allocator) void {
         },
     };
     
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &STACK_CONTRACT) catch return;
+    // Set contract code and get the hash
+    const code_hash = db_interface.set_code(&STACK_CONTRACT) catch return;
+    
+    // Get existing account or create new one
+    var account = db_interface.get_account(TEST_ADDRESS_2) catch null orelse evm_mod.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = HashUtils.EMPTY_KECCAK256,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    
+    // Update account with code hash
+    account.code_hash = code_hash;
+    db_interface.set_account(TEST_ADDRESS_2, account) catch return;
     
     const result = vm.call(call_params) catch return;
     _ = result;

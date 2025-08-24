@@ -1,11 +1,10 @@
 const std = @import("std");
 const zbench = @import("zbench");
 const primitives = @import("primitives");
-const evm_legacy = @import("evm");
-const evm_mod = @import("../root.zig");
+const evm = @import("evm");
 const revm = @import("revm");
 const Address = primitives.Address.Address;
-const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
+const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 
 // Test configuration
 const BENCHMARK_GAS_LIMIT: u64 = 1_000_000;
@@ -77,171 +76,99 @@ const MEMORY_CONTRACT = [_]u8{
 // ============================================================================
 
 fn benchmark_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_mod.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
     
-    const block_info = evm_mod.BlockInfo{
-        .number = 1,
-        .timestamp = 1640995200,
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .difficulty = 0,
-        .coinbase = ZERO_ADDRESS,
-        .base_fee = 0,
-        .prev_randao = [_]u8{0} ** 32,
-    };
+    // Create frame interpreter for arithmetic contract
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ 
+        .has_database = true,
+        .TracerType = evm.NoOpTracer,
+    });
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .coinbase = ZERO_ADDRESS,
-        .chain_id = 1,
-    };
+    var interpreter = FrameInterpreterType.init(
+        allocator,
+        &ARITHMETIC_CONTRACT,
+        BENCHMARK_GAS_LIMIT,
+        db_interface
+    ) catch return;
+    defer interpreter.deinit(allocator);
     
-    var vm = evm_mod.Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN) catch return;
-    defer vm.deinit();
-    
-    const call_params = evm_mod.CallParams{
-        .call = .{
-            .caller = TEST_ADDRESS_1,
-            .to = TEST_ADDRESS_2,
-            .value = 0,
-            .input = &.{},
-            .gas = BENCHMARK_GAS_LIMIT,
-        },
-    };
-    
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &ARITHMETIC_CONTRACT) catch return;
-    
-    const result = vm.call(call_params) catch return;
-    _ = result;
+    // Execute the contract
+    _ = interpreter.interpret() catch return;
 }
 
 fn benchmark_evm_storage_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_mod.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
     
-    const block_info = evm_mod.BlockInfo{
-        .number = 1,
-        .timestamp = 1640995200,
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .difficulty = 0,
-        .coinbase = ZERO_ADDRESS,
-        .base_fee = 0,
-        .prev_randao = [_]u8{0} ** 32,
-    };
+    // Create frame interpreter for storage contract
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ 
+        .has_database = true,
+        .TracerType = evm.NoOpTracer,
+    });
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .coinbase = ZERO_ADDRESS,
-        .chain_id = 1,
-    };
+    var interpreter = FrameInterpreterType.init(
+        allocator,
+        &STORAGE_CONTRACT,
+        BENCHMARK_GAS_LIMIT,
+        db_interface
+    ) catch return;
+    defer interpreter.deinit(allocator);
     
-    var vm = evm_mod.Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN) catch return;
-    defer vm.deinit();
-    
-    const call_params = evm_mod.CallParams{
-        .call = .{
-            .caller = TEST_ADDRESS_1,
-            .to = TEST_ADDRESS_2,
-            .value = 0,
-            .input = &.{},
-            .gas = BENCHMARK_GAS_LIMIT,
-        },
-    };
-    
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &STORAGE_CONTRACT) catch return;
-    
-    const result = vm.call(call_params) catch return;
-    _ = result;
+    // Execute the contract
+    _ = interpreter.interpret() catch return;
 }
 
 fn benchmark_evm_stack_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_mod.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
     
-    const block_info = evm_mod.BlockInfo{
-        .number = 1,
-        .timestamp = 1640995200,
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .difficulty = 0,
-        .coinbase = ZERO_ADDRESS,
-        .base_fee = 0,
-        .prev_randao = [_]u8{0} ** 32,
-    };
+    // Create frame interpreter for stack contract
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ 
+        .has_database = true,
+        .TracerType = evm.NoOpTracer,
+    });
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .coinbase = ZERO_ADDRESS,
-        .chain_id = 1,
-    };
+    var interpreter = FrameInterpreterType.init(
+        allocator,
+        &STACK_CONTRACT,
+        BENCHMARK_GAS_LIMIT,
+        db_interface
+    ) catch return;
+    defer interpreter.deinit(allocator);
     
-    var vm = evm_mod.Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN) catch return;
-    defer vm.deinit();
-    
-    const call_params = evm_mod.CallParams{
-        .call = .{
-            .caller = TEST_ADDRESS_1,
-            .to = TEST_ADDRESS_2,
-            .value = 0,
-            .input = &.{},
-            .gas = BENCHMARK_GAS_LIMIT,
-        },
-    };
-    
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &STACK_CONTRACT) catch return;
-    
-    const result = vm.call(call_params) catch return;
-    _ = result;
+    // Execute the contract
+    _ = interpreter.interpret() catch return;
 }
 
 fn benchmark_evm_memory_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_mod.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
     
-    const block_info = evm_mod.BlockInfo{
-        .number = 1,
-        .timestamp = 1640995200,
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .difficulty = 0,
-        .coinbase = ZERO_ADDRESS,
-        .base_fee = 0,
-        .prev_randao = [_]u8{0} ** 32,
-    };
+    // Create frame interpreter for memory contract
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ 
+        .has_database = true,
+        .TracerType = evm.NoOpTracer,
+    });
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
-        .gas_limit = BENCHMARK_GAS_LIMIT,
-        .coinbase = ZERO_ADDRESS,
-        .chain_id = 1,
-    };
+    var interpreter = FrameInterpreterType.init(
+        allocator,
+        &MEMORY_CONTRACT,
+        BENCHMARK_GAS_LIMIT,
+        db_interface
+    ) catch return;
+    defer interpreter.deinit(allocator);
     
-    var vm = evm_mod.Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN) catch return;
-    defer vm.deinit();
-    
-    const call_params = evm_mod.CallParams{
-        .call = .{
-            .caller = TEST_ADDRESS_1,
-            .to = TEST_ADDRESS_2,
-            .value = 0,
-            .input = &.{},
-            .gas = BENCHMARK_GAS_LIMIT,
-        },
-    };
-    
-    // Set contract code
-    db_interface.set_code_by_address(TEST_ADDRESS_2, &MEMORY_CONTRACT) catch return;
-    
-    const result = vm.call(call_params) catch return;
-    _ = result;
+    // Execute the contract
+    _ = interpreter.interpret() catch return;
 }
 
 // ============================================================================
@@ -249,71 +176,55 @@ fn benchmark_evm_memory_contract(allocator: std.mem.Allocator) void {
 // ============================================================================
 
 fn benchmark_legacy_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_legacy.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
-    defer vm.deinit();
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT);
+    var interpreter = FrameInterpreterType.init(allocator, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    defer interpreter.deinit(allocator);
     
-    var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
-    defer frame.deinit();
-    
-    const result = vm.table.execute_vm(&frame);
-    _ = result;
+    interpreter.interpret() catch return;
 }
 
 fn benchmark_legacy_evm_storage_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_legacy.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
-    defer vm.deinit();
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT);
+    var interpreter = FrameInterpreterType.init(allocator, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    defer interpreter.deinit(allocator);
     
-    var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
-    defer frame.deinit();
-    
-    const result = vm.table.execute_vm(&frame);
-    _ = result;
+    interpreter.interpret() catch return;
 }
 
 fn benchmark_legacy_evm_stack_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_legacy.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
-    defer vm.deinit();
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT);
+    var interpreter = FrameInterpreterType.init(allocator, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    defer interpreter.deinit(allocator);
     
-    var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
-    defer frame.deinit();
-    
-    const result = vm.table.execute_vm(&frame);
-    _ = result;
+    interpreter.interpret() catch return;
 }
 
 fn benchmark_legacy_evm_memory_contract(allocator: std.mem.Allocator) void {
-    var memory_db = evm_legacy.MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
-    defer vm.deinit();
+    const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT);
+    var interpreter = FrameInterpreterType.init(allocator, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    defer interpreter.deinit(allocator);
     
-    var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
-    defer frame.deinit();
-    
-    const result = vm.table.execute_vm(&frame);
-    _ = result;
+    interpreter.interpret() catch return;
 }
 
 // ============================================================================
