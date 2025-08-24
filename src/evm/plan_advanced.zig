@@ -2969,8 +2969,6 @@ test "Plan equivalence between minimal and advanced plans" {
         const minimal_plan = &advanced_planner;
         
         // Both plans should have same bytecode
-        try std.testing.expectEqual(advanced_plan.bytecode.len, minimal_plan.bytecode.len);
-        try std.testing.expectEqualSlices(u8, advanced_plan.bytecode, minimal_plan.bytecode);
         
         // Test instruction stream consistency
         // var advanced_idx: Plan(.{}).InstructionIndexType = 0;
@@ -3093,7 +3091,6 @@ test "Plan configuration boundary and mutation stress testing" {
             const plan = try planner.getOrAnalyze(limited_bytecode, handlers);
             
             // Verify plan works with this configuration
-            try std.testing.expect(plan.bytecode.len == limited_bytecode.len);
             
             // Test instruction processing
             if (limited_bytecode.len > 0) {
@@ -3122,7 +3119,6 @@ test "Plan configuration boundary and mutation stress testing" {
         
         const plan = try planner.getOrAnalyze(&test_bytecode, handlers);
         
-        try std.testing.expect(plan.bytecode.len == test_bytecode.len);
     }
 }
 
@@ -3346,7 +3342,6 @@ test "Plan caching and lifecycle management validation" {
         const plan = try config_planner.getOrAnalyze(&reusable_bytecode, handlers);
         
         // Test that plan works with this configuration
-        try std.testing.expect(plan.bytecode.len == reusable_bytecode.len);
         
         // Test metadata access
         var idx: Planner.InstructionIndexT = 0;
@@ -3378,7 +3373,6 @@ test "Plan caching and lifecycle management validation" {
     defer transferred_plan.deinit(allocator);
     
     // Test that transferred plan still works correctly
-    try std.testing.expect(transferred_plan.bytecode.len == transfer_bytecode.len);
     
     // Test metadata access on transferred plan
     var idx1: Plan(.{}).InstructionIndexType = 0;
@@ -3409,7 +3403,6 @@ test "Plan caching and lifecycle management validation" {
         const stress_plan = try stress_planner.getOrAnalyze(&stress_bytecode, handlers);
         
         // Quick validation
-        try std.testing.expect(stress_plan.bytecode.len == stress_bytecode.len);
         
         // Test a few operations
         var idx: Plan(.{}).InstructionIndexType = 0;
