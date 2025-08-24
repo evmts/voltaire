@@ -438,8 +438,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             // Get origin from host's transaction context
-            // NOTE: Host interface needs get_tx_origin method - using placeholder
-            const origin = primitives.Address.to_u256(primitives.ZERO_ADDRESS);
+            const origin_addr = self.host.?.get_tx_origin();
+            const origin = primitives.Address.to_u256(origin_addr);
             
             // Push origin to stack
             try self.stack.push(@as(WordType, @intCast(origin)));
@@ -465,8 +465,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             // Get caller from host
-            // NOTE: Host interface needs get_caller method - using placeholder
-            const caller_u256 = primitives.Address.to_u256(primitives.ZERO_ADDRESS);
+            const caller_addr = self.host.?.get_caller();
+            const caller_u256 = primitives.Address.to_u256(caller_addr);
             
             // Push caller to stack
             try self.stack.push(@as(WordType, @intCast(caller_u256)));
@@ -492,8 +492,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             // Get call value from host
-            // NOTE: Host interface needs get_call_value method - using placeholder
-            const value: u256 = 0;
+            const value = self.host.?.get_call_value();
             
             // Push value to stack
             try self.stack.push(value);
