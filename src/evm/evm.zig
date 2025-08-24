@@ -939,8 +939,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         fn handle_create2(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: JournalType.SnapshotIdType) !CallResult {
             const salt_bytes = @as([32]u8, @bitCast(params.salt));
 
-            const crypto = @import("crypto");
-            const init_code_hash = crypto.Hash.keccak256(params.init_code);
+            const keccak_asm = @import("keccak_asm.zig");
+            var init_code_hash_bytes: [32]u8 = undefined;
+            try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
 
             const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
 
