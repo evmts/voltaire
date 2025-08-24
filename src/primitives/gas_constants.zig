@@ -4,7 +4,7 @@
 /// to the Ethereum Yellow Paper and various EIPs. Gas costs are critical for
 /// preventing denial-of-service attacks and fairly pricing computational resources.
 const std = @import("std");
-const u256 = @import("uint.zig").Uint(256);
+const @"u256" = @import("uint.zig").Uint(256);
 ///
 /// ## Gas Cost Categories
 ///
@@ -1488,4 +1488,133 @@ test "hardfork - memory expansion costs unchanged" {
     // Verify constants unchanged
     try testing.expectEqual(@as(u64, 3), MemoryGas);
     try testing.expectEqual(@as(u64, 512), QuadCoeffDiv);
+}
+
+// ============================================================================
+// EIP-2200 Istanbul SSTORE Gas Tests
+// ============================================================================
+
+test "hardfork - EIP-2200 Istanbul SSTORE gas metering" {
+    // Test Istanbul's complex SSTORE gas rules
+    
+    // Scenario 1: No-op (current == original == new)
+    const no_op_gas = sstore_gas_cost(42, 42, 42, false);
+    try testing.expectEqual(@as(u64, 100), no_op_gas); // SloadGas
+    
+    // Scenario 2: Fresh slot (original == current == 0, new != 0)
+    const fresh_slot_gas = sstore_gas_cost(0, 0, 42, false);
+    try testing.expectEqual(@as(u64, 20000), fresh_slot_gas); // SstoreSetGas
+    
+    // Scenario 3: Clean slot (original == current != 0, new == 0)
+    const clean_slot_gas = sstore_gas_cost(42, 42, 0, false);
+    try testing.expectEqual(@as(u64, 5000), clean_slot_gas); // SstoreClearGas
+    
+    // Scenario 4: Reset to original (original != current, new == original)
+    const reset_original_gas = sstore_gas_cost(100, 42, 42, false);
+    try testing.expectEqual(@as(u64, 100), reset_original_gas); // SloadGas
+    
+    // Scenario 5: Dirty write (original != current, new != original)
+    const dirty_write_gas = sstore_gas_cost(100, 42, 200, false);
+    try testing.expectEqual(@as(u64, 100), dirty_write_gas); // SloadGas
+}
+
+// ============================================================================
+// MODEXP Precompile Gas Tests
+// ============================================================================
+
+test "hardfork - MODEXP precompile gas thresholds" {
+    // EIP-2565 introduced new gas calculation for MODEXP
+    
+    // Minimum gas cost
+    try testing.expectEqual(@as(u64, 200), MODEXP_MIN_GAS);
+    
+    // Quadratic threshold (64 bytes)
+    try testing.expectEqual(@as(usize, 64), MODEXP_QUADRATIC_THRESHOLD);
+    
+    // Linear threshold (1024 bytes)
+    try testing.expectEqual(@as(usize, 1024), MODEXP_LINEAR_THRESHOLD);
+    
+    // For inputs smaller than 64 bytes, use simple quadratic formula
+    // For inputs between 64-1024 bytes, use optimized formula
+    // For inputs larger than 1024 bytes, use linear approximation
+}
+
+// ============================================================================
+// Gas Stipend and Retention Tests
+// ============================================================================
+
+test "hardfork - gas stipends and retention" {
+    // Test gas stipend for value transfers
+    try testing.expectEqual(@as(u64, 2300), CallStipend);
+    try testing.expectEqual(@as(u64, 2300), GAS_STIPEND_VALUE_TRANSFER);
+    
+    // Test 63/64 gas retention rule
+    try testing.expectEqual(@as(u64, 64), CALL_GAS_RETENTION_DIVISOR);
+    
+    // Calculate retained gas for various amounts
+    const test_gas_amounts = [_]u64{ 64000, 100000, 1000000 };
+    for (test_gas_amounts) |gas| {
+        const retained = gas / CALL_GAS_RETENTION_DIVISOR;
+        const forwarded = gas - retained;
+        // Note: Integer division may cause slight differences
+        // 100000 / 64 = 1562 (retained), 100000 - 1562 = 98438
+        // 100000 * 63 / 64 = 98437 (due to integer division)
+        const expected_forwarded = gas - (gas / 64);
+        try testing.expectEqual(expected_forwarded, forwarded);
+    }
+}
+
+// ============================================================================
+// Comprehensive Hardfork Timeline Tests
+// ============================================================================
+
+test "hardfork - gas cost evolution timeline" {
+    // Test how specific operations changed across hardforks
+    
+    // SLOAD evolution
+    // Pre-Berlin: 200 gas (after EIP-1884)
+    // Post-Berlin: 100 gas warm, 2100 gas cold
+    try testing.expectEqual(@as(u64, 100), SloadGas); // Warm
+    try testing.expectEqual(@as(u64, 2100), ColdSloadCost); // Cold
+    
+    // SELFDESTRUCT evolution
+    // Pre-EIP-150: 0 gas
+    // Post-EIP-150: 5000 gas
+    // Post-London: No refund (was 24000)
+    try testing.expectEqual(@as(u64, 5000), SelfdestructGas);
+    try testing.expectEqual(@as(u64, 24000), SelfdestructRefundGas);
+    
+    // BALANCE evolution
+    // Pre-EIP-1884: 20 gas
+    // Post-EIP-1884: 400 gas
+    // Post-Berlin: 100 gas warm, 2600 gas cold
+    try testing.expectEqual(@as(u64, 100), CALL_BASE_COST); // Warm access
+    try testing.expectEqual(@as(u64, 2600), ColdAccountAccessCost); // Cold
+}
+
+// ============================================================================
+// Edge Case Hardfork Tests
+// ============================================================================
+
+test "hardfork - edge cases across hardforks" {
+    // Test edge cases that behave differently across hardforks
+    
+    // SSTORE with same value (no-op)
+    _ = 5000; // no_op_pre_istanbul: Always charged before Istanbul
+    _ = 200; // no_op_istanbul: Reduced in Istanbul
+    _ = 100; // no_op_berlin: Further reduced in Berlin
+    
+    // Verify current (Berlin+) behavior
+    const current_no_op = sstore_gas_cost(42, 42, 42, false);
+    try testing.expectEqual(@as(u64, 100), current_no_op);
+    
+    // CREATE2 with empty init code
+    const empty_create2_pre_shanghai = create_gas_cost(0, 0);
+    const empty_create2_post_shanghai = create_gas_cost(0, InitcodeWordGas);
+    try testing.expectEqual(@as(u64, 32000), empty_create2_pre_shanghai);
+    try testing.expectEqual(@as(u64, 32000), empty_create2_post_shanghai); // 0 words
+    
+    // Transient storage (only exists post-Cancun)
+    try testing.expectEqual(@as(u64, 100), TLoadGas);
+    try testing.expectEqual(@as(u64, 100), TStoreGas);
 }
