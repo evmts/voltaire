@@ -449,3 +449,518 @@ pub fn validate_database_implementation(comptime T: type) void {
     if (!@hasDecl(T, "rollback_batch")) @compileError("Database implementation missing rollback_batch method");
     if (!@hasDecl(T, "deinit")) @compileError("Database implementation missing deinit method");
 }
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+const testing = std.testing;
+
+// Test Account struct
+test "Account.zero creates account with all zero values" {
+    const account = Account.zero();
+    try testing.expectEqual(@as(u256, 0), account.balance);
+    try testing.expectEqual(@as(u64, 0), account.nonce);
+    try testing.expectEqualSlices(u8, &[_]u8{0} ** 32, &account.code_hash);
+    try testing.expectEqualSlices(u8, &[_]u8{0} ** 32, &account.storage_root);
+}
+
+test "Account.is_empty detects empty accounts" {
+    const empty_account = Account.zero();
+    try testing.expect(empty_account.is_empty());
+    
+    var non_empty_account = Account.zero();
+    non_empty_account.balance = 100;
+    try testing.expect(!non_empty_account.is_empty());
+    
+    non_empty_account = Account.zero();
+    non_empty_account.nonce = 1;
+    try testing.expect(!non_empty_account.is_empty());
+    
+    non_empty_account = Account.zero();
+    non_empty_account.code_hash[0] = 1;
+    try testing.expect(!non_empty_account.is_empty());
+}
+
+// Mock database implementation for testing
+const MockDatabase = struct {
+    accounts: std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage),
+    storage: std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage),
+    transient_storage: std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage),
+    code_storage: std.HashMap([32]u8, []const u8, ArrayHashContext, std.hash_map.default_max_load_percentage),
+    snapshots: std.ArrayList(MockSnapshot),
+    next_snapshot_id: u64,
+    allocator: std.mem.Allocator,
+    
+    const StorageKey = struct {
+        address: [20]u8,
+        key: u256,
+    };
+    
+    const MockSnapshot = struct {
+        id: u64,
+        accounts: std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage),
+        storage: std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage),
+    };
+    
+    const ArrayHashContext = struct {
+        pub fn hash(self: @This(), s: anytype) u64 {
+            _ = self;
+            return std.hash_map.hashString(@as([]const u8, &s));
+        }
+        pub fn eql(self: @This(), a: anytype, b: anytype) bool {
+            _ = self;
+            return std.mem.eql(u8, &a, &b);
+        }
+    };
+    
+    const StorageKeyContext = struct {
+        pub fn hash(self: @This(), key: StorageKey) u64 {
+            _ = self;
+            var hasher = std.hash.Wyhash.init(0);
+            hasher.update(&key.address);
+            hasher.update(std.mem.asBytes(&key.key));
+            return hasher.final();
+        }
+        pub fn eql(self: @This(), a: StorageKey, b: StorageKey) bool {
+            _ = self;
+            return std.mem.eql(u8, &a.address, &b.address) and a.key == b.key;
+        }
+    };
+    
+    pub fn init(allocator: std.mem.Allocator) MockDatabase {
+        return MockDatabase{
+            .accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .transient_storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .code_storage = std.HashMap([32]u8, []const u8, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .snapshots = std.ArrayList(MockSnapshot).init(allocator),
+            .next_snapshot_id = 1,
+            .allocator = allocator,
+        };
+    }
+    
+    pub fn deinit(self: *MockDatabase) void {
+        self.accounts.deinit();
+        self.storage.deinit();
+        self.transient_storage.deinit();
+        self.code_storage.deinit();
+        
+        for (self.snapshots.items) |*snapshot| {
+            snapshot.accounts.deinit();
+            snapshot.storage.deinit();
+        }
+        self.snapshots.deinit();
+    }
+    
+    // Account operations
+    pub fn get_account(self: *MockDatabase, address: [20]u8) DatabaseError!?Account {
+        return self.accounts.get(address);
+    }
+    
+    pub fn set_account(self: *MockDatabase, address: [20]u8, account: Account) DatabaseError!void {
+        try self.accounts.put(address, account);
+    }
+    
+    pub fn delete_account(self: *MockDatabase, address: [20]u8) DatabaseError!void {
+        _ = self.accounts.remove(address);
+    }
+    
+    pub fn account_exists(self: *MockDatabase, address: [20]u8) bool {
+        return self.accounts.contains(address);
+    }
+    
+    pub fn get_balance(self: *MockDatabase, address: [20]u8) DatabaseError!u256 {
+        if (self.accounts.get(address)) |account| {
+            return account.balance;
+        }
+        return 0; // Non-existent accounts have zero balance
+    }
+    
+    // Storage operations
+    pub fn get_storage(self: *MockDatabase, address: [20]u8, key: u256) DatabaseError!u256 {
+        const storage_key = StorageKey{ .address = address, .key = key };
+        return self.storage.get(storage_key) orelse 0;
+    }
+    
+    pub fn set_storage(self: *MockDatabase, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+        const storage_key = StorageKey{ .address = address, .key = key };
+        try self.storage.put(storage_key, value);
+    }
+    
+    // Transient storage operations
+    pub fn get_transient_storage(self: *MockDatabase, address: [20]u8, key: u256) DatabaseError!u256 {
+        const storage_key = StorageKey{ .address = address, .key = key };
+        return self.transient_storage.get(storage_key) orelse 0;
+    }
+    
+    pub fn set_transient_storage(self: *MockDatabase, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+        const storage_key = StorageKey{ .address = address, .key = key };
+        try self.transient_storage.put(storage_key, value);
+    }
+    
+    // Code operations
+    pub fn get_code(self: *MockDatabase, code_hash: [32]u8) DatabaseError![]const u8 {
+        return self.code_storage.get(code_hash) orelse return DatabaseError.CodeNotFound;
+    }
+    
+    pub fn get_code_by_address(self: *MockDatabase, address: [20]u8) DatabaseError![]const u8 {
+        if (self.accounts.get(address)) |account| {
+            return self.get_code(account.code_hash);
+        }
+        return DatabaseError.AccountNotFound;
+    }
+    
+    pub fn set_code(self: *MockDatabase, code: []const u8) DatabaseError![32]u8 {
+        var hash: [32]u8 = undefined;
+        std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
+        try self.code_storage.put(hash, code);
+        return hash;
+    }
+    
+    // State root operations
+    pub fn get_state_root(self: *MockDatabase) DatabaseError![32]u8 {
+        _ = self;
+        return [_]u8{0xAB} ** 32; // Mock state root
+    }
+    
+    pub fn commit_changes(self: *MockDatabase) DatabaseError![32]u8 {
+        return self.get_state_root();
+    }
+    
+    // Snapshot operations
+    pub fn create_snapshot(self: *MockDatabase) DatabaseError!u64 {
+        const snapshot_id = self.next_snapshot_id;
+        self.next_snapshot_id += 1;
+        
+        var snapshot_accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        var accounts_iter = self.accounts.iterator();
+        while (accounts_iter.next()) |entry| {
+            try snapshot_accounts.put(entry.key_ptr.*, entry.value_ptr.*);
+        }
+        
+        var snapshot_storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        var storage_iter = self.storage.iterator();
+        while (storage_iter.next()) |entry| {
+            try snapshot_storage.put(entry.key_ptr.*, entry.value_ptr.*);
+        }
+        
+        try self.snapshots.append(MockSnapshot{
+            .id = snapshot_id,
+            .accounts = snapshot_accounts,
+            .storage = snapshot_storage,
+        });
+        
+        return snapshot_id;
+    }
+    
+    pub fn revert_to_snapshot(self: *MockDatabase, snapshot_id: u64) DatabaseError!void {
+        var snapshot_index: ?usize = null;
+        for (self.snapshots.items, 0..) |snapshot, i| {
+            if (snapshot.id == snapshot_id) {
+                snapshot_index = i;
+                break;
+            }
+        }
+        
+        const index = snapshot_index orelse return DatabaseError.SnapshotNotFound;
+        const snapshot = &self.snapshots.items[index];
+        
+        self.accounts.deinit();
+        self.storage.deinit();
+        
+        self.accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        self.storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        
+        var accounts_iter = snapshot.accounts.iterator();
+        while (accounts_iter.next()) |entry| {
+            try self.accounts.put(entry.key_ptr.*, entry.value_ptr.*);
+        }
+        
+        var storage_iter = snapshot.storage.iterator();
+        while (storage_iter.next()) |entry| {
+            try self.storage.put(entry.key_ptr.*, entry.value_ptr.*);
+        }
+        
+        // Remove this snapshot and all later ones
+        for (self.snapshots.items[index..]) |*snap| {
+            snap.accounts.deinit();
+            snap.storage.deinit();
+        }
+        self.snapshots.shrinkRetainingCapacity(index);
+    }
+    
+    pub fn commit_snapshot(self: *MockDatabase, snapshot_id: u64) DatabaseError!void {
+        var snapshot_index: ?usize = null;
+        for (self.snapshots.items, 0..) |snapshot, i| {
+            if (snapshot.id == snapshot_id) {
+                snapshot_index = i;
+                break;
+            }
+        }
+        
+        const index = snapshot_index orelse return DatabaseError.SnapshotNotFound;
+        
+        // Clean up this snapshot and all later ones
+        for (self.snapshots.items[index..]) |*snapshot| {
+            snapshot.accounts.deinit();
+            snapshot.storage.deinit();
+        }
+        self.snapshots.shrinkRetainingCapacity(index);
+    }
+    
+    // Batch operations (simple implementation)
+    pub fn begin_batch(self: *MockDatabase) DatabaseError!void {
+        _ = self;
+        // In a real implementation, this would prepare batch state
+    }
+    
+    pub fn commit_batch(self: *MockDatabase) DatabaseError!void {
+        _ = self;
+        // In a real implementation, this would commit all batched operations
+    }
+    
+    pub fn rollback_batch(self: *MockDatabase) DatabaseError!void {
+        _ = self;
+        // In a real implementation, this would rollback all batched operations
+    }
+};
+
+test "DatabaseInterface vtable dispatch works correctly" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_address = [_]u8{0x12} ++ [_]u8{0} ** 19;
+    
+    // Test account operations
+    try testing.expect(!db_interface.account_exists(test_address));
+    try testing.expectEqual(@as(?Account, null), try db_interface.get_account(test_address));
+    
+    var test_account = Account{
+        .balance = 1000,
+        .nonce = 5,
+        .code_hash = [_]u8{0xAB} ** 32,
+        .storage_root = [_]u8{0xCD} ** 32,
+    };
+    
+    try db_interface.set_account(test_address, test_account);
+    try testing.expect(db_interface.account_exists(test_address));
+    
+    const retrieved_account = (try db_interface.get_account(test_address)).?;
+    try testing.expectEqual(test_account.balance, retrieved_account.balance);
+    try testing.expectEqual(test_account.nonce, retrieved_account.nonce);
+    try testing.expectEqualSlices(u8, &test_account.code_hash, &retrieved_account.code_hash);
+    try testing.expectEqualSlices(u8, &test_account.storage_root, &retrieved_account.storage_root);
+    
+    try testing.expectEqual(@as(u256, 1000), try db_interface.get_balance(test_address));
+}
+
+test "DatabaseInterface storage operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_address = [_]u8{0x34} ++ [_]u8{0} ** 19;
+    const storage_key: u256 = 0x123456789ABCDEF;
+    const storage_value: u256 = 0xFEDCBA987654321;
+    
+    // Initially storage should be zero
+    try testing.expectEqual(@as(u256, 0), try db_interface.get_storage(test_address, storage_key));
+    
+    // Set storage value
+    try db_interface.set_storage(test_address, storage_key, storage_value);
+    try testing.expectEqual(storage_value, try db_interface.get_storage(test_address, storage_key));
+}
+
+test "DatabaseInterface transient storage operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_address = [_]u8{0x56} ++ [_]u8{0} ** 19;
+    const storage_key: u256 = 0x987654321;
+    const storage_value: u256 = 0x123456789;
+    
+    // Initially transient storage should be zero
+    try testing.expectEqual(@as(u256, 0), try db_interface.get_transient_storage(test_address, storage_key));
+    
+    // Set transient storage value
+    try db_interface.set_transient_storage(test_address, storage_key, storage_value);
+    try testing.expectEqual(storage_value, try db_interface.get_transient_storage(test_address, storage_key));
+}
+
+test "DatabaseInterface code operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_code = "PUSH1 0x60 PUSH1 0x40 MSTORE";
+    
+    // Set code and get its hash
+    const code_hash = try db_interface.set_code(test_code);
+    
+    // Retrieve code by hash
+    const retrieved_code = try db_interface.get_code(code_hash);
+    try testing.expectEqualSlices(u8, test_code, retrieved_code);
+    
+    // Test retrieving code for non-existent hash
+    const fake_hash = [_]u8{0xFF} ** 32;
+    try testing.expectError(DatabaseError.CodeNotFound, db_interface.get_code(fake_hash));
+}
+
+test "DatabaseInterface code by address operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_address = [_]u8{0x78} ++ [_]u8{0} ** 19;
+    const test_code = "PUSH2 0x1234 RETURN";
+    
+    // Set code and get its hash
+    const code_hash = try db_interface.set_code(test_code);
+    
+    // Create account with code hash
+    const test_account = Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try db_interface.set_account(test_address, test_account);
+    
+    // Retrieve code by address
+    const retrieved_code = try db_interface.get_code_by_address(test_address);
+    try testing.expectEqualSlices(u8, test_code, retrieved_code);
+    
+    // Test retrieving code for non-existent address
+    const fake_address = [_]u8{0xFF} ** 20;
+    try testing.expectError(DatabaseError.AccountNotFound, db_interface.get_code_by_address(fake_address));
+}
+
+test "DatabaseInterface snapshot operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_address = [_]u8{0x9A} ++ [_]u8{0} ** 19;
+    
+    // Set initial account state
+    const initial_account = Account{
+        .balance = 500,
+        .nonce = 1,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try db_interface.set_account(test_address, initial_account);
+    try db_interface.set_storage(test_address, 1, 100);
+    
+    // Create snapshot
+    const snapshot_id = try db_interface.create_snapshot();
+    
+    // Modify state
+    const modified_account = Account{
+        .balance = 1000,
+        .nonce = 2,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try db_interface.set_account(test_address, modified_account);
+    try db_interface.set_storage(test_address, 1, 200);
+    
+    // Verify modified state
+    const current_account = (try db_interface.get_account(test_address)).?;
+    try testing.expectEqual(@as(u256, 1000), current_account.balance);
+    try testing.expectEqual(@as(u64, 2), current_account.nonce);
+    try testing.expectEqual(@as(u256, 200), try db_interface.get_storage(test_address, 1));
+    
+    // Revert to snapshot
+    try db_interface.revert_to_snapshot(snapshot_id);
+    
+    // Verify reverted state
+    const reverted_account = (try db_interface.get_account(test_address)).?;
+    try testing.expectEqual(@as(u256, 500), reverted_account.balance);
+    try testing.expectEqual(@as(u64, 1), reverted_account.nonce);
+    try testing.expectEqual(@as(u256, 100), try db_interface.get_storage(test_address, 1));
+}
+
+test "DatabaseInterface snapshot error handling" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    // Test reverting to non-existent snapshot
+    try testing.expectError(DatabaseError.SnapshotNotFound, db_interface.revert_to_snapshot(999));
+    
+    // Test committing non-existent snapshot
+    try testing.expectError(DatabaseError.SnapshotNotFound, db_interface.commit_snapshot(999));
+}
+
+test "DatabaseInterface state root operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const state_root = try db_interface.get_state_root();
+    try testing.expectEqualSlices(u8, &[_]u8{0xAB} ** 32, &state_root);
+    
+    const committed_root = try db_interface.commit_changes();
+    try testing.expectEqualSlices(u8, &state_root, &committed_root);
+}
+
+test "DatabaseInterface batch operations" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    // Test batch operations (mock implementation doesn't do much)
+    try db_interface.begin_batch();
+    try db_interface.commit_batch();
+    
+    try db_interface.begin_batch();
+    try db_interface.rollback_batch();
+}
+
+test "DatabaseInterface account deletion" {
+    const allocator = testing.allocator;
+    var mock_db = MockDatabase.init(allocator);
+    defer mock_db.deinit();
+    
+    const db_interface = DatabaseInterface.init(&mock_db);
+    
+    const test_address = [_]u8{0xBC} ++ [_]u8{0} ** 19;
+    const test_account = Account{
+        .balance = 250,
+        .nonce = 3,
+        .code_hash = [_]u8{0x11} ** 32,
+        .storage_root = [_]u8{0x22} ** 32,
+    };
+    
+    // Set account
+    try db_interface.set_account(test_address, test_account);
+    try testing.expect(db_interface.account_exists(test_address));
+    
+    // Delete account
+    try db_interface.delete_account(test_address);
+    try testing.expect(!db_interface.account_exists(test_address));
+    try testing.expectEqual(@as(?Account, null), try db_interface.get_account(test_address));
+    try testing.expectEqual(@as(u256, 0), try db_interface.get_balance(test_address));
+}
