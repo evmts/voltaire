@@ -783,7 +783,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// KECCAK256 opcode (0x20) - Compute keccak256 hash
         /// Pops offset and size from stack, reads data from memory, and pushes hash.
         /// Stack: [offset, size] → [hash]
-        pub fn op_keccak256(self: *Self) Error!void {
+        pub fn keccak256(self: *Self) Error!void {
             const offset = try self.stack.pop();
             const size = try self.stack.pop();
 
