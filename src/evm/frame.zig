@@ -1,3 +1,14 @@
+//! Lightweight execution context for EVM operations.
+//!
+//! Frame handles direct opcode execution including stack manipulation,
+//! arithmetic, memory access, and storage operations. It does NOT handle:
+//! - PC tracking and jumps (managed by Plan)
+//! - CALL/CREATE operations (managed by Host/EVM)
+//! - Environment queries (provided by Host)
+//!
+//! The Frame is designed for efficient opcode dispatch with configurable
+//! components for stack size, memory limits, and gas tracking.
+
 const std = @import("std");
 const builtin = @import("builtin");
 const log = @import("log.zig");
@@ -24,36 +35,10 @@ const gas_manager_mod = @import("gas_manager.zig");
 const GasManager = gas_manager_mod.GasManager;
 const GasError = gas_manager_mod.GasError;
 
-/// Frame is a lightweight execution context for EVM operations.
+/// Creates a configured Frame type for EVM execution.
 ///
-/// ## Limitations
-///
-/// Frame does NOT support the following operations as they are managed by other components:
-///
-/// - **PC tracking and JUMP operations**: The Program Counter (PC) and jump destinations are
-///   managed by the Plan during execution. JUMP/JUMPI validation happens at the Plan level.
-///
-/// - **CALL/CREATE operations**: Nested execution contexts and contract creation are handled
-///   by the Host or EVM instance, not the Frame itself.
-///
-/// - **Environment operations**: Block information (BLOCKHASH, COINBASE, TIMESTAMP, etc.) and
-///   transaction context (ORIGIN, GASPRICE, etc.) are provided by the Host interface.
-///
-/// - **Block operations**: BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT,
-///   CHAINID, SELFBALANCE, BASEFEE operations require Host context.
-///
-/// ## Supported Operations
-///
-/// Frame provides direct support for:
-/// - Stack operations (PUSH, POP, DUP, SWAP)
-/// - Arithmetic operations (ADD, SUB, MUL, DIV, etc.)
-/// - Bitwise operations (AND, OR, XOR, NOT, etc.)
-/// - Comparison operations (LT, GT, EQ, etc.)
-/// - Memory operations (MLOAD, MSTORE, MSIZE, MCOPY)
-/// - Storage operations (SLOAD, SSTORE, TLOAD, TSTORE) when database is configured
-/// - Hashing operations (KECCAK256)
-/// - LOG operations (LOG0-LOG4)
-///
+/// The Frame is parameterized by compile-time configuration to enable
+/// optimal code generation and platform-specific optimizations.
 pub fn Frame(comptime config: FrameConfig) type {
     comptime config.validate();
 
@@ -108,6 +93,10 @@ pub fn Frame(comptime config: FrameConfig) type {
 
         host: ?Host = null,
 
+        /// Initialize a new execution frame.
+        ///
+        /// Creates stack, memory, and other execution components. Validates
+        /// bytecode size and allocates resources with proper cleanup on failure.
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: ?Host) Error!Self {
             if (bytecode.len > max_bytecode_size) return Error.BytecodeTooLarge;
 
@@ -1650,7 +1639,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_difficulty(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const block_info = host.get_block_info();
-            try self.stack.push(block_info.difficulty);
+            const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
+            try self.stack.push(difficulty_word);
         }
 
         /// PREVRANDAO opcode - Alias for DIFFICULTY post-merge
@@ -1676,7 +1666,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_basefee(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const block_info = host.get_block_info();
-            try self.stack.push(block_info.base_fee);
+            const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
+            try self.stack.push(base_fee_word);
         }
 
         /// BLOBHASH opcode (0x49) - Get versioned hash of blob
@@ -1714,7 +1705,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_blobbasefee(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const blob_base_fee = host.get_blob_base_fee();
-            try self.stack.push(blob_base_fee);
+            const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
+            try self.stack.push(blob_base_fee_word);
         }
 
         // ========== LOG opcodes (0xA0-0xA4) ==========
