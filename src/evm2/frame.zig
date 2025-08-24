@@ -20,7 +20,6 @@ const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 pub fn createFrame(comptime config: FrameConfig) type {
     config.validate();
 
-
     const Frame = struct {
         pub const WordType = config.WordType;
         pub const TracerType = config.TracerType;
@@ -179,8 +178,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
             
             std.log.warn("===================\n\n", .{});
         }
-
-
 
         pub fn op_pc(self: *Self) Error!void {
             // Since we don't track PC anymore, this should get PC from plan
