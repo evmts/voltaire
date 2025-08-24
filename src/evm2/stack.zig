@@ -1,5 +1,6 @@
 const std = @import("std");
-pub const StackConfig = @import("stack_config.zig").StackConfig;
+
+const StackConfig = @import("stack_config.zig").StackConfig;
 
 pub fn createStack(comptime config: StackConfig) type {
     config.validate();
@@ -103,67 +104,67 @@ pub fn createStack(comptime config: StackConfig) type {
             return self.push(value);
         }
 
-        pub fn op_dup1(self: *Self) Error!void {
+        pub fn dup1(self: *Self) Error!void {
             return self.dup_n(1);
         }
 
-        pub fn op_dup2(self: *Self) Error!void {
+        pub fn dup2(self: *Self) Error!void {
             return self.dup_n(2);
         }
 
-        pub fn op_dup3(self: *Self) Error!void {
+        pub fn dup3(self: *Self) Error!void {
             return self.dup_n(3);
         }
 
-        pub fn op_dup4(self: *Self) Error!void {
+        pub fn dup4(self: *Self) Error!void {
             return self.dup_n(4);
         }
 
-        pub fn op_dup5(self: *Self) Error!void {
+        pub fn dup5(self: *Self) Error!void {
             return self.dup_n(5);
         }
 
-        pub fn op_dup6(self: *Self) Error!void {
+        pub fn dup6(self: *Self) Error!void {
             return self.dup_n(6);
         }
 
-        pub fn op_dup7(self: *Self) Error!void {
+        pub fn dup7(self: *Self) Error!void {
             return self.dup_n(7);
         }
 
-        pub fn op_dup8(self: *Self) Error!void {
+        pub fn dup8(self: *Self) Error!void {
             return self.dup_n(8);
         }
 
-        pub fn op_dup9(self: *Self) Error!void {
+        pub fn dup9(self: *Self) Error!void {
             return self.dup_n(9);
         }
 
-        pub fn op_dup10(self: *Self) Error!void {
+        pub fn dup10(self: *Self) Error!void {
             return self.dup_n(10);
         }
 
-        pub fn op_dup11(self: *Self) Error!void {
+        pub fn dup11(self: *Self) Error!void {
             return self.dup_n(11);
         }
 
-        pub fn op_dup12(self: *Self) Error!void {
+        pub fn dup12(self: *Self) Error!void {
             return self.dup_n(12);
         }
 
-        pub fn op_dup13(self: *Self) Error!void {
+        pub fn dup13(self: *Self) Error!void {
             return self.dup_n(13);
         }
 
-        pub fn op_dup14(self: *Self) Error!void {
+        pub fn dup14(self: *Self) Error!void {
             return self.dup_n(14);
         }
 
-        pub fn op_dup15(self: *Self) Error!void {
+        pub fn dup15(self: *Self) Error!void {
             return self.dup_n(15);
         }
 
-        pub fn op_dup16(self: *Self) Error!void {
+        pub fn dup16(self: *Self) Error!void {
             return self.dup_n(16);
         }
 
@@ -178,67 +179,67 @@ pub fn createStack(comptime config: StackConfig) type {
             std.mem.swap(WordType, &self.stack[top_index], &self.stack[other_index]);
         }
 
-        pub fn op_swap1(self: *Self) Error!void {
+        pub fn swap1(self: *Self) Error!void {
             return self.swap_n(1);
         }
 
-        pub fn op_swap2(self: *Self) Error!void {
+        pub fn swap2(self: *Self) Error!void {
             return self.swap_n(2);
         }
 
-        pub fn op_swap3(self: *Self) Error!void {
+        pub fn swap3(self: *Self) Error!void {
             return self.swap_n(3);
         }
 
-        pub fn op_swap4(self: *Self) Error!void {
+        pub fn swap4(self: *Self) Error!void {
             return self.swap_n(4);
         }
 
-        pub fn op_swap5(self: *Self) Error!void {
+        pub fn swap5(self: *Self) Error!void {
             return self.swap_n(5);
         }
 
-        pub fn op_swap6(self: *Self) Error!void {
+        pub fn swap6(self: *Self) Error!void {
             return self.swap_n(6);
         }
 
-        pub fn op_swap7(self: *Self) Error!void {
+        pub fn swap7(self: *Self) Error!void {
             return self.swap_n(7);
         }
 
-        pub fn op_swap8(self: *Self) Error!void {
+        pub fn swap8(self: *Self) Error!void {
             return self.swap_n(8);
         }
 
-        pub fn op_swap9(self: *Self) Error!void {
+        pub fn swap9(self: *Self) Error!void {
             return self.swap_n(9);
         }
 
-        pub fn op_swap10(self: *Self) Error!void {
+        pub fn swap10(self: *Self) Error!void {
             return self.swap_n(10);
         }
 
-        pub fn op_swap11(self: *Self) Error!void {
+        pub fn swap11(self: *Self) Error!void {
             return self.swap_n(11);
         }
 
-        pub fn op_swap12(self: *Self) Error!void {
+        pub fn swap12(self: *Self) Error!void {
             return self.swap_n(12);
         }
 
-        pub fn op_swap13(self: *Self) Error!void {
+        pub fn swap13(self: *Self) Error!void {
             return self.swap_n(13);
         }
 
-        pub fn op_swap14(self: *Self) Error!void {
+        pub fn swap14(self: *Self) Error!void {
             return self.swap_n(14);
         }
 
-        pub fn op_swap15(self: *Self) Error!void {
+        pub fn swap15(self: *Self) Error!void {
             return self.swap_n(15);
         }
 
-        pub fn op_swap16(self: *Self) Error!void {
+        pub fn swap16(self: *Self) Error!void {
             return self.swap_n(16);
         }
         
@@ -379,7 +380,7 @@ test "Stack op_dup1 duplicates top stack item" {
     try std.testing.expectEqual(@as(u12, 1), stack.next_stack_index);
 
     // Execute op_dup1 - should duplicate top item
-    try stack.op_dup1();
+    try stack.dup1();
     try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index);
     try std.testing.expectEqual(@as(u256, 42), stack.stack[0]); // Original
     try std.testing.expectEqual(@as(u256, 42), stack.stack[1]); // Duplicate
@@ -400,7 +401,7 @@ test "Stack op_dup16 duplicates 16th stack item" {
     try std.testing.expectEqual(@as(u12, 16), stack.next_stack_index);
 
     // Execute op_dup16 - should duplicate 16th item from top (which is value 1)
-    try stack.op_dup16();
+    try stack.dup16();
     try std.testing.expectEqual(@as(u12, 17), stack.next_stack_index);
     try std.testing.expectEqual(@as(u256, 1), stack.stack[0]); // 16th from top (value 1)
     try std.testing.expectEqual(@as(u256, 1), stack.stack[16]); // Duplicate on top
@@ -419,7 +420,7 @@ test "Stack op_swap1 swaps top two stack items" {
     try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index);
 
     // Execute op_swap1 - should swap top two items
-    try stack.op_swap1();
+    try stack.swap1();
     try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index); // Index unchanged
     try std.testing.expectEqual(@as(u256, 20), stack.stack[0]); // Was 10, now 20
     try std.testing.expectEqual(@as(u256, 10), stack.stack[1]); // Was 20, now 10
@@ -440,7 +441,7 @@ test "Stack op_swap16 swaps top with 17th stack item" {
     try std.testing.expectEqual(@as(u12, 17), stack.next_stack_index);
 
     // Execute op_swap16 - should swap top item (17) with 17th from top (1)
-    try stack.op_swap16();
+    try stack.swap16();
     try std.testing.expectEqual(@as(u12, 17), stack.next_stack_index); // Index unchanged
     try std.testing.expectEqual(@as(u256, 17), stack.stack[0]); // Was 1, now 17
     try std.testing.expectEqual(@as(u256, 1), stack.stack[16]); // Was 17, now 1
@@ -527,11 +528,11 @@ test "Stack maximum configuration comprehensive test" {
 
     // Test overflow
     try std.testing.expectError(error.StackOverflow, stack.push(999));
-    try std.testing.expectError(error.StackOverflow, stack.op_dup1());
+    try std.testing.expectError(error.StackOverflow, stack.dup1());
 
     // Test operations at capacity
     _ = try stack.pop(); // Make room
-    try stack.op_dup1(); // Should work now
+    try stack.dup1(); // Should work now
     
     // Empty stack and test DUP16/SWAP16
     while (stack.next_stack_index > 0) {
@@ -544,11 +545,11 @@ test "Stack maximum configuration comprehensive test" {
         try stack.push(@as(u256, j));
     }
     
-    try stack.op_dup16(); // Should duplicate 16th item (1)
+    try stack.dup16(); // Should duplicate 16th item (1)
     try std.testing.expectEqual(@as(u256, 1), try stack.peek());
     
     // Now we have 17 items, SWAP16 should work
-    try stack.op_swap16(); // Swap top (1) with 17th (1 - the original bottom)
+    try stack.swap16(); // Swap top (1) with 17th (1 - the original bottom)
     try std.testing.expectEqual(@as(u256, 1), try stack.peek());
 
     // Empty the entire stack
@@ -585,11 +586,11 @@ test "Stack minimum configuration comprehensive test" {
 
     // Test DUP and SWAP
     try stack.push(100);
-    try stack.op_dup1();
+    try stack.dup1();
     try std.testing.expectEqual(@as(u8, 100), try stack.peek());
     
     try stack.push(200);
-    try stack.op_swap1();
+    try stack.swap1();
     try std.testing.expectEqual(@as(u8, 100), try stack.peek());
 
     // Fill small stack to capacity
@@ -600,11 +601,11 @@ test "Stack minimum configuration comprehensive test" {
 
     // Test overflow with small stack
     try std.testing.expectError(error.StackOverflow, stack.push(255));
-    try std.testing.expectError(error.StackOverflow, stack.op_dup1());
+    try std.testing.expectError(error.StackOverflow, stack.dup1());
 
     // Test DUP16 and SWAP16 at capacity
     _ = try stack.pop(); // Make room
-    try stack.op_dup1(); // Should work
+    try stack.dup1(); // Should work
     
     // Empty and test with exactly 16 items for DUP16/SWAP16
     while (stack.next_stack_index > 0) {
@@ -618,16 +619,16 @@ test "Stack minimum configuration comprehensive test" {
     }
 
     // DUP16 should fail - not enough items
-    try std.testing.expectError(error.StackUnderflow, stack.op_dup16());
+    try std.testing.expectError(error.StackUnderflow, stack.dup16());
     
     // Add one more to have exactly 16
     try stack.push(16);
     
     // Now DUP16 should work but will overflow the 16-element stack
-    try std.testing.expectError(error.StackOverflow, stack.op_dup16());
+    try std.testing.expectError(error.StackOverflow, stack.dup16());
     
     // Test SWAP16 with 16 items - should fail, needs 17 items
-    try std.testing.expectError(error.StackUnderflow, stack.op_swap16());
+    try std.testing.expectError(error.StackUnderflow, stack.swap16());
 
     // Empty the stack
     while (stack.next_stack_index > 0) {
@@ -638,8 +639,8 @@ test "Stack minimum configuration comprehensive test" {
     try std.testing.expectError(error.StackUnderflow, stack.pop());
     try std.testing.expectError(error.StackUnderflow, stack.peek());
     try std.testing.expectError(error.StackUnderflow, stack.set_top(42));
-    try std.testing.expectError(error.StackUnderflow, stack.op_dup1());
-    try std.testing.expectError(error.StackUnderflow, stack.op_swap1());
+    try std.testing.expectError(error.StackUnderflow, stack.dup1());
+    try std.testing.expectError(error.StackUnderflow, stack.swap1());
 }
 
 test "Stack index type boundaries" {
@@ -837,16 +838,16 @@ test "Complex operation sequences at boundaries" {
     try stack.push(700); // 7 items
     
     // DUP1 should work (brings to 8, at capacity)
-    try stack.op_dup1();
+    try stack.dup1();
     try std.testing.expectEqual(@as(u4, 8), stack.next_stack_index);
     try std.testing.expectEqual(@as(u256, 700), try stack.peek());
     
     // Any push should fail now
     try std.testing.expectError(error.StackOverflow, stack.push(999));
-    try std.testing.expectError(error.StackOverflow, stack.op_dup1());
+    try std.testing.expectError(error.StackOverflow, stack.dup1());
     
     // SWAP should work (doesn't change count)
-    try stack.op_swap1();
+    try stack.swap1();
     try std.testing.expectEqual(@as(u4, 8), stack.next_stack_index);
     try std.testing.expectEqual(@as(u256, 700), try stack.peek()); // Original second item
     
@@ -858,10 +859,10 @@ test "Complex operation sequences at boundaries" {
     try std.testing.expectEqual(@as(u256, 700), val2);
     
     // Now we have 6 items, test complex DUP/SWAP
-    try stack.op_dup3(); // Duplicate 3rd from top (should be 400)
+    try stack.dup3(); // Duplicate 3rd from top (should be 400)
     try std.testing.expectEqual(@as(u256, 400), try stack.peek());
     
-    try stack.op_swap2(); // Swap with 2nd item
+    try stack.swap2(); // Swap with 2nd item
     const second_item = stack.stack[stack.next_stack_index - 2];
     try std.testing.expectEqual(@as(u256, 600), second_item);
     
@@ -872,8 +873,8 @@ test "Complex operation sequences at boundaries" {
     
     // Test underflow after complex sequence
     try std.testing.expectError(error.StackUnderflow, stack.pop());
-    try std.testing.expectError(error.StackUnderflow, stack.op_dup1());
-    try std.testing.expectError(error.StackUnderflow, stack.op_swap1());
+    try std.testing.expectError(error.StackUnderflow, stack.dup1());
+    try std.testing.expectError(error.StackUnderflow, stack.swap1());
 }
 
 test "Zero values and boundary values" {
@@ -930,8 +931,8 @@ test "Zero values and boundary values" {
     try stack_min.push(42);
     try std.testing.expectEqual(@as(u4, 1), stack_min.next_stack_index);
     try std.testing.expectError(error.StackOverflow, stack_min.push(99));
-    try std.testing.expectError(error.StackOverflow, stack_min.op_dup1());
-    try std.testing.expectError(error.StackUnderflow, stack_min.op_swap1()); // Needs 2 items
+    try std.testing.expectError(error.StackOverflow, stack_min.dup1());
+    try std.testing.expectError(error.StackUnderflow, stack_min.swap1()); // Needs 2 items
 }
 
 test "Unsafe operations at exact boundaries" {
