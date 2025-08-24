@@ -18,6 +18,16 @@ pub const Error = error{
 current: usize,
 data: *[CAPACITY]u256,
 
+// Comptime assertions for struct size and alignment
+comptime {
+    // Document expected size: pointer (8 bytes) + usize (8 bytes) = 16 bytes on 64-bit
+    const expected_size = @sizeOf(usize) + @sizeOf(*[CAPACITY]u256);
+    std.debug.assert(@sizeOf(Stack) == expected_size);
+    
+    // Ensure proper alignment for efficient access
+    std.debug.assert(@alignOf(Stack) == @alignOf(usize));
+}
+
 pub fn init(allocator: std.mem.Allocator) !Stack {
     const data: *[CAPACITY]u256 = try allocator.create([CAPACITY]u256);
     errdefer allocator.destroy(data);
