@@ -606,7 +606,6 @@ pub fn build(b: *std.Build) void {
     const build_evm_runner_small_step = b.step("build-evm-runner-small", "Build the EVM benchmark runner (ReleaseSmall)");
     build_evm_runner_small_step.dependOn(&b.addInstallArtifact(evm_runner_small_exe, .{}).step);
 
-
     // Debug EVM Runner
     const debug_runner_exe = b.addExecutable(.{
         .name = "debug-runner",
