@@ -37,4 +37,20 @@ pub const EvmConfig = struct {
         else
             @compileError("max_call_depth too large");
     }
+
+    /// Predefined configuration optimized for performance
+    /// Uses advanced planner strategy for maximum optimization
+    pub fn optimizeFast() EvmConfig {
+        return EvmConfig{
+            .planner_strategy = .advanced,
+        };
+    }
+
+    /// Predefined configuration optimized for binary size
+    /// Uses minimal planner strategy to reduce executable size
+    pub fn optimizeSmall() EvmConfig {
+        return EvmConfig{
+            .planner_strategy = .minimal,
+        };
+    }
 };

@@ -1689,6 +1689,254 @@ pub fn Frame(comptime config: FrameConfig) type {
             try self.stack.push(blob_base_fee);
         }
 
+        // ========== LOG opcodes (0xA0-0xA4) ==========
+        
+        /// LOG0 opcode (0xA0) - Emit log with no topics
+        /// Emits a log event with data but no topics.
+        /// Stack: [offset, length] → []
+        pub fn op_log0(self: *Self) Error!void {
+            // Check if we're in static context
+            if (self.is_static) {
+                return Error.WriteProtection;
+            }
+
+            const length = try self.stack.pop();
+            const offset = try self.stack.pop();
+
+            // Calculate gas cost: 375 + 8 * data_size + memory_expansion_cost
+            const data_size = @as(usize, @intCast(length));
+            const gas_cost = 375 + 8 * data_size;
+            
+            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+
+            // Get data from memory
+            if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
+            
+            // Create log entry
+            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = self.allocator.alloc(u256, 0) catch return Error.AllocationError;
+            
+            const log_entry = Log{
+                .address = self.contract_address,
+                .topics = topics_array,
+                .data = data_copy,
+            };
+            
+            self.logs.append(log_entry) catch {
+                self.allocator.free(data_copy);
+                self.allocator.free(topics_array);
+                return Error.AllocationError;
+            };
+        }
+
+        /// LOG1 opcode (0xA1) - Emit log with one topic
+        /// Emits a log event with data and one topic.
+        /// Stack: [offset, length, topic1] → []
+        pub fn op_log1(self: *Self) Error!void {
+            if (self.is_static) {
+                return Error.WriteProtection;
+            }
+
+            const topic1 = try self.stack.pop();
+            const length = try self.stack.pop();
+            const offset = try self.stack.pop();
+
+            // Calculate gas cost: 375 + 375*1 + 8 * data_size
+            const data_size = @as(usize, @intCast(length));
+            const gas_cost = 375 + 375 + 8 * data_size;
+            
+            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+
+            // Get data from memory
+            if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
+            
+            // Create log entry
+            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = self.allocator.alloc(u256, 1) catch {
+                self.allocator.free(data_copy);
+                return Error.AllocationError;
+            };
+            topics_array[0] = topic1;
+            
+            const log_entry = Log{
+                .address = self.contract_address,
+                .topics = topics_array,
+                .data = data_copy,
+            };
+            
+            self.logs.append(log_entry) catch {
+                self.allocator.free(data_copy);
+                self.allocator.free(topics_array);
+                return Error.AllocationError;
+            };
+        }
+
+        /// LOG2 opcode (0xA2) - Emit log with two topics
+        /// Stack: [offset, length, topic1, topic2] → []
+        pub fn op_log2(self: *Self) Error!void {
+            if (self.is_static) {
+                return Error.WriteProtection;
+            }
+
+            const topic2 = try self.stack.pop();
+            const topic1 = try self.stack.pop();
+            const length = try self.stack.pop();
+            const offset = try self.stack.pop();
+
+            const data_size = @as(usize, @intCast(length));
+            const gas_cost = 375 + 375 * 2 + 8 * data_size;
+            
+            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+
+            if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
+            
+            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = self.allocator.alloc(u256, 2) catch {
+                self.allocator.free(data_copy);
+                return Error.AllocationError;
+            };
+            topics_array[0] = topic1;
+            topics_array[1] = topic2;
+            
+            const log_entry = Log{
+                .address = self.contract_address,
+                .topics = topics_array,
+                .data = data_copy,
+            };
+            
+            self.logs.append(log_entry) catch {
+                self.allocator.free(data_copy);
+                self.allocator.free(topics_array);
+                return Error.AllocationError;
+            };
+        }
+
+        /// LOG3 opcode (0xA3) - Emit log with three topics
+        /// Stack: [offset, length, topic1, topic2, topic3] → []
+        pub fn op_log3(self: *Self) Error!void {
+            if (self.is_static) {
+                return Error.WriteProtection;
+            }
+
+            const topic3 = try self.stack.pop();
+            const topic2 = try self.stack.pop();
+            const topic1 = try self.stack.pop();
+            const length = try self.stack.pop();
+            const offset = try self.stack.pop();
+
+            const data_size = @as(usize, @intCast(length));
+            const gas_cost = 375 + 375 * 3 + 8 * data_size;
+            
+            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+
+            if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
+            
+            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = self.allocator.alloc(u256, 3) catch {
+                self.allocator.free(data_copy);
+                return Error.AllocationError;
+            };
+            topics_array[0] = topic1;
+            topics_array[1] = topic2;
+            topics_array[2] = topic3;
+            
+            const log_entry = Log{
+                .address = self.contract_address,
+                .topics = topics_array,
+                .data = data_copy,
+            };
+            
+            self.logs.append(log_entry) catch {
+                self.allocator.free(data_copy);
+                self.allocator.free(topics_array);
+                return Error.AllocationError;
+            };
+        }
+
+        /// LOG4 opcode (0xA4) - Emit log with four topics
+        /// Stack: [offset, length, topic1, topic2, topic3, topic4] → []
+        pub fn op_log4(self: *Self) Error!void {
+            if (self.is_static) {
+                return Error.WriteProtection;
+            }
+
+            const topic4 = try self.stack.pop();
+            const topic3 = try self.stack.pop();
+            const topic2 = try self.stack.pop();
+            const topic1 = try self.stack.pop();
+            const length = try self.stack.pop();
+            const offset = try self.stack.pop();
+
+            const data_size = @as(usize, @intCast(length));
+            const gas_cost = 375 + 375 * 4 + 8 * data_size;
+            
+            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+
+            if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
+            
+            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = self.allocator.alloc(u256, 4) catch {
+                self.allocator.free(data_copy);
+                return Error.AllocationError;
+            };
+            topics_array[0] = topic1;
+            topics_array[1] = topic2;
+            topics_array[2] = topic3;
+            topics_array[3] = topic4;
+            
+            const log_entry = Log{
+                .address = self.contract_address,
+                .topics = topics_array,
+                .data = data_copy,
+            };
+            
+            self.logs.append(log_entry) catch {
+                self.allocator.free(data_copy);
+                self.allocator.free(topics_array);
+                return Error.AllocationError;
+            };
+        }
+
         // ========== COMPREHENSIVE ETHEREUM TESTS INTEGRATION ==========
         // Based on official Ethereum tests: https://github.com/ethereum/tests
         // These tests follow the patterns from VMTests, GeneralStateTests, etc.
@@ -7108,4 +7356,780 @@ test "Frame SIMD integration with other operations" {
     // Should have a valid value
     const loaded_val = frame.stack.pop_unsafe();
     try std.testing.expect(loaded_val > 0);
+}
+
+test "Frame LOG0 opcode - emit log with no topics" {
+    const allocator = std.testing.allocator;
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try Frame(.{}).init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    // Set contract address for the log
+    frame.contract_address = [_]u8{0x12} ++ [_]u8{0} ** 19;
+    
+    // Setup memory with log data
+    const log_data = "Hello, LOG0!";
+    try frame.memory.set_data(0, log_data);
+    
+    // Push offset and length for LOG0
+    try frame.stack.push(0);  // offset
+    try frame.stack.push(@intCast(log_data.len));  // length
+    
+    // Execute LOG0
+    try frame.op_log0();
+    
+    // Verify log was emitted
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    const emitted_log = frame.logs.items[0];
+    try std.testing.expectEqual(frame.contract_address, emitted_log.address);
+    try std.testing.expectEqual(@as(usize, 0), emitted_log.topics.len);
+    try std.testing.expectEqualSlices(u8, log_data, emitted_log.data);
+}
+
+test "Frame LOG1 opcode - emit log with one topic" {
+    const allocator = std.testing.allocator;
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try Frame(.{}).init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    frame.contract_address = [_]u8{0x34} ++ [_]u8{0} ** 19;
+    
+    // Setup memory with log data
+    const log_data = "LOG1 test data";
+    try frame.memory.set_data(0, log_data);
+    
+    // Push topic, offset and length
+    try frame.stack.push(0);  // offset
+    try frame.stack.push(@intCast(log_data.len));  // length
+    try frame.stack.push(0xDEADBEEF);  // topic1
+    
+    // Execute LOG1
+    try frame.op_log1();
+    
+    // Verify log
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    const emitted_log = frame.logs.items[0];
+    try std.testing.expectEqual(frame.contract_address, emitted_log.address);
+    try std.testing.expectEqual(@as(usize, 1), emitted_log.topics.len);
+    try std.testing.expectEqual(@as(u256, 0xDEADBEEF), emitted_log.topics[0]);
+    try std.testing.expectEqualSlices(u8, log_data, emitted_log.data);
+}
+
+test "Frame LOG4 opcode - emit log with four topics" {
+    const allocator = std.testing.allocator;
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try Frame(.{}).init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    frame.contract_address = [_]u8{0x56} ++ [_]u8{0} ** 19;
+    
+    // Setup memory
+    const log_data = "LOG4 data";
+    try frame.memory.set_data(0, log_data);
+    
+    // Push offset, length and 4 topics
+    try frame.stack.push(0);  // offset
+    try frame.stack.push(@intCast(log_data.len));  // length
+    try frame.stack.push(0x1111);  // topic1
+    try frame.stack.push(0x2222);  // topic2
+    try frame.stack.push(0x3333);  // topic3
+    try frame.stack.push(0x4444);  // topic4
+    
+    // Execute LOG4
+    try frame.op_log4();
+    
+    // Verify
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    const emitted_log = frame.logs.items[0];
+    try std.testing.expectEqual(@as(usize, 4), emitted_log.topics.len);
+    try std.testing.expectEqual(@as(u256, 0x1111), emitted_log.topics[0]);
+    try std.testing.expectEqual(@as(u256, 0x2222), emitted_log.topics[1]);
+    try std.testing.expectEqual(@as(u256, 0x3333), emitted_log.topics[2]);
+    try std.testing.expectEqual(@as(u256, 0x4444), emitted_log.topics[3]);
+}
+
+test "Frame LOG opcodes - gas consumption" {
+    const allocator = std.testing.allocator;
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try Frame(.{}).init(allocator, &bytecode, 10000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    // Setup small log data
+    const log_data = "test";
+    try frame.memory.set_data(0, log_data);
+    
+    // Test LOG0 gas consumption
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0);
+    try frame.stack.push(4);
+    try frame.op_log0();
+    
+    // LOG0 base cost is 375 + 8 * 4 = 407
+    const expected_gas = 375 + 8 * 4;
+    try std.testing.expectEqual(initial_gas - expected_gas, frame.gas_remaining);
+}
+
+test "Frame LOG opcodes - static context check" {
+    const allocator = std.testing.allocator;
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try Frame(.{}).init(allocator, &bytecode, 10000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    // Set frame to static context
+    frame.is_static = true;
+    
+    // Try to execute LOG0 in static context
+    try frame.stack.push(0);
+    try frame.stack.push(0);
+    
+    // Should fail with WriteProtection error
+    try std.testing.expectError(Frame(.{}).Error.WriteProtection, frame.op_log0());
+}
+
+test "Memory expansion gas costs - MLOAD operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{ 0x51, 0x00 }; // MLOAD STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test 1: MLOAD at offset 0 - first memory expansion to 32 bytes
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0); // offset
+    try frame.mload();
+    const gas_used_first = initial_gas - frame.gas_remaining;
+    
+    // MLOAD base cost (3 gas) + memory expansion cost for 32 bytes
+    // Memory cost = (memory_size_word^2) / 512 + (3 * memory_size_word)
+    // For 32 bytes = 1 word: cost = 1^2/512 + 3*1 = 0 + 3 = 3
+    const expected_first = GasConstants.GasVeryLow + 3; // 3 + 3 = 6 gas
+    try std.testing.expectEqual(expected_first, gas_used_first);
+
+    // Test 2: MLOAD at offset 32 - expand to 64 bytes (2 words)
+    const gas_before_second = frame.gas_remaining;
+    try frame.stack.push(32); // offset
+    try frame.mload();
+    const gas_used_second = gas_before_second - frame.gas_remaining;
+    
+    // Additional memory cost from 1 word to 2 words
+    // New cost = 2^2/512 + 3*2 = 4/512 + 6 = 0 + 6 = 6
+    // Previous cost = 3, so additional cost = 6 - 3 = 3
+    const expected_second = GasConstants.GasVeryLow + 3; // 3 + 3 = 6 gas
+    try std.testing.expectEqual(expected_second, gas_used_second);
+
+    // Test 3: MLOAD at offset 1024 - expand to 1056 bytes (33 words)
+    const gas_before_large = frame.gas_remaining;
+    try frame.stack.push(1024); // offset
+    try frame.mload();
+    const gas_used_large = gas_before_large - frame.gas_remaining;
+    
+    // Memory expansion from 2 words to 33 words
+    // New cost = 33^2/512 + 3*33 = 1089/512 + 99 = 2.12... + 99 = 101
+    // Previous cost = 6, so additional cost = 101 - 6 = 95
+    const expected_large = GasConstants.GasVeryLow + 95; // 3 + 95 = 98 gas
+    try std.testing.expectEqual(expected_large, gas_used_large);
+}
+
+test "Memory expansion gas costs - MSTORE operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{ 0x52, 0x00 }; // MSTORE STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test 1: MSTORE at offset 0 - first memory expansion
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0xDEADBEEF); // value
+    try frame.stack.push(0); // offset
+    try frame.mstore();
+    const gas_used_first = initial_gas - frame.gas_remaining;
+    
+    // MSTORE base cost (3 gas) + memory expansion cost
+    const expected_first = GasConstants.GasVeryLow + 3; // 3 + 3 = 6 gas
+    try std.testing.expectEqual(expected_first, gas_used_first);
+
+    // Test 2: MSTORE8 at various offsets to test single-byte expansion
+    const gas_before_byte = frame.gas_remaining;
+    try frame.stack.push(0xFF); // value
+    try frame.stack.push(64); // offset - expand to 96 bytes (3 words)
+    try frame.mstore8();
+    const gas_used_byte = gas_before_byte - frame.gas_remaining;
+    
+    // Additional memory cost from 1 word to 3 words
+    // New cost = 3^2/512 + 3*3 = 9/512 + 9 = 0 + 9 = 9
+    // Previous cost = 3, so additional cost = 9 - 3 = 6
+    const expected_byte = GasConstants.GasVeryLow + 6; // 3 + 6 = 9 gas
+    try std.testing.expectEqual(expected_byte, gas_used_byte);
+}
+
+test "Memory expansion gas costs - MCOPY operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{ 0x5E, 0x00 }; // MCOPY STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // First set up some initial memory
+    try frame.stack.push(0xABCDEF);
+    try frame.stack.push(0);
+    try frame.mstore();
+    
+    // Test MCOPY with memory expansion
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(32); // length
+    try frame.stack.push(0);  // source
+    try frame.stack.push(64); // destination - expands to 96 bytes
+    try frame.mcopy();
+    const gas_used = initial_gas - frame.gas_remaining;
+    
+    // MCOPY base cost (3 gas) + dynamic cost (3 per word) + expansion cost
+    // Dynamic cost = 3 * ceil(32/32) = 3 * 1 = 3
+    // Memory expansion from 32 to 96 bytes (1 to 3 words)
+    // New cost = 3^2/512 + 3*3 = 9/512 + 9 = 0 + 9 = 9
+    // Previous cost = 3, so additional cost = 9 - 3 = 6
+    const expected = GasConstants.GasVeryLow + 3 + 6; // 3 + 3 + 6 = 12 gas
+    try std.testing.expectEqual(expected, gas_used);
+}
+
+test "Memory expansion gas costs - CALLDATACOPY operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{ 0x37, 0x00 }; // CALLDATACOPY STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test CALLDATACOPY with memory expansion
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(32); // length
+    try frame.stack.push(0);  // calldata offset
+    try frame.stack.push(0);  // memory offset - first expansion
+    try frame.calldatacopy();
+    const gas_used = initial_gas - frame.gas_remaining;
+    
+    // CALLDATACOPY base cost (3 gas) + dynamic cost (3 per word) + expansion
+    // Dynamic cost = 3 * ceil(32/32) = 3 * 1 = 3
+    // Memory expansion to 32 bytes = 3 gas
+    const expected = GasConstants.GasVeryLow + 3 + 3; // 3 + 3 + 3 = 9 gas
+    try std.testing.expectEqual(expected, gas_used);
+}
+
+test "Memory expansion gas costs - CODECOPY operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{ 0x39, 0x00 }; // CODECOPY STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test CODECOPY with memory expansion
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(2);  // length - copy 2 bytes of bytecode
+    try frame.stack.push(0);  // code offset
+    try frame.stack.push(0);  // memory offset
+    try frame.codecopy();
+    const gas_used = initial_gas - frame.gas_remaining;
+    
+    // CODECOPY base cost (3 gas) + dynamic cost (3 per word) + expansion
+    // Dynamic cost = 3 * ceil(2/32) = 3 * 1 = 3
+    // Memory expansion to 32 bytes = 3 gas
+    const expected = GasConstants.GasVeryLow + 3 + 3; // 3 + 3 + 3 = 9 gas
+    try std.testing.expectEqual(expected, gas_used);
+}
+
+test "Memory expansion gas costs - Large memory operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{ 0x51, 0x00 }; // MLOAD STOP
+    var frame = try F.init(allocator, &bytecode, 10000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test very large memory access to verify quadratic gas cost
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(10000); // offset - large memory access
+    try frame.mload();
+    const gas_used = initial_gas - frame.gas_remaining;
+    
+    // Memory size = 10032 bytes = 314 words (rounded up)
+    // Memory cost = 314^2/512 + 3*314 = 98596/512 + 942 = 192.57... + 942 = 1134
+    const expected_minimum = GasConstants.GasVeryLow + 1000; // At least 1003 gas
+    try std.testing.expect(gas_used >= expected_minimum);
+    
+    // Verify the cost increases quadratically for even larger access
+    const gas_before_larger = frame.gas_remaining;
+    try frame.stack.push(50000); // Much larger offset
+    try frame.mload();
+    const gas_used_larger = gas_before_larger - frame.gas_remaining;
+    
+    // This should cost significantly more due to quadratic nature
+    try std.testing.expect(gas_used_larger > gas_used * 2);
+}
+
+test "SSTORE gas costs and refunds - EIP-2200/3529" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0x55, 0x00 }; // SSTORE STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, null);
+    defer frame.deinit(allocator);
+    
+    const storage_key: u256 = 0x1234;
+    const test_address = Address.fromInt(0x1000);
+    
+    // Ensure account exists in database
+    _ = try db_interface.get_account(test_address);
+    
+    // Test 1: First write to zero (cold access) - EIP-2200
+    // SSTORE to zero slot should cost 22100 gas (20000 + 2100 cold access)
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0xABCD); // value
+    try frame.stack.push(storage_key); // key
+    frame.contract.address = test_address;
+    try frame.sstore();
+    const gas_used_first = initial_gas - frame.gas_remaining;
+    
+    // Cold SSTORE (first write): 22100 gas
+    const expected_cold_sstore = 22100;
+    try std.testing.expectEqual(expected_cold_sstore, gas_used_first);
+    
+    // Test 2: Update existing non-zero value (warm access)
+    // Should cost 5000 gas (warm access)
+    const gas_before_update = frame.gas_remaining;
+    try frame.stack.push(0xDEAD); // new value
+    try frame.stack.push(storage_key); // same key
+    try frame.sstore();
+    const gas_used_update = gas_before_update - frame.gas_remaining;
+    
+    // Warm SSTORE (update): 5000 gas
+    const expected_warm_sstore = 5000;
+    try std.testing.expectEqual(expected_warm_sstore, gas_used_update);
+    
+    // Test 3: Set to zero (should provide refund) - EIP-3529
+    // Setting non-zero to zero provides refund
+    const gas_before_zero = frame.gas_remaining;
+    try frame.stack.push(0); // value = 0
+    try frame.stack.push(storage_key); // same key
+    try frame.sstore();
+    const gas_used_zero = gas_before_zero - frame.gas_remaining;
+    
+    // Setting to zero: 5000 gas, but refund should be provided
+    // The frame doesn't track refunds directly, but gas cost is still 5000
+    try std.testing.expectEqual(@as(u64, 5000), gas_used_zero);
+}
+
+test "SSTORE gas costs - Multiple slots and refund scenarios" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0x55, 0x00 }; // SSTORE STOP
+    var frame = try F.init(allocator, &bytecode, 200000, db_interface, null);
+    defer frame.deinit(allocator);
+    
+    const test_address = Address.fromInt(0x2000);
+    frame.contract.address = test_address;
+    
+    // Test multiple storage slots with different scenarios
+    
+    // Slot 1: Zero → Non-zero (new slot)
+    const initial_gas_1 = frame.gas_remaining;
+    try frame.stack.push(0x1111); // value
+    try frame.stack.push(0x01); // key
+    try frame.sstore();
+    const gas_used_1 = initial_gas_1 - frame.gas_remaining;
+    try std.testing.expectEqual(@as(u64, 22100), gas_used_1); // Cold SSTORE
+    
+    // Slot 2: Zero → Non-zero (another new slot)
+    const initial_gas_2 = frame.gas_remaining;
+    try frame.stack.push(0x2222); // value
+    try frame.stack.push(0x02); // key
+    try frame.sstore();
+    const gas_used_2 = initial_gas_2 - frame.gas_remaining;
+    try std.testing.expectEqual(@as(u64, 22100), gas_used_2); // Cold SSTORE
+    
+    // Slot 1: Non-zero → Different non-zero (warm access)
+    const initial_gas_3 = frame.gas_remaining;
+    try frame.stack.push(0x3333); // new value
+    try frame.stack.push(0x01); // same key as slot 1
+    try frame.sstore();
+    const gas_used_3 = initial_gas_3 - frame.gas_remaining;
+    try std.testing.expectEqual(@as(u64, 5000), gas_used_3); // Warm SSTORE
+    
+    // Slot 1: Non-zero → Zero (refund scenario)
+    const initial_gas_4 = frame.gas_remaining;
+    try frame.stack.push(0x0000); // value = 0
+    try frame.stack.push(0x01); // same key as slot 1
+    try frame.sstore();
+    const gas_used_4 = initial_gas_4 - frame.gas_remaining;
+    try std.testing.expectEqual(@as(u64, 5000), gas_used_4); // Warm SSTORE
+}
+
+test "SLOAD warm/cold gas costs - EIP-2929/2930" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0x54, 0x00 }; // SLOAD STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, null);
+    defer frame.deinit(allocator);
+    
+    const storage_key: u256 = 0xABCD;
+    const test_address = Address.fromInt(0x3000);
+    frame.contract.address = test_address;
+    
+    // First set up a value in storage using SSTORE
+    try frame.stack.push(0xDEADBEEF); // value
+    try frame.stack.push(storage_key); // key
+    try frame.sstore();
+    
+    // Test 1: Cold SLOAD - first access to this storage slot
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(storage_key); // key
+    try frame.sload();
+    const value_loaded = try frame.stack.pop();
+    const gas_used_cold = initial_gas - frame.gas_remaining;
+    
+    // Verify the correct value was loaded
+    try std.testing.expectEqual(@as(u256, 0xDEADBEEF), value_loaded);
+    
+    // Cold SLOAD should cost 2100 gas
+    const expected_cold_sload = 2100;
+    try std.testing.expectEqual(expected_cold_sload, gas_used_cold);
+    
+    // Test 2: Warm SLOAD - subsequent access to same storage slot
+    const gas_before_warm = frame.gas_remaining;
+    try frame.stack.push(storage_key); // same key
+    try frame.sload();
+    const value_loaded_warm = try frame.stack.pop();
+    const gas_used_warm = gas_before_warm - frame.gas_remaining;
+    
+    // Verify the correct value was loaded again
+    try std.testing.expectEqual(@as(u256, 0xDEADBEEF), value_loaded_warm);
+    
+    // Warm SLOAD should cost 100 gas
+    const expected_warm_sload = 100;
+    try std.testing.expectEqual(expected_warm_sload, gas_used_warm);
+    
+    // Test 3: Cold access to different storage slot
+    const different_key: u256 = 0x9999;
+    const gas_before_different = frame.gas_remaining;
+    try frame.stack.push(different_key); // different key
+    try frame.sload();
+    const value_different = try frame.stack.pop();
+    const gas_used_different = gas_before_different - frame.gas_remaining;
+    
+    // Should load zero (default value)
+    try std.testing.expectEqual(@as(u256, 0), value_different);
+    
+    // Different slot should be cold again: 2100 gas
+    try std.testing.expectEqual(@as(u64, 2100), gas_used_different);
+}
+
+test "SLOAD/SSTORE interaction - Access list warming" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0x54, 0x55, 0x00 }; // SLOAD SSTORE STOP
+    var frame = try F.init(allocator, &bytecode, 200000, db_interface, null);
+    defer frame.deinit(allocator);
+    
+    const storage_key: u256 = 0xCAFE;
+    const test_address = Address.fromInt(0x4000);
+    frame.contract.address = test_address;
+    
+    // Test: SLOAD makes storage slot warm for subsequent SSTORE
+    
+    // First SLOAD (cold)
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(storage_key);
+    try frame.sload();
+    _ = try frame.stack.pop(); // consume loaded value
+    const gas_used_sload = initial_gas - frame.gas_remaining;
+    try std.testing.expectEqual(@as(u64, 2100), gas_used_sload); // Cold SLOAD
+    
+    // SSTORE to same slot (should be warm now)
+    const gas_before_sstore = frame.gas_remaining;
+    try frame.stack.push(0xBEEF); // value
+    try frame.stack.push(storage_key); // same key
+    try frame.sstore();
+    const gas_used_sstore = gas_before_sstore - frame.gas_remaining;
+    
+    // Should cost less than cold SSTORE because slot is warm
+    // For zero→non-zero but warm access: still high cost due to storage creation
+    // But for non-zero→different non-zero warm: 5000 gas
+    // Since we're writing to a previously zero slot, it's still 22100 - 2100 = 20000 base + warm cost
+    // The exact gas calculation depends on the EVM implementation details
+    try std.testing.expect(gas_used_sstore > 5000); // More than warm update
+    try std.testing.expect(gas_used_sstore < 22100); // Less than cold new slot
+}
+
+test "CALL value stipend gas costs" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const caller_addr = Address.fromInt(0x1000);
+    const target_addr = Address.fromInt(0x2000);
+    frame.contract.address = caller_addr;
+    
+    // Test 1: CALL with value transfer (should add 2300 gas stipend to sub-call)
+    // Base CALL cost + cold account access + value transfer cost
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(1000); // value (non-zero)
+    try frame.stack.push(@intFromEnum(target_addr)); // address
+    try frame.stack.push(50000); // gas
+    try frame.call();
+    const gas_used_with_value = initial_gas - frame.gas_remaining;
+    
+    // CALL with value: base cost + cold account access + value transfer
+    // Base: 700 gas, Cold account: 2600 gas, Value transfer: 9000 gas
+    // Total expected: 700 + 2600 + 9000 = 12300 gas (plus the gas allocated to the call)
+    try std.testing.expect(gas_used_with_value >= 12300);
+    
+    // Test 2: CALL without value (no stipend)
+    const gas_before_no_value = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(0); // value (zero)
+    try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
+    try frame.stack.push(50000); // gas
+    try frame.call();
+    const gas_used_no_value = gas_before_no_value - frame.gas_remaining;
+    
+    // CALL without value to warm address: base cost + warm account access
+    // Base: 700 gas, Warm account: 100 gas
+    // Total expected: 700 + 100 = 800 gas
+    try std.testing.expect(gas_used_no_value >= 800);
+    try std.testing.expect(gas_used_no_value < gas_used_with_value); // Should be much less
+}
+
+test "CALL cold account access penalties - EIP-2929" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
+    var frame = try F.init(allocator, &bytecode, 200000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const caller_addr = Address.fromInt(0x5000);
+    const cold_addr = Address.fromInt(0x6000);
+    const another_cold_addr = Address.fromInt(0x7000);
+    frame.contract.address = caller_addr;
+    
+    // Test 1: First CALL to cold account
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(0); // value
+    try frame.stack.push(@intFromEnum(cold_addr)); // cold address
+    try frame.stack.push(30000); // gas
+    try frame.call();
+    const gas_used_cold = initial_gas - frame.gas_remaining;
+    
+    // Cold account access: 700 (base) + 2600 (cold) = 3300 gas + forwarded gas
+    try std.testing.expect(gas_used_cold >= 3300);
+    
+    // Test 2: Second CALL to same account (now warm)
+    const gas_before_warm = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(0); // value
+    try frame.stack.push(@intFromEnum(cold_addr)); // same address (now warm)
+    try frame.stack.push(30000); // gas
+    try frame.call();
+    const gas_used_warm = gas_before_warm - frame.gas_remaining;
+    
+    // Warm account access: 700 (base) + 100 (warm) = 800 gas + forwarded gas
+    try std.testing.expect(gas_used_warm >= 800);
+    try std.testing.expect(gas_used_warm < gas_used_cold); // Should be less than cold
+    
+    // Test 3: CALL to different cold account
+    const gas_before_another_cold = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(0); // value
+    try frame.stack.push(@intFromEnum(another_cold_addr)); // different cold address
+    try frame.stack.push(30000); // gas
+    try frame.call();
+    const gas_used_another_cold = gas_before_another_cold - frame.gas_remaining;
+    
+    // Should cost the same as first cold access
+    try std.testing.expect(gas_used_another_cold >= 3300);
+    // Both cold accesses should cost more than warm access
+    try std.testing.expect(gas_used_another_cold > gas_used_warm);
+}
+
+test "DELEGATECALL and STATICCALL gas costs" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0xF4, 0xFA, 0x00 }; // DELEGATECALL STATICCALL STOP
+    var frame = try F.init(allocator, &bytecode, 200000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const caller_addr = Address.fromInt(0x8000);
+    const target_addr = Address.fromInt(0x9000);
+    frame.contract.address = caller_addr;
+    
+    // Test 1: DELEGATECALL (no value transfer, different gas model)
+    const initial_gas = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(@intFromEnum(target_addr)); // address
+    try frame.stack.push(50000); // gas
+    try frame.delegatecall();
+    const gas_used_delegatecall = initial_gas - frame.gas_remaining;
+    
+    // DELEGATECALL: base cost + cold account access (no value transfer cost)
+    // Base: 700 gas, Cold account: 2600 gas = 3300 total
+    try std.testing.expect(gas_used_delegatecall >= 3300);
+    
+    // Test 2: STATICCALL (no value, guaranteed read-only)
+    const gas_before_static = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
+    try frame.stack.push(50000); // gas
+    try frame.staticcall();
+    const gas_used_staticcall = gas_before_static - frame.gas_remaining;
+    
+    // STATICCALL to warm address: base cost + warm account access
+    // Base: 700 gas, Warm account: 100 gas = 800 total
+    try std.testing.expect(gas_used_staticcall >= 800);
+    try std.testing.expect(gas_used_staticcall < gas_used_delegatecall); // Should be less due to warm access
+}
+
+test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{ 0xF1, 0x54, 0x55, 0x00 }; // CALL SLOAD SSTORE STOP
+    var frame = try F.init(allocator, &bytecode, 300000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const caller_addr = Address.fromInt(0xA000);
+    const target_addr = Address.fromInt(0xB000);
+    const storage_key: u256 = 0xCCCC;
+    frame.contract.address = caller_addr;
+    
+    // Simulate access list pre-warming by making initial accesses
+    // In a real EVM, the access list would be pre-populated in the transaction
+    
+    // Pre-warm the target address with a CALL
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(0); // value
+    try frame.stack.push(@intFromEnum(target_addr)); // address
+    try frame.stack.push(30000); // gas
+    try frame.call();
+    
+    // Pre-warm storage slot with SLOAD
+    try frame.stack.push(storage_key);
+    try frame.sload();
+    _ = try frame.stack.pop(); // consume value
+    
+    // Now test that subsequent accesses use warm gas costs
+    
+    // Test 1: Second CALL to pre-warmed address
+    const gas_before_warm_call = frame.gas_remaining;
+    try frame.stack.push(0); // retSize
+    try frame.stack.push(0); // retOffset
+    try frame.stack.push(0); // argsSize
+    try frame.stack.push(0); // argsOffset
+    try frame.stack.push(0); // value
+    try frame.stack.push(@intFromEnum(target_addr)); // pre-warmed address
+    try frame.stack.push(30000); // gas
+    try frame.call();
+    const gas_used_warm_call = gas_before_warm_call - frame.gas_remaining;
+    
+    // Should use warm access cost: 700 + 100 = 800
+    try std.testing.expect(gas_used_warm_call >= 800);
+    try std.testing.expect(gas_used_warm_call < 3300); // Less than cold access
+    
+    // Test 2: SLOAD from pre-warmed storage slot
+    const gas_before_warm_sload = frame.gas_remaining;
+    try frame.stack.push(storage_key); // pre-warmed slot
+    try frame.sload();
+    _ = try frame.stack.pop();
+    const gas_used_warm_sload = gas_before_warm_sload - frame.gas_remaining;
+    
+    // Should use warm SLOAD cost: 100 gas
+    try std.testing.expectEqual(@as(u64, 100), gas_used_warm_sload);
+    
+    // Test 3: SSTORE to pre-warmed storage slot
+    const gas_before_warm_sstore = frame.gas_remaining;
+    try frame.stack.push(0xFFFF); // value
+    try frame.stack.push(storage_key); // pre-warmed slot
+    try frame.sstore();
+    const gas_used_warm_sstore = gas_before_warm_sstore - frame.gas_remaining;
+    
+    // Since slot was accessed (but likely zero), this is zero→non-zero but warm
+    // The gas cost depends on the EVM's implementation of warm vs cold for SSTORE
+    try std.testing.expect(gas_used_warm_sstore >= 5000); // At least warm SSTORE cost
 }

@@ -3,6 +3,7 @@ pub const CallResult = struct {
     success: bool,
     gas_left: u64,
     output: []const u8,
+    logs: []const Log = &.{},
     
     /// Create a successful call result
     pub fn success_with_output(gas_left: u64, output: []const u8) CallResult {
@@ -10,6 +11,7 @@ pub const CallResult = struct {
             .success = true,
             .gas_left = gas_left,
             .output = output,
+            .logs = &.{},
         };
     }
     
@@ -19,6 +21,7 @@ pub const CallResult = struct {
             .success = true,
             .gas_left = gas_left,
             .output = &[_]u8{},
+            .logs = &.{},
         };
     }
     
@@ -28,6 +31,7 @@ pub const CallResult = struct {
             .success = false,
             .gas_left = gas_left,
             .output = &[_]u8{},
+            .logs = &.{},
         };
     }
     
@@ -37,6 +41,17 @@ pub const CallResult = struct {
             .success = false,
             .gas_left = gas_left,
             .output = revert_data,
+            .logs = &.{},
+        };
+    }
+    
+    /// Create a successful call result with output and logs
+    pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) CallResult {
+        return CallResult{
+            .success = true,
+            .gas_left = gas_left,
+            .output = output,
+            .logs = logs,
         };
     }
     
@@ -63,6 +78,15 @@ pub const CallResult = struct {
 };
 
 const std = @import("std");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
+
+/// Log entry structure for EVM events
+pub const Log = struct {
+    address: Address,
+    topics: []const u256,
+    data: []const u8,
+};
 
 test "call result success creation" {
     const output_data = &[_]u8{ 0x01, 0x02, 0x03, 0x04 };

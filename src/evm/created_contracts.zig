@@ -189,8 +189,10 @@ test "created contracts large number of addresses" {
     // Add 1000 unique addresses
     const count = 1000;
     for (0..count) |i| {
-        const addr_bytes = std.mem.toBytes(@as(u160, i));
-        const addr: Address = addr_bytes;
+        var addr: Address = [_]u8{0} ** 20;
+        const i_bytes = std.mem.toBytes(@as(u160, i));
+        // Copy the lower 20 bytes to address
+        @memcpy(addr[0..20], i_bytes[0..20]);
         try created.mark_created(addr);
     }
     
@@ -198,13 +200,15 @@ test "created contracts large number of addresses" {
     
     // Verify all addresses are tracked
     for (0..count) |i| {
-        const addr_bytes = std.mem.toBytes(@as(u160, i));
-        const addr: Address = addr_bytes;
+        var addr: Address = [_]u8{0} ** 20;
+        const i_bytes = std.mem.toBytes(@as(u160, i));
+        @memcpy(addr[0..20], i_bytes[0..20]);
         try std.testing.expect(created.was_created_in_tx(addr));
     }
     
     // Verify an address not added is not found
-    const not_added_bytes = std.mem.toBytes(@as(u160, count));
-    const not_added: Address = not_added_bytes;
+    var not_added: Address = [_]u8{0} ** 20;
+    const count_bytes = std.mem.toBytes(@as(u160, count));
+    @memcpy(not_added[0..20], count_bytes[0..20]);
     try std.testing.expect(!created.was_created_in_tx(not_added));
 }

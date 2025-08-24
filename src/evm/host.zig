@@ -124,12 +124,23 @@ pub const Host = struct {
 
             fn vtable_create_snapshot(ptr: *anyopaque) u32 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.create_snapshot();
+                // The implementation returns u8 or u16, but the interface uses u32
+                // This is safe as snapshot IDs start from 0 and increment
+                return @as(u32, self.create_snapshot());
             }
 
             fn vtable_revert_to_snapshot(ptr: *anyopaque, snapshot_id: u32) void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.revert_to_snapshot(snapshot_id);
+                // Cast down to the implementation's snapshot ID type
+                // The EVM uses either u8 or u16 depending on max_call_depth
+                // This cast is safe as snapshot IDs are sequential from 0
+                if (@hasDecl(@typeInfo(Impl).pointer.child, "Journal")) {
+                    const SnapshotIdType = @typeInfo(Impl).pointer.child.Journal.SnapshotIdType;
+                    return self.revert_to_snapshot(@as(SnapshotIdType, @intCast(snapshot_id)));
+                } else {
+                    // Fallback for implementations without Journal type
+                    return self.revert_to_snapshot(@as(u16, @intCast(snapshot_id)));
+                }
             }
 
             fn vtable_record_storage_change(ptr: *anyopaque, address: Address, slot: u256, original_value: u256) anyerror!void {

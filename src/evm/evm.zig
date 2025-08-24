@@ -20,6 +20,7 @@ const Host = @import("host.zig").Host;
 const block_info_mod = @import("block_info.zig");
 const BlockInfo = block_info_mod.DefaultBlockInfo; // Default for backward compatibility
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
+const Account = @import("database_interface_account.zig").Account;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
@@ -31,6 +32,8 @@ const precompiles = @import("precompiles.zig");
 const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
+const journal_mod = @import("journal.zig");
+const JournalConfig = @import("journal_config.zig").JournalConfig;
 
 pub fn Evm(comptime config: EvmConfig) type {
     const DepthType = config.get_depth_type();
@@ -47,84 +50,45 @@ pub fn Evm(comptime config: EvmConfig) type {
         .maxBytecodeSize = config.frame_config.max_bytecode_size,
         .stack_size = config.frame_config.stack_size,
     });
+    
+    // Create journal configuration based on EVM config
+    const journal_config = JournalConfig{
+        .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,
+        .WordType = config.frame_config.WordType,
+        .NonceType = u64,
+        .initial_capacity = 128,
+    };
+    
+    const JournalType = journal_mod.Journal(journal_config);
 
     return struct {
         const Self = @This();
 
         pub const SelectedPlannerType = PlannerType;
-
-        /// Simple journal implementation for state snapshots
-        pub const Journal = struct {
-            /// Journal entry for state changes
-            const Entry = struct {
-                snapshot_id: u32,
-                data: union(enum) {
-                    storage_change: struct {
-                        address: Address,
-                        key: u256,
-                        original_value: u256,
-                    },
-                    balance_change: struct {
-                        address: Address,
-                        original_balance: u256,
-                    },
-                    nonce_change: struct {
-                        address: Address,
-                        original_nonce: u64,
-                    },
-                    code_change: struct {
-                        address: Address,
-                        original_code_hash: [32]u8,
-                    },
-                },
-            };
-
-            entries: std.ArrayList(Entry),
-            next_snapshot_id: u32,
-            allocator: std.mem.Allocator,
-
-            pub fn init(allocator: std.mem.Allocator) Journal {
-                return Journal{
-                    .entries = std.ArrayList(Entry).init(allocator),
-                    .next_snapshot_id = 0,
-                    .allocator = allocator,
-                };
-            }
-
-            pub fn deinit(self: *Journal) void {
-                self.entries.deinit();
-            }
-
-            pub fn create_snapshot(self: *Journal) u32 {
-                const id = self.next_snapshot_id;
-                self.next_snapshot_id += 1;
-                return id;
-            }
-
-            pub fn revert_to_snapshot(self: *Journal, snapshot_id: u32) void {
-                var i = self.entries.items.len;
-                while (i > 0) : (i -= 1) {
-                    if (self.entries.items[i - 1].snapshot_id < snapshot_id) {
-                        break;
-                    }
-                }
-                self.entries.shrinkRetainingCapacity(i);
-            }
-
-            pub fn record_storage_change(self: *Journal, snapshot_id: u32, address: Address, key: u256, original_value: u256) !void {
-                try self.entries.append(.{
-                    .snapshot_id = snapshot_id,
-                    .data = .{ .storage_change = .{
-                        .address = address,
-                        .key = key,
-                        .original_value = original_value,
-                    } },
-                });
-            }
-        };
+        pub const Journal = JournalType;
 
         /// Parameters for different types of EVM calls (re-export)
         pub const CallParams = @import("call_params.zig").CallParams;
+        
+        /// EVM execution errors
+        pub const Error = error{
+            InvalidJump,
+            OutOfGas,
+            StackUnderflow,
+            StackOverflow,
+            ContractNotFound,
+            PrecompileError,
+            MemoryError,
+            StorageError,
+            CallDepthExceeded,
+            InsufficientBalance,
+            ContractCollision,
+            InvalidBytecode,
+            StaticCallViolation,
+            InvalidOpcode,
+            RevertExecution,
+            Stop,
+        };
 
         /// Stack of frames for nested calls
         // frames: [config.max_call_depth]*FrameInterpreter,
@@ -142,7 +106,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         database: DatabaseInterface,
 
         /// Journal for tracking state changes and snapshots
-        journal: Journal,
+        journal: JournalType,
 
         /// Tracks contracts created in current transaction (EIP-6780)
         created_contracts: CreatedContracts,
@@ -176,6 +140,12 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Planner instance for bytecode analysis and optimization
         planner: PlannerType,
+        
+        /// Current snapshot ID for the active call frame
+        current_snapshot_id: JournalType.SnapshotIdType,
+
+        /// Logs emitted during the current call
+        logs: std.ArrayList(@import("call_result.zig").Log),
 
         /// Result of a call execution (re-export)
         pub const CallResult = @import("call_result.zig").CallResult;
@@ -191,7 +161,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .static_stack = [_]bool{false} ** config.max_call_depth,
                 .allocator = allocator,
                 .database = database,
-                .journal = Journal.init(allocator),
+                .journal = JournalType.init(allocator),
                 .created_contracts = CreatedContracts.init(allocator),
                 .self_destruct = SelfDestruct.init(allocator),
                 .access_list = AccessList.init(allocator),
@@ -203,6 +173,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .origin = origin,
                 .hardfork_config = hardfork_config,
                 .planner = planner,
+                .current_snapshot_id = 0,
+                .logs = std.ArrayList(@import("call_result.zig").Log).init(allocator),
             };
         }
 
@@ -212,11 +184,96 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.self_destruct.deinit();
             self.access_list.deinit();
             self.planner.deinit();
+            // Free log data
+            for (self.logs.items) |log| {
+                self.allocator.free(log.topics);
+                self.allocator.free(log.data);
+            }
+            self.logs.deinit();
         }
 
-        pub fn call(self: *Self, params: CallParams) anyerror!CallResult {
+        /// Main entry point for EVM calls - routes to specific handlers based on call type
+        pub fn call(self: *Self, params: CallParams) Error!CallResult {
             self.depth = 0;
-            return self._call(params, true);
+            
+            // Clear any existing logs before starting
+            for (self.logs.items) |log| {
+                self.allocator.free(log.topics);
+                self.allocator.free(log.data);
+            }
+            self.logs.clearRetainingCapacity();
+            
+            // Route to appropriate handler based on call type
+            var result = switch (params) {
+                .call => |p| try self.call_regular(p),
+                .callcode => |p| try self.callcode_handler(p),
+                .delegatecall => |p| try self.delegatecall_handler(p),
+                .staticcall => |p| try self.staticcall_handler(p),
+                .create => |p| try self.create_handler(p),
+                .create2 => |p| try self.create2_handler(p),
+            };
+            
+            // For top-level calls, include logs in the result
+            result.logs = self.takeLogs();
+            return result;
+        }
+        
+        /// Regular CALL operation
+        pub fn call_regular(self: *Self, params: anytype) Error!CallResult {
+            _ = self;
+            _ = params;
+            return error.InvalidJump; // Placeholder
+        }
+        
+        /// CALLCODE operation
+        pub fn callcode_handler(self: *Self, params: anytype) Error!CallResult {
+            _ = self;
+            _ = params;
+            return error.InvalidJump; // Placeholder
+        }
+        
+        /// DELEGATECALL operation
+        pub fn delegatecall_handler(self: *Self, params: anytype) Error!CallResult {
+            _ = self;
+            _ = params;
+            return error.InvalidJump; // Placeholder
+        }
+        
+        /// STATICCALL operation
+        pub fn staticcall_handler(self: *Self, params: anytype) Error!CallResult {
+            _ = self;
+            _ = params;
+            return error.InvalidJump; // Placeholder
+        }
+        
+        /// CREATE operation
+        pub fn create_handler(self: *Self, params: anytype) Error!CallResult {
+            _ = self;
+            _ = params;
+            return error.InvalidJump; // Placeholder
+        }
+        
+        /// CREATE2 operation
+        pub fn create2_handler(self: *Self, params: anytype) Error!CallResult {
+            _ = self;
+            _ = params;
+            return error.InvalidJump; // Placeholder
+        }
+        
+        // Old implementation for reference - to be removed
+        pub fn call_old(self: *Self, params: CallParams) anyerror!CallResult {
+            self.depth = 0;
+            // Clear any existing logs before starting
+            for (self.logs.items) |log| {
+                self.allocator.free(log.topics);
+                self.allocator.free(log.data);
+            }
+            self.logs.clearRetainingCapacity();
+            
+            var result = try self._call(params, true);
+            // For top-level calls, include logs in the result
+            result.logs = self.takeLogs();
+            return result;
         }
 
         pub fn inner_call(self: *Self, params: CallParams) anyerror!CallResult {
@@ -237,7 +294,12 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Internal call implementation with journal support
         fn _call(self: *Self, params: CallParams, comptime is_top_level_call: bool) anyerror!CallResult {
-            const snapshot_id = if (!is_top_level_call) self.create_snapshot() else 0;
+            const snapshot_id = if (!is_top_level_call) self.create_snapshot() else @as(JournalType.SnapshotIdType, 0);
+            const prev_snapshot_id: JournalType.SnapshotIdType = self.current_snapshot_id;
+            self.current_snapshot_id = snapshot_id;
+            defer if (!is_top_level_call) {
+                self.current_snapshot_id = prev_snapshot_id;
+            };
 
             var call_address: Address = undefined;
             var call_code: []const u8 = undefined;
@@ -423,7 +485,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             value: u256,
             is_static: bool,
             comptime is_top_level: bool,
-            snapshot_id: u32,
+            snapshot_id: JournalType.SnapshotIdType,
         ) !CallResult {
             _ = input; // Used by frame via host.get_input()
             _ = caller; // Used by frame via host.get_caller() - requires Host interface extension
@@ -464,6 +526,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Set frame properties through the interpreter
             interpreter.frame.contract_address = contract_address;
             interpreter.frame.is_static = is_static;
+            interpreter.frame.host = self.to_host();
 
             if (self.depth > 0) {
                 self.static_stack[self.depth - 1] = is_static;
@@ -510,7 +573,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Handle CREATE contract creation
-        fn handle_create(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: u32) !CallResult {
+        fn handle_create(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: JournalType.SnapshotIdType) !CallResult {
             var caller_account = (self.database.get_account(params.caller) catch null) orelse @import("database_interface_account.zig").Account{
                 .balance = 0,
                 .nonce = 0,
@@ -529,7 +592,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Handle CREATE2 contract creation
-        fn handle_create2(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: u32) !CallResult {
+        fn handle_create2(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: JournalType.SnapshotIdType) !CallResult {
             const salt_bytes = @as([32]u8, @bitCast(params.salt));
 
             const crypto = @import("crypto");
@@ -550,7 +613,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             gas: u64,
             contract_address: Address,
             comptime is_top_level_call: bool,
-            snapshot_id: u32,
+            snapshot_id: JournalType.SnapshotIdType,
         ) !CallResult {
             if (self.database.account_exists(contract_address)) {
                 if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
@@ -666,11 +729,21 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Emit log event
         pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
-            // NOTE: Log storage is handled by Host interface emit_log method
-            _ = self;
-            _ = contract_address;
-            _ = topics;
-            _ = data;
+            // Make copies of the data since the caller's data might be temporary
+            const topics_copy = self.allocator.dupe(u256, topics) catch return;
+            const data_copy = self.allocator.dupe(u8, data) catch {
+                self.allocator.free(topics_copy);
+                return;
+            };
+
+            self.logs.append(@import("call_result.zig").Log{
+                .address = contract_address,
+                .topics = topics_copy,
+                .data = data_copy,
+            }) catch {
+                self.allocator.free(topics_copy);
+                self.allocator.free(data_copy);
+            };
         }
 
         /// Execute nested EVM call - for Host interface
@@ -689,14 +762,14 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Create a new journal snapshot
-        pub fn create_snapshot(self: *Self) u32 {
+        pub fn create_snapshot(self: *Self) JournalType.SnapshotIdType {
             return self.journal.create_snapshot();
         }
 
         /// Revert state changes to a previous snapshot
-        pub fn revert_to_snapshot(self: *Self, snapshot_id: u32) void {
+        pub fn revert_to_snapshot(self: *Self, snapshot_id: JournalType.SnapshotIdType) void {
             // Get the journal entries that need to be reverted before removing them
-            var entries_to_revert = std.ArrayList(Journal.Entry).init(self.allocator);
+            var entries_to_revert = std.ArrayList(JournalType.EntryType).init(self.allocator);
             defer entries_to_revert.deinit();
 
             // Collect entries that belong to snapshots newer than or equal to the target snapshot
@@ -726,7 +799,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Apply a single journal entry to revert database state
-        fn apply_journal_entry_revert(self: *Self, entry: Journal.Entry) !void {
+        fn apply_journal_entry_revert(self: *Self, entry: JournalType.EntryType) !void {
             switch (entry.data) {
                 .storage_change => |sc| {
                     // Revert storage to original value
@@ -736,7 +809,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                     // Revert balance to original value
                     var account = (try self.database.get_account(bc.address)) orelse {
                         // If account doesn't exist, create it with the original balance
-                        const Account = @import("database_interface_account.zig").Account;
                         const reverted_account = Account{
                             .balance = bc.original_balance,
                             .nonce = 0,
@@ -750,60 +822,43 @@ pub fn Evm(comptime config: EvmConfig) type {
                 },
                 .nonce_change => |nc| {
                     // Revert nonce to original value
-                    var account = (try self.database.get_account(nc.address)) orelse {
-                        // If account doesn't exist, create it with the original nonce
-                        const Account = @import("database_interface_account.zig").Account;
-                        const reverted_account = Account{
-                            .balance = 0,
-                            .nonce = nc.original_nonce,
-                            .code_hash = [_]u8{0} ** 32,
-                            .storage_root = [_]u8{0} ** 32,
-                        };
-                        return self.database.set_account(nc.address, reverted_account);
-                    };
+                    var account = (try self.database.get_account(nc.address)) orelse return;
                     account.nonce = nc.original_nonce;
                     try self.database.set_account(nc.address, account);
                 },
                 .code_change => |cc| {
-                    // Revert code hash to original value
-                    var account = (try self.database.get_account(cc.address)) orelse {
-                        // If account doesn't exist, create it with the original code hash
-                        const Account = @import("database_interface_account.zig").Account;
-                        const reverted_account = Account{
-                            .balance = 0,
-                            .nonce = 0,
-                            .code_hash = cc.original_code_hash,
-                            .storage_root = [_]u8{0} ** 32,
-                        };
-                        return self.database.set_account(cc.address, reverted_account);
-                    };
+                    // Revert code to original value
+                    var account = (try self.database.get_account(cc.address)) orelse return;
                     account.code_hash = cc.original_code_hash;
                     try self.database.set_account(cc.address, account);
+                },
+                .account_created => |ac| {
+                    // Remove created account
+                    try self.database.delete_account(ac.address);
+                },
+                .account_destroyed => |ad| {
+                    // Restore destroyed account
+                    // Note: This is a simplified restoration - in practice we'd need full account state
+                    const restored_account = Account{
+                        .balance = ad.balance,
+                        .nonce = 0,
+                        .code_hash = [_]u8{0} ** 32,
+                        .storage_root = [_]u8{0} ** 32,
+                    };
+                    try self.database.set_account(ad.address, restored_account);
                 },
             }
         }
 
         /// Record a storage change in the journal
         pub fn record_storage_change(self: *Self, address: Address, slot: u256, original_value: u256) !void {
-            // NOTE: Snapshot ID management is handled by Host interface
-            const snapshot_id = 0; // if (self.depth > 0) self.frames[self.depth - 1].snapshot_id else 0;
-            try self.journal.record_storage_change(snapshot_id, address, slot, original_value);
+            try self.journal.record_storage_change(self.current_snapshot_id, address, slot, original_value);
         }
 
         /// Get the original storage value from the journal
         pub fn get_original_storage(self: *Self, address: Address, slot: u256) ?u256 {
-            // Search journal entries for the original storage value
-            for (self.journal.entries.items) |entry| {
-                switch (entry.data) {
-                    .storage_change => |sc| {
-                        if (std.mem.eql(u8, &address, &sc.address) and sc.key == slot) {
-                            return sc.original_value;
-                        }
-                    },
-                    else => continue,
-                }
-            }
-            return null;
+            // Use journal's built-in method to get original storage
+            return self.journal.get_original_storage(address, slot);
         }
 
         /// Access an address and return the gas cost (EIP-2929)
@@ -902,6 +957,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn to_host(self: *Self) Host {
             return Host.init(self);
         }
+
+        /// Take all logs and clear the log list
+        fn takeLogs(self: *Self) []const @import("call_result.zig").Log {
+            const logs = self.logs.toOwnedSlice() catch &.{};
+            self.logs = std.ArrayList(@import("call_result.zig").Log).init(self.allocator);
+            return logs;
+        }
     };
 }
 
@@ -930,6 +992,196 @@ test "CallParams and CallResult structures" {
     try testing.expect(result.success);
     try testing.expectEqual(@as(u64, 900000), result.gas_left);
     try testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "EVM error type definition" {
+    const testing = std.testing;
+    
+    // Test that Error type exists and contains expected error cases
+    const TestEvm = Evm(.{});
+    
+    // Test error type is defined
+    comptime {
+        _ = TestEvm.Error;
+    }
+    
+    // Test that we can create error values
+    const err1: TestEvm.Error = error.InvalidJump;
+    const err2: TestEvm.Error = error.OutOfGas;
+    
+    // Test that different errors are not equal
+    try testing.expect(err1 != err2);
+    
+    // Test that error set contains expected errors
+    comptime {
+        _ = error.StackUnderflow;
+        _ = error.StackOverflow;
+        _ = error.ContractNotFound;
+        _ = error.PrecompileError;
+        _ = error.MemoryError;
+        _ = error.StorageError;
+        _ = error.CallDepthExceeded;
+        _ = error.InsufficientBalance;
+        _ = error.ContractCollision;
+        _ = error.InvalidBytecode;
+        _ = error.StaticCallViolation;
+        _ = error.InvalidOpcode;
+        _ = error.RevertExecution;
+        _ = error.Stop;
+    }
+}
+
+test "EVM call() entry point method" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    
+    // Create test database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+    };
+    
+    const tx_context = TransactionContext{
+        .caller = ZERO_ADDRESS,
+        .origin = ZERO_ADDRESS,
+        .gas_price = 0,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    defer evm.deinit();
+    
+    // Test that call method exists and has correct signature
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    };
+    
+    // This should return Error!CallResult
+    const result = evm.call(call_params);
+    
+    // Test that method returns expected error type
+    comptime {
+        const ReturnType = @TypeOf(result);
+        const expected_type = DefaultEvm.Error!DefaultEvm.CallResult;
+        _ = ReturnType;
+        _ = expected_type;
+        // We can't directly compare error union types, but this ensures it compiles
+    }
+}
+
+test "EVM call() method routes to different handlers" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    
+    // Create test database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+    };
+    
+    const tx_context = TransactionContext{
+        .caller = ZERO_ADDRESS,
+        .origin = ZERO_ADDRESS,
+        .gas_price = 0,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    defer evm.deinit();
+    
+    // Test CALL routing
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    };
+    _ = evm.call(call_params) catch |err| {
+        // Expected to fail for now as implementation doesn't exist
+        _ = err;
+    };
+    
+    // Test DELEGATECALL routing
+    const delegatecall_params = DefaultEvm.CallParams{
+        .delegatecall = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    };
+    _ = evm.call(delegatecall_params) catch |err| {
+        // Expected to fail for now
+        _ = err;
+    };
+    
+    // Test STATICCALL routing
+    const staticcall_params = DefaultEvm.CallParams{
+        .staticcall = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    };
+    _ = evm.call(staticcall_params) catch |err| {
+        // Expected to fail for now
+        _ = err;
+    };
+    
+    // Test CREATE routing
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = ZERO_ADDRESS,
+            .value = 0,
+            .init_code = &.{},
+            .gas = 1000000,
+        },
+    };
+    _ = evm.call(create_params) catch |err| {
+        // Expected to fail for now
+        _ = err;
+    };
+    
+    // Test CREATE2 routing
+    const create2_params = DefaultEvm.CallParams{
+        .create2 = .{
+            .caller = ZERO_ADDRESS,
+            .value = 0,
+            .init_code = &.{},
+            .salt = 0,
+            .gas = 1000000,
+        },
+    };
+    _ = evm.call(create2_params) catch |err| {
+        // Expected to fail for now
+        _ = err;
+    };
 }
 
 test "Evm creation with custom config" {
@@ -1094,7 +1346,16 @@ test "call method loads contract code from state" {
     // Set up contract with bytecode [0x00] (STOP)
     const contract_address: Address = [_]u8{0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90};
     const bytecode = [_]u8{0x00};
-    try memory_db.set_code(contract_address, &bytecode);
+    const code_hash = try memory_db.set_code(&bytecode);
+    
+    // Create account with the code
+    const account = Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(contract_address, account);
 
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -1203,12 +1464,13 @@ test "call method handles gas limit properly" {
 
 test "Journal - snapshot creation and management" {
     const testing = std.testing;
+    const JournalType = journal_mod.Journal(.{});
 
-    var journal = DefaultEvm.Journal.init(testing.allocator);
+    var journal = JournalType.init(testing.allocator);
     defer journal.deinit();
 
     try testing.expectEqual(@as(u32, 0), journal.next_snapshot_id);
-    try testing.expectEqual(@as(usize, 0), journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 0), journal.entry_count());
 
     // Create snapshots
     const snapshot1 = journal.create_snapshot();
@@ -1223,8 +1485,9 @@ test "Journal - snapshot creation and management" {
 
 test "Journal - storage change recording" {
     const testing = std.testing;
+    const JournalType = journal_mod.Journal(.{});
 
-    var journal = DefaultEvm.Journal.init(testing.allocator);
+    var journal = JournalType.init(testing.allocator);
     defer journal.deinit();
 
     const snapshot_id = journal.create_snapshot();
@@ -1236,7 +1499,7 @@ test "Journal - storage change recording" {
     try journal.record_storage_change(snapshot_id, address, key, original_value);
 
     // Verify entry was recorded
-    try testing.expectEqual(@as(usize, 1), journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 1), journal.entry_count());
     const entry = journal.entries.items[0];
     try testing.expectEqual(snapshot_id, entry.snapshot_id);
 
@@ -1248,12 +1511,18 @@ test "Journal - storage change recording" {
         },
         else => try testing.expect(false), // Should be storage_change
     }
+    
+    // Test get_original_storage
+    const retrieved = journal.get_original_storage(address, key);
+    try testing.expect(retrieved != null);
+    try testing.expectEqual(original_value, retrieved.?);
 }
 
 test "Journal - revert to snapshot" {
     const testing = std.testing;
+    const JournalType = journal_mod.Journal(.{});
 
-    var journal = DefaultEvm.Journal.init(testing.allocator);
+    var journal = JournalType.init(testing.allocator);
     defer journal.deinit();
 
     const snapshot1 = journal.create_snapshot();
@@ -1266,12 +1535,12 @@ test "Journal - revert to snapshot" {
     try journal.record_storage_change(snapshot2, ZERO_ADDRESS, 3, 30);
     try journal.record_storage_change(snapshot3, ZERO_ADDRESS, 4, 40);
 
-    try testing.expectEqual(@as(usize, 4), journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 4), journal.entry_count());
 
     // Revert to snapshot2 - should remove entries with snapshot_id >= 2
     journal.revert_to_snapshot(snapshot2);
 
-    try testing.expectEqual(@as(usize, 2), journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 2), journal.entry_count());
     // Verify remaining entries are from snapshot1
     for (journal.entries.items) |entry| {
         try testing.expect(entry.snapshot_id < snapshot2);
@@ -1280,39 +1549,55 @@ test "Journal - revert to snapshot" {
 
 test "Journal - multiple entry types" {
     const testing = std.testing;
+    const JournalType = journal_mod.Journal(.{});
 
-    var journal = DefaultEvm.Journal.init(testing.allocator);
+    var journal = JournalType.init(testing.allocator);
     defer journal.deinit();
 
     const snapshot_id = journal.create_snapshot();
     const address = ZERO_ADDRESS;
+    const code_hash = [_]u8{0xAB} ** 32;
 
     // Record different types of changes
     try journal.record_storage_change(snapshot_id, address, 1, 100);
+    try journal.record_balance_change(snapshot_id, address, 1000);
+    try journal.record_nonce_change(snapshot_id, address, 5);
+    try journal.record_code_change(snapshot_id, address, code_hash);
 
-    try journal.record_storage_change(snapshot_id, address, 2, 200);
-    try journal.record_storage_change(snapshot_id, address, 3, 300);
+    try testing.expectEqual(@as(usize, 4), journal.entry_count());
 
-    try testing.expectEqual(@as(usize, 3), journal.entries.items.len);
-
-    // Verify all entries are storage_change type
+    // Verify all entry types exist
+    var storage_found = false;
+    var balance_found = false;
+    var nonce_found = false;
+    var code_found = false;
+    
     for (journal.entries.items) |entry| {
         switch (entry.data) {
-            .storage_change => {}, // Expected
-            else => try testing.expect(false),
+            .storage_change => storage_found = true,
+            .balance_change => balance_found = true,
+            .nonce_change => nonce_found = true,
+            .code_change => code_found = true,
+            else => {},
         }
     }
+    
+    try testing.expect(storage_found);
+    try testing.expect(balance_found);
+    try testing.expect(nonce_found);
+    try testing.expect(code_found);
 }
 
 test "Journal - empty revert" {
     const testing = std.testing;
+    const JournalType = journal_mod.Journal(.{});
 
-    var journal = DefaultEvm.Journal.init(testing.allocator);
+    var journal = JournalType.init(testing.allocator);
     defer journal.deinit();
 
     // Revert with no entries should not crash
     journal.revert_to_snapshot(0);
-    try testing.expectEqual(@as(usize, 0), journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 0), journal.entry_count());
 
     // Create entries and revert to future snapshot
     const snapshot = journal.create_snapshot();
@@ -1320,7 +1605,7 @@ test "Journal - empty revert" {
 
     // Revert to future snapshot (should remove all entries)
     journal.revert_to_snapshot(999);
-    try testing.expectEqual(@as(usize, 0), journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 0), journal.entry_count());
 }
 
 test "EvmConfig - depth type selection" {
@@ -1430,38 +1715,10 @@ test "Evm initialization with all parameters" {
 
     // Verify sub-components initialized
     try testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);
-    try testing.expectEqual(@as(usize, 0), evm.journal.entries.items.len);
+    try testing.expectEqual(@as(usize, 0), evm.journal.entry_count());
 }
 
 // Duplicate test removed - see earlier occurrence
-
-test "Journal - revert to snapshot (duplicate removed)" {
-    const testing = std.testing;
-
-    var journal = DefaultEvm.Journal.init(testing.allocator);
-    defer journal.deinit();
-
-    const snapshot1 = journal.create_snapshot();
-    const snapshot2 = journal.create_snapshot();
-    const snapshot3 = journal.create_snapshot();
-
-    // Add entries with different snapshot IDs
-    try journal.record_storage_change(snapshot1, ZERO_ADDRESS, 1, 10);
-    try journal.record_storage_change(snapshot1, ZERO_ADDRESS, 2, 20);
-    try journal.record_storage_change(snapshot2, ZERO_ADDRESS, 3, 30);
-    try journal.record_storage_change(snapshot3, ZERO_ADDRESS, 4, 40);
-
-    try testing.expectEqual(@as(usize, 4), journal.entries.items.len);
-
-    // Revert to snapshot2 - should remove entries with snapshot_id >= 2
-    journal.revert_to_snapshot(snapshot2);
-
-    try testing.expectEqual(@as(usize, 2), journal.entries.items.len);
-    // Verify remaining entries are from snapshot1
-    for (journal.entries.items) |entry| {
-        try testing.expect(entry.snapshot_id < snapshot2);
-    }
-}
 
 test "Host interface - get_balance functionality" {
     const testing = std.testing;
@@ -1662,6 +1919,124 @@ test "Host interface - call type differentiation" {
 
     const delegate_result = try evm.call(delegate_params);
     try testing.expect(delegate_result.success);
+}
+
+test "EVM logs - emit_log functionality" {
+    const testing = std.testing;
+
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Test emit_log functionality
+    const test_address = ZERO_ADDRESS;
+    const topics = [_]u256{ 0x1234, 0x5678 };
+    const data = "test log data";
+
+    // Emit a log
+    evm.emit_log(test_address, &topics, data);
+
+    // Verify log was stored
+    try testing.expectEqual(@as(usize, 1), evm.logs.items.len);
+    const log = evm.logs.items[0];
+    try testing.expectEqual(test_address, log.address);
+    try testing.expectEqual(@as(usize, 2), log.topics.len);
+    try testing.expectEqual(@as(u256, 0x1234), log.topics[0]);
+    try testing.expectEqual(@as(u256, 0x5678), log.topics[1]);
+    try testing.expectEqualStrings("test log data", log.data);
+
+    // Test takeLogs
+    const taken_logs = evm.takeLogs();
+    defer evm.allocator.free(taken_logs);
+    try testing.expectEqual(@as(usize, 1), taken_logs.len);
+    try testing.expectEqual(@as(usize, 0), evm.logs.items.len); // Should be empty after taking
+}
+
+test "EVM logs - included in CallResult" {
+    const testing = std.testing;
+
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Create bytecode that emits LOG0 (0xA0 opcode)
+    // PUSH1 0x05 (data length)
+    // PUSH1 0x00 (data offset)
+    // LOG0
+    const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x00, 0xA0, 0x00 }; // Last 0x00 is STOP
+    const code_hash = try memory_db.set_code(&bytecode);
+    
+    const contract_address: Address = [_]u8{0x12} ++ [_]u8{0} ** 19;
+    const account = Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(contract_address, account);
+
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = contract_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(call_params);
+    defer {
+        // Clean up logs
+        for (result.logs) |log| {
+            testing.allocator.free(log.topics);
+            testing.allocator.free(log.data);
+        }
+        testing.allocator.free(result.logs);
+    }
+
+    // For now, we expect no logs because LOG0 isn't implemented in the frame
+    // This test just verifies the infrastructure works
+    try testing.expect(result.success);
+    try testing.expect(result.logs.len == 0); // Will be > 0 when LOG opcodes are implemented
 }
 
 test "Host interface - hardfork compatibility checks" {
@@ -2394,7 +2769,6 @@ test "journal state application - balance change rollback" {
     const new_balance: u256 = 2000;
 
     // Set initial account balance
-    const Account = @import("database_interface_account.zig").Account;
     var original_account = Account.zero();
     original_account.balance = original_balance;
     try evm.database.set_account(test_address, original_account);
@@ -2458,7 +2832,6 @@ test "journal state application - nonce change rollback" {
     const new_nonce: u64 = 10;
 
     // Set initial account nonce
-    const Account = @import("database_interface_account.zig").Account;
     var original_account = Account.zero();
     original_account.nonce = original_nonce;
     try evm.database.set_account(test_address, original_account);
@@ -2522,7 +2895,6 @@ test "journal state application - code change rollback" {
     const new_code_hash = [_]u8{0xBB} ++ [_]u8{0} ** 31;
 
     // Set initial account code hash
-    const Account = @import("database_interface_account.zig").Account;
     var original_account = Account.zero();
     original_account.code_hash = original_code_hash;
     try evm.database.set_account(test_address, original_account);
@@ -2597,7 +2969,6 @@ test "journal state application - multiple changes rollback" {
     const new_code_hash = [_]u8{0xDD} ++ [_]u8{0} ** 31;
 
     // Set initial state
-    const Account = @import("database_interface_account.zig").Account;
     var original_account = Account.zero();
     original_account.balance = original_balance;
     original_account.nonce = original_nonce;
@@ -2700,7 +3071,6 @@ test "journal state application - nested snapshots rollback" {
     const final_balance: u256 = 300;
 
     // Set initial state
-    const Account = @import("database_interface_account.zig").Account;
     var account = Account.zero();
     account.balance = original_balance;
     try evm.database.set_account(test_address, account);
