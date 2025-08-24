@@ -88,6 +88,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             InvalidOpcode,
             RevertExecution,
             Stop,
+            OutOfMemory,
         };
 
         /// Stack of frames for nested calls
@@ -671,7 +672,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer interpreter.deinit();
             
             // Execute the frame
-            const exec_result = interpreter.interpret() catch |err| {
+            interpreter.interpret() catch |err| {
                 const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
                 return switch (err) {
                     error.STOP => CallResult.success_with_output(gas_left, interpreter.frame.output_data.items),
@@ -685,10 +686,17 @@ pub fn Evm(comptime config: EvmConfig) type {
                     error.WriteProtection => CallResult.failure(0),
                     error.BytecodeTooLarge => CallResult.failure(0),
                     error.AllocationError => CallResult.failure(0),
+                    error.OutOfMemory => CallResult.failure(0),
+                    error.TruncatedPush => CallResult.failure(0),
+                    error.InvalidJumpDestination => CallResult.failure(0),
+                    error.MissingJumpDestMetadata => CallResult.failure(0),
+                    error.InitcodeTooLarge => CallResult.failure(0),
                 };
             };
             
-            return exec_result;
+            // Normal completion (STOP)
+            const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
+            return CallResult.success_with_output(gas_left, interpreter.frame.output_data.items);
         }
         
         // Old implementation for reference - to be removed
