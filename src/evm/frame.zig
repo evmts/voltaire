@@ -7909,7 +7909,7 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     try frame.stack.push(different_key); // different key
     try frame.sload();
     const value_different = try frame.stack.pop();
-    const gas_used_different = gas_before_different - frame.gas_manager.gasRemaining();
+    const gas_used_different = gas_before_different - @max(frame.gas_remaining, 0);
 
     // Should load zero (default value)
     try std.testing.expectEqual(@as(u256, 0), value_different);
@@ -7941,15 +7941,15 @@ test "SLOAD/SSTORE interaction - Access list warming" {
     try frame.stack.push(storage_key);
     try frame.sload();
     _ = try frame.stack.pop(); // consume loaded value
-    const gas_used_sload = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_sload = initial_gas - @max(frame.gas_remaining, 0);
     try std.testing.expectEqual(@as(u64, 2100), gas_used_sload); // Cold SLOAD
 
     // SSTORE to same slot (should be warm now)
-    const gas_before_sstore = frame.gas_manager.gasRemaining();
+    const gas_before_sstore = @max(frame.gas_remaining, 0);
     try frame.stack.push(0xBEEF); // value
     try frame.stack.push(storage_key); // same key
     try frame.sstore();
-    const gas_used_sstore = gas_before_sstore - frame.gas_manager.gasRemaining();
+    const gas_used_sstore = gas_before_sstore - @max(frame.gas_remaining, 0);
 
     // Should cost less than cold SSTORE because slot is warm
     // For zero→non-zero but warm access: still high cost due to storage creation
@@ -7990,7 +7990,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(50000); // gas
     try frame.op_call();
-    const gas_used_with_value = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_with_value = initial_gas - @max(frame.gas_remaining, 0);
 
     // CALL with value: base cost + cold account access + value transfer
     // Base: 700 gas, Cold account: 2600 gas, Value transfer: 9000 gas
@@ -7998,7 +7998,7 @@ test "CALL value stipend gas costs" {
     try std.testing.expect(gas_used_with_value >= 12300);
 
     // Test 2: CALL without value (no stipend)
-    const gas_before_no_value = frame.gas_manager.gasRemaining();
+    const gas_before_no_value = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8007,7 +8007,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(to_u256(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
     try frame.op_call();
-    const gas_used_no_value = gas_before_no_value - frame.gas_manager.gasRemaining();
+    const gas_used_no_value = gas_before_no_value - @max(frame.gas_remaining, 0);
 
     // CALL without value to warm address: base cost + warm account access
     // Base: 700 gas, Warm account: 100 gas
