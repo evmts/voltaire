@@ -36,7 +36,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void) Error!Self {
             var frame = try Frame.init(allocator, bytecode, gas_remaining, database, null);
             errdefer frame.deinit(allocator);
-            var planner = try Planner.init(allocator, bytecode);
+            var planner = try Planner.init(allocator, 32); // Small cache for frame interpreter
             var handlers: [256]*const HandlerFn = undefined;
             for (&handlers) |*h| h.* = &op_invalid_handler;
             handlers[@intFromEnum(Opcode.STOP)] = &op_stop_handler;
@@ -2904,26 +2904,6 @@ test "FrameInterpreter host interface - ADDRESS opcode" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
 
-    // Mock host implementation
-    const MockHost = struct {
-        pub fn get_balance(_: @This(), _: [20]u8) u256 { return 1000; }
-        pub fn get_tx_origin(_: @This()) [20]u8 { return [_]u8{0x01} ++ [_]u8{0} ** 19; }
-        pub fn get_caller(_: @This()) [20]u8 { return [_]u8{0x02} ++ [_]u8{0} ** 19; }
-        pub fn get_call_value(_: @This()) u256 { return 500; }
-        pub fn get_chain_id(_: @This()) u256 { return 1; }
-        pub fn get_gas_price(_: @This()) u256 { return 20; }
-        pub fn get_calldata(_: @This()) []const u8 { return &[_]u8{}; }
-        pub fn get_code(_: @This(), _: [20]u8) []const u8 { return &[_]u8{}; }
-        pub fn get_return_data(_: @This()) []const u8 { return &[_]u8{}; }
-        pub fn account_exists(_: @This(), _: [20]u8) bool { return true; }
-        pub fn get_block_info(_: @This()) struct { number: u64, timestamp: u64, coinbase: [20]u8, difficulty: u256, gas_limit: u64, base_fee: u256 } {
-            return .{ .number = 100, .timestamp = 1000, .coinbase = [_]u8{0x03} ++ [_]u8{0} ** 19, .difficulty = 1000000, .gas_limit = 30000000, .base_fee = 10 };
-        }
-        pub fn get_block_hash(_: @This(), _: u256) u256 { return 0x12345; }
-        pub fn get_blob_hash(_: @This(), _: usize) u256 { return 0x54321; }
-        pub fn get_blob_base_fee(_: @This()) u256 { return 5; }
-    };
-
     const bytecode = [_]u8{ 0x30, 0x00 }; // ADDRESS, STOP
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
     defer interpreter.deinit(allocator);
@@ -3429,8 +3409,6 @@ test "FrameInterpreter multi-config - bytecode size limits" {
 // 7. DATABASE INTEGRATION TESTS ⭐⭐⭐
 
 test "FrameInterpreter database integration - SLOAD/SSTORE operations" {
-    const allocator = std.testing.allocator;
-    
     // Skip if database integration not available
     if (!@hasDecl(@TypeOf(FrameInterpreter(.{ .has_database = true })), "init")) {
         return error.SkipZigTest;

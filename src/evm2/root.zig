@@ -45,7 +45,7 @@ pub const Opcode = @import("opcode.zig").Opcode;
 pub const opcode_synthetic = @import("opcode_synthetic.zig");
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 // pub const createPlanMinimal = @import("plan_minimal.zig").PlanMinimal;
-// pub const createFrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
+pub const createFrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
 
 // Run all tests
 test {
@@ -79,7 +79,7 @@ test {
     _ = Account;
     _ = AccessList;
     // _ = createPlanMinimal;
-    // _ = createFrameInterpreter;
+    _ = createFrameInterpreter;
     
     // Test config modules
     _ = MemoryConfig;

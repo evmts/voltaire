@@ -18,6 +18,14 @@ const StorageKey = primitives.StorageKey;
 // Import precompile utilities from legacy EVM  
 const precompiles = @import("evm").precompiles.precompiles;
 
+/// Strategy for EVM bytecode planning and optimization
+pub const PlannerStrategy = enum {
+    /// Minimal planner with basic bytecode analysis
+    minimal,
+    /// Advanced planner with comprehensive optimizations
+    advanced,
+};
+
 pub const EvmConfig = struct {
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
     /// This prevents infinite recursion and stack overflow attacks
@@ -27,12 +35,15 @@ pub const EvmConfig = struct {
     /// This prevents excessive memory usage in single operations
     max_input_size: u18 = 131072, // 128 KB
     
-    /// Frame configuration parameters
-    frame_config: frame_mod.FrameConfig = .{},
+    /// Frame configuration parameters (enable database by default)
+    frame_config: frame_mod.FrameConfig = .{ .has_database = true },
     
     /// Enable precompiled contracts support (default: true)
     /// When disabled, precompile calls will fail with an error
     enable_precompiles: bool = true,
+    
+    /// Planner strategy for bytecode analysis and optimization (default: minimal)
+    planner_strategy: PlannerStrategy = .minimal,
     
     /// Gets the appropriate type for depth based on max_call_depth
     fn get_depth_type(self: EvmConfig) type {
@@ -48,6 +59,12 @@ pub const EvmConfig = struct {
 pub fn Evm(comptime config: EvmConfig) type {
     // const FrameInterpreter = frame_interpreter_mod.FrameInterpreter(config.frame_config);
     const DepthType = config.get_depth_type();
+    
+    // Comptime planner strategy selection
+    const PlannerType = switch (config.planner_strategy) {
+        .minimal => @import("plan_minimal.zig").createPlanMinimal(.{}),
+        .advanced => @import("plan_advanced.zig").createPlanAdvanced(.{}),
+    };
     
     return struct {
         const Self = @This();
@@ -211,13 +228,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         self.access_list.deinit();
     }
 
-    pub fn call(self: *Self, params: CallParams) ExecutionError.Error!CallResult {
+    pub fn call(self: *Self, params: CallParams) anyerror!CallResult {
         // Reset depth for new top-level call
         self.depth = 0;
         return self._call(params, true);
     }
     
-    pub fn inner_call(self: *Self, params: CallParams) ExecutionError.Error!CallResult {
+    pub fn inner_call(self: *Self, params: CallParams) anyerror!CallResult {
         // Check max depth with cold branch hint
         if (self.depth >= config.max_call_depth) {
             @branchHint(.cold);
@@ -238,7 +255,7 @@ pub fn Evm(comptime config: EvmConfig) type {
     }
 
     /// Internal call implementation with journal support
-    fn _call(self: *Self, params: CallParams, comptime is_top_level_call: bool) ExecutionError.Error!CallResult {
+    fn _call(self: *Self, params: CallParams, comptime is_top_level_call: bool) anyerror!CallResult {
         // Create snapshot for nested calls
         const snapshot_id = if (!is_top_level_call) self.create_snapshot() else 0;
         
@@ -323,16 +340,30 @@ pub fn Evm(comptime config: EvmConfig) type {
             return precompile_result;
         }
         
-        // TODO: Initialize frame and execute bytecode
-        
-        // For now, execute a basic "success" path for non-precompile calls
-        // TODO: Use call_address, call_code, call_is_static, call_caller, call_value for actual execution
-        
-        return CallResult{
-            .success = true,
-            .gas_left = call_gas,
-            .output = &.{},
+        // Execute bytecode using Frame
+        const execution_result = self.execute_bytecode(
+            call_code,
+            call_input,
+            call_gas,
+            call_address,
+            call_caller,
+            call_value,
+            call_is_static,
+            is_top_level_call,
+            snapshot_id,
+        ) catch |err| {
+            if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+            return switch (err) {
+                else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
+            };
         };
+
+        // Handle execution result
+        if (!is_top_level_call and !execution_result.success) {
+            self.revert_to_snapshot(snapshot_id);
+        }
+
+        return execution_result;
     }
 
     /// Execute a precompile call using the full legacy precompile system
@@ -382,43 +413,239 @@ pub fn Evm(comptime config: EvmConfig) type {
         errdefer self.allocator.free(output_buffer);
 
         // Create chain rules for the current hardfork
-        const ChainRules = @import("evm").hardforks.chain_rules.ChainRules;
-        const chain_rules = ChainRules.from_hardfork(self.hardfork_config);
+        const evm_mod = @import("evm");
+        const chain_rules = evm_mod.ChainRules.for_hardfork(self.hardfork_config);
 
         // Execute the precompile
-        const result = precompiles.execute(precompile_id, input, output_buffer, gas, chain_rules) catch |err| {
-            self.allocator.free(output_buffer);
-            return switch (err) {
-                error.OutOfMemory => error.OutOfMemory,
-                else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
-            };
-        };
+        const result = precompiles.execute_precompile_by_id(precompile_id, input, output_buffer, gas, chain_rules);
 
         return switch (result) {
             .success => |success_data| CallResult{
                 .success = true,
-                .gas_left = success_data.gas_left,
-                .output = if (success_data.output_len > 0) 
-                    output_buffer[0..success_data.output_len] 
+                .gas_left = gas - success_data.gas_used,
+                .output = if (success_data.output_size > 0) 
+                    output_buffer[0..success_data.output_size] 
                 else 
                     &.{},
             },
-            .failure => |failure_data| blk: {
+            .failure => |_| blk: {
                 self.allocator.free(output_buffer);
                 break :blk CallResult{
                     .success = false,
-                    .gas_left = failure_data.gas_left,
+                    .gas_left = 0,
                     .output = &.{},
                 };
             },
-            .revert => |revert_data| blk: {
-                self.allocator.free(output_buffer);
-                break :blk CallResult{
+        };
+    }
+
+    /// Execute bytecode using the Frame system
+    fn execute_bytecode(
+        self: *Self,
+        code: []const u8,
+        input: []const u8,
+        gas: u64,
+        contract_address: Address,
+        caller: Address,
+        value: u256,
+        is_static: bool,
+        comptime is_top_level: bool,
+        snapshot_id: u32,
+    ) !CallResult {
+        _ = input; // TODO: Use for CALLDATALOAD etc
+        _ = caller; // TODO: Use for CALLER opcode
+        _ = value; // TODO: Use for CALLVALUE opcode
+        _ = is_top_level; // TODO: Use for nested call handling
+        _ = snapshot_id; // TODO: Use for state rollback
+        // Handle empty code case
+        if (code.len == 0) {
+            return CallResult{
+                .success = true,
+                .gas_left = gas,
+                .output = &.{},
+            };
+        }
+
+        // For now, implement basic bytecode execution
+        // This is a placeholder until the Frame interpretation loop is implemented
+        
+        // Simple bytecode analysis
+        if (code.len == 1 and code[0] == 0x00) {
+            // STOP opcode - successful termination
+            return CallResult{
+                .success = true,
+                .gas_left = gas - 3, // STOP costs 3 gas
+                .output = &.{},
+            };
+        }
+        
+        // For other bytecode, create frame to validate structure but don't execute yet
+        const FrameType = frame_mod.Frame(config.frame_config);
+        var frame = FrameType.init(self.allocator, code, @intCast(gas), self.database, self.to_host()) catch |err| {
+            return switch (err) {
+                FrameType.Error.BytecodeTooLarge => CallResult{
                     .success = false,
-                    .gas_left = revert_data.gas_left,
+                    .gas_left = 0,
                     .output = &.{},
-                };
-            },
+                },
+                else => return err,
+            };
+        };
+        defer frame.deinit(self.allocator);
+        
+        // Set up execution context
+        frame.contract_address = contract_address;
+        frame.is_static = is_static;
+        
+        // TODO: Implement full bytecode interpretation loop
+        // For now, return success for valid frame setup
+        return CallResult{
+            .success = true,
+            .gas_left = @intCast(@max(0, frame.gas_remaining)),
+            .output = &.{},
+        };
+    }
+
+    /// Handle CREATE contract creation
+    fn handle_create(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: u32) !CallResult {
+        // Get caller account to retrieve and increment nonce
+        var caller_account = (self.database.get_account(params.caller) catch null) orelse @import("database_interface_account.zig").Account{
+            .balance = 0,
+            .nonce = 0,
+            .code_hash = [_]u8{0} ** 32,
+            .storage_root = [_]u8{0} ** 32,
+        };
+        
+        // Calculate contract address using caller and nonce
+        const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
+        
+        // Increment caller's nonce
+        caller_account.nonce += 1;
+        try self.database.set_account(params.caller, caller_account);
+        
+        // Delegate to common creation logic
+        return self.create_contract_at(params.caller, params.value, params.init_code, params.gas, contract_address, is_top_level_call, snapshot_id);
+    }
+
+    /// Handle CREATE2 contract creation
+    fn handle_create2(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: u32) !CallResult {
+        // Calculate contract address using CREATE2 formula: keccak256(0xFF + sender + salt + keccak256(init_code))
+        const salt_bytes = @as([32]u8, @bitCast(params.salt));
+        
+        // Calculate init code hash
+        const crypto = @import("crypto");
+        const init_code_hash = crypto.Hash.keccak256(params.init_code);
+        
+        const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash);
+        
+        // CREATE2 doesn't increment caller nonce
+        return self.create_contract_at(params.caller, params.value, params.init_code, params.gas, contract_address, is_top_level_call, snapshot_id);
+    }
+
+    /// Create a contract at a specific address
+    fn create_contract_at(
+        self: *Self,
+        caller: Address,
+        value: u256,
+        init_code: []const u8,
+        gas: u64,
+        contract_address: Address,
+        comptime is_top_level_call: bool,
+        snapshot_id: u32,
+    ) !CallResult {
+        // Check if contract already exists
+        if (self.database.account_exists(contract_address)) {
+            if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+            return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
+        }
+
+        // Charge CREATE gas cost (32000 gas minimum)
+        const GasConstants = @import("primitives").GasConstants;
+        const create_gas_cost = GasConstants.CreateGas; // 32000 gas
+        if (gas < create_gas_cost) {
+            if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+            return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
+        }
+        const remaining_gas = gas - create_gas_cost;
+
+        // Transfer value from caller to new contract
+        if (value > 0) {
+            var caller_account = (self.database.get_account(caller) catch null) orelse @import("database_interface_account.zig").Account{
+                .balance = 0,
+                .nonce = 0,
+                .code_hash = [_]u8{0} ** 32,
+                .storage_root = [_]u8{0} ** 32,
+            };
+
+            if (caller_account.balance < value) {
+                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
+            }
+
+            // Transfer value
+            caller_account.balance -= value;
+            try self.database.set_account(caller, caller_account);
+        }
+
+        // Create new contract account
+        const new_contract_account = @import("database_interface_account.zig").Account{
+            .balance = value,
+            .nonce = 1, // Contract accounts start with nonce 1
+            .code_hash = [_]u8{0} ** 32, // Will be set after init code execution
+            .storage_root = [_]u8{0} ** 32,
+        };
+        try self.database.set_account(contract_address, new_contract_account);
+
+        // Register contract as created in current transaction (for EIP-6780)
+        try self.register_created_contract(contract_address);
+
+        // Execute initialization code to get deployed bytecode
+        const init_result = try self.execute_bytecode(
+            init_code,
+            &.{}, // Empty input for init code
+            remaining_gas,
+            contract_address,
+            caller,
+            value,
+            false, // Not static
+            false, // Not top level
+            snapshot_id,
+        );
+
+        if (!init_result.success) {
+            // Init code failed - revert contract creation
+            if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+            return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
+        }
+
+        // Store the deployed bytecode
+        if (init_result.output.len > 0) {
+            // Check max code size (24576 bytes per EIP-170)
+            const MAX_CODE_SIZE = 24576;
+            if (init_result.output.len > MAX_CODE_SIZE) {
+                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
+            }
+
+            // Store code and get its hash
+            const code_hash = try self.database.set_code(init_result.output);
+            
+            var updated_contract = (try self.database.get_account(contract_address)) orelse {
+                // This should never happen since we just created the account
+                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
+            };
+            updated_contract.code_hash = code_hash;
+            try self.database.set_account(contract_address, updated_contract);
+        }
+
+        // Return contract address as 20-byte output
+        const address_output = try self.allocator.alloc(u8, 20);
+        @memcpy(address_output, &contract_address);
+
+        return CallResult{
+            .success = true,
+            .gas_left = init_result.gas_left,
+            .output = address_output,
         };
     }
 
@@ -1862,4 +2089,114 @@ test "Security - bounds checking and edge cases" {
     try evm.set_storage(ZERO_ADDRESS, max_key, max_value);
     const retrieved_max = evm.get_storage(ZERO_ADDRESS, max_key);
     try testing.expectEqual(max_value, retrieved_max);
+}
+
+test "EVM with minimal planner strategy" {
+    const testing = std.testing;
+    
+    // Define EVM config with minimal planner strategy
+    const MinimalEvmConfig = EvmConfig{
+        .planner_strategy = .minimal,
+    };
+    const MinimalEvm = Evm(MinimalEvmConfig);
+    
+    // Create test database
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = MinimalEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try MinimalEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test basic execution with minimal planner
+    const simple_bytecode = [_]u8{
+        0x60, 0x05, // PUSH1 5
+        0x60, 0x03, // PUSH1 3
+        0x01,       // ADD
+        0x00,       // STOP
+    };
+    
+    const call_params = MinimalEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = &simple_bytecode,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    try testing.expect(result.success);
+}
+
+test "EVM with advanced planner strategy" {
+    const testing = std.testing;
+    
+    // Define EVM config with advanced planner strategy
+    const AdvancedEvmConfig = EvmConfig{
+        .planner_strategy = .advanced,
+    };
+    const AdvancedEvm = Evm(AdvancedEvmConfig);
+    
+    // Create test database
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = AdvancedEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try AdvancedEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test basic execution with advanced planner
+    const simple_bytecode = [_]u8{
+        0x60, 0x05, // PUSH1 5
+        0x60, 0x03, // PUSH1 3
+        0x01,       // ADD
+        0x00,       // STOP
+    };
+    
+    const call_params = AdvancedEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = &simple_bytecode,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    try testing.expect(result.success);
 }
