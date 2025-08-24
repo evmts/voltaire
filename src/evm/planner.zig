@@ -54,7 +54,10 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             prev: ?*@This(),
         };
         const PlanType = plan_mod.Plan(PlanCfg);
-        const BytecodeType = createBytecode(.{ .max_bytecode_size = Cfg.maxBytecodeSize });
+        const BytecodeType = createBytecode(.{ 
+            .max_bytecode_size = Cfg.maxBytecodeSize,
+            .max_initcode_size = @max(Cfg.maxBytecodeSize, 49152), // EIP-3860 limit, but must be >= max_bytecode_size
+        });
 
         const Self = @This();
         // Expose types for callers/tests.
