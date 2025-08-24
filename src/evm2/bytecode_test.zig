@@ -86,7 +86,13 @@ test "Bytecode.getStats - basic stats" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Check opcode counts
     try std.testing.expectEqual(@as(u32, 2), stats.opcode_counts[@intFromEnum(@import("opcode.zig").Opcode.PUSH1)]);
@@ -99,6 +105,15 @@ test "Bytecode.getStats - basic stats" {
     try std.testing.expectEqual(@as(usize, 0), stats.push_values[0].pc);
     try std.testing.expectEqual(@as(u256, 0x03), stats.push_values[1].value);
     try std.testing.expectEqual(@as(usize, 2), stats.push_values[1].pc);
+    
+    // Test formatStats
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify it contains expected content
+    try std.testing.expect(std.mem.indexOf(u8, output, "Bytecode Statistics") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PUSH1: 2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "ADD: 1") != null);
 }
 
 test "Bytecode.getStats - potential fusions" {
@@ -108,7 +123,13 @@ test "Bytecode.getStats - potential fusions" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Check for PUSH+JUMP fusion
     try std.testing.expectEqual(@as(usize, 2), stats.potential_fusions.len);
@@ -134,7 +155,13 @@ test "Bytecode.getStats - jumpdests and jumps" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Check jumpdests
     try std.testing.expectEqual(@as(usize, 2), stats.jumpdests.len);
@@ -164,7 +191,13 @@ test "Bytecode.getStats - backwards jumps (loops)" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Check backwards jumps
     try std.testing.expectEqual(@as(usize, 1), stats.backwards_jumps);
@@ -189,7 +222,13 @@ test "Bytecode.getStats - create code detection" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Check if identified as create code
     try std.testing.expect(stats.is_create_code);
@@ -202,7 +241,13 @@ test "Bytecode.getStats - runtime code detection" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Should not be identified as create code
     try std.testing.expect(!stats.is_create_code);
@@ -224,7 +269,13 @@ test "Bytecode.getStats - all opcode types counted" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     
-    const stats = bytecode.getStats();
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
     
     // Verify counts
     try std.testing.expectEqual(@as(u32, 3), stats.opcode_counts[@intFromEnum(@import("opcode.zig").Opcode.PUSH1)]);
