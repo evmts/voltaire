@@ -9,18 +9,13 @@ public final class GuillotineEVMThreadSafe: @unchecked Sendable {
     private var isInitialized: Bool = false
     private let lock = NSLock()
     
-    /// Initialize the EVM instance (all C calls happen on current thread)
+    /// Initialize the EVM instance using lazy initialization pattern
     public init() throws {
         lock.lock()
         defer { lock.unlock() }
         
-        // CRITICAL FIX: Check if already initialized to prevent double-initialization hang
-        if guillotine_is_initialized() == 0 {
-            let result = guillotine_init()
-            guard result == GUILLOTINE_OK.rawValue else {
-                throw mapCErrorToExecutionError(result)
-            }
-        }
+        // LAZY INITIALIZATION: Ensure C library is initialized only when needed
+        try GuillotineLazyInit.shared.ensureInitialized()
         
         guard let vm = guillotine_vm_create() else {
             throw ExecutionError.internalError("Failed to create VM instance")
@@ -185,18 +180,14 @@ public final class GuillotineEVMThreadSafe: @unchecked Sendable {
         }
     }
     
-    /// Get Guillotine version
+    /// Get Guillotine version (safe to call without initialization)
     public static var version: String {
-        // Call C function directly from current thread
-        guard let versionPtr = guillotine_version() else {
-            return "unknown"
-        }
-        return String(cString: versionPtr)
+        return GuillotineLazyInit.shared.version
     }
     
     /// Check if EVM is initialized
     public static var isInitialized: Bool {
-        guillotine_is_initialized() != 0
+        return GuillotineLazyInit.shared.isInitialized
     }
 }
 

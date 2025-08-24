@@ -8,15 +8,10 @@ public actor GuillotineEVM {
     private var vmPtr: OpaquePointer?
     private var isInitialized: Bool = false
     
-    /// Initialize the EVM instance
+    /// Initialize the EVM instance using lazy initialization pattern
     public init() throws {
-        // CRITICAL FIX: Check if already initialized to prevent double-initialization hang
-        if guillotine_is_initialized() == 0 {
-            let result = guillotine_init()
-            guard result == GUILLOTINE_OK.rawValue else {
-                throw mapCErrorToExecutionError(result)
-            }
-        }
+        // LAZY INITIALIZATION: Ensure C library is initialized only when needed
+        try GuillotineLazyInit.shared.ensureInitialized()
         
         guard let vm = guillotine_vm_create() else {
             throw ExecutionError.internalError("Failed to create VM instance")
@@ -236,14 +231,14 @@ public actor GuillotineEVM {
         }
     }
     
-    /// Get Guillotine version
+    /// Get Guillotine version (safe to call without initialization)
     public static var version: String {
-        String(cString: guillotine_version())
+        return GuillotineLazyInit.shared.version
     }
     
     /// Check if EVM is initialized
     public static var isInitialized: Bool {
-        guillotine_is_initialized() != 0
+        return GuillotineLazyInit.shared.isInitialized
     }
 }
 
