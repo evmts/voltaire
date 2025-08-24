@@ -31,72 +31,7 @@
 //! number of interface calls.
 
 const std = @import("std");
-
-/// Database operation errors
-pub const DatabaseError = error{
-    /// Account not found in the database
-    AccountNotFound,
-    /// Storage slot not found for the given address
-    StorageNotFound,
-    /// Contract code not found for the given hash
-    CodeNotFound,
-    /// Invalid address format
-    InvalidAddress,
-    /// Database corruption detected
-    DatabaseCorrupted,
-    /// Network error when accessing remote database
-    NetworkError,
-    /// Permission denied accessing database
-    PermissionDenied,
-    /// Out of memory during database operation
-    OutOfMemory,
-    /// Invalid snapshot identifier
-    InvalidSnapshot,
-    /// Batch operation not in progress
-    NoBatchInProgress,
-    /// Snapshot not found
-    SnapshotNotFound,
-};
-
-/// Account state data structure
-///
-/// ## Field Ordering Optimization
-/// Fields are ordered to minimize padding and improve cache locality:
-/// - Large fields (u256, [32]u8) grouped together
-/// - Smaller fields (u64) grouped together
-/// - Most frequently accessed fields (balance, nonce) first
-pub const Account = struct {
-    /// Account balance in wei (frequently accessed)
-    balance: u256,
-
-    /// Hash of the contract code (keccak256 hash)
-    /// Grouped with storage_root for better cache locality
-    code_hash: [32]u8,
-
-    /// Storage root hash (merkle root of account's storage trie)
-    storage_root: [32]u8,
-
-    /// Transaction nonce (number of transactions sent from this account)
-    /// Smaller field placed last to minimize padding
-    nonce: u64,
-
-    /// Creates a new account with zero values
-    pub fn zero() Account {
-        return Account{
-            .balance = 0,
-            .code_hash = [_]u8{0} ** 32,
-            .storage_root = [_]u8{0} ** 32,
-            .nonce = 0,
-        };
-    }
-
-    /// Checks if account is empty (zero balance, nonce, and no code)
-    pub fn is_empty(self: Account) bool {
-        return self.balance == 0 and
-            self.nonce == 0 and
-            std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32);
-    }
-};
+pub const Account = @import("database_interface_account.zig").Account;
 
 /// Database interface using vtable pattern for pluggable implementations
 pub const DatabaseInterface = struct {
@@ -105,41 +40,67 @@ pub const DatabaseInterface = struct {
     /// Function pointer table for the implementation
     vtable: *const VTable,
 
+    /// Database operation errors
+    pub const Error = error{
+        /// Account not found in the database
+        AccountNotFound,
+        /// Storage slot not found for the given address
+        StorageNotFound,
+        /// Contract code not found for the given hash
+        CodeNotFound,
+        /// Invalid address format
+        InvalidAddress,
+        /// Database corruption detected
+        DatabaseCorrupted,
+        /// Network error when accessing remote database
+        NetworkError,
+        /// Permission denied accessing database
+        PermissionDenied,
+        /// Out of memory during database operation
+        OutOfMemory,
+        /// Invalid snapshot identifier
+        InvalidSnapshot,
+        /// Batch operation not in progress
+        NoBatchInProgress,
+        /// Snapshot not found
+        SnapshotNotFound,
+    };
+
     /// Virtual function table defining all database operations
     pub const VTable = struct {
         // Account operations
-        get_account: *const fn (ptr: *anyopaque, address: [20]u8) DatabaseError!?Account,
-        set_account: *const fn (ptr: *anyopaque, address: [20]u8, account: Account) DatabaseError!void,
-        delete_account: *const fn (ptr: *anyopaque, address: [20]u8) DatabaseError!void,
+        get_account: *const fn (ptr: *anyopaque, address: [20]u8) Error!?Account,
+        set_account: *const fn (ptr: *anyopaque, address: [20]u8, account: Account) Error!void,
+        delete_account: *const fn (ptr: *anyopaque, address: [20]u8) Error!void,
         account_exists: *const fn (ptr: *anyopaque, address: [20]u8) bool,
-        get_balance: *const fn (ptr: *anyopaque, address: [20]u8) DatabaseError!u256,
+        get_balance: *const fn (ptr: *anyopaque, address: [20]u8) Error!u256,
 
         // Storage operations
-        get_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256) DatabaseError!u256,
-        set_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256, value: u256) DatabaseError!void,
+        get_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256) Error!u256,
+        set_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void,
         
         // Transient storage operations (EIP-1153)
-        get_transient_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256) DatabaseError!u256,
-        set_transient_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256, value: u256) DatabaseError!void,
+        get_transient_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256) Error!u256,
+        set_transient_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void,
 
         // Code operations
-        get_code: *const fn (ptr: *anyopaque, code_hash: [32]u8) DatabaseError![]const u8,
-        get_code_by_address: *const fn (ptr: *anyopaque, address: [20]u8) DatabaseError![]const u8,
-        set_code: *const fn (ptr: *anyopaque, code: []const u8) DatabaseError![32]u8,
+        get_code: *const fn (ptr: *anyopaque, code_hash: [32]u8) Error![]const u8,
+        get_code_by_address: *const fn (ptr: *anyopaque, address: [20]u8) Error![]const u8,
+        set_code: *const fn (ptr: *anyopaque, code: []const u8) Error![32]u8,
 
         // State root operations
-        get_state_root: *const fn (ptr: *anyopaque) DatabaseError![32]u8,
-        commit_changes: *const fn (ptr: *anyopaque) DatabaseError![32]u8,
+        get_state_root: *const fn (ptr: *anyopaque) Error![32]u8,
+        commit_changes: *const fn (ptr: *anyopaque) Error![32]u8,
 
         // Snapshot operations
-        create_snapshot: *const fn (ptr: *anyopaque) DatabaseError!u64,
-        revert_to_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u64) DatabaseError!void,
-        commit_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u64) DatabaseError!void,
+        create_snapshot: *const fn (ptr: *anyopaque) Error!u64,
+        revert_to_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u64) Error!void,
+        commit_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u64) Error!void,
 
         // Batch operations
-        begin_batch: *const fn (ptr: *anyopaque) DatabaseError!void,
-        commit_batch: *const fn (ptr: *anyopaque) DatabaseError!void,
-        rollback_batch: *const fn (ptr: *anyopaque) DatabaseError!void,
+        begin_batch: *const fn (ptr: *anyopaque) Error!void,
+        commit_batch: *const fn (ptr: *anyopaque) Error!void,
+        rollback_batch: *const fn (ptr: *anyopaque) Error!void,
 
         // Lifecycle
         deinit: *const fn (ptr: *anyopaque) void,
@@ -167,17 +128,17 @@ pub const DatabaseInterface = struct {
         }
 
         const gen = struct {
-            fn vtable_get_account(ptr: *anyopaque, address: [20]u8) DatabaseError!?Account {
+            fn vtable_get_account(ptr: *anyopaque, address: [20]u8) Error!?Account {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_account(address);
             }
 
-            fn vtable_set_account(ptr: *anyopaque, address: [20]u8, account: Account) DatabaseError!void {
+            fn vtable_set_account(ptr: *anyopaque, address: [20]u8, account: Account) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_account(address, account);
             }
 
-            fn vtable_delete_account(ptr: *anyopaque, address: [20]u8) DatabaseError!void {
+            fn vtable_delete_account(ptr: *anyopaque, address: [20]u8) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.delete_account(address);
             }
@@ -187,82 +148,82 @@ pub const DatabaseInterface = struct {
                 return self.account_exists(address);
             }
 
-            fn vtable_get_balance(ptr: *anyopaque, address: [20]u8) DatabaseError!u256 {
+            fn vtable_get_balance(ptr: *anyopaque, address: [20]u8) Error!u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_balance(address);
             }
 
-            fn vtable_get_storage(ptr: *anyopaque, address: [20]u8, key: u256) DatabaseError!u256 {
+            fn vtable_get_storage(ptr: *anyopaque, address: [20]u8, key: u256) Error!u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_storage(address, key);
             }
 
-            fn vtable_set_storage(ptr: *anyopaque, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+            fn vtable_set_storage(ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_storage(address, key, value);
             }
             
-            fn vtable_get_transient_storage(ptr: *anyopaque, address: [20]u8, key: u256) DatabaseError!u256 {
+            fn vtable_get_transient_storage(ptr: *anyopaque, address: [20]u8, key: u256) Error!u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_transient_storage(address, key);
             }
 
-            fn vtable_set_transient_storage(ptr: *anyopaque, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+            fn vtable_set_transient_storage(ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_transient_storage(address, key, value);
             }
 
-            fn vtable_get_code(ptr: *anyopaque, code_hash: [32]u8) DatabaseError![]const u8 {
+            fn vtable_get_code(ptr: *anyopaque, code_hash: [32]u8) Error![]const u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_code(code_hash);
             }
 
-            fn vtable_get_code_by_address(ptr: *anyopaque, address: [20]u8) DatabaseError![]const u8 {
+            fn vtable_get_code_by_address(ptr: *anyopaque, address: [20]u8) Error![]const u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_code_by_address(address);
             }
 
-            fn vtable_set_code(ptr: *anyopaque, code: []const u8) DatabaseError![32]u8 {
+            fn vtable_set_code(ptr: *anyopaque, code: []const u8) Error![32]u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_code(code);
             }
 
-            fn vtable_get_state_root(ptr: *anyopaque) DatabaseError![32]u8 {
+            fn vtable_get_state_root(ptr: *anyopaque) Error![32]u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_state_root();
             }
 
-            fn vtable_commit_changes(ptr: *anyopaque) DatabaseError![32]u8 {
+            fn vtable_commit_changes(ptr: *anyopaque) Error![32]u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.commit_changes();
             }
 
-            fn vtable_create_snapshot(ptr: *anyopaque) DatabaseError!u64 {
+            fn vtable_create_snapshot(ptr: *anyopaque) Error!u64 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.create_snapshot();
             }
 
-            fn vtable_revert_to_snapshot(ptr: *anyopaque, snapshot_id: u64) DatabaseError!void {
+            fn vtable_revert_to_snapshot(ptr: *anyopaque, snapshot_id: u64) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.revert_to_snapshot(snapshot_id);
             }
 
-            fn vtable_commit_snapshot(ptr: *anyopaque, snapshot_id: u64) DatabaseError!void {
+            fn vtable_commit_snapshot(ptr: *anyopaque, snapshot_id: u64) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.commit_snapshot(snapshot_id);
             }
 
-            fn vtable_begin_batch(ptr: *anyopaque) DatabaseError!void {
+            fn vtable_begin_batch(ptr: *anyopaque) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.begin_batch();
             }
 
-            fn vtable_commit_batch(ptr: *anyopaque) DatabaseError!void {
+            fn vtable_commit_batch(ptr: *anyopaque) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.commit_batch();
             }
 
-            fn vtable_rollback_batch(ptr: *anyopaque) DatabaseError!void {
+            fn vtable_rollback_batch(ptr: *anyopaque) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.rollback_batch();
             }
@@ -306,17 +267,17 @@ pub const DatabaseInterface = struct {
     // Account operations
 
     /// Get account data for the given address
-    pub fn get_account(self: DatabaseInterface, address: [20]u8) DatabaseError!?Account {
+    pub fn get_account(self: DatabaseInterface, address: [20]u8) Error!?Account {
         return self.vtable.get_account(self.ptr, address);
     }
 
     /// Set account data for the given address
-    pub fn set_account(self: DatabaseInterface, address: [20]u8, account: Account) DatabaseError!void {
+    pub fn set_account(self: DatabaseInterface, address: [20]u8, account: Account) Error!void {
         return self.vtable.set_account(self.ptr, address, account);
     }
 
     /// Delete account and all associated data
-    pub fn delete_account(self: DatabaseInterface, address: [20]u8) DatabaseError!void {
+    pub fn delete_account(self: DatabaseInterface, address: [20]u8) Error!void {
         return self.vtable.delete_account(self.ptr, address);
     }
 
@@ -326,92 +287,92 @@ pub const DatabaseInterface = struct {
     }
 
     /// Get account balance
-    pub fn get_balance(self: DatabaseInterface, address: [20]u8) DatabaseError!u256 {
+    pub fn get_balance(self: DatabaseInterface, address: [20]u8) Error!u256 {
         return self.vtable.get_balance(self.ptr, address);
     }
 
     // Storage operations
 
     /// Get storage value for the given address and key
-    pub fn get_storage(self: DatabaseInterface, address: [20]u8, key: u256) DatabaseError!u256 {
+    pub fn get_storage(self: DatabaseInterface, address: [20]u8, key: u256) Error!u256 {
         return self.vtable.get_storage(self.ptr, address, key);
     }
 
     /// Set storage value for the given address and key
-    pub fn set_storage(self: DatabaseInterface, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+    pub fn set_storage(self: DatabaseInterface, address: [20]u8, key: u256, value: u256) Error!void {
         return self.vtable.set_storage(self.ptr, address, key, value);
     }
 
     /// Get transient storage value for the given address and key (EIP-1153)
-    pub fn get_transient_storage(self: DatabaseInterface, address: [20]u8, key: u256) DatabaseError!u256 {
+    pub fn get_transient_storage(self: DatabaseInterface, address: [20]u8, key: u256) Error!u256 {
         return self.vtable.get_transient_storage(self.ptr, address, key);
     }
 
     /// Set transient storage value for the given address and key (EIP-1153)
-    pub fn set_transient_storage(self: DatabaseInterface, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+    pub fn set_transient_storage(self: DatabaseInterface, address: [20]u8, key: u256, value: u256) Error!void {
         return self.vtable.set_transient_storage(self.ptr, address, key, value);
     }
 
     // Code operations
 
     /// Get contract code by hash
-    pub fn get_code(self: DatabaseInterface, code_hash: [32]u8) DatabaseError![]const u8 {
+    pub fn get_code(self: DatabaseInterface, code_hash: [32]u8) Error![]const u8 {
         return self.vtable.get_code(self.ptr, code_hash);
     }
 
     /// Get contract code by address
-    pub fn get_code_by_address(self: DatabaseInterface, address: [20]u8) DatabaseError![]const u8 {
+    pub fn get_code_by_address(self: DatabaseInterface, address: [20]u8) Error![]const u8 {
         return self.vtable.get_code_by_address(self.ptr, address);
     }
 
     /// Store contract code and return its hash
-    pub fn set_code(self: DatabaseInterface, code: []const u8) DatabaseError![32]u8 {
+    pub fn set_code(self: DatabaseInterface, code: []const u8) Error![32]u8 {
         return self.vtable.set_code(self.ptr, code);
     }
 
     // State root operations
 
     /// Get current state root hash
-    pub fn get_state_root(self: DatabaseInterface) DatabaseError![32]u8 {
+    pub fn get_state_root(self: DatabaseInterface) Error![32]u8 {
         return self.vtable.get_state_root(self.ptr);
     }
 
     /// Commit pending changes and return new state root
-    pub fn commit_changes(self: DatabaseInterface) DatabaseError![32]u8 {
+    pub fn commit_changes(self: DatabaseInterface) Error![32]u8 {
         return self.vtable.commit_changes(self.ptr);
     }
 
     // Snapshot operations
 
     /// Create a state snapshot and return its ID
-    pub fn create_snapshot(self: DatabaseInterface) DatabaseError!u64 {
+    pub fn create_snapshot(self: DatabaseInterface) Error!u64 {
         return self.vtable.create_snapshot(self.ptr);
     }
 
     /// Revert state to the given snapshot
-    pub fn revert_to_snapshot(self: DatabaseInterface, snapshot_id: u64) DatabaseError!void {
+    pub fn revert_to_snapshot(self: DatabaseInterface, snapshot_id: u64) Error!void {
         return self.vtable.revert_to_snapshot(self.ptr, snapshot_id);
     }
 
     /// Commit a snapshot (discard it without reverting)
-    pub fn commit_snapshot(self: DatabaseInterface, snapshot_id: u64) DatabaseError!void {
+    pub fn commit_snapshot(self: DatabaseInterface, snapshot_id: u64) Error!void {
         return self.vtable.commit_snapshot(self.ptr, snapshot_id);
     }
 
     // Batch operations
 
     /// Begin a batch operation for efficient bulk updates
-    pub fn begin_batch(self: DatabaseInterface) DatabaseError!void {
+    pub fn begin_batch(self: DatabaseInterface) Error!void {
         return self.vtable.begin_batch(self.ptr);
     }
 
     /// Commit all changes in the current batch
-    pub fn commit_batch(self: DatabaseInterface) DatabaseError!void {
+    pub fn commit_batch(self: DatabaseInterface) Error!void {
         return self.vtable.commit_batch(self.ptr);
     }
 
     /// Rollback all changes in the current batch
-    pub fn rollback_batch(self: DatabaseInterface) DatabaseError!void {
+    pub fn rollback_batch(self: DatabaseInterface) Error!void {
         return self.vtable.rollback_batch(self.ptr);
     }
 
@@ -455,32 +416,6 @@ pub fn validate_database_implementation(comptime T: type) void {
 // =============================================================================
 
 const testing = std.testing;
-
-// Test Account struct
-test "Account.zero creates account with all zero values" {
-    const account = Account.zero();
-    try testing.expectEqual(@as(u256, 0), account.balance);
-    try testing.expectEqual(@as(u64, 0), account.nonce);
-    try testing.expectEqualSlices(u8, &[_]u8{0} ** 32, &account.code_hash);
-    try testing.expectEqualSlices(u8, &[_]u8{0} ** 32, &account.storage_root);
-}
-
-test "Account.is_empty detects empty accounts" {
-    const empty_account = Account.zero();
-    try testing.expect(empty_account.is_empty());
-    
-    var non_empty_account = Account.zero();
-    non_empty_account.balance = 100;
-    try testing.expect(!non_empty_account.is_empty());
-    
-    non_empty_account = Account.zero();
-    non_empty_account.nonce = 1;
-    try testing.expect(!non_empty_account.is_empty());
-    
-    non_empty_account = Account.zero();
-    non_empty_account.code_hash[0] = 1;
-    try testing.expect(!non_empty_account.is_empty());
-}
 
 // Mock database implementation for testing
 const MockDatabase = struct {
@@ -554,15 +489,15 @@ const MockDatabase = struct {
     }
     
     // Account operations
-    pub fn get_account(self: *MockDatabase, address: [20]u8) DatabaseError!?Account {
+    pub fn get_account(self: *MockDatabase, address: [20]u8) DatabaseInterface.Error!?Account {
         return self.accounts.get(address);
     }
     
-    pub fn set_account(self: *MockDatabase, address: [20]u8, account: Account) DatabaseError!void {
+    pub fn set_account(self: *MockDatabase, address: [20]u8, account: Account) DatabaseInterface.Error!void {
         try self.accounts.put(address, account);
     }
     
-    pub fn delete_account(self: *MockDatabase, address: [20]u8) DatabaseError!void {
+    pub fn delete_account(self: *MockDatabase, address: [20]u8) DatabaseInterface.Error!void {
         _ = self.accounts.remove(address);
     }
     
@@ -570,7 +505,7 @@ const MockDatabase = struct {
         return self.accounts.contains(address);
     }
     
-    pub fn get_balance(self: *MockDatabase, address: [20]u8) DatabaseError!u256 {
+    pub fn get_balance(self: *MockDatabase, address: [20]u8) DatabaseInterface.Error!u256 {
         if (self.accounts.get(address)) |account| {
             return account.balance;
         }
@@ -578,40 +513,40 @@ const MockDatabase = struct {
     }
     
     // Storage operations
-    pub fn get_storage(self: *MockDatabase, address: [20]u8, key: u256) DatabaseError!u256 {
+    pub fn get_storage(self: *MockDatabase, address: [20]u8, key: u256) DatabaseInterface.Error!u256 {
         const storage_key = StorageKey{ .address = address, .key = key };
         return self.storage.get(storage_key) orelse 0;
     }
     
-    pub fn set_storage(self: *MockDatabase, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+    pub fn set_storage(self: *MockDatabase, address: [20]u8, key: u256, value: u256) DatabaseInterface.Error!void {
         const storage_key = StorageKey{ .address = address, .key = key };
         try self.storage.put(storage_key, value);
     }
     
     // Transient storage operations
-    pub fn get_transient_storage(self: *MockDatabase, address: [20]u8, key: u256) DatabaseError!u256 {
+    pub fn get_transient_storage(self: *MockDatabase, address: [20]u8, key: u256) DatabaseInterface.Error!u256 {
         const storage_key = StorageKey{ .address = address, .key = key };
         return self.transient_storage.get(storage_key) orelse 0;
     }
     
-    pub fn set_transient_storage(self: *MockDatabase, address: [20]u8, key: u256, value: u256) DatabaseError!void {
+    pub fn set_transient_storage(self: *MockDatabase, address: [20]u8, key: u256, value: u256) DatabaseInterface.Error!void {
         const storage_key = StorageKey{ .address = address, .key = key };
         try self.transient_storage.put(storage_key, value);
     }
     
     // Code operations
-    pub fn get_code(self: *MockDatabase, code_hash: [32]u8) DatabaseError![]const u8 {
-        return self.code_storage.get(code_hash) orelse return DatabaseError.CodeNotFound;
+    pub fn get_code(self: *MockDatabase, code_hash: [32]u8) DatabaseInterface.Error![]const u8 {
+        return self.code_storage.get(code_hash) orelse return DatabaseInterface.Error.CodeNotFound;
     }
     
-    pub fn get_code_by_address(self: *MockDatabase, address: [20]u8) DatabaseError![]const u8 {
+    pub fn get_code_by_address(self: *MockDatabase, address: [20]u8) DatabaseInterface.Error![]const u8 {
         if (self.accounts.get(address)) |account| {
             return self.get_code(account.code_hash);
         }
-        return DatabaseError.AccountNotFound;
+        return DatabaseInterface.Error.AccountNotFound;
     }
     
-    pub fn set_code(self: *MockDatabase, code: []const u8) DatabaseError![32]u8 {
+    pub fn set_code(self: *MockDatabase, code: []const u8) DatabaseInterface.Error![32]u8 {
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
         try self.code_storage.put(hash, code);
@@ -619,17 +554,17 @@ const MockDatabase = struct {
     }
     
     // State root operations
-    pub fn get_state_root(self: *MockDatabase) DatabaseError![32]u8 {
+    pub fn get_state_root(self: *MockDatabase) DatabaseInterface.Error![32]u8 {
         _ = self;
         return [_]u8{0xAB} ** 32; // Mock state root
     }
     
-    pub fn commit_changes(self: *MockDatabase) DatabaseError![32]u8 {
+    pub fn commit_changes(self: *MockDatabase) DatabaseInterface.Error![32]u8 {
         return self.get_state_root();
     }
     
     // Snapshot operations
-    pub fn create_snapshot(self: *MockDatabase) DatabaseError!u64 {
+    pub fn create_snapshot(self: *MockDatabase) DatabaseInterface.Error!u64 {
         const snapshot_id = self.next_snapshot_id;
         self.next_snapshot_id += 1;
         
@@ -654,7 +589,7 @@ const MockDatabase = struct {
         return snapshot_id;
     }
     
-    pub fn revert_to_snapshot(self: *MockDatabase, snapshot_id: u64) DatabaseError!void {
+    pub fn revert_to_snapshot(self: *MockDatabase, snapshot_id: u64) DatabaseInterface.Error!void {
         var snapshot_index: ?usize = null;
         for (self.snapshots.items, 0..) |snapshot, i| {
             if (snapshot.id == snapshot_id) {
@@ -663,7 +598,7 @@ const MockDatabase = struct {
             }
         }
         
-        const index = snapshot_index orelse return DatabaseError.SnapshotNotFound;
+        const index = snapshot_index orelse return DatabaseInterface.Error.SnapshotNotFound;
         const snapshot = &self.snapshots.items[index];
         
         self.accounts.deinit();
@@ -690,7 +625,7 @@ const MockDatabase = struct {
         self.snapshots.shrinkRetainingCapacity(index);
     }
     
-    pub fn commit_snapshot(self: *MockDatabase, snapshot_id: u64) DatabaseError!void {
+    pub fn commit_snapshot(self: *MockDatabase, snapshot_id: u64) DatabaseInterface.Error!void {
         var snapshot_index: ?usize = null;
         for (self.snapshots.items, 0..) |snapshot, i| {
             if (snapshot.id == snapshot_id) {
@@ -699,7 +634,7 @@ const MockDatabase = struct {
             }
         }
         
-        const index = snapshot_index orelse return DatabaseError.SnapshotNotFound;
+        const index = snapshot_index orelse return DatabaseInterface.Error.SnapshotNotFound;
         
         // Clean up this snapshot and all later ones
         for (self.snapshots.items[index..]) |*snapshot| {
@@ -710,17 +645,17 @@ const MockDatabase = struct {
     }
     
     // Batch operations (simple implementation)
-    pub fn begin_batch(self: *MockDatabase) DatabaseError!void {
+    pub fn begin_batch(self: *MockDatabase) DatabaseInterface.Error!void {
         _ = self;
         // In a real implementation, this would prepare batch state
     }
     
-    pub fn commit_batch(self: *MockDatabase) DatabaseError!void {
+    pub fn commit_batch(self: *MockDatabase) DatabaseInterface.Error!void {
         _ = self;
         // In a real implementation, this would commit all batched operations
     }
     
-    pub fn rollback_batch(self: *MockDatabase) DatabaseError!void {
+    pub fn rollback_batch(self: *MockDatabase) DatabaseInterface.Error!void {
         _ = self;
         // In a real implementation, this would rollback all batched operations
     }
@@ -814,7 +749,7 @@ test "DatabaseInterface code operations" {
     
     // Test retrieving code for non-existent hash
     const fake_hash = [_]u8{0xFF} ** 32;
-    try testing.expectError(DatabaseError.CodeNotFound, db_interface.get_code(fake_hash));
+    try testing.expectError(DatabaseInterface.Error.CodeNotFound, db_interface.get_code(fake_hash));
 }
 
 test "DatabaseInterface code by address operations" {
@@ -845,7 +780,7 @@ test "DatabaseInterface code by address operations" {
     
     // Test retrieving code for non-existent address
     const fake_address = [_]u8{0xFF} ** 20;
-    try testing.expectError(DatabaseError.AccountNotFound, db_interface.get_code_by_address(fake_address));
+    try testing.expectError(DatabaseInterface.Error.AccountNotFound, db_interface.get_code_by_address(fake_address));
 }
 
 test "DatabaseInterface snapshot operations" {
@@ -904,10 +839,10 @@ test "DatabaseInterface snapshot error handling" {
     const db_interface = DatabaseInterface.init(&mock_db);
     
     // Test reverting to non-existent snapshot
-    try testing.expectError(DatabaseError.SnapshotNotFound, db_interface.revert_to_snapshot(999));
+    try testing.expectError(DatabaseInterface.Error.SnapshotNotFound, db_interface.revert_to_snapshot(999));
     
     // Test committing non-existent snapshot
-    try testing.expectError(DatabaseError.SnapshotNotFound, db_interface.commit_snapshot(999));
+    try testing.expectError(DatabaseInterface.Error.SnapshotNotFound, db_interface.commit_snapshot(999));
 }
 
 test "DatabaseInterface state root operations" {
