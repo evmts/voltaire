@@ -1460,7 +1460,7 @@ test "analysis cache: LRU eviction works correctly" {
     try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan1_again));
     
     // Add third plan - should evict plan2 (least recently used)
-    _ = try planner.getOrAnalyze(&bytecode3, handlers);
+    _ = try planner.getOrAnalyze(&bytecode3, handlers, Hardfork.DEFAULT);
     try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
     
     // plan1 should still be in cache
