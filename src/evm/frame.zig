@@ -6636,7 +6636,7 @@ test "Frame system opcodes gas accounting" {
     const host = mock_host.to_host();
     frame.host = host;
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Setup stack for CALL
     try frame.stack.push(20000); // gas
@@ -7135,7 +7135,7 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
     var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Complex sequence: arithmetic + memory + stack operations
     // Push values for calculation
@@ -7543,7 +7543,7 @@ test "Frame LOG opcodes - gas consumption" {
     try frame.memory.set_data(0, log_data);
 
     // Test LOG0 gas consumption
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0);
     try frame.stack.push(4);
     try frame.op_log0();
@@ -7579,10 +7579,10 @@ test "Memory expansion gas costs - MLOAD operations" {
     defer frame.deinit(allocator);
 
     // Test 1: MLOAD at offset 0 - first memory expansion to 32 bytes
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // offset
     try frame.mload();
-    const gas_used_first = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_first = initial_gas - @max(frame.gas_remaining, 0);
 
     // MLOAD base cost (3 gas) + memory expansion cost for 32 bytes
     // Memory cost = (memory_size_word^2) / 512 + (3 * memory_size_word)
@@ -7591,10 +7591,10 @@ test "Memory expansion gas costs - MLOAD operations" {
     try std.testing.expectEqual(expected_first, gas_used_first);
 
     // Test 2: MLOAD at offset 32 - expand to 64 bytes (2 words)
-    const gas_before_second = frame.gas_manager.gasRemaining();
+    const gas_before_second = @max(frame.gas_remaining, 0);
     try frame.stack.push(32); // offset
     try frame.mload();
-    const gas_used_second = gas_before_second - frame.gas_manager.gasRemaining();
+    const gas_used_second = gas_before_second - @max(frame.gas_remaining, 0);
 
     // Additional memory cost from 1 word to 2 words
     // New cost = 2^2/512 + 3*2 = 4/512 + 6 = 0 + 6 = 6
@@ -7603,10 +7603,10 @@ test "Memory expansion gas costs - MLOAD operations" {
     try std.testing.expectEqual(expected_second, gas_used_second);
 
     // Test 3: MLOAD at offset 1024 - expand to 1056 bytes (33 words)
-    const gas_before_large = frame.gas_manager.gasRemaining();
+    const gas_before_large = @max(frame.gas_remaining, 0);
     try frame.stack.push(1024); // offset
     try frame.mload();
-    const gas_used_large = gas_before_large - frame.gas_manager.gasRemaining();
+    const gas_used_large = gas_before_large - @max(frame.gas_remaining, 0);
 
     // Memory expansion from 2 words to 33 words
     // New cost = 33^2/512 + 3*33 = 1089/512 + 99 = 2.12... + 99 = 101
@@ -7623,22 +7623,22 @@ test "Memory expansion gas costs - MSTORE operations" {
     defer frame.deinit(allocator);
 
     // Test 1: MSTORE at offset 0 - first memory expansion
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0xDEADBEEF); // value
     try frame.stack.push(0); // offset
     try frame.mstore();
-    const gas_used_first = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_first = initial_gas - @max(frame.gas_remaining, 0);
 
     // MSTORE base cost (3 gas) + memory expansion cost
     const expected_first = GasConstants.GasFastestStep + 3; // 3 + 3 = 6 gas
     try std.testing.expectEqual(expected_first, gas_used_first);
 
     // Test 2: MSTORE8 at various offsets to test single-byte expansion
-    const gas_before_byte = frame.gas_manager.gasRemaining();
+    const gas_before_byte = @max(frame.gas_remaining, 0);
     try frame.stack.push(0xFF); // value
     try frame.stack.push(64); // offset - expand to 96 bytes (3 words)
     try frame.mstore8();
-    const gas_used_byte = gas_before_byte - frame.gas_manager.gasRemaining();
+    const gas_used_byte = gas_before_byte - @max(frame.gas_remaining, 0);
 
     // Additional memory cost from 1 word to 3 words
     // New cost = 3^2/512 + 3*3 = 9/512 + 9 = 0 + 9 = 9
@@ -7660,7 +7660,7 @@ test "Memory expansion gas costs - MCOPY operations" {
     try frame.mstore();
 
     // Test MCOPY with memory expansion
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(32); // length
     try frame.stack.push(0); // source
     try frame.stack.push(64); // destination - expands to 96 bytes
@@ -7684,7 +7684,7 @@ test "Memory expansion gas costs - CALLDATACOPY operations" {
     defer frame.deinit(allocator);
 
     // Test CALLDATACOPY with memory expansion
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(32); // length
     try frame.stack.push(0); // calldata offset
     try frame.stack.push(0); // memory offset - first expansion
@@ -7706,7 +7706,7 @@ test "Memory expansion gas costs - CODECOPY operations" {
     defer frame.deinit(allocator);
 
     // Test CODECOPY with memory expansion
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(2); // length - copy 2 bytes of bytecode
     try frame.stack.push(0); // code offset
     try frame.stack.push(0); // memory offset
@@ -7728,7 +7728,7 @@ test "Memory expansion gas costs - Large memory operations" {
     defer frame.deinit(allocator);
 
     // Test very large memory access to verify quadratic gas cost
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(10000); // offset - large memory access
     try frame.mload();
     const gas_used = initial_gas - frame.gas_manager.gasRemaining();
@@ -7768,12 +7768,12 @@ test "SSTORE gas costs and refunds - EIP-2200/3529" {
 
     // Test 1: First write to zero (cold access) - EIP-2200
     // SSTORE to zero slot should cost 22100 gas (20000 + 2100 cold access)
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0xABCD); // value
     try frame.stack.push(storage_key); // key
     frame.contract_address = test_address;
     try frame.sstore();
-    const gas_used_first = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_first = initial_gas - @max(frame.gas_remaining, 0);
 
     // Cold SSTORE (first write): 22100 gas
     const expected_cold_sstore = 22100;
@@ -7876,7 +7876,7 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     try frame.sstore();
 
     // Test 1: Cold SLOAD - first access to this storage slot
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(storage_key); // key
     try frame.sload();
     const value_loaded = try frame.stack.pop();
@@ -7937,7 +7937,7 @@ test "SLOAD/SSTORE interaction - Access list warming" {
     // Test: SLOAD makes storage slot warm for subsequent SSTORE
 
     // First SLOAD (cold)
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(storage_key);
     try frame.sload();
     _ = try frame.stack.pop(); // consume loaded value
@@ -7981,7 +7981,7 @@ test "CALL value stipend gas costs" {
 
     // Test 1: CALL with value transfer (should add 2300 gas stipend to sub-call)
     // Base CALL cost + cold account access + value transfer cost
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8037,7 +8037,7 @@ test "CALL cold account access penalties - EIP-2929" {
     frame.contract_address = caller_addr;
 
     // Test 1: First CALL to cold account
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8105,7 +8105,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     frame.contract_address = caller_addr;
 
     // Test 1: DELEGATECALL (no value transfer, different gas model)
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8300,7 +8300,7 @@ test "CALL gas integration - sufficient gas scenario" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Setup CALL stack: [gas, address, value, input_offset, input_size, output_offset, output_size]
     try frame.stack.push(0); // output_size
@@ -8371,7 +8371,7 @@ test "CALL gas integration - value transfer with stipend" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Setup CALL stack with value transfer
     try frame.stack.push(0); // output_size
@@ -8415,7 +8415,7 @@ test "DELEGATECALL gas integration - no value transfer cost" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Setup DELEGATECALL stack: [gas, address, input_offset, input_size, output_offset, output_size]
     try frame.stack.push(0); // output_size
@@ -8458,7 +8458,7 @@ test "STATICCALL gas integration - static context enforced" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Setup STATICCALL stack: [gas, address, input_offset, input_size, output_offset, output_size]
     try frame.stack.push(0); // output_size
@@ -8753,7 +8753,7 @@ test "Memory expansion costs with call operations" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Setup CALL with large memory access that requires expansion
     try frame.stack.push(64); // output_size (64 bytes)
@@ -8791,7 +8791,7 @@ test "Nested call gas accounting - deep call stack" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_manager.gasRemaining();
+    const initial_gas = @max(frame.gas_remaining, 0);
 
     // Simulate multiple sequential calls (like a contract calling other contracts)
     for (0..3) |i| {
