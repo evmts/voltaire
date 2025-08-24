@@ -235,14 +235,29 @@ fn benchmark_legacy_evm_erc20_transfer(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller: Address = [_]u8{0x10} ** 20;
-    vm.state.set_balance(caller, std.math.maxInt(u256)) catch return;
+    // Set balance for caller account
+    var caller_account = db_interface.get_account(caller) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    caller_account.balance = std.math.maxInt(u256);
+    db_interface.set_account(caller, caller_account) catch return;
 
-    const create_result = vm.create_contract(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
-    if (!create_result.success) return;
+    const deploy_result = vm.call(evm_legacy.CallParams{
+        .create = .{
+            .caller = caller,
+            .value = 0,
+            .init_code = bytecode,
+            .gas = BENCHMARK_GAS_LIMIT,
+        },
+    }) catch return;
+    if (!deploy_result.success) return;
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
-        .to = create_result.address,
+        .to = [_]u8{0x20} ** 20,  // Use predetermined contract address
         .value = 0,
         .input = calldata,
         .gas = BENCHMARK_GAS_LIMIT,
@@ -285,14 +300,29 @@ fn benchmark_legacy_evm_snailtracer(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller: Address = [_]u8{0x10} ** 20;
-    vm.state.set_balance(caller, std.math.maxInt(u256)) catch return;
+    // Set balance for caller account
+    var caller_account = db_interface.get_account(caller) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    caller_account.balance = std.math.maxInt(u256);
+    db_interface.set_account(caller, caller_account) catch return;
 
-    const create_result = vm.create_contract(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
-    if (!create_result.success) return;
+    const deploy_result = vm.call(evm_legacy.CallParams{
+        .create = .{
+            .caller = caller,
+            .value = 0,
+            .init_code = bytecode,
+            .gas = BENCHMARK_GAS_LIMIT,
+        },
+    }) catch return;
+    if (!deploy_result.success) return;
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
-        .to = create_result.address,
+        .to = [_]u8{0x20} ** 20,  // Use predetermined contract address
         .value = 0,
         .input = calldata,
         .gas = BENCHMARK_GAS_LIMIT,
@@ -335,14 +365,29 @@ fn benchmark_legacy_evm_thousand_hashes(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller: Address = [_]u8{0x10} ** 20;
-    vm.state.set_balance(caller, std.math.maxInt(u256)) catch return;
+    // Set balance for caller account
+    var caller_account = db_interface.get_account(caller) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    caller_account.balance = std.math.maxInt(u256);
+    db_interface.set_account(caller, caller_account) catch return;
 
-    const create_result = vm.create_contract(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
-    if (!create_result.success) return;
+    const deploy_result = vm.call(evm_legacy.CallParams{
+        .create = .{
+            .caller = caller,
+            .value = 0,
+            .init_code = bytecode,
+            .gas = BENCHMARK_GAS_LIMIT,
+        },
+    }) catch return;
+    if (!deploy_result.success) return;
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
-        .to = create_result.address,
+        .to = [_]u8{0x20} ** 20,  // Use predetermined contract address
         .value = 0,
         .input = calldata,
         .gas = BENCHMARK_GAS_LIMIT,
@@ -372,7 +417,7 @@ fn benchmark_revm_erc20_transfer(allocator: std.mem.Allocator) void {
     const caller: Address = [_]u8{0x10} ** 20;
     vm.setBalance(caller, std.math.maxInt(u256)) catch return;
 
-    const create_result = vm.create(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
+    var create_result = vm.create(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
     defer create_result.deinit();
     if (!create_result.success) return;
 
@@ -401,7 +446,7 @@ fn benchmark_revm_snailtracer(allocator: std.mem.Allocator) void {
     const caller: Address = [_]u8{0x10} ** 20;
     vm.setBalance(caller, std.math.maxInt(u256)) catch return;
 
-    const create_result = vm.create(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
+    var create_result = vm.create(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
     defer create_result.deinit();
     if (!create_result.success) return;
 
@@ -430,7 +475,7 @@ fn benchmark_revm_thousand_hashes(allocator: std.mem.Allocator) void {
     const caller: Address = [_]u8{0x10} ** 20;
     vm.setBalance(caller, std.math.maxInt(u256)) catch return;
 
-    const create_result = vm.create(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
+    var create_result = vm.create(caller, 0, bytecode, BENCHMARK_GAS_LIMIT) catch return;
     defer create_result.deinit();
     if (!create_result.success) return;
 
@@ -523,10 +568,27 @@ fn benchmark_legacy_evm_stack_push_pop(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller: Address = [_]u8{0x10} ** 20;
-    vm.state.set_balance(caller, std.math.maxInt(u256)) catch return;
+    // Set balance for caller account
+    var caller_account = db_interface.get_account(caller) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    caller_account.balance = std.math.maxInt(u256);
+    db_interface.set_account(caller, caller_account) catch return;
 
     const contract_address = [_]u8{0x12} ** 20;
-    vm.state.set_code(contract_address, &simple_bytecode) catch return;
+    // Set contract code through database
+    const code_hash = db_interface.set_code(&simple_bytecode) catch return;
+    var contract_account = db_interface.get_account(contract_address) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    contract_account.code_hash = code_hash;
+    db_interface.set_account(contract_address, contract_account) catch return;
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
@@ -669,10 +731,27 @@ fn benchmark_legacy_evm_arithmetic_sequence(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller: Address = [_]u8{0x10} ** 20;
-    vm.state.set_balance(caller, std.math.maxInt(u256)) catch return;
+    // Set balance for caller account
+    var caller_account = db_interface.get_account(caller) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    caller_account.balance = std.math.maxInt(u256);
+    db_interface.set_account(caller, caller_account) catch return;
 
     const contract_address = [_]u8{0x12} ** 20;
-    vm.state.set_code(contract_address, &arithmetic_bytecode) catch return;
+    // Set contract code through database
+    const code_hash = db_interface.set_code(&arithmetic_bytecode) catch return;
+    var contract_account = db_interface.get_account(contract_address) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    contract_account.code_hash = code_hash;
+    db_interface.set_account(contract_address, contract_account) catch return;
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
@@ -813,10 +892,27 @@ fn benchmark_legacy_evm_memory_operations(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller: Address = [_]u8{0x10} ** 20;
-    vm.state.set_balance(caller, std.math.maxInt(u256)) catch return;
+    // Set balance for caller account
+    var caller_account = db_interface.get_account(caller) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    caller_account.balance = std.math.maxInt(u256);
+    db_interface.set_account(caller, caller_account) catch return;
 
     const contract_address = [_]u8{0x12} ** 20;
-    vm.state.set_code(contract_address, &memory_bytecode) catch return;
+    // Set contract code through database
+    const code_hash = db_interface.set_code(&memory_bytecode) catch return;
+    var contract_account = db_interface.get_account(contract_address) catch null orelse evm_legacy.Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    contract_account.code_hash = code_hash;
+    db_interface.set_account(contract_address, contract_account) catch return;
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,

@@ -2140,6 +2140,7 @@ pub fn build(b: *std.Build) void {
     evm_c_mod.addImport("evm", evm_mod);
     evm_c_mod.addImport("build_options", build_options_mod);
     evm_c_mod.addImport("crypto", crypto_mod);
+    evm_c_mod.addIncludePath(b.path("src/revm_wrapper"));
 
     // Create C API static library
     const evm_c_static = b.addLibrary(.{
@@ -2147,6 +2148,9 @@ pub fn build(b: *std.Build) void {
         .linkage = .static,
         .root_module = evm_c_mod,
     });
+    if (revm_lib) |revm| {
+        evm_c_static.linkLibrary(revm);
+    }
     b.installArtifact(evm_c_static);
 
     // Create C API shared library
@@ -2155,6 +2159,9 @@ pub fn build(b: *std.Build) void {
         .linkage = .dynamic,
         .root_module = evm_c_mod,
     });
+    if (revm_lib) |revm| {
+        evm_c_shared.linkLibrary(revm);
+    }
     b.installArtifact(evm_c_shared);
 
     // Build steps for C libraries
@@ -2172,6 +2179,9 @@ pub fn build(b: *std.Build) void {
         .name = "test-evm-new-c",
         .root_module = evm_c_mod,
     });
+    if (revm_lib) |revm| {
+        test_evm_c.linkLibrary(revm);
+    }
     const run_test_evm_c = b.addRunArtifact(test_evm_c);
     const test_evm_c_step = b.step("test-evm-new-c", "Run EVM C API tests");
     test_evm_c_step.dependOn(&run_test_evm_c.step);

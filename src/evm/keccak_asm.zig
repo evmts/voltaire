@@ -30,37 +30,9 @@ pub const KeccakError = error{
 /// This function uses the high-performance keccak-asm Rust crate which provides
 /// assembly-optimized implementations for different CPU architectures.
 pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
-    // Use standard library implementation for WASM
-    if (comptime (builtin.target.cpu.arch == .wasm32)) {
-        std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
-        return;
-    }
-    
-    var error_ptr: ?*c.RevmError = null;
-    
-    const result = c.keccak256_asm(
-        data.ptr,
-        data.len,
-        out_hash.ptr,
-        &error_ptr,
-    );
-    
-    if (result != 1) {
-        defer if (error_ptr) |err| c.revm_free_error(err);
-        
-        if (error_ptr) |err| {
-            const code = err.code;
-            return switch (code) {
-                1 => KeccakError.InvalidInput,
-                2 => KeccakError.ExecutionError,
-                3 => KeccakError.StateError,
-                4 => KeccakError.MemoryError,
-                else => KeccakError.Unknown,
-            };
-        } else {
-            return KeccakError.Unknown;
-        }
-    }
+    // Use standard library implementation for now
+    // TODO: Link with assembly-optimized implementation when available
+    std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
 }
 
 /// Batch hash multiple inputs using assembly optimization
@@ -76,56 +48,10 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
         return; // Nothing to do
     }
     
-    // Use standard library implementation for WASM
-    if (comptime (builtin.target.cpu.arch == .wasm32)) {
-        for (inputs, outputs) |input, *output| {
-            std.crypto.hash.sha3.Keccak256.hash(input, output, .{});
-        }
-        return;
-    }
-    
-    // Create arrays of pointers and lengths for C interface
-    // Use page allocator for WASM, c_allocator for other targets
-    const allocator = if (comptime (builtin.target.cpu.arch == .wasm32))
-        std.heap.page_allocator
-    else
-        std.heap.c_allocator;
-    const input_ptrs = try allocator.alloc([*c]const u8, inputs.len);
-    defer allocator.free(input_ptrs);
-    
-    const input_lens = try allocator.alloc(usize, inputs.len);
-    defer allocator.free(input_lens);
-    
-    for (inputs, 0..) |input, i| {
-        input_ptrs[i] = input.ptr;
-        input_lens[i] = input.len;
-    }
-    
-    var error_ptr: ?*c.RevmError = null;
-    
-    const result = c.keccak256_asm_batch(
-        input_ptrs.ptr,
-        input_lens.ptr,
-        inputs.len,
-        @as([*c]u8, @ptrCast(outputs.ptr)),
-        &error_ptr,
-    );
-    
-    if (result != 1) {
-        defer if (error_ptr) |err| c.revm_free_error(err);
-        
-        if (error_ptr) |err| {
-            const code = err.code;
-            return switch (code) {
-                1 => KeccakError.InvalidInput,
-                2 => KeccakError.ExecutionError,
-                3 => KeccakError.StateError,
-                4 => KeccakError.MemoryError,
-                else => KeccakError.Unknown,
-            };
-        } else {
-            return KeccakError.Unknown;
-        }
+    // Use standard library implementation for now
+    // TODO: Link with assembly-optimized implementation when available
+    for (inputs, outputs) |input, *output| {
+        std.crypto.hash.sha3.Keccak256.hash(input, output, .{});
     }
 }
 
