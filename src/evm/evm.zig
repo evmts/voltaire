@@ -5070,11 +5070,10 @@ test "CREATE interaction - created contract modifies parent storage" {
     
     // Deploy parent contract
     const deploy_result = try evm_instance.call(.{
-        .call = .{
+        .create = .{
             .caller = [_]u8{0x01} ** 20,
-            .to = null,
             .value = 0,
-            .input = parent_code.items,
+            .init_code = parent_code.items,
             .gas = 5_000_000,
         },
     });
