@@ -301,11 +301,16 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             };
 
             // Get the current handler before advancing
+            if (idx.* >= self.instructionStream.len) {
+                std.log.warn("getNextInstruction: idx {} >= instructionStream.len {}", .{idx.*, self.instructionStream.len});
+                @panic("instruction index out of bounds");
+            }
             const handler = self.instructionStream[idx.*].handler;
             
             // Advance index
             idx.* += 1;
             if (has_metadata) idx.* += 1;
+            
             
             // Return the handler
             return handler;

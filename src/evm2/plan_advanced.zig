@@ -978,7 +978,7 @@ test "PlanMinimal basic functionality" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     // Create handler array
     var handlers: [256]*const HandlerFn = undefined;
@@ -1052,7 +1052,8 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
         };
         
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = Planner.init(&bytecode);
+        var planner = try Planner.init(allocator, &bytecode);
+        defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -1108,7 +1109,7 @@ test "PlanMinimal getNextInstruction advances correctly" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1160,7 +1161,7 @@ test "PlanMinimal JUMPDEST detection with PUSH data" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1186,7 +1187,8 @@ test "PlanMinimal edge cases" {
     {
         const bytecode = [_]u8{};
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = Planner.init(&bytecode);
+        var planner = try Planner.init(allocator, &bytecode);
+        defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -1201,7 +1203,8 @@ test "PlanMinimal edge cases" {
     {
         const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = Planner.init(&bytecode);
+        var planner = try Planner.init(allocator, &bytecode);
+        defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -1224,7 +1227,8 @@ test "PlanMinimal edge cases" {
             @intFromEnum(Opcode.PUSH3), 0xAB, // Missing 2 bytes
         };
         const Planner = @import("planner.zig").createPlanner(.{});
-        var planner = Planner.init(&bytecode);
+        var planner = try Planner.init(allocator, &bytecode);
+        defer planner.deinit();
         
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
@@ -1272,7 +1276,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1318,7 +1322,7 @@ test "PlanMinimal PC opcode returns correct value" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1350,7 +1354,7 @@ test "PlanMinimal JUMPDEST metadata" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
@@ -1384,7 +1388,7 @@ test "PlanMinimal simulated execution flow" {
     };
     
     const Planner = @import("planner.zig").createPlanner(.{});
-    var planner = Planner.init(&bytecode);
+    var planner = try Planner.init(allocator, &bytecode);
     
     // Create handler tracking array
     var handler_calls = std.ArrayList(u8).init(allocator);
