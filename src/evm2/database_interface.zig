@@ -68,41 +68,26 @@ pub const DatabaseInterface = struct {
 
     /// Virtual function table defining all database operations
     pub const VTable = struct {
-        // Account operations
         get_account: *const fn (ptr: *anyopaque, address: [20]u8) Error!?Account,
         set_account: *const fn (ptr: *anyopaque, address: [20]u8, account: Account) Error!void,
         delete_account: *const fn (ptr: *anyopaque, address: [20]u8) Error!void,
         account_exists: *const fn (ptr: *anyopaque, address: [20]u8) bool,
         get_balance: *const fn (ptr: *anyopaque, address: [20]u8) Error!u256,
-
-        // Storage operations
         get_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256) Error!u256,
         set_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void,
-        
-        // Transient storage operations (EIP-1153)
         get_transient_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256) Error!u256,
         set_transient_storage: *const fn (ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void,
-
-        // Code operations
         get_code: *const fn (ptr: *anyopaque, code_hash: [32]u8) Error![]const u8,
         get_code_by_address: *const fn (ptr: *anyopaque, address: [20]u8) Error![]const u8,
         set_code: *const fn (ptr: *anyopaque, code: []const u8) Error![32]u8,
-
-        // State root operations
         get_state_root: *const fn (ptr: *anyopaque) Error![32]u8,
         commit_changes: *const fn (ptr: *anyopaque) Error![32]u8,
-
-        // Snapshot operations
         create_snapshot: *const fn (ptr: *anyopaque) Error!u64,
         revert_to_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u64) Error!void,
         commit_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u64) Error!void,
-
-        // Batch operations
         begin_batch: *const fn (ptr: *anyopaque) Error!void,
         commit_batch: *const fn (ptr: *anyopaque) Error!void,
         rollback_batch: *const fn (ptr: *anyopaque) Error!void,
-
-        // Lifecycle
         deinit: *const fn (ptr: *anyopaque) void,
     };
 
@@ -122,117 +107,94 @@ pub const DatabaseInterface = struct {
     pub fn init(implementation: anytype) DatabaseInterface {
         const Impl = @TypeOf(implementation);
         const impl_info = @typeInfo(Impl);
-
         if (impl_info != .pointer) {
             @compileError("Database interface requires a pointer to implementation");
         }
-
         const gen = struct {
             fn vtable_get_account(ptr: *anyopaque, address: [20]u8) Error!?Account {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_account(address);
             }
-
             fn vtable_set_account(ptr: *anyopaque, address: [20]u8, account: Account) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_account(address, account);
             }
-
             fn vtable_delete_account(ptr: *anyopaque, address: [20]u8) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.delete_account(address);
             }
-
             fn vtable_account_exists(ptr: *anyopaque, address: [20]u8) bool {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.account_exists(address);
             }
-
             fn vtable_get_balance(ptr: *anyopaque, address: [20]u8) Error!u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_balance(address);
             }
-
             fn vtable_get_storage(ptr: *anyopaque, address: [20]u8, key: u256) Error!u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_storage(address, key);
             }
-
             fn vtable_set_storage(ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_storage(address, key, value);
             }
-            
             fn vtable_get_transient_storage(ptr: *anyopaque, address: [20]u8, key: u256) Error!u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_transient_storage(address, key);
             }
-
             fn vtable_set_transient_storage(ptr: *anyopaque, address: [20]u8, key: u256, value: u256) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_transient_storage(address, key, value);
             }
-
             fn vtable_get_code(ptr: *anyopaque, code_hash: [32]u8) Error![]const u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_code(code_hash);
             }
-
             fn vtable_get_code_by_address(ptr: *anyopaque, address: [20]u8) Error![]const u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_code_by_address(address);
             }
-
             fn vtable_set_code(ptr: *anyopaque, code: []const u8) Error![32]u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.set_code(code);
             }
-
             fn vtable_get_state_root(ptr: *anyopaque) Error![32]u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_state_root();
             }
-
             fn vtable_commit_changes(ptr: *anyopaque) Error![32]u8 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.commit_changes();
             }
-
             fn vtable_create_snapshot(ptr: *anyopaque) Error!u64 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.create_snapshot();
             }
-
             fn vtable_revert_to_snapshot(ptr: *anyopaque, snapshot_id: u64) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.revert_to_snapshot(snapshot_id);
             }
-
             fn vtable_commit_snapshot(ptr: *anyopaque, snapshot_id: u64) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.commit_snapshot(snapshot_id);
             }
-
             fn vtable_begin_batch(ptr: *anyopaque) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.begin_batch();
             }
-
             fn vtable_commit_batch(ptr: *anyopaque) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.commit_batch();
             }
-
             fn vtable_rollback_batch(ptr: *anyopaque) Error!void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.rollback_batch();
             }
-
             fn vtable_deinit(ptr: *anyopaque) void {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.deinit();
             }
-
             const vtable = VTable{
                 .get_account = vtable_get_account,
                 .set_account = vtable_set_account,
@@ -257,16 +219,12 @@ pub const DatabaseInterface = struct {
                 .deinit = vtable_deinit,
             };
         };
-
         return DatabaseInterface{
             .ptr = implementation,
             .vtable = &gen.vtable,
         };
     }
 
-    // Account operations
-
-    /// Get account data for the given address
     pub fn get_account(self: DatabaseInterface, address: [20]u8) Error!?Account {
         return self.vtable.get_account(self.ptr, address);
     }
@@ -290,8 +248,6 @@ pub const DatabaseInterface = struct {
     pub fn get_balance(self: DatabaseInterface, address: [20]u8) Error!u256 {
         return self.vtable.get_balance(self.ptr, address);
     }
-
-    // Storage operations
 
     /// Get storage value for the given address and key
     pub fn get_storage(self: DatabaseInterface, address: [20]u8, key: u256) Error!u256 {
