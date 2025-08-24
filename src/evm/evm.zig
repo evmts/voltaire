@@ -4720,14 +4720,13 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     // Deploy factory with initialization value 123
     var deploy_data = std.ArrayList(u8).init(allocator);
     defer deploy_data.deinit();
-    try deploy_data.appendSlice(&[32]u8{0} ** 31 ++ [_]u8{123}); // 123 as uint256
+    try deploy_data.appendSlice(&([31]u8{0} ** 31 ++ [_]u8{123})); // 123 as uint256
     
     const factory_result = try evm_instance.call(.{
-        .call = .{
+        .create = .{
             .caller = [_]u8{0x01} ** 20,
-            .to = null, // Contract creation
             .value = 0,
-            .input = deploy_data.items,
+            .init_code = deploy_data.items,
             .gas = 5_000_000,
         },
     });
@@ -4898,11 +4897,10 @@ test "CREATE interaction - contract creates contract that creates contract" {
     
     // Execute level 1
     const result1 = try evm_instance.call(.{
-        .call = .{
+        .create = .{
             .caller = [_]u8{0x01} ** 20,
-            .to = null,
             .value = 0,
-            .input = level1_code.items,
+            .init_code = level1_code.items,
             .gas = 10_000_000,
         },
     });
