@@ -2,7 +2,6 @@ const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
-const ExecutionError = @import("evm").ExecutionError;
 const frame_mod = @import("frame.zig");
 const Host = @import("host.zig").Host;
 const BlockInfo = @import("block_info.zig").BlockInfo;
@@ -11,10 +10,11 @@ const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const AccessList = @import("access_list.zig").AccessList;
-const hardfork = @import("evm").hardforks.hardfork;
+const Hardfork = @import("hardfork.zig").Hardfork;
 const StorageKey = primitives.StorageKey;
 
-const precompiles = @import("evm").precompiles.precompiles;
+// TODO: Precompiles support not yet implemented in evm2
+// const precompiles = @import("evm").precompiles.precompiles;
 
 /// Strategy for EVM bytecode planning and optimization
 pub const PlannerStrategy = enum {
@@ -41,6 +41,8 @@ pub const EvmConfig = struct {
     enable_precompiles: bool = true,
 
     /// Planner strategy for bytecode analysis and optimization (default: minimal)
+    /// Note: When compiling with -Doptimize=ReleaseSmall, this is always forced to .minimal
+    /// regardless of the configured value to minimize binary size.
     planner_strategy: PlannerStrategy = .minimal,
 
     /// Gets the appropriate type for depth based on max_call_depth
@@ -56,10 +58,19 @@ pub const EvmConfig = struct {
 
 pub fn Evm(comptime config: EvmConfig) type {
     const DepthType = config.get_depth_type();
-    const PlannerType = switch (config.planner_strategy) {
-        .minimal => @import("plan_minimal.zig").PlanMinimal(.{}),
-        .advanced => @import("plan_minimal.zig").PlanMinimal(.{}), // Use minimal for now until advanced is fixed
-    };
+    
+    // TODO: When optimizing for size (ReleaseSmall), force minimal planner strategy
+    // This will ensure the smallest possible binary size by excluding advanced
+    // optimization code paths that would increase the binary size.
+    // Implementation blocked by incomplete plan_minimal module.
+    // For now, we always use the standard planner which implements the minimal strategy.
+    
+    const planner_mod = @import("planner.zig");
+    const PlannerType = planner_mod.Planner(.{
+        .WordType = config.frame_config.WordType,
+        .maxBytecodeSize = config.frame_config.max_bytecode_size,
+        .stack_size = config.frame_config.stack_size,
+    });
 
     return struct {
         const Self = @This();

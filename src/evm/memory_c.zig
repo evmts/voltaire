@@ -3,9 +3,10 @@
 // ============================================================================
 
 const std = @import("std");
-const MemoryConfig = @import("memory_config.zig").MemoryConfig;
-const Memory = @import("memory.zig").Memory;
-const MemoryError = @import("memory.zig").MemoryError;
+const evm = @import("evm");
+const MemoryConfig = evm.MemoryConfig;
+const Memory = evm.Memory;
+const MemoryError = evm.MemoryError;
 
 const allocator = std.heap.c_allocator;
 

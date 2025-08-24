@@ -383,18 +383,18 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             );
             
             // Store the debug handler
-            const opcode_value = comptime blk: {
-                break :blk if (@TypeOf(opcode) == u8)
-                    opcode
-                else if (@TypeOf(opcode) == Opcode)
-                    @intFromEnum(opcode)
-                else if (@TypeOf(opcode) == OpcodeSynthetic)
-                    @intFromEnum(opcode)
-                else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                    @intFromEnum(@field(Opcode, @tagName(opcode)))
-                else
-                    @compileError("Invalid opcode type");
-            };
+            // const opcode_value = comptime blk: {
+            //     break :blk if (@TypeOf(opcode) == u8)
+            //         opcode
+            //     else if (@TypeOf(opcode) == Opcode)
+            //         @intFromEnum(opcode)
+            //     else if (@TypeOf(opcode) == OpcodeSynthetic)
+            //         @intFromEnum(opcode)
+            //     else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
+            //         @intFromEnum(@field(Opcode, @tagName(opcode)))
+            //     else
+            //         @compileError("Invalid opcode type");
+            // };
             
             // If this is the first instruction, wrap it to create sidecar frame
             if (current_idx == 0) {

@@ -3,8 +3,9 @@
 // ============================================================================
 
 const std = @import("std");
-const StackConfig = @import("stack_config.zig").StackConfig;
-const Stack = @import("stack.zig").Stack;
+const evm = @import("evm");
+const StackConfig = evm.StackConfig;
+const Stack = evm.Stack;
 
 const allocator = std.heap.c_allocator;
 

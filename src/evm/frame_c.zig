@@ -1,6 +1,7 @@
 const std = @import("std");
-const frame_mod = @import("frame.zig");
-const tracer_mod = @import("tracer.zig");
+const evm = @import("evm");
+const frame_mod = evm;
+const tracer_mod = evm;
 
 // ============================================================================
 // FRAME C API - EVM Frame operations exported to C

@@ -669,7 +669,7 @@ test "Plan getMetadata for PUSH opcodes" {
 
 test "Plan getMetadata for large PUSH opcodes" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create constants array
     var constants = try allocator.alloc(PlanType.WordType, 2);
@@ -771,7 +771,7 @@ test "Plan getMetadata for PC opcode" {
 
 test "Plan getMetadata for synthetic opcodes" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create constants
     var constants = try allocator.alloc(PlanType.WordType, 1);
@@ -868,7 +868,7 @@ test "Plan getNextInstruction with metadata" {
 
 test "Plan deinit" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     const plan = Plan{
         .instructionStream = try allocator.alloc(InstructionElement, 10),
@@ -1299,7 +1299,7 @@ test "Plan error boundary conditions" {
 
 test "Plan PC to instruction mapping" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create PC mapping
     var pc_map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
@@ -1333,7 +1333,7 @@ test "Plan PC to instruction mapping" {
 
 test "Plan synthetic opcodes comprehensive" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test all synthetic opcode variants
     const synthetic_opcodes = [_]u8{
@@ -1413,7 +1413,7 @@ test "Plan synthetic opcodes comprehensive" {
 
 test "Plan large instruction stream" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create a large instruction stream to test memory handling
     const stream_size = 1000;
@@ -1462,7 +1462,7 @@ test "Plan large instruction stream" {
 
 test "Plan memory management stress test" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create and destroy multiple plans to test memory management
     for (0..20) |cycle| {
@@ -1515,7 +1515,7 @@ test "Plan memory management stress test" {
 
 test "Plan platform-specific InstructionElement handling" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test that InstructionElement behaves correctly on current platform
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -1567,7 +1567,7 @@ test "Plan platform-specific InstructionElement handling" {
 
 test "Plan getNextInstruction edge cases" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -1599,7 +1599,7 @@ test "Plan getNextInstruction edge cases" {
 
 test "Plan debugPrint functionality" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create a simple plan for debug printing
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -1690,7 +1690,7 @@ test "Plan configuration validation comprehensive" {
 
 test "Plan integration with all opcode types" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create comprehensive instruction stream covering all opcode categories
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -1867,7 +1867,7 @@ test "Plan and PlanMinimal interoperability" {
 
 test "Plan extreme edge cases and error resilience" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test with zero-size arrays
     var empty_plan = Plan{
@@ -1902,7 +1902,7 @@ test "Plan extreme edge cases and error resilience" {
 
 test "Plan comprehensive deinit behavior" {
     const allocator = std.testing.allocator;
-    // const PlanType = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test deinit with various configurations
     const test_sizes = [_]usize{ 0, 1, 10, 100, 1000 };
@@ -2213,7 +2213,7 @@ test "Plan synthetic opcode edge cases and error handling" {
         try std.testing.expect(metadata != 0); // Should have valid metadata
         
         // Test PC advancement
-        var idx: InstructionIndexType = 0;
+        var idx: Plan(.{}).InstructionIndexType = 0;
         _ = plan.getNextInstruction(&idx, test_case.synthetic);
         try std.testing.expect(idx > 0); // Should advance PC
     }
@@ -2225,6 +2225,7 @@ test "Plan memory fragmentation resistance" {
     // Create many small plans to test memory fragmentation
     const num_plans = 100;
     var plans: [num_plans]Plan = undefined;
+    const Planner = @import("planner.zig").createPlanner(.{});
     var planners: [num_plans]Planner = undefined;
     
     // Small bytecode pattern
@@ -2406,7 +2407,7 @@ test "Plan concurrent access simulation" {
             _ = plan.getInstructionIndexForPc(@intCast(pc));
             
             // Test next instruction handling
-            var idx: InstructionIndexType = @intCast(pc);
+            var idx: Plan(.{}).InstructionIndexType = @intCast(pc);
             if (idx < bytecode.len) {
                 _ = plan.getNextInstruction(&idx, opcode);
             }
@@ -2551,7 +2552,7 @@ test "Plan resource cleanup and leak prevention" {
     for (0..num_iterations) |i| {
         // Vary bytecode size to stress allocator
         const bytecode_size = (i % 10) + 1;
-        var bytecode = try allocator.alloc(u8, bytecode_size);
+        const bytecode = try allocator.alloc(u8, bytecode_size);
         defer allocator.free(bytecode);
         
         // Fill with simple pattern
@@ -3028,7 +3029,7 @@ test "Plan equivalence between minimal and advanced plans" {
         try std.testing.expectEqualSlices(u8, advanced_plan.bytecode, minimal_plan.bytecode);
         
         // Test instruction stream consistency
-        var advanced_idx: InstructionIndexType = 0;
+        var advanced_idx: Plan(.{}).InstructionIndexType = 0;
         var minimal_idx: PlanMinimal.InstructionIndexType = 0;
         
         // Walk through both instruction streams
@@ -3306,7 +3307,7 @@ test "Plan bytecode analysis completeness validation" {
         // 4. Code/data separation validation
         pc = 0;
         while (pc < pattern.bytecode.len) {
-            const opcode = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
+            _ = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
             
             // Should be able to get instruction index for all instruction starts
             const inst_idx = plan.getInstructionIndexForPc(@intCast(pc));
@@ -3350,6 +3351,7 @@ test "Plan caching and lifecycle management validation" {
     // Test 1: Multiple plans from same bytecode should work independently
     const num_concurrent_plans = 5;
     var plans: [num_concurrent_plans]Plan = undefined;
+    const Planner = @import("planner.zig").createPlanner(.{});
     var planners: [num_concurrent_plans]Planner = undefined;
     
     // Create multiple plans concurrently

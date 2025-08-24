@@ -526,6 +526,7 @@ Evm
 - **Advanced Fusion**: More sophisticated opcode combination patterns
 - **SIMD Optimization**: Vector operations for bulk memory/storage operations
 - **JIT Compilation**: Dynamic compilation of hot execution paths
+- **Size-Optimized Build**: Complete implementation of plan_minimal module to enable ReleaseSmall builds that exclude advanced optimization code paths
 
 ### Long-term Research Directions
 - **Execution Strategies**: Different execution models (threaded code, subroutining)
