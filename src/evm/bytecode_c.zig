@@ -410,6 +410,8 @@ pub export fn evm_bytecode_opcode_name(opcode_value: u8) [*:0]const u8 {
         .REVERT => "REVERT",
         .INVALID => "INVALID",
         .SELFDESTRUCT => "SELFDESTRUCT",
+        .BLOBHASH => "BLOBHASH",
+        .BLOBBASEFEE => "BLOBBASEFEE",
     };
 }
 
