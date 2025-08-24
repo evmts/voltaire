@@ -7,8 +7,9 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
-const GasConstants = @import("primitives").GasConstants;
-const Address = @import("primitives").Address.Address;
+const primitives = @import("primitives");
+const GasConstants = primitives.GasConstants;
+const Address = primitives.Address.Address;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const Host = @import("host.zig").Host;
 
@@ -1077,6 +1078,354 @@ pub fn Frame(comptime config: FrameConfig) type {
         
         pub fn log4(self: *Self, allocator: std.mem.Allocator) Error!void {
             return self.make_log(4, allocator);
+        }
+
+        // Environment/Context opcodes
+
+        /// ADDRESS opcode (0x30) - Get address of currently executing account
+        /// Pushes the address of the currently executing contract.
+        /// Stack: [] → [address]
+        pub fn op_address(self: *Self) Error!void {
+            const addr_u256 = primitives.Address.to_u256(self.contract_address);
+            try self.stack.push(addr_u256);
+        }
+
+        /// BALANCE opcode (0x31) - Get balance of an account
+        /// Pops an address and pushes the balance of that account in wei.
+        /// Stack: [address] → [balance]
+        pub fn op_balance(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const address_u256 = try self.stack.pop();
+            const address = primitives.Address.from_u256(address_u256);
+            const balance = host.get_balance(address);
+            try self.stack.push(balance);
+        }
+
+        /// ORIGIN opcode (0x32) - Get execution origination address  
+        /// Pushes the address of the account that initiated the transaction.
+        /// Stack: [] → [origin]
+        pub fn op_origin(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const origin = host.get_tx_origin();
+            const origin_u256 = primitives.Address.to_u256(origin);
+            try self.stack.push(origin_u256);
+        }
+
+        /// CALLER opcode (0x33) - Get caller address
+        /// Pushes the address of the account that directly called this contract.
+        /// Stack: [] → [caller]
+        pub fn op_caller(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const caller = host.get_caller();
+            const caller_u256 = primitives.Address.to_u256(caller);
+            try self.stack.push(caller_u256);
+        }
+
+        /// CALLVALUE opcode (0x34) - Get deposited value by instruction/transaction
+        /// Pushes the value in wei sent with the current call.
+        /// Stack: [] → [value]
+        pub fn op_callvalue(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const value = host.get_call_value();
+            try self.stack.push(value);
+        }
+
+        /// CALLDATALOAD opcode (0x35) - Load word from input data
+        /// Pops an offset and pushes a 32-byte word from the input data starting at that offset.
+        /// Stack: [offset] → [data]
+        pub fn op_calldataload(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const offset = try self.stack.pop();
+            
+            // Convert u256 to usize, checking for overflow
+            if (offset > std.math.maxInt(usize)) {
+                try self.stack.push(0);
+                return;
+            }
+            
+            const offset_usize = @as(usize, @intCast(offset));
+            const calldata = host.get_calldata();
+            
+            // Load 32 bytes from calldata, zero-padding if needed
+            var word: u256 = 0;
+            for (0..32) |i| {
+                const byte_index = offset_usize + i;
+                if (byte_index < calldata.len) {
+                    const byte_val = calldata[byte_index];
+                    word = (word << 8) | @as(u256, byte_val);
+                } else {
+                    word = word << 8; // Zero padding
+                }
+            }
+            
+            try self.stack.push(word);
+        }
+
+        /// CALLDATASIZE opcode (0x36) - Get size of input data
+        /// Pushes the size of the input data in bytes.
+        /// Stack: [] → [size]
+        pub fn op_calldatasize(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const calldata = host.get_calldata();
+            try self.stack.push(@as(u256, @intCast(calldata.len)));
+        }
+
+        /// CALLDATACOPY opcode (0x37) - Copy input data to memory
+        /// Copies input data to memory.
+        /// Stack: [destOffset, offset, length] → []
+        pub fn op_calldatacopy(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            
+            const dest_offset = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const length = try self.stack.pop();
+            
+            // Check for overflow
+            if (dest_offset > std.math.maxInt(usize) or 
+                offset > std.math.maxInt(usize) or 
+                length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const dest_offset_usize = @as(usize, @intCast(dest_offset));
+            const offset_usize = @as(usize, @intCast(offset));
+            const length_usize = @as(usize, @intCast(length));
+            
+            if (length_usize == 0) return;
+            
+            // Ensure memory capacity
+            const new_size = dest_offset_usize + length_usize;
+            self.memory.ensure_capacity(new_size) catch |err| switch (err) {
+                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
+                else => return Error.AllocationError,
+            };
+            
+            const calldata = host.get_calldata();
+            
+            // Copy calldata to memory with bounds checking
+            for (0..length_usize) |i| {
+                const src_index = offset_usize + i;
+                const dest_index = dest_offset_usize + i;
+                const byte_val = if (src_index < calldata.len) calldata[src_index] else 0;
+                self.memory.set_byte(dest_index, byte_val) catch return Error.OutOfBounds;
+            }
+        }
+
+        /// CODESIZE opcode (0x38) - Get size of executing contract code
+        /// Pushes the size of the currently executing contract's code.
+        /// Stack: [] → [size]
+        pub fn op_codesize(self: *Self) Error!void {
+            try self.stack.push(@as(u256, @intCast(self.bytecode.len)));
+        }
+
+        /// CODECOPY opcode (0x39) - Copy executing contract code to memory
+        /// Copies contract code to memory.
+        /// Stack: [destOffset, offset, length] → []
+        pub fn op_codecopy(self: *Self) Error!void {
+            const dest_offset = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const length = try self.stack.pop();
+            
+            // Check for overflow
+            if (dest_offset > std.math.maxInt(usize) or 
+                offset > std.math.maxInt(usize) or 
+                length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const dest_offset_usize = @as(usize, @intCast(dest_offset));
+            const offset_usize = @as(usize, @intCast(offset));
+            const length_usize = @as(usize, @intCast(length));
+            
+            if (length_usize == 0) return;
+            
+            // Ensure memory capacity
+            const new_size = dest_offset_usize + length_usize;
+            self.memory.ensure_capacity(new_size) catch |err| switch (err) {
+                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
+                else => return Error.AllocationError,
+            };
+            
+            // Copy contract code to memory with bounds checking
+            for (0..length_usize) |i| {
+                const src_index = offset_usize + i;
+                const dest_index = dest_offset_usize + i;
+                const byte_val = if (src_index < self.bytecode.len) self.bytecode[src_index] else 0;
+                self.memory.set_byte(dest_index, byte_val) catch return Error.OutOfBounds;
+            }
+        }
+
+        /// GASPRICE opcode (0x3A) - Get price of gas in current transaction
+        /// Pushes the gas price of the current transaction.
+        /// Stack: [] → [gas_price]
+        pub fn op_gasprice(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const gas_price = host.get_gas_price();
+            try self.stack.push(gas_price);
+        }
+
+        /// EXTCODESIZE opcode (0x3B) - Get size of account's code
+        /// Pops an address and pushes the size of that account's code in bytes.
+        /// Stack: [address] → [size]
+        pub fn op_extcodesize(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const address_u256 = try self.stack.pop();
+            const address = primitives.Address.from_u256(address_u256);
+            const code = host.get_code(address);
+            try self.stack.push(@as(u256, @intCast(code.len)));
+        }
+
+        /// EXTCODECOPY opcode (0x3C) - Copy account's code to memory
+        /// Copies code from an external account to memory.
+        /// Stack: [address, destOffset, offset, length] → []
+        pub fn op_extcodecopy(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            
+            const address_u256 = try self.stack.pop();
+            const dest_offset = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const length = try self.stack.pop();
+            
+            // Check for overflow
+            if (dest_offset > std.math.maxInt(usize) or 
+                offset > std.math.maxInt(usize) or 
+                length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const address = primitives.Address.from_u256(address_u256);
+            const dest_offset_usize = @as(usize, @intCast(dest_offset));
+            const offset_usize = @as(usize, @intCast(offset));
+            const length_usize = @as(usize, @intCast(length));
+            
+            if (length_usize == 0) return;
+            
+            // Ensure memory capacity
+            const new_size = dest_offset_usize + length_usize;
+            self.memory.ensure_capacity(new_size) catch |err| switch (err) {
+                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
+                else => return Error.AllocationError,
+            };
+            
+            const code = host.get_code(address);
+            
+            // Copy external code to memory with bounds checking
+            for (0..length_usize) |i| {
+                const src_index = offset_usize + i;
+                const dest_index = dest_offset_usize + i;
+                const byte_val = if (src_index < code.len) code[src_index] else 0;
+                self.memory.set_byte(dest_index, byte_val) catch return Error.OutOfBounds;
+            }
+        }
+
+        /// RETURNDATASIZE opcode (0x3D) - Get size of output data from previous call
+        /// Pushes the size of the return data from the last call.
+        /// Stack: [] → [size]
+        pub fn op_returndatasize(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const return_data = host.get_return_data();
+            try self.stack.push(@as(u256, @intCast(return_data.len)));
+        }
+
+        /// RETURNDATACOPY opcode (0x3E) - Copy output data from previous call to memory
+        /// Copies return data from the last call to memory.
+        /// Stack: [destOffset, offset, length] → []
+        pub fn op_returndatacopy(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            
+            const dest_offset = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const length = try self.stack.pop();
+            
+            // Check for overflow
+            if (dest_offset > std.math.maxInt(usize) or 
+                offset > std.math.maxInt(usize) or 
+                length > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
+            
+            const dest_offset_usize = @as(usize, @intCast(dest_offset));
+            const offset_usize = @as(usize, @intCast(offset));
+            const length_usize = @as(usize, @intCast(length));
+            
+            if (length_usize == 0) return;
+            
+            const return_data = host.get_return_data();
+            
+            // Check if we're reading beyond the return data
+            if (offset_usize > return_data.len or 
+                (offset_usize + length_usize) > return_data.len) {
+                return Error.OutOfBounds;
+            }
+            
+            // Ensure memory capacity
+            const new_size = dest_offset_usize + length_usize;
+            self.memory.ensure_capacity(new_size) catch |err| switch (err) {
+                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
+                else => return Error.AllocationError,
+            };
+            
+            // Copy return data to memory
+            for (0..length_usize) |i| {
+                const src_index = offset_usize + i;
+                const dest_index = dest_offset_usize + i;
+                const byte_val = return_data[src_index];
+                self.memory.set_byte(dest_index, byte_val) catch return Error.OutOfBounds;
+            }
+        }
+
+        /// EXTCODEHASH opcode (0x3F) - Get hash of account's code
+        /// Pops an address and pushes the keccak256 hash of that account's code.
+        /// Stack: [address] → [hash]
+        pub fn op_extcodehash(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const address_u256 = try self.stack.pop();
+            const address = primitives.Address.from_u256(address_u256);
+            
+            if (!host.account_exists(address)) {
+                // Non-existent account returns 0 per EIP-1052
+                try self.stack.push(0);
+                return;
+            }
+            
+            const code = host.get_code(address);
+            if (code.len == 0) {
+                // Existing account with empty code returns keccak256("") constant
+                const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+                try self.stack.push(empty_hash_u256);
+                return;
+            }
+            
+            // Compute keccak256 hash of the code
+            var hash: [32]u8 = undefined;
+            const crypto = @import("crypto");
+            crypto.Keccak256.hash(code, &hash, .{});
+            
+            // Convert hash to u256 (big-endian)
+            var hash_u256: u256 = 0;
+            for (hash) |byte| {
+                hash_u256 = (hash_u256 << 8) | @as(u256, byte);
+            }
+            
+            try self.stack.push(hash_u256);
+        }
+
+        /// CHAINID opcode (0x46) - Get chain ID
+        /// Pushes the chain ID of the current network.
+        /// Stack: [] → [chain_id]
+        pub fn op_chainid(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const chain_id = host.get_chain_id();
+            try self.stack.push(chain_id);
+        }
+
+        /// SELFBALANCE opcode (0x47) - Get balance of currently executing account
+        /// Pushes the balance of the currently executing contract.
+        /// Stack: [] → [balance]
+        pub fn op_selfbalance(self: *Self) Error!void {
+            const host = self.host orelse return Error.InvalidOpcode;
+            const balance = host.get_balance(self.contract_address);
+            try self.stack.push(balance);
         }
     };
 }

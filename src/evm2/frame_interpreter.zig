@@ -1518,11 +1518,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 test "FrameInterpreter basic execution" {
     std.testing.log_level = .warn;
     const allocator = std.testing.allocator;
-    const FrameInterpreter(.{}) = FrameInterpreter(.{});
+    const FrameInterpreterType = FrameInterpreter(.{});
 
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
     const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
-    var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
     defer interpreter.deinit(allocator);
 
     std.log.warn("\n=== FrameInterpreter basic execution test ===", .{});
@@ -1541,12 +1541,12 @@ test "FrameInterpreter basic execution" {
 
 test "FrameInterpreter OUT_OF_BOUNDS error" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter(.{}) = FrameInterpreter(.{});
+    const FrameInterpreterType = FrameInterpreter(.{});
 
     // Bytecode without explicit STOP: PUSH1 5
     // The planner should handle this gracefully but for now add STOP
     const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5 STOP
-    var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
     defer interpreter.deinit(allocator);
 
     // Should execute normally
@@ -1556,11 +1556,11 @@ test "FrameInterpreter OUT_OF_BOUNDS error" {
 
 test "FrameInterpreter invalid opcode" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter(.{}) = FrameInterpreter(.{});
+    const FrameInterpreterType = FrameInterpreter(.{});
 
     // Bytecode with invalid opcode: 0xFE (INVALID)
     const bytecode = [_]u8{0xFE};
-    var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
     defer interpreter.deinit(allocator);
 
     // Should return InvalidOpcode error
@@ -1570,11 +1570,11 @@ test "FrameInterpreter invalid opcode" {
 
 test "FrameInterpreter PUSH values metadata" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter(.{}) = FrameInterpreter(.{});
+    const FrameInterpreterType = FrameInterpreter(.{});
 
     // Test PUSH1 with value stored in metadata
     const bytecode = [_]u8{ 0x60, 0xFF, 0x00 }; // PUSH1 255, STOP
-    var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret(); // Handles STOP internally
@@ -1585,12 +1585,12 @@ test "FrameInterpreter PUSH values metadata" {
 
 test "FrameInterpreter complex bytecode sequence" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter(.{}) = FrameInterpreter(.{});
+    const FrameInterpreterType = FrameInterpreter(.{});
 
     // PUSH1 5, PUSH1 3, ADD, PUSH1 2, MUL, STOP
     // Should compute (5 + 3) * 2 = 16
     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x02, 0x02, 0x00 };
-    var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret(); // Handles STOP internally
@@ -1601,12 +1601,12 @@ test "FrameInterpreter complex bytecode sequence" {
 
 test "FrameInterpreter handles all PUSH opcodes correctly" {
     const allocator = std.testing.allocator;
-    const FrameInterpreter(.{}) = FrameInterpreter(.{});
+    const FrameInterpreterType = FrameInterpreter(.{});
 
     // Test PUSH3 through interpreter
     {
         const bytecode = [_]u8{ 0x62, 0x12, 0x34, 0x56, 0x00 }; // PUSH3 0x123456 STOP
-        var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
         defer interpreter.deinit(allocator);
 
         std.log.warn("\n=== PUSH3 Test Starting ===", .{});
@@ -1624,7 +1624,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         }
         bytecode[11] = 0x00; // STOP
 
-        var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
         defer interpreter.deinit(allocator);
 
         try interpreter.interpret(); // Handles STOP internally
@@ -1645,7 +1645,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         }
         bytecode[21] = 0x00; // STOP
 
-        var interpreter = try FrameInterpreter(.{}).init(allocator, &bytecode, 1000000, void{});
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
         defer interpreter.deinit(allocator);
 
         try interpreter.interpret(); // Handles STOP internally
