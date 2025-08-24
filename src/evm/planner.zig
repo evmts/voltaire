@@ -16,6 +16,7 @@ const plan_minimal_mod = @import("plan_minimal.zig");
 pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
 const createBytecode = @import("bytecode.zig").createBytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
+const Hardfork = @import("hardfork.zig").Hardfork;
 
 // Re-export commonly used types from plan
 pub const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
@@ -118,8 +119,15 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         /// First checks the LRU cache for a previously analyzed plan. If not found,
         /// analyzes the bytecode and caches the result. The returned plan is owned
         /// by the cache and must not be freed by the caller.
-        pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const PlanType {
-            const key = std.hash.Wyhash.hash(0, bytecode);
+        ///
+        /// The hardfork parameter is included in the cache key to avoid incorrect
+        /// plan reuse when hardfork rules change (e.g., new opcodes, gas costs).
+        pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn, hardfork: Hardfork) !*const PlanType {
+            // Include hardfork in cache key to avoid incorrect plan reuse
+            var hasher = std.hash.Wyhash.init(0);
+            hasher.update(bytecode);
+            hasher.update(std.mem.asBytes(&hardfork));
+            const key = hasher.final();
             
             // Check cache
             if (self.cache_map.get(key)) |node| {
@@ -648,7 +656,7 @@ test "planner: bitmaps mark push-data and jumpdest correctly" {
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
-    const plan = try planner.getOrAnalyze(&bytecode, handlers); // Just test that it works
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT); // Just test that it works
     
     // Verify plan was created successfully
     try std.testing.expect(plan.instructionStream.len > 0);
@@ -667,7 +675,7 @@ test "planner: blocks and lookupInstrIdx basic" {
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Verify plan was created successfully
     try std.testing.expect(plan.instructionStream.len > 0);
@@ -704,8 +712,8 @@ test "planner: SIMD parity with scalar" {
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
-    const plan_simd = try planner_simd.getOrAnalyze(&bc, handlers);
-    const plan_scalar = try planner_scalar.getOrAnalyze(&bc, handlers);
+    const plan_simd = try planner_simd.getOrAnalyze(&bc, handlers, Hardfork.DEFAULT);
+    const plan_scalar = try planner_scalar.getOrAnalyze(&bc, handlers, Hardfork.DEFAULT);
 
     // Compare instruction stream lengths
     try std.testing.expectEqual(plan_scalar.instructionStream.len, plan_simd.instructionStream.len);
@@ -727,7 +735,7 @@ test "planner: static gas charge and stack height ranges" {
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
-    const plan = try planner.getOrAnalyze(&bc, handlers);
+    const plan = try planner.getOrAnalyze(&bc, handlers, Hardfork.DEFAULT);
     _ = plan;
 
     // Entry block metadata is stored in planner.start
@@ -749,7 +757,7 @@ test "planner: lookupInstructionIdx returns null for non-dest" {
     // Create dummy handlers for test
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
-    const plan = try planner.getOrAnalyze(&bc, handlers);
+    const plan = try planner.getOrAnalyze(&bc, handlers, Hardfork.DEFAULT);
     _ = plan;
     // No jump_table in runtime plan anymore
 }
@@ -765,7 +773,7 @@ test "planner: init with allocator" {
     // Create dummy handlers
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testMockHandler;
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Verify plan was created successfully  
     try std.testing.expect(plan.instructionStream.len > 0);
@@ -1023,7 +1031,7 @@ test "create_instruction_stream: basic handler array" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have at least 2 instructions (handler + metadata)
     try std.testing.expect(plan.instructionStream.len >= 2);
@@ -1047,7 +1055,7 @@ test "PUSH inline vs pointer: small values stored inline" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have handler + inline value
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
@@ -1076,7 +1084,7 @@ test "PUSH inline vs pointer: large values use pointer" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have handler + pointer
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
@@ -1109,7 +1117,7 @@ test "fusion detection: PUSH+ADD inline" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have fused handler + inline value  
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
@@ -1140,7 +1148,7 @@ test "fusion detection: PUSH+ADD pointer" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have fused handler + pointer
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
@@ -1177,7 +1185,7 @@ test "fusion detection: PUSH+JUMP inline" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have fused handler + inline value + rest
     try std.testing.expect(plan.instructionStream.len >= 2);
@@ -1210,7 +1218,7 @@ test "fusion detection: PUSH+JUMP pointer" {
     var planner = try Planner(.{}).init(allocator, 16);
     defer planner.deinit();
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should have fused handler + pointer
     try std.testing.expect(plan.instructionStream.len >= 2);
@@ -1245,7 +1253,7 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
     
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     // Note: plan is cached, don't call deinit directly
     
     // Find JUMPDEST in the instruction stream
@@ -1299,7 +1307,7 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
     
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     // Note: plan is cached, don't call deinit directly
     
     // Dynamic jump support is handled during execution, not in the plan
@@ -1338,7 +1346,7 @@ test "fusion detection: PUSH+MUL fusion" {
     
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     // Note: plan is cached, don't call deinit directly
     
     // Should have detected PUSH+MUL fusion
@@ -1367,7 +1375,7 @@ test "fusion detection: PUSH+DIV fusion" {
     
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     // Note: plan is cached, don't call deinit directly
     
     // Should have detected PUSH+DIV fusion
@@ -1400,7 +1408,7 @@ test "fusion detection: PUSH+JUMPI fusion" {
     
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     // Note: plan is cached, don't call deinit directly
     
     // Should have PUSH1 1, then fused PUSH+JUMPI
@@ -1443,12 +1451,12 @@ test "analysis cache: LRU eviction works correctly" {
     const bytecode3 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x03, @intFromEnum(Opcode.STOP) };
     
     // Add first two plans (fills cache to capacity)
-    const plan1 = try planner.getOrAnalyze(&bytecode1, handlers);
-    const plan2 = try planner.getOrAnalyze(&bytecode2, handlers);
+    const plan1 = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    const plan2 = try planner.getOrAnalyze(&bytecode2, handlers, Hardfork.DEFAULT);
     try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
     
     // Access plan1 to make it most recent
-    const plan1_again = try planner.getOrAnalyze(&bytecode1, handlers);
+    const plan1_again = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
     try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan1_again));
     
     // Add third plan - should evict plan2 (least recently used)
@@ -1456,11 +1464,11 @@ test "analysis cache: LRU eviction works correctly" {
     try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
     
     // plan1 should still be in cache
-    const plan1_final = try planner.getOrAnalyze(&bytecode1, handlers);
+    const plan1_final = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
     try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan1_final));
     
     // plan2 should be evicted, so we should get a new instance
-    const plan2_new = try planner.getOrAnalyze(&bytecode2, handlers);
+    const plan2_new = try planner.getOrAnalyze(&bytecode2, handlers, Hardfork.DEFAULT);
     try std.testing.expect(@intFromPtr(plan2) != @intFromPtr(plan2_new));
 }
 
@@ -1485,10 +1493,10 @@ test "analysis cache: stores and reuses plans" {
     };
     
     // First call should analyze and cache
-    const plan1 = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan1 = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Second call should return cached plan (same reference)
-    const plan2 = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan2 = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Should be the same plan reference
     try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan2));
@@ -1521,8 +1529,8 @@ test "analysis cache: clear cache functionality" {
     const bytecode1 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
     const bytecode2 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x02, @intFromEnum(Opcode.STOP) };
     
-    _ = try planner.getOrAnalyze(&bytecode1, handlers);
-    _ = try planner.getOrAnalyze(&bytecode2, handlers);
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    _ = try planner.getOrAnalyze(&bytecode2, handlers, Hardfork.DEFAULT);
     try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
     
     // Clear cache
@@ -1610,7 +1618,7 @@ test "integration: complex bytecode with all features" {
     
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     // Note: plan is cached, don't call deinit directly
     
     // Verify we have all the features:
