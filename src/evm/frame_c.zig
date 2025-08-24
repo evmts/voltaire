@@ -7,14 +7,18 @@ const tracer_mod = evm;
 // FRAME C API - EVM Frame operations exported to C
 // ============================================================================
 
-// Create our frame type with default config for C API
+// Create our frame interpreter type with default config for C API
 // TODO: We should somehow allow end user to configure this even if it's just showing them how to build from scratch
 // Since the configuration is comptime we can't do this dynamically over FFI
 // We might just want to make an instance for every hardfork as it's own different build target we expose
-pub const Frame = frame_mod.Frame(.{});
+pub const FrameInterpreter = evm.createFrameInterpreter(.{});
+pub const Frame = evm.Frame(.{}); // Still need Frame type for some operations
 
-// Create debug frame type with debugging tracer
-pub const DebugFrame = frame_mod.Frame(.{
+// Create debug frame interpreter type with debugging tracer
+pub const DebugFrameInterpreter = evm.createFrameInterpreter(.{
+    .TracerType = tracer_mod.DebuggingTracer,
+});
+pub const DebugFrame = evm.Frame(.{
     .TracerType = tracer_mod.DebuggingTracer,
 });
 
@@ -36,11 +40,42 @@ pub const EVM_ERROR_BYTECODE_TOO_LARGE: c_int = -8;
 pub const EVM_ERROR_STOP: c_int = -9;
 pub const EVM_ERROR_NULL_POINTER: c_int = -10;
 pub const EVM_ERROR_WRITE_PROTECTION: c_int = -11;
+pub const EVM_ERROR_REVERT: c_int = -12;
+pub const EVM_ERROR_UNKNOWN: c_int = -99;
 
 // ============================================================================
 // INTERNAL HELPERS
 // ============================================================================
 
+// Map stack errors to C error codes
+pub fn stackErrorToCError(err: anyerror) c_int {
+    return switch (err) {
+        error.StackOverflow => EVM_ERROR_STACK_OVERFLOW,
+        error.StackUnderflow => EVM_ERROR_STACK_UNDERFLOW,
+        error.AllocationError => EVM_ERROR_ALLOCATION,
+        else => EVM_ERROR_UNKNOWN,
+    };
+}
+
+// Map frame errors to C error codes
+pub fn frameErrorToCError(err: anyerror) c_int {
+    return switch (err) {
+        error.StackOverflow => EVM_ERROR_STACK_OVERFLOW,
+        error.StackUnderflow => EVM_ERROR_STACK_UNDERFLOW,
+        error.OutOfGas => EVM_ERROR_OUT_OF_GAS,
+        error.InvalidJump => EVM_ERROR_INVALID_JUMP,
+        error.InvalidOpcode => EVM_ERROR_INVALID_OPCODE,
+        error.OutOfBounds => EVM_ERROR_OUT_OF_BOUNDS,
+        error.AllocationError => EVM_ERROR_ALLOCATION,
+        error.BytecodeTooLarge => EVM_ERROR_BYTECODE_TOO_LARGE,
+        error.STOP => EVM_ERROR_STOP,
+        error.WriteProtection => EVM_ERROR_WRITE_PROTECTION,
+        error.REVERT => EVM_ERROR_REVERT,
+        else => EVM_ERROR_UNKNOWN,
+    };
+}
+
+// Generic error mapping for any error type
 pub fn zigErrorToCError(err: anytype) c_int {
     return switch (err) {
         error.StackOverflow => EVM_ERROR_STACK_OVERFLOW,
@@ -53,12 +88,14 @@ pub fn zigErrorToCError(err: anytype) c_int {
         error.BytecodeTooLarge => EVM_ERROR_BYTECODE_TOO_LARGE,
         error.STOP => EVM_ERROR_STOP,
         error.WriteProtection => EVM_ERROR_WRITE_PROTECTION,
+        error.REVERT => EVM_ERROR_REVERT,
+        else => EVM_ERROR_UNKNOWN,
     };
 }
 
-// Wrapper struct to hold frame and owned bytecode
+// Wrapper struct to hold frame interpreter and owned bytecode
 pub const FrameHandle = struct {
-    frame: Frame,
+    interpreter: FrameInterpreter,
     bytecode_owned: []u8,
     initial_gas: u64,
     is_stopped: bool,
@@ -66,7 +103,7 @@ pub const FrameHandle = struct {
 
 // Debug frame handle with debugging tracer
 pub const DebugFrameHandle = struct {
-    frame: DebugFrame,
+    interpreter: DebugFrameInterpreter,
     bytecode_owned: []u8,
     initial_gas: u64,
     is_stopped: bool,
@@ -78,7 +115,7 @@ pub const DebugFrameHandle = struct {
 
 /// Create a new EVM frame with the given bytecode and initial gas
 /// Returns opaque pointer to frame handle, or null on failure
-export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
+pub export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
     // Validate inputs
     if (bytecode_len == 0) {
         return null;
@@ -96,8 +133,8 @@ export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_g
     };
     errdefer allocator.free(handle.bytecode_owned);
 
-    // Initialize frame
-    handle.frame = Frame.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null) catch {
+    // Initialize frame interpreter  
+    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
@@ -110,24 +147,24 @@ export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_g
 }
 
 /// Destroy frame and free all associated memory
-export fn evm_frame_destroy(frame_ptr: ?*anyopaque) void {
+pub export fn evm_frame_destroy(frame_ptr: ?*anyopaque) void {
     if (frame_ptr) |ptr| {
         const handle: *FrameHandle = @ptrCast(@alignCast(ptr));
-        handle.frame.deinit(allocator);
+        handle.interpreter.deinit(allocator);
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
     }
 }
 
 /// Reset frame to initial state with new gas amount
-export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
+pub export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
     // Deinitialize current frame
-    handle.frame.deinit(allocator);
+    handle.interpreter.frame.deinit(allocator);
 
-    // Reinitialize with same bytecode
-    handle.frame = Frame.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}, null) catch |err| {
+    // Reinitialize interpreter with same bytecode
+    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}) catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -141,12 +178,12 @@ export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
 // ============================================================================
 
 /// Execute frame until completion or error
-export fn evm_frame_execute(frame_ptr: ?*anyopaque) c_int {
+pub export fn evm_frame_execute(frame_ptr: ?*anyopaque) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
     if (handle.is_stopped) return EVM_ERROR_STOP;
 
-    handle.frame.interpret(allocator) catch |err| {
+    handle.interpreter.interpret() catch |err| {
         handle.is_stopped = true;
         return zigErrorToCError(err);
     };
@@ -160,29 +197,29 @@ export fn evm_frame_execute(frame_ptr: ?*anyopaque) c_int {
 // ============================================================================
 
 /// Push a 64-bit value onto the stack (zero-extended to 256 bits)
-export fn evm_frame_push_u64(frame_ptr: ?*anyopaque, value: u64) c_int {
+pub export fn evm_frame_push_u64(frame_ptr: ?*anyopaque, value: u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    handle.frame.stack.push(@as(u256, value)) catch |err| {
-        return zigErrorToCError(err);
+    handle.interpreter.frame.stack.push(@as(u256, value)) catch |err| {
+        return stackErrorToCError(err);
     };
 
     return EVM_SUCCESS;
 }
 
 /// Push a 32-bit value onto the stack (zero-extended to 256 bits)
-export fn evm_frame_push_u32(frame_ptr: ?*anyopaque, value: u32) c_int {
+pub export fn evm_frame_push_u32(frame_ptr: ?*anyopaque, value: u32) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    handle.frame.stack.push(@as(u256, value)) catch |err| {
-        return zigErrorToCError(err);
+    handle.interpreter.frame.stack.push(@as(u256, value)) catch |err| {
+        return stackErrorToCError(err);
     };
 
     return EVM_SUCCESS;
 }
 
 /// Push 256-bit value from byte array (big-endian)
-export fn evm_frame_push_bytes(frame_ptr: ?*anyopaque, bytes: [*]const u8, len: usize) c_int {
+pub export fn evm_frame_push_bytes(frame_ptr: ?*anyopaque, bytes: [*]const u8, len: usize) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
     if (len > 32) return EVM_ERROR_OUT_OF_BOUNDS;
@@ -195,19 +232,19 @@ export fn evm_frame_push_bytes(frame_ptr: ?*anyopaque, bytes: [*]const u8, len: 
         value = (value << 8) | byte;
     }
 
-    handle.frame.stack.push(value) catch |err| {
-        return zigErrorToCError(err);
+    handle.interpreter.frame.stack.push(value) catch |err| {
+        return stackErrorToCError(err);
     };
 
     return EVM_SUCCESS;
 }
 
 /// Pop value from stack and return as 64-bit (truncated if larger)
-export fn evm_frame_pop_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
+pub export fn evm_frame_pop_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.stack.pop() catch |err| {
-        return zigErrorToCError(err);
+    const result = handle.interpreter.frame.stack.pop() catch |err| {
+        return stackErrorToCError(err);
     };
 
     value_out.* = @truncate(result);
@@ -215,11 +252,11 @@ export fn evm_frame_pop_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
 }
 
 /// Pop value from stack and return as 32-bit (truncated if larger)
-export fn evm_frame_pop_u32(frame_ptr: ?*anyopaque, value_out: *u32) c_int {
+pub export fn evm_frame_pop_u32(frame_ptr: ?*anyopaque, value_out: *u32) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.stack.pop() catch |err| {
-        return zigErrorToCError(err);
+    const result = handle.interpreter.frame.stack.pop() catch |err| {
+        return stackErrorToCError(err);
     };
 
     value_out.* = @truncate(result);
@@ -227,11 +264,11 @@ export fn evm_frame_pop_u32(frame_ptr: ?*anyopaque, value_out: *u32) c_int {
 }
 
 /// Pop value from stack and return as byte array (big-endian, 32 bytes)
-export fn evm_frame_pop_bytes(frame_ptr: ?*anyopaque, bytes_out: [*]u8) c_int {
+pub export fn evm_frame_pop_bytes(frame_ptr: ?*anyopaque, bytes_out: [*]u8) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.stack.pop() catch |err| {
-        return zigErrorToCError(err);
+    const result = handle.interpreter.frame.stack.pop() catch |err| {
+        return stackErrorToCError(err);
     };
 
     // Convert u256 to big-endian bytes
@@ -247,11 +284,11 @@ export fn evm_frame_pop_bytes(frame_ptr: ?*anyopaque, bytes_out: [*]u8) c_int {
 }
 
 /// Peek at top of stack without removing (return as 64-bit)
-export fn evm_frame_peek_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
+pub export fn evm_frame_peek_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const result = handle.frame.stack.peek() catch |err| {
-        return zigErrorToCError(err);
+    const result = handle.interpreter.frame.stack.peek() catch |err| {
+        return stackErrorToCError(err);
     };
 
     value_out.* = @truncate(result);
@@ -259,13 +296,13 @@ export fn evm_frame_peek_u64(frame_ptr: ?*anyopaque, value_out: *u64) c_int {
 }
 
 /// Get current stack depth
-export fn evm_frame_stack_size(frame_ptr: ?*anyopaque) u32 {
+pub export fn evm_frame_stack_size(frame_ptr: ?*anyopaque) u32 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    return @intCast(handle.frame.next_stack_index);
+    return @intCast(handle.interpreter.frame.stack.size());
 }
 
 /// Get maximum stack capacity
-export fn evm_frame_stack_capacity(frame_ptr: ?*anyopaque) u32 {
+pub export fn evm_frame_stack_capacity(frame_ptr: ?*anyopaque) u32 {
     _ = frame_ptr;
     return 1024;
 }
@@ -275,40 +312,41 @@ export fn evm_frame_stack_capacity(frame_ptr: ?*anyopaque) u32 {
 // ============================================================================
 
 /// Get remaining gas
-export fn evm_frame_get_gas_remaining(frame_ptr: ?*anyopaque) u64 {
+pub export fn evm_frame_get_gas_remaining(frame_ptr: ?*anyopaque) u64 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    return if (handle.frame.gas_remaining < 0) 0 else @intCast(handle.frame.gas_remaining);
+    return if (handle.interpreter.frame.gas_remaining < 0) 0 else @intCast(handle.interpreter.frame.gas_remaining);
 }
 
 /// Get gas used so far
-export fn evm_frame_get_gas_used(frame_ptr: ?*anyopaque) u64 {
+pub export fn evm_frame_get_gas_used(frame_ptr: ?*anyopaque) u64 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    const remaining = if (handle.frame.gas_remaining < 0) 0 else @as(u64, @intCast(handle.frame.gas_remaining));
+    const remaining = if (handle.interpreter.frame.gas_remaining < 0) 0 else @as(u64, @intCast(handle.interpreter.frame.gas_remaining));
     return handle.initial_gas - remaining;
 }
 
 /// Get current program counter
-export fn evm_frame_get_pc(frame_ptr: ?*anyopaque) u32 {
+pub export fn evm_frame_get_pc(frame_ptr: ?*anyopaque) u32 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    return @intCast(handle.frame.pc);
+    return @intCast(handle.interpreter.getCurrentPc() orelse 0);
 }
 
 /// Get bytecode length
-export fn evm_frame_get_bytecode_len(frame_ptr: ?*anyopaque) usize {
+pub export fn evm_frame_get_bytecode_len(frame_ptr: ?*anyopaque) usize {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    return handle.frame.bytecode.len;
+    return handle.interpreter.frame.bytecode.len;
 }
 
 /// Get current opcode at PC (returns 0xFF if out of bounds)
-export fn evm_frame_get_current_opcode(frame_ptr: ?*anyopaque) u8 {
+pub export fn evm_frame_get_current_opcode(frame_ptr: ?*anyopaque) u8 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0xFF));
 
-    if (handle.frame.pc >= handle.frame.bytecode.len) return 0xFF;
-    return handle.frame.bytecode[handle.frame.pc];
+    const pc = handle.interpreter.getCurrentPc() orelse return 0xFF;
+    if (pc >= handle.interpreter.frame.bytecode.len) return 0xFF;
+    return handle.interpreter.frame.bytecode[pc];
 }
 
 /// Check if execution has stopped
-export fn evm_frame_is_stopped(frame_ptr: ?*anyopaque) bool {
+pub export fn evm_frame_is_stopped(frame_ptr: ?*anyopaque) bool {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return true));
     return handle.is_stopped;
 }
@@ -318,7 +356,7 @@ export fn evm_frame_is_stopped(frame_ptr: ?*anyopaque) bool {
 // ============================================================================
 
 /// Convert error code to human-readable string
-export fn evm_error_string(error_code: c_int) [*:0]const u8 {
+pub export fn evm_error_string(error_code: c_int) [*:0]const u8 {
     return switch (error_code) {
         EVM_SUCCESS => "Success",
         EVM_ERROR_STACK_OVERFLOW => "Stack overflow",
@@ -336,7 +374,7 @@ export fn evm_error_string(error_code: c_int) [*:0]const u8 {
 }
 
 /// Check if error represents a normal stop condition
-export fn evm_error_is_stop(error_code: c_int) bool {
+pub export fn evm_error_is_stop(error_code: c_int) bool {
     return error_code == EVM_ERROR_STOP;
 }
 
@@ -345,7 +383,7 @@ export fn evm_error_is_stop(error_code: c_int) bool {
 // ============================================================================
 
 /// Create a debugging frame with tracing capabilities
-export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
+pub export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
     // Validate inputs
     if (bytecode_len == 0) {
         return null;
@@ -363,8 +401,8 @@ export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize, ini
     };
     errdefer allocator.free(handle.bytecode_owned);
 
-    // Initialize debug frame
-    handle.frame = DebugFrame.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null) catch {
+    // Initialize debug frame interpreter
+    handle.interpreter = DebugFrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
@@ -377,102 +415,103 @@ export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize, ini
 }
 
 /// Set step mode for debugging frame
-export fn evm_debug_set_step_mode(frame_ptr: ?*anyopaque, enabled: bool) c_int {
+pub export fn evm_debug_set_step_mode(frame_ptr: ?*anyopaque, enabled: bool) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     tracer_ptr.setStepMode(enabled);
     return EVM_SUCCESS;
 }
 
 /// Check if frame is currently paused
-export fn evm_debug_is_paused(frame_ptr: ?*anyopaque) bool {
+pub export fn evm_debug_is_paused(frame_ptr: ?*anyopaque) bool {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return false));
-    return handle.frame.tracer.paused;
+    return handle.interpreter.frame.tracer.paused;
 }
 
 /// Resume execution from paused state
-export fn evm_debug_resume(frame_ptr: ?*anyopaque) c_int {
+pub export fn evm_debug_resume(frame_ptr: ?*anyopaque) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
     // Get pointer to tracer and call resumeExecution
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     tracer_ptr.resumeExecution();
     return EVM_SUCCESS;
 }
 
 /// Execute a single step and pause
-export fn evm_debug_step(frame_ptr: ?*anyopaque) c_int {
+pub export fn evm_debug_step(frame_ptr: ?*anyopaque) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
     // Enable step mode and execute one instruction
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     tracer_ptr.setStepMode(true);
     tracer_ptr.resumeExecution();
 
     // Execute until next pause (should be immediate in step mode)
-    handle.frame.interpret(allocator) catch |err| {
+    handle.interpreter.interpret() catch |err| {
         if (err == error.STOP) {
             handle.is_stopped = true;
             return EVM_ERROR_STOP;
         }
-        return zigErrorToCError(err);
+        return stackErrorToCError(err);
     };
 
     return EVM_SUCCESS;
 }
 
 /// Add a breakpoint at the given PC
-export fn evm_debug_add_breakpoint(frame_ptr: ?*anyopaque, pc: u32) c_int {
+pub export fn evm_debug_add_breakpoint(frame_ptr: ?*anyopaque, pc: u32) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     tracer_ptr.addBreakpoint(pc) catch return EVM_ERROR_ALLOCATION;
     return EVM_SUCCESS;
 }
 
 /// Remove a breakpoint at the given PC
-export fn evm_debug_remove_breakpoint(frame_ptr: ?*anyopaque, pc: u32) c_int {
+pub export fn evm_debug_remove_breakpoint(frame_ptr: ?*anyopaque, pc: u32) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
 
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     return if (tracer_ptr.removeBreakpoint(pc)) 1 else 0;
 }
 
 /// Check if there's a breakpoint at the given PC
-export fn evm_debug_has_breakpoint(frame_ptr: ?*anyopaque, pc: u32) c_int {
+pub export fn evm_debug_has_breakpoint(frame_ptr: ?*anyopaque, pc: u32) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
 
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     return if (tracer_ptr.hasBreakpoint(pc)) 1 else 0;
 }
 
 /// Clear all breakpoints
-export fn evm_debug_clear_breakpoints(frame_ptr: ?*anyopaque) c_int {
+pub export fn evm_debug_clear_breakpoints(frame_ptr: ?*anyopaque) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     tracer_ptr.clearBreakpoints();
     return EVM_SUCCESS;
 }
 
 /// Get the number of execution steps taken
-export fn evm_debug_get_step_count(frame_ptr: ?*anyopaque) u64 {
+pub export fn evm_debug_get_step_count(frame_ptr: ?*anyopaque) u64 {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     return tracer_ptr.getStepCount();
 }
 
 /// Get current stack contents
-export fn evm_frame_get_stack(frame_ptr: ?*anyopaque, stack_out: [*]u8, max_items: u32, count_out: *u32) c_int {
+pub export fn evm_frame_get_stack(frame_ptr: ?*anyopaque, stack_out: [*]u8, max_items: u32, count_out: *u32) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    const stack_depth = handle.frame.next_stack_index;
+    const stack_depth = handle.interpreter.frame.stack.size();
     const items_to_copy = @min(stack_depth, max_items);
 
-    // Copy stack items (32 bytes each)
+    // Get stack slice and copy items
+    const stack_slice = handle.interpreter.frame.stack.get_slice();
     for (0..items_to_copy) |i| {
-        const stack_item = handle.frame.stack[i];
+        const stack_item = stack_slice[i];
         const bytes: [32]u8 = @bitCast(stack_item);
 
         // Copy to output buffer
@@ -485,14 +524,15 @@ export fn evm_frame_get_stack(frame_ptr: ?*anyopaque, stack_out: [*]u8, max_item
 }
 
 /// Get stack item at specific index (0 = bottom, top = depth-1)
-export fn evm_frame_get_stack_item(frame_ptr: ?*anyopaque, index: u32, item_out: [*]u8) c_int {
+pub export fn evm_frame_get_stack_item(frame_ptr: ?*anyopaque, index: u32, item_out: [*]u8) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    if (index >= handle.frame.next_stack_index) {
+    if (index >= handle.interpreter.frame.stack.size()) {
         return EVM_ERROR_OUT_OF_BOUNDS;
     }
 
-    const stack_item = handle.frame.stack[index];
+    const stack_slice = handle.interpreter.frame.stack.get_slice();
+    const stack_item = stack_slice[index];
     const bytes: [32]u8 = @bitCast(stack_item);
     @memcpy(item_out[0..32], &bytes);
 
@@ -500,21 +540,18 @@ export fn evm_frame_get_stack_item(frame_ptr: ?*anyopaque, index: u32, item_out:
 }
 
 /// Get memory contents
-export fn evm_frame_get_memory(frame_ptr: ?*anyopaque, offset: u32, length: u32, data_out: [*]u8) c_int {
+pub export fn evm_frame_get_memory(frame_ptr: ?*anyopaque, offset: u32, length: u32, data_out: [*]u8) c_int {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    // Check if frame has memory field
-    if (!@hasField(@TypeOf(handle.frame), "memory")) {
-        return EVM_ERROR_OUT_OF_BOUNDS;
-    }
+    // Memory is always available in the frame
 
-    const memory_size = handle.frame.memory.size();
+    const memory_size = handle.interpreter.frame.memory.size();
     if (offset >= memory_size or offset + length > memory_size) {
         return EVM_ERROR_OUT_OF_BOUNDS;
     }
 
     // Copy memory data
-    const memory_slice = handle.frame.memory.get_slice(offset, length) catch {
+    const memory_slice = handle.interpreter.frame.memory.get_slice(offset, length) catch {
         return EVM_ERROR_OUT_OF_BOUNDS;
     };
     @memcpy(data_out[0..length], memory_slice);
@@ -523,15 +560,12 @@ export fn evm_frame_get_memory(frame_ptr: ?*anyopaque, offset: u32, length: u32,
 }
 
 /// Get current memory size
-export fn evm_frame_get_memory_size(frame_ptr: ?*anyopaque) u32 {
+pub export fn evm_frame_get_memory_size(frame_ptr: ?*anyopaque) u32 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
 
-    // Check if frame has memory field
-    if (!@hasField(@TypeOf(handle.frame), "memory")) {
-        return 0;
-    }
+    // Memory is always available in the frame
 
-    return @intCast(handle.frame.memory.size());
+    return @intCast(handle.interpreter.frame.memory.size());
 }
 
 /// C structure for debugging statistics
@@ -544,10 +578,10 @@ pub const DebugStats = extern struct {
 };
 
 /// Get debugging statistics
-export fn evm_debug_get_stats(frame_ptr: ?*anyopaque, stats_out: *DebugStats) c_int {
+pub export fn evm_debug_get_stats(frame_ptr: ?*anyopaque, stats_out: *DebugStats) c_int {
     const handle: *DebugFrameHandle = @ptrCast(@alignCast(frame_ptr orelse return EVM_ERROR_NULL_POINTER));
 
-    var tracer_ptr = &handle.frame.tracer;
+    var tracer_ptr = &handle.interpreter.frame.tracer;
     const stats = tracer_ptr.getStats();
     stats_out.total_instructions = stats.total_instructions;
     stats_out.total_gas_used = stats.total_gas_used;

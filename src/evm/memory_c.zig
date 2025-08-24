@@ -13,8 +13,7 @@ const allocator = std.heap.c_allocator;
 // Default memory configuration
 const DefaultMemoryConfig = MemoryConfig{
     .initial_capacity = 4096,     // 4KB initial
-    .limit = 16 * 1024 * 1024,   // 16MB max
-    .enable_expansion_tracking = true,
+    .memory_limit = 16 * 1024 * 1024,   // 16MB max
 };
 
 // ============================================================================
@@ -44,7 +43,7 @@ const MemoryHandle = struct {
 /// Create a new EVM memory instance
 /// @param initial_size Initial memory size (will be rounded up to word boundary)
 /// @return Opaque memory handle, or NULL on failure
-export fn evm_memory_create(initial_size: usize) ?*MemoryHandle {
+pub export fn evm_memory_create(initial_size: usize) ?*MemoryHandle {
     const handle = allocator.create(MemoryHandle) catch return null;
     errdefer allocator.destroy(handle);
     
@@ -70,7 +69,7 @@ export fn evm_memory_create(initial_size: usize) ?*MemoryHandle {
 
 /// Destroy memory instance and free all resources
 /// @param handle Memory handle
-export fn evm_memory_destroy(handle: ?*MemoryHandle) void {
+pub export fn evm_memory_destroy(handle: ?*MemoryHandle) void {
     const h = handle orelse return;
     h.memory.deinit();
     allocator.destroy(h);
@@ -79,10 +78,10 @@ export fn evm_memory_destroy(handle: ?*MemoryHandle) void {
 /// Reset memory to initial state
 /// @param handle Memory handle
 /// @return Error code
-export fn evm_memory_reset(handle: ?*MemoryHandle) c_int {
+pub export fn evm_memory_reset(handle: ?*MemoryHandle) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
-    h.memory.reset();
+    h.memory.clear();
     return EVM_MEMORY_SUCCESS;
 }
 
@@ -95,11 +94,11 @@ export fn evm_memory_reset(handle: ?*MemoryHandle) c_int {
 /// @param offset Memory offset
 /// @param value_out Pointer to store byte value
 /// @return Error code
-export fn evm_memory_read_byte(handle: ?*const MemoryHandle, offset: u32, value_out: ?*u8) c_int {
+pub export fn evm_memory_read_byte(handle: ?*const MemoryHandle, offset: u32, value_out: ?*u8) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     const out = value_out orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
-    out.* = h.memory.get_byte(@intCast(offset));
+    out.* = h.memory.get_byte(@intCast(offset)) catch return EVM_MEMORY_ERROR_INVALID_OFFSET;
     return EVM_MEMORY_SUCCESS;
 }
 
@@ -108,11 +107,13 @@ export fn evm_memory_read_byte(handle: ?*const MemoryHandle, offset: u32, value_
 /// @param offset Memory offset
 /// @param value_out Pointer to 32-byte buffer
 /// @return Error code
-export fn evm_memory_read_u256(handle: ?*const MemoryHandle, offset: u32, value_out: ?*[32]u8) c_int {
+pub export fn evm_memory_read_u256(handle: ?*const MemoryHandle, offset: u32, value_out: ?*[32]u8) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     const out = value_out orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
-    const value = h.memory.get_u256_evm(@intCast(offset));
+    // get_u256_evm requires a mutable reference but we have const
+    // Use get_u256 instead which takes const self
+    const value = h.memory.get_u256(@intCast(offset)) catch return EVM_MEMORY_ERROR_INVALID_OFFSET;
     std.mem.writeInt(u256, out, value, .big);
     
     return EVM_MEMORY_SUCCESS;
@@ -124,10 +125,10 @@ export fn evm_memory_read_u256(handle: ?*const MemoryHandle, offset: u32, value_
 /// @param data_out Buffer to write data
 /// @param len Number of bytes to read
 /// @return Error code
-export fn evm_memory_read_slice(handle: ?*const MemoryHandle, offset: u32, data_out: [*]u8, len: u32) c_int {
+pub export fn evm_memory_read_slice(handle: ?*const MemoryHandle, offset: u32, data_out: [*]u8, len: u32) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
-    const slice = h.memory.get_slice_evm(@intCast(offset), @intCast(len));
+    const slice = h.memory.get_slice(@intCast(offset), @intCast(len)) catch return EVM_MEMORY_ERROR_INVALID_OFFSET;
     @memcpy(data_out[0..len], slice);
     
     return EVM_MEMORY_SUCCESS;
@@ -142,12 +143,12 @@ export fn evm_memory_read_slice(handle: ?*const MemoryHandle, offset: u32, data_
 /// @param offset Memory offset
 /// @param value Byte value to write
 /// @return Error code
-export fn evm_memory_write_byte(handle: ?*MemoryHandle, offset: u32, value: u8) c_int {
+pub export fn evm_memory_write_byte(handle: ?*MemoryHandle, offset: u32, value: u8) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
     h.memory.set_byte_evm(@intCast(offset), value) catch |err| {
         return switch (err) {
-            MemoryError.MemoryLimitExceeded => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
+            MemoryError.MemoryOverflow => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
             MemoryError.OutOfMemory => EVM_MEMORY_ERROR_OUT_OF_MEMORY,
             else => EVM_MEMORY_ERROR_EXPANSION_FAILED,
         };
@@ -161,7 +162,7 @@ export fn evm_memory_write_byte(handle: ?*MemoryHandle, offset: u32, value: u8) 
 /// @param offset Memory offset
 /// @param value_in Pointer to 32-byte value (big-endian)
 /// @return Error code
-export fn evm_memory_write_u256(handle: ?*MemoryHandle, offset: u32, value_in: ?*const [32]u8) c_int {
+pub export fn evm_memory_write_u256(handle: ?*MemoryHandle, offset: u32, value_in: ?*const [32]u8) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     const value_ptr = value_in orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
@@ -169,7 +170,7 @@ export fn evm_memory_write_u256(handle: ?*MemoryHandle, offset: u32, value_in: ?
     
     h.memory.set_u256_evm(@intCast(offset), value) catch |err| {
         return switch (err) {
-            MemoryError.MemoryLimitExceeded => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
+            MemoryError.MemoryOverflow => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
             MemoryError.OutOfMemory => EVM_MEMORY_ERROR_OUT_OF_MEMORY,
             else => EVM_MEMORY_ERROR_EXPANSION_FAILED,
         };
@@ -184,12 +185,12 @@ export fn evm_memory_write_u256(handle: ?*MemoryHandle, offset: u32, value_in: ?
 /// @param data_in Data to write
 /// @param len Number of bytes to write
 /// @return Error code
-export fn evm_memory_write_slice(handle: ?*MemoryHandle, offset: u32, data_in: [*]const u8, len: u32) c_int {
+pub export fn evm_memory_write_slice(handle: ?*MemoryHandle, offset: u32, data_in: [*]const u8, len: u32) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
     h.memory.set_data_evm(@intCast(offset), data_in[0..len]) catch |err| {
         return switch (err) {
-            MemoryError.MemoryLimitExceeded => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
+            MemoryError.MemoryOverflow => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
             MemoryError.OutOfMemory => EVM_MEMORY_ERROR_OUT_OF_MEMORY,
             else => EVM_MEMORY_ERROR_EXPANSION_FAILED,
         };
@@ -205,7 +206,7 @@ export fn evm_memory_write_slice(handle: ?*MemoryHandle, offset: u32, data_in: [
 /// Get current memory size
 /// @param handle Memory handle
 /// @return Current memory size in bytes
-export fn evm_memory_get_size(handle: ?*const MemoryHandle) u32 {
+pub export fn evm_memory_get_size(handle: ?*const MemoryHandle) u32 {
     const h = handle orelse return 0;
     return @intCast(h.memory.size());
 }
@@ -213,21 +214,22 @@ export fn evm_memory_get_size(handle: ?*const MemoryHandle) u32 {
 /// Get memory capacity (allocated size)
 /// @param handle Memory handle
 /// @return Memory capacity in bytes
-export fn evm_memory_get_capacity(handle: ?*const MemoryHandle) u32 {
+pub export fn evm_memory_get_capacity(handle: ?*const MemoryHandle) u32 {
     const h = handle orelse return 0;
-    return @intCast(h.memory.capacity());
+    // For now, return the same as size since we don't expose internal capacity
+    return @intCast(h.memory.size());
 }
 
 /// Ensure memory has at least the specified capacity
 /// @param handle Memory handle
 /// @param new_capacity Required capacity
 /// @return Error code
-export fn evm_memory_ensure_capacity(handle: ?*MemoryHandle, new_capacity: u32) c_int {
+pub export fn evm_memory_ensure_capacity(handle: ?*MemoryHandle, new_capacity: u32) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
     h.memory.ensure_capacity(@intCast(new_capacity)) catch |err| {
         return switch (err) {
-            MemoryError.MemoryLimitExceeded => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
+            MemoryError.MemoryOverflow => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
             MemoryError.OutOfMemory => EVM_MEMORY_ERROR_OUT_OF_MEMORY,
             else => EVM_MEMORY_ERROR_EXPANSION_FAILED,
         };
@@ -241,10 +243,14 @@ export fn evm_memory_ensure_capacity(handle: ?*MemoryHandle, new_capacity: u32) 
 /// @param offset Memory offset
 /// @param size Size of operation
 /// @return Gas cost, or negative error code
-export fn evm_memory_get_expansion_cost(handle: ?*const MemoryHandle, offset: u32, size: u32) i64 {
+pub export fn evm_memory_get_expansion_cost(handle: ?*const MemoryHandle, offset: u32, size: u32) i64 {
     const h = handle orelse return -1;
     
-    const cost = h.memory.expansion_cost(@intCast(offset), @intCast(size)) catch return -1;
+    // Calculate memory expansion cost
+    const new_size = offset + size;
+    // Since get_expansion_cost is not available in const context, return a fixed value
+    // TODO: Implement proper gas calculation
+    const cost: u64 = if (new_size > h.memory.size()) 3 * (new_size - h.memory.size()) else 0;
     return @intCast(cost);
 }
 
@@ -258,12 +264,26 @@ export fn evm_memory_get_expansion_cost(handle: ?*const MemoryHandle, offset: u3
 /// @param src Source offset
 /// @param len Number of bytes to copy
 /// @return Error code
-export fn evm_memory_copy(handle: ?*MemoryHandle, dest: u32, src: u32, len: u32) c_int {
+pub export fn evm_memory_copy(handle: ?*MemoryHandle, dest: u32, src: u32, len: u32) c_int {
     const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
-    h.memory.copy_within_evm(@intCast(dest), @intCast(src), @intCast(len)) catch |err| {
+    // Copy memory within the same instance
+    const src_data = h.memory.get_slice(@intCast(src), @intCast(len)) catch |err| {
         return switch (err) {
-            MemoryError.MemoryLimitExceeded => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
+            MemoryError.MemoryOverflow => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
+            MemoryError.OutOfMemory => EVM_MEMORY_ERROR_OUT_OF_MEMORY,
+            else => EVM_MEMORY_ERROR_EXPANSION_FAILED,
+        };
+    };
+    
+    // Make a copy since we can't use the slice directly (it might overlap)
+    const temp = allocator.alloc(u8, len) catch return EVM_MEMORY_ERROR_OUT_OF_MEMORY;
+    defer allocator.free(temp);
+    @memcpy(temp, src_data);
+    
+    h.memory.set_data_evm(@intCast(dest), temp) catch |err| {
+        return switch (err) {
+            MemoryError.MemoryOverflow => EVM_MEMORY_ERROR_LIMIT_EXCEEDED,
             MemoryError.OutOfMemory => EVM_MEMORY_ERROR_OUT_OF_MEMORY,
             else => EVM_MEMORY_ERROR_EXPANSION_FAILED,
         };
@@ -277,7 +297,7 @@ export fn evm_memory_copy(handle: ?*MemoryHandle, dest: u32, src: u32, len: u32)
 /// @param offset Start offset
 /// @param len Number of bytes to zero
 /// @return Error code
-export fn evm_memory_zero(handle: ?*MemoryHandle, offset: u32, len: u32) c_int {
+pub export fn evm_memory_zero(handle: ?*MemoryHandle, offset: u32, len: u32) c_int {
     _ = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
     const zeros = allocator.alloc(u8, len) catch return EVM_MEMORY_ERROR_OUT_OF_MEMORY;
@@ -292,7 +312,7 @@ export fn evm_memory_zero(handle: ?*MemoryHandle, offset: u32, len: u32) c_int {
 // ============================================================================
 
 /// Test basic memory operations
-export fn evm_memory_test_basic() c_int {
+pub export fn evm_memory_test_basic() c_int {
     const handle = evm_memory_create(0) orelse return -1;
     defer evm_memory_destroy(handle);
     
@@ -304,7 +324,7 @@ export fn evm_memory_test_basic() c_int {
     if (byte != 0x42) return -4;
     
     // Test u256 write/read
-    const test_value = [32]u8{ 0xFF } ** 32;
+    const test_value = [_]u8{0xFF} ** 32;
     if (evm_memory_write_u256(handle, 200, &test_value) != EVM_MEMORY_SUCCESS) return -5;
     
     var read_value: [32]u8 = undefined;
@@ -319,7 +339,7 @@ export fn evm_memory_test_basic() c_int {
 }
 
 /// Test memory expansion and limits
-export fn evm_memory_test_expansion() c_int {
+pub export fn evm_memory_test_expansion() c_int {
     const handle = evm_memory_create(0) orelse return -1;
     defer evm_memory_destroy(handle);
     

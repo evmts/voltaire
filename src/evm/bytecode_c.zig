@@ -36,7 +36,7 @@ const BytecodeHandle = struct {
 /// @param data Pointer to bytecode data
 /// @param len Length of bytecode
 /// @return Opaque handle or NULL on failure
-export fn evm_bytecode_create(data: [*]const u8, len: usize) ?*BytecodeHandle {
+pub export fn evm_bytecode_create(data: [*]const u8, len: usize) ?*BytecodeHandle {
     if (len == 0 or len > DefaultBytecodeConfig.max_bytecode_size) return null;
     
     const handle = allocator.create(BytecodeHandle) catch return null;
@@ -65,7 +65,7 @@ export fn evm_bytecode_create(data: [*]const u8, len: usize) ?*BytecodeHandle {
 
 /// Destroy bytecode instance and free memory
 /// @param handle Bytecode handle
-export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
+pub export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
     const h = handle orelse return;
     allocator.free(h.bytecode_data);
     allocator.destroy(h);
@@ -78,7 +78,7 @@ export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
 /// Analyze bytecode to identify jump destinations
 /// @param handle Bytecode handle
 /// @return 0 on success, error code on failure (already analyzed on creation)
-export fn evm_bytecode_analyze(handle: ?*BytecodeHandle) c_int {
+pub export fn evm_bytecode_analyze(handle: ?*BytecodeHandle) c_int {
     const h = handle orelse return -1;
     // Bytecode is already analyzed during init
     h.is_analyzed = true;
@@ -89,7 +89,7 @@ export fn evm_bytecode_analyze(handle: ?*BytecodeHandle) c_int {
 /// @param handle Bytecode handle
 /// @param pc Program counter to check
 /// @return 1 if valid JUMPDEST, 0 otherwise
-export fn evm_bytecode_is_valid_jumpdest(handle: ?*const BytecodeHandle, pc: u32) c_int {
+pub export fn evm_bytecode_is_valid_jumpdest(handle: ?*const BytecodeHandle, pc: u32) c_int {
     const h = handle orelse return 0;
     if (!h.is_analyzed) return 0;
     
@@ -103,7 +103,7 @@ export fn evm_bytecode_is_valid_jumpdest(handle: ?*const BytecodeHandle, pc: u32
 /// Get bytecode length
 /// @param handle Bytecode handle
 /// @return Length in bytes, or 0 on error
-export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
+pub export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
     const h = handle orelse return 0;
     return h.bytecode.runtime_code.len;
 }
@@ -112,7 +112,7 @@ export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
 /// @param handle Bytecode handle
 /// @param pc Program counter
 /// @return Opcode value, or 0xFE (INVALID) on error
-export fn evm_bytecode_get_opcode(handle: ?*const BytecodeHandle, pc: u32) u8 {
+pub export fn evm_bytecode_get_opcode(handle: ?*const BytecodeHandle, pc: u32) u8 {
     const h = handle orelse return 0xFE;
     
     if (pc >= h.bytecode.runtime_code.len) return 0xFE;
@@ -124,7 +124,7 @@ export fn evm_bytecode_get_opcode(handle: ?*const BytecodeHandle, pc: u32) u8 {
 /// @param out Buffer to write bytecode
 /// @param max_len Maximum bytes to write
 /// @return Number of bytes written
-export fn evm_bytecode_get_data(handle: ?*const BytecodeHandle, out: [*]u8, max_len: usize) usize {
+pub export fn evm_bytecode_get_data(handle: ?*const BytecodeHandle, out: [*]u8, max_len: usize) usize {
     const h = handle orelse return 0;
     
     const copy_len = @min(h.bytecode.runtime_code.len, max_len);
@@ -153,7 +153,7 @@ pub const CBytecodeStats = extern struct {
 /// @param handle Bytecode handle
 /// @param stats_out Pointer to stats structure
 /// @return 0 on success, error code on failure
-export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: ?*CBytecodeStats) c_int {
+pub export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: ?*CBytecodeStats) c_int {
     const h = handle orelse return -1;
     const stats = stats_out orelse return -2;
     
@@ -212,7 +212,7 @@ export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: ?*CB
 /// Check if bytecode contains only valid opcodes
 /// @param handle Bytecode handle
 /// @return 1 if all opcodes are valid, 0 otherwise
-export fn evm_bytecode_is_valid(handle: ?*const BytecodeHandle) c_int {
+pub export fn evm_bytecode_is_valid(handle: ?*const BytecodeHandle) c_int {
     const h = handle orelse return 0;
     
     for (h.bytecode.runtime_code) |byte| {
@@ -225,7 +225,7 @@ export fn evm_bytecode_is_valid(handle: ?*const BytecodeHandle) c_int {
 /// Get the size of PUSH data for an opcode
 /// @param opcode Opcode value
 /// @return Number of data bytes (0-32), or -1 if not a PUSH opcode
-export fn evm_bytecode_get_push_size(opcode: u8) c_int {
+pub export fn evm_bytecode_get_push_size(opcode: u8) c_int {
     return switch (opcode) {
         0x60...0x7F => @as(c_int, opcode - 0x5F), // PUSH1-PUSH32
         else => -1,
@@ -237,7 +237,7 @@ export fn evm_bytecode_get_push_size(opcode: u8) c_int {
 // ============================================================================
 
 /// Test function - analyze simple bytecode
-export fn evm_bytecode_test_analyze() c_int {
+pub export fn evm_bytecode_test_analyze() c_int {
     // PUSH1 0x80 PUSH1 0x40 MSTORE JUMPDEST STOP
     const test_bytecode = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x5B, 0x00 };
     
@@ -257,7 +257,7 @@ export fn evm_bytecode_test_analyze() c_int {
 }
 
 /// Test function - get bytecode statistics
-export fn evm_bytecode_test_stats() c_int {
+pub export fn evm_bytecode_test_stats() c_int {
     // Complex bytecode with various opcodes
     const test_bytecode = [_]u8{
         0x60, 0x01, // PUSH1 1

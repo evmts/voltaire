@@ -12,8 +12,7 @@ const allocator = std.heap.c_allocator;
 // Default stack configuration (EVM standard)
 const DefaultStackConfig = StackConfig{
     .stack_size = 1024,
-    .underflow_checks = true,
-    .overflow_checks = true,
+    .WordType = u256,
 };
 
 // ============================================================================
@@ -41,7 +40,7 @@ const StackHandle = struct {
 
 /// Create a new EVM stack instance
 /// @return Opaque stack handle, or NULL on failure
-export fn evm_stack_create() ?*StackHandle {
+pub export fn evm_stack_create() ?*StackHandle {
     const handle = allocator.create(StackHandle) catch return null;
     errdefer allocator.destroy(handle);
     
@@ -57,18 +56,19 @@ export fn evm_stack_create() ?*StackHandle {
 
 /// Destroy stack instance and free memory
 /// @param handle Stack handle
-export fn evm_stack_destroy(handle: ?*StackHandle) void {
+pub export fn evm_stack_destroy(handle: ?*StackHandle) void {
     const h = handle orelse return;
-    h.stack.deinit();
+    h.stack.deinit(allocator);
     allocator.destroy(h);
 }
 
 /// Reset stack to empty state
 /// @param handle Stack handle
 /// @return Error code
-export fn evm_stack_reset(handle: ?*StackHandle) c_int {
+pub export fn evm_stack_reset(handle: ?*StackHandle) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
-    h.stack.reset();
+    // Reset stack by moving pointer back to base
+    h.stack.stack_ptr = h.stack.stack_base + DefaultStackConfig.stack_size;
     return EVM_STACK_SUCCESS;
 }
 
@@ -80,7 +80,7 @@ export fn evm_stack_reset(handle: ?*StackHandle) c_int {
 /// @param handle Stack handle
 /// @param value Value to push
 /// @return Error code
-export fn evm_stack_push_u64(handle: ?*StackHandle, value: u64) c_int {
+pub export fn evm_stack_push_u64(handle: ?*StackHandle, value: u64) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     
     h.stack.push(@as(u256, value)) catch |err| {
@@ -97,7 +97,7 @@ export fn evm_stack_push_u64(handle: ?*StackHandle, value: u64) c_int {
 /// @param handle Stack handle
 /// @param bytes Pointer to 32-byte array (big-endian)
 /// @return Error code
-export fn evm_stack_push_bytes(handle: ?*StackHandle, bytes: ?*const [32]u8) c_int {
+pub export fn evm_stack_push_bytes(handle: ?*StackHandle, bytes: ?*const [32]u8) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const b = bytes orelse return EVM_STACK_ERROR_NULL_POINTER;
     
@@ -121,7 +121,7 @@ export fn evm_stack_push_bytes(handle: ?*StackHandle, bytes: ?*const [32]u8) c_i
 /// @param handle Stack handle
 /// @param value_out Pointer to store popped value
 /// @return Error code
-export fn evm_stack_pop_u64(handle: ?*StackHandle, value_out: ?*u64) c_int {
+pub export fn evm_stack_pop_u64(handle: ?*StackHandle, value_out: ?*u64) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const out = value_out orelse return EVM_STACK_ERROR_NULL_POINTER;
     
@@ -140,7 +140,7 @@ export fn evm_stack_pop_u64(handle: ?*StackHandle, value_out: ?*u64) c_int {
 /// @param handle Stack handle
 /// @param bytes_out Pointer to 32-byte buffer
 /// @return Error code
-export fn evm_stack_pop_bytes(handle: ?*StackHandle, bytes_out: ?*[32]u8) c_int {
+pub export fn evm_stack_pop_bytes(handle: ?*StackHandle, bytes_out: ?*[32]u8) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const out = bytes_out orelse return EVM_STACK_ERROR_NULL_POINTER;
     
@@ -163,7 +163,7 @@ export fn evm_stack_pop_bytes(handle: ?*StackHandle, bytes_out: ?*[32]u8) c_int 
 /// @param handle Stack handle
 /// @param value_out Pointer to store peeked value
 /// @return Error code
-export fn evm_stack_peek_u64(handle: ?*const StackHandle, value_out: ?*u64) c_int {
+pub export fn evm_stack_peek_u64(handle: ?*const StackHandle, value_out: ?*u64) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const out = value_out orelse return EVM_STACK_ERROR_NULL_POINTER;
     
@@ -182,7 +182,7 @@ export fn evm_stack_peek_u64(handle: ?*const StackHandle, value_out: ?*u64) c_in
 /// @param handle Stack handle
 /// @param bytes_out Pointer to 32-byte buffer
 /// @return Error code
-export fn evm_stack_peek_bytes(handle: ?*const StackHandle, bytes_out: ?*[32]u8) c_int {
+pub export fn evm_stack_peek_bytes(handle: ?*const StackHandle, bytes_out: ?*[32]u8) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const out = bytes_out orelse return EVM_STACK_ERROR_NULL_POINTER;
     
@@ -202,17 +202,17 @@ export fn evm_stack_peek_bytes(handle: ?*const StackHandle, bytes_out: ?*[32]u8)
 /// @param depth Stack depth to peek at
 /// @param bytes_out Pointer to 32-byte buffer
 /// @return Error code
-export fn evm_stack_peek_at(handle: ?*const StackHandle, depth: u32, bytes_out: ?*[32]u8) c_int {
+pub export fn evm_stack_peek_at(handle: ?*const StackHandle, depth: u32, bytes_out: ?*[32]u8) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const out = bytes_out orelse return EVM_STACK_ERROR_NULL_POINTER;
     
-    const value = h.stack.peek_at(@intCast(depth)) catch |err| {
-        return switch (err) {
-            error.StackUnderflow => EVM_STACK_ERROR_UNDERFLOW,
-            else => EVM_STACK_ERROR_UNDERFLOW,
-        };
-    };
+    // Use get_slice to access stack elements
+    const stack_slice = h.stack.get_slice();
+    if (depth >= stack_slice.len) {
+        return EVM_STACK_ERROR_UNDERFLOW;
+    }
     
+    const value = stack_slice[depth];
     std.mem.writeInt(u256, out, value, .big);
     return EVM_STACK_SUCCESS;
 }
@@ -225,10 +225,11 @@ export fn evm_stack_peek_at(handle: ?*const StackHandle, depth: u32, bytes_out: 
 /// @param handle Stack handle
 /// @param depth Item to duplicate (0 = top)
 /// @return Error code
-export fn evm_stack_dup(handle: ?*StackHandle, depth: u32) c_int {
+pub export fn evm_stack_dup(handle: ?*StackHandle, depth: u32) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     
-    h.stack.dup(@intCast(depth)) catch |err| {
+    // Stack dup_n expects 1-based index (DUP1 duplicates top item)
+    h.stack.dup_n(@intCast(depth + 1)) catch |err| {
         return switch (err) {
             error.StackOverflow => EVM_STACK_ERROR_OVERFLOW,
             error.StackUnderflow => EVM_STACK_ERROR_UNDERFLOW,
@@ -243,10 +244,10 @@ export fn evm_stack_dup(handle: ?*StackHandle, depth: u32) c_int {
 /// @param handle Stack handle
 /// @param depth Item to swap with top (1 = second from top)
 /// @return Error code
-export fn evm_stack_swap(handle: ?*StackHandle, depth: u32) c_int {
+pub export fn evm_stack_swap(handle: ?*StackHandle, depth: u32) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     
-    h.stack.swap(@intCast(depth)) catch |err| {
+    h.stack.swap_n(@intCast(depth)) catch |err| {
         return switch (err) {
             error.StackUnderflow => EVM_STACK_ERROR_UNDERFLOW,
             else => EVM_STACK_ERROR_UNDERFLOW,
@@ -263,7 +264,7 @@ export fn evm_stack_swap(handle: ?*StackHandle, depth: u32) c_int {
 /// Get current stack depth
 /// @param handle Stack handle
 /// @return Stack depth (number of items), or 0 on error
-export fn evm_stack_size(handle: ?*const StackHandle) u32 {
+pub export fn evm_stack_size(handle: ?*const StackHandle) u32 {
     const h = handle orelse return 0;
     return @intCast(h.stack.size());
 }
@@ -271,23 +272,23 @@ export fn evm_stack_size(handle: ?*const StackHandle) u32 {
 /// Check if stack is empty
 /// @param handle Stack handle
 /// @return 1 if empty, 0 if not empty or on error
-export fn evm_stack_is_empty(handle: ?*const StackHandle) c_int {
+pub export fn evm_stack_is_empty(handle: ?*const StackHandle) c_int {
     const h = handle orelse return 0;
-    return if (h.stack.is_empty()) 1 else 0;
+    return if (h.stack.size() == 0) 1 else 0;
 }
 
 /// Check if stack is full
 /// @param handle Stack handle
 /// @return 1 if full, 0 if not full or on error
-export fn evm_stack_is_full(handle: ?*const StackHandle) c_int {
+pub export fn evm_stack_is_full(handle: ?*const StackHandle) c_int {
     const h = handle orelse return 0;
-    return if (h.stack.is_full()) 1 else 0;
+    return if (h.stack.size() >= DefaultStackConfig.stack_size) 1 else 0;
 }
 
 /// Get maximum stack capacity
 /// @param handle Stack handle
 /// @return Maximum capacity (1024 for EVM)
-export fn evm_stack_capacity(handle: ?*const StackHandle) u32 {
+pub export fn evm_stack_capacity(handle: ?*const StackHandle) u32 {
     _ = handle;
     return DefaultStackConfig.stack_size;
 }
@@ -302,17 +303,18 @@ export fn evm_stack_capacity(handle: ?*const StackHandle) u32 {
 /// @param max_items Maximum items to write
 /// @param count_out Actual items written
 /// @return Error code
-export fn evm_stack_get_contents(handle: ?*const StackHandle, buffer: [*]u8, max_items: u32, count_out: ?*u32) c_int {
+pub export fn evm_stack_get_contents(handle: ?*const StackHandle, buffer: [*]u8, max_items: u32, count_out: ?*u32) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
     const out = count_out orelse return EVM_STACK_ERROR_NULL_POINTER;
     
     const depth = h.stack.size();
     const copy_count = @min(depth, max_items);
     
-    // Copy from bottom to top
+    // Get stack slice and copy items
+    const stack_slice = h.stack.get_slice();
     var i: usize = 0;
     while (i < copy_count) : (i += 1) {
-        const value = h.stack.peek_at(depth - 1 - i) catch return EVM_STACK_ERROR_UNDERFLOW;
+        const value = stack_slice[i];
         std.mem.writeInt(u256, buffer[i * 32 ..][0..32], value, .big);
     }
     
@@ -325,7 +327,7 @@ export fn evm_stack_get_contents(handle: ?*const StackHandle, buffer: [*]u8, max
 // ============================================================================
 
 /// Test basic stack operations
-export fn evm_stack_test_basic() c_int {
+pub export fn evm_stack_test_basic() c_int {
     const handle = evm_stack_create() orelse return -1;
     defer evm_stack_destroy(handle);
     
@@ -348,7 +350,7 @@ export fn evm_stack_test_basic() c_int {
 }
 
 /// Test stack operations (DUP, SWAP, etc.)
-export fn evm_stack_test_operations() c_int {
+pub export fn evm_stack_test_operations() c_int {
     const handle = evm_stack_create() orelse return -1;
     defer evm_stack_destroy(handle);
     
@@ -374,12 +376,12 @@ export fn evm_stack_test_operations() c_int {
 }
 
 /// Test 256-bit operations
-export fn evm_stack_test_u256() c_int {
+pub export fn evm_stack_test_u256() c_int {
     const handle = evm_stack_create() orelse return -1;
     defer evm_stack_destroy(handle);
     
     // Test with max u256 value
-    const max_value = [32]u8{ 0xFF } ** 32;
+    const max_value = [_]u8{0xFF} ** 32;
     if (evm_stack_push_bytes(handle, &max_value) != EVM_STACK_SUCCESS) return -2;
     
     var out_value: [32]u8 = undefined;
