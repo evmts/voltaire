@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const ArrayList = std.ArrayListAligned;
 const Opcode = @import("opcode.zig").Opcode;
 const bytecode_config = @import("bytecode_config.zig");
@@ -43,10 +44,10 @@ const CACHE_LINE_SIZE = 64; // Common cache line size for x86-64 and ARM64
 const PREFETCH_DISTANCE = 256; // How far ahead to prefetch in bytes
 
 /// Factory function to create a Bytecode type with the given configuration
-pub fn createBytecode(comptime cfg: BytecodeConfig) type {
+pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
     
-    const BytecodeType = struct {
+    return struct {
         pub const ValidationError = error{
             InvalidOpcode,
             TruncatedPush,
@@ -60,22 +61,35 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
 
         const Self = @This();
 
-        code: []const u8,
+        // Full bytecode including any metadata
+        full_code: []const u8,
+        // Runtime bytecode (excludes trailing metadata)
+        runtime_code: []const u8,
+        // Optional metadata if found
+        metadata: ?SolidityMetadata,
         allocator: std.mem.Allocator,
         is_push_data: []u8,
         is_op_start: []u8,
         is_jumpdest: []u8,
         
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
+            // First, try to parse metadata to separate runtime code
+            const metadata = parseSolidityMetadataFromBytes(code);
+            const runtime_code = if (metadata) |m| 
+                code[0..code.len - m.metadata_length]
+            else 
+                code;
+            
             var self = Self{
-                .code = code,
+                .full_code = code,
+                .runtime_code = runtime_code,
+                .metadata = metadata,
                 .allocator = allocator,
                 .is_push_data = undefined,
                 .is_op_start = undefined,
                 .is_jumpdest = undefined,
             };
-            // Build bitmaps and validate
-            // This must run in constructor in order to populate the currently undefined bitmaps and guarantee the bytecode is valid
+            // Build bitmaps and validate only the runtime code
             try self.buildBitmapsAndValidate();
             return self;
         }
@@ -108,22 +122,29 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         pub inline fn len(self: Self) PcType {
             // https://ziglang.org/documentation/master/#intCast
             // @intCast converts between integer types, runtime safety-checked
-            return @intCast(self.code.len);
+            return @intCast(self.runtime_code.len);
         }
         
         /// Get the raw bytecode slice
         pub inline fn raw(self: Self) []const u8 {
-            return self.code;
+            return self.runtime_code;
+        }
+        
+        /// Get bytecode without Solidity metadata
+        /// Returns a slice excluding the metadata at the end, or the full bytecode if no metadata found
+        pub fn rawWithoutMetadata(self: Self) []const u8 {
+            // Since we already separated metadata during init, just return runtime_code
+            return self.runtime_code;
         }
         
         /// Get byte at index
         pub inline fn get(self: Self, index: PcType) ?u8 {
-            if (index >= self.code.len) return null;
-            return self.code[index];
+            if (index >= self.runtime_code.len) return null;
+            return self.runtime_code[index];
         }
         /// Get byte at index
         pub inline fn get_unsafe(self: Self, index: PcType) u8 {
-            return self.code[index];
+            return self.runtime_code[index];
         }
 
         /// Get opcode at position (doesn't check if it's actually an opcode start)
@@ -219,9 +240,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             callback: fn (@TypeOf(context), pc: PcType) void,
         ) void {
             var i: PcType = 0;
-            while (i < self.code.len) {
+            while (i < self.runtime_code.len) {
                 @branchHint(.likely);
-                const op = self.code[i];
+                const op = self.runtime_code[i];
                 // https://ziglang.org/documentation/master/#intFromEnum
                 // @intFromEnum converts an enum value to its integer representation
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
@@ -328,7 +349,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             const splat_jumpi: @Vector(L, u8) = @splat(@intFromEnum(Opcode.JUMPI));
             
             var i: usize = 0;
-            while (i < self.code.len) {
+            while (i < self.runtime_code.len) {
                 // Skip if not an operation start
                 if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
                     @branchHint(.unlikely);
@@ -336,16 +357,16 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                     continue;
                 }
                 
-                const op = self.code[i];
+                const op = self.runtime_code[i];
                 if (op >= push1 and op <= push32) {
                     const push_size = 1 + (op - (push1 - 1));
                     const next_op_pos = i + push_size;
                     
                     // Use SIMD to check multiple fusion opportunities at once if we have enough bytes
-                    if (next_op_pos < self.code.len and next_op_pos + L <= self.code.len) {
+                    if (next_op_pos < self.runtime_code.len and next_op_pos + L <= self.runtime_code.len) {
                         // Load next L bytes starting from next_op_pos
                         var arr: [L]u8 = undefined;
-                        inline for (0..L) |k| arr[k] = if (next_op_pos + k < self.code.len) self.code[next_op_pos + k] else 0;
+                        inline for (0..L) |k| arr[k] = if (next_op_pos + k < self.runtime_code.len) self.runtime_code[next_op_pos + k] else 0;
                         const v: @Vector(L, u8) = arr;
                         
                         // Check all fusion patterns
@@ -377,9 +398,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                                 .second_opcode = target_op,
                             });
                         }
-                    } else if (next_op_pos < self.code.len) {
+                    } else if (next_op_pos < self.runtime_code.len) {
                         // Fallback to scalar check for edge cases
-                        const next_op = self.code[next_op_pos];
+                        const next_op = self.runtime_code[next_op_pos];
                         for (fusion_ops) |fusion_op| {
                             if (next_op == fusion_op) {
                                 const target_op = std.meta.intToEnum(Opcode, fusion_op) catch unreachable;
@@ -402,7 +423,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
 
         /// Build bitmaps and validate bytecode
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
-            const N = self.code.len;
+            const N = self.runtime_code.len;
             // Empty bytecode is valid, allocate minimal bitmaps
             if (N == 0) {
                 self.is_push_data = try self.allocator.alloc(u8, 1);
@@ -418,7 +439,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             
             // Try to align bitmap allocations to cache line boundaries for better performance
             // Fall back to regular allocation if allocator doesn't support aligned alloc
-            const use_aligned = comptime !@import("builtin").is_test;
+            const use_aligned = comptime !builtin.is_test;
             
             if (use_aligned) {
                 const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
@@ -443,7 +464,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             
             // First pass: validate all opcodes using SIMD if available
             if (comptime cfg.vector_length > 0) {
-                if (!validateOpcodeSimd(self.code, cfg.vector_length)) {
+                if (!validateOpcodeSimd(self.runtime_code, cfg.vector_length)) {
                     return error.InvalidOpcode;
                 }
             }
@@ -454,7 +475,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 
                 // Prefetch ahead for better cache performance on large bytecode
                 if (i + PREFETCH_DISTANCE < N) {
-                    @prefetch(&self.code[i + PREFETCH_DISTANCE], .{
+                    @prefetch(&self.runtime_code[i + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3, // Low temporal locality
                         .cache = .data,
@@ -462,7 +483,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 }
                 
                 self.is_op_start[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
-                const op = self.code[i];
+                const op = self.runtime_code[i];
                 
                 // SECURITY: Validate opcode using safe enum conversion
                 // We need to ensure this is a valid opcode before using it
@@ -503,13 +524,13 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                     i += 1;
                     continue;
                 }
-                const op = self.code[i];
+                const op = self.runtime_code[i];
                 if ((op == @intFromEnum(Opcode.JUMP) or op == @intFromEnum(Opcode.JUMPI)) and i > 0) {
                     var push_start: ?PcType = null;
                     var j: PcType = 0;
                     while (j < i) {
                         if ((self.is_op_start[j >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(j & BITMAP_MASK))) != 0) {
-                            const prev_op = self.code[j];
+                            const prev_op = self.runtime_code[j];
                             if (prev_op >= @intFromEnum(Opcode.PUSH1) and prev_op <= @intFromEnum(Opcode.PUSH32)) {
                                 const size = self.getInstructionSize(j);
                                 if (j + size == i) {
@@ -521,10 +542,10 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                         j += 1;
                     }
                     if (push_start) |start| {
-                        const push_op = self.code[start];
+                        const push_op = self.runtime_code[start];
                         const n = push_op - (@intFromEnum(Opcode.PUSH1) - 1);
                         const target = self.readPushValueN(start, @intCast(n)) orelse unreachable;
-                        if (target >= self.code.len) {
+                        if (target >= self.runtime_code.len) {
                             return error.InvalidJumpDestination;
                         }
                         const target_pc = @as(PcType, @intCast(target));
@@ -541,39 +562,39 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         /// Based on plan_minimal.zig's getMetadata implementation
         // https://ziglang.org/documentation/master/std/#std.meta.Int
         pub fn readPushValue(self: Self, pc: PcType, comptime n: u8) ?std.meta.Int(.unsigned, n * 8) {
-            if (pc >= self.code.len) return null;
-            const op = self.code[pc];
+            if (pc >= self.runtime_code.len) return null;
+            const op = self.runtime_code[pc];
             if (op != @intFromEnum(Opcode.PUSH1) + n - 1) return null; // Not the right PUSH opcode
             const start = pc + 1;
-            if (start + n > self.code.len) return null; // Not enough bytes
+            if (start + n > self.runtime_code.len) return null; // Not enough bytes
             // https://ziglang.org/documentation/master/std/#std.meta.Int
             // Creates an unsigned integer type with n*8 bits (e.g., n=1 -> u8, n=2 -> u16)
             const T = std.meta.Int(.unsigned, n * BITS_PER_BYTE);
             var value: T = 0;
             var i: u8 = 0;
             // https://ziglang.org/documentation/master/std/#std.math.shl
-            while (i < n) : (i += 1) value = std.math.shl(T, value, BITS_PER_BYTE) | @as(T, self.code[start + i]);
+            while (i < n) : (i += 1) value = std.math.shl(T, value, BITS_PER_BYTE) | @as(T, self.runtime_code[start + i]);
             return value;
         }
         
         /// Read a variable-sized PUSH value (returns u256)
         pub fn readPushValueN(self: Self, pc: PcType, n: u8) ?u256 {
-            if (pc >= self.code.len or n == 0 or n > MAX_PUSH_BYTES) return null;
-            const op = self.code[pc];
+            if (pc >= self.runtime_code.len or n == 0 or n > MAX_PUSH_BYTES) return null;
+            const op = self.runtime_code[pc];
             if (op < @intFromEnum(Opcode.PUSH1) or op > @intFromEnum(Opcode.PUSH32)) return null;
             const expected_n = op - (@intFromEnum(Opcode.PUSH1) - 1);
             if (expected_n != n) return null;
             const start = pc + 1;
-            const available = @min(n, self.code.len -| start);
+            const available = @min(n, self.runtime_code.len -| start);
             var value: u256 = 0;
-            for (0..n) |i| value = if (i < available) (value << BITS_PER_BYTE) | self.code[start + i] else value << BITS_PER_BYTE; 
+            for (0..n) |i| value = if (i < available) (value << BITS_PER_BYTE) | self.runtime_code[start + i] else value << BITS_PER_BYTE; 
             return value;
         }
         
         /// Get the size of bytecode at PC (1 for most opcodes, 1+n for PUSH)
         pub fn getInstructionSize(self: Self, pc: PcType) PcType {
-            if (pc >= self.code.len) return 0;
-            const op = self.code[pc];
+            if (pc >= self.runtime_code.len) return 0;
+            const op = self.runtime_code[pc];
             if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) return 1 + (op - (@intFromEnum(Opcode.PUSH1) - 1));
             return 1;
         }
@@ -583,8 +604,147 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             const size = self.getInstructionSize(pc);
             if (size == 0) return null;
             const next = pc + size;
-            if (next > self.code.len) return null;
+            if (next > self.runtime_code.len) return null;
             return next;
+        }
+        
+        /// Metadata information extracted from Solidity compiler metadata
+        pub const SolidityMetadata = struct {
+            ipfs_hash: [32]u8,
+            solc_version: [3]u8, // major, minor, patch
+            metadata_length: usize,
+        };
+        
+        /// Parse Solidity metadata from raw bytecode bytes (static function)
+        fn parseSolidityMetadataFromBytes(code: []const u8) ?SolidityMetadata {
+            // Minimum metadata size: 2 (length) + 4 (ipfs) + 32 (hash) + 4 (solc) + 3 (version) = 45 bytes
+            if (code.len < 45) return null;
+            
+            // Get the last 2 bytes which encode the metadata length
+            const len_offset = code.len - 2;
+            const metadata_len = (@as(u16, code[len_offset]) << 8) | code[len_offset + 1];
+            
+            // Verify metadata length is reasonable
+            if (metadata_len < 43 or metadata_len > code.len) return null;
+            
+            // Calculate where metadata starts
+            const metadata_start = code.len - 2 - metadata_len;
+            const metadata = code[metadata_start..code.len - 2];
+            
+            // Parse CBOR-encoded metadata
+            var pos: usize = 0;
+            
+            // Check CBOR map header (0xa2 = map with 2 items)
+            if (pos >= metadata.len or metadata[pos] != 0xa2) return null;
+            pos += 1;
+            
+            // First entry should be "ipfs"
+            if (pos + 5 >= metadata.len) return null;
+            if (metadata[pos] != 0x64) return null; // 4-byte string
+            pos += 1;
+            
+            if (!std.mem.eql(u8, metadata[pos..pos + 4], "ipfs")) return null;
+            pos += 4;
+            
+            // IPFS hash (0x58 = byte string, 0x22 = 34 bytes following)
+            if (pos + 2 >= metadata.len) return null;
+            if (metadata[pos] != 0x58 or metadata[pos + 1] != 0x22) return null;
+            pos += 2;
+            
+            if (pos + 32 > metadata.len) return null;
+            var ipfs_hash: [32]u8 = undefined;
+            @memcpy(&ipfs_hash, metadata[pos..pos + 32]);
+            pos += 32;
+            
+            // Second entry should be "solc"
+            if (pos + 5 >= metadata.len) return null;
+            if (metadata[pos] != 0x64) return null; // 4-byte string
+            pos += 1;
+            
+            if (!std.mem.eql(u8, metadata[pos..pos + 4], "solc")) return null;
+            pos += 4;
+            
+            // Solc version (3 bytes: major, minor, patch)
+            if (pos + 3 > metadata.len) return null;
+            const major = metadata[pos];
+            const minor = metadata[pos + 1];
+            const patch = metadata[pos + 2];
+            
+            return SolidityMetadata{
+                .ipfs_hash = ipfs_hash,
+                .solc_version = .{ major, minor, patch },
+                .metadata_length = metadata_len + 2, // Include the length bytes
+            };
+        }
+        
+        /// Get the parsed Solidity metadata if it exists
+        pub fn getSolidityMetadata(self: Self) ?SolidityMetadata {
+            return self.metadata;
+        }
+        
+        /// Parse Solidity metadata from the end of bytecode (for backwards compatibility)
+        /// Returns null if no valid metadata is found
+        pub fn parseSolidityMetadata(self: Self) ?SolidityMetadata {
+            // Minimum metadata size: 2 (length) + 4 (ipfs) + 32 (hash) + 4 (solc) + 3 (version) = 45 bytes
+            if (self.full_code.len < 45) return null;
+            
+            // Get the last 2 bytes which encode the metadata length
+            const len_offset = self.full_code.len - 2;
+            const metadata_len = (@as(u16, self.full_code[len_offset]) << 8) | self.full_code[len_offset + 1];
+            
+            // Verify metadata length is reasonable
+            if (metadata_len < 43 or metadata_len > self.full_code.len) return null;
+            
+            // Calculate where metadata starts
+            const metadata_start = self.full_code.len - 2 - metadata_len;
+            const metadata = self.full_code[metadata_start..self.full_code.len - 2];
+            
+            // Parse CBOR-encoded metadata
+            // Expected format: 0xa2 (map with 2 entries) 0x64 (4-byte string) "ipfs" 0x58 0x22 (34 bytes) <32-byte hash>
+            //                  0x64 (4-byte string) "solc" <3-byte version>
+            var pos: usize = 0;
+            
+            // Check CBOR map header (0xa2 = map with 2 items)
+            if (pos >= metadata.len or metadata[pos] != 0xa2) return null;
+            pos += 1;
+            
+            // First entry should be "ipfs"
+            if (pos + 5 >= metadata.len) return null;
+            if (metadata[pos] != 0x64) return null; // 4-byte string
+            pos += 1;
+            
+            if (!std.mem.eql(u8, metadata[pos..pos + 4], "ipfs")) return null;
+            pos += 4;
+            
+            // IPFS hash (0x58 = byte string, 0x22 = 34 bytes following)
+            if (pos + 2 >= metadata.len) return null;
+            if (metadata[pos] != 0x58 or metadata[pos + 1] != 0x22) return null;
+            pos += 2;
+            
+            if (pos + 32 > metadata.len) return null;
+            var ipfs_hash: [32]u8 = undefined;
+            @memcpy(&ipfs_hash, metadata[pos..pos + 32]);
+            pos += 32;
+            
+            // Second entry should be "solc"
+            if (pos + 5 >= metadata.len) return null;
+            if (metadata[pos] != 0x64) return null; // 4-byte string
+            pos += 1;
+            
+            if (!std.mem.eql(u8, metadata[pos..pos + 4], "solc")) return null;
+            pos += 4;
+            
+            // Solc version (3 bytes: major, minor, patch)
+            if (pos + 3 > metadata.len) return null;
+            const major = metadata[pos];
+            const minor = metadata[pos + 1];
+            const patch = metadata[pos + 2];
+            
+            return SolidityMetadata{
+                .ipfs_hash = ipfs_hash,
+                .solc_version = .{ major, minor, patch },
+                .metadata_length = metadata_len + 2, // Include the length bytes
+            };
         }
         
         /// Get statistics about the bytecode
@@ -618,10 +778,10 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             var jumps = ArrayList(Stats.Jump, null).init(self.allocator);
             defer jumps.deinit();
             var i: PcType = 0;
-            while (i < self.code.len) {
+            while (i < self.runtime_code.len) {
                 // Prefetch ahead for stats collection
-                if (i + PREFETCH_DISTANCE < self.code.len) {
-                    @prefetch(&self.code[i + PREFETCH_DISTANCE], .{
+                if (i + PREFETCH_DISTANCE < self.runtime_code.len) {
+                    @prefetch(&self.runtime_code[i + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
@@ -632,7 +792,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                     i += 1;
                     continue;
                 }
-                const op = self.code[i];
+                const op = self.runtime_code[i];
                 stats.opcode_counts[op] += 1;
                 if (op == @intFromEnum(Opcode.JUMPDEST)) try jumpdests.append(i);
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
@@ -642,8 +802,8 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                         const next_pc = i + 1 + n;
                         
                         // Skip fusion detection if using SIMD (already done)
-                        if (simd_fusions == null and next_pc < self.code.len) {
-                            const next_op = self.code[next_pc];
+                        if (simd_fusions == null and next_pc < self.runtime_code.len) {
+                            const next_op = self.runtime_code[next_pc];
                             if (next_op == @intFromEnum(Opcode.JUMP) or
                                 next_op == @intFromEnum(Opcode.JUMPI) or
                                 next_op == @intFromEnum(Opcode.ADD) or
@@ -656,9 +816,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                                 });
                             }
                         }
-                        if (next_pc < self.code.len and 
-                            (self.code[next_pc] == @intFromEnum(Opcode.JUMP) or 
-                             self.code[next_pc] == @intFromEnum(Opcode.JUMPI))) {
+                        if (next_pc < self.runtime_code.len and 
+                            (self.runtime_code[next_pc] == @intFromEnum(Opcode.JUMP) or 
+                             self.runtime_code[next_pc] == @intFromEnum(Opcode.JUMPI))) {
                             try jumps.append(.{ .pc = next_pc, .target = value });
                             if (value < i) {
                                 stats.backwards_jumps += 1;
@@ -695,7 +855,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             while (i < self.len()) : (i += 1) {
                 // Prefetch for sequential access
                 if (i + PREFETCH_DISTANCE < self.len()) {
-                    @prefetch(&self.code[i + PREFETCH_DISTANCE], .{
+                    @prefetch(&self.runtime_code[i + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
@@ -703,7 +863,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 }
                 
                 const test_push = (self.is_push_data[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) != 0;
-                if (self.code[i] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
+                if (self.runtime_code[i] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
                     self.is_jumpdest[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
                 }
             }
@@ -713,13 +873,13 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         /// Optimized with prefetching and better SIMD utilization
         fn markJumpdestSimd(self: Self, comptime L: comptime_int) void {
             var i: usize = 0;
-            const code_len = self.code.len;
+            const code_len = self.runtime_code.len;
             const splat_5b: @Vector(L, u8) = @splat(@as(u8, @intFromEnum(Opcode.JUMPDEST)));
             
             while (i + L <= code_len) : (i += L) {
                 // Prefetch next iteration's data
                 if (i + L + PREFETCH_DISTANCE < code_len) {
-                    @prefetch(&self.code[i + L + PREFETCH_DISTANCE], .{
+                    @prefetch(&self.runtime_code[i + L + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
@@ -733,7 +893,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 
                 // Load and compare bytecode chunk
                 var arr: [L]u8 = undefined;
-                inline for (0..L) |k| arr[k] = self.code[i + k];
+                inline for (0..L) |k| arr[k] = self.runtime_code[i + k];
                 const v: @Vector(L, u8) = arr;
                 const eq: @Vector(L, bool) = v == splat_5b;
                 const eq_arr: [L]bool = eq;
@@ -760,27 +920,26 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 const byte_idx = t >> BITMAP_SHIFT;
                 const bit_mask = @as(u8, 1) << @intCast(t & BITMAP_MASK);
                 const test_push = (self.is_push_data[byte_idx] & bit_mask) != 0;
-                if (self.code[t] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
+                if (self.runtime_code[t] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
                     self.is_jumpdest[byte_idx] |= bit_mask;
                 }
             }
         }
 
     };
-    return BytecodeType;
 }
 
 // Default configuration with EIP-3860 initcode limit of 49,152 bytes (2 * max contract size)
 const default_config = BytecodeConfig{};
-pub const Bytecode = createBytecode(default_config);
-pub const BytecodeValidationError = Bytecode.ValidationError;
+pub const BytecodeDefault = Bytecode(default_config);
+pub const BytecodeValidationError = BytecodeDefault.ValidationError;
 
 test "Bytecode.init and basic getters" {
     const allocator = std.testing.allocator;
     const code = [_]u8{ 0x60, 0x40, 0x60, 0x80 }; // PUSH1 0x40 PUSH1 0x80
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    try std.testing.expectEqual(@as(Bytecode.PcType, 4), bytecode.len());
+    try std.testing.expectEqual(@as(BytecodeDefault.PcType, 4), bytecode.len());
     try std.testing.expectEqualSlices(u8, &code, bytecode.raw());
     try std.testing.expectEqual(@as(?u8, 0x60), bytecode.get(0));
     try std.testing.expectEqual(@as(?u8, 0x40), bytecode.get(1));
@@ -791,7 +950,7 @@ test "Bytecode.init and basic getters" {
 test "Bytecode.isValidJumpDest" {
     const allocator = std.testing.allocator;
     const code = [_]u8{ 0x60, 0x03, 0x56, 0x5b, 0x00 };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expect(!bytecode.isValidJumpDest(0)); 
     try std.testing.expect(!bytecode.isValidJumpDest(1));
@@ -799,7 +958,7 @@ test "Bytecode.isValidJumpDest" {
     try std.testing.expect(bytecode.isValidJumpDest(3)); 
     try std.testing.expect(!bytecode.isValidJumpDest(4)); 
     const code2 = [_]u8{ 0x62, 0x5b, 0x5b, 0x5b, 0x00 }; 
-    var bytecode2 = try Bytecode.init(allocator, &code2);
+    var bytecode2 = try BytecodeDefault.init(allocator, &code2);
     defer bytecode2.deinit();
     try std.testing.expect(!bytecode2.isValidJumpDest(1)); 
     try std.testing.expect(!bytecode2.isValidJumpDest(2));
@@ -809,7 +968,7 @@ test "Bytecode.isValidJumpDest" {
 test "Bytecode buildBitmaps are created on init" {
     const allocator = std.testing.allocator;
     const code = [_]u8{ 0x61, 0x12, 0x34, 0x5b, 0x60, 0x56, 0x00 };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 0)) != 0); 
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 1)) == 0);
@@ -835,7 +994,7 @@ test "Bytecode.readPushValue" {
         0x61, 0x12, 0x34,          // PUSH2
         0x63, 0xDE, 0xAD, 0xBE, 0xEF // PUSH4
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expectEqual(@as(?u8, 0x42), bytecode.readPushValue(0, 1));
     try std.testing.expectEqual(@as(?u16, 0x1234), bytecode.readPushValue(2, 2));
@@ -854,7 +1013,7 @@ test "Bytecode.getInstructionSize and getNextPc" {
     code[2] = 0x01; // ADD
     code[3] = 0x7f; // PUSH32
     for (4..36) |i| code[i] = @intCast(i);
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expectEqual(@as(Bytecode.PcType, 2), bytecode.getInstructionSize(0)); // PUSH1
     try std.testing.expectEqual(@as(Bytecode.PcType, 1), bytecode.getInstructionSize(2)); // ADD
@@ -875,7 +1034,7 @@ test "Bytecode.analyzeJumpDests" {
         0x5b,             // JUMPDEST at PC 7
         0x00              // STOP
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     const Context = struct {
         // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
@@ -896,7 +1055,7 @@ test "Bytecode validation - invalid opcode" {
     const allocator = std.testing.allocator;
     // Test bytecode with invalid opcode 0xFE
     const code = [_]u8{ 0x60, 0x01, 0xFE }; // PUSH1 0x01 INVALID
-    const result = Bytecode.init(allocator, &code);
+    const result = BytecodeDefault.init(allocator, &code);
     try std.testing.expectError(error.InvalidOpcode, result);
 }
 
@@ -904,7 +1063,7 @@ test "Bytecode validation - PUSH extends past end" {
     const allocator = std.testing.allocator;
     // PUSH2 but only 1 byte of data available
     const code = [_]u8{ 0x61, 0x42 }; // PUSH2 with only 1 byte
-    const result = Bytecode.init(allocator, &code);
+    const result = BytecodeDefault.init(allocator, &code);
     try std.testing.expectError(error.TruncatedPush, result);
 }
 
@@ -916,7 +1075,7 @@ test "Bytecode validation - PUSH32 extends past end" {
     for (1..32) |i| {
         code[i] = @intCast(i);
     }
-    const result = Bytecode.init(allocator, &code); // Only 32 bytes, needs 33
+    const result = BytecodeDefault.init(allocator, &code); // Only 32 bytes, needs 33
     try std.testing.expectError(error.TruncatedPush, result);
 }
 
@@ -924,7 +1083,7 @@ test "Bytecode validation - Jump to invalid destination" {
     const allocator = std.testing.allocator;
     // PUSH1 0x10 JUMP but no JUMPDEST at 0x10
     const code = [_]u8{ 0x60, 0x10, 0x56, 0x00 }; // PUSH1 0x10 JUMP STOP
-    const result = Bytecode.init(allocator, &code);
+    const result = BytecodeDefault.init(allocator, &code);
     try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
@@ -932,7 +1091,7 @@ test "Bytecode validation - Jump to valid JUMPDEST" {
     const allocator = std.testing.allocator;
     // PUSH1 0x04 JUMP JUMPDEST STOP
     const code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x00 };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expect(bytecode.is_jumpdest.len > 0);
 }
@@ -941,14 +1100,14 @@ test "Bytecode validation - JUMPI to invalid destination" {
     const allocator = std.testing.allocator;
     // PUSH1 0x10 PUSH1 0x01 JUMPI but no JUMPDEST at 0x10
     const code = [_]u8{ 0x60, 0x10, 0x60, 0x01, 0x57 }; // PUSH1 0x10 PUSH1 0x01 JUMPI
-    const result = Bytecode.init(allocator, &code);
+    const result = BytecodeDefault.init(allocator, &code);
     try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
 test "Bytecode validation - empty bytecode is valid" {
     const allocator = std.testing.allocator;
     const code = [_]u8{};
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expectEqual(@as(usize, 0), bytecode.len());
 }
@@ -956,7 +1115,7 @@ test "Bytecode validation - empty bytecode is valid" {
 test "Bytecode validation - only STOP is valid" {
     const allocator = std.testing.allocator;
     const code = [_]u8{0x00};
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     try std.testing.expectEqual(@as(usize, 1), bytecode.len());
 }
@@ -965,7 +1124,7 @@ test "Bytecode validation - JUMPDEST inside PUSH data is invalid jump target" {
     const allocator = std.testing.allocator;
     // PUSH1 0x03 JUMP [0x5b inside push] JUMPDEST
     const code = [_]u8{ 0x60, 0x03, 0x56, 0x62, 0x5b, 0x5b, 0x5b }; // PUSH1 0x03 JUMP PUSH3 0x5b5b5b
-    const result = Bytecode.init(allocator, &code);
+    const result = BytecodeDefault.init(allocator, &code);
     try std.testing.expectError(error.InvalidJumpDestination, result);
 }
 
@@ -973,7 +1132,7 @@ test "Bytecode.getStats - basic stats" {
     const allocator = std.testing.allocator;
     // PUSH1 0x05 PUSH1 0x03 ADD STOP
     const code = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x00 };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1010,7 +1169,7 @@ test "Bytecode.getStats - potential fusions" {
     const allocator = std.testing.allocator;
     // PUSH1 0x04 JUMP JUMPDEST PUSH1 0x10 ADD STOP
     const code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x60, 0x10, 0x01, 0x00 };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1042,7 +1201,7 @@ test "Bytecode.getStats - jumpdests and jumps" {
         0x5b,                   // JUMPDEST at PC 12
         0x00                    // STOP
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1078,7 +1237,7 @@ test "Bytecode.getStats - backwards jumps (loops)" {
         0x60, 0x00,       // PUSH1 0x00
         0x56              // JUMP (back to 0)
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1109,7 +1268,7 @@ test "Bytecode.getStats - create code detection" {
         0x60, 0x00,       // PUSH1 0x00 (offset in memory)
         0xf3              // RETURN
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1128,7 +1287,7 @@ test "Bytecode.getStats - runtime code detection" {
     const allocator = std.testing.allocator;
     // Normal runtime code (no CODECOPY + RETURN pattern)
     const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1148,8 +1307,8 @@ test "Bytecode SIMD opcode validation" {
     
     // Test bytecode with invalid opcode (0xFF is not a valid opcode)
     const invalid_code = [_]u8{ 0x60, 0x01, 0xFF, 0x00 }; // PUSH1 1 INVALID STOP
-    const result = Bytecode.init(allocator, &invalid_code);
-    try std.testing.expectError(Bytecode.ValidationError.InvalidOpcode, result);
+    const result = BytecodeDefault.init(allocator, &invalid_code);
+    try std.testing.expectError(BytecodeDefault.ValidationError.InvalidOpcode, result);
     
     // Test bytecode with all valid opcodes
     const valid_code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
@@ -1168,7 +1327,7 @@ test "Bytecode initcode validation - EIP-3860" {
     defer allocator.free(valid_initcode);
     @memset(valid_initcode, 0x00); // Fill with STOP opcodes
     
-    var bytecode = try Bytecode.initFromInitcode(allocator, valid_initcode);
+    var bytecode = try BytecodeDefault.initFromInitcode(allocator, valid_initcode);
     defer bytecode.deinit();
     try std.testing.expectEqual(@as(usize, 1000), bytecode.len());
     
@@ -1228,7 +1387,7 @@ test "Bytecode SIMD fusion pattern detection" {
         0x60, 0x12, 0x57, // PUSH1 18 JUMPI
         0x00              // STOP
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1275,7 +1434,7 @@ test "Bytecode.getStats - all opcode types counted" {
         0x51,         // MLOAD
         0x00          // STOP
     };
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     const stats = try bytecode.getStats();
@@ -1362,14 +1521,14 @@ test "Bytecode.findNextSetBit - basic functionality" {
 test "Bytecode cache-aligned allocations" {
     // Skip this test since test allocator doesn't support aligned allocations
     // In production, allocations will be cache-aligned
-    if (@import("builtin").is_test) {
+    if (builtin.is_test) {
         return;
     }
     
     const allocator = std.testing.allocator;
     // Test that bitmaps are allocated with cache line alignment
     const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
-    var bytecode = try Bytecode.init(allocator, &code);
+    var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
     
     // Check that bitmaps are aligned to cache line boundaries
@@ -1380,4 +1539,64 @@ test "Bytecode cache-aligned allocations" {
     try std.testing.expect(push_data_addr % CACHE_LINE_SIZE == 0);
     try std.testing.expect(op_start_addr % CACHE_LINE_SIZE == 0);
     try std.testing.expect(jumpdest_addr % CACHE_LINE_SIZE == 0);
+}
+
+test "Bytecode.parseSolidityMetadata" {
+    const allocator = std.testing.allocator;
+    
+    // Example bytecode with Solidity metadata
+    // This represents a simple contract with metadata appended
+    const code_with_metadata = [_]u8{
+        // Some contract bytecode
+        0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15, 0x60, 0x0e, 0x57, 0x5f, 0x5f, 0xfd, 0x5b, 0x50,
+        
+        // Solidity metadata (CBOR encoded)
+        0xa2, // CBOR map with 2 entries
+        0x64, 0x69, 0x70, 0x66, 0x73, // "ipfs"
+        0x58, 0x22, // 34 bytes following
+        // 32-byte IPFS hash
+        0x12, 0x20, 0x2c, 0x24, 0x7f, 0x39, 0xd6, 0x15, 0xd7, 0xf6, 0x69, 0x42, 0xcd, 0x6e, 0xd5, 0x05,
+        0xd8, 0xea, 0x34, 0xfb, 0xfc, 0xbe, 0x16, 0xac, 0x87, 0x5e, 0xd0, 0x8c, 0x4a, 0x9c, 0x22, 0x93,
+        0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x00, 0x08, 0x1e, // version 0.8.30
+        0x00, 0x33, // metadata length: 51 bytes
+    };
+    
+    var bytecode = try Bytecode.init(allocator, &code_with_metadata);
+    defer bytecode.deinit();
+    
+    // Parse metadata
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata != null);
+    
+    if (metadata) |m| {
+        // Check IPFS hash (first few bytes)
+        try std.testing.expectEqual(@as(u8, 0x12), m.ipfs_hash[0]);
+        try std.testing.expectEqual(@as(u8, 0x20), m.ipfs_hash[1]);
+        try std.testing.expectEqual(@as(u8, 0x2c), m.ipfs_hash[2]);
+        
+        // Check Solidity version
+        try std.testing.expectEqual(@as(u8, 0), m.solc_version[0]); // major
+        try std.testing.expectEqual(@as(u8, 8), m.solc_version[1]); // minor
+        try std.testing.expectEqual(@as(u8, 30), m.solc_version[2]); // patch (0x1e = 30)
+        
+        // Check metadata length
+        try std.testing.expectEqual(@as(usize, 53), m.metadata_length); // 51 + 2 length bytes
+    }
+    
+    // Test with bytecode that has no metadata
+    const code_no_metadata = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x00 };
+    var bytecode2 = try Bytecode.init(allocator, &code_no_metadata);
+    defer bytecode2.deinit();
+    
+    const no_metadata = bytecode2.parseSolidityMetadata();
+    try std.testing.expect(no_metadata == null);
+    
+    // Test with bytecode too short for metadata
+    const short_code = [_]u8{ 0x60, 0x00 };
+    var bytecode3 = try BytecodeDefault.init(allocator, &short_code);
+    defer bytecode3.deinit();
+    
+    const short_metadata = bytecode3.parseSolidityMetadata();
+    try std.testing.expect(short_metadata == null);
 }

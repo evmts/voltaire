@@ -73,10 +73,10 @@ comptime {
 
 
 /// Factory function to create a Plan type with the given configuration.
-pub fn createPlan(comptime cfg: PlanConfig) type {
+pub fn Plan(comptime cfg: PlanConfig) type {
     comptime cfg.validate();
     
-    const Plan = struct {
+    return struct {
         pub const PcType = cfg.PcType();
         pub const InstructionIndexType = PcType; // Can only have as many instructions as PCs
         pub const WordType = cfg.WordType;
@@ -420,8 +420,6 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             self.u256_constants = &.{};
         }
     };
-    
-    return Plan;
 }
 
 // Test handler function that does nothing (for testing)
@@ -480,7 +478,7 @@ test "PlanConfig validation" {
 
 test "Plan getMetadata for PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create a plan with test data
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -498,7 +496,7 @@ test "Plan getMetadata for PUSH opcodes" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .inline_value = std.math.maxInt(u64) });
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -506,30 +504,30 @@ test "Plan getMetadata for PUSH opcodes" {
     defer plan.deinit(allocator);
     
     // Test PUSH1
-    var idx: Plan.InstructionIndexType = 0;
+    var idx: TestPlan.InstructionIndexType = 0;
     const push1_val = plan.getMetadata(&idx, .PUSH1);
     try std.testing.expectEqual(@as(u8, 42), push1_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+    try std.testing.expectEqual(@as(TestPlan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test PUSH2
     idx = 2; // Move to PUSH2 handler position
     const push2_val = plan.getMetadata(&idx, .PUSH2);
     try std.testing.expectEqual(@as(u16, 0x1234), push2_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(TestPlan.InstructionIndexType, 2), idx);
     
     // Test PUSH8
     idx = 4; // Move to PUSH8 handler position
     const push8_val = plan.getMetadata(&idx, .PUSH8);
     try std.testing.expectEqual(@as(u64, std.math.maxInt(u64)), push8_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
+    try std.testing.expectEqual(@as(TestPlan.InstructionIndexType, 4), idx);
 }
 
 test "Plan getMetadata for large PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create constants array
-    var constants = try allocator.alloc(Plan.WordType, 2);
+    var constants = try allocator.alloc(TestPlan.WordType, 2);
     defer allocator.free(constants);
     constants[0] = 0x123456789ABCDEF0123456789ABCDEF0;
     constants[1] = std.math.maxInt(u256);
@@ -546,7 +544,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 1 });
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -554,7 +552,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     defer plan.deinit(allocator);
     
     // Test PUSH32
-    var idx: Plan.InstructionIndexType = 0;
+    var idx: TestPlan.InstructionIndexType = 0;
     const push32_ptr = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(constants[0], push32_ptr.*);
     
@@ -566,10 +564,10 @@ test "Plan getMetadata for large PUSH opcodes" {
 
 test "Plan getMetadata for synthetic opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create constants array
-    var constants = try allocator.alloc(Plan.WordType, 1);
+    var constants = try allocator.alloc(TestPlan.WordType, 1);
     defer allocator.free(constants);
     constants[0] = 0xDEADBEEF;
     
@@ -585,7 +583,7 @@ test "Plan getMetadata for synthetic opcodes" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 0 });
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -593,7 +591,7 @@ test "Plan getMetadata for synthetic opcodes" {
     defer plan.deinit(allocator);
     
     // Test PUSH_ADD_INLINE
-    var idx: Plan.InstructionIndexType = 0;
+    var idx: TestPlan.InstructionIndexType = 0;
     const inline_val = plan.getMetadata(&idx, OpcodeSynthetic.PUSH_ADD_INLINE);
     if (@sizeOf(usize) == 8) {
         try std.testing.expectEqual(@as(u64, 999), inline_val);
@@ -609,7 +607,7 @@ test "Plan getMetadata for synthetic opcodes" {
 
 test "Plan getMetadata for JUMPDEST" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create instruction stream
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -628,14 +626,14 @@ test "Plan getMetadata for JUMPDEST" {
         return;
     }
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
-    var idx: Plan.InstructionIndexType = 0;
+    var idx: TestPlan.InstructionIndexType = 0;
     const jumpdest_meta = plan.getMetadata(&idx, .JUMPDEST);
     try std.testing.expectEqual(@as(u32, 100), jumpdest_meta.gas);
     try std.testing.expectEqual(@as(i16, -5), jumpdest_meta.min_stack);
@@ -644,7 +642,7 @@ test "Plan getMetadata for JUMPDEST" {
 
 test "Plan getMetadata for PC opcode" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create instruction stream
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -654,16 +652,16 @@ test "Plan getMetadata for PC opcode" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .inline_value = 42 }); // Original PC was 42
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
-    var idx: Plan.InstructionIndexType = 0;
+    var idx: TestPlan.InstructionIndexType = 0;
     const pc_val = plan.getMetadata(&idx, .PC);
-    try std.testing.expectEqual(@as(Plan.PcType, 42), pc_val);
+    try std.testing.expectEqual(@as(TestPlan.PcType, 42), pc_val);
 }
 
 test "Plan getNextInstruction advances correctly" {
@@ -682,7 +680,7 @@ test "Plan getNextInstruction advances correctly" {
     // MUL (no metadata)
     try stream.append(.{ .handler = &testHandler });
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -690,20 +688,20 @@ test "Plan getNextInstruction advances correctly" {
     defer plan.deinit(allocator);
     
     // Test advancing from ADD (no metadata)
-    var idx: Plan.InstructionIndexType = 0;
+    var idx: TestPlan.InstructionIndexType = 0;
     const handler1 = plan.getNextInstruction(&idx, .ADD);
     try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler1));
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 1), idx);
+    try std.testing.expectEqual(@as(TestPlan.InstructionIndexType, 1), idx);
     
     // Test advancing from PUSH1 (has metadata)
     const handler2 = plan.getNextInstruction(&idx, .PUSH1);
     try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler2));
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 3), idx); // Skipped metadata
+    try std.testing.expectEqual(@as(TestPlan.InstructionIndexType, 3), idx); // Skipped metadata
     
     // Test advancing from MUL (no metadata)
     const handler3 = plan.getNextInstruction(&idx, .MUL);
     try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler3));
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
+    try std.testing.expectEqual(@as(TestPlan.InstructionIndexType, 4), idx);
 }
 
 test "Plan getInstructionIndexForPc" {
@@ -718,7 +716,7 @@ test "Plan getInstructionIndexForPc" {
     try map.put(1, 1);   // PC 1 -> Instruction 1
     try map.put(3, 3);   // PC 3 -> Instruction 3 (skipped PC 2 due to PUSH data)
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = &.{},
         .u256_constants = &.{},
         .pc_to_instruction_idx = map,
@@ -744,7 +742,7 @@ test "Plan deinit frees resources" {
     var map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
     try map.put(0, 0);
     
-    var plan = Plan{
+    var plan = TestPlan{
         .instructionStream = stream,
         .u256_constants = constants,
         .pc_to_instruction_idx = map,

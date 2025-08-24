@@ -10,10 +10,10 @@ const tracer_mod = @import("tracer.zig");
 // TODO: We should somehow allow end user to configure this even if it's just showing them how to build from scratch
 // Since the configuration is comptime we can't do this dynamically over FFI
 // We might just want to make an instance for every hardfork as it's own different build target we expose
-pub const Frame = frame_mod.createFrame(.{});
+pub const Frame = frame_mod.Frame(.{});
 
 // Create debug frame type with debugging tracer
-pub const DebugFrame = frame_mod.createFrame(.{
+pub const DebugFrame = frame_mod.Frame(.{
     .TracerType = tracer_mod.DebuggingTracer,
 });
 
@@ -94,7 +94,7 @@ export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initial_g
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize frame
-    handle.frame = Frame.init(allocator, handle.bytecode_owned, @intCast(initial_gas)) catch {
+    handle.frame = Frame.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
@@ -124,7 +124,7 @@ export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     handle.frame.deinit(allocator);
 
     // Reinitialize with same bytecode
-    handle.frame = Frame.init(allocator, handle.bytecode_owned, @intCast(new_gas)) catch |err| {
+    handle.frame = Frame.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}, null) catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -362,7 +362,7 @@ export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize, ini
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize debug frame
-    handle.frame = DebugFrame.init(allocator, handle.bytecode_owned, @intCast(initial_gas)) catch {
+    handle.frame = DebugFrame.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;

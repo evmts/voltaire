@@ -5,26 +5,12 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
 pub const CreatedContracts = struct {
-    created: std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage),
+    created: std.AutoHashMap(Address, void),
     allocator: std.mem.Allocator,
-
-    const AddressContext = struct {
-        pub fn hash(self: @This(), address: Address) u64 {
-            _ = self;
-            var hasher = std.hash.Wyhash.init(0);
-            hasher.update(&address);
-            return hasher.final();
-        }
-
-        pub fn eql(self: @This(), a: Address, b: Address) bool {
-            _ = self;
-            return std.mem.eql(u8, &a, &b);
-        }
-    };
 
     pub inline fn init(allocator: std.mem.Allocator) CreatedContracts {
         return CreatedContracts{
-            .created = std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .created = std.AutoHashMap(Address, void).init(allocator),
             .allocator = allocator,
         };
     }

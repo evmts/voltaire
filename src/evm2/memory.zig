@@ -9,10 +9,10 @@ pub const MemoryError = error{
 };
 
 // Factory function to create Memory type
-pub fn createMemory(comptime config: MemoryConfig) type {
+pub fn Memory(comptime config: MemoryConfig) type {
     config.validate();
     
-    const Memory = struct {
+    return struct {
         const Self = @This();
         
         pub const INITIAL_CAPACITY = config.initial_capacity;
@@ -190,13 +190,12 @@ pub fn createMemory(comptime config: MemoryConfig) type {
             return self.buffer_ptr;
         }
     };
-    return Memory;
 }
 
 test "Memory owner basic operations" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     try std.testing.expectEqual(@as(usize, 0), memory.size());
     const data = [_]u8{0x01, 0x02, 0x03, 0x04};
@@ -210,12 +209,12 @@ test "Memory owner basic operations" {
 
 test "Memory borrowed operations" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var owner = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var owner = try Mem.init(allocator);
     defer owner.deinit();
     const data1 = [_]u8{0xAA, 0xBB, 0xCC};
     try owner.set_data(0, &data1);
-    var borrowed = try Memory.init_borrowed(allocator, owner.buffer_ptr, owner.buffer_ptr.items.len);
+    var borrowed = try Mem.init_borrowed(allocator, owner.buffer_ptr, owner.buffer_ptr.items.len);
     defer borrowed.deinit();
     try std.testing.expectEqual(@as(usize, 0), borrowed.size());
     const data2 = [_]u8{0xDD, 0xEE, 0xFF};
@@ -228,8 +227,8 @@ test "Memory borrowed operations" {
 
 test "Memory capacity limits" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{ .initial_capacity = 50, .memory_limit = 100 });
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{ .initial_capacity = 50, .memory_limit = 100 });
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     try memory.ensure_capacity(50);
     try std.testing.expectEqual(@as(usize, 50), memory.buffer_ptr.items.len);
@@ -240,8 +239,8 @@ test "Memory capacity limits" {
 
 test "Memory child creation" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var parent = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var parent = try Mem.init(allocator);
     defer parent.deinit();
     const data1 = [_]u8{0x11, 0x22, 0x33};
     try parent.set_data(0, &data1);
@@ -261,8 +260,8 @@ test "Memory child creation" {
 
 test "Memory zero initialization on expansion" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     try memory.ensure_capacity(10);
     const slice = try memory.get_slice(0, 10);
@@ -273,8 +272,8 @@ test "Memory zero initialization on expansion" {
 
 test "Memory out of bounds access" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     const data = [_]u8{0x01, 0x02, 0x03};
     try memory.set_data(0, &data);
@@ -284,14 +283,14 @@ test "Memory out of bounds access" {
 }
 
 test "Memory configuration validation" {
-    _ = createMemory(.{});
-    _ = createMemory(.{ .initial_capacity = 1024, .memory_limit = 2048 });
+    _ = Memory(.{});
+    _ = Memory(.{ .initial_capacity = 1024, .memory_limit = 2048 });
 }
 
 test "Memory u256 operations" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     const value1: u256 = 0x123456789ABCDEF0;
     try memory.set_u256(0, value1);
@@ -308,8 +307,8 @@ test "Memory u256 operations" {
 
 test "Memory byte operations" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     try memory.set_byte(0, 0xFF);
     const byte1 = try memory.get_byte(0);
@@ -323,8 +322,8 @@ test "Memory byte operations" {
 
 test "Memory gas expansion cost" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     var cost = memory.get_expansion_cost(0);
     try std.testing.expectEqual(@as(u64, 0), cost);
@@ -340,8 +339,8 @@ test "Memory gas expansion cost" {
 
 test "Memory gas expansion cost caching" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     const cost1 = memory.get_expansion_cost(256);
     const expected_cost = 3 * 8 + (8 * 8) / 512;
@@ -352,8 +351,8 @@ test "Memory gas expansion cost caching" {
 
 test "Memory clear resets cache" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     const cost1 = memory.get_expansion_cost(256);
     try std.testing.expect(cost1 > 0);
@@ -364,8 +363,8 @@ test "Memory clear resets cache" {
 
 test "Memory large data operations" {
     const allocator = std.testing.allocator;
-    const Memory = createMemory(.{});
-    var memory = try Memory.init(allocator);
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
     defer memory.deinit();
     var large_data: [1024]u8 = undefined;
     for (&large_data, 0..) |*byte, i| {

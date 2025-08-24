@@ -10,7 +10,7 @@ const primitives = @import("primitives");
 // FrameInterpreter combines a Frame with a Plan to execute EVM bytecode
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     config.validate();
-    const Frame = frame_mod.createFrame(config);
+    const Frame = frame_mod.Frame(config);
     const Planner = planner_mod.createPlanner(.{
         .WordType = config.WordType,
         .maxBytecodeSize = config.max_bytecode_size,
@@ -34,7 +34,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         instruction_idx: Plan.InstructionIndexType,
         
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void) Error!Self {
-            var frame = try Frame.init(allocator, bytecode, gas_remaining, database);
+            var frame = try Frame.init(allocator, bytecode, gas_remaining, database, null);
             errdefer frame.deinit(allocator);
             var planner = try Planner.init(allocator, bytecode);
             var handlers: [256]*const HandlerFn = undefined;
@@ -413,10 +413,10 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         const op_sgt_handler = makeSimpleHandler(Frame.sgt, .SGT);
         const op_eq_handler = makeSimpleHandler(Frame.eq, .EQ);
         const op_iszero_handler = makeSimpleHandler(Frame.iszero, .ISZERO);
-        const op_and_handler = makeSimpleHandler(Frame.and_, .AND);
-        const op_or_handler = makeSimpleHandler(Frame.or_, .OR);
+        const op_and_handler = makeSimpleHandler(Frame.@"and", .AND);
+        const op_or_handler = makeSimpleHandler(Frame.@"or", .OR);
         const op_xor_handler = makeSimpleHandler(Frame.xor, .XOR);
-        const op_not_handler = makeSimpleHandler(Frame.not_, .NOT);
+        const op_not_handler = makeSimpleHandler(Frame.@"not", .NOT);
         const op_byte_handler = makeSimpleHandler(Frame.byte, .BYTE);
         const op_shl_handler = makeSimpleHandler(Frame.shl, .SHL);
         const op_shr_handler = makeSimpleHandler(Frame.shr, .SHR);

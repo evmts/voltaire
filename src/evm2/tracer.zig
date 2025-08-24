@@ -741,7 +741,7 @@ test "tracer captures basic frame state with writer" {
     const allocator = std.testing.allocator;
     
     // Create a frame with some state
-    const Frame = frame_mod.createFrame(.{
+    const Frame = frame_mod.Frame(.{
         .stack_size = 10,
         .block_gas_limit = 1000,
     });
@@ -776,7 +776,7 @@ test "tracer captures basic frame state with writer" {
 test "tracer writes JSON to writer" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame_mod.createFrame(.{});
+    const Frame = frame_mod.Frame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {});
     defer test_frame.deinit(allocator);
     
@@ -802,7 +802,7 @@ test "tracer writes JSON to writer" {
 test "logging tracer writes to stdout" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame_mod.createFrame(.{});
+    const Frame = frame_mod.Frame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {});
     defer test_frame.deinit(allocator);
     
@@ -830,7 +830,7 @@ test "file tracer writes to file" {
     defer allocator.free(file_path);
     
     // Create frame
-    const Frame = frame_mod.createFrame(.{});
+    const Frame = frame_mod.Frame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000, {});
     defer test_frame.deinit(allocator);
     
@@ -855,7 +855,7 @@ test "file tracer writes to file" {
 test "tracer with gas cost computation" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame_mod.createFrame(.{});
+    const Frame = frame_mod.Frame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x01 }, 1000, {});
     defer test_frame.deinit(allocator);
     
@@ -890,7 +890,7 @@ test "tracer with gas cost computation" {
 test "tracer handles empty stack with JSON output" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame_mod.createFrame(.{});
+    const Frame = frame_mod.Frame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {});
     defer test_frame.deinit(allocator);
     
@@ -907,7 +907,7 @@ test "tracer handles empty stack with JSON output" {
 test "tracer handles large stack values in JSON" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame_mod.createFrame(.{});
+    const Frame = frame_mod.Frame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {});
     defer test_frame.deinit(allocator);
     

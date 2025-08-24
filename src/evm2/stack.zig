@@ -2,11 +2,11 @@ const std = @import("std");
 
 const StackConfig = @import("stack_config.zig").StackConfig;
 
-pub fn createStack(comptime config: StackConfig) type {
+pub fn Stack(comptime config: StackConfig) type {
     config.validate();
 
 
-    const Stack = struct {
+    return struct {
         pub const WordType = config.WordType;
         pub const IndexType = config.StackIndexType();
         pub const stack_capacity = config.stack_size;
@@ -279,15 +279,13 @@ pub fn createStack(comptime config: StackConfig) type {
             return self.stack_ptr[0..count];
         }
     };
-
-    return Stack;
 }
 
 test "Stack push and push_unsafe" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Test push_unsafe
@@ -316,9 +314,9 @@ test "Stack push and push_unsafe" {
 
 test "Stack pop and pop_unsafe" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with some values
@@ -347,9 +345,9 @@ test "Stack pop and pop_unsafe" {
 
 test "Stack set_top and set_top_unsafe" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with some values
@@ -380,9 +378,9 @@ test "Stack set_top and set_top_unsafe" {
 
 test "Stack peek and peek_unsafe" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with values
@@ -410,9 +408,9 @@ test "Stack peek and peek_unsafe" {
 
 test "Stack op_dup1 duplicates top stack item" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with value
@@ -429,9 +427,9 @@ test "Stack op_dup1 duplicates top stack item" {
 
 test "Stack op_dup16 duplicates 16th stack item" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with 16 values
@@ -452,9 +450,9 @@ test "Stack op_dup16 duplicates 16th stack item" {
 
 test "Stack op_swap1 swaps top two stack items" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with two values
@@ -473,9 +471,9 @@ test "Stack op_swap1 swaps top two stack items" {
 
 test "Stack op_swap16 swaps top with 17th stack item" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Setup stack with 17 values
@@ -496,9 +494,9 @@ test "Stack op_swap16 swaps top with 17th stack item" {
 
 test "Stack set_top underflow detection (bug fix validation)" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Test the bug fix: set_top should detect underflow on empty stack
@@ -512,9 +510,9 @@ test "Stack set_top underflow detection (bug fix validation)" {
 
 test "Stack peek underflow detection (bug fix validation)" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Test the bug fix: peek should detect underflow on empty stack
@@ -527,9 +525,9 @@ test "Stack peek underflow detection (bug fix validation)" {
 
 test "Stack unsafe operations assertion validation (bug fix)" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{});
+    const StackType = Stack(.{});
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Add one item to test valid operations
@@ -549,12 +547,12 @@ test "Stack unsafe operations assertion validation (bug fix)" {
 test "Stack maximum configuration comprehensive test" {
     const allocator = std.testing.allocator;
     // Maximum configuration: largest stack size and word type
-    const Stack = createStack(.{
+    const StackType = Stack(.{
         .stack_size = 4095, // Maximum supported
         .WordType = u256,   // Maximum word size
     });
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Test all operations with maximum values
@@ -614,12 +612,12 @@ test "Stack maximum configuration comprehensive test" {
 test "Stack minimum configuration comprehensive test" {
     const allocator = std.testing.allocator;
     // Minimum meaningful configuration
-    const Stack = createStack(.{
+    const StackType = Stack(.{
         .stack_size = 16,   // Small stack for testing
         .WordType = u8,     // Smallest practical word type
     });
 
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
     // Test all operations with small values
@@ -694,7 +692,7 @@ test "Stack index type boundaries" {
     const allocator = std.testing.allocator;
     
     // Test u4 boundary (stack_size = 15 uses u4, 16 uses u8)
-    const Stack15 = createStack(.{ .stack_size = 15 });
+    const Stack15 = Stack(.{ .stack_size = 15 });
     var stack15 = try Stack15.init(allocator);
     defer stack15.deinit(allocator);
     
@@ -707,7 +705,7 @@ test "Stack index type boundaries" {
     try std.testing.expectError(error.StackOverflow, stack15.push(999));
     
     // Test u8 boundary (stack_size = 255 uses u8, 256 uses u12)
-    const Stack255 = createStack(.{ .stack_size = 255 });
+    const Stack255 = Stack(.{ .stack_size = 255 });
     var stack255 = try Stack255.init(allocator);
     defer stack255.deinit(allocator);
     
@@ -720,7 +718,7 @@ test "Stack index type boundaries" {
     try std.testing.expectError(error.StackOverflow, stack255.push(999));
     
     // Test u12 at boundary (stack_size = 256 uses u12)
-    const Stack256 = createStack(.{ .stack_size = 256 });
+    const Stack256 = Stack(.{ .stack_size = 256 });
     var stack256 = try Stack256.init(allocator);
     defer stack256.deinit(allocator);
     
@@ -731,9 +729,9 @@ test "Stack index type boundaries" {
 
 test "All DUP operations DUP1-DUP16" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{ .stack_size = 32 });
+    const StackType = Stack(.{ .stack_size = 32 });
     
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
     
     // Test each DUP operation with exactly the minimum required items
@@ -769,9 +767,9 @@ test "All DUP operations DUP1-DUP16" {
 
 test "All SWAP operations SWAP1-SWAP16" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{ .stack_size = 32 });
+    const StackType = Stack(.{ .stack_size = 32 });
     
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
     
     // Test each SWAP operation with exactly the minimum required items
@@ -861,17 +859,15 @@ test "Mock allocator and allocation failure" {
         },
     };
     
-    const Stack = createStack(.{});
-    
     // Test that init fails with AllocationError when allocator fails
-    try std.testing.expectError(error.AllocationError, Stack.init(failing_allocator));
+    try std.testing.expectError(error.AllocationError, Stack(.{}).init(failing_allocator));
 }
 
 test "Complex operation sequences at boundaries" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{ .stack_size = 8 }); // Small stack for boundary testing
+    const StackType = Stack(.{ .stack_size = 8 }); // Small stack for boundary testing
     
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
     
     // Complex sequence: Push → DUP → SWAP → Pop at boundaries
@@ -939,11 +935,11 @@ test "Zero values and boundary values" {
     const allocator = std.testing.allocator;
     
     // Test with different word types
-    const StackU8 = createStack(.{ .WordType = u8 });
-    const StackU16 = createStack(.{ .WordType = u16 });
-    const StackU32 = createStack(.{ .WordType = u32 });
-    const StackU64 = createStack(.{ .WordType = u64 });
-    const StackU128 = createStack(.{ .WordType = u128 });
+    const StackU8 = Stack(.{ .WordType = u8 });
+    const StackU16 = Stack(.{ .WordType = u16 });
+    const StackU32 = Stack(.{ .WordType = u32 });
+    const StackU64 = Stack(.{ .WordType = u64 });
+    const StackU128 = Stack(.{ .WordType = u128 });
     
     var stack_u8 = try StackU8.init(allocator);
     defer stack_u8.deinit(allocator);
@@ -982,7 +978,7 @@ test "Zero values and boundary values" {
     try std.testing.expectEqual(std.math.maxInt(u128), try stack_u128.peek());
     
     // Test minimal stack size (1 element)
-    const StackMin = createStack(.{ .stack_size = 1 });
+    const StackMin = Stack(.{ .stack_size = 1 });
     var stack_min = try StackMin.init(allocator);
     defer stack_min.deinit(allocator);
     
@@ -995,9 +991,9 @@ test "Zero values and boundary values" {
 
 test "Unsafe operations at exact boundaries" {
     const allocator = std.testing.allocator;
-    const Stack = createStack(.{ .stack_size = 4 });
+    const StackType = Stack(.{ .stack_size = 4 });
     
-    var stack = try Stack.init(allocator);
+    var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
     
     // Test push_unsafe at exact capacity

@@ -1209,7 +1209,7 @@ test "Frame with bytecode" {
     const SmallFrame = Frame(.{ .max_bytecode_size = 255 });
     const small_bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.PUSH1), 0x02, @intFromEnum(Opcode.STOP) };
 
-    var small_frame = try SmallFrame.init(allocator, &small_bytecode, 1000000, {});
+    var small_frame = try SmallFrame.init(allocator, &small_bytecode, 1000000, {}, null);
     defer small_frame.deinit(allocator);
 
     try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), small_frame.bytecode[0]);
@@ -1218,7 +1218,7 @@ test "Frame with bytecode" {
     const MediumFrame = Frame(.{ .max_bytecode_size = 65535 });
     const medium_bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0xFF, @intFromEnum(Opcode.STOP) };
 
-    var medium_frame = try MediumFrame.init(allocator, &medium_bytecode, 1000000, {});
+    var medium_frame = try MediumFrame.init(allocator, &medium_bytecode, 1000000, {}, null);
     defer medium_frame.deinit(allocator);
 
     try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), medium_frame.bytecode[0]);
@@ -1633,7 +1633,7 @@ test "Frame op_selfdestruct basic" {
     // defer memory_db.deinit();
     // const db_interface = memory_db.to_database_interface();
     // 
-    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
+    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface, null);
     // defer frame.deinit(allocator);
     // 
     // // Set contract address and balance
@@ -1677,7 +1677,7 @@ test "Frame op_selfdestruct with insufficient stack" {
     // defer memory_db.deinit();
     // const db_interface = memory_db.to_database_interface();
     // 
-    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
+    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface, null);
     // defer frame.deinit(allocator);
     // 
     // // Don't push anything to stack
@@ -1697,7 +1697,7 @@ test "Frame op_selfdestruct in static context" {
     // defer memory_db.deinit();
     // const db_interface = memory_db.to_database_interface();
     // 
-    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
+    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface, null);
     // defer frame.deinit(allocator);
     // 
     // // Set static context
@@ -1721,7 +1721,7 @@ test "Frame init validates bytecode size" {
     const stack_memory = try allocator.create([1024]u256);
     defer allocator.destroy(stack_memory);
 
-    var frame = try SmallFrame.init(allocator, &small_bytecode, 1000000, {});
+    var frame = try SmallFrame.init(allocator, &small_bytecode, 1000000, {}, null);
     defer frame.deinit(allocator);
 
     // PC is now managed by plan, not frame directly
@@ -1733,11 +1733,11 @@ test "Frame init validates bytecode size" {
     defer allocator.free(large_bytecode);
     @memset(large_bytecode, 0x00);
 
-    try std.testing.expectError(error.BytecodeTooLarge, SmallFrame.init(allocator, large_bytecode, 0, {}));
+    try std.testing.expectError(error.BytecodeTooLarge, SmallFrame.init(allocator, large_bytecode, 0, {}, null));
 
     // Test with empty bytecode
     const empty_bytecode = [_]u8{};
-    var empty_frame = try SmallFrame.init(allocator, &empty_bytecode, 1000000, {});
+    var empty_frame = try SmallFrame.init(allocator, &empty_bytecode, 1000000, {}, null);
     defer empty_frame.deinit(allocator);
     try std.testing.expectEqual(@as(usize, 0), empty_frame.bytecode.len);
 }
