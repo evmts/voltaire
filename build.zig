@@ -1238,6 +1238,47 @@ pub fn build(b: *std.Build) void {
     evm_core_test_step.dependOn(&run_evm_core_test.step);
     evm_package_test_step.dependOn(&run_evm_core_test.step);
     
+    // Add EVM E2E tests
+    const evm_e2e_test = b.addTest(.{
+        .name = "evm-e2e-test",
+        .root_source_file = b.path("src/evm/evm_e2e.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    evm_e2e_test.root_module.addImport("evm", evm_mod);
+    evm_e2e_test.root_module.addImport("primitives", primitives_mod);
+    evm_e2e_test.root_module.addImport("crypto", crypto_mod);
+    evm_e2e_test.root_module.addImport("build_options", build_options_mod);
+    if (bn254_lib) |bn254| {
+        evm_e2e_test.linkLibrary(bn254);
+        evm_e2e_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_evm_e2e_test = b.addRunArtifact(evm_e2e_test);
+    const evm_e2e_test_step = b.step("test-evm-e2e", "Run EVM E2E tests");
+    evm_e2e_test_step.dependOn(&run_evm_e2e_test.step);
+    
+    // Add Comprehensive Differential tests
+    const comprehensive_differential_test = b.addTest(.{
+        .name = "comprehensive-differential-test",
+        .root_source_file = b.path("src/evm/comprehensive_differential_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    comprehensive_differential_test.root_module.addImport("evm", evm_mod);
+    comprehensive_differential_test.root_module.addImport("primitives", primitives_mod);
+    comprehensive_differential_test.root_module.addImport("crypto", crypto_mod);
+    comprehensive_differential_test.root_module.addImport("build_options", build_options_mod);
+    comprehensive_differential_test.root_module.addImport("revm", revm_mod);
+    if (bn254_lib) |bn254| {
+        comprehensive_differential_test.linkLibrary(bn254);
+        comprehensive_differential_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_comprehensive_differential_test = b.addRunArtifact(comprehensive_differential_test);
+    const comprehensive_differential_test_step = b.step("test-comprehensive-differential", "Run comprehensive differential tests");
+    comprehensive_differential_test_step.dependOn(&run_comprehensive_differential_test.step);
+    
     // Add deployment test
     const deployment_test = b.addTest(.{
         .name = "deployment-test",
@@ -1952,6 +1993,20 @@ pub fn build(b: *std.Build) void {
     const run_test_evm2_call = b.addRunArtifact(test_evm2_call);
     const test_evm2_call_step = b.step("test-evm2-call", "Run EVM2 call method tests");
     test_evm2_call_step.dependOn(&run_test_evm2_call.step);
+
+    // EVM2 CREATE operations tests
+    const test_evm2_create = b.addTest(.{
+        .name = "test-evm2-create",
+        .root_source_file = b.path("test_evm2_create.zig"),
+    });
+    test_evm2_create.root_module.addImport("primitives", primitives_mod);
+    test_evm2_create.root_module.addImport("evm", evm_mod);
+    test_evm2_create.root_module.addImport("evm2", evm2_mod);
+    test_evm2_create.root_module.addImport("build_options", build_options_mod);
+    test_evm2_create.root_module.addImport("crypto", crypto_mod);
+    const run_test_evm2_create = b.addRunArtifact(test_evm2_create);
+    const test_evm2_create_step = b.step("test-evm2-create", "Run EVM2 CREATE/CREATE2 tests");
+    test_evm2_create_step.dependOn(&run_test_evm2_create.step);
 
     // EVM2 Benchmark Runner executable (ReleaseFast)
     const evm2_runner_exe = b.addExecutable(.{
