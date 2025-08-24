@@ -1,18 +1,14 @@
-/// EVM module root - High-performance Ethereum Virtual Machine implementation
-/// 
-/// This module provides a complete EVM implementation with pluggable components:
-/// - Frame-based execution contexts with configurable stack and memory
-/// - Bytecode analysis and optimization via the Planner system
-/// - Pluggable database interface for state management
-/// - Comprehensive tracing and debugging capabilities
-/// - Support for all Ethereum hard forks and EIPs
-/// 
-/// Key components:
-/// - `Evm`: Main virtual machine orchestrating execution
-/// - `Frame`: Execution context with stack, memory, and gas tracking
-/// - `Planner`: Bytecode analysis and optimization
-/// - `DatabaseInterface`: Pluggable state storage abstraction
-/// - `Host`: External operations interface for calls and environment queries
+//! High-performance Ethereum Virtual Machine implementation.
+//!
+//! This module provides a complete EVM with configurable components:
+//! - Frame-based execution contexts with stack, memory, and gas tracking
+//! - Bytecode analysis and optimization through the Planner system  
+//! - Pluggable database interfaces for state management
+//! - Comprehensive tracing and debugging capabilities
+//! - Support for all Ethereum hard forks and EIPs
+//!
+//! The implementation prioritizes performance through cache-conscious design,
+//! compile-time configuration, and platform-specific optimizations.
 const std = @import("std");
 
 // Core frame and execution modules
