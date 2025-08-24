@@ -340,7 +340,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 return next_handler(frame, plan);
             } else {
                 // On other platforms, use tail call optimization
-                return next_handler(frame, plan);
+                return @call(.always_tail, next_handler, .{ frame, plan });
             }
         }
         
@@ -2399,7 +2399,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.gas_manager.consume(memory_expansion_cost);
             
             // Expand memory to ensure we can read the init code
-            try self.memory.ensure_capacity(end_address);
+            try self.memory.ensure_capacity(@intCast(end_address));
             
             // Get init code from memory
             const init_code = try self.memory.get_slice(@intCast(offset_u64), @intCast(size_u64));

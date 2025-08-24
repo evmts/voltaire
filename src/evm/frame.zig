@@ -2016,7 +2016,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     };
                     
                     // If access cost equals cold access cost, it was a cold access
-                    break :blk access_cost == primitives.GasConstants.COLD_ACCOUNT_ACCESS_COST;
+                    break :blk access_cost == primitives.GasConstants.ColdAccountAccessCost;
                 } else {
                     // No host available, assume cold access for safety
                     break :blk true;
@@ -5666,7 +5666,7 @@ test "Frame memory operations edge cases - extreme offsets and sizes" {
     try std.testing.expectError(error.OutOfBounds, frame.mload());
 
     // Test MSTORE with offset near memory limit
-    const near_limit = frame.Memory.MEMORY_LIMIT - 32;
+    const near_limit = F.Memory.MEMORY_LIMIT - 32;
     if (near_limit < std.math.maxInt(usize)) {
         // Only test if the offset fits in usize
         const test_value: u256 = 0xDEADBEEF;
@@ -5981,7 +5981,7 @@ test "Frame error recovery - partial operations and state consistency" {
 
     // Attempt to pop from empty stack
     try std.testing.expectError(error.StackUnderflow, frame.stack.pop());
-    try std.testing.expectEqual(initial_stack_len, frame.stack.len());
+    try std.testing.expectEqual(initial_stack_len, frame.stack.size());
 
     // Add some values
     try frame.stack.push(100);
@@ -5990,8 +5990,8 @@ test "Frame error recovery - partial operations and state consistency" {
     // Attempt invalid operation that should fail cleanly
     // Test BYTE with invalid stack state by trying to duplicate beyond capacity
     // Fill stack near capacity first
-    while (frame.stack.len() < 1023) {
-        try frame.stack.push(@as(u256, frame.stack.len()));
+    while (frame.stack.size() < 1023) {
+        try frame.stack.push(@as(u256, frame.stack.size()));
     }
 
     // Now stack is nearly full, attempt operation that might fail
@@ -6042,12 +6042,12 @@ const MockHost = struct {
 
         // Track call type
         const call_type = switch (params) {
-            .call => .call,
-            .delegatecall => .delegatecall,
-            .staticcall => .staticcall,
-            .create => .create,
-            .create2 => .create2,
-            else => .call,
+            .call => CallType.call,
+            .delegatecall => CallType.delegatecall,
+            .staticcall => CallType.staticcall,
+            .create => CallType.create,
+            .create2 => CallType.create2,
+            else => CallType.call,
         };
         try self.call_types.append(call_type);
 
@@ -6414,8 +6414,8 @@ test "Frame op_selfdestruct basic functionality" {
     // Verify destruction was recorded
     try std.testing.expectEqual(@as(usize, 1), mock_host.destructions.items.len);
     const destruction = mock_host.destructions.items[0];
-    try std.testing.expectEqualSlices(u8, &frame.contract_address.bytes, &destruction.contract.bytes);
-    try std.testing.expectEqualSlices(u8, &recipient_addr.bytes, &destruction.recipient.bytes);
+    try std.testing.expectEqualSlices(u8, &frame.contract_address, &destruction.contract);
+    try std.testing.expectEqualSlices(u8, &recipient_addr, &destruction.recipient);
 }
 
 test "Frame op_selfdestruct static context fails" {
@@ -6655,20 +6655,20 @@ test "Ethereum Test: ADD basic operation and overflow handling" {
     // Test 1: Basic addition - 5 + 10 = 15
     try frame.stack.push(5);
     try frame.stack.push(10);
-    try frame.op_add();
+    try frame.add();
     try std.testing.expectEqual(@as(u256, 15), frame.stack.pop_unsafe());
 
     // Test 2: Maximum value addition - should wrap around
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.push(max_u256);
     try frame.stack.push(1);
-    try frame.op_add();
+    try frame.add();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe()); // Overflow wraps to 0
 
     // Test 3: Zero addition identity
     try frame.stack.push(42);
     try frame.stack.push(0);
-    try frame.op_add();
+    try frame.add();
     try std.testing.expectEqual(@as(u256, 42), frame.stack.pop_unsafe());
 
     // Test 4: Large number addition
@@ -6676,7 +6676,7 @@ test "Ethereum Test: ADD basic operation and overflow handling" {
     const large2 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     try frame.stack.push(large1);
     try frame.stack.push(large2);
-    try frame.op_add();
+    try frame.add();
     const result = frame.stack.pop_unsafe();
     try std.testing.expectEqual(large1 +% large2, result);
 }
@@ -6691,26 +6691,26 @@ test "Ethereum Test: SUB subtraction and underflow handling" {
     // Test 1: Basic subtraction - 10 - 5 = 5
     try frame.stack.push(10);
     try frame.stack.push(5);
-    try frame.op_sub();
+    try frame.sub();
     try std.testing.expectEqual(@as(u256, 5), frame.stack.pop_unsafe());
 
     // Test 2: Underflow wrapping - 0 - 1 = max_u256
     try frame.stack.push(0);
     try frame.stack.push(1);
-    try frame.op_sub();
+    try frame.sub();
     try std.testing.expectEqual(std.math.maxInt(u256), frame.stack.pop_unsafe());
 
     // Test 3: Self subtraction
     try frame.stack.push(42);
     try frame.stack.push(42);
-    try frame.op_sub();
+    try frame.sub();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 4: Large number subtraction
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.push(max_u256);
     try frame.stack.push(1);
-    try frame.op_sub();
+    try frame.sub();
     try std.testing.expectEqual(max_u256 - 1, frame.stack.pop_unsafe());
 }
 
@@ -6724,19 +6724,19 @@ test "Ethereum Test: MUL multiplication and overflow patterns" {
     // Test 1: Basic multiplication - 6 * 7 = 42
     try frame.stack.push(6);
     try frame.stack.push(7);
-    try frame.op_mul();
+    try frame.mul();
     try std.testing.expectEqual(@as(u256, 42), frame.stack.pop_unsafe());
 
     // Test 2: Zero multiplication
     try frame.stack.push(1000);
     try frame.stack.push(0);
-    try frame.op_mul();
+    try frame.mul();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Identity multiplication
     try frame.stack.push(42);
     try frame.stack.push(1);
-    try frame.op_mul();
+    try frame.mul();
     try std.testing.expectEqual(@as(u256, 42), frame.stack.pop_unsafe());
 
     // Test 4: Large number multiplication with overflow
@@ -6744,7 +6744,7 @@ test "Ethereum Test: MUL multiplication and overflow patterns" {
     const large2 = 0x10000000000000000; // 2^64
     try frame.stack.push(large1);
     try frame.stack.push(large2);
-    try frame.op_mul();
+    try frame.mul();
     const result = frame.stack.pop_unsafe();
     try std.testing.expectEqual(large1 *% large2, result); // Wrapping multiplication
 }
@@ -6759,31 +6759,31 @@ test "Ethereum Test: DIV division and division by zero" {
     // Test 1: Basic division - 42 / 6 = 7
     try frame.stack.push(42);
     try frame.stack.push(6);
-    try frame.op_div();
+    try frame.div();
     try std.testing.expectEqual(@as(u256, 7), frame.stack.pop_unsafe());
 
     // Test 2: Division by zero - should return 0
     try frame.stack.push(42);
     try frame.stack.push(0);
-    try frame.op_div();
+    try frame.div();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Zero dividend
     try frame.stack.push(0);
     try frame.stack.push(42);
-    try frame.op_div();
+    try frame.div();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 4: Integer division truncation - 7 / 3 = 2
     try frame.stack.push(7);
     try frame.stack.push(3);
-    try frame.op_div();
+    try frame.div();
     try std.testing.expectEqual(@as(u256, 2), frame.stack.pop_unsafe());
 
     // Test 5: Self division
     try frame.stack.push(42);
     try frame.stack.push(42);
-    try frame.op_div();
+    try frame.div();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 }
 
@@ -6797,32 +6797,32 @@ test "Ethereum Test: MOD modulo operations and edge cases" {
     // Test 1: Basic modulo - 17 % 5 = 2
     try frame.stack.push(17);
     try frame.stack.push(5);
-    try frame.op_mod();
+    try frame.mod();
     try std.testing.expectEqual(@as(u256, 2), frame.stack.pop_unsafe());
 
     // Test 2: Modulo by zero - should return 0
     try frame.stack.push(42);
     try frame.stack.push(0);
-    try frame.op_mod();
+    try frame.mod();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Zero dividend modulo
     try frame.stack.push(0);
     try frame.stack.push(42);
-    try frame.op_mod();
+    try frame.mod();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 4: Self modulo
     try frame.stack.push(42);
     try frame.stack.push(42);
-    try frame.op_mod();
+    try frame.mod();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 5: Large number modulo
     const large = 0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0;
     try frame.stack.push(large);
     try frame.stack.push(256);
-    try frame.op_mod();
+    try frame.mod();
     try std.testing.expectEqual(large % 256, frame.stack.pop_unsafe());
 }
 
@@ -6838,26 +6838,26 @@ test "Ethereum Test: LT less than comparisons" {
     // Test 1: Basic less than - 5 < 10 = true (1)
     try frame.stack.push(5);
     try frame.stack.push(10);
-    try frame.op_lt();
+    try frame.lt();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 
     // Test 2: False comparison - 10 < 5 = false (0)
     try frame.stack.push(10);
     try frame.stack.push(5);
-    try frame.op_lt();
+    try frame.lt();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Equal values - 42 < 42 = false (0)
     try frame.stack.push(42);
     try frame.stack.push(42);
-    try frame.op_lt();
+    try frame.lt();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 4: Maximum values
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.push(max_u256 - 1);
     try frame.stack.push(max_u256);
-    try frame.op_lt();
+    try frame.lt();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 }
 
@@ -6871,19 +6871,19 @@ test "Ethereum Test: GT greater than comparisons" {
     // Test 1: Basic greater than - 10 > 5 = true (1)
     try frame.stack.push(10);
     try frame.stack.push(5);
-    try frame.op_gt();
+    try frame.gt();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 
     // Test 2: False comparison - 5 > 10 = false (0)
     try frame.stack.push(5);
     try frame.stack.push(10);
-    try frame.op_gt();
+    try frame.gt();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Equal values - 42 > 42 = false (0)
     try frame.stack.push(42);
     try frame.stack.push(42);
-    try frame.op_gt();
+    try frame.gt();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 }
 
@@ -6897,26 +6897,26 @@ test "Ethereum Test: EQ equality comparisons" {
     // Test 1: Equal values - 42 == 42 = true (1)
     try frame.stack.push(42);
     try frame.stack.push(42);
-    try frame.op_eq();
+    try frame.eq();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 
     // Test 2: Unequal values - 42 == 24 = false (0)
     try frame.stack.push(42);
     try frame.stack.push(24);
-    try frame.op_eq();
+    try frame.eq();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Zero comparison
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try frame.op_eq();
+    try frame.eq();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 
     // Test 4: Maximum value comparison
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.push(max_u256);
     try frame.stack.push(max_u256);
-    try frame.op_eq();
+    try frame.eq();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 }
 
@@ -6929,22 +6929,22 @@ test "Ethereum Test: ISZERO zero check operations" {
 
     // Test 1: Zero value - iszero(0) = true (1)
     try frame.stack.push(0);
-    try frame.op_iszero();
+    try frame.iszero();
     try std.testing.expectEqual(@as(u256, 1), frame.stack.pop_unsafe());
 
     // Test 2: Non-zero value - iszero(42) = false (0)
     try frame.stack.push(42);
-    try frame.op_iszero();
+    try frame.iszero();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Maximum value - iszero(max) = false (0)
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_iszero();
+    try frame.iszero();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 4: One value - iszero(1) = false (0)
     try frame.stack.push(1);
-    try frame.op_iszero();
+    try frame.iszero();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 }
 
@@ -6960,19 +6960,19 @@ test "Ethereum Test: AND bitwise operations" {
     // Test 1: Basic AND - 0xFF & 0x0F = 0x0F
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
-    try frame.op_and();
+    try frame.and();
     try std.testing.expectEqual(@as(u256, 0x0F), frame.stack.pop_unsafe());
 
     // Test 2: Zero AND
     try frame.stack.push(0xFF);
     try frame.stack.push(0);
-    try frame.op_and();
+    try frame.and();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Self AND (identity)
     try frame.stack.push(0xABCDEF);
     try frame.stack.push(0xABCDEF);
-    try frame.op_and();
+    try frame.and();
     try std.testing.expectEqual(@as(u256, 0xABCDEF), frame.stack.pop_unsafe());
 
     // Test 4: Large number AND
@@ -6980,7 +6980,7 @@ test "Ethereum Test: AND bitwise operations" {
     const large2 = 0x5555555555555555555555555555555555555555555555555555555555555555;
     try frame.stack.push(large1);
     try frame.stack.push(large2);
-    try frame.op_and();
+    try frame.and();
     try std.testing.expectEqual(large2, frame.stack.pop_unsafe());
 }
 
@@ -7121,7 +7121,7 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
     // Push values for calculation
     try frame.stack.push(100);
     try frame.stack.push(200);
-    try frame.op_add(); // 100 + 200 = 300
+    try frame.add(); // 100 + 200 = 300
 
     // Store result in memory
     try frame.stack.push(0); // offset
@@ -7138,7 +7138,7 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
     try frame.op_or(); // Should be 0xFFFF
 
     try frame.stack.push(0x0F0F);
-    try frame.op_and(); // 0xFFFF & 0x0F0F = 0x0F0F
+    try frame.and(); // 0xFFFF & 0x0F0F = 0x0F0F
 
     try std.testing.expectEqual(@as(u256, 0x0F0F), frame.stack.pop_unsafe());
 
@@ -9552,7 +9552,7 @@ const MockHostWithAccessList = struct {
         if (self.cold_addresses.contains(address)) {
             // Remove from cold list (now it's warm)
             _ = self.cold_addresses.remove(address);
-            return primitives.GasConstants.COLD_ACCOUNT_ACCESS_COST;
+            return primitives.GasConstants.ColdAccountAccessCost;
         } else {
             // Already warm
             return primitives.GasConstants.WARM_ACCOUNT_ACCESS_COST;
