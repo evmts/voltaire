@@ -485,7 +485,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             try self.stack.set_top(top | top_minus_1);
         }
 
-        pub fn op_xor(self: *Self) Error!void {
+        pub fn xor(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
@@ -3561,7 +3561,7 @@ test "Frame op_or bitwise OR operation" {
     try std.testing.expectEqual(@as(u256, 0x12345678), result3);
 }
 
-test "Frame op_xor bitwise XOR operation" {
+test "Frame xor bitwise XOR operation" {
     const allocator = std.testing.allocator;
     const F = Frame(.{});
 
