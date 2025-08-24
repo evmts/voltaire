@@ -44,9 +44,9 @@ public struct Address: Sendable {
     }
     
     /// Convert to C representation
-    internal func toCAddress() -> GuillotineAddress {
+    public func toCAddress() -> GuillotineAddress {
         var cAddress = GuillotineAddress()
-        withUnsafeBytes(of: &cAddress.bytes) { ptr in
+        withUnsafeMutableBytes(of: &cAddress.bytes) { ptr in
             let buffer = ptr.bindMemory(to: UInt8.self)
             for i in 0..<20 {
                 buffer[i] = bytes[i]

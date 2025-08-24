@@ -3,7 +3,7 @@ import GuillotineC
 
 /// 256-bit unsigned integer
 public struct U256: Sendable {
-    private let bytes: [UInt8] // Little-endian representation
+    internal let bytes: [UInt8] // Little-endian representation
     
     /// Create U256 from UInt64
     public init(_ value: UInt64) {
@@ -81,9 +81,9 @@ public struct U256: Sendable {
     }
     
     /// Convert to C representation
-    internal func toCU256() -> GuillotineU256 {
+    public func toCU256() -> GuillotineU256 {
         var cU256 = GuillotineU256()
-        withUnsafeBytes(of: &cU256.bytes) { ptr in
+        withUnsafeMutableBytes(of: &cU256.bytes) { ptr in
             let buffer = ptr.bindMemory(to: UInt8.self)
             for i in 0..<32 {
                 buffer[i] = bytes[i]

@@ -18,7 +18,7 @@ extension Address {
         // This is a simplified implementation
         // Real CREATE address calculation uses RLP encoding of [deployer, nonce]
         var bytes = deployer.rawBytes
-        var nonceBytes = withUnsafeBytes(of: nonce.littleEndian) { Array($0) }
+        let nonceBytes = withUnsafeBytes(of: nonce.littleEndian) { Array($0) }
         
         // Simple hash combination (not the real EVM algorithm)
         bytes.append(contentsOf: nonceBytes)
