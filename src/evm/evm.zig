@@ -1,15 +1,15 @@
-/// Main EVM implementation providing transaction execution and state management
-/// 
-/// The EVM (Ethereum Virtual Machine) is the core execution environment for smart contracts.
-/// This implementation provides:
-/// - Transaction-level execution context with call depth tracking
-/// - Integration with Host interface for external operations
-/// - Support for different planning strategies (minimal vs advanced optimization)
-/// - Comprehensive gas accounting and hard fork compliance
-/// - State management through pluggable database interfaces
-/// 
-/// The EVM orchestrates Frame execution, manages call stacks, and handles
-/// system-level operations like contract creation and cross-contract calls.
+//! Transaction-level EVM execution and state management.
+//!
+//! The EVM orchestrates contract execution, managing:
+//! - Call depth tracking and nested execution contexts
+//! - State journaling for transaction reverts
+//! - Gas accounting and metering
+//! - Contract creation (CREATE/CREATE2)
+//! - Cross-contract calls (CALL/DELEGATECALL/STATICCALL)
+//! - Integration with Host interface for environment queries
+//!
+//! This module provides the entry point for all EVM operations,
+//! coordinating between Frames, the Planner, and state storage.
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
@@ -35,6 +35,11 @@ const TransactionContext = @import("transaction_context.zig").TransactionContext
 const journal_mod = @import("journal.zig");
 const JournalConfig = @import("journal_config.zig").JournalConfig;
 
+/// Creates a configured EVM instance type.
+///
+/// The EVM is parameterized by compile-time configuration for optimal
+/// performance and minimal runtime overhead. Configuration controls
+/// stack size, memory limits, call depth, and optimization strategies.
 pub fn Evm(comptime config: EvmConfig) type {
     const DepthType = config.get_depth_type();
     
@@ -151,6 +156,11 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Result of a call execution (re-export)
         pub const CallResult = @import("call_result.zig").CallResult;
 
+        /// Initialize a new EVM instance.
+        ///
+        /// Sets up the execution environment with state storage, block context,
+        /// and transaction parameters. The planner cache is initialized with
+        /// a default size for bytecode optimization.
         pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: Address, hardfork_config: Hardfork) !Self {
             // Initialize planner with a reasonable cache size
             var planner = try PlannerType.init(allocator, 32); // 32 plans cache
@@ -179,6 +189,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
         }
 
+        /// Clean up all resources.
         pub fn deinit(self: *Self) void {
             self.journal.deinit();
             self.created_contracts.deinit();
@@ -193,7 +204,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.logs.deinit();
         }
 
-        /// Main entry point for EVM calls - routes to specific handlers based on call type
+        /// Execute an EVM operation.
+        ///
+        /// This is the main entry point that routes to specific handlers based
+        /// on the operation type (CALL, CREATE, etc). Manages transaction-level
+        /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) Error!CallResult {
             self.depth = 0;
             
@@ -219,7 +234,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             return result;
         }
         
-        /// Regular CALL operation
+        /// Execute a regular CALL operation.
+        ///
+        /// Transfers value from caller to target and executes target contract code.
+        /// Creates a new execution context with the target's storage. Supports
+        /// precompiled contracts and handles state reverts on failure.
         pub fn call_regular(self: *Self, params: anytype) Error!CallResult {
             // Validate gas
             if (params.gas == 0) {
@@ -336,7 +355,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             return result;
         }
         
-        /// CALLCODE operation
+        /// Execute a CALLCODE operation.
+        ///
+        /// Executes target contract code in the caller's storage context.
+        /// Unlike DELEGATECALL, msg.sender remains the direct caller.
+        /// Deprecated in favor of DELEGATECALL but maintained for compatibility.
         pub fn callcode_handler(self: *Self, params: anytype) Error!CallResult {
             // Validate gas
             if (params.gas == 0) {
