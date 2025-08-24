@@ -1743,5 +1743,64 @@ test "cache hit ratio tracking" {
     try std.testing.expectEqual(@as(usize, 0), stats.count);
 }
 
+test "cache eviction behavior" {
+    const allocator = std.testing.allocator;
+    
+    // Create a small cache to test eviction
+    var planner = try Planner(.{}).init(allocator, 2); // Only 2 items
+    defer planner.deinit();
+    
+    const bytecode1 = [_]u8{0x60, 0x01, 0x00}; // PUSH1 1, STOP
+    const bytecode2 = [_]u8{0x60, 0x02, 0x00}; // PUSH1 2, STOP  
+    const bytecode3 = [_]u8{0x60, 0x03, 0x00}; // PUSH1 3, STOP
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Fill cache to capacity
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    var stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 1), stats.count);
+    try std.testing.expectEqual(@as(usize, 1), stats.misses);
+    
+    _ = try planner.getOrAnalyze(&bytecode2, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 2), stats.count);
+    try std.testing.expectEqual(@as(usize, 2), stats.misses);
+    
+    // Cache is now full. Access first item to make it most recently used
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 2), stats.count);
+    try std.testing.expectEqual(@as(usize, 1), stats.hits);
+    try std.testing.expectEqual(@as(usize, 2), stats.misses);
+    
+    // Add third item - should evict bytecode2 (least recently used)
+    _ = try planner.getOrAnalyze(&bytecode3, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 2), stats.count); // Still at capacity
+    try std.testing.expectEqual(@as(usize, 1), stats.hits);
+    try std.testing.expectEqual(@as(usize, 3), stats.misses);
+    
+    // bytecode1 should still be in cache (was accessed recently)
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 2), stats.hits);
+    try std.testing.expectEqual(@as(usize, 3), stats.misses);
+    
+    // bytecode3 should still be in cache (was just added)
+    _ = try planner.getOrAnalyze(&bytecode3, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 3), stats.hits);
+    try std.testing.expectEqual(@as(usize, 3), stats.misses);
+    
+    // bytecode2 should have been evicted - should be a miss
+    _ = try planner.getOrAnalyze(&bytecode2, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 2), stats.count); // Still at capacity
+    try std.testing.expectEqual(@as(usize, 3), stats.hits);
+    try std.testing.expectEqual(@as(usize, 4), stats.misses); // Miss because bytecode2 was evicted
+}
+
 // Export the factory function for creating Planner types
 pub const createPlanner = Planner;
