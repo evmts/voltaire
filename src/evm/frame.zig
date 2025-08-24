@@ -4180,19 +4180,19 @@ test "Frame op_gas returns gas remaining" {
     try std.testing.expectEqual(@as(u256, 1000000), result1);
 
     // Test op_gas with modified gas_remaining
-    frame.gas_manager.remaining = 12345;
+    frame.gas_remaining = 12345;
     try frame.gas();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 12345), result2);
 
     // Test op_gas with zero gas
-    frame.gas_manager.remaining = 0;
+    frame.gas_remaining = 0;
     try frame.gas();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test op_gas with negative gas (should push 0)
-    frame.gas_manager.remaining = 0; // Can't have negative gas
+    frame.gas_remaining = 0; // Can't have negative gas
     try frame.gas();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
@@ -5071,7 +5071,7 @@ test "Frame gas consumption tracking" {
     defer interpreter.deinit(allocator);
 
     // Check initial gas
-    const initial_gas = interpreter.frame.gas_manager.gasRemaining();
+    const initial_gas = @max(interpreter.frame.gas_remaining, 0);
     try std.testing.expectEqual(@as(i32, 1000), initial_gas);
 
     // Run the interpretation which will consume gas
@@ -5420,7 +5420,7 @@ test "Frame LOG gas consumption" {
 
     // Verify gas was consumed for data bytes
     const expected_gas_consumed = @as(i32, @intCast(GasConstants.LogDataGas * test_data.len));
-    try std.testing.expectEqual(initial_gas - expected_gas_consumed, frame.gas_manager.gasRemaining());
+    try std.testing.expectEqual(initial_gas - expected_gas_consumed, @max(frame.gas_remaining, 0));
 }
 
 // ============================================================================
@@ -5967,7 +5967,7 @@ test "Frame initialization edge cases - various configurations" {
     const bytecode1 = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame1 = try F1.init(allocator, &bytecode1, 0, void{}, null);
     defer frame1.deinit(allocator);
-    try std.testing.expectEqual(@as(i32, 0), frame1.gas_manager.remaining);
+    try std.testing.expectEqual(@as(i32, 0), frame1.gas_remaining);
 
     // Test frame with maximum bytecode size for different PC types
     const SmallFrame = Frame(.{ .max_bytecode_size = 255 });
