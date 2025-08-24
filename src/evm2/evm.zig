@@ -69,6 +69,9 @@ pub fn Evm(comptime config: EvmConfig) type {
     return struct {
         const Self = @This();
         
+        // Store the selected planner type for use in the EVM
+        pub const SelectedPlannerType = PlannerType;
+        
         /// Transaction context
         pub const TransactionContext = struct {
             /// Transaction gas limit

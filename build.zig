@@ -165,8 +165,8 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("build_options", build_options_mod);
 
     // Link BN254 Rust library to EVM module (native targets only, if enabled)
-    if (bn254_lib) |lib| {
-        evm_mod.linkLibrary(lib);
+    if (bn254_lib) |bn254| {
+        evm_mod.linkLibrary(revm);
         evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -208,8 +208,8 @@ pub fn build(b: *std.Build) void {
     revm_mod.addImport("primitives", primitives_mod);
 
     // Link REVM Rust library if available
-    if (revm_lib) |lib| {
-        revm_mod.linkLibrary(lib);
+    if (revm_lib) |revm| {
+        revm_mod.linkLibrary(revm);
         revm_mod.addIncludePath(b.path("src/revm_wrapper"));
     }
 
@@ -253,7 +253,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 Rust library to the library artifact (if enabled)
     if (bn254_lib) |bn254| {
-        lib.linkLibrary(bn254);
+        lib.linkLibrary(revm);
         lib.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -273,7 +273,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 Rust library to the shared library artifact (if enabled)
     if (bn254_lib) |bn254| {
-        shared_lib.linkLibrary(bn254);
+        shared_lib.linkLibrary(revm);
         shared_lib.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -719,7 +719,7 @@ pub fn build(b: *std.Build) void {
 
     // Link BN254 library if available
     if (bn254_lib) |bn254| {
-        opcode_test_lib.linkLibrary(bn254);
+        opcode_test_lib.linkLibrary(revm);
         opcode_test_lib.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
@@ -792,7 +792,7 @@ pub fn build(b: *std.Build) void {
     interpret_test.root_module.addImport("evm", evm_mod);
     interpret_test.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        interpret_test.linkLibrary(bn254);
+        interpret_test.linkLibrary(revm);
         interpret_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     interpret_test.root_module.addImport("revm_wrapper", revm_mod);
@@ -825,7 +825,7 @@ pub fn build(b: *std.Build) void {
     control_test.root_module.addImport("evm", evm_mod);
     control_test.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        control_test.linkLibrary(bn254);
+        control_test.linkLibrary(revm);
         control_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -843,7 +843,7 @@ pub fn build(b: *std.Build) void {
     system_test.root_module.addImport("evm", evm_mod);
     system_test.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        system_test.linkLibrary(bn254);
+        system_test.linkLibrary(revm);
         system_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -861,7 +861,7 @@ pub fn build(b: *std.Build) void {
     tailcall_benchmark.root_module.addImport("evm", evm_mod);
     tailcall_benchmark.root_module.addImport("primitives", primitives_mod);
     if (bn254_lib) |bn254| {
-        tailcall_benchmark.linkLibrary(bn254);
+        tailcall_benchmark.linkLibrary(revm);
         tailcall_benchmark.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -1250,7 +1250,7 @@ pub fn build(b: *std.Build) void {
     evm_e2e_test.root_module.addImport("crypto", crypto_mod);
     evm_e2e_test.root_module.addImport("build_options", build_options_mod);
     if (bn254_lib) |bn254| {
-        evm_e2e_test.linkLibrary(bn254);
+        evm_e2e_test.linkLibrary(revm);
         evm_e2e_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -1271,7 +1271,7 @@ pub fn build(b: *std.Build) void {
     comprehensive_differential_test.root_module.addImport("build_options", build_options_mod);
     comprehensive_differential_test.root_module.addImport("revm", revm_mod);
     if (bn254_lib) |bn254| {
-        comprehensive_differential_test.linkLibrary(bn254);
+        comprehensive_differential_test.linkLibrary(revm);
         comprehensive_differential_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     
@@ -1827,7 +1827,7 @@ pub fn build(b: *std.Build) void {
     bn254_comparison_fuzz_test.root_module.addImport("crypto", crypto_mod);
     bn254_comparison_fuzz_test.root_module.addImport("evm", evm_mod);
     if (bn254_lib) |bn254| {
-        bn254_comparison_fuzz_test.linkLibrary(bn254);
+        bn254_comparison_fuzz_test.linkLibrary(revm);
     }
 
     const run_bn254_comparison_fuzz_test = b.addRunArtifact(bn254_comparison_fuzz_test);
@@ -1967,6 +1967,13 @@ pub fn build(b: *std.Build) void {
         .name = "evm2",
         .root_module = evm2_mod,
     });
+    
+    // Link REVM Rust library to EVM2 if available
+    if (revm_lib) |revm| {
+        evm2_lib.linkLibrary(revm);
+        evm2_lib.addIncludePath(b.path("src/revm_wrapper"));
+    }
+    
     b.installArtifact(evm2_lib);
 
     // Build EVM2 step
@@ -1984,6 +1991,13 @@ pub fn build(b: *std.Build) void {
     test_evm2.root_module.addImport("evm", evm_mod);
     test_evm2.root_module.addImport("build_options", build_options_mod);
     test_evm2.root_module.addImport("crypto", crypto_mod);
+    test_evm2.root_module.addIncludePath(b.path("src/revm_wrapper"));
+    
+    // Link REVM library to tests if available
+    if (revm_lib) |revm| {
+        test_evm2.linkLibrary(revm);
+    }
+    
     const run_test_evm2 = b.addRunArtifact(test_evm2);
     const test_evm2_step = b.step("test-evm2", "Run EVM2 tests");
     test_evm2_step.dependOn(&run_test_evm2.step);
@@ -1998,6 +2012,13 @@ pub fn build(b: *std.Build) void {
     test_evm2_call.root_module.addImport("evm2", evm2_mod);
     test_evm2_call.root_module.addImport("build_options", build_options_mod);
     test_evm2_call.root_module.addImport("crypto", crypto_mod);
+    test_evm2_call.root_module.addIncludePath(b.path("src/revm_wrapper"));
+    
+    // Link REVM library if available
+    if (revm_lib) |revm| {
+        test_evm2_call.linkLibrary(revm);
+    }
+    
     const run_test_evm2_call = b.addRunArtifact(test_evm2_call);
     const test_evm2_call_step = b.step("test-evm2-call", "Run EVM2 call method tests");
     test_evm2_call_step.dependOn(&run_test_evm2_call.step);
@@ -2012,6 +2033,13 @@ pub fn build(b: *std.Build) void {
     test_evm2_create.root_module.addImport("evm2", evm2_mod);
     test_evm2_create.root_module.addImport("build_options", build_options_mod);
     test_evm2_create.root_module.addImport("crypto", crypto_mod);
+    test_evm2_create.root_module.addIncludePath(b.path("src/revm_wrapper"));
+    
+    // Link REVM library if available
+    if (revm_lib) |revm| {
+        test_evm2_create.linkLibrary(revm);
+    }
+    
     const run_test_evm2_create = b.addRunArtifact(test_evm2_create);
     const test_evm2_create_step = b.step("test-evm2-create", "Run EVM2 CREATE/CREATE2 tests");
     test_evm2_create_step.dependOn(&run_test_evm2_create.step);

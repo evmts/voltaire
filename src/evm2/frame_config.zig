@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 
 pub const FrameConfig = struct {
@@ -18,6 +19,8 @@ pub const FrameConfig = struct {
     memory_limit: u64 = 0xFFFFFF,
     /// Whether the frame has access to a database interface for storage operations
     has_database: bool = false,
+    /// How big of a vector length to use for simd operations. 0 if simd should not be used
+    vector_length: comptime_int = std.simd.suggestVectorLengthForCpu(u8, builtin.cpu) orelse 0,
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
         return if (self.max_bytecode_size <= std.math.maxInt(u8))

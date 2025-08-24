@@ -670,7 +670,7 @@ test "Plan getMetadata for PUSH opcodes" {
 
 test "Plan getMetadata for large PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create constants array
     var constants = try allocator.alloc(Plan.WordType, 2);
