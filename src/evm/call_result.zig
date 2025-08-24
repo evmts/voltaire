@@ -234,12 +234,12 @@ test "CallResult log memory management - proper cleanup" {
     
     const logs = try allocator.alloc(Log, 2);
     logs[0] = Log{
-        .address = std.mem.zeroes([20]u8),
+        .address = Address.ZERO,
         .topics = topics1,
         .data = data1,
     };
     logs[1] = Log{
-        .address = std.mem.zeroes([20]u8),
+        .address = Address.ZERO,
         .topics = topics2,
         .data = data2,
     };
