@@ -1881,7 +1881,7 @@ pub fn build(b: *std.Build) void {
     // tracer_test_step.dependOn(&run_tracer_test.step);
 
     // Add compare execution test
-    // TODO: Re-enable when tracer is reimplemented
+    // NOTE: Tracer test disabled - requires tracer reimplementation
     // const compare_test = b.addTest(.{
     //     .name = "compare-test",
     //     .root_source_file = b.path("test/evm/compare_execution.zig"),
