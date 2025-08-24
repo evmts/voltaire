@@ -666,7 +666,7 @@ test "Plan getMetadata for PC opcode" {
 
 test "Plan getNextInstruction advances correctly" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create instruction stream
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -706,10 +706,10 @@ test "Plan getNextInstruction advances correctly" {
 
 test "Plan getInstructionIndexForPc" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create PC mapping
-    var map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    var map = std.AutoHashMap(TestPlan.PcType, TestPlan.InstructionIndexType).init(allocator);
     defer map.deinit();
     
     try map.put(0, 0);   // PC 0 -> Instruction 0
@@ -723,23 +723,23 @@ test "Plan getInstructionIndexForPc" {
     };
     
     // Test valid PCs
-    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, 0), plan.getInstructionIndexForPc(0));
-    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, 1), plan.getInstructionIndexForPc(1));
-    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, 3), plan.getInstructionIndexForPc(3));
+    try std.testing.expectEqual(@as(?TestPlan.InstructionIndexType, 0), plan.getInstructionIndexForPc(0));
+    try std.testing.expectEqual(@as(?TestPlan.InstructionIndexType, 1), plan.getInstructionIndexForPc(1));
+    try std.testing.expectEqual(@as(?TestPlan.InstructionIndexType, 3), plan.getInstructionIndexForPc(3));
     
     // Test invalid PC
-    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, null), plan.getInstructionIndexForPc(2));
-    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, null), plan.getInstructionIndexForPc(99));
+    try std.testing.expectEqual(@as(?TestPlan.InstructionIndexType, null), plan.getInstructionIndexForPc(2));
+    try std.testing.expectEqual(@as(?TestPlan.InstructionIndexType, null), plan.getInstructionIndexForPc(99));
 }
 
 test "Plan deinit frees resources" {
     const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
+    const TestPlan = Plan(.{});
     
     // Create resources
     const stream = try allocator.alloc(InstructionElement, 10);
-    const constants = try allocator.alloc(Plan.WordType, 5);
-    var map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    const constants = try allocator.alloc(TestPlan.WordType, 5);
+    var map = std.AutoHashMap(TestPlan.PcType, TestPlan.InstructionIndexType).init(allocator);
     try map.put(0, 0);
     
     var plan = TestPlan{
@@ -754,5 +754,6 @@ test "Plan deinit frees resources" {
     // Verify fields are reset
     try std.testing.expectEqual(@as(usize, 0), plan.instructionStream.len);
     try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
-    try std.testing.expectEqual(@as(?std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType), null), plan.pc_to_instruction_idx);
+    try std.testing.expectEqual(@as(?std.AutoHashMap(TestPlan.PcType, TestPlan.InstructionIndexType), null), plan.pc_to_instruction_idx);
 }
+

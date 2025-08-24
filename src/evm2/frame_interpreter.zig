@@ -38,11 +38,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             errdefer frame.deinit(allocator);
             var planner = try Planner.init(allocator, bytecode);
             var handlers: [256]*const HandlerFn = undefined;
-            
-            // Initialize all handlers to invalid by default
             for (&handlers) |*h| h.* = &op_invalid_handler;
-            
-            // Arithmetic operations (0x01-0x0b)
             handlers[@intFromEnum(Opcode.STOP)] = &op_stop_handler;
             handlers[@intFromEnum(Opcode.ADD)] = &op_add_handler;
             handlers[@intFromEnum(Opcode.MUL)] = &op_mul_handler;
@@ -55,13 +51,9 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.MULMOD)] = &op_mulmod_handler;
             handlers[@intFromEnum(Opcode.EXP)] = &op_exp_handler;
             handlers[@intFromEnum(Opcode.SIGNEXTEND)] = &op_signextend_handler;
-            
-            // Undefined opcodes 0x0c-0x0f
             inline for (0x0c..0x10) |i| {
                 handlers[i] = &op_invalid_handler;
             }
-            
-            // Comparison & bitwise logic (0x10-0x1d)
             handlers[@intFromEnum(Opcode.LT)] = &op_lt_handler;
             handlers[@intFromEnum(Opcode.GT)] = &op_gt_handler;
             handlers[@intFromEnum(Opcode.SLT)] = &op_slt_handler;
@@ -76,35 +68,34 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.SHL)] = &op_shl_handler;
             handlers[@intFromEnum(Opcode.SHR)] = &op_shr_handler;
             handlers[@intFromEnum(Opcode.SAR)] = &op_sar_handler;
-            
-            // Undefined opcodes 0x1e-0x1f
             handlers[0x1e] = &op_invalid_handler;
             handlers[0x1f] = &op_invalid_handler;
-            
-            // Crypto (0x20)
             handlers[@intFromEnum(Opcode.KECCAK256)] = &op_invalid_handler; // TODO: implement
-            
-            // Undefined opcodes 0x21-0x2f
             inline for (0x21..0x30) |i| {
                 handlers[i] = &op_invalid_handler;
             }
-            
-            // Environmental information (0x30-0x3f) - all unimplemented for now
-            inline for (0x30..0x40) |i| {
-                handlers[i] = &op_invalid_handler; // TODO: implement
-            }
-            
-            // Block information (0x40-0x4a) - all unimplemented for now
+            handlers[@intFromEnum(Opcode.ADDRESS)] = &op_address_handler;
+            handlers[@intFromEnum(Opcode.BALANCE)] = &op_balance_handler;
+            handlers[@intFromEnum(Opcode.ORIGIN)] = &op_origin_handler;
+            handlers[@intFromEnum(Opcode.CALLER)] = &op_caller_handler;
+            handlers[@intFromEnum(Opcode.CALLVALUE)] = &op_callvalue_handler;
+            handlers[@intFromEnum(Opcode.CALLDATALOAD)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.CALLDATASIZE)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.CALLDATACOPY)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.CODESIZE)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.CODECOPY)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.GASPRICE)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.EXTCODESIZE)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.EXTCODECOPY)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.RETURNDATASIZE)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.RETURNDATACOPY)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.EXTCODEHASH)] = &op_invalid_handler; // TODO: implement
             inline for (0x40..0x4b) |i| {
                 handlers[i] = &op_invalid_handler; // TODO: implement
             }
-            
-            // Undefined opcodes 0x4b-0x4f
             inline for (0x4b..0x50) |i| {
                 handlers[i] = &op_invalid_handler;
             }
-            
-            // Stack, Memory, Storage and Flow Operations (0x50-0x5f)
             handlers[@intFromEnum(Opcode.POP)] = &op_pop_handler;
             handlers[@intFromEnum(Opcode.MLOAD)] = &op_mload_handler;
             handlers[@intFromEnum(Opcode.MSTORE)] = &op_mstore_handler;
@@ -121,8 +112,6 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.TSTORE)] = &op_tstore_handler;
             handlers[@intFromEnum(Opcode.MCOPY)] = &op_mcopy_handler;
             handlers[@intFromEnum(Opcode.PUSH0)] = &push0_handler;
-            
-            // PUSH operations (0x60-0x7f)
             handlers[@intFromEnum(Opcode.PUSH1)] = &push1_handler;
             handlers[@intFromEnum(Opcode.PUSH2)] = &push2_handler;
             handlers[@intFromEnum(Opcode.PUSH3)] = &push3_handler;
@@ -155,8 +144,6 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.PUSH30)] = &push30_handler;
             handlers[@intFromEnum(Opcode.PUSH31)] = &push31_handler;
             handlers[@intFromEnum(Opcode.PUSH32)] = &push32_handler;
-            
-            // DUP operations (0x80-0x8f)
             handlers[@intFromEnum(Opcode.DUP1)] = &dup1_handler;
             handlers[@intFromEnum(Opcode.DUP2)] = &dup2_handler;
             handlers[@intFromEnum(Opcode.DUP3)] = &dup3_handler;
@@ -173,8 +160,6 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.DUP14)] = &dup14_handler;
             handlers[@intFromEnum(Opcode.DUP15)] = &dup15_handler;
             handlers[@intFromEnum(Opcode.DUP16)] = &dup16_handler;
-            
-            // SWAP operations (0x90-0x9f)
             handlers[@intFromEnum(Opcode.SWAP1)] = &swap1_handler;
             handlers[@intFromEnum(Opcode.SWAP2)] = &swap2_handler;
             handlers[@intFromEnum(Opcode.SWAP3)] = &swap3_handler;
@@ -191,23 +176,15 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.SWAP14)] = &swap14_handler;
             handlers[@intFromEnum(Opcode.SWAP15)] = &swap15_handler;
             handlers[@intFromEnum(Opcode.SWAP16)] = &swap16_handler;
-            
-            // LOG operations (0xa0-0xa4) - all unimplemented for now
             inline for (0xa0..0xa5) |i| {
                 handlers[i] = &op_invalid_handler; // TODO: implement
             }
-            
-            // Undefined opcodes 0xa5-0xef
             inline for (0xa5..0xf0) |i| {
                 handlers[i] = &op_invalid_handler;
             }
-            
-            // System operations (0xf0-0xff) - all unimplemented for now
             inline for (0xf0..0x100) |i| {
                 handlers[i] = &op_invalid_handler; // TODO: implement
             }
-            
-            // Synthetic opcodes (above 0xff)
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)] = &push_add_inline_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER)] = &push_add_pointer_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE)] = &push_mul_inline_handler;
@@ -218,8 +195,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_POINTER)] = &push_jump_pointer_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &push_jumpi_inline_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &push_jumpi_pointer_handler;
-            
-            // Create the plan using our planner
+
             const plan = try planner.create_instruction_stream(allocator, handlers);
             
             return Self{
@@ -334,6 +310,136 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         
         // TODO: Add all other handler functions here...
         // For now, let's just add a few more to show the pattern
+        
+        // Environment opcodes
+        fn op_address_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADDRESS)];
+            
+            // Consume gas
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Push the contract address as u256
+            const address = primitives.address.to_u256(self.contract_address);
+            try self.stack.push(address);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.ADDRESS));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_balance_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Pop address from stack
+            const address_u256 = try self.stack.pop();
+            const address = primitives.address.from_u256(address_u256);
+            
+            // Check if we have a host
+            if (self.host == null) {
+                return Error.InvalidOpcode; // No host, can't get balance
+            }
+            
+            // Get balance from host
+            const balance = self.host.?.get_balance(address);
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.BALANCE)];
+            
+            // Consume gas (100 for warm, 2600 for cold - simplified for now)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Push balance to stack
+            try self.stack.push(balance);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BALANCE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_origin_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ORIGIN)];
+            
+            // Consume gas
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Check if we have a host
+            if (self.host == null) {
+                return Error.InvalidOpcode; // No host, can't get origin
+            }
+            
+            // Get origin from host's transaction context
+            const tx_context = self.host.?.get_transaction_context();
+            const origin = primitives.address.to_u256(tx_context.tx_origin);
+            
+            // Push origin to stack
+            try self.stack.push(origin);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.ORIGIN));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_caller_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.CALLER)];
+            
+            // Consume gas
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Check if we have a host
+            if (self.host == null) {
+                return Error.InvalidOpcode; // No host, can't get caller
+            }
+            
+            // Get caller from host
+            const caller = self.host.?.get_caller();
+            const caller_u256 = primitives.address.to_u256(caller);
+            
+            // Push caller to stack
+            try self.stack.push(caller_u256);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLER));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_callvalue_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.CALLVALUE)];
+            
+            // Consume gas
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Check if we have a host
+            if (self.host == null) {
+                return Error.InvalidOpcode; // No host, can't get call value
+            }
+            
+            // Get call value from host
+            const value = self.host.?.get_call_value();
+            
+            // Push value to stack
+            try self.stack.push(value);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLVALUE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
         
         fn op_add_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));

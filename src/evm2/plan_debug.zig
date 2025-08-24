@@ -7,7 +7,7 @@ const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
 const plan_mod = @import("plan.zig");
 const plan_minimal_mod = @import("plan_minimal.zig");
-const createPlanner = @import("planner.zig").createPlanner;
+const Planner = @import("planner.zig").Planner;
 // REVM integration disabled - module not available
 
 // Import u256 type
@@ -149,15 +149,17 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             handlers: [256]*const HandlerFn,
         ) !Self {
             // Create planner for analysis
-            const Planner = createPlanner(cfg);
-            var planner = try Planner.init(allocator, bytecode);
+            const PlannerType = Planner(cfg);
+            var planner = try PlannerType.init(allocator, bytecode);
             defer planner.deinit();
             
             // Create advanced plan
             const advanced_plan = try planner.create_instruction_stream(allocator, handlers);
+            errdefer advanced_plan.deinit(allocator);
             
             // Create minimal plan
             const minimal_plan = try MinimalPlan.init(allocator, bytecode, handlers);
+            errdefer minimal_plan.deinit();
             
             // Store original handlers
             var original_handlers: [256]*const HandlerFn = handlers;
@@ -168,6 +170,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             // Allocate debug contexts pool (enough for all instructions)
             const max_contexts = advanced_plan.instructionStream.len;
             const debug_contexts = try allocator.alloc(DebugHandlerContext, max_contexts);
+            errdefer allocator.free(debug_contexts);
             
             return Self{
                 .advanced_plan = advanced_plan,
@@ -217,6 +220,14 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             
             // Convert to our trace format
             var trace = try allocator.alloc(RevmTraceData, parsed.value.len);
+            errdefer {
+                // Clean up partially allocated trace on error
+                for (trace[0..]) |*t| {
+                    t.deinit();
+                }
+                allocator.free(trace);
+            }
+            
             for (parsed.value, 0..) |entry, i| {
                 trace[i] = RevmTraceData{
                     .pc = entry.pc,
@@ -523,6 +534,19 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             };
         }
         
+        /// Debug handler result for interception
+        pub const DebugHandlerResult = union(enum) {
+            continue: struct {
+                next_handler: *const HandlerFn,
+                instruction_idx: InstructionIndexType,
+            },
+            stop: struct {
+                reason: []const u8,
+                gas_remaining: i64,
+            },
+            error: anyerror,
+        };
+        
         /// Handler context for debug execution
         const DebugHandlerContext = struct {
             plan: *Self,
@@ -531,11 +555,75 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             pc: PcType,
             opcode_count: usize,
             is_first: bool,
+            
+            /// Execute the original handler with validation
+            pub fn executeWithValidation(self: *DebugHandlerContext, frame_ptr: *anyopaque, plan_ptr: *const anyopaque) !DebugHandlerResult {
+                // Save frame state before execution
+                const frame_before = try self.plan.captureFrameState(frame_ptr);
+                defer frame_before.deinit();
+                
+                // Execute on main frame using original handler
+                // Note: This is a simplified approach since we can't intercept tail calls
+                // In practice, the handler would be executed and we'd validate the result
+                
+                // For now, we'll simulate validation by checking frame state changes
+                _ = plan_ptr;
+                
+                // Validate against REVM trace if available
+                if (self.plan.revm_trace) |_| {
+                    self.plan.validateAgainstRevmTrace(frame_ptr, self.pc);
+                }
+                
+                // TODO: Execute minimal plan opcodes in parallel and compare
+                
+                // Return continuation - in real implementation this would come from handler
+                return DebugHandlerResult{ .continue = .{
+                    .next_handler = self.original_handler,
+                    .instruction_idx = self.instruction_idx + 1,
+                }};
+            }
         };
         
         /// Storage for debug handler contexts (pre-allocated pool)
         debug_contexts: []DebugHandlerContext,
         next_context_idx: usize = 0,
+        
+        /// Execute sidecar opcodes on the minimal plan
+        fn executeSidecarOpcodes(
+            self: *Self,
+            ctx: *DebugHandlerContext,
+            frame_before: FrameState,
+        ) !DebugHandlerResult {
+            // TODO: Create a sidecar frame if not exists
+            if (self.sidecar_frame == null) {
+                // In a real implementation, we would create a copy of the main frame
+                // for sidecar execution
+            }
+            
+            // Execute the corresponding minimal plan opcodes
+            var minimal_pc = ctx.pc;
+            var i: usize = 0;
+            while (i < ctx.opcode_count) : (i += 1) {
+                if (minimal_pc >= self.bytecode.len) break;
+                
+                const opcode = self.bytecode[minimal_pc];
+                var min_idx = minimal_pc;
+                
+                // Get handler from minimal plan
+                const minimal_handler = self.minimal_plan.getNextInstruction(&min_idx, opcode);
+                _ = minimal_handler; // TODO: Execute handler on sidecar frame
+                
+                minimal_pc = min_idx;
+            }
+            
+            // TODO: Compare sidecar frame state with main frame state
+            _ = frame_before;
+            
+            return DebugHandlerResult{ .continue = .{
+                .next_handler = ctx.original_handler,
+                .instruction_idx = ctx.instruction_idx + 1,
+            }};
+        }
         
         /// Create a debug handler that validates execution.
         fn createDebugHandler(
@@ -546,6 +634,8 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             opcode_count: usize,
             advanced_handler: *const HandlerFn,
         ) *const HandlerFn {
+            _ = opcode; // Suppress unused parameter warning
+            
             // Get a context from the pool
             if (self.next_context_idx >= self.debug_contexts.len) {
                 @panic("DebugPlan: Ran out of debug contexts");
@@ -563,16 +653,22 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 .is_first = false,
             };
             
-            // For debugging purposes, we'll wrap the handler to add logging
-            // In a real implementation, we would need a more sophisticated approach
-            // to intercept between tail calls
+            // Store the context for later validation
+            // The actual validation would happen in a trampoline-based approach
+            // or through external coordination
             
-            // Return the original handler with debug context stored
-            // The validation will happen via logging/tracing rather than interception
+            // For now, return the original handler
+            // In a full implementation, we would return a wrapper that:
+            // 1. Captures frame state before
+            // 2. Executes original handler
+            // 3. Captures frame state after
+            // 4. Executes minimal plan equivalent
+            // 5. Compares results
+            
             return advanced_handler;
         }
         
-        /// Create the first instruction handler that copies the frame.
+        /// Create the first instruction handler that sets up sidecar execution.
         fn createFirstInstructionHandler(
             self: *Self,
             wrapped_handler: *const HandlerFn,
@@ -594,24 +690,54 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 .is_first = true,
             };
             
-            return wrapped_handler; // TODO: Implement proper first handler
+            // The first handler would ideally:
+            // 1. Create a sidecar frame by copying the main frame
+            // 2. Initialize minimal plan execution state
+            // 3. Set up validation infrastructure
+            // 4. Execute the wrapped handler
+            
+            // For now, return the wrapped handler with context stored
+            // In a complete implementation, this would be a specialized wrapper
+            
+            return wrapped_handler;
         }
         
         /// Capture current frame state
         fn captureFrameState(self: *const Self, frame_ptr: *anyopaque) !FrameState {
-            const FrameType = @import("frame.zig").createFrame(cfg);
+            const FrameType = @import("frame.zig").Frame(cfg);
             const frame = @as(*FrameType, @ptrCast(@alignCast(frame_ptr)));
             
-            return FrameState{
-                .stack = try self.allocator.dupe(u256, frame.stack.stack[0..frame.stack.next_stack_index]),
-                .stack_height = frame.stack.next_stack_index,
-                .memory = try self.allocator.dupe(u8, frame.memory.getSlice()),
-                .memory_size = frame.memory.getCurrentSize(),
-                .pc = frame.pc,
-                .gas_remaining = frame.gas_remaining,
-                .return_data = try self.allocator.dupe(u8, frame.return_data),
+            // Allocate and initialize with error handling
+            var state = FrameState{
+                .stack = &.{},
+                .stack_height = 0,
+                .memory = &.{},
+                .memory_size = 0,
+                .pc = 0,
+                .gas_remaining = 0,
+                .return_data = &.{},
                 .allocator = self.allocator,
             };
+            
+            // Allocate stack with error handling
+            state.stack = try self.allocator.dupe(u256, frame.stack.stack[0..frame.stack.next_stack_index]);
+            errdefer self.allocator.free(state.stack);
+            
+            // Allocate memory with error handling
+            state.memory = try self.allocator.dupe(u8, frame.memory.getSlice());
+            errdefer self.allocator.free(state.memory);
+            
+            // Allocate return data with error handling
+            state.return_data = try self.allocator.dupe(u8, frame.return_data);
+            errdefer self.allocator.free(state.return_data);
+            
+            // Set remaining fields
+            state.stack_height = frame.stack.next_stack_index;
+            state.memory_size = frame.memory.getCurrentSize();
+            state.pc = frame.pc;
+            state.gas_remaining = frame.gas_remaining;
+            
+            return state;
         }
         
         /// Assert that two frames are equal.
@@ -644,9 +770,8 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             const main_frame = @as(*FrameType, @ptrCast(@alignCast(frame)));
             
             // TODO: Create a copy for minimal plan execution
-            // var minimal_frame = try main_frame.copy(self.allocator);
-            // defer minimal_frame.deinit(self.allocator);
-            _ = main_frame; // Suppress unused variable warning
+            // For now, we'll just validate the main frame against itself as a placeholder
+            // In a real implementation, we would create a separate minimal frame
             
             // Track instruction indices
             var advanced_idx: InstructionIndexType = 0;
@@ -677,7 +802,12 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 }
                 
                 // TODO: Compare frame states after each step
-                // self.assertEqual(main_frame, &minimal_frame);
+                // For now, just validate we can capture frame state
+                var test_state = try self.captureFrameState(main_frame);
+                defer test_state.deinit();
+                
+                // In a real implementation, we would compare against minimal_frame
+                // try self.assertEqual(main_frame, &minimal_frame);
                 
                 // Update indices
                 advanced_idx = adv_idx;
@@ -719,12 +849,12 @@ test "DebugPlan basic initialization" {
     };
     
     // Create handler array
-    var handlers: [256]*const plan_mod.HandlerFn = undefined;
+    var handlers: [256]*const TestDebugPlan.HandlerFn = undefined;
     for (&handlers) |*h| {
         h.* = &testHandler;
     }
     
-    var plan = try DebugPlan.init(allocator, &bytecode, handlers);
+    var plan = try TestDebugPlan.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Verify both plans were created
@@ -744,12 +874,12 @@ test "DebugPlan metadata validation" {
     };
     
     // Create handler array
-    var handlers: [256]*const plan_mod.HandlerFn = undefined;
+    var handlers: [256]*const TestDebugPlan.HandlerFn = undefined;
     for (&handlers) |*h| {
         h.* = &testHandler;
     }
     
-    var plan = try DebugPlan.init(allocator, &bytecode, handlers);
+    var plan = try TestDebugPlan.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Test PUSH1 metadata
@@ -775,12 +905,12 @@ test "DebugPlan fusion validation" {
     };
     
     // Create handler array
-    var handlers: [256]*const plan_mod.HandlerFn = undefined;
+    var handlers: [256]*const TestDebugPlan.HandlerFn = undefined;
     for (&handlers) |*h| {
         h.* = &testHandler;
     }
     
-    var plan = try DebugPlan.init(allocator, &bytecode, handlers);
+    var plan = try TestDebugPlan.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // The advanced plan should have detected fusion
@@ -799,7 +929,8 @@ test "DebugPlan fusion validation" {
 test "DebugPlan executeAndValidate basic opcodes" {
     const allocator = std.testing.allocator;
     const TestDebugPlan = DebugPlan(.{});
-    const Frame = @import("frame.zig").Frame(.{});
+    // TODO: Update when frame interface is stable
+    // const Frame = @import("frame.zig").createFrame(.{});
     
     // Simple bytecode: PUSH1 10, PUSH1 20, ADD, STOP
     const bytecode = [_]u8{
@@ -810,16 +941,16 @@ test "DebugPlan executeAndValidate basic opcodes" {
     };
     
     // Create handler array
-    var handlers: [256]*const plan_mod.HandlerFn = undefined;
+    var handlers: [256]*const TestDebugPlan.HandlerFn = undefined;
     for (&handlers) |*h| {
         h.* = &testHandler;
     }
     
-    var plan = try DebugPlan.init(allocator, &bytecode, handlers);
+    var plan = try TestDebugPlan.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Create a frame
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+    var frame = try Frame.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
     
     // Execute and validate step by step
@@ -837,12 +968,12 @@ test "DebugPlan REVM trace validation" {
     };
     
     // Create handler array
-    var handlers: [256]*const plan_mod.HandlerFn = undefined;
+    var handlers: [256]*const TestDebugPlan.HandlerFn = undefined;
     for (&handlers) |*h| {
         h.* = &testHandler;
     }
     
-    var plan = try DebugPlan.init(allocator, &bytecode, handlers);
+    var plan = try TestDebugPlan.init(allocator, &bytecode, handlers);
     defer plan.deinit();
     
     // Create mock REVM trace
