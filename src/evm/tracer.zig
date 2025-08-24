@@ -207,7 +207,7 @@ pub const DebuggingTracer = struct {
         
         const snapshot = StateSnapshot{
             .pc = pc,
-            .gas_remaining = frame.gas_manager.gasRemaining(),
+            .gas_remaining = @max(frame.gas_remaining, 0),
             .stack = stack_copy,
             .memory_size = if (@hasField(FrameType, "memory")) frame.memory.size() else 0,
             .depth = if (@hasField(FrameType, "depth")) frame.depth else 0,
@@ -279,7 +279,7 @@ pub const DebuggingTracer = struct {
     
     /// Helper function to capture state for step recording
     fn captureStateForStep(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType, is_before: bool) !void {
-        const gas = frame.gas_manager.gasRemaining();
+        const gas = @max(frame.gas_remaining, 0);
         
         // Create stack copy
         const stack_copy = try self.allocator.alloc(u256, frame.next_stack_index);
@@ -441,7 +441,7 @@ pub fn Tracer(comptime Writer: type) type {
             const op_name = getOpcodeName(opcode);
             
             // Gas calculation
-            const gas_now: u64 = if (frame_instance.gas_manager.remaining < 0) 0 else @intCast(frame_instance.gas_manager.remaining);
+            const gas_now: u64 = @max(frame_instance.gas_remaining, 0);
             var gas_cost: u64 = 0;
             if (self.cfg.compute_gas_cost) {
                 if (self.prev_gas) |prev| {
@@ -808,8 +808,9 @@ test "tracer captures basic frame state with writer" {
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
     // PC is now managed by plan, not frame
-    const gas_to_consume1 = @as(u64, @intCast(test_frame.gas_manager.remaining - 950));
-    try test_frame.gas_manager.consume(gas_to_consume1);
+    const gas_to_consume1 = @as(u64, @intCast(test_frame.gas_remaining - 950));
+    if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume1))) return error.OutOfGas;
+    test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume1));
     
     // Create tracer with array list writer
     var output = std.ArrayList(u8).init(allocator);
@@ -839,8 +840,9 @@ test "tracer writes JSON to writer" {
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
     // PC is now managed by plan, not frame
-    const gas_to_consume2 = @as(u64, @intCast(test_frame.gas_manager.remaining - 950));
-    try test_frame.gas_manager.consume(gas_to_consume2);
+    const gas_to_consume2 = @as(u64, @intCast(test_frame.gas_remaining - 950));
+    if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume2))) return error.OutOfGas;
+    test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume2));
     
     // Create tracer with array list writer
     var output = std.ArrayList(u8).init(allocator);
@@ -892,8 +894,9 @@ test "file tracer writes to file" {
     defer test_frame.deinit(allocator);
     
     // PC is now managed by plan, not frame
-    const gas_to_consume3 = @as(u64, @intCast(test_frame.gas_manager.remaining - 997));
-    try test_frame.gas_manager.consume(gas_to_consume3);
+    const gas_to_consume3 = @as(u64, @intCast(test_frame.gas_remaining - 997));
+    if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume3))) return error.OutOfGas;
+    test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume3));
     
     // Create file tracer and write
     var tracer = try FileTracer.init(allocator, file_path);
@@ -927,22 +930,25 @@ test "tracer with gas cost computation" {
     );
     
     // First snapshot - no previous gas, so cost should be 0
-    const gas_to_consume4 = @as(u64, @intCast(test_frame.gas_manager.remaining - 1000));
-    try test_frame.gas_manager.consume(gas_to_consume4);
+    const gas_to_consume4 = @as(u64, @intCast(test_frame.gas_remaining - 1000));
+    if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume4))) return error.OutOfGas;
+    test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume4));
     const log1 = try tracer.snapshot(0, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log1.stack);
     try std.testing.expectEqual(@as(u64, 0), log1.gasCost);
     
     // Second snapshot - gas decreased by 3
-    const gas_to_consume5 = @as(u64, @intCast(test_frame.gas_manager.remaining - 997));
-    try test_frame.gas_manager.consume(gas_to_consume5);
+    const gas_to_consume5 = @as(u64, @intCast(test_frame.gas_remaining - 997));
+    if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume5))) return error.OutOfGas;
+    test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume5));
     const log2 = try tracer.snapshot(1, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log2.stack);
     try std.testing.expectEqual(@as(u64, 3), log2.gasCost);
     
     // Third snapshot - gas decreased by 21
-    const gas_to_consume6 = @as(u64, @intCast(test_frame.gas_manager.remaining - 976));
-    try test_frame.gas_manager.consume(gas_to_consume6);
+    const gas_to_consume6 = @as(u64, @intCast(test_frame.gas_remaining - 976));
+    if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume6))) return error.OutOfGas;
+    test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume6));
     const log3 = try tracer.snapshot(2, 0x01, Frame, &test_frame); // ADD
     defer allocator.free(log3.stack);
     try std.testing.expectEqual(@as(u64, 21), log3.gasCost);
@@ -1047,15 +1053,13 @@ test "DebuggingTracer memory management" {
         bytecode: []const u8,
         next_stack_index: usize,
         stack: [16]u256,
-        gas_manager: struct {
-            pub fn gasRemaining(self: @This()) u64 { _ = self; return 1000; }
-        },
+        gas_remaining: i64 = 1000,
         
         fn init() @This() {
             return .{
                 .gas_remaining = 1000,
                 .bytecode = &[_]u8{0x60, 0x05}, // PUSH1 5
-                .gas_manager = .{},
+                .gas_remaining = 1000,
                 .next_stack_index = 0,
                 .stack = [_]u256{0} ** 16,
             };
