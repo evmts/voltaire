@@ -224,7 +224,7 @@ pub fn build(b: *std.Build) void {
     // EVM Benchmark Rust crate integration - removed guillotine-rs
 
     // Add Rust Foundry wrapper integration
-    // TODO: Fix Rust integration - needs proper zabi dependency
+    // NOTE: Rust integration disabled - requires zabi dependency resolution
     // const rust_build = @import("src/compilers/rust_build.zig");
     // const rust_step = rust_build.add_rust_integration(b, target, optimize) catch |err| {
     //     std.debug.print("Failed to add Rust integration: {}\n", .{err});
@@ -1085,7 +1085,7 @@ pub fn build(b: *std.Build) void {
     compiler_test.root_module.addImport("primitives", primitives_mod);
     compiler_test.root_module.addImport("evm", evm_mod);
 
-    // TODO: Re-enable when Rust integration is fixed
+    // NOTE: Rust integration disabled - requires dependency resolution
     // // Make the compiler test depend on the Rust build
     // compiler_test.step.dependOn(rust_step);
 
@@ -1958,7 +1958,7 @@ pub fn build(b: *std.Build) void {
     const erc20_trace_test_step = b.step("test-erc20-trace", "Run ERC20 constructor trace test");
     erc20_trace_test_step.dependOn(&run_erc20_trace_test.step);
 
-    // TODO: Re-enable when Rust integration is fixed
+    // NOTE: Rust integration disabled - requires dependency resolution
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
 
