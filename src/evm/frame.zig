@@ -9596,11 +9596,11 @@ const MockHostWithAccessList = struct {
     fn mock_get_balance(ptr: *anyopaque, address: Address) u256 { _ = ptr; _ = address; return 0; }
     fn mock_account_exists(ptr: *anyopaque, address: Address) bool { _ = ptr; _ = address; return false; }
     fn mock_get_code(ptr: *anyopaque, address: Address) []const u8 { _ = ptr; _ = address; return &[_]u8{}; }
-    fn mock_get_block_info(ptr: *anyopaque) @import("block_info.zig").DefaultBlockInfo { _ = ptr; return @import("block_info.zig").DefaultBlockInfo{}; }
+    fn mock_get_block_info(ptr: *anyopaque) @import("block_info.zig").DefaultBlockInfo { _ = ptr; return @import("block_info.zig").DefaultBlockInfo.init(); }
     fn mock_emit_log(ptr: *anyopaque, contract_address: Address, topics: []const u256, data: []const u8) void { _ = ptr; _ = contract_address; _ = topics; _ = data; }
-    fn mock_inner_call(ptr: *anyopaque, params: *const @import("call_params.zig").CallParams) anyerror!@import("call_result.zig").CallResult { 
+    fn mock_inner_call(ptr: *anyopaque, params: @import("call_params.zig").CallParams) anyerror!@import("call_result.zig").CallResult { 
         _ = ptr; _ = params; 
-        return @import("call_result.zig").CallResult{ .success = true, .gas_refunded = 0, .return_value = &[_]u8{} }; 
+        return @import("call_result.zig").CallResult{ .success = true, .gas_left = 0, .output = &[_]u8{} }; 
     }
     fn mock_register_created_contract(ptr: *anyopaque, address: Address) anyerror!void { _ = ptr; _ = address; }
     fn mock_was_created_in_tx(ptr: *anyopaque, address: Address) bool { _ = ptr; _ = address; return false; }
@@ -9753,7 +9753,7 @@ test "_calculate_call_gas comprehensive edge cases and integration scenarios" {
         var mock_host = MockHostWithAccessList.init(allocator);
         defer mock_host.deinit();
         mock_host.set_hardfork_berlin(true);
-        mock_host.mark_warm(precompile_addr); // Precompiles are usually warm
+        // Precompiles are warm by default in Berlin+
         
         const host = mock_host.to_host();
         var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);

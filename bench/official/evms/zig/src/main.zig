@@ -130,7 +130,7 @@ pub fn main() !void {
     });
 
     // Run benchmarks
-    for (0..num_runs) |_| {
+    for (0..num_runs) |run_idx| {
         const call_params = evm.DefaultEvm.CallParams{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
@@ -150,7 +150,7 @@ pub fn main() !void {
         
         // Debug: Print gas usage info
         const gas_used = 100000 - result.gas_left;
-        if (i == 0) { // Only print for first run
+        if (run_idx == 0) { // Only print for first run
             std.log.warn("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}", 
                 .{result.success, 100000, result.gas_left, gas_used, result.output.len});
         }

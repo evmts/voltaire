@@ -621,7 +621,7 @@ test "Plan getMetadata for PUSH opcodes" {
     defer plan.deinit(allocator);
     
     // Test PUSH1
-    var idx: TestPlan.InstructionIndexType = 0;
+    var idx: Plan(.{}).InstructionIndexType = 0;
     const push1_val = plan.getMetadata(&idx, .PUSH1);
     try std.testing.expectEqual(@as(u8, 42), push1_val);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
@@ -674,7 +674,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     }
     
     // Test PUSH32
-    var idx: TestPlan.InstructionIndexType = 0;
+    var idx: Plan(.{}).InstructionIndexType = 0;
     const push32_ptr = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0123456789ABCDEF0), push32_ptr.*);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
@@ -711,7 +711,7 @@ test "Plan getMetadata for JUMPDEST" {
         };
         defer plan.deinit(allocator);
         
-        var idx: TestPlan.InstructionIndexType = 0;
+        var idx: Plan(.{}).InstructionIndexType = 0;
         const jumpdest_meta = plan.getMetadata(&idx, .JUMPDEST);
         try std.testing.expectEqual(metadata.gas, jumpdest_meta.gas);
         try std.testing.expectEqual(metadata.min_stack, jumpdest_meta.min_stack);
@@ -738,7 +738,7 @@ test "Plan getMetadata for PC opcode" {
     };
     defer plan.deinit(allocator);
     
-    var idx: TestPlan.InstructionIndexType = 0;
+    var idx: Plan(.{}).InstructionIndexType = 0;
     const pc_val = plan.getMetadata(&idx, .PC);
     try std.testing.expectEqual(@as(TestPlan.PcType, 1234), pc_val);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
@@ -809,7 +809,7 @@ test "Plan getNextInstruction without metadata" {
     defer plan.deinit(allocator);
     
     // Test opcode without metadata
-    var idx: TestPlan.InstructionIndexType = 0;
+    var idx: Plan(.{}).InstructionIndexType = 0;
     const handler = plan.getNextInstruction(&idx, .ADD);
     try std.testing.expectEqual(&testHandler, handler);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 1), idx);
@@ -837,7 +837,7 @@ test "Plan getNextInstruction with metadata" {
     defer plan.deinit(allocator);
     
     // Test opcode with metadata
-    var idx: TestPlan.InstructionIndexType = 0;
+    var idx: Plan(.{}).InstructionIndexType = 0;
     const handler = plan.getNextInstruction(&idx, .PUSH1);
     try std.testing.expectEqual(&testHandler, handler);
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
@@ -2419,7 +2419,7 @@ test "Plan instruction stream integrity validation" {
         try std.testing.expect(inst_idx != null);
         
         // Verify metadata access
-        var idx: TestPlan.InstructionIndexType = @intCast(expected_pc);
+        var idx: Plan(.{}).InstructionIndexType = @intCast(expected_pc);
         _ = plan.getMetadata(&idx, opcode);
         
         // Calculate next PC
@@ -2625,7 +2625,7 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
             const opcode = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
             
             // Test metadata access
-            var idx: TestPlan.InstructionIndexType = @intCast(pc);
+            var idx: Plan(.{}).InstructionIndexType = @intCast(pc);
             _ = plan.getMetadata(&idx, opcode);
             
             // Advance PC correctly for PUSH operations
@@ -2793,7 +2793,7 @@ test "Plan comprehensive JUMPDEST analysis with pathological patterns" {
             const opcode = std.meta.intToEnum(Opcode, pattern.bytecode[pc]) catch break;
             
             // Should be able to get metadata for any valid PC
-            var idx: TestPlan.InstructionIndexType = @intCast(pc);
+            var idx: Plan(.{}).InstructionIndexType = @intCast(pc);
             _ = plan.getMetadata(&idx, opcode);
             
             // Advance PC correctly
@@ -2919,7 +2919,7 @@ test "Plan gas cost estimation accuracy validation" {
         for (bytecode[0..bytecode_len], 0..) |byte, pc| {
             if (byte == @intFromEnum(test_case.opcode)) {
                 // Test that we can get metadata (gas info) for this opcode
-                var idx: TestPlan.InstructionIndexType = @intCast(pc);
+                var idx: Plan(.{}).InstructionIndexType = @intCast(pc);
                 const metadata = plan.getMetadata(&idx, test_case.opcode);
                 
                 // Basic validation that metadata exists
@@ -3005,8 +3005,8 @@ test "Plan equivalence between minimal and advanced plans" {
             switch (opcode) {
                 .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => {
                     // Both plans should provide equivalent metadata for small PUSH opcodes
-                    var advanced_idx: TestPlan.InstructionIndexType = @intCast(pc);
-                    var minimal_idx: TestPlan.InstructionIndexType = @intCast(pc);
+                    var advanced_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
+                    var minimal_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
                     const advanced_meta = advanced_plan.getMetadata(&advanced_idx, opcode);
                     const minimal_meta = minimal_plan.getMetadata(&minimal_idx, opcode);
                     
@@ -3015,15 +3015,15 @@ test "Plan equivalence between minimal and advanced plans" {
                 },
                 .JUMPDEST => {
                     // Both should recognize JUMPDEST
-                    var advanced_idx: TestPlan.InstructionIndexType = @intCast(pc);
-                    var minimal_idx: TestPlan.InstructionIndexType = @intCast(pc);
+                    var advanced_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
+                    var minimal_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
                     _ = advanced_plan.getMetadata(&advanced_idx, opcode);
                     _ = minimal_plan.getMetadata(&minimal_idx, opcode);
                 },
                 .PC => {
                     // PC opcode should return the same value
-                    var advanced_idx: TestPlan.InstructionIndexType = @intCast(pc);
-                    var minimal_idx: TestPlan.InstructionIndexType = @intCast(pc);
+                    var advanced_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
+                    var minimal_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
                     const advanced_pc = advanced_plan.getMetadata(&advanced_idx, opcode);
                     const minimal_pc = minimal_plan.getMetadata(&minimal_idx, opcode);
                     try std.testing.expectEqual(@as(u256, pc), advanced_pc);
@@ -3031,8 +3031,8 @@ test "Plan equivalence between minimal and advanced plans" {
                 },
                 else => {
                     // Other opcodes should be handled consistently
-                    var advanced_idx: TestPlan.InstructionIndexType = @intCast(pc);
-                    var minimal_idx: TestPlan.InstructionIndexType = @intCast(pc);
+                    var advanced_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
+                    var minimal_idx: Plan(.{}).InstructionIndexType = @intCast(pc);
                     _ = advanced_plan.getMetadata(&advanced_idx, opcode);
                     _ = minimal_plan.getMetadata(&minimal_idx, opcode);
                 },
@@ -3109,7 +3109,8 @@ test "Plan configuration boundary and mutation stress testing" {
             // Test instruction processing
             if (limited_bytecode.len > 0) {
                 const first_opcode = std.meta.intToEnum(Opcode, limited_bytecode[0]) catch .STOP;
-                _ = plan.getMetadata(0, first_opcode, undefined);
+                var idx: Plan(.{}).InstructionIndexType = 0;
+                _ = plan.getMetadata(&idx, first_opcode);
             }
         }
     }
@@ -3220,7 +3221,8 @@ test "Plan bytecode analysis completeness validation" {
                 const opcode = std.meta.intToEnum(Opcode, opcode_val) catch break;
                 
                 // Should be able to extract PUSH value
-                const metadata = plan.getMetadata(pc, opcode, undefined);
+                var idx: TestPlan.InstructionIndexType = @intCast(pc);
+                const metadata = plan.getMetadata(&idx, opcode);
                 try std.testing.expect(metadata != 0); // Should have valid value
                 
                 push_count += 1;
@@ -3326,7 +3328,8 @@ test "Plan caching and lifecycle management validation" {
         try std.testing.expectEqualSlices(u8, plans[i].bytecode, &reusable_bytecode);
         
         // Test that each plan provides correct metadata
-        const push_value = plans[i].getMetadata(0, .PUSH1, undefined);
+        var idx: TestPlan.InstructionIndexType = 0;
+        const push_value = plans[i].getMetadata(&idx, .PUSH1);
         try std.testing.expectEqual(@as(u256, 0x42), push_value);
         
         // Test instruction indexing

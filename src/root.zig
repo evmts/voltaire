@@ -79,6 +79,24 @@ const evm_root = @import("evm");
 const primitives = @import("primitives");
 const provider = @import("provider");
 
+// Custom log function for WASM that avoids Thread dependencies
+pub const std_options = .{
+    .logFn = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) wasmLogFn else std.log.defaultLog,
+};
+
+fn wasmLogFn(
+    comptime message_level: std.log.Level,
+    comptime scope: @TypeOf(.enum_literal),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    _ = message_level;
+    _ = scope;
+    _ = format;
+    _ = args;
+    // No-op for WASM to avoid Thread/IO dependencies
+}
+
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
     _ = level;

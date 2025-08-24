@@ -5,9 +5,10 @@ const evm_root = @import("evm");
 const primitives = @import("primitives");
 
 // Custom log function for WASM that avoids Thread dependencies
-pub const std_options = .{
-    .logFn = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) wasmLogFn else std.log.defaultLog,
-};
+pub const std_options: std.Options = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
+    .{ .logFn = wasmLogFn }
+else
+    .{};
 
 fn wasmLogFn(
     comptime message_level: std.log.Level,
