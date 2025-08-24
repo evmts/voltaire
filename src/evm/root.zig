@@ -29,6 +29,9 @@ pub const Evm = @import("evm.zig").Evm;
 pub const EvmConfig = @import("evm.zig").EvmConfig;
 pub const PlannerStrategy = @import("evm.zig").PlannerStrategy;
 
+// Default EVM type for backward compatibility
+pub const DefaultEvm = Evm(.{});
+
 // Tracer modules
 pub const Tracer = @import("tracer.zig").Tracer;
 pub const DetailedStructLog = @import("tracer.zig").DetailedStructLog;

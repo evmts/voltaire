@@ -8,6 +8,7 @@ pub const PlanConfig = @import("plan_config.zig").PlanConfig;
 const plan_mod = @import("plan.zig");
 const plan_minimal_mod = @import("plan_minimal.zig");
 const Planner = @import("planner.zig").Planner;
+const Frame = @import("frame.zig").Frame;
 // REVM integration disabled - module not available
 
 // Import primitives
@@ -165,10 +166,10 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             errdefer minimal_plan.deinit();
             
             // Store original handlers
-            var original_handlers: [256]*const HandlerFn = handlers;
+            const original_handlers: [256]*const HandlerFn = handlers;
             
             // Create debug handlers (will be populated during execution)
-            var debug_handlers: [256]*const HandlerFn = handlers;
+            const debug_handlers: [256]*const HandlerFn = handlers;
             
             // Allocate debug contexts pool (enough for all instructions)
             const max_contexts = advanced_plan.instructionStream.len;
@@ -368,7 +369,6 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             
             // Get handler from advanced plan
             const advanced_handler = self.advanced_plan.getNextInstruction(idx, opcode);
-            const next_idx = idx.*;
             
             // Calculate how many minimal opcodes we need to execute
             const opcode_count = self.getOpcodeCount(opcode);
@@ -790,13 +790,13 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 var min_idx = minimal_pc;
                 
                 // Execute one instruction on advanced plan
-                const advanced_handler = self.advanced_plan.getNextInstruction(&adv_idx, opcode);
+                _ = self.advanced_plan.getNextInstruction(&adv_idx, opcode);
                 
                 // Execute corresponding instruction(s) on minimal plan
                 const opcode_count = self.getOpcodeCount(opcode);
                 var i: usize = 0;
                 while (i < opcode_count) : (i += 1) {
-                    const minimal_handler = self.minimal_plan.getNextInstruction(&min_idx, self.bytecode[minimal_pc]);
+                    _ = self.minimal_plan.getNextInstruction(&min_idx, self.bytecode[minimal_pc]);
                     minimal_pc = min_idx;
                 }
                 

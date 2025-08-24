@@ -92,6 +92,8 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
     }
 }
 const MemoryDatabase = evm_root.MemoryDatabase;
+const BlockInfo = evm_root.BlockInfo;
+const ZERO_ADDRESS = evm_root.ZERO_ADDRESS;
 const Address = primitives.Address.Address;
 
 // Global allocator for WASM environment
@@ -99,7 +101,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else gpa.allocator();
 
 // Global VM instance
-var vm_instance: ?*evm_root.Evm = null;
+var vm_instance: ?*evm_root.DefaultEvm = null;
 
 // C-compatible error codes
 const GuillotineError = enum(c_int) {
@@ -134,15 +136,36 @@ export fn guillotine_init() c_int {
     var memory_db = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
 
-    const vm = allocator.create(evm_root.Evm) catch {
+    const vm = allocator.create(evm_root.DefaultEvm) catch {
         log(.err, .guillotine_c, "Failed to allocate memory for VM", .{});
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
 
-    vm.* = evm_root.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
-        null, // context
-        null // tracer
+    // Create default block info and transaction context
+    const block_info = evm_root.BlockInfo{
+        .number = 0,
+        .timestamp = 0,
+        .difficulty = 0,
+        .gas_limit = 30_000_000,
+        .coinbase = evm_root.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const tx_context = evm_root.DefaultEvm.TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = evm_root.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    vm.* = evm_root.DefaultEvm.init(
+        allocator,
+        db_interface,
+        block_info,
+        tx_context,
+        0, // gas_price
+        evm_root.ZERO_ADDRESS, // origin
+        .CANCUN // hardfork
     ) catch |err| {
         log(.err, .guillotine_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
@@ -265,7 +288,7 @@ pub const GuillotineExecutionResult = extern struct {
 
 // Internal VM structure
 const VmState = struct {
-    vm: *evm_root.Evm,
+    vm: *evm_root.DefaultEvm,
     memory_db: *MemoryDatabase,
     allocator: std.mem.Allocator,
 };
@@ -284,17 +307,38 @@ export fn guillotine_vm_create() ?*GuillotineVm {
     state.memory_db.* = MemoryDatabase.init(alloc);
 
     const db_interface = state.memory_db.to_database_interface();
-    state.vm = alloc.create(evm_root.Evm) catch {
+    state.vm = alloc.create(evm_root.DefaultEvm) catch {
         state.memory_db.deinit();
         alloc.destroy(state.memory_db);
         alloc.destroy(state);
         return null;
     };
 
-    state.vm.* = evm_root.Evm.init(alloc, db_interface, null, // table
-        null, // chain_rules
-        null, // context
-        null // tracer
+    // Create default block info and transaction context
+    const block_info = BlockInfo{
+        .number = 0,
+        .timestamp = 0,
+        .difficulty = 0,
+        .gas_limit = 30_000_000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const tx_context = evm_root.DefaultEvm.TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    state.vm.* = evm_root.DefaultEvm.init(
+        alloc,
+        db_interface,
+        block_info,
+        tx_context,
+        0, // gas_price
+        ZERO_ADDRESS, // origin
+        .CANCUN // hardfork
     ) catch {
         state.memory_db.deinit();
         alloc.destroy(state.memory_db);
@@ -412,8 +456,9 @@ test "C interface compilation" {
     std.testing.refAllDecls(@This());
 }
 
-// Re-export modules
+// Re-export modules  
 pub const Evm = evm_root.Evm;
+pub const DefaultEvm = evm_root.DefaultEvm;
 pub const Primitives = primitives;
 pub const Provider = provider;
 

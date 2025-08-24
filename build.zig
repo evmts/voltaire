@@ -299,7 +299,6 @@ pub fn build(b: *std.Build) void {
     // step when running `zig build`).
     b.installArtifact(exe);
 
-
     // WASM library build optimized for size
     const wasm_target = wasm.setupWasmTarget(b);
     const wasm_optimize = optimize;
@@ -348,24 +347,6 @@ pub fn build(b: *std.Build) void {
         .root_source_file = "src/evm_c.zig",
         .dest_sub_path = "guillotine-evm.wasm",
     }, wasm_evm_lib_mod);
-    
-    // EVM WASM build
-    const wasm_evm_mod = wasm.createWasmModule(b, "src/evm/root.zig", wasm_target, wasm_optimize);
-    wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_evm_mod.addImport("evm", wasm_evm_mod);
-    wasm_evm_mod.addImport("crypto", wasm_crypto_mod);
-    wasm_evm_mod.addImport("build_options", build_options_mod);
-    
-    const wasm_evm_lib_mod = wasm.createWasmModule(b, "src/evm/root_c.zig", wasm_target, wasm_optimize);
-    wasm_evm_lib_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
-    wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
-    
-    const wasm_evm_build = wasm.buildWasmExecutable(b, .{
-        .name = "guillotine-evm",
-        .root_source_file = "src/evm/root_c.zig",
-        .dest_sub_path = "guillotine-evm.wasm",
-    }, wasm_evm_lib_mod);
 
     // Add step to report WASM bundle sizes for all builds
     const wasm_size_step = wasm.addWasmSizeReportStep(
@@ -386,9 +367,6 @@ pub fn build(b: *std.Build) void {
     const wasm_primitives_step = b.step("wasm-primitives", "Build primitives-only WASM library");
     wasm_primitives_step.dependOn(&wasm_primitives_build.install.step);
 
-    const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
-    wasm_evm_step.dependOn(&wasm_evm_build.install.step);
-    
     const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
     wasm_evm_step.dependOn(&wasm_evm_build.install.step);
 
@@ -811,7 +789,7 @@ pub fn build(b: *std.Build) void {
     stack_test_step.dependOn(&run_stack_test.step);
 
     // Analysis comprehensive tests removed - files no longer exist
-    
+
     // Interpret comprehensive tests
     const interpret_test = b.addTest(.{
         .name = "interpret-comprehensive-test",
@@ -826,11 +804,11 @@ pub fn build(b: *std.Build) void {
         interpret_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
     interpret_test.root_module.addImport("revm_wrapper", revm_mod);
-    
+
     const run_interpret_test = b.addRunArtifact(interpret_test);
     const interpret_test_step = b.step("test-interpret", "Run Interpret comprehensive tests");
     interpret_test_step.dependOn(&run_interpret_test.step);
-    
+
     // Interpret corner cases tests
     const interpret_corner_test = b.addTest(.{
         .name = "interpret-corner-cases-test",
@@ -840,7 +818,7 @@ pub fn build(b: *std.Build) void {
     });
     interpret_corner_test.root_module.addImport("evm", evm_mod);
     interpret_corner_test.root_module.addImport("primitives", primitives_mod);
-    
+
     const run_interpret_corner_test = b.addRunArtifact(interpret_corner_test);
     const interpret_corner_test_step = b.step("test-interpret-corner", "Run Interpret corner cases tests");
     interpret_corner_test_step.dependOn(&run_interpret_corner_test.step);
@@ -858,7 +836,7 @@ pub fn build(b: *std.Build) void {
         control_test.linkLibrary(bn254);
         control_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
-    
+
     const run_control_test = b.addRunArtifact(control_test);
     const control_test_step = b.step("test-control", "Run Control comprehensive tests");
     control_test_step.dependOn(&run_control_test.step);
@@ -876,7 +854,7 @@ pub fn build(b: *std.Build) void {
         system_test.linkLibrary(bn254);
         system_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
-    
+
     const run_system_test = b.addRunArtifact(system_test);
     const system_test_step = b.step("test-system", "Run System comprehensive tests");
     system_test_step.dependOn(&run_system_test.step);
@@ -894,7 +872,7 @@ pub fn build(b: *std.Build) void {
         tailcall_benchmark.linkLibrary(bn254);
         tailcall_benchmark.addIncludePath(b.path("src/bn254_wrapper"));
     }
-    
+
     const run_tailcall_benchmark = b.addRunArtifact(tailcall_benchmark);
     const tailcall_benchmark_step = b.step("test-tailcall-benchmark", "Run tailcall dispatch benchmark");
     tailcall_benchmark_step.dependOn(&run_tailcall_benchmark.step);
@@ -910,11 +888,11 @@ pub fn build(b: *std.Build) void {
     interpret2_test.root_module.addImport("primitives", primitives_mod);
     interpret2_test.root_module.addImport("crypto", crypto_mod);
     interpret2_test.root_module.addImport("build_options", build_options_mod);
-    
+
     const run_interpret2_test = b.addRunArtifact(interpret2_test);
     const interpret2_test_step = b.step("test-interpret2", "Run interpret2 tests");
     interpret2_test_step.dependOn(&run_interpret2_test.step);
-    
+
     // Interpret2 simple test
     const interpret2_simple_test = b.addTest(.{
         .name = "interpret2-simple-test",
@@ -926,11 +904,11 @@ pub fn build(b: *std.Build) void {
     interpret2_simple_test.root_module.addImport("primitives", primitives_mod);
     interpret2_simple_test.root_module.addImport("crypto", crypto_mod);
     interpret2_simple_test.root_module.addImport("build_options", build_options_mod);
-    
+
     const run_interpret2_simple_test = b.addRunArtifact(interpret2_simple_test);
     const interpret2_simple_test_step = b.step("test-interpret2-simple", "Run interpret2 simple tests");
     interpret2_simple_test_step.dependOn(&run_interpret2_simple_test.step);
-    
+
     // Interpret2 comprehensive test
     const interpret2_comprehensive_test = b.addTest(.{
         .name = "interpret2-comprehensive-test",
@@ -942,11 +920,11 @@ pub fn build(b: *std.Build) void {
     interpret2_comprehensive_test.root_module.addImport("primitives", primitives_mod);
     interpret2_comprehensive_test.root_module.addImport("crypto", crypto_mod);
     interpret2_comprehensive_test.root_module.addImport("build_options", build_options_mod);
-    
+
     const run_interpret2_comprehensive_test = b.addRunArtifact(interpret2_comprehensive_test);
     const interpret2_comprehensive_test_step = b.step("test-interpret2-comprehensive", "Run interpret2 comprehensive tests");
     interpret2_comprehensive_test_step.dependOn(&run_interpret2_comprehensive_test.step);
-    
+
     // Environment and block opcodes test for interpret2
     const environment_block_opcodes_test = b.addTest(.{
         .name = "environment-block-opcodes-test",
@@ -958,11 +936,11 @@ pub fn build(b: *std.Build) void {
     environment_block_opcodes_test.root_module.addImport("primitives", primitives_mod);
     environment_block_opcodes_test.root_module.addImport("crypto", crypto_mod);
     environment_block_opcodes_test.root_module.addImport("build_options", build_options_mod);
-    
+
     const run_environment_block_opcodes_test = b.addRunArtifact(environment_block_opcodes_test);
     const environment_block_opcodes_test_step = b.step("test-environment-block-opcodes", "Run environment and block opcodes tests");
     environment_block_opcodes_test_step.dependOn(&run_environment_block_opcodes_test.step);
-    
+
     // RETURN opcode test
     const return_opcode_test = b.addTest(.{
         .name = "return-opcode-test",
@@ -974,7 +952,7 @@ pub fn build(b: *std.Build) void {
     return_opcode_test.root_module.addImport("primitives", primitives_mod);
     return_opcode_test.root_module.addImport("crypto", crypto_mod);
     return_opcode_test.root_module.addImport("build_options", build_options_mod);
-    
+
     const run_return_opcode_test = b.addRunArtifact(return_opcode_test);
     const return_opcode_test_step = b.step("test-return-opcode", "Run RETURN opcode tests");
     return_opcode_test_step.dependOn(&run_return_opcode_test.step);
@@ -1267,7 +1245,7 @@ pub fn build(b: *std.Build) void {
     const evm_core_test_step = b.step("test-evm-core", "Run evm.zig tests");
     evm_core_test_step.dependOn(&run_evm_core_test.step);
     evm_package_test_step.dependOn(&run_evm_core_test.step);
-    
+
     // Add EVM E2E tests
     const evm_e2e_test = b.addTest(.{
         .name = "evm-e2e-test",
@@ -1283,11 +1261,11 @@ pub fn build(b: *std.Build) void {
         evm_e2e_test.linkLibrary(bn254);
         evm_e2e_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
-    
+
     const run_evm_e2e_test = b.addRunArtifact(evm_e2e_test);
     const evm_e2e_test_step = b.step("test-evm-e2e", "Run EVM E2E tests");
     evm_e2e_test_step.dependOn(&run_evm_e2e_test.step);
-    
+
     // Add Comprehensive Differential tests
     const comprehensive_differential_test = b.addTest(.{
         .name = "comprehensive-differential-test",
@@ -1304,11 +1282,11 @@ pub fn build(b: *std.Build) void {
         comprehensive_differential_test.linkLibrary(bn254);
         comprehensive_differential_test.addIncludePath(b.path("src/bn254_wrapper"));
     }
-    
+
     const run_comprehensive_differential_test = b.addRunArtifact(comprehensive_differential_test);
     const comprehensive_differential_test_step = b.step("test-comprehensive-differential", "Run comprehensive differential tests");
     comprehensive_differential_test_step.dependOn(&run_comprehensive_differential_test.step);
-    
+
     // Add deployment test
     const deployment_test = b.addTest(.{
         .name = "deployment-test",
@@ -1522,7 +1500,7 @@ pub fn build(b: *std.Build) void {
     debug_10k_exe.root_module.addImport("evm", evm_mod);
     debug_10k_exe.root_module.addImport("primitives", primitives_mod);
     b.installArtifact(debug_10k_exe);
-    
+
     const run_debug_10k = b.addRunArtifact(debug_10k_exe);
     const debug_10k_step = b.step("debug-10k", "Debug 10k hashes execution");
     debug_10k_step.dependOn(&run_debug_10k.step);
@@ -1536,7 +1514,7 @@ pub fn build(b: *std.Build) void {
     debug_constructor_exe.root_module.addImport("evm", evm_mod);
     debug_constructor_exe.root_module.addImport("primitives", primitives_mod);
     b.installArtifact(debug_constructor_exe);
-    
+
     const run_debug_constructor = b.addRunArtifact(debug_constructor_exe);
     const debug_constructor_step = b.step("debug-constructor", "Debug constructor execution");
     debug_constructor_step.dependOn(&run_debug_constructor.step);
@@ -1972,7 +1950,6 @@ pub fn build(b: *std.Build) void {
     const test3_step = b.step("test3", "Run register-based EVM tests");
     test3_step.dependOn(&run_test3.step);
 
-
     // Test EVM
     const test_evm = b.addTest(.{
         .name = "test-evm",
@@ -1985,16 +1962,16 @@ pub fn build(b: *std.Build) void {
     test_evm.root_module.addImport("build_options", build_options_mod);
     test_evm.root_module.addImport("crypto", crypto_mod);
     test_evm.root_module.addIncludePath(b.path("src/revm_wrapper"));
-    
+
     // Link REVM library to tests if available
     if (revm_lib) |revm| {
         test_evm.linkLibrary(revm);
     }
-    
+
     const run_test_evm = b.addRunArtifact(test_evm);
     const test_evm_step = b.step("test-evm-new", "Run EVM tests");
     test_evm_step.dependOn(&run_test_evm.step);
-    
+
     // Add isolated call method test
     const test_evm_call = b.addTest(.{
         .name = "test-evm-new-call",
@@ -2006,12 +1983,12 @@ pub fn build(b: *std.Build) void {
     test_evm_call.root_module.addImport("build_options", build_options_mod);
     test_evm_call.root_module.addImport("crypto", crypto_mod);
     test_evm_call.root_module.addIncludePath(b.path("src/revm_wrapper"));
-    
+
     // Link REVM library if available
     if (revm_lib) |revm| {
         test_evm_call.linkLibrary(revm);
     }
-    
+
     const run_test_evm_call = b.addRunArtifact(test_evm_call);
     const test_evm_call_step = b.step("test-evm-new-call", "Run EVM call method tests");
     test_evm_call_step.dependOn(&run_test_evm_call.step);
@@ -2027,39 +2004,15 @@ pub fn build(b: *std.Build) void {
     test_evm_create.root_module.addImport("build_options", build_options_mod);
     test_evm_create.root_module.addImport("crypto", crypto_mod);
     test_evm_create.root_module.addIncludePath(b.path("src/revm_wrapper"));
-    
+
     // Link REVM library if available
     if (revm_lib) |revm| {
         test_evm_create.linkLibrary(revm);
     }
-    
+
     const run_test_evm_create = b.addRunArtifact(test_evm_create);
     const test_evm_create_step = b.step("test-evm-new-create", "Run EVM CREATE/CREATE2 tests");
     test_evm_create_step.dependOn(&run_test_evm_create.step);
-
-    // EVM Benchmark Runner executable (ReleaseFast)
-    const evm_runner_exe = b.addExecutable(.{
-        .name = "evm-runner-new",
-        .root_source_file = b.path("bench/official/evms/zig/src/main.zig"),
-        .target = target,
-        .optimize = .ReleaseFast,
-    });
-    evm_runner_exe.root_module.addImport("evm", evm_mod);
-    evm_runner_exe.root_module.addImport("primitives", primitives_mod);
-    evm_runner_exe.root_module.addImport("crypto", crypto_mod);
-
-    b.installArtifact(evm_runner_exe);
-
-    const run_evm_runner_cmd = b.addRunArtifact(evm_runner_exe);
-    if (b.args) |args| {
-        run_evm_runner_cmd.addArgs(args);
-    }
-
-    const evm_runner_step = b.step("evm-runner-new", "Run the EVM benchmark runner");
-    evm_runner_step.dependOn(&run_evm_runner_cmd.step);
-
-    const build_evm_runner_step = b.step("build-evm-runner-new", "Build the EVM benchmark runner (ReleaseFast)");
-    build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
 
     // EVM zbench Benchmarks
     const evm_bench_exe = b.addExecutable(.{
@@ -2225,83 +2178,72 @@ pub fn build(b: *std.Build) void {
     // =============================================================================
 
     // Create a custom step to find and copy the EVM C library to a known location for Go CGO
-    const find_and_copy_lib_cmd = b.addSystemCommand(&[_][]const u8{
-        "sh", "-c", 
-        "mkdir -p zig-cache/lib && find .zig-cache/o -name 'libevm_c.a' -exec cp {} zig-cache/lib/libevm_c.a \\;"
-    });
+    const find_and_copy_lib_cmd = b.addSystemCommand(&[_][]const u8{ "sh", "-c", "mkdir -p zig-cache/lib && find .zig-cache/o -name 'libevm_c.a' -exec cp {} zig-cache/lib/libevm_c.a \\;" });
     find_and_copy_lib_cmd.step.dependOn(&evm_c_static.step);
 
     // CLI build command that builds the Go debugger with EVM integration
     const cli_cmd = blk: {
         // Output binary name based on target platform
         const exe_name = if (target.result.os.tag == .windows) "evm-debugger.exe" else "evm-debugger";
-        
+
         // Cross-platform Go build command
-        const cmd = b.addSystemCommand(&[_][]const u8{
-            "go", "build", "-o", exe_name, "-ldflags", "-s -w", "."
-        });
+        const cmd = b.addSystemCommand(&[_][]const u8{ "go", "build", "-o", exe_name, "-ldflags", "-s -w", "." });
         cmd.setCwd(b.path("src/cli"));
-        
+
         // Set CGO environment variables
         cmd.setEnvironmentVariable("CGO_ENABLED", "1");
-        
+
         // Set GOOS and GOARCH based on Zig target
         const goos = switch (target.result.os.tag) {
             .linux => "linux",
-            .windows => "windows", 
+            .windows => "windows",
             .macos => "darwin",
             else => "linux", // fallback
         };
-        
+
         const goarch = switch (target.result.cpu.arch) {
             .x86_64 => "amd64",
             .aarch64 => "arm64",
             .x86 => "386",
             else => "amd64", // fallback
         };
-        
+
         cmd.setEnvironmentVariable("GOOS", goos);
         cmd.setEnvironmentVariable("GOARCH", goarch);
-        
+
         // Set CGO compiler and linker flags
-        const cflags = "-I../evm2";
+        const cflags = "-I../evm";
         cmd.setEnvironmentVariable("CGO_CFLAGS", cflags);
-        
+
         // Use the copied library in a fixed location
         const ldflags = "-L../../zig-cache/lib -levm_c";
         cmd.setEnvironmentVariable("CGO_LDFLAGS", ldflags);
-        
+
         break :blk cmd;
     };
 
     // CLI build depends on the library being copied to the known location
     cli_cmd.step.dependOn(&find_and_copy_lib_cmd.step);
-    
+
     const cli_step = b.step("cli", "Build the EVM debugger CLI with EVM integration");
     cli_step.dependOn(&cli_cmd.step);
 
     // CLI clean command
-    const cli_clean_cmd = b.addSystemCommand(&[_][]const u8{
-        "go", "clean", "-cache"
-    });
+    const cli_clean_cmd = b.addSystemCommand(&[_][]const u8{ "go", "clean", "-cache" });
     cli_clean_cmd.setCwd(b.path("src/cli"));
-    
+
     // Also remove the copied library and Go binary
-    const clean_lib_cmd = b.addSystemCommand(&[_][]const u8{
-        "rm", "-rf", "zig-cache/lib", "src/cli/evm-debugger", "src/cli/evm-debugger.exe"
-    });
-    
+    const clean_lib_cmd = b.addSystemCommand(&[_][]const u8{ "rm", "-rf", "zig-cache/lib", "src/cli/evm-debugger", "src/cli/evm-debugger.exe" });
+
     const cli_clean_step = b.step("cli-clean", "Clean CLI build artifacts and Go cache");
     cli_clean_step.dependOn(&cli_clean_cmd.step);
     cli_clean_step.dependOn(&clean_lib_cmd.step);
 
     // CLI run command (builds and runs the CLI)
-    const cli_run_cmd = b.addSystemCommand(&[_][]const u8{
-        "./evm-debugger", "--help"
-    });
+    const cli_run_cmd = b.addSystemCommand(&[_][]const u8{ "./evm-debugger", "--help" });
     cli_run_cmd.setCwd(b.path("src/cli"));
     cli_run_cmd.step.dependOn(&cli_cmd.step);
-    
+
     const cli_run_step = b.step("cli-run", "Build and run the EVM debugger CLI");
     cli_run_step.dependOn(&cli_run_cmd.step);
 
