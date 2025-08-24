@@ -1,189 +1,198 @@
-/// EIP-2929 Access List implementation for gas cost optimization
-/// Tracks warm/cold access to addresses and storage slots for accurate gas accounting
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
-/// Error type for AccessList operations
-pub const AccessError = error{OutOfMemory};
-
-/// AccessList tracks accessed addresses for EIP-2929 gas cost optimization
-/// Cold access: 2600 gas, Warm access: 100 gas
+/// Simplified Access List for EIP-2929 gas cost tracking
+/// This provides basic warm/cold access tracking for addresses and storage slots
+/// to ensure proper gas accounting for EVM2 operations.
+///
+/// Gas costs:
+/// - Cold address access: 2600 gas
+/// - Warm address access: 100 gas  
+/// - Cold storage slot access: 2100 gas
+/// - Warm storage slot access: 100 gas
 pub const AccessList = struct {
-    /// HashMap tracking accessed addresses (true = warm, false/missing = cold)
-    accessed_addresses: std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage),
-    /// HashMap tracking accessed storage slots (key = address + slot hash)
-    accessed_storage: std.HashMap(StorageKey, void, StorageKeyContext, std.hash_map.default_max_load_percentage),
-    /// Allocator for HashMap operations
     allocator: std.mem.Allocator,
+    /// Warm addresses - addresses that have been accessed
+    addresses: std.AutoHashMap(Address, void),
+    /// Warm storage slots - storage slots that have been accessed  
+    storage_slots: std.HashMap(StorageKey, void, StorageKeyContext, 80),
 
-    /// Storage key for address + slot combination
+    // Gas costs defined by EIP-2929
+    pub const COLD_ACCOUNT_ACCESS_COST: u64 = 2600;
+    pub const WARM_ACCOUNT_ACCESS_COST: u64 = 100;
+    pub const COLD_SLOAD_COST: u64 = 2100;
+    pub const WARM_SLOAD_COST: u64 = 100;
+
     const StorageKey = struct {
         address: Address,
-        slot: [32]u8,
-
-        pub fn hash(self: StorageKey) u64 {
-            var hasher = std.hash.Wyhash.init(0);
-            hasher.update(&self.address);
-            hasher.update(&self.slot);
-            return hasher.final();
-        }
-
-        pub fn eql(self: StorageKey, other: StorageKey) bool {
-            return std.mem.eql(u8, &self.address, &other.address) and
-                   std.mem.eql(u8, &self.slot, &other.slot);
-        }
+        slot: u256,
     };
 
-    /// Context for Address HashMap
-    const AddressContext = struct {
-        pub fn hash(self: @This(), address: Address) u64 {
-            _ = self;
-            var hasher = std.hash.Wyhash.init(0);
-            hasher.update(&address);
-            return hasher.final();
-        }
-
-        pub fn eql(self: @This(), a: Address, b: Address) bool {
-            _ = self;
-            return std.mem.eql(u8, &a, &b);
-        }
-    };
-
-    /// Context for StorageKey HashMap
     const StorageKeyContext = struct {
         pub fn hash(self: @This(), key: StorageKey) u64 {
             _ = self;
-            return key.hash();
+            var hasher = std.hash.Wyhash.init(0);
+            hasher.update(&key.address);
+            hasher.update(std.mem.asBytes(&key.slot));
+            return hasher.final();
         }
 
         pub fn eql(self: @This(), a: StorageKey, b: StorageKey) bool {
             _ = self;
-            return a.eql(b);
+            return std.mem.eql(u8, &a.address, &b.address) and a.slot == b.slot;
         }
     };
 
-    /// Initialize new AccessList with given allocator
     pub fn init(allocator: std.mem.Allocator) AccessList {
         return AccessList{
-            .accessed_addresses = std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage).init(allocator),
-            .accessed_storage = std.HashMap(StorageKey, void, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
             .allocator = allocator,
+            .addresses = std.AutoHashMap(Address, void).init(allocator),
+            .storage_slots = std.HashMap(StorageKey, void, StorageKeyContext, 80).init(allocator),
         };
     }
 
-    /// Clean up resources
     pub fn deinit(self: *AccessList) void {
-        self.accessed_addresses.deinit();
-        self.accessed_storage.deinit();
+        self.addresses.deinit();
+        self.storage_slots.deinit();
     }
 
-    /// Access an address and return the gas cost (EIP-2929)
-    /// Returns 2600 for cold access (first time), 100 for warm access (subsequent times)
-    pub fn access_address(self: *AccessList, address: Address) AccessError!u64 {
-        const result = try self.accessed_addresses.getOrPut(address);
+    /// Clear all access lists for a new transaction
+    pub fn clear(self: *AccessList) void {
+        self.addresses.clearRetainingCapacity();
+        self.storage_slots.clearRetainingCapacity();
+    }
+
+    /// Mark an address as accessed and return the gas cost
+    /// Returns COLD_ACCOUNT_ACCESS_COST if first access, WARM_ACCOUNT_ACCESS_COST if already accessed
+    pub fn access_address(self: *AccessList, address: Address) !u64 {
+        const result = try self.addresses.getOrPut(address);
         if (result.found_existing) {
-            return 100; // Warm access
-        } else {
-            return 2600; // Cold access
+            return WARM_ACCOUNT_ACCESS_COST;
         }
+        return COLD_ACCOUNT_ACCESS_COST;
     }
 
-    /// Access a storage slot and return the gas cost (EIP-2929)
-    /// Returns 2100 for cold access (first time), 100 for warm access (subsequent times)
-    pub fn access_storage(self: *AccessList, address: Address, slot: [32]u8) AccessError!u64 {
+    /// Mark a storage slot as accessed and return the gas cost
+    /// Returns COLD_SLOAD_COST if first access, WARM_SLOAD_COST if already accessed
+    pub fn access_storage_slot(self: *AccessList, address: Address, slot: u256) !u64 {
         const key = StorageKey{ .address = address, .slot = slot };
-        const result = try self.accessed_storage.getOrPut(key);
+        const result = try self.storage_slots.getOrPut(key);
         if (result.found_existing) {
-            return 100; // Warm access
-        } else {
-            return 2100; // Cold access
+            return WARM_SLOAD_COST;
         }
+        return COLD_SLOAD_COST;
     }
 
-    /// Check if an address is warm (already accessed)
+    /// Check if an address is warm (has been accessed)
     pub fn is_address_warm(self: *AccessList, address: Address) bool {
-        return self.accessed_addresses.contains(address);
+        return self.addresses.contains(address);
     }
 
-    /// Check if a storage slot is warm (already accessed)
-    pub fn is_storage_warm(self: *AccessList, address: Address, slot: [32]u8) bool {
+    /// Check if a storage slot is warm (has been accessed)
+    pub fn is_storage_slot_warm(self: *AccessList, address: Address, slot: u256) bool {
         const key = StorageKey{ .address = address, .slot = slot };
-        return self.accessed_storage.contains(key);
+        return self.storage_slots.contains(key);
     }
 
-    /// Warm up an address (mark as accessed without returning gas cost)
-    /// Used for precompiles and other special cases
-    pub fn warm_address(self: *AccessList, address: Address) AccessError!void {
-        _ = try self.accessed_addresses.getOrPut(address);
-    }
-
-    /// Warm up a storage slot (mark as accessed without returning gas cost)
-    pub fn warm_storage(self: *AccessList, address: Address, slot: [32]u8) AccessError!void {
-        const key = StorageKey{ .address = address, .slot = slot };
-        _ = try self.accessed_storage.getOrPut(key);
+    /// Pre-warm addresses for transaction initialization
+    /// This is used to warm the tx.origin, coinbase, and transaction target
+    pub fn pre_warm_addresses(self: *AccessList, addresses: []const Address) !void {
+        for (addresses) |address| {
+            _ = try self.addresses.getOrPut(address);
+        }
     }
 };
 
+// =============================================================================
+// Tests
+// =============================================================================
+
+const testing = std.testing;
+
 test "AccessList - address access tracking" {
-    const allocator = std.testing.allocator;
-    var access_list = AccessList.init(allocator);
+    var access_list = AccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const addr = primitives.Address.ZERO_ADDRESS;
+    const test_address = [_]u8{1} ** 20;
 
-    // First access should be cold (2600 gas)
-    const cold_cost = try access_list.access_address(addr);
-    try std.testing.expectEqual(@as(u64, 2600), cold_cost);
+    // First access should be cold
+    const cost1 = try access_list.access_address(test_address);
+    try testing.expectEqual(AccessList.COLD_ACCOUNT_ACCESS_COST, cost1);
 
-    // Second access should be warm (100 gas)
-    const warm_cost = try access_list.access_address(addr);
-    try std.testing.expectEqual(@as(u64, 100), warm_cost);
+    // Second access should be warm
+    const cost2 = try access_list.access_address(test_address);
+    try testing.expectEqual(AccessList.WARM_ACCOUNT_ACCESS_COST, cost2);
 
-    // Verify warmth check
-    try std.testing.expect(access_list.is_address_warm(addr));
+    // Check warmth
+    try testing.expect(access_list.is_address_warm(test_address));
+
+    const cold_address = [_]u8{2} ** 20;
+    try testing.expect(!access_list.is_address_warm(cold_address));
 }
 
-test "AccessList - storage access tracking" {
-    const allocator = std.testing.allocator;
-    var access_list = AccessList.init(allocator);
+test "AccessList - storage slot access tracking" {
+    var access_list = AccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const addr = primitives.Address.ZERO_ADDRESS;
-    const slot = [_]u8{0x01} ++ [_]u8{0} ** 31;
+    const test_address = [_]u8{1} ** 20;
+    const slot1: u256 = 42;
+    const slot2: u256 = 100;
 
-    // First storage access should be cold (2100 gas)
-    const cold_cost = try access_list.access_storage(addr, slot);
-    try std.testing.expectEqual(@as(u64, 2100), cold_cost);
+    // First access to slot1 should be cold
+    const cost1 = try access_list.access_storage_slot(test_address, slot1);
+    try testing.expectEqual(AccessList.COLD_SLOAD_COST, cost1);
 
-    // Second storage access should be warm (100 gas)
-    const warm_cost = try access_list.access_storage(addr, slot);
-    try std.testing.expectEqual(@as(u64, 100), warm_cost);
+    // Second access to slot1 should be warm
+    const cost2 = try access_list.access_storage_slot(test_address, slot1);
+    try testing.expectEqual(AccessList.WARM_SLOAD_COST, cost2);
 
-    // Verify warmth check
-    try std.testing.expect(access_list.is_storage_warm(addr, slot));
+    // First access to slot2 should be cold
+    const cost3 = try access_list.access_storage_slot(test_address, slot2);
+    try testing.expectEqual(AccessList.COLD_SLOAD_COST, cost3);
+
+    // Check warmth
+    try testing.expect(access_list.is_storage_slot_warm(test_address, slot1));
+    try testing.expect(access_list.is_storage_slot_warm(test_address, slot2));
+    try testing.expect(!access_list.is_storage_slot_warm(test_address, 999));
 }
 
-test "AccessList - warming functions" {
-    const allocator = std.testing.allocator;
-    var access_list = AccessList.init(allocator);
+test "AccessList - pre-warming addresses" {
+    var access_list = AccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const addr = primitives.Address.ZERO_ADDRESS;
-    const slot = [_]u8{0x02} ++ [_]u8{0} ** 31;
+    const addresses = [_]Address{
+        primitives.Address.ZERO_ADDRESS,
+        [_]u8{1} ** 20,
+        [_]u8{2} ** 20,
+    };
 
-    // Warm address without cost
-    try access_list.warm_address(addr);
-    try std.testing.expect(access_list.is_address_warm(addr));
+    try access_list.pre_warm_addresses(&addresses);
 
-    // Warm storage without cost
-    try access_list.warm_storage(addr, slot);
-    try std.testing.expect(access_list.is_storage_warm(addr, slot));
+    // All should be warm
+    for (addresses) |address| {
+        try testing.expect(access_list.is_address_warm(address));
+        try testing.expectEqual(AccessList.WARM_ACCOUNT_ACCESS_COST, try access_list.access_address(address));
+    }
+}
 
-    // Subsequent accesses should be warm
-    const addr_cost = try access_list.access_address(addr);
-    try std.testing.expectEqual(@as(u64, 100), addr_cost);
+test "AccessList - clear functionality" {
+    var access_list = AccessList.init(testing.allocator);
+    defer access_list.deinit();
 
-    const storage_cost = try access_list.access_storage(addr, slot);
-    try std.testing.expectEqual(@as(u64, 100), storage_cost);
+    const test_address = [_]u8{1} ** 20;
+    const slot: u256 = 42;
+
+    // Access address and storage slot
+    _ = try access_list.access_address(test_address);
+    _ = try access_list.access_storage_slot(test_address, slot);
+
+    try testing.expect(access_list.is_address_warm(test_address));
+    try testing.expect(access_list.is_storage_slot_warm(test_address, slot));
+
+    // Clear access list
+    access_list.clear();
+
+    try testing.expect(!access_list.is_address_warm(test_address));
+    try testing.expect(!access_list.is_storage_slot_warm(test_address, slot));
 }

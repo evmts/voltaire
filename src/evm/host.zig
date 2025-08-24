@@ -1,75 +1,10 @@
 const std = @import("std");
-const Address = @import("primitives").Address.Address;
-pub const CallResult = @import("evm/call_result.zig").CallResult;
-const Frame = @import("stack_frame.zig").StackFrame;
-
-/// Call operation parameters for different call types
-pub const CallParams = union(enum) {
-    /// Regular CALL operation
-    call: struct {
-        caller: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    },
-    /// CALLCODE operation: execute external code with current storage/context
-    /// Executes code at `to`, but uses caller's storage and address context
-    callcode: struct {
-        caller: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    },
-    /// DELEGATECALL operation (preserves caller context)
-    delegatecall: struct {
-        caller: Address, // Original caller, not current contract
-        to: Address,
-        input: []const u8,
-        gas: u64,
-    },
-    /// STATICCALL operation (read-only)
-    staticcall: struct {
-        caller: Address,
-        to: Address,
-        input: []const u8,
-        gas: u64,
-    },
-    /// CREATE operation
-    create: struct {
-        caller: Address,
-        value: u256,
-        init_code: []const u8,
-        gas: u64,
-    },
-    /// CREATE2 operation
-    create2: struct {
-        caller: Address,
-        value: u256,
-        init_code: []const u8,
-        salt: u256,
-        gas: u64,
-    },
-};
-
-/// Block information structure for Host interface
-pub const BlockInfo = struct {
-    /// Block number
-    number: u64,
-    /// Block timestamp
-    timestamp: u64,
-    /// Block difficulty
-    difficulty: u256,
-    /// Block gas limit
-    gas_limit: u64,
-    /// Coinbase (miner) address
-    coinbase: Address,
-    /// Base fee per gas (EIP-1559)
-    base_fee: u256,
-    /// Block hash of previous block
-    prev_randao: [32]u8,
-};
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
+const hardfork = @import("evm").hardforks.hardfork;
+const CallResult = @import("call_result.zig").CallResult;
+const CallParams = @import("call_params.zig").CallParams;
+const BlockInfo = @import("block_info.zig").BlockInfo;
 
 /// Host interface for external operations
 /// This provides the EVM with access to blockchain state and external services
@@ -114,11 +49,15 @@ pub const Host = struct {
         /// Get current call input/calldata
         get_input: *const fn (ptr: *anyopaque) []const u8,
         /// Hardfork helpers
-        is_hardfork_at_least: *const fn (ptr: *anyopaque, target: @import("hardforks/hardfork.zig").Hardfork) bool,
-        get_hardfork: *const fn (ptr: *anyopaque) @import("hardforks/hardfork.zig").Hardfork,
+        is_hardfork_at_least: *const fn (ptr: *anyopaque, target: hardfork.Hardfork) bool,
+        get_hardfork: *const fn (ptr: *anyopaque) hardfork.Hardfork,
         /// Get metadata for the current frame
         get_is_static: *const fn (ptr: *anyopaque) bool,
         get_depth: *const fn (ptr: *anyopaque) u11,
+        /// Get storage value
+        get_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256) u256,
+        /// Set storage value
+        set_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256, value: u256) anyerror!void,
     };
 
     /// Initialize a Host interface from any implementation
@@ -212,12 +151,12 @@ pub const Host = struct {
                 return self.get_input();
             }
 
-            fn vtable_is_hardfork_at_least(ptr: *anyopaque, target: @import("hardforks/hardfork.zig").Hardfork) bool {
+            fn vtable_is_hardfork_at_least(ptr: *anyopaque, target: hardfork.Hardfork) bool {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.is_hardfork_at_least(target);
             }
 
-            fn vtable_get_hardfork(ptr: *anyopaque) @import("hardforks/hardfork.zig").Hardfork {
+            fn vtable_get_hardfork(ptr: *anyopaque) hardfork.Hardfork {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_hardfork();
             }
@@ -230,6 +169,16 @@ pub const Host = struct {
             fn vtable_get_depth(ptr: *anyopaque) u11 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_depth();
+            }
+
+            fn vtable_get_storage(ptr: *anyopaque, address: Address, slot: u256) u256 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_storage(address, slot);
+            }
+
+            fn vtable_set_storage(ptr: *anyopaque, address: Address, slot: u256, value: u256) anyerror!void {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.set_storage(address, slot, value);
             }
 
             const vtable = VTable{
@@ -253,6 +202,8 @@ pub const Host = struct {
                 .get_hardfork = vtable_get_hardfork,
                 .get_is_static = vtable_get_is_static,
                 .get_depth = vtable_get_depth,
+                .get_storage = vtable_get_storage,
+                .set_storage = vtable_set_storage,
             };
         };
 
@@ -344,11 +295,11 @@ pub const Host = struct {
     }
 
     /// Hardfork helpers
-    pub fn is_hardfork_at_least(self: Host, target: @import("hardforks/hardfork.zig").Hardfork) bool {
+    pub fn is_hardfork_at_least(self: Host, target: hardfork.Hardfork) bool {
         return self.vtable.is_hardfork_at_least(self.ptr, target);
     }
 
-    pub fn get_hardfork(self: Host) @import("hardforks/hardfork.zig").Hardfork {
+    pub fn get_hardfork(self: Host) hardfork.Hardfork {
         return self.vtable.get_hardfork(self.ptr);
     }
 
@@ -361,12 +312,23 @@ pub const Host = struct {
     pub fn get_depth(self: Host) u11 {
         return self.vtable.get_depth(self.ptr);
     }
+
+    /// Get storage value
+    pub fn get_storage(self: Host, address: Address, slot: u256) u256 {
+        return self.vtable.get_storage(self.ptr, address, slot);
+    }
+
+    /// Set storage value
+    pub fn set_storage(self: Host, address: Address, slot: u256, value: u256) !void {
+        return self.vtable.set_storage(self.ptr, address, slot, value);
+    }
 };
 
 /// Mock host implementation for testing
 pub const MockHost = struct {
     allocator: std.mem.Allocator,
     logs: std.ArrayList(LogEntry),
+    storage: std.AutoHashMap(StorageKey, u256),
 
     pub const LogEntry = struct {
         contract_address: Address,
@@ -374,10 +336,16 @@ pub const MockHost = struct {
         data: []const u8,
     };
 
+    pub const StorageKey = struct {
+        address: Address,
+        slot: u256,
+    };
+
     pub fn init(allocator: std.mem.Allocator) MockHost {
         return MockHost{
             .allocator = allocator,
             .logs = std.ArrayList(LogEntry).init(allocator),
+            .storage = std.AutoHashMap(StorageKey, u256).init(allocator),
         };
     }
 
@@ -388,6 +356,7 @@ pub const MockHost = struct {
             self.allocator.free(log.data);
         }
         self.logs.deinit();
+        self.storage.deinit();
     }
 
     pub fn get_balance(self: *MockHost, address: Address) u256 {
@@ -415,7 +384,7 @@ pub const MockHost = struct {
             .timestamp = 1000,
             .difficulty = 100,
             .gas_limit = 30000000,
-            .coinbase = @import("primitives").ZERO_ADDRESS,
+            .coinbase = primitives.ZERO_ADDRESS,
             .base_fee = 1000000000, // 1 gwei
             .prev_randao = [_]u8{0} ** 32,
         };
@@ -542,14 +511,14 @@ pub const MockHost = struct {
         return &.{};
     }
 
-    pub fn is_hardfork_at_least(self: *MockHost, target: @import("hardforks/hardfork.zig").Hardfork) bool {
+    pub fn is_hardfork_at_least(self: *MockHost, target: hardfork.Hardfork) bool {
         _ = self;
         _ = target;
         // Mock implementation - always return true
         return true;
     }
 
-    pub fn get_hardfork(self: *MockHost) @import("hardforks/hardfork.zig").Hardfork {
+    pub fn get_hardfork(self: *MockHost) hardfork.Hardfork {
         _ = self;
         // Mock implementation - return latest hardfork
         return .CANCUN;
@@ -561,10 +530,10 @@ pub const MockHost = struct {
         return false;
     }
 
-    pub fn get_caller(self: *MockHost) @import("primitives").Address.Address {
+    pub fn get_caller(self: *MockHost) Address {
         _ = self;
         // Mock implementation - return zero address
-        return @import("primitives").ZERO_ADDRESS;
+        return primitives.ZERO_ADDRESS;
     }
 
     pub fn get_value(self: *MockHost) u256 {
@@ -597,6 +566,16 @@ pub const MockHost = struct {
         // Mock implementation - do nothing
     }
 
+    pub fn get_storage(self: *MockHost, address: Address, slot: u256) u256 {
+        const key = StorageKey{ .address = address, .slot = slot };
+        return self.storage.get(key) orelse 0;
+    }
+
+    pub fn set_storage(self: *MockHost, address: Address, slot: u256, value: u256) !void {
+        const key = StorageKey{ .address = address, .slot = slot };
+        try self.storage.put(key, value);
+    }
+
     pub fn to_host(self: *MockHost) Host {
         return Host.init(self);
     }
@@ -611,7 +590,7 @@ test "Host interface with MockHost" {
     const host = mock_host.to_host();
 
     // Test balance
-    const zero_addr = @import("primitives").ZERO_ADDRESS;
+    const zero_addr = primitives.ZERO_ADDRESS;
     const balance = host.get_balance(zero_addr);
     try std.testing.expectEqual(@as(u256, 1000), balance);
 
@@ -640,4 +619,18 @@ test "Host interface with MockHost" {
     try std.testing.expectEqual(@as(u256, 0x1234), stored_log.topics[0]);
     try std.testing.expectEqual(@as(u256, 0x5678), stored_log.topics[1]);
     try std.testing.expectEqualStrings("test log data", stored_log.data);
+
+    // Test storage
+    const test_addr = Address{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0x22, 0x33, 0x44 };
+    const test_slot: u256 = 0x123456;
+    const test_value: u256 = 0xdeadbeef;
+
+    // Initially should be 0
+    try std.testing.expectEqual(@as(u256, 0), host.get_storage(test_addr, test_slot));
+
+    // Set storage
+    try host.set_storage(test_addr, test_slot, test_value);
+
+    // Now should return the value we set
+    try std.testing.expectEqual(test_value, host.get_storage(test_addr, test_slot));
 }

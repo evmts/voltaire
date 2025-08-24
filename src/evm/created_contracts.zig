@@ -1,128 +1,210 @@
-/// Tracks contracts created within the current transaction for EIP-6780 compliance
-/// EIP-6780 restricts SELFDESTRUCT to only work on contracts created in the same transaction
+/// Tracks contracts created during transaction execution
+/// Used for EIP-6780 SELFDESTRUCT behavior in Cancun+
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
-/// Error type for CreatedContracts operations
-pub const StateError = error{OutOfMemory};
-
-/// CreatedContracts tracks contracts created within the current transaction
-/// Used for EIP-6780 compliance where SELFDESTRUCT only works on same-tx contracts
 pub const CreatedContracts = struct {
-    /// Set of addresses created in current transaction
-    contracts: std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage),
-    /// Allocator for HashMap operations  
+    created: std.AutoHashMap(Address, void),
     allocator: std.mem.Allocator,
 
-    /// Context for Address HashMap
-    const AddressContext = struct {
-        pub fn hash(self: @This(), address: Address) u64 {
-            _ = self;
-            var hasher = std.hash.Wyhash.init(0);
-            hasher.update(&address);
-            return hasher.final();
-        }
-
-        pub fn eql(self: @This(), a: Address, b: Address) bool {
-            _ = self;
-            return std.mem.eql(u8, &a, &b);
-        }
-    };
-
-    /// Initialize new CreatedContracts tracker
-    pub fn init(allocator: std.mem.Allocator) CreatedContracts {
+    pub inline fn init(allocator: std.mem.Allocator) CreatedContracts {
         return CreatedContracts{
-            .contracts = std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .created = std.AutoHashMap(Address, void).init(allocator),
             .allocator = allocator,
         };
     }
 
-    /// Clean up resources
-    pub fn deinit(self: *CreatedContracts) void {
-        self.contracts.deinit();
+    pub inline fn deinit(self: *CreatedContracts) void {
+        self.created.deinit();
     }
 
-    /// Mark a contract as created in this transaction
-    pub fn mark_created(self: *CreatedContracts, contract_addr: Address) StateError!void {
-        std.log.debug("[CreatedContracts] mark_created: addr={any}, allocator={any}, contracts_allocator={any}", .{ 
-            std.fmt.fmtSliceHexLower(&contract_addr),
-            @intFromPtr(self.allocator.vtable),
-            @intFromPtr(self.contracts.allocator.vtable)
-        });
-        try self.contracts.put(contract_addr, {});
+    pub inline fn mark_created(self: *CreatedContracts, address: Address) !void {
+        try self.created.put(address, {});
     }
 
-    /// Check if a contract was created in this transaction
-    pub fn was_created_in_tx(self: *const CreatedContracts, contract_addr: Address) bool {
-        return self.contracts.contains(contract_addr);
+    pub inline fn was_created_in_tx(self: *const CreatedContracts, address: Address) bool {
+        return self.created.contains(address);
     }
-
-    /// Get count of contracts created in this transaction
-    pub fn count(self: *const CreatedContracts) u32 {
-        return @intCast(self.contracts.count());
+    
+    pub inline fn count(self: *const CreatedContracts) u32 {
+        return @intCast(self.created.count());
     }
-
-    /// Clear all tracked contracts (used for new transaction)
-    pub fn clear(self: *CreatedContracts) void {
-        self.contracts.clearRetainingCapacity();
+    
+    pub inline fn clear(self: *CreatedContracts) void {
+        self.created.clearAndFree();
+    }
+    
+    pub inline fn remove(self: *CreatedContracts, address: Address) bool {
+        return self.created.remove(address);
     }
 };
 
-test "CreatedContracts - basic tracking" {
+test "created contracts initialization" {
     const allocator = std.testing.allocator;
     var created = CreatedContracts.init(allocator);
     defer created.deinit();
-
-    const contract_addr = primitives.Address.ZERO_ADDRESS;
-
-    // Initially not created
-    try std.testing.expect(!created.was_created_in_tx(contract_addr));
+    
     try std.testing.expectEqual(@as(u32, 0), created.count());
-
-    // Mark as created
-    try created.mark_created(contract_addr);
-
-    // Should now be tracked
-    try std.testing.expect(created.was_created_in_tx(contract_addr));
-    try std.testing.expectEqual(@as(u32, 1), created.count());
 }
 
-test "CreatedContracts - multiple contracts" {
+test "created contracts mark and check" {
     const allocator = std.testing.allocator;
     var created = CreatedContracts.init(allocator);
     defer created.deinit();
-
-    const contract1 = primitives.Address.ZERO_ADDRESS;
-    const contract2 = [_]u8{0x02} ++ [_]u8{0} ** 19;
-    const contract3 = [_]u8{0x03} ++ [_]u8{0} ** 19;
-
-    // Mark multiple contracts
-    try created.mark_created(contract1);
-    try created.mark_created(contract2);
-
-    // Check tracking
-    try std.testing.expect(created.was_created_in_tx(contract1));
-    try std.testing.expect(created.was_created_in_tx(contract2));
-    try std.testing.expect(!created.was_created_in_tx(contract3));
-
+    
+    const addr1 = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const addr2 = Address{ .bytes = [_]u8{2} ++ [_]u8{0} ** 19 };
+    const addr3 = Address{ .bytes = [_]u8{3} ++ [_]u8{0} ** 19 };
+    
+    // Initially no contracts
+    try std.testing.expect(!created.was_created_in_tx(addr1));
+    try std.testing.expect(!created.was_created_in_tx(addr2));
+    try std.testing.expectEqual(@as(u32, 0), created.count());
+    
+    // Mark one contract as created
+    try created.mark_created(addr1);
+    try std.testing.expect(created.was_created_in_tx(addr1));
+    try std.testing.expect(!created.was_created_in_tx(addr2));
+    try std.testing.expectEqual(@as(u32, 1), created.count());
+    
+    // Mark another contract
+    try created.mark_created(addr2);
+    try std.testing.expect(created.was_created_in_tx(addr1));
+    try std.testing.expect(created.was_created_in_tx(addr2));
+    try std.testing.expect(!created.was_created_in_tx(addr3));
     try std.testing.expectEqual(@as(u32, 2), created.count());
 }
 
-test "CreatedContracts - clear functionality" {
+test "created contracts duplicate marking" {
     const allocator = std.testing.allocator;
     var created = CreatedContracts.init(allocator);
     defer created.deinit();
-
-    const contract_addr = primitives.Address.ZERO_ADDRESS;
-
-    // Mark and verify
-    try created.mark_created(contract_addr);
+    
+    const addr = Address{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
+    
+    // Mark same contract multiple times
+    try created.mark_created(addr);
     try std.testing.expectEqual(@as(u32, 1), created.count());
-    try std.testing.expect(created.was_created_in_tx(contract_addr));
+    
+    try created.mark_created(addr); // Should not increase count
+    try std.testing.expectEqual(@as(u32, 1), created.count());
+    try std.testing.expect(created.was_created_in_tx(addr));
+}
 
-    // Clear and verify
+test "created contracts removal" {
+    const allocator = std.testing.allocator;
+    var created = CreatedContracts.init(allocator);
+    defer created.deinit();
+    
+    const addr1 = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const addr2 = Address{ .bytes = [_]u8{2} ++ [_]u8{0} ** 19 };
+    
+    // Add contracts
+    try created.mark_created(addr1);
+    try created.mark_created(addr2);
+    try std.testing.expectEqual(@as(u32, 2), created.count());
+    
+    // Remove existing contract
+    try std.testing.expect(created.remove(addr1));
+    try std.testing.expect(!created.was_created_in_tx(addr1));
+    try std.testing.expect(created.was_created_in_tx(addr2));
+    try std.testing.expectEqual(@as(u32, 1), created.count());
+    
+    // Try to remove non-existing contract
+    try std.testing.expect(!created.remove(addr1)); // Should return false
+    try std.testing.expectEqual(@as(u32, 1), created.count());
+    
+    // Remove last contract
+    try std.testing.expect(created.remove(addr2));
+    try std.testing.expectEqual(@as(u32, 0), created.count());
+}
+
+test "created contracts clear" {
+    const allocator = std.testing.allocator;
+    var created = CreatedContracts.init(allocator);
+    defer created.deinit();
+    
+    // Add multiple contracts
+    for (1..11) |i| {
+        const addr = Address{ .bytes = [_]u8{@intCast(i)} ++ [_]u8{0} ** 19 };
+        try created.mark_created(addr);
+    }
+    try std.testing.expectEqual(@as(u32, 10), created.count());
+    
+    // Clear all
     created.clear();
     try std.testing.expectEqual(@as(u32, 0), created.count());
-    try std.testing.expect(!created.was_created_in_tx(contract_addr));
+    
+    // Verify all were removed
+    for (1..11) |i| {
+        const addr = Address{ .bytes = [_]u8{@intCast(i)} ++ [_]u8{0} ** 19 };
+        try std.testing.expect(!created.was_created_in_tx(addr));
+    }
+}
+
+test "created contracts zero address" {
+    const allocator = std.testing.allocator;
+    var created = CreatedContracts.init(allocator);
+    defer created.deinit();
+    
+    // Test with zero address
+    try created.mark_created(Address.ZERO);
+    try std.testing.expect(created.was_created_in_tx(Address.ZERO));
+    try std.testing.expectEqual(@as(u32, 1), created.count());
+    
+    try std.testing.expect(created.remove(Address.ZERO));
+    try std.testing.expect(!created.was_created_in_tx(Address.ZERO));
+    try std.testing.expectEqual(@as(u32, 0), created.count());
+}
+
+test "created contracts edge case addresses" {
+    const allocator = std.testing.allocator;
+    var created = CreatedContracts.init(allocator);
+    defer created.deinit();
+    
+    // Maximum address (all 0xFF)
+    const max_addr = Address{ .bytes = [_]u8{0xff} ** 20 };
+    try created.mark_created(max_addr);
+    try std.testing.expect(created.was_created_in_tx(max_addr));
+    
+    // Minimum non-zero address
+    const min_addr = Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
+    try created.mark_created(min_addr);
+    try std.testing.expect(created.was_created_in_tx(min_addr));
+    
+    try std.testing.expectEqual(@as(u32, 2), created.count());
+    
+    // Verify specific addresses
+    try std.testing.expect(created.was_created_in_tx(max_addr));
+    try std.testing.expect(created.was_created_in_tx(min_addr));
+    try std.testing.expect(!created.was_created_in_tx(Address.ZERO));
+}
+
+test "created contracts large number of addresses" {
+    const allocator = std.testing.allocator;
+    var created = CreatedContracts.init(allocator);
+    defer created.deinit();
+    
+    // Add 1000 unique addresses
+    const count = 1000;
+    for (0..count) |i| {
+        const addr_bytes = std.mem.toBytes(@as(u160, i));
+        const addr = Address{ .bytes = addr_bytes };
+        try created.mark_created(addr);
+    }
+    
+    try std.testing.expectEqual(@as(u32, count), created.count());
+    
+    // Verify all addresses are tracked
+    for (0..count) |i| {
+        const addr_bytes = std.mem.toBytes(@as(u160, i));
+        const addr = Address{ .bytes = addr_bytes };
+        try std.testing.expect(created.was_created_in_tx(addr));
+    }
+    
+    // Verify an address not added is not found
+    const not_added_bytes = std.mem.toBytes(@as(u160, count));
+    const not_added = Address{ .bytes = not_added_bytes };
+    try std.testing.expect(!created.was_created_in_tx(not_added));
 }
