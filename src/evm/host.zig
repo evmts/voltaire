@@ -75,6 +75,12 @@ pub const Host = struct {
         get_blob_hash: *const fn (ptr: *anyopaque, index: u256) ?[32]u8,
         /// Get blob base fee (EIP-4844)
         get_blob_base_fee: *const fn (ptr: *anyopaque) u256,
+        /// Get transaction origin (tx.origin)
+        get_tx_origin: *const fn (ptr: *anyopaque) Address,
+        /// Get caller of current execution context
+        get_caller: *const fn (ptr: *anyopaque) Address,
+        /// Get value sent with current call
+        get_call_value: *const fn (ptr: *anyopaque) u256,
     };
 
     /// Initialize a Host interface from any implementation
@@ -239,6 +245,21 @@ pub const Host = struct {
                 return self.get_blob_base_fee();
             }
 
+            fn vtable_get_tx_origin(ptr: *anyopaque) Address {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_tx_origin();
+            }
+
+            fn vtable_get_caller(ptr: *anyopaque) Address {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_caller();
+            }
+
+            fn vtable_get_call_value(ptr: *anyopaque) u256 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_call_value();
+            }
+
             const vtable = VTable{
                 .get_balance = vtable_get_balance,
                 .account_exists = vtable_account_exists,
@@ -268,6 +289,9 @@ pub const Host = struct {
                 .get_block_hash = vtable_get_block_hash,
                 .get_blob_hash = vtable_get_blob_hash,
                 .get_blob_base_fee = vtable_get_blob_base_fee,
+                .get_tx_origin = vtable_get_tx_origin,
+                .get_caller = vtable_get_caller,
+                .get_call_value = vtable_get_call_value,
             };
         };
 
@@ -415,6 +439,21 @@ pub const Host = struct {
     /// Get blob base fee (EIP-4844)
     pub fn get_blob_base_fee(self: Host) u256 {
         return self.vtable.get_blob_base_fee(self.ptr);
+    }
+
+    /// Get transaction origin (tx.origin)
+    pub fn get_tx_origin(self: Host) Address {
+        return self.vtable.get_tx_origin(self.ptr);
+    }
+
+    /// Get caller of current execution context
+    pub fn get_caller(self: Host) Address {
+        return self.vtable.get_caller(self.ptr);
+    }
+
+    /// Get value sent with current call
+    pub fn get_call_value(self: Host) u256 {
+        return self.vtable.get_call_value(self.ptr);
     }
 };
 
@@ -700,6 +739,18 @@ pub const MockHost = struct {
     pub fn get_blob_base_fee(self: *MockHost) u256 {
         _ = self;
         return 0; // No blob base fee in mock
+    }
+
+    pub fn get_tx_origin(self: *MockHost) Address {
+        _ = self;
+        // Mock implementation - return zero address as transaction origin
+        return primitives.ZERO_ADDRESS;
+    }
+
+    pub fn get_call_value(self: *MockHost) u256 {
+        _ = self;
+        // Mock implementation - return zero call value
+        return 0;
     }
 
     pub fn to_host(self: *MockHost) Host {

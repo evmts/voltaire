@@ -11,7 +11,6 @@
 /// and catch invalid parameter combinations early.
 const std = @import("std");
 const builtin = @import("builtin");
-const GasManagerConfig = @import("gas_manager_config.zig").GasManagerConfig;
 
 pub const FrameConfig = struct {
     const Self = @This();
@@ -35,8 +34,6 @@ pub const FrameConfig = struct {
     /// operations for bulk stack operations (DUP/SWAP) and other suitable operations.
     /// Common values: 4, 8, 16, 32 depending on CPU (AVX, AVX2, AVX-512 support).
     vector_length: comptime_int = std.simd.suggestVectorLengthForCpu(u8, builtin.cpu) orelse 0,
-    /// Gas manager configuration for centralized gas tracking
-    gas_manager_config: GasManagerConfig = .{},
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
         return if (self.max_bytecode_size <= std.math.maxInt(u8))
@@ -63,17 +60,10 @@ pub const FrameConfig = struct {
     }
     /// GasType: minimal signed integer type to track gas remaining
     pub fn GasType(comptime self: Self) type {
-        // Use gas manager config to determine gas type, but sync with block_gas_limit
-        var gas_config = self.gas_manager_config;
-        gas_config.block_gas_limit = self.block_gas_limit;
-        return gas_config.GasType();
-    }
-    
-    /// Get gas manager configuration with synced block gas limit
-    pub fn gasManagerConfig(comptime self: Self) GasManagerConfig {
-        var gas_config = self.gas_manager_config;
-        gas_config.block_gas_limit = self.block_gas_limit;
-        return gas_config;
+        return if (self.block_gas_limit <= std.math.maxInt(i32))
+            i32
+        else
+            i64;
     }
     
     /// The amount of data the frame plans on allocating based on config

@@ -143,24 +143,17 @@ pub fn Stack(comptime config: StackConfig) type {
             return self.push(value);
         }
 
-        // DUP1-DUP16 operations - comptime-optimized concise implementation
-        // Generated using pattern: pub fn dup{n}(self: *Self) Error!void { return self.dup_n({n}); }
-        pub fn dup1(self: *Self) Error!void { return self.dup_n(1); }
-        pub fn dup2(self: *Self) Error!void { return self.dup_n(2); }
-        pub fn dup3(self: *Self) Error!void { return self.dup_n(3); }
-        pub fn dup4(self: *Self) Error!void { return self.dup_n(4); }
-        pub fn dup5(self: *Self) Error!void { return self.dup_n(5); }
-        pub fn dup6(self: *Self) Error!void { return self.dup_n(6); }
-        pub fn dup7(self: *Self) Error!void { return self.dup_n(7); }
-        pub fn dup8(self: *Self) Error!void { return self.dup_n(8); }
-        pub fn dup9(self: *Self) Error!void { return self.dup_n(9); }
-        pub fn dup10(self: *Self) Error!void { return self.dup_n(10); }
-        pub fn dup11(self: *Self) Error!void { return self.dup_n(11); }
-        pub fn dup12(self: *Self) Error!void { return self.dup_n(12); }
-        pub fn dup13(self: *Self) Error!void { return self.dup_n(13); }
-        pub fn dup14(self: *Self) Error!void { return self.dup_n(14); }
-        pub fn dup15(self: *Self) Error!void { return self.dup_n(15); }
-        pub fn dup16(self: *Self) Error!void { return self.dup_n(16); }
+        // DUP1-DUP16 operations - comptime generated functions
+        comptime {
+            inline for (1..17) |n| {
+                const func_name = std.fmt.comptimePrint("dup{d}", .{n});
+                @field(@This(), func_name) = struct {
+                    fn f(self: *Self) Error!void {
+                        return self.dup_n(@as(u8, n));
+                    }
+                }.f;
+            }
+        }
 
         // Generic swap function for SWAP1-SWAP16
         pub fn swap_n(self: *Self, n: u8) Error!void {
@@ -175,24 +168,17 @@ pub fn Stack(comptime config: StackConfig) type {
             std.mem.swap(WordType, &self.stack_ptr[0], &self.stack_ptr[n]);
         }
 
-        // SWAP1-SWAP16 operations - comptime-optimized concise implementation
-        // Generated using pattern: pub fn swap{n}(self: *Self) Error!void { return self.swap_n({n}); }
-        pub fn swap1(self: *Self) Error!void { return self.swap_n(1); }
-        pub fn swap2(self: *Self) Error!void { return self.swap_n(2); }
-        pub fn swap3(self: *Self) Error!void { return self.swap_n(3); }
-        pub fn swap4(self: *Self) Error!void { return self.swap_n(4); }
-        pub fn swap5(self: *Self) Error!void { return self.swap_n(5); }
-        pub fn swap6(self: *Self) Error!void { return self.swap_n(6); }
-        pub fn swap7(self: *Self) Error!void { return self.swap_n(7); }
-        pub fn swap8(self: *Self) Error!void { return self.swap_n(8); }
-        pub fn swap9(self: *Self) Error!void { return self.swap_n(9); }
-        pub fn swap10(self: *Self) Error!void { return self.swap_n(10); }
-        pub fn swap11(self: *Self) Error!void { return self.swap_n(11); }
-        pub fn swap12(self: *Self) Error!void { return self.swap_n(12); }
-        pub fn swap13(self: *Self) Error!void { return self.swap_n(13); }
-        pub fn swap14(self: *Self) Error!void { return self.swap_n(14); }
-        pub fn swap15(self: *Self) Error!void { return self.swap_n(15); }
-        pub fn swap16(self: *Self) Error!void { return self.swap_n(16); }
+        // SWAP1-SWAP16 operations - comptime generated functions
+        comptime {
+            inline for (1..17) |n| {
+                const func_name = std.fmt.comptimePrint("swap{d}", .{n});
+                @field(@This(), func_name) = struct {
+                    fn f(self: *Self) Error!void {
+                        return self.swap_n(@as(u8, n));
+                    }
+                }.f;
+            }
+        }
         
         // Accessors for tracer
         pub fn size(self: *const Self) usize {

@@ -193,8 +193,8 @@ pub fn Memory(comptime config: MemoryConfig) type {
         pub fn get_expansion_cost(self: *Self, new_size: u64) u64 {
             const current_size = @as(u64, @intCast(self.size()));
             if (new_size <= current_size) return 0;
-            const new_words = (new_size + 31) / 32;
-            const current_words = (current_size + 31) / 32;
+            const new_words = (new_size + 31) >> 5;  // Bit shift instead of / 32
+            const current_words = (current_size + 31) >> 5;  // Bit shift instead of / 32
             if (new_size <= self.cached_expansion.last_size) return 0;
             const new_cost = calculate_memory_cost(new_words);
             const current_cost = calculate_memory_cost(current_words);

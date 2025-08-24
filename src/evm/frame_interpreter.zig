@@ -2407,7 +2407,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const init_code = try self.memory.get_slice(@intCast(offset_u64), @intCast(size_u64));
             
             // Calculate gas for subcall (all but 1/64th of remaining gas)
-            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const gas_for_call = @divFloor(remaining_gas * 63, 64);
             if (gas_for_call < 0) {
                 return Error.OutOfGas;
@@ -2426,7 +2426,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             // Update gas remaining
             // Set gas to result.gas_left - need to create a new gas manager
-            self.gas_manager = try Frame.GasManagerType.init(result.gas_left);
+            self.gas_remaining = @as(Frame.GasType, @intCast(result.gas_left));
             
             // Push result to stack (new contract address or 0 on failure)
             if (result.success and result.output.len >= 20) {
