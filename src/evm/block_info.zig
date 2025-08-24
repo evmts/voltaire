@@ -1,3 +1,13 @@
+/// Block context information for EVM execution environment
+/// 
+/// Provides blockchain context data needed by EVM operations:
+/// - Block number, timestamp, difficulty, gas limit
+/// - Coinbase address (block miner)
+/// - Base fee for EIP-1559 transactions
+/// - Random value for PREVRANDAO opcode
+/// 
+/// This data is accessed by environment opcodes like BLOCKHASH, TIMESTAMP,
+/// DIFFICULTY, GASLIMIT, COINBASE, etc.
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 

@@ -1,3 +1,13 @@
+/// EVM bytecode representation and validation
+/// 
+/// Provides safe bytecode handling with:
+/// - Size validation (max 24576 bytes per EIP-170)
+/// - Format validation and parsing
+/// - Security-conscious design preventing buffer overflows
+/// - Integration with the Planner system for analysis
+/// - Support for both raw bytecode and analyzed instruction streams
+/// 
+/// All bytecode operations are bounds-checked and memory-safe.
 const std = @import("std");
 const builtin = @import("builtin");
 const ArrayList = std.ArrayListAligned;

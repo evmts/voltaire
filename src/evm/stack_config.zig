@@ -1,3 +1,13 @@
+/// Stack configuration parameters for EVM stack implementation
+/// 
+/// Configures the EVM stack behavior including:
+/// - Stack capacity (maximum number of elements, defaults to 1024 per EVM spec)
+/// - Word type for stack elements (u256 for standard EVM compatibility)
+/// - Index type optimization (automatically selected based on stack size)
+/// - Memory alignment for cache performance
+/// 
+/// Configuration is validated at compile time to ensure EVM compliance
+/// and optimal performance characteristics.
 const std = @import("std");
 
 pub const StackConfig = struct {

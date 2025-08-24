@@ -1,3 +1,13 @@
+/// Memory configuration parameters for EVM memory management
+/// 
+/// Configures EVM memory behavior including:
+/// - Initial capacity for memory allocation (default 4KB)
+/// - Maximum memory limit to prevent resource exhaustion (default 16MB) 
+/// - Growth strategy and alignment requirements
+/// - Integration with gas cost calculations
+/// 
+/// Memory configuration affects both performance and resource usage.
+/// Larger initial capacity reduces allocations, while limits prevent DoS attacks.
 const std = @import("std");
 
 pub const MemoryConfig = struct {

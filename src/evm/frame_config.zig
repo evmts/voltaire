@@ -1,3 +1,14 @@
+/// Frame configuration parameters for customizable EVM execution contexts
+/// 
+/// Defines compile-time configuration for Frame instances including:
+/// - Stack size and word type (u256, u128, etc.)
+/// - Memory limits and initial capacity  
+/// - Gas tracking precision (i32 vs i64)
+/// - Database and tracing capabilities
+/// - Platform-specific optimizations
+/// 
+/// Configuration is validated at compile time to ensure optimal performance
+/// and catch invalid parameter combinations early.
 const std = @import("std");
 const builtin = @import("builtin");
 

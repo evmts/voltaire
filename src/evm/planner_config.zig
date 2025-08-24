@@ -1,3 +1,14 @@
+/// Planner configuration for bytecode analysis and optimization strategies
+/// 
+/// Configures the bytecode planner behavior including:
+/// - Platform-specific optimizations (32-bit vs 64-bit)
+/// - Optimization level (minimal, advanced, debug)
+/// - Instruction fusion and inlining strategies
+/// - Memory usage vs performance trade-offs
+/// 
+/// Different configurations enable varying levels of bytecode optimization,
+/// from minimal analysis for size-constrained environments to aggressive
+/// optimization for high-performance execution.
 const std = @import("std");
 
 /// Compile-time configuration for the planner.
