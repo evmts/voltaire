@@ -37,6 +37,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         frame: Frame,
         plan: Plan,
         instruction_idx: Plan.InstructionIndexType,
+        allocator: std.mem.Allocator,
         
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void) Error!Self {
             var frame = try Frame.init(allocator, bytecode, gas_remaining, database, null);
@@ -228,6 +229,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 .frame = frame,
                 .plan = plan,
                 .instruction_idx = 0,
+                .allocator = allocator,
             };
         }
         
@@ -2240,41 +2242,95 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        // LOG handlers - need allocator parameter
+        // LOG handlers
         fn op_log0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            _ = frame;
-            _ = plan;
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
             
-            // LOG operations need allocator - this is a limitation of current design
-            // For now, return InvalidOpcode until allocator is available in frame context
-            return Error.InvalidOpcode;
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LOG0)];
             
-            //const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG0));
-            //return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            // Consume gas (dynamic gas calculated in log0)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Execute the LOG0 operation
+            try self.log0(interpreter.allocator);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG0));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         fn op_log1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            _ = frame;
-            _ = plan;
-            return Error.InvalidOpcode;
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LOG1)];
+            
+            // Consume gas (dynamic gas calculated in log1)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Execute the LOG1 operation
+            try self.log1(interpreter.allocator);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG1));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         fn op_log2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            _ = frame;
-            _ = plan;
-            return Error.InvalidOpcode;
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LOG2)];
+            
+            // Consume gas (dynamic gas calculated in log2)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Execute the LOG2 operation
+            try self.log2(interpreter.allocator);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG2));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         fn op_log3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            _ = frame;
-            _ = plan;
-            return Error.InvalidOpcode;
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LOG3)];
+            
+            // Consume gas (dynamic gas calculated in log3)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Execute the LOG3 operation
+            try self.log3(interpreter.allocator);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG3));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         fn op_log4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            _ = frame;
-            _ = plan;
-            return Error.InvalidOpcode;
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LOG4)];
+            
+            // Consume gas (dynamic gas calculated in log4)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            
+            // Execute the LOG4 operation
+            try self.log4(interpreter.allocator);
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG4));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
     };
 }
