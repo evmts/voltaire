@@ -2975,7 +2975,7 @@ test "Plan equivalence between minimal and advanced plans" {
         
         // For minimal plan, we need to set bytecode first
         advanced_planner.bytecode = try AdvancedPlanner.Bytecode.init(allocator, bytecode);
-        defer advanced_planner.bytecode.deinit(allocator);
+        defer advanced_planner.bytecode.deinit();
         try advanced_planner.create_minimal_plan(allocator, handlers);
         const minimal_plan = &advanced_planner;
         
@@ -3396,7 +3396,7 @@ test "Plan caching and lifecycle management validation" {
     const push2_value = transferred_plan.getMetadata(&idx1, .PUSH2);
     try std.testing.expectEqual(@as(u256, 0x1234), push2_value);
     
-    var idx2: TestPlan.InstructionIndexType = 3;
+    var idx2: Plan(.{}).InstructionIndexType = 3;
     const push1_value = transferred_plan.getMetadata(&idx2, .PUSH1);
     try std.testing.expectEqual(@as(u256, 0x56), push1_value);
     
@@ -3423,7 +3423,8 @@ test "Plan caching and lifecycle management validation" {
         try std.testing.expect(stress_plan.bytecode.len == stress_bytecode.len);
         
         // Test a few operations
-        const first_push = stress_plan.getMetadata(0, .PUSH1, undefined);
+        var idx: Plan(.{}).InstructionIndexType = 0;
+        const first_push = stress_plan.getMetadata(&idx, .PUSH1);
         try std.testing.expectEqual(@as(u256, iteration % 256), first_push);
         
         try std.testing.expect(stress_plan.isValidJumpDestination(6)); // JUMPDEST at PC 6
