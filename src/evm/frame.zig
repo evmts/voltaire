@@ -7986,7 +7986,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(1000); // value (non-zero)
     try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(50000); // gas
-    try frame.call();
+    try frame.op_call();
     const gas_used_with_value = initial_gas - frame.gas_manager.gasRemaining();
     
     // CALL with value: base cost + cold account access + value transfer
@@ -8003,7 +8003,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(0); // value (zero)
     try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
-    try frame.call();
+    try frame.op_call();
     const gas_used_no_value = gas_before_no_value - frame.gas_manager.gasRemaining();
     
     // CALL without value to warm address: base cost + warm account access
@@ -8042,7 +8042,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(0); // value
     try frame.stack.push(to_u256(cold_addr)); // cold address
     try frame.stack.push(30000); // gas
-    try frame.call();
+    try frame.op_call();
     const gas_used_cold = initial_gas - frame.gas_manager.gasRemaining();
     
     // Cold account access: 700 (base) + 2600 (cold) = 3300 gas + forwarded gas
@@ -8057,7 +8057,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(0); // value
     try frame.stack.push(@intFromEnum(cold_addr)); // same address (now warm)
     try frame.stack.push(30000); // gas
-    try frame.call();
+    try frame.op_call();
     const gas_used_warm = gas_before_warm - frame.gas_manager.gasRemaining();
     
     // Warm account access: 700 (base) + 100 (warm) = 800 gas + forwarded gas
@@ -8073,7 +8073,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(0); // value
     try frame.stack.push(@intFromEnum(another_cold_addr)); // different cold address
     try frame.stack.push(30000); // gas
-    try frame.call();
+    try frame.op_call();
     const gas_used_another_cold = gas_before_another_cold - frame.gas_manager.gasRemaining();
     
     // Should cost the same as first cold access
@@ -8109,7 +8109,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(50000); // gas
-    try frame.delegatecall();
+    try frame.op_delegatecall();
     const gas_used_delegatecall = initial_gas - frame.gas_manager.gasRemaining();
     
     // DELEGATECALL: base cost + cold account access (no value transfer cost)
@@ -8164,7 +8164,7 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     try frame.stack.push(0); // value
     try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(30000); // gas
-    try frame.call();
+    try frame.op_call();
     
     // Pre-warm storage slot with SLOAD
     try frame.stack.push(storage_key);
@@ -8182,7 +8182,7 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     try frame.stack.push(0); // value
     try frame.stack.push(@intFromEnum(target_addr)); // pre-warmed address
     try frame.stack.push(30000); // gas
-    try frame.call();
+    try frame.op_call();
     const gas_used_warm_call = gas_before_warm_call - frame.gas_manager.gasRemaining();
     
     // Should use warm access cost: 700 + 100 = 800

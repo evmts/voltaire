@@ -80,9 +80,10 @@ const primitives = @import("primitives");
 const provider = @import("provider");
 
 // Custom log function for WASM that avoids Thread dependencies
-pub const std_options = .{
-    .logFn = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) wasmLogFn else std.log.defaultLog,
-};
+pub const std_options: std.Options = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
+    .{ .logFn = wasmLogFn }
+else
+    .{};
 
 fn wasmLogFn(
     comptime message_level: std.log.Level,

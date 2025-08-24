@@ -4514,7 +4514,7 @@ test "CREATE interaction - deployed contract can be called" {
     var evm_instance = try DefaultEvm.init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -4523,7 +4523,7 @@ test "CREATE interaction - deployed contract can be called" {
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
-        transaction_context.TransactionContext{
+        TransactionContext{
             .nonce = 0,
             .gas_price = 20_000_000_000,
             .gas_limit = 10_000_000,
@@ -4622,7 +4622,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     var evm_instance = try DefaultEvm.init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -4631,7 +4631,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
-        transaction_context.TransactionContext{
+        TransactionContext{
             .nonce = 0,
             .gas_price = 20_000_000_000,
             .gas_limit = 10_000_000,
@@ -4785,7 +4785,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     var evm_instance = try DefaultEvm.init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -4794,7 +4794,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
-        transaction_context.TransactionContext{
+        TransactionContext{
             .nonce = 0,
             .gas_price = 20_000_000_000,
             .gas_limit = 20_000_000,
@@ -4986,7 +4986,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     var evm_instance = try DefaultEvm.init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -4995,7 +4995,7 @@ test "CREATE interaction - created contract modifies parent storage" {
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
-        transaction_context.TransactionContext{
+        TransactionContext{
             .nonce = 0,
             .gas_price = 20_000_000_000,
             .gas_limit = 10_000_000,

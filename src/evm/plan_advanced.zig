@@ -3221,7 +3221,7 @@ test "Plan bytecode analysis completeness validation" {
                 const opcode = std.meta.intToEnum(Opcode, opcode_val) catch break;
                 
                 // Should be able to extract PUSH value
-                var idx: TestPlan.InstructionIndexType = @intCast(pc);
+                var idx: Planner.InstructionIndexT = @intCast(pc);
                 const metadata = plan.getMetadata(&idx, opcode);
                 try std.testing.expect(metadata != 0); // Should have valid value
                 
@@ -3328,7 +3328,7 @@ test "Plan caching and lifecycle management validation" {
         try std.testing.expectEqualSlices(u8, plans[i].bytecode, &reusable_bytecode);
         
         // Test that each plan provides correct metadata
-        var idx: TestPlan.InstructionIndexType = 0;
+        var idx: Planner.InstructionIndexT = 0;
         const push_value = plans[i].getMetadata(&idx, .PUSH1);
         try std.testing.expectEqual(@as(u256, 0x42), push_value);
         
@@ -3360,7 +3360,8 @@ test "Plan caching and lifecycle management validation" {
         try std.testing.expect(plan.bytecode.len == reusable_bytecode.len);
         
         // Test metadata access
-        const meta = plan.getMetadata(0, .PUSH1, undefined);
+        var idx: Planner.InstructionIndexT = 0;
+        const meta = plan.getMetadata(&idx, .PUSH1);
         _ = meta;
     }
     
