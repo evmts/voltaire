@@ -25,7 +25,7 @@ pub const CHardfork = enum(c_int) {
     LONDON = @intFromEnum(Hardfork.LONDON),
     ARROW_GLACIER = @intFromEnum(Hardfork.ARROW_GLACIER),
     GRAY_GLACIER = @intFromEnum(Hardfork.GRAY_GLACIER),
-    PARIS = @intFromEnum(Hardfork.PARIS),
+    MERGE = @intFromEnum(Hardfork.MERGE),
     SHANGHAI = @intFromEnum(Hardfork.SHANGHAI),
     CANCUN = @intFromEnum(Hardfork.CANCUN),
 };
@@ -62,7 +62,7 @@ pub export fn evm_hardfork_name(hardfork: CHardfork) [*:0]const u8 {
         .LONDON => "London",
         .ARROW_GLACIER => "Arrow Glacier",
         .GRAY_GLACIER => "Gray Glacier",
-        .PARIS => "Paris",
+        .MERGE => "Merge",
         .SHANGHAI => "Shanghai",
         .CANCUN => "Cancun",
     };
@@ -86,7 +86,7 @@ pub export fn evm_hardfork_description(hardfork: CHardfork) [*:0]const u8 {
         .LONDON => "EIP-1559 fee market reform (August 2021)",
         .ARROW_GLACIER => "Difficulty bomb delay (December 2021)",
         .GRAY_GLACIER => "Difficulty bomb delay (June 2022)",
-        .PARIS => "Ethereum merge to proof-of-stake (September 2022)",
+        .MERGE => "Ethereum merge to proof-of-stake (September 2022)",
         .SHANGHAI => "Staking withdrawals and optimizations (April 2023)",
         .CANCUN => "Proto-danksharding and blob transactions (March 2024)",
     };
@@ -195,7 +195,7 @@ pub export fn evm_hardfork_supports_beacon_block_root(hardfork: CHardfork) c_int
 /// @param hardfork Hardfork to check
 /// @return 1 if post-merge, 0 otherwise
 pub export fn evm_hardfork_is_post_merge(hardfork: CHardfork) c_int {
-    return if (@intFromEnum(hardfork) >= @intFromEnum(CHardfork.PARIS)) 1 else 0;
+    return if (@intFromEnum(hardfork) >= @intFromEnum(CHardfork.MERGE)) 1 else 0;
 }
 
 // ============================================================================
@@ -336,7 +336,7 @@ pub export fn evm_hardfork_get_info(hardfork: CHardfork, info_out: *CHardforkInf
             info_out.month = 6;
             info_out.major_features = "Difficulty bomb delay";
         },
-        .PARIS => {
+        .MERGE => {
             info_out.year = 2022;
             info_out.month = 9;
             info_out.major_features = "Proof-of-stake transition (The Merge)";
@@ -376,7 +376,7 @@ pub export fn evm_hardfork_get_all(hardforks_out: [*]CHardfork, max_count: u32, 
         .LONDON,
         .ARROW_GLACIER,
         .GRAY_GLACIER,
-        .PARIS,
+        .MERGE,
         .SHANGHAI,
         .CANCUN,
     };
@@ -434,8 +434,8 @@ pub export fn evm_hardfork_from_name(name: [*:0]const u8, hardfork_out: *CHardfo
         hardfork_out.* = .ARROW_GLACIER;
     } else if (std.mem.eql(u8, lowercase_name, "gray glacier") or std.mem.eql(u8, lowercase_name, "gray_glacier")) {
         hardfork_out.* = .GRAY_GLACIER;
-    } else if (std.mem.eql(u8, lowercase_name, "paris") or std.mem.eql(u8, lowercase_name, "merge")) {
-        hardfork_out.* = .PARIS;
+    } else if (std.mem.eql(u8, lowercase_name, "merge") or std.mem.eql(u8, lowercase_name, "paris")) {
+        hardfork_out.* = .MERGE;
     } else if (std.mem.eql(u8, lowercase_name, "shanghai")) {
         hardfork_out.* = .SHANGHAI;
     } else if (std.mem.eql(u8, lowercase_name, "cancun")) {
