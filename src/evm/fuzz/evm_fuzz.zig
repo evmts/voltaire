@@ -30,6 +30,7 @@ const OpcodeData = evm.OpcodeData;
 const Address = @import("primitives").Address;
 const Planner = evm.Planner;
 const PlannerConfig = evm.PlannerConfig;
+const Hardfork = @import("../hardfork.zig").Hardfork;
 const Journal = evm.Journal;
 const DatabaseInterface = evm.DatabaseInterface;
 const MemoryDatabase = evm.MemoryDatabase;
@@ -465,7 +466,7 @@ test "fuzz planner bytecode analysis" {
     const handlers = frame.get_opcode_handlers();
     
     // Test real bytecode analysis with actual handlers
-    _ = planner.getOrAnalyze(bytecode, handlers) catch |err| {
+    _ = planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT) catch |err| {
         // All errors are acceptable - malformed bytecode is expected in fuzzing
         return;
     };
@@ -532,7 +533,7 @@ test "fuzz planner opcode fusion detection" {
     const handlers = frame.get_opcode_handlers();
     
     // Test fusion detection with real handlers
-    _ = planner.getOrAnalyze(bytecode.items, handlers) catch |err| {
+    _ = planner.getOrAnalyze(bytecode.items, handlers, Hardfork.DEFAULT) catch |err| {
         return; // Malformed bytecode is expected
     };
 }
@@ -569,7 +570,7 @@ test "fuzz planner cache operations" {
         if (bytecode.len == 0) break;
         
         // Test cache operations with real handlers
-        _ = planner.getOrAnalyze(bytecode, handlers) catch |err| {
+        _ = planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT) catch |err| {
             // Cache operations may fail due to invalid bytecode
         };
         

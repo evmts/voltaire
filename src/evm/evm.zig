@@ -71,6 +71,14 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         pub const SelectedPlannerType = PlannerType;
         pub const Journal = JournalType;
+        
+        /// Default empty account structure
+        const DEFAULT_ACCOUNT = Account{
+            .balance = 0,
+            .nonce = 0,
+            .code_hash = [_]u8{0} ** 32,
+            .storage_root = [_]u8{0} ** 32,
+        };
 
         /// Parameters for different types of EVM calls (re-export)
         pub const CallParams = @import("call_params.zig").CallParams;
@@ -841,6 +849,82 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .staticcall => |p| return try self.staticcall_handler(p),
                 .create => |p| return try self.create_handler(p),
                 .create2 => |p| return try self.create2_handler(p),
+            }
+        }
+        
+        /// Execute a precompile call using the full legacy precompile system
+        /// This implementation supports all standard Ethereum precompiles (0x01-0x0A)
+        fn execute_precompile_call(self: *Self, address: Address, input: []const u8, gas: u64, is_static: bool) !CallResult {
+            _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
+
+            if (!precompiles.is_precompile(address)) {
+                return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
+            }
+
+            const precompile_id = address[19]; // Last byte is the precompile ID
+            if (precompile_id < 1 or precompile_id > 10) {
+                return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
+            }
+
+            const estimated_output_size: usize = switch (precompile_id) {
+                1 => 32, // ECRECOVER - returns 32-byte address (padded)
+                2 => 32, // SHA256 - returns 32-byte hash
+                3 => 32, // RIPEMD160 - returns 32-byte hash (padded)
+                4 => input.len, // IDENTITY - returns input data
+                5 => blk: {
+                    // MODEXP - estimate based on modulus length from input
+                    if (input.len < 96) break :blk 0;
+                    const mod_len_bytes = input[64..96];
+                    var mod_len: usize = 0;
+                    for (mod_len_bytes) |byte| {
+                        mod_len = (mod_len << 8) | byte;
+                    }
+                    break :blk @min(mod_len, 4096); // Cap at 4KB for safety
+                },
+                6 => 64, // ECADD - returns 64 bytes (2 field elements)
+                7 => 64, // ECMUL - returns 64 bytes (2 field elements)
+                8 => 32, // ECPAIRING - returns 32 bytes (boolean result padded)
+                9 => 64, // BLAKE2F - returns 64-byte hash
+                10 => 64, // KZG_POINT_EVALUATION - returns verification result
+                else => 0,
+            };
+
+            const output_buffer = self.allocator.alloc(u8, estimated_output_size) catch |err| {
+                return err;
+            };
+            errdefer self.allocator.free(output_buffer);
+
+            // NOTE: ChainRules integration for precompiles is pending precompile implementation
+            // const chain_rules = ChainRules.for_hardfork(self.hardfork_config);
+
+            // Execute precompile
+            const result = precompiles.execute_precompile(self.allocator, address, input, gas) catch {
+                self.allocator.free(output_buffer);
+                return CallResult{
+                    .success = false,
+                    .gas_left = 0,
+                    .output = &.{},
+                };
+            };
+
+            // Handle precompile result
+            if (result.success) {
+                // Copy output data to our buffer
+                const output_len = @min(result.output.len, output_buffer.len);
+                @memcpy(output_buffer[0..output_len], result.output[0..output_len]);
+                
+                return CallResult{
+                    .success = true,
+                    .gas_left = gas - result.gas_used,
+                    .output = output_buffer[0..output_len],
+                };
+            } else {
+                self.allocator.free(output_buffer);
+                return CallResult{
+                    .success = false,
+                    .gas_left = 0,
+                    .output = &.{},
+                };
             }
         }
 

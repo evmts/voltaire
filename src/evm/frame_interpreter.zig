@@ -133,7 +133,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.MCOPY)] = &op_mcopy_handler;
             // Generate PUSH handlers using comptime
             const push_handlers = comptime blk: {
-                var result: [33]HandlerFnType = undefined;
+                var result: [33]HandlerFn = undefined;
                 var i: u8 = 0;
                 while (i <= 32) : (i += 1) {
                     result[i] = generatePushHandler(i);
@@ -329,7 +329,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         }
         
         // Comptime PUSH handler generation
-        fn generatePushHandler(comptime n: u8) HandlerFnType {
+        fn generatePushHandler(comptime n: u8) HandlerFn {
             const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.PUSH0) + n));
             return struct {
                 fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -352,7 +352,25 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }.handler;
         }
         
+        // Comptime DUP handler generation
+        fn generateDupHandler(comptime n: u8) HandlerFnType {
+            const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.DUP1) + n - 1));
+            return struct {
+                fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+                    const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+                    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+                    const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+                    
+                    try self.stack.dup_n(n);
+                    
+                    const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
+                    return dispatchNext(next_handler, self, plan_ptr);
+                }
+            }.handler;
+        }
+        
         // PUSH handlers are now generated at comptime in the init function
+        // DUP handlers are now generated at comptime in the init function
         
         // Individual PUSH handlers (old implementations for reference)
         fn push0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {

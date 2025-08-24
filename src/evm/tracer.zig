@@ -1049,17 +1049,15 @@ test "DebuggingTracer memory management" {
     // This test verifies that the tracer properly manages memory
     // when used with a mock frame
     const MockFrame = struct {
-        gas_remaining: u64,
+        gas_remaining: i64 = 1000,
         bytecode: []const u8,
         next_stack_index: usize,
         stack: [16]u256,
-        gas_remaining: i64 = 1000,
         
         fn init() @This() {
             return .{
                 .gas_remaining = 1000,
                 .bytecode = &[_]u8{0x60, 0x05}, // PUSH1 5
-                .gas_remaining = 1000,
                 .next_stack_index = 0,
                 .stack = [_]u256{0} ** 16,
             };
