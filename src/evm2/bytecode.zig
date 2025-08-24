@@ -132,6 +132,145 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             }
         }
         
+        /// Validate opcode range using SIMD
+        fn validateOpcodeSimd(code: []const u8, comptime L: comptime_int) bool {
+            const max_valid_opcode = @intFromEnum(Opcode.SELFDESTRUCT);
+            const splat_max: @Vector(L, u8) = @splat(max_valid_opcode);
+            
+            var i: usize = 0;
+            while (i + L <= code.len) : (i += L) {
+                var arr: [L]u8 = undefined;
+                inline for (0..L) |k| arr[k] = code[i + k];
+                const v: @Vector(L, u8) = arr;
+                // Check if any byte exceeds max valid opcode
+                const gt_max: @Vector(L, bool) = v > splat_max;
+                const gt_max_arr: [L]bool = gt_max;
+                inline for (gt_max_arr) |exceeds| {
+                    if (exceeds) return false;
+                }
+            }
+            // Check remaining bytes
+            while (i < code.len) : (i += 1) {
+                if (code[i] > max_valid_opcode) return false;
+            }
+            return true;
+        }
+
+        /// Set bits in bitmap using SIMD operations
+        fn setBitmapBitsSimd(bitmap: []u8, indices: []const usize, comptime L: comptime_int) void {
+            // Process in chunks where possible
+            var i: usize = 0;
+            while (i + L <= indices.len) : (i += L) {
+                inline for (0..L) |j| {
+                    const idx = indices[i + j];
+                    bitmap[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                }
+            }
+            // Handle remaining indices
+            while (i < indices.len) : (i += 1) {
+                const idx = indices[i];
+                bitmap[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+            }
+        }
+
+        /// Pattern match for PUSH+OP fusion opportunities using SIMD
+        fn findFusionPatternsSimd(self: Self, comptime L: comptime_int) !ArrayList(Stats.Fusion, null) {
+            var fusions = ArrayList(Stats.Fusion, null).init(self.allocator);
+            errdefer fusions.deinit();
+            
+            const push1 = @intFromEnum(Opcode.PUSH1);
+            const push32 = @intFromEnum(Opcode.PUSH32);
+            
+            // Fusion targets
+            const fusion_ops = [_]u8{
+                @intFromEnum(Opcode.ADD),
+                @intFromEnum(Opcode.SUB),
+                @intFromEnum(Opcode.MUL),
+                @intFromEnum(Opcode.DIV),
+                @intFromEnum(Opcode.JUMP),
+                @intFromEnum(Opcode.JUMPI),
+            };
+            
+            // Create vectors for each fusion target
+            const splat_add: @Vector(L, u8) = @splat(@intFromEnum(Opcode.ADD));
+            const splat_sub: @Vector(L, u8) = @splat(@intFromEnum(Opcode.SUB));
+            const splat_mul: @Vector(L, u8) = @splat(@intFromEnum(Opcode.MUL));
+            const splat_div: @Vector(L, u8) = @splat(@intFromEnum(Opcode.DIV));
+            const splat_jump: @Vector(L, u8) = @splat(@intFromEnum(Opcode.JUMP));
+            const splat_jumpi: @Vector(L, u8) = @splat(@intFromEnum(Opcode.JUMPI));
+            
+            var i: usize = 0;
+            while (i < self.code.len) {
+                // Skip if not an operation start
+                if ((self.is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) == 0) {
+                    i += 1;
+                    continue;
+                }
+                
+                const op = self.code[i];
+                if (op >= push1 and op <= push32) {
+                    const push_size = 1 + (op - (push1 - 1));
+                    const next_op_pos = i + push_size;
+                    
+                    // Use SIMD to check multiple fusion opportunities at once if we have enough bytes
+                    if (next_op_pos < self.code.len and next_op_pos + L <= self.code.len) {
+                        // Load next L bytes starting from next_op_pos
+                        var arr: [L]u8 = undefined;
+                        inline for (0..L) |k| arr[k] = if (next_op_pos + k < self.code.len) self.code[next_op_pos + k] else 0;
+                        const v: @Vector(L, u8) = arr;
+                        
+                        // Check all fusion patterns
+                        const eq_add: @Vector(L, bool) = v == splat_add;
+                        const eq_sub: @Vector(L, bool) = v == splat_sub;
+                        const eq_mul: @Vector(L, bool) = v == splat_mul;
+                        const eq_div: @Vector(L, bool) = v == splat_div;
+                        const eq_jump: @Vector(L, bool) = v == splat_jump;
+                        const eq_jumpi: @Vector(L, bool) = v == splat_jumpi;
+                        
+                        // Check if the first position matches any fusion op
+                        const eq_add_arr: [L]bool = eq_add;
+                        const eq_sub_arr: [L]bool = eq_sub;
+                        const eq_mul_arr: [L]bool = eq_mul;
+                        const eq_div_arr: [L]bool = eq_div;
+                        const eq_jump_arr: [L]bool = eq_jump;
+                        const eq_jumpi_arr: [L]bool = eq_jumpi;
+                        
+                        if (eq_add_arr[0] or eq_sub_arr[0] or eq_mul_arr[0] or eq_div_arr[0] or eq_jump_arr[0] or eq_jumpi_arr[0]) {
+                            const target_op = if (eq_add_arr[0]) Opcode.ADD
+                                else if (eq_sub_arr[0]) Opcode.SUB
+                                else if (eq_mul_arr[0]) Opcode.MUL
+                                else if (eq_div_arr[0]) Opcode.DIV
+                                else if (eq_jump_arr[0]) Opcode.JUMP
+                                else Opcode.JUMPI;
+                            
+                            try fusions.append(.{
+                                .pc = i,
+                                .second_opcode = target_op,
+                            });
+                        }
+                    } else if (next_op_pos < self.code.len) {
+                        // Fallback to scalar check for edge cases
+                        const next_op = self.code[next_op_pos];
+                        for (fusion_ops) |fusion_op| {
+                            if (next_op == fusion_op) {
+                                const target_op = std.meta.intToEnum(Opcode, fusion_op) catch unreachable;
+                                try fusions.append(.{
+                                    .pc = i,
+                                    .second_opcode = target_op,
+                                });
+                                break;
+                            }
+                        }
+                    }
+                    i = next_op_pos;
+                } else {
+                    i += 1;
+                }
+            }
+            
+            return fusions;
+        }
+
         /// Build bitmaps and validate bytecode
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
             const N = self.code.len;
@@ -158,6 +297,13 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             @memset(self.is_op_start, 0);
             @memset(self.is_jumpdest, 0);
             
+            // First pass: validate all opcodes using SIMD if available
+            if (comptime cfg.vector_length > 0) {
+                if (!validateOpcodeSimd(self.code, cfg.vector_length)) {
+                    return error.InvalidOpcode;
+                }
+            }
+            
             var i: PcType = 0;
             while (i < N) {
                 self.is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
@@ -165,6 +311,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 
                 // SECURITY: Validate opcode using safe enum conversion
                 // We need to ensure this is a valid opcode before using it
+                // Note: If SIMD validation passed, this should never fail, but we still check for defense in depth
                 const opcode_enum = std.meta.intToEnum(Opcode, op) catch {
                     // Invalid opcode found
                     return error.InvalidOpcode;
@@ -296,6 +443,13 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
             var push_values = ArrayList(Stats.PushValue, null).init(self.allocator);
             defer push_values.deinit();
+            // Use SIMD fusion detection if available
+            var simd_fusions: ?ArrayList(Stats.Fusion, null) = null;
+            if (comptime cfg.vector_length > 0) {
+                simd_fusions = try self.findFusionPatternsSimd(cfg.vector_length);
+            }
+            defer if (simd_fusions) |*f| f.deinit();
+            
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
             var fusions = ArrayList(Stats.Fusion, null).init(self.allocator);
             defer fusions.deinit();
@@ -319,7 +473,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                     if (self.readPushValueN(i, @intCast(n))) |value| {
                         try push_values.append(.{ .pc = i, .value = value });
                         const next_pc = i + 1 + n;
-                        if (next_pc < self.code.len) {
+                        
+                        // Skip fusion detection if using SIMD (already done)
+                        if (simd_fusions == null and next_pc < self.code.len) {
                             const next_op = self.code[next_pc];
                             if (next_op == @intFromEnum(Opcode.JUMP) or
                                 next_op == @intFromEnum(Opcode.JUMPI) or
@@ -348,8 +504,15 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 }
                 i += self.getInstructionSize(i);
             }
+            
             stats.push_values = try self.allocator.dupe(Stats.PushValue, push_values.items);
-            stats.potential_fusions = try self.allocator.dupe(Stats.Fusion, fusions.items);
+            
+            // Use SIMD fusions if available, otherwise use scalar detected fusions
+            if (simd_fusions) |simd_f| {
+                stats.potential_fusions = try self.allocator.dupe(Stats.Fusion, simd_f.items);
+            } else {
+                stats.potential_fusions = try self.allocator.dupe(Stats.Fusion, fusions.items);
+            }
             const jumpdests_usize = try self.allocator.alloc(usize, jumpdests.items.len);
             for (jumpdests.items, 0..) |pc, idx| {
                 jumpdests_usize[idx] = @intCast(pc);
@@ -508,15 +671,364 @@ test "Bytecode.analyzeJumpDests" {
     var bytecode = try Bytecode.init(allocator, &code);
     defer bytecode.deinit();
     const Context = struct {
-        jumpdests: std.ArrayList(Bytecode.PcType),
+        // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
+        jumpdests: ArrayList(Bytecode.PcType, null),
         fn callback(self: *@This(), pc: Bytecode.PcType) void {
             self.jumpdests.append(pc) catch unreachable;
         }
     };
-    var context = Context{ .jumpdests = std.ArrayList(Bytecode.PcType).init(std.testing.allocator) };
+    var context = Context{ .jumpdests = ArrayList(Bytecode.PcType, null).init(std.testing.allocator) };
     defer context.jumpdests.deinit();
     bytecode.analyzeJumpDests(&context, Context.callback);
     try std.testing.expectEqual(@as(usize, 2), context.jumpdests.items.len);
     try std.testing.expectEqual(@as(Bytecode.PcType, 3), context.jumpdests.items[0]);
     try std.testing.expectEqual(@as(Bytecode.PcType, 7), context.jumpdests.items[1]);
+}
+
+test "Bytecode validation - invalid opcode" {
+    const allocator = std.testing.allocator;
+    // Test bytecode with invalid opcode 0xFE
+    const code = [_]u8{ 0x60, 0x01, 0xFE }; // PUSH1 0x01 INVALID
+    const result = Bytecode.init(allocator, &code);
+    try std.testing.expectError(error.InvalidOpcode, result);
+}
+
+test "Bytecode validation - PUSH extends past end" {
+    const allocator = std.testing.allocator;
+    // PUSH2 but only 1 byte of data available
+    const code = [_]u8{ 0x61, 0x42 }; // PUSH2 with only 1 byte
+    const result = Bytecode.init(allocator, &code);
+    try std.testing.expectError(error.TruncatedPush, result);
+}
+
+test "Bytecode validation - PUSH32 extends past end" {
+    const allocator = std.testing.allocator;
+    // PUSH32 but not enough data
+    var code: [32]u8 = undefined;
+    code[0] = 0x7f; // PUSH32
+    for (1..32) |i| {
+        code[i] = @intCast(i);
+    }
+    const result = Bytecode.init(allocator, &code); // Only 32 bytes, needs 33
+    try std.testing.expectError(error.TruncatedPush, result);
+}
+
+test "Bytecode validation - Jump to invalid destination" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x10 JUMP but no JUMPDEST at 0x10
+    const code = [_]u8{ 0x60, 0x10, 0x56, 0x00 }; // PUSH1 0x10 JUMP STOP
+    const result = Bytecode.init(allocator, &code);
+    try std.testing.expectError(error.InvalidJumpDestination, result);
+}
+
+test "Bytecode validation - Jump to valid JUMPDEST" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x04 JUMP JUMPDEST STOP
+    const code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x00 };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    try std.testing.expect(bytecode.is_jumpdest.len > 0);
+}
+
+test "Bytecode validation - JUMPI to invalid destination" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x10 PUSH1 0x01 JUMPI but no JUMPDEST at 0x10
+    const code = [_]u8{ 0x60, 0x10, 0x60, 0x01, 0x57 }; // PUSH1 0x10 PUSH1 0x01 JUMPI
+    const result = Bytecode.init(allocator, &code);
+    try std.testing.expectError(error.InvalidJumpDestination, result);
+}
+
+test "Bytecode validation - empty bytecode is valid" {
+    const allocator = std.testing.allocator;
+    const code = [_]u8{};
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    try std.testing.expectEqual(@as(usize, 0), bytecode.len());
+}
+
+test "Bytecode validation - only STOP is valid" {
+    const allocator = std.testing.allocator;
+    const code = [_]u8{0x00};
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    try std.testing.expectEqual(@as(usize, 1), bytecode.len());
+}
+
+test "Bytecode validation - JUMPDEST inside PUSH data is invalid jump target" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x03 JUMP [0x5b inside push] JUMPDEST
+    const code = [_]u8{ 0x60, 0x03, 0x56, 0x62, 0x5b, 0x5b, 0x5b }; // PUSH1 0x03 JUMP PUSH3 0x5b5b5b
+    const result = Bytecode.init(allocator, &code);
+    try std.testing.expectError(error.InvalidJumpDestination, result);
+}
+
+test "Bytecode.getStats - basic stats" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x05 PUSH1 0x03 ADD STOP
+    const code = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x00 };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Check opcode counts
+    try std.testing.expectEqual(@as(u32, 2), stats.opcode_counts[@intFromEnum(Opcode.PUSH1)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.ADD)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.STOP)]);
+    
+    // Check push values
+    try std.testing.expectEqual(@as(usize, 2), stats.push_values.len);
+    try std.testing.expectEqual(@as(u256, 0x05), stats.push_values[0].value);
+    try std.testing.expectEqual(@as(usize, 0), stats.push_values[0].pc);
+    try std.testing.expectEqual(@as(u256, 0x03), stats.push_values[1].value);
+    try std.testing.expectEqual(@as(usize, 2), stats.push_values[1].pc);
+    
+    // Test formatStats
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify it contains expected content
+    try std.testing.expect(std.mem.indexOf(u8, output, "Bytecode Statistics") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PUSH1: 2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "ADD: 1") != null);
+}
+
+test "Bytecode.getStats - potential fusions" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x04 JUMP JUMPDEST PUSH1 0x10 ADD STOP
+    const code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x60, 0x10, 0x01, 0x00 };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Check for PUSH+JUMP fusion
+    try std.testing.expectEqual(@as(usize, 2), stats.potential_fusions.len);
+    try std.testing.expectEqual(@as(usize, 0), stats.potential_fusions[0].pc); // PUSH1 at 0
+    try std.testing.expectEqual(Opcode.JUMP, stats.potential_fusions[0].second_opcode);
+    
+    // Check for PUSH+ADD fusion
+    try std.testing.expectEqual(@as(usize, 5), stats.potential_fusions[1].pc); // PUSH1 at 5
+    try std.testing.expectEqual(Opcode.ADD, stats.potential_fusions[1].second_opcode);
+}
+
+test "Bytecode.getStats - jumpdests and jumps" {
+    const allocator = std.testing.allocator;
+    // PUSH1 0x08 JUMP PUSH1 0x00 PUSH1 0x00 REVERT JUMPDEST PUSH1 0x0C JUMP JUMPDEST STOP
+    const code = [_]u8{ 
+        0x60, 0x08, 0x56,       // PUSH1 0x08 JUMP
+        0x60, 0x00, 0x60, 0x00, 0xfd, // PUSH1 0x00 PUSH1 0x00 REVERT
+        0x5b,                   // JUMPDEST at PC 8
+        0x60, 0x0C, 0x56,       // PUSH1 0x0C JUMP
+        0x5b,                   // JUMPDEST at PC 12
+        0x00                    // STOP
+    };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Check jumpdests
+    try std.testing.expectEqual(@as(usize, 2), stats.jumpdests.len);
+    try std.testing.expectEqual(@as(usize, 8), stats.jumpdests[0]);
+    try std.testing.expectEqual(@as(usize, 12), stats.jumpdests[1]);
+    
+    // Check jumps
+    try std.testing.expectEqual(@as(usize, 2), stats.jumps.len);
+    try std.testing.expectEqual(@as(usize, 2), stats.jumps[0].pc); // JUMP at PC 2
+    try std.testing.expectEqual(@as(u256, 0x08), stats.jumps[0].target);
+    try std.testing.expectEqual(@as(usize, 11), stats.jumps[1].pc); // JUMP at PC 11
+    try std.testing.expectEqual(@as(u256, 0x0C), stats.jumps[1].target);
+    
+    // Check backwards jumps (none in this example)
+    try std.testing.expectEqual(@as(usize, 0), stats.backwards_jumps);
+}
+
+test "Bytecode.getStats - backwards jumps (loops)" {
+    const allocator = std.testing.allocator;
+    // JUMPDEST PUSH1 0x01 PUSH1 0x00 JUMP (infinite loop)
+    const code = [_]u8{ 
+        0x5b,             // JUMPDEST at PC 0
+        0x60, 0x01,       // PUSH1 0x01
+        0x60, 0x00,       // PUSH1 0x00
+        0x56              // JUMP (back to 0)
+    };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Check backwards jumps
+    try std.testing.expectEqual(@as(usize, 1), stats.backwards_jumps);
+    try std.testing.expectEqual(@as(usize, 1), stats.jumps.len);
+    try std.testing.expectEqual(@as(u256, 0x00), stats.jumps[0].target);
+    try std.testing.expectEqual(@as(usize, 5), stats.jumps[0].pc);
+}
+
+test "Bytecode.getStats - create code detection" {
+    const allocator = std.testing.allocator;
+    // Bytecode that starts with constructor pattern (returns runtime code)
+    // PUSH1 0x10 PUSH1 0x20 PUSH1 0x00 CODECOPY PUSH1 0x10 PUSH1 0x00 RETURN
+    const code = [_]u8{ 
+        0x60, 0x10,       // PUSH1 0x10 (size)
+        0x60, 0x20,       // PUSH1 0x20 (offset in code)
+        0x60, 0x00,       // PUSH1 0x00 (dest in memory)
+        0x39,             // CODECOPY
+        0x60, 0x10,       // PUSH1 0x10 (size)
+        0x60, 0x00,       // PUSH1 0x00 (offset in memory)
+        0xf3              // RETURN
+    };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Check if identified as create code
+    try std.testing.expect(stats.is_create_code);
+}
+
+test "Bytecode.getStats - runtime code detection" {
+    const allocator = std.testing.allocator;
+    // Normal runtime code (no CODECOPY + RETURN pattern)
+    const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Should not be identified as create code
+    try std.testing.expect(!stats.is_create_code);
+}
+
+test "Bytecode SIMD opcode validation" {
+    const allocator = std.testing.allocator;
+    
+    // Test bytecode with invalid opcode (0xFF is not a valid opcode)
+    const invalid_code = [_]u8{ 0x60, 0x01, 0xFF, 0x00 }; // PUSH1 1 INVALID STOP
+    const result = Bytecode.init(allocator, &invalid_code);
+    try std.testing.expectError(Bytecode.ValidationError.InvalidOpcode, result);
+    
+    // Test bytecode with all valid opcodes
+    const valid_code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
+    var bytecode = try Bytecode.init(allocator, &valid_code);
+    defer bytecode.deinit();
+    
+    // Should pass validation
+    try std.testing.expectEqual(@as(usize, 6), bytecode.len());
+}
+
+test "Bytecode SIMD fusion pattern detection" {
+    const allocator = std.testing.allocator;
+    
+    // Test all fusion patterns: PUSH + ADD/SUB/MUL/DIV/JUMP/JUMPI
+    const code = [_]u8{
+        0x60, 0x01, 0x01, // PUSH1 1 ADD
+        0x60, 0x02, 0x03, // PUSH1 2 SUB
+        0x60, 0x03, 0x02, // PUSH1 3 MUL
+        0x60, 0x04, 0x04, // PUSH1 4 DIV
+        0x60, 0x0F, 0x56, // PUSH1 15 JUMP
+        0x60, 0x12, 0x57, // PUSH1 18 JUMPI
+        0x00              // STOP
+    };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Check that all 6 fusion opportunities were detected
+    try std.testing.expectEqual(@as(usize, 6), stats.potential_fusions.len);
+    
+    // Verify each fusion
+    try std.testing.expectEqual(@as(usize, 0), stats.potential_fusions[0].pc);
+    try std.testing.expectEqual(Opcode.ADD, stats.potential_fusions[0].second_opcode);
+    
+    try std.testing.expectEqual(@as(usize, 3), stats.potential_fusions[1].pc);
+    try std.testing.expectEqual(Opcode.SUB, stats.potential_fusions[1].second_opcode);
+    
+    try std.testing.expectEqual(@as(usize, 6), stats.potential_fusions[2].pc);
+    try std.testing.expectEqual(Opcode.MUL, stats.potential_fusions[2].second_opcode);
+    
+    try std.testing.expectEqual(@as(usize, 9), stats.potential_fusions[3].pc);
+    try std.testing.expectEqual(Opcode.DIV, stats.potential_fusions[3].second_opcode);
+    
+    try std.testing.expectEqual(@as(usize, 12), stats.potential_fusions[4].pc);
+    try std.testing.expectEqual(Opcode.JUMP, stats.potential_fusions[4].second_opcode);
+    
+    try std.testing.expectEqual(@as(usize, 15), stats.potential_fusions[5].pc);
+    try std.testing.expectEqual(Opcode.JUMPI, stats.potential_fusions[5].second_opcode);
+}
+
+test "Bytecode.getStats - all opcode types counted" {
+    const allocator = std.testing.allocator;
+    // Use various opcodes
+    const code = [_]u8{ 
+        0x60, 0x01,   // PUSH1 1
+        0x80,         // DUP1
+        0x01,         // ADD
+        0x60, 0x20,   // PUSH1 32
+        0x52,         // MSTORE
+        0x60, 0x20,   // PUSH1 32
+        0x51,         // MLOAD
+        0x00          // STOP
+    };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Verify counts
+    try std.testing.expectEqual(@as(u32, 3), stats.opcode_counts[@intFromEnum(Opcode.PUSH1)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.DUP1)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.ADD)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.MSTORE)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.MLOAD)]);
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.STOP)]);
 }
