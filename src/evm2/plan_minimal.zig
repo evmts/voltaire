@@ -20,7 +20,7 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
     
     // Create bytecode type with matching configuration
     const BytecodeType = createBytecode(.{
-        .max_bytecode_size = cfg.max_bytecode_size,
+        .max_bytecode_size = cfg.maxBytecodeSize,
     });
     
     const PlanMinimal = struct {
@@ -276,27 +276,8 @@ test "PlanMinimal getMetadata for PUSH opcodes" {
         h.* = &testHandler;
     }
     
-    // Allocate bitmaps
-    const bitmap_size = (bytecode.len + 7) / 8;
-    const is_push_data = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_push_data);
-    const is_op_start = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_op_start);
-    const is_jumpdest = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_jumpdest);
-    
-    @memset(is_push_data, 0);
-    @memset(is_op_start, 0);
-    @memset(is_jumpdest, 0);
-    
-    var plan = PlanMinimal{
-        .bytecode = &bytecode,
-        .is_push_data = is_push_data,
-        .is_op_start = is_op_start,
-        .is_jumpdest = is_jumpdest,
-        .handlers = handlers,
-    };
-    defer plan.deinit(allocator);
+    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
     
     // Test PUSH1
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -331,27 +312,8 @@ test "PlanMinimal getNextInstruction" {
         h.* = &testHandler;
     }
     
-    // Allocate bitmaps
-    const bitmap_size = (bytecode.len + 7) / 8;
-    const is_push_data = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_push_data);
-    const is_op_start = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_op_start);
-    const is_jumpdest = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_jumpdest);
-    
-    @memset(is_push_data, 0);
-    @memset(is_op_start, 0);
-    @memset(is_jumpdest, 0);
-    
-    var plan = PlanMinimal{
-        .bytecode = &bytecode,
-        .is_push_data = is_push_data,
-        .is_op_start = is_op_start,
-        .is_jumpdest = is_jumpdest,
-        .handlers = handlers,
-    };
-    defer plan.deinit(allocator);
+    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
     
     // Start at PC 0 (PUSH1)
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -383,27 +345,8 @@ test "PlanMinimal PC metadata" {
         h.* = &testHandler;
     }
     
-    // Allocate bitmaps
-    const bitmap_size = (bytecode.len + 7) / 8;
-    const is_push_data = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_push_data);
-    const is_op_start = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_op_start);
-    const is_jumpdest = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_jumpdest);
-    
-    @memset(is_push_data, 0);
-    @memset(is_op_start, 0);
-    @memset(is_jumpdest, 0);
-    
-    var plan = PlanMinimal{
-        .bytecode = &bytecode,
-        .is_push_data = is_push_data,
-        .is_op_start = is_op_start,
-        .is_jumpdest = is_jumpdest,
-        .handlers = handlers,
-    };
-    defer plan.deinit(allocator);
+    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
     
     // Test PC metadata returns current PC
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -434,30 +377,8 @@ test "PlanMinimal isValidJumpDest" {
         h.* = &testHandler;
     }
     
-    // Allocate bitmaps
-    const bitmap_size = (bytecode.len + 7) / 8;
-    const is_push_data = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_push_data);
-    const is_op_start = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_op_start);
-    const is_jumpdest = try allocator.alloc(u8, bitmap_size);
-    defer allocator.free(is_jumpdest);
-    
-    @memset(is_push_data, 0);
-    @memset(is_op_start, 0);
-    @memset(is_jumpdest, 0);
-    
-    // Mark JUMPDEST at position 3
-    is_jumpdest[0] = 0b1000; // Bit 3 set
-    
-    var plan = PlanMinimal{
-        .bytecode = &bytecode,
-        .is_push_data = is_push_data,
-        .is_op_start = is_op_start,
-        .is_jumpdest = is_jumpdest,
-        .handlers = handlers,
-    };
-    defer plan.deinit(allocator);
+    var plan = try PlanMinimal.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
     
     // Test isValidJumpDest
     try std.testing.expect(!plan.isValidJumpDest(0)); // PUSH1
