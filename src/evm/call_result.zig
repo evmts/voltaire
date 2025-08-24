@@ -86,6 +86,16 @@ pub const CallResult = struct {
         allocator.free(self.logs);
         self.logs = &.{};
     }
+    
+    /// Clean up memory for a logs slice returned by takeLogs()
+    /// Use this when you have logs from takeLogs() instead of a full CallResult
+    pub fn deinitLogsSlice(logs: []const Log, allocator: std.mem.Allocator) void {
+        for (logs) |log| {
+            allocator.free(log.topics);
+            allocator.free(log.data);
+        }
+        allocator.free(logs);
+    }
 };
 
 const std = @import("std");
@@ -261,4 +271,38 @@ test "CallResult log memory management - proper cleanup" {
     
     // This should properly clean up all allocated memory
     call_result.deinitLogs(allocator);
+}
+
+test "CallResult deinitLogsSlice - memory management for takeLogs result" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer {
+        const deinit_status = gpa.deinit();
+        if (deinit_status == .leak) {
+            std.debug.print("Memory leak detected in deinitLogsSlice test!\n", .{});
+            testing.expect(false) catch {};
+        }
+    }
+    const allocator = gpa.allocator();
+    
+    // Simulate takeLogs() result - individual logs with allocated data
+    const topics1 = try allocator.dupe(u256, &[_]u256{ 0xDEAD, 0xBEEF });
+    const data1 = try allocator.dupe(u8, "takeLogs test");
+    const topics2 = try allocator.dupe(u256, &[_]u256{ 0xCAFE });
+    const data2 = try allocator.dupe(u8, "slice cleanup");
+    
+    const logs = try allocator.alloc(Log, 2);
+    logs[0] = Log{
+        .address = ZERO_ADDRESS,
+        .topics = topics1,
+        .data = data1,
+    };
+    logs[1] = Log{
+        .address = ZERO_ADDRESS,
+        .topics = topics2,
+        .data = data2,
+    };
+    
+    // This should properly clean up all memory including individual log data
+    CallResult.deinitLogsSlice(logs, allocator);
 }

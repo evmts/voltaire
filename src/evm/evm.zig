@@ -2512,7 +2512,7 @@ test "EVM logs - emit_log functionality" {
 
     // Test takeLogs
     const taken_logs = evm.takeLogs();
-    defer evm.allocator.free(taken_logs);
+    defer CallResult.deinitLogsSlice(taken_logs, evm.allocator);
     try testing.expectEqual(@as(usize, 1), taken_logs.len);
     try testing.expectEqual(@as(usize, 0), evm.logs.items.len); // Should be empty after taking
 }
