@@ -511,8 +511,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn sar(self: *Self) Error!void {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-            const result = if (shift >= 256) blk: {
-                const sign_bit = value >> 255;
+            const word_bits = @bitSizeOf(WordType);
+            const result = if (shift >= word_bits) blk: {
+                const sign_bit = value >> (word_bits - 1);
                 break :blk if (sign_bit == 1) @as(WordType, std.math.maxInt(WordType)) else @as(WordType, 0);
             } else blk: {
                 const shift_amount = @as(u8, @intCast(shift));
@@ -776,8 +777,14 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Handle empty data case
             if (size == 0) {
                 // Hash of empty data = keccak256("")
-                const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
-                try self.stack.push(empty_hash);
+                if (WordType == u256) {
+                    const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+                    try self.stack.push(empty_hash);
+                } else {
+                    // For smaller word types, we can't represent the full hash
+                    // This is a limitation when using non-u256 word types
+                    try self.stack.push(0);
+                }
                 return;
             }
 
@@ -2047,7 +2054,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Extract the created contract address from output
                 var address_bytes: [20]u8 = undefined;
                 @memcpy(&address_bytes, result.output[0..20]);
-                const address = Address{ .bytes = address_bytes };
+                const address: Address = address_bytes;
                 const address_u256 = to_u256(address);
                 try self.stack.push(address_u256);
             } else {
@@ -2129,7 +2136,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Extract the created contract address from output
                 var address_bytes: [20]u8 = undefined;
                 @memcpy(&address_bytes, result.output[0..20]);
-                const address = Address{ .bytes = address_bytes };
+                const address: Address = address_bytes;
                 const address_u256 = to_u256(address);
                 try self.stack.push(address_u256);
             } else {
@@ -5739,7 +5746,7 @@ const MockHost = struct {
         if (self.should_call_succeed) {
             // For CREATE/CREATE2, return address in output
             if (params.isCreate()) {
-                const addr = Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
+                const addr: Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
                 const output = try self.allocator.alloc(u8, 20);
                 @memcpy(output, &addr.bytes);
                 return CallResult{
@@ -5958,7 +5965,7 @@ test "Frame op_create basic functionality" {
 
     // Should push created address to stack
     const result = try frame.stack.pop();
-    const expected_addr = to_u256(Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 });
+    const expected_addr = to_u256([_]u8{0x42} ++ [_]u8{0} ** 19);
     try std.testing.expectEqual(expected_addr, result);
 
     // Verify a create was made
@@ -6013,7 +6020,7 @@ test "Frame op_create2 basic functionality" {
 
     // Should push created address to stack
     const result = try frame.stack.pop();
-    const expected_addr = to_u256(Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 });
+    const expected_addr = to_u256([_]u8{0x42} ++ [_]u8{0} ** 19);
     try std.testing.expectEqual(expected_addr, result);
 
     // Verify a create2 was made
@@ -6086,10 +6093,10 @@ test "Frame op_selfdestruct basic functionality" {
     frame.host = host;
 
     // Setup contract address
-    frame.contract_address = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    frame.contract_address = [_]u8{0x11} ++ [_]u8{0} ** 19;
 
     // Setup stack: [recipient]
-    const recipient_addr = Address{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 };
+    const recipient_addr: Address = [_]u8{0x22} ++ [_]u8{0} ** 19;
     try frame.stack.push(to_u256(recipient_addr));
 
     // Execute SELFDESTRUCT - should terminate with STOP
