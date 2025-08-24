@@ -142,7 +142,7 @@ pub fn main() !void {
                 .to = deploy_address,
                 .value = 0,
                 .input = calldata,
-                .gas = 100000,
+                .gas = 10000000, // Increased from 100k to 10M
             },
         };
 
@@ -154,10 +154,11 @@ pub fn main() !void {
         const end_time = std.time.nanoTimestamp();
         
         // Debug: Print gas usage info
-        const gas_used = 100000 - result.gas_left;
+        const gas_provided = 10000000;
+        const gas_used = gas_provided - result.gas_left;
         if (run_idx == 0) { // Only print for first run
             std.debug.print("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", 
-                .{result.success, 100000, result.gas_left, gas_used, result.output.len});
+                .{result.success, gas_provided, result.gas_left, gas_used, result.output.len});
             if (result.output.len > 0 and result.output.len <= 64) {
                 std.debug.print("Debug: output={x}\n", .{std.fmt.fmtSliceHexLower(result.output)});
             }
