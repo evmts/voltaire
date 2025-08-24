@@ -25,9 +25,11 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
     }
 }
 
-// Global allocator for WASM environment
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else gpa.allocator();
+// Use page allocator for WASM (no libc dependency)
+const allocator = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
+    std.heap.page_allocator
+else
+    std.heap.c_allocator;
 
 // C-compatible error codes
 const PrimitivesError = enum(c_int) {

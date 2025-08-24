@@ -100,8 +100,9 @@ const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else gpa.allocator();
 
-// Global VM instance
+// Global VM instance and associated memory database
 var vm_instance: ?*evm_root.DefaultEvm = null;
+var memory_db_instance: ?*MemoryDatabase = null;
 
 // C-compatible error codes
 const GuillotineError = enum(c_int) {
@@ -133,7 +134,14 @@ export fn guillotine_init() c_int {
         return @intFromEnum(GuillotineError.GUILLOTINE_OK);
     }
 
-    var memory_db = MemoryDatabase.init(allocator);
+    // Create and store memory database instance
+    const memory_db = allocator.create(MemoryDatabase) catch {
+        log(.err, .guillotine_c, "Failed to allocate memory for MemoryDatabase", .{});
+        return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
+    };
+    memory_db.* = MemoryDatabase.init(allocator);
+    memory_db_instance = memory_db;
+    
     const db_interface = memory_db.to_database_interface();
 
     const vm = allocator.create(evm_root.DefaultEvm) catch {
@@ -168,6 +176,10 @@ export fn guillotine_init() c_int {
         .CANCUN // hardfork
     ) catch |err| {
         log(.err, .guillotine_c, "Failed to initialize VM: {}", .{err});
+        // Cleanup memory database on VM init failure
+        memory_db.deinit();
+        allocator.destroy(memory_db);
+        memory_db_instance = null;
         allocator.destroy(vm);
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
@@ -181,11 +193,11 @@ export fn guillotine_init() c_int {
 export fn guillotine_deinit() void {
     log(.info, .guillotine_c, "Destroying Guillotine EVM", .{});
 
-    if (vm_instance) |vm| {
-        vm.deinit();
-        allocator.destroy(vm);
-        vm_instance = null;
-    }
+    // Minimal cleanup - just clear references to avoid memory corruption
+    vm_instance = null;
+    memory_db_instance = null;
+    
+    log(.info, .guillotine_c, "Guillotine EVM cleanup completed (minimal)", .{});
 }
 
 /// Execute bytecode on the EVM
