@@ -8931,3 +8931,158 @@ test "Rapid successive calls - gas depletion patterns" {
     // Final gas should be very low
     try std.testing.expect(frame.gas_remaining < initial_gas / 2);
 }
+
+// ============================================================================
+// ACCOUNT EXISTENCE DETECTION TESTS (TDD - FAILING TESTS FIRST)
+// ============================================================================
+
+test "_calculate_call_gas new account costs - nonexistent account" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    // Test with a completely new address that doesn't exist in database
+    const nonexistent_address = Address.from_u256(0x12345);
+    const gas_cost = frame._calculate_call_gas(nonexistent_address, 0, false);
+    
+    // Calling non-existent account should include new account cost
+    const expected = GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas existing account costs - account with balance" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Pre-create an account with non-zero balance
+    const existing_address = Address.from_u256(0x54321);
+    const account = DatabaseInterface.Account{
+        .nonce = 1,
+        .balance = 1000,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(existing_address, account);
+
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    const gas_cost = frame._calculate_call_gas(existing_address, 0, false);
+    
+    // Calling existing account should not include new account cost
+    const expected = GasConstants.CALL_BASE_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas existing account costs - account with code" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Pre-create an account with code (non-empty code hash)
+    const existing_address = Address.from_u256(0x98765);
+    const code_hash = primitives.keccak256(&[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }); // Simple contract code
+    const account = database_interface.Account{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(existing_address, account);
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+
+    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
+    defer contract.deinit(allocator, null);
+
+    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+    defer frame.deinit();
+
+    const gas_cost = frame._calculate_call_gas(existing_address, 0, false);
+    
+    // Account with code should not be considered new
+    const expected = GasConstants.CALL_BASE_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas existing account costs - account with nonce" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Pre-create an account with non-zero nonce (but zero balance and empty code)
+    const existing_address = Address.from_u256(0x11111);
+    const account = database_interface.Account{
+        .nonce = 5,
+        .balance = 0,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(existing_address, account);
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+
+    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
+    defer contract.deinit(allocator, null);
+
+    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+    defer frame.deinit();
+
+    const gas_cost = frame._calculate_call_gas(existing_address, 0, false);
+    
+    // Account with non-zero nonce should not be considered new
+    const expected = GasConstants.CALL_BASE_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas database error handling" {
+    // This test will verify proper error propagation from database operations
+    // Implementation will handle database errors gracefully
+    const allocator = std.testing.allocator;
+    
+    // For now, we'll just verify that the function exists and compiles
+    // The actual database error testing will be implemented once we have the database integration
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+
+    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
+    defer contract.deinit(allocator, null);
+
+    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+    defer frame.deinit();
+
+    const test_address = Address.from_u256(0x999);
+    const gas_cost = frame._calculate_call_gas(test_address, 0, false);
+    
+    // For now, should use placeholder logic
+    try std.testing.expect(gas_cost >= GasConstants.CALL_BASE_COST);
+}
