@@ -41,8 +41,8 @@ pub const PlanDebug = @import("plan_debug.zig").PlanDebug;
 
 // EVM main module and configuration
 pub const Evm = @import("evm.zig").Evm;
-pub const EvmConfig = @import("evm.zig").EvmConfig;
-pub const PlannerStrategy = @import("evm.zig").PlannerStrategy;
+pub const EvmConfig = @import("evm_config.zig").EvmConfig;
+pub const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 
 // Default EVM type for backward compatibility
 pub const DefaultEvm = Evm(.{});
@@ -73,7 +73,10 @@ pub const opcode_synthetic = @import("opcode_synthetic.zig");
 pub const precompiles = @import("precompiles.zig");
 
 // Database and state modules
-pub const BlockInfo = @import("block_info.zig").BlockInfo;
+const block_info_mod = @import("block_info.zig");
+pub const BlockInfo = block_info_mod.DefaultBlockInfo;
+pub const CompactBlockInfo = block_info_mod.CompactBlockInfo;
+pub const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
 pub const CallParams = @import("call_params.zig").CallParams;
 pub const CallResult = @import("call_result.zig").CallResult;
 pub const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
@@ -85,6 +88,7 @@ pub const Host = @import("host.zig").Host;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 pub const Log = @import("logs.zig").Log;
+pub const TransactionContext = @import("transaction_context.zig").TransactionContext;
 
 // Run all tests
 test {

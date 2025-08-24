@@ -1532,7 +1532,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_chainid(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const chain_id = host.get_chain_id();
-            try self.stack.push(chain_id);
+            try self.stack.push(@as(u256, chain_id));
         }
 
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account

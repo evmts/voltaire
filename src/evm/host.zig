@@ -4,7 +4,7 @@ const Address = primitives.Address.Address;
 const Hardfork = @import("hardfork.zig").Hardfork;
 const CallResult = @import("call_result.zig").CallResult;
 const CallParams = @import("call_params.zig").CallParams;
-const BlockInfo = @import("block_info.zig").BlockInfo;
+const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
 
 /// Host interface for external operations
 /// This provides the EVM with access to blockchain state and external services
@@ -63,7 +63,7 @@ pub const Host = struct {
         /// Get return data from last call
         get_return_data: *const fn (ptr: *anyopaque) []const u8,
         /// Get chain ID
-        get_chain_id: *const fn (ptr: *anyopaque) u256,
+        get_chain_id: *const fn (ptr: *anyopaque) u16,
         /// Get block hash by number
         get_block_hash: *const fn (ptr: *anyopaque, block_number: u64) ?[32]u8,
         /// Get blob hash for the given index (EIP-4844)
@@ -203,7 +203,7 @@ pub const Host = struct {
                 return self.get_return_data();
             }
 
-            fn vtable_get_chain_id(ptr: *anyopaque) u256 {
+            fn vtable_get_chain_id(ptr: *anyopaque) u16 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
                 return self.get_chain_id();
             }
@@ -382,7 +382,7 @@ pub const Host = struct {
     }
 
     /// Get chain ID
-    pub fn get_chain_id(self: Host) u256 {
+    pub fn get_chain_id(self: Host) u16 {
         return self.vtable.get_chain_id(self.ptr);
     }
 
@@ -663,7 +663,7 @@ pub const MockHost = struct {
         return self.return_data;
     }
 
-    pub fn get_chain_id(self: *MockHost) u256 {
+    pub fn get_chain_id(self: *MockHost) u16 {
         _ = self;
         return 1; // Default mainnet chain ID
     }

@@ -17,7 +17,8 @@ const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const frame_mod = @import("frame.zig");
 const frame_interpreter_mod = @import("frame_interpreter.zig");
 const Host = @import("host.zig").Host;
-const BlockInfo = @import("block_info.zig").BlockInfo;
+const block_info_mod = @import("block_info.zig");
+const BlockInfo = block_info_mod.DefaultBlockInfo; // Default for backward compatibility
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
@@ -27,46 +28,9 @@ const Hardfork = @import("hardfork.zig").Hardfork;
 const StorageKey = primitives.StorageKey;
 
 const precompiles = @import("precompiles.zig");
-
-/// Strategy for EVM bytecode planning and optimization
-pub const PlannerStrategy = enum {
-    /// Minimal planner with basic bytecode analysis
-    minimal,
-    /// Advanced planner with comprehensive optimizations
-    advanced,
-};
-
-pub const EvmConfig = struct {
-    /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
-    /// This prevents infinite recursion and stack overflow attacks
-    max_call_depth: u11 = 1024,
-
-    /// Maximum input size for interpreter operations (128 KB)
-    /// This prevents excessive memory usage in single operations
-    max_input_size: u18 = 131072, // 128 KB
-
-    /// Frame configuration parameters (enable database by default)
-    frame_config: frame_mod.FrameConfig = .{ .has_database = true },
-
-    /// Enable precompiled contracts support (default: true)
-    /// When disabled, precompile calls will fail with an error
-    enable_precompiles: bool = true,
-
-    /// Planner strategy for bytecode analysis and optimization (default: minimal)
-    /// Note: When compiling with -Doptimize=ReleaseSmall, this is always forced to .minimal
-    /// regardless of the configured value to minimize binary size.
-    planner_strategy: PlannerStrategy = .minimal,
-
-    /// Gets the appropriate type for depth based on max_call_depth
-    fn get_depth_type(self: EvmConfig) type {
-        return if (self.max_call_depth <= std.math.maxInt(u8))
-            u8
-        else if (self.max_call_depth <= std.math.maxInt(u11))
-            u11
-        else
-            @compileError("max_call_depth too large");
-    }
-};
+const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
+const EvmConfig = @import("evm_config.zig").EvmConfig;
+const TransactionContext = @import("transaction_context.zig").TransactionContext;
 
 pub fn Evm(comptime config: EvmConfig) type {
     const DepthType = config.get_depth_type();
@@ -88,16 +52,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         const Self = @This();
 
         pub const SelectedPlannerType = PlannerType;
-
-        /// Transaction context
-        pub const TransactionContext = struct {
-            /// Transaction gas limit
-            gas_limit: u64,
-            /// Coinbase address (miner/validator)
-            coinbase: Address,
-            /// Chain ID
-            chain_id: u256,
-        };
 
         /// Simple journal implementation for state snapshots
         pub const Journal = struct {
@@ -917,7 +871,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Get chain ID
-        pub fn get_chain_id(self: *Self) u256 {
+        pub fn get_chain_id(self: *Self) u16 {
             return self.context.chain_id;
         }
 
@@ -1005,7 +959,7 @@ test "Evm creation with custom config" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = CustomEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1035,7 +989,7 @@ test "Evm call depth limit" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1082,7 +1036,7 @@ test "call method basic functionality - simple STOP" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1128,7 +1082,7 @@ test "call method loads contract code from state" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1176,7 +1130,7 @@ test "call method handles CREATE operation" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1221,7 +1175,7 @@ test "call method handles gas limit properly" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1411,7 +1365,7 @@ test "EvmConfig - custom configurations" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = CustomEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1426,7 +1380,7 @@ test "EvmConfig - custom configurations" {
 test "TransactionContext creation and fields" {
     const testing = std.testing;
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 5000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 137, // Polygon
@@ -1434,7 +1388,7 @@ test "TransactionContext creation and fields" {
 
     try testing.expectEqual(@as(u64, 5000000), context.gas_limit);
     try testing.expectEqual(ZERO_ADDRESS, context.coinbase);
-    try testing.expectEqual(@as(u256, 137), context.chain_id);
+    try testing.expectEqual(@as(u16, 137), context.chain_id);
 }
 
 test "Evm initialization with all parameters" {
@@ -1454,7 +1408,7 @@ test "Evm initialization with all parameters" {
         .prev_randao = [_]u8{0xAB} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 300000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1, // Mainnet
@@ -1526,7 +1480,7 @@ test "Host interface - get_balance functionality" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1572,7 +1526,7 @@ test "Host interface - storage operations" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1618,7 +1572,7 @@ test "Host interface - account_exists functionality" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1661,7 +1615,7 @@ test "Host interface - call type differentiation" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1727,7 +1681,7 @@ test "Host interface - hardfork compatibility checks" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1767,7 +1721,7 @@ test "Host interface - access cost operations" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1805,7 +1759,7 @@ test "Host interface - input size validation" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1853,7 +1807,7 @@ test "Call types - CREATE2 with salt" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1900,7 +1854,7 @@ test "Error handling - nested call depth tracking" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1951,7 +1905,7 @@ test "Error handling - precompile execution" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -1996,7 +1950,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2048,7 +2002,7 @@ test "Precompiles - SHA256 precompile (0x02)" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2099,7 +2053,7 @@ test "Precompiles - disabled configuration" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = NoPrecompileEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2147,7 +2101,7 @@ test "Precompiles - invalid precompile addresses" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2193,7 +2147,7 @@ test "Security - bounds checking and edge cases" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2257,7 +2211,7 @@ test "EVM with minimal planner strategy" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = MinimalEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2312,7 +2266,7 @@ test "EVM with advanced planner strategy" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = AdvancedEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2365,7 +2319,7 @@ test "journal state application - storage change rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2426,7 +2380,7 @@ test "journal state application - balance change rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2490,7 +2444,7 @@ test "journal state application - nonce change rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2554,7 +2508,7 @@ test "journal state application - code change rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2618,7 +2572,7 @@ test "journal state application - multiple changes rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2731,7 +2685,7 @@ test "journal state application - nested snapshots rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -2812,7 +2766,7 @@ test "journal state application - empty journal rollback" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,

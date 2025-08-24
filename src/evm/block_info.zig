@@ -8,30 +8,43 @@
 /// 
 /// This data is accessed by environment opcodes like BLOCKHASH, TIMESTAMP,
 /// DIFFICULTY, GASLIMIT, COINBASE, etc.
+const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
 
-// TODO: Currently unused
-/// Block information structure for Host interface
-pub const BlockInfo = struct {
-    /// Block number
-    number: u64,
-    /// Block timestamp
-    timestamp: u64,
-    /// Block difficulty
-    difficulty: u256,
-    /// Block gas limit
-    gas_limit: u64,
-    /// Coinbase (miner) address
-    coinbase: Address,
-    /// Base fee per gas (EIP-1559)
-    base_fee: u256,
-    /// Block hash of previous block
-    prev_randao: [32]u8,
+/// Create a BlockInfo type with the given configuration
+pub fn BlockInfo(comptime config: BlockInfoConfig) type {
+    // Validate configuration at compile time
+    config.validate();
     
-    /// Initialize BlockInfo with default values
-    pub fn init() BlockInfo {
-        return BlockInfo{
+    const DifficultyType = config.getDifficultyType();
+    const BaseFeeType = config.getBaseFeeType();
+    
+    return struct {
+        const Self = @This();
+        
+        /// Block number
+        number: u64,
+        /// Block timestamp
+        timestamp: u64,
+        /// Block difficulty (pre-merge) or prevrandao (post-merge)
+        /// Note: Ethereum spec requires u256, but pre-merge practical values fit in u64
+        /// Post-merge prevrandao uses full 256 bits of randomness
+        difficulty: DifficultyType,
+        /// Block gas limit
+        gas_limit: u64,
+        /// Coinbase (miner) address
+        coinbase: Address,
+        /// Base fee per gas (EIP-1559)
+        /// Note: Ethereum spec requires u256, but practical values fit in u64
+        base_fee: BaseFeeType,
+        /// Block hash of previous block (post-merge: prevrandao value)
+        prev_randao: [32]u8,
+        
+        /// Initialize BlockInfo with default values
+        pub fn init() Self {
+            return Self{
             .number = 0,
             .timestamp = 0,
             .difficulty = 0,
@@ -39,28 +52,33 @@ pub const BlockInfo = struct {
             .coinbase = primitives.ZERO_ADDRESS,
             .base_fee = 0,
             .prev_randao = [_]u8{0} ** 32,
-        };
-    }
-    
-    /// Check if this block has EIP-1559 base fee support (London+)
-    pub fn hasBaseFee(self: BlockInfo) bool {
-        return self.base_fee > 0 or self.number > 0; // Simplified check
-    }
-    
-    /// Validate block info constraints
-    pub fn validate(self: BlockInfo) bool {
-        // Gas limit must be reasonable
-        if (self.gas_limit == 0 or self.gas_limit > 100_000_000) return false;
-        // Timestamp should be reasonable (not before 2015)
-        if (self.timestamp > 0 and self.timestamp < 1438269973) return false; // Ethereum genesis
-        return true;
-    }
-};
+                };
+        }
+        
+        /// Check if this block has EIP-1559 base fee support (London+)
+        pub fn hasBaseFee(self: Self) bool {
+            return self.base_fee > 0 or self.number > 0; // Simplified check
+        }
+        
+        /// Validate block info constraints
+        pub fn validate(self: Self) bool {
+            // Gas limit must be reasonable
+            if (self.gas_limit == 0 or self.gas_limit > 100_000_000) return false;
+            // Timestamp should be reasonable (not before 2015)
+            if (self.timestamp > 0 and self.timestamp < 1438269973) return false; // Ethereum genesis
+            return true;
+        }
+    };
+}
 
-const std = @import("std");
+/// Default BlockInfo type with full u256 compliance (spec-compliant)
+pub const DefaultBlockInfo = BlockInfo(.{});
+
+/// Compact BlockInfo type using u64 for efficiency (practical values)
+pub const CompactBlockInfo = BlockInfo(.{ .use_compact_types = true });
 
 test "block info initialization" {
-    const block = BlockInfo.init();
+    const block = DefaultBlockInfo.init();
     try std.testing.expectEqual(@as(u64, 0), block.number);
     try std.testing.expectEqual(@as(u64, 0), block.timestamp);
     try std.testing.expectEqual(@as(u256, 0), block.difficulty);
@@ -71,10 +89,10 @@ test "block info initialization" {
 }
 
 test "block info custom values" {
-    const custom_address = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const custom_address: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     const custom_randao = [_]u8{0xff} ** 32;
     
-    const block = BlockInfo{
+    const block = DefaultBlockInfo{
         .number = 12345,
         .timestamp = 1640995200, // Jan 1, 2022
         .difficulty = 1000000,
@@ -95,50 +113,50 @@ test "block info custom values" {
 
 test "block info hasBaseFee check" {
     // Block with base fee
-    var block = BlockInfo.init();
+    var block = DefaultBlockInfo.init();
     block.base_fee = 1000;
     try std.testing.expect(block.hasBaseFee());
     
     // Block with number > 0 (London fork assumption)
-    block = BlockInfo.init();
+    block = DefaultBlockInfo.init();
     block.number = 12965000; // London fork block
     try std.testing.expect(block.hasBaseFee());
     
     // Genesis block without base fee
-    block = BlockInfo.init();
+    block = DefaultBlockInfo.init();
     try std.testing.expect(!block.hasBaseFee()); // Neither condition met
 }
 
 test "block info validation" {
     // Valid block
-    var block = BlockInfo.init();
+    var block = DefaultBlockInfo.init();
     block.timestamp = 1640995200;
     try std.testing.expect(block.validate());
     
     // Invalid gas limit - zero
-    block = BlockInfo.init();
+    block = DefaultBlockInfo.init();
     block.gas_limit = 0;
     try std.testing.expect(!block.validate());
     
     // Invalid gas limit - too high
-    block = BlockInfo.init();
+    block = DefaultBlockInfo.init();
     block.gas_limit = 200_000_000;
     try std.testing.expect(!block.validate());
     
     // Invalid timestamp - before Ethereum genesis
-    block = BlockInfo.init();
+    block = DefaultBlockInfo.init();
     block.timestamp = 1000000; // Before 2015
     try std.testing.expect(!block.validate());
     
     // Valid timestamp at boundary
-    block = BlockInfo.init();
+    block = DefaultBlockInfo.init();
     block.timestamp = 1438269973; // Ethereum genesis timestamp
     try std.testing.expect(block.validate());
 }
 
 test "block info edge cases" {
     // Maximum values
-    const max_block = BlockInfo{
+    const max_block = DefaultBlockInfo{
         .number = std.math.maxInt(u64),
         .timestamp = std.math.maxInt(u64),
         .difficulty = std.math.maxInt(u256),
@@ -151,7 +169,7 @@ test "block info edge cases" {
     try std.testing.expect(max_block.hasBaseFee());
     
     // Minimum valid values
-    const min_block = BlockInfo{
+    const min_block = DefaultBlockInfo{
         .number = 0,
         .timestamp = 1438269973, // Ethereum genesis
         .difficulty = 0,
@@ -161,4 +179,46 @@ test "block info edge cases" {
         .prev_randao = [_]u8{0} ** 32,
     };
     try std.testing.expect(min_block.validate());
+}
+
+test "compact block info" {
+    // Test compact block info with u64 types
+    const block = CompactBlockInfo{
+        .number = 15000000,
+        .timestamp = 1640995200,
+        .difficulty = 15_000_000_000_000_000, // 15 PH - fits in u64
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 100_000_000_000, // 100 Gwei - fits in u64
+        .prev_randao = [_]u8{0xAB} ** 32,
+    };
+    
+    try std.testing.expectEqual(@as(u64, 15000000), block.number);
+    try std.testing.expectEqual(@as(u64, 15_000_000_000_000_000), block.difficulty);
+    try std.testing.expectEqual(@as(u64, 100_000_000_000), block.base_fee);
+    try std.testing.expect(block.validate());
+    try std.testing.expect(block.hasBaseFee());
+}
+
+test "mixed block info types" {
+    // Custom configuration with mixed types
+    const MixedConfig = BlockInfoConfig{
+        .DifficultyType = u128,
+        .BaseFeeType = u96,
+        .use_compact_types = false,
+    };
+    const MixedBlockInfo = BlockInfo(MixedConfig);
+    
+    const block = MixedBlockInfo{
+        .number = 1000000,
+        .timestamp = 1640995200,
+        .difficulty = 1 << 100, // Requires u128
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1 << 80, // Requires u96
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    try std.testing.expectEqual(u128, @TypeOf(block.difficulty));
+    try std.testing.expectEqual(u96, @TypeOf(block.base_fee));
 }
