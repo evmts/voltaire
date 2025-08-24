@@ -1,5 +1,3 @@
-/// Advanced nested snapshot tests simulating realistic EVM execution patterns
-/// These tests validate complex transaction scenarios with multiple call depths and reverts
 const std = @import("std");
 const testing = std.testing;
 const primitives = @import("primitives");
@@ -7,12 +5,11 @@ const Address = primitives.Address.Address;
 const Journal = @import("journal.zig").Journal;
 const JournalConfig = @import("journal_config.zig").JournalConfig;
 
-/// ERC20 token transfer simulation with nested calls and reverts
 test "Journal nested - ERC20 transfer simulation" {
     const erc20_contract = [_]u8{1} ** 20;
-    const sender = [_]u8{2} ** 20;
-    const recipient = [_]u8{3} ** 20;
-    const allowance_spender = [_]u8{4} ** 20;
+    _ = [_]u8{2} ** 20; // sender
+    _ = [_]u8{3} ** 20; // recipient  
+    _ = [_]u8{4} ** 20; // allowance_spender
     
     var journal = Journal(.{}).init(testing.allocator);
     defer journal.deinit();
@@ -67,8 +64,6 @@ test "Journal nested - DEX swap with multiple token interactions" {
     const dex_contract = [_]u8{1} ** 20;
     const token_a_contract = [_]u8{2} ** 20;
     const token_b_contract = [_]u8{3} ** 20;
-    const user = [_]u8{4} ** 20;
-    const dex_pool = [_]u8{5} ** 20;
     
     var journal = Journal(.{}).init(testing.allocator);
     defer journal.deinit();

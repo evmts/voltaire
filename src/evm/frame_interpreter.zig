@@ -2378,15 +2378,19 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 return Error.OutOfBounds;
             }
             const offset_u64 = @as(u64, @intCast(offset));
-            const memory_expansion_cost = try self.memory.expansion_cost(offset_u64, size_u64);
+            const end_address = offset_u64 + size_u64;
+            const memory_expansion_cost = self.memory.get_expansion_cost(end_address);
             
             if (self.gas_remaining < @as(Frame.GasType, @intCast(memory_expansion_cost))) {
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @as(Frame.GasType, @intCast(memory_expansion_cost));
             
+            // Expand memory to ensure we can read the init code
+            try self.memory.ensure_capacity(end_address);
+            
             // Get init code from memory
-            const init_code = try self.memory.get_slice_evm(offset_u64, size_u64);
+            const init_code = try self.memory.get_slice(@intCast(offset_u64), @intCast(size_u64));
             
             // Calculate gas for subcall (all but 1/64th of remaining gas)
             const gas_for_call = @divFloor(self.gas_remaining * 63, 64);
@@ -2406,7 +2410,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const result = try self.host.?.inner_call(params);
             
             // Update gas remaining
-            self.gas_remaining = @as(GasType, @intCast(result.gas_left));
+            self.gas_remaining = @as(Frame.GasType, @intCast(result.gas_left));
             
             // Push result to stack (new contract address or 0 on failure)
             if (result.success and result.output.len >= 20) {
