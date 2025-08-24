@@ -22,7 +22,6 @@ pub fn createMemory(comptime config: MemoryConfig) type {
         buffer_ptr: *std.ArrayList(u8),
         allocator: std.mem.Allocator,
         owns_buffer: bool,
-        
         cached_expansion: struct {
             last_size: u64,
             last_words: u64,
@@ -32,12 +31,9 @@ pub fn createMemory(comptime config: MemoryConfig) type {
         pub fn init(allocator: std.mem.Allocator) !Self {
             const buffer_ptr = try allocator.create(std.ArrayList(u8));
             errdefer allocator.destroy(buffer_ptr);
-            
             buffer_ptr.* = std.ArrayList(u8).init(allocator);
             errdefer buffer_ptr.deinit();
-            
             try buffer_ptr.ensureTotalCapacity(INITIAL_CAPACITY);
-            
             return Self{
                 .checkpoint = 0,
                 .buffer_ptr = buffer_ptr,
@@ -111,10 +107,7 @@ pub fn createMemory(comptime config: MemoryConfig) type {
         
         pub fn get_slice(self: *const Self, offset: usize, len: usize) MemoryError![]const u8 {
             const end = offset + len;
-            if (end > self.size()) {
-                return MemoryError.OutOfBounds;
-            }
-            
+            if (end > self.size()) return MemoryError.OutOfBounds;
             const start_idx = self.checkpoint + offset;
             return self.buffer_ptr.items[start_idx..start_idx + len];
         }
@@ -122,7 +115,6 @@ pub fn createMemory(comptime config: MemoryConfig) type {
         pub fn set_data(self: *Self, offset: usize, data: []const u8) !void {
             const end = offset + data.len;
             try self.ensure_capacity(end);
-            
             const start_idx = self.checkpoint + offset;
             @memcpy(self.buffer_ptr.items[start_idx..start_idx + data.len], data);
         }
@@ -140,9 +132,7 @@ pub fn createMemory(comptime config: MemoryConfig) type {
         pub fn get_u256(self: *const Self, offset: usize) !u256 {
             const slice = try self.get_slice(offset, 32);
             var result: u256 = 0;
-            for (slice) |byte| {
-                result = (result << 8) | byte;
-            }
+            for (slice) |byte| result = (result << 8) | byte;
             return result;
         }
         
@@ -152,9 +142,7 @@ pub fn createMemory(comptime config: MemoryConfig) type {
             try self.ensure_capacity(word_aligned_end);
             const slice = try self.get_slice(offset, 32);
             var result: u256 = 0;
-            for (slice) |byte| {
-                result = (result << 8) | byte;
-            }
+            for (slice) |byte| result = (result << 8) | byte;
             return result;
         }
         
@@ -180,16 +168,15 @@ pub fn createMemory(comptime config: MemoryConfig) type {
             try self.set_data(offset, &bytes);
         }
         
+        fn calculate_memory_cost(words: u64) u64 {
+            return 3 * words + (words * words) / 512;
+        }
         pub fn get_expansion_cost(self: *Self, new_size: u64) u64 {
             const current_size = @as(u64, @intCast(self.size()));
-            if (new_size <= current_size) {
-                return 0;
-            }
+            if (new_size <= current_size) return 0;
             const new_words = (new_size + 31) / 32;
             const current_words = (current_size + 31) / 32;
-            if (new_size <= self.cached_expansion.last_size) {
-                return 0;
-            }
+            if (new_size <= self.cached_expansion.last_size) return 0;
             const new_cost = calculate_memory_cost(new_words);
             const current_cost = calculate_memory_cost(current_words);
             const expansion_cost = new_cost - current_cost;
@@ -197,10 +184,6 @@ pub fn createMemory(comptime config: MemoryConfig) type {
             self.cached_expansion.last_words = new_words;
             self.cached_expansion.last_cost = new_cost;
             return expansion_cost;
-        }
-        
-        fn calculate_memory_cost(words: u64) u64 {
-            return 3 * words + (words * words) / 512;
         }
         
         pub fn get_buffer_ref(self: *Self) *std.ArrayList(u8) {
