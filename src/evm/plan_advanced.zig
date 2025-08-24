@@ -363,6 +363,8 @@ pub fn Plan(comptime cfg: PlanConfig) type {
 
 /// Minimal plan that leverages bytecode.zig for analysis and lightweight execution.
 /// Used by FrameMinimal for simple bytecode execution without optimization.
+pub const PlanAdvanced = Plan;
+
 pub const PlanMinimal = struct {
     /// Bytecode with validation and analysis (leverages bytecode.zig)
     bytecode: BytecodeType,

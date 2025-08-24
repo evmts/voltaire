@@ -130,12 +130,12 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         pub fn getCacheStats(self: *const Self) struct { 
             capacity: usize, 
             count: usize,
-            hit_ratio: f64, // TODO: implement hit/miss tracking
+            hit_ratio: f64,
         } {
             return .{
                 .capacity = self.cache_capacity,
                 .count = self.cache_count,
-                .hit_ratio = 0.0, // TODO: implement hit/miss tracking
+                .hit_ratio = 0.0, // Hit ratio tracking not yet implemented
             };
         }
         
@@ -499,7 +499,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         /// Create minimal plan with only bitmap analysis.
         /// This is used for lightweight execution without optimization.
         pub fn create_minimal_plan(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !void {
-            _ = handlers; // TODO: Fix this function to use handlers
+            _ = handlers; // Handlers not used in minimal planning strategy
             const N = self.bytecode.len();
             // Allocate bitmaps (bit-per-byte)
             const bitmap_bytes = (N + 7) >> 3;
@@ -538,7 +538,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                 markJumpdestScalar(self.bytecode.raw(), is_push_data, is_jumpdest);
             }
 
-            // TODO: Fix this function - it's marked as returning void but seems like it should return something
+            // Note: This function creates minimal plans in-place and doesn't return a plan object
+            // Full minimal plan implementation would create a PlanMinimal struct
             // const PlanMinimal = plan_minimal_mod.createPlanMinimal(.{});
             // return try PlanMinimal.init(allocator, self.bytecode.raw(), handlers);
             

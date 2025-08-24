@@ -1009,3 +1009,6 @@ test "DebugPlan REVM trace validation" {
     // The validation should pass when executing
     // (In a real test, we'd execute and the handlers would validate)
 }
+
+// Export for root.zig compatibility
+pub const PlanDebug = DebugPlan;
