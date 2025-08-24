@@ -4159,19 +4159,19 @@ test "Frame op_gas returns gas remaining" {
     try std.testing.expectEqual(@as(u256, 1000000), result1);
 
     // Test op_gas with modified gas_remaining
-    frame.gas_manager = try F.GasManagerType.init(12345);
+    frame.gas_manager.remaining = 12345;
     try frame.gas();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 12345), result2);
 
     // Test op_gas with zero gas
-    frame.gas_manager = try F.GasManagerType.init(0);
+    frame.gas_manager.remaining = 0;
     try frame.gas();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test op_gas with negative gas (should push 0)
-    frame.gas_manager = try F.GasManagerType.init(0); // Can't have negative gas
+    frame.gas_manager.remaining = 0; // Can't have negative gas
     try frame.gas();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
@@ -5949,7 +5949,7 @@ test "Frame initialization edge cases - various configurations" {
     const bytecode1 = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame1 = try F1.init(allocator, &bytecode1, 0, void{}, null);
     defer frame1.deinit(allocator);
-    try std.testing.expectEqual(@as(u64, 0), frame1.gas_manager.remaining);
+    try std.testing.expectEqual(@as(i32, 0), frame1.gas_manager.remaining);
 
     // Test frame with maximum bytecode size for different PC types
     const SmallFrame = Frame(.{ .max_bytecode_size = 255 });
@@ -6001,19 +6001,21 @@ test "Frame error recovery - partial operations and state consistency" {
     try std.testing.expectError(error.StackOverflow, frame.stack.push(1000));
 
     // Stack should still be at capacity, not corrupted
-    try std.testing.expectEqual(@as(usize, 1024), frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1024), frame.stack.size());
     try std.testing.expectEqual(@as(u256, 999), frame.stack.peek_unsafe());
 }
 
 // Mock Host implementation for testing system opcodes
 const CallType = enum { call, delegatecall, staticcall, create, create2 };
 
+const Destruction = struct { contract: Address, recipient: Address };
+
 const MockHost = struct {
     allocator: std.mem.Allocator,
     call_count: usize,
     call_types: std.ArrayList(CallType),
     snapshots: std.ArrayList(u32),
-    destructions: std.ArrayList(struct { contract: Address, recipient: Address }),
+    destructions: std.ArrayList(Destruction),
     snapshot_counter: u32,
     should_call_succeed: bool,
     call_return_data: []const u8,
@@ -6024,7 +6026,7 @@ const MockHost = struct {
             .call_count = 0,
             .call_types = std.ArrayList(CallType).init(allocator),
             .snapshots = std.ArrayList(u32).init(allocator),
-            .destructions = std.ArrayList(struct { contract: Address, recipient: Address }).init(allocator),
+            .destructions = std.ArrayList(Destruction).init(allocator),
             .snapshot_counter = 0,
             .should_call_succeed = true,
             .call_return_data = &[_]u8{},
@@ -6041,13 +6043,12 @@ const MockHost = struct {
         self.call_count += 1;
 
         // Track call type
-        const call_type = switch (params) {
-            .call => CallType.call,
-            .delegatecall => CallType.delegatecall,
-            .staticcall => CallType.staticcall,
-            .create => CallType.create,
-            .create2 => CallType.create2,
-            else => CallType.call,
+        const call_type: CallType = switch (params) {
+            .call => .call,
+            .delegatecall => .delegatecall,
+            .staticcall => .staticcall,
+            .create => .create,
+            .create2 => .create2,
         };
         try self.call_types.append(call_type);
 
@@ -6056,7 +6057,7 @@ const MockHost = struct {
             if (params.isCreate()) {
                 const addr: Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
                 const output = try self.allocator.alloc(u8, 20);
-                @memcpy(output, &addr.bytes);
+                @memcpy(output, &addr);
                 return CallResult{
                     .success = true,
                     .gas_left = params.getGas() - 1000, // Simulate some gas consumption
@@ -6960,19 +6961,19 @@ test "Ethereum Test: AND bitwise operations" {
     // Test 1: Basic AND - 0xFF & 0x0F = 0x0F
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
-    try frame.and();
+    try frame.@"and"();
     try std.testing.expectEqual(@as(u256, 0x0F), frame.stack.pop_unsafe());
 
     // Test 2: Zero AND
     try frame.stack.push(0xFF);
     try frame.stack.push(0);
-    try frame.and();
+    try frame.@"and"();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Self AND (identity)
     try frame.stack.push(0xABCDEF);
     try frame.stack.push(0xABCDEF);
-    try frame.and();
+    try frame.@"and"();
     try std.testing.expectEqual(@as(u256, 0xABCDEF), frame.stack.pop_unsafe());
 
     // Test 4: Large number AND
@@ -6980,7 +6981,7 @@ test "Ethereum Test: AND bitwise operations" {
     const large2 = 0x5555555555555555555555555555555555555555555555555555555555555555;
     try frame.stack.push(large1);
     try frame.stack.push(large2);
-    try frame.and();
+    try frame.@"and"();
     try std.testing.expectEqual(large2, frame.stack.pop_unsafe());
 }
 
@@ -6994,19 +6995,19 @@ test "Ethereum Test: OR bitwise operations" {
     // Test 1: Basic OR - 0xF0 | 0x0F = 0xFF
     try frame.stack.push(0xF0);
     try frame.stack.push(0x0F);
-    try frame.op_or();
+    try frame.@"or"();
     try std.testing.expectEqual(@as(u256, 0xFF), frame.stack.pop_unsafe());
 
     // Test 2: Zero OR (identity)
     try frame.stack.push(0xABCDEF);
     try frame.stack.push(0);
-    try frame.op_or();
+    try frame.@"or"();
     try std.testing.expectEqual(@as(u256, 0xABCDEF), frame.stack.pop_unsafe());
 
     // Test 3: Self OR (identity)
     try frame.stack.push(0xABCDEF);
     try frame.stack.push(0xABCDEF);
-    try frame.op_or();
+    try frame.@"or"();
     try std.testing.expectEqual(@as(u256, 0xABCDEF), frame.stack.pop_unsafe());
 }
 
@@ -7020,19 +7021,19 @@ test "Ethereum Test: XOR bitwise operations" {
     // Test 1: Basic XOR - 0xFF ^ 0x0F = 0xF0
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
-    try frame.op_xor();
+    try frame.xor();
     try std.testing.expectEqual(@as(u256, 0xF0), frame.stack.pop_unsafe());
 
     // Test 2: Zero XOR (identity)
     try frame.stack.push(0xABCDEF);
     try frame.stack.push(0);
-    try frame.op_xor();
+    try frame.xor();
     try std.testing.expectEqual(@as(u256, 0xABCDEF), frame.stack.pop_unsafe());
 
     // Test 3: Self XOR (always zero)
     try frame.stack.push(0xABCDEF);
     try frame.stack.push(0xABCDEF);
-    try frame.op_xor();
+    try frame.xor();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 }
 
@@ -7045,19 +7046,19 @@ test "Ethereum Test: NOT bitwise complement" {
 
     // Test 1: Basic NOT - ~0 = max_u256
     try frame.stack.push(0);
-    try frame.op_not();
+    try frame.not();
     try std.testing.expectEqual(std.math.maxInt(u256), frame.stack.pop_unsafe());
 
     // Test 2: NOT max_u256 = 0
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.op_not();
+    try frame.not();
     try std.testing.expectEqual(@as(u256, 0), frame.stack.pop_unsafe());
 
     // Test 3: Pattern NOT
     const pattern = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
     const expected = 0x5555555555555555555555555555555555555555555555555555555555555555;
     try frame.stack.push(pattern);
-    try frame.op_not();
+    try frame.not();
     try std.testing.expectEqual(expected, frame.stack.pop_unsafe());
 }
 
@@ -7071,11 +7072,11 @@ test "Ethereum Test: Stack underflow comprehensive error cases" {
     defer frame.deinit(allocator);
 
     // Test arithmetic operations with insufficient stack
-    try std.testing.expectError(error.StackUnderflow, frame.op_add());
+    try std.testing.expectError(error.StackUnderflow, frame.add());
 
     // Push one item and try two-operand operation
     try frame.stack.push(42);
-    try std.testing.expectError(error.StackUnderflow, frame.op_add());
+    try std.testing.expectError(error.StackUnderflow, frame.add());
 
     // Test stack operations with empty stack
     var empty_frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
@@ -7100,7 +7101,7 @@ test "Ethereum Test: Stack overflow protection" {
     }
 
     // Verify stack is full
-    try std.testing.expectEqual(@as(u32, 1024), frame.stack.depth());
+    try std.testing.expectEqual(@as(u32, 1024), frame.stack.size());
 
     // Next push should fail with overflow
     try std.testing.expectError(error.StackOverflow, frame.stack.push(1025));
@@ -7125,20 +7126,20 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
 
     // Store result in memory
     try frame.stack.push(0); // offset
-    try frame.op_mstore();
+    try frame.mstore();
 
     // Load it back
     try frame.stack.push(0);
-    try frame.op_mload();
+    try frame.mload();
     try std.testing.expectEqual(@as(u256, 300), frame.stack.pop_unsafe());
 
     // Perform bitwise operations
     try frame.stack.push(0xFF00);
     try frame.stack.push(0x00FF);
-    try frame.op_or(); // Should be 0xFFFF
+    try frame.@"or"(); // Should be 0xFFFF
 
     try frame.stack.push(0x0F0F);
-    try frame.and(); // 0xFFFF & 0x0F0F = 0x0F0F
+    try frame.@"and"(); // 0xFFFF & 0x0F0F = 0x0F0F
 
     try std.testing.expectEqual(@as(u256, 0x0F0F), frame.stack.pop_unsafe());
 
