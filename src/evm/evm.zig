@@ -337,44 +337,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             // If no code, it's a simple value transfer
             if (code.len == 0) {
                 // Transfer value if needed
-                if (params.value > 0) {
-                    // Deduct from caller
-                    var caller_account = self.database.get_account(params.caller) catch |err| {
-                        self.journal.revert_to_snapshot(snapshot_id);
-                        return switch (err) {
-                            else => CallResult.failure(0),
-                        };
-                    } orelse unreachable;
-                    
-                    caller_account.balance -= params.value;
-                    self.database.set_account(params.caller, caller_account) catch |err| {
-                        self.journal.revert_to_snapshot(snapshot_id);
-                        return switch (err) {
-                            else => CallResult.failure(0),
-                        };
-                    };
-                    
-                    // Add to recipient
-                    var to_account = self.database.get_account(params.to) catch |err| {
-                        self.journal.revert_to_snapshot(snapshot_id);
-                        return switch (err) {
-                            else => CallResult.failure(0),
-                        };
-                    } orelse Account{
-                        .balance = 0,
-                        .nonce = 0,
-                        .code_hash = [_]u8{0} ** 32,
-                        .storage_root = [_]u8{0} ** 32,
-                    };
-                    
-                    to_account.balance += params.value;
-                    self.database.set_account(params.to, to_account) catch |err| {
-                        self.journal.revert_to_snapshot(snapshot_id);
-                        return switch (err) {
-                            else => CallResult.failure(0),
-                        };
-                    };
-                }
+                self.transfer_value(params.caller, params.to, params.value, snapshot_id) catch {
+                    return CallResult.failure(0);
+                };
                 
                 // Empty call success
                 return CallResult.success_empty(params.gas);

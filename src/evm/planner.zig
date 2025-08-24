@@ -161,11 +161,23 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             capacity: usize, 
             count: usize,
             hit_ratio: f64,
+            hits: usize,
+            misses: usize,
+            total_requests: usize,
         } {
+            const total_requests = self.cache_hits + self.cache_misses;
+            const hit_ratio: f64 = if (total_requests > 0) 
+                @as(f64, @floatFromInt(self.cache_hits)) / @as(f64, @floatFromInt(total_requests))
+            else 
+                0.0;
+            
             return .{
                 .capacity = self.cache_capacity,
                 .count = self.cache_count,
-                .hit_ratio = 0.0, // Hit ratio tracking not yet implemented
+                .hit_ratio = hit_ratio,
+                .hits = self.cache_hits,
+                .misses = self.cache_misses,
+                .total_requests = total_requests,
             };
         }
         
@@ -185,6 +197,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             self.cache_head = null;
             self.cache_tail = null;
             self.cache_count = 0;
+            self.cache_hits = 0;
+            self.cache_misses = 0;
         }
         
         fn moveToFront(self: *Self, node: *CacheNode) void {
