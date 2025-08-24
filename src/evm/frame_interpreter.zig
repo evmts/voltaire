@@ -4520,20 +4520,61 @@ test "FrameInterpreter multi-config - bytecode size limits" {
 // 7. DATABASE INTEGRATION TESTS ⭐⭐⭐
 
 test "FrameInterpreter database integration - SLOAD/SSTORE operations" {
-    // Skip if database integration not available
-    if (!@hasDecl(@TypeOf(FrameInterpreter(.{ .has_database = true })), "init")) {
-        return error.SkipZigTest;
-    }
+    const allocator = std.testing.allocator;
     
-    // This test would require database interface implementation
-    // For now, just verify the test framework works
-    try std.testing.expect(true);
+    // Create database
+    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    // SSTORE bytecode: PUSH1 0x42 PUSH1 0x01 SSTORE STOP
+    const bytecode = [_]u8{ 0x60, 0x42, 0x60, 0x01, 0x55, 0x00 };
+    
+    var frame_interpreter = try FrameInterpreter(test_config).init(allocator, &bytecode, 100000, db_interface);
+    defer frame_interpreter.deinit(allocator);
+    
+    // Execute SSTORE operation
+    const result = frame_interpreter.interpret();
+    
+    // Should complete successfully
+    switch (result) {
+        .success => {},
+        else => try std.testing.expect(false),
+    }
 }
 
 test "FrameInterpreter database integration - storage boundary conditions" {
-    // Test storage operations at boundaries (slot 0, max slot, etc.)
-    // Skip for now if database not implemented
-    return error.SkipZigTest;
+    const allocator = std.testing.allocator;
+    
+    // Create database
+    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    // Test storage at slot 0 - SSTORE: PUSH1 0x42 PUSH1 0x00 SSTORE STOP
+    const bytecode_slot0 = [_]u8{ 0x60, 0x42, 0x60, 0x00, 0x55, 0x00 };
+    
+    var frame_interpreter = try FrameInterpreter(test_config).init(allocator, &bytecode_slot0, 100000, db_interface);
+    defer frame_interpreter.deinit(allocator);
+    
+    const result = frame_interpreter.interpret();
+    switch (result) {
+        .success => {},
+        else => try std.testing.expect(false),
+    }
+    
+    // Test SLOAD from slot 0 - SLOAD: PUSH1 0x00 SLOAD STOP  
+    const bytecode_load = [_]u8{ 0x60, 0x00, 0x54, 0x00 };
+    var frame_interpreter2 = try FrameInterpreter(test_config).init(allocator, &bytecode_load, 100000, db_interface);
+    defer frame_interpreter2.deinit(allocator);
+    
+    const result2 = frame_interpreter2.interpret();
+    switch (result2) {
+        .success => {},
+        else => try std.testing.expect(false),
+    }
 }
 
 // 8. STRESS & PERFORMANCE EDGE CASES ⭐⭐⭐

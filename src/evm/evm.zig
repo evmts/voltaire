@@ -559,10 +559,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             
             // Calculate contract address from sender, salt, and init code hash
-            const crypto = @import("crypto");
-            const init_code_hash = crypto.Hash.keccak256(params.init_code);
+            const keccak_asm = @import("keccak_asm.zig");
+            var init_code_hash_bytes: [32]u8 = undefined;
+            try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
             const salt_bytes = @as([32]u8, @bitCast(params.salt));
-            const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash);
+            const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
             
             // Check if address already has code (collision)
             if (self.database.account_exists(contract_address)) {
@@ -611,7 +612,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Store the deployed code
             if (result.output.len > 0) {
-                const code_hash = crypto.Hash.keccak256(result.output);
+                var code_hash_bytes: [32]u8 = undefined;
+                try keccak_asm.keccak256(result.output, &code_hash_bytes);
                 
                 const new_account = Account{
                     .balance = params.value,
@@ -940,7 +942,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const crypto = @import("crypto");
             const init_code_hash = crypto.Hash.keccak256(params.init_code);
 
-            const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash);
+            const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
 
             // CREATE2 doesn't increment caller nonce
             return self.create_contract_at(params.caller, params.value, params.init_code, params.gas, contract_address, is_top_level_call, snapshot_id);

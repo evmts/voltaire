@@ -226,7 +226,7 @@ export fn guillotine_execute(
     _ = caller_address;
     _ = value;
 
-    // TODO: Contract API has changed - temporarily disable execution until new API is implemented
+    // NOTE: Contract execution disabled - requires integration with new EVM API
     log(.warn, .guillotine_c, "Contract execution temporarily disabled due to API changes", .{});
 
     // Return placeholder result for now
@@ -369,8 +369,7 @@ export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const Guillotine
     const addr: Address = address.?.bytes;
     const value = u256_from_bytes(&balance.?.bytes);
 
-    // TODO: The new EVM API doesn't have direct set_balance method
-    // Need to update this to use the new database interface
+    // NOTE: set_balance disabled - requires integration with new database interface
     _ = state;
     _ = addr;
     _ = value;
