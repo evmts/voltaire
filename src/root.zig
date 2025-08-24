@@ -152,7 +152,7 @@ export fn guillotine_init() c_int {
         .prev_randao = [_]u8{0} ** 32,
     };
     
-    const tx_context = evm_root.DefaultEvm.TransactionContext{
+    const tx_context = evm_root.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -325,7 +325,7 @@ export fn guillotine_vm_create() ?*GuillotineVm {
         .prev_randao = [_]u8{0} ** 32,
     };
     
-    const tx_context = evm_root.DefaultEvm.TransactionContext{
+    const tx_context = evm_root.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -471,5 +471,5 @@ pub const Primitives = primitives;
 pub const Provider = provider;
 
 test "Evm module" {
-    std.testing.refAllDecls(Evm);
+    std.testing.refAllDecls(DefaultEvm);
 }
