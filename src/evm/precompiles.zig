@@ -409,13 +409,64 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
 
     const output = try allocator.alloc(u8, 64);
     
-    // TODO: Implement proper BN254 elliptic curve addition
-    // For now, return zero point (placeholder implementation)
-    _ = x1;
-    _ = y1;
-    _ = x2;
-    _ = y2;
-    @memset(output, 0);
+    // Use the actual BN254 implementation from crypto module
+    const g1_x1 = crypto.bn254.FpMont.from_int(x1) catch {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
+    const g1_y1 = crypto.bn254.FpMont.from_int(y1) catch {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
+    const g1_x2 = crypto.bn254.FpMont.from_int(x2) catch {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
+    const g1_y2 = crypto.bn254.FpMont.from_int(y2) catch {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
+    
+    // Create G1 points
+    const point1 = crypto.bn254.G1{ .x = g1_x1, .y = g1_y1, .z = crypto.bn254.FpMont.ONE };
+    const point2 = crypto.bn254.G1{ .x = g1_x2, .y = g1_y2, .z = crypto.bn254.FpMont.ONE };
+    
+    // Check if points are on curve
+    if (!point1.isOnCurve() or !point2.isOnCurve()) {
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    }
+    
+    // Perform addition
+    const result = point1.add(&point2);
+    
+    // Convert back to affine coordinates and bytes
+    const result_affine = result.toAffine();
+    const result_x = result_affine.x.to_int();
+    const result_y = result_affine.y.to_int();
+    
+    u256ToBytes(result_x, output[0..32]);
+    u256ToBytes(result_y, output[32..64]);
 
     return PrecompileOutput{
         .output = output,
