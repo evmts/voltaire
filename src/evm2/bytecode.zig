@@ -138,54 +138,109 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             }
         }
         
-        /// Build bitmaps for bytecode analysis (caller owns the memory)
-        /// Copied from planner.zig
-        pub fn buildBitmaps(
-            self: Self,
-            allocator: std.mem.Allocator,
-        ) !struct {
-            is_push_data: []u8,
-            is_op_start: []u8,
-            is_jumpdest: []u8,
-        } {
+        /// Build bitmaps and validate bytecode
+        fn buildBitmapsAndValidate(self: *Self) BytecodeValidationError!void {
             const N = self.code.len;
+            if (N == 0) {
+                // Empty bytecode is valid, allocate minimal bitmaps
+                self.is_push_data = try self.allocator.alloc(u8, 1);
+                self.is_op_start = try self.allocator.alloc(u8, 1);
+                self.is_jumpdest = try self.allocator.alloc(u8, 1);
+                self.is_push_data[0] = 0;
+                self.is_op_start[0] = 0;
+                self.is_jumpdest[0] = 0;
+                return;
+            }
+            
             const bitmap_bytes = (N + 7) >> 3;
             
-            const is_push_data = try allocator.alloc(u8, bitmap_bytes);
-            errdefer allocator.free(is_push_data);
-            const is_op_start = try allocator.alloc(u8, bitmap_bytes);
-            errdefer allocator.free(is_op_start);
-            const is_jumpdest = try allocator.alloc(u8, bitmap_bytes);
-            errdefer allocator.free(is_jumpdest);
+            self.is_push_data = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
+            errdefer self.allocator.free(self.is_push_data);
+            self.is_op_start = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
+            errdefer self.allocator.free(self.is_op_start);
+            self.is_jumpdest = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
+            errdefer self.allocator.free(self.is_jumpdest);
             
-            @memset(is_push_data, 0);
-            @memset(is_op_start, 0);
-            @memset(is_jumpdest, 0);
+            @memset(self.is_push_data, 0);
+            @memset(self.is_op_start, 0);
+            @memset(self.is_jumpdest, 0);
             
-            // Build opcode start and push data bitmaps
+            // First pass: build bitmaps and validate opcodes
             var i: usize = 0;
-            while (i < N) : (i += 1) {
-                is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
+            while (i < N) {
+                self.is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
                 const op = self.code[i];
+                
+                // Validate opcode
+                if (op == 0xFE) return error.InvalidOpcode; // INVALID opcode
+                
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    
+                    // Check if PUSH extends past end
+                    if (i + n >= N) return error.TruncatedPush;
+                    
                     var j: usize = 0;
-                    while (j < n and i + 1 + j < N) : (j += 1) {
+                    while (j < n) : (j += 1) {
                         const idx = i + 1 + j;
-                        is_push_data[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                        self.is_push_data[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
                     }
-                    i += n;
+                    i += n + 1;
+                } else {
+                    i += 1;
                 }
             }
             
             // Mark JUMPDEST positions
-            markJumpdestScalar(self.code, is_push_data, is_jumpdest);
+            markJumpdestScalar(self.code, self.is_push_data, self.is_jumpdest);
             
-            return .{
-                .is_push_data = is_push_data,
-                .is_op_start = is_op_start,
-                .is_jumpdest = is_jumpdest,
-            };
+            // Second pass: validate jump destinations
+            i = 0;
+            while (i < N) {
+                if ((self.is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) == 0) {
+                    i += 1;
+                    continue;
+                }
+                
+                const op = self.code[i];
+                
+                // Check for JUMP/JUMPI with constant destination
+                if ((op == @intFromEnum(Opcode.JUMP) or op == @intFromEnum(Opcode.JUMPI)) and i > 0) {
+                    // Check if previous instruction was a PUSH
+                    var push_start: ?usize = null;
+                    var j: usize = 0;
+                    while (j < i) {
+                        if ((self.is_op_start[j >> 3] & (@as(u8, 1) << @intCast(j & 7))) != 0) {
+                            const prev_op = self.code[j];
+                            if (prev_op >= @intFromEnum(Opcode.PUSH1) and prev_op <= @intFromEnum(Opcode.PUSH32)) {
+                                const size = self.getInstructionSize(j);
+                                if (j + size == i) {
+                                    push_start = j;
+                                    break;
+                                }
+                            }
+                        }
+                        j += 1;
+                    }
+                    
+                    if (push_start) |start| {
+                        // Extract jump target
+                        const push_op = self.code[start];
+                        const n = push_op - (@intFromEnum(Opcode.PUSH1) - 1);
+                        const target = self.readPushValueN(start, @intCast(n)) orelse unreachable;
+                        
+                        // Validate jump destination
+                        if (target < self.code.len) {
+                            const target_pc = @as(usize, @intCast(target));
+                            if ((self.is_jumpdest[target_pc >> 3] & (@as(u8, 1) << @intCast(target_pc & 7))) == 0) {
+                                return error.InvalidJumpDestination;
+                            }
+                        }
+                    }
+                }
+                
+                i += self.getInstructionSize(i);
+            }
         }
         
         /// Read a PUSH value at the given PC
@@ -246,6 +301,98 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             const next = pc + size;
             if (next > self.code.len) return null;
             return next;
+        }
+        
+        /// Get statistics about the bytecode
+        pub fn getStats(self: Self) Stats {
+            var stats = Stats{
+                .opcode_counts = [_]u32{0} ** 256,
+                .push_values = &.{},
+                .potential_fusions = &.{},
+                .jumpdests = &.{},
+                .jumps = &.{},
+                .backwards_jumps = 0,
+                .is_create_code = false,
+            };
+            
+            // Count opcodes and collect data
+            var push_values = std.ArrayList(Stats.PushValue).init(self.allocator);
+            defer push_values.deinit();
+            var fusions = std.ArrayList(Stats.Fusion).init(self.allocator);
+            defer fusions.deinit();
+            var jumpdests = std.ArrayList(usize).init(self.allocator);
+            defer jumpdests.deinit();
+            var jumps = std.ArrayList(Stats.Jump).init(self.allocator);
+            defer jumps.deinit();
+            
+            var i: usize = 0;
+            while (i < self.code.len) {
+                if ((self.is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) == 0) {
+                    i += 1;
+                    continue;
+                }
+                
+                const op = self.code[i];
+                stats.opcode_counts[op] += 1;
+                
+                // Collect JUMPDEST locations
+                if (op == @intFromEnum(Opcode.JUMPDEST)) {
+                    jumpdests.append(i) catch {};
+                }
+                
+                // Collect PUSH values
+                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                    const n = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    if (const value = self.readPushValueN(i, @intCast(n))) {
+                        push_values.append(.{ .pc = i, .value = value }) catch {};
+                        
+                        // Check for potential fusions
+                        const next_pc = i + 1 + n;
+                        if (next_pc < self.code.len) {
+                            const next_op = self.code[next_pc];
+                            // Common fusions: PUSH+JUMP, PUSH+ADD, PUSH+MUL, PUSH+SUB, etc.
+                            if (next_op == @intFromEnum(Opcode.JUMP) or
+                                next_op == @intFromEnum(Opcode.JUMPI) or
+                                next_op == @intFromEnum(Opcode.ADD) or
+                                next_op == @intFromEnum(Opcode.MUL) or
+                                next_op == @intFromEnum(Opcode.SUB) or
+                                next_op == @intFromEnum(Opcode.DIV)) {
+                                fusions.append(.{ 
+                                    .pc = i, 
+                                    .second_opcode = @as(Opcode, @enumFromInt(next_op))
+                                }) catch {};
+                            }
+                        }
+                        
+                        // Collect jump targets
+                        if (next_pc < self.code.len and 
+                            (self.code[next_pc] == @intFromEnum(Opcode.JUMP) or 
+                             self.code[next_pc] == @intFromEnum(Opcode.JUMPI))) {
+                            jumps.append(.{ .pc = next_pc, .target = value }) catch {};
+                            
+                            // Check for backwards jumps
+                            if (value < i) {
+                                stats.backwards_jumps += 1;
+                            }
+                        }
+                    }
+                }
+                
+                // Check for create code pattern (CODECOPY + RETURN)
+                if (op == @intFromEnum(Opcode.CODECOPY)) {
+                    stats.is_create_code = true;
+                }
+                
+                i += self.getInstructionSize(i);
+            }
+            
+            // Convert to slices (leak memory for simplicity in stats)
+            stats.push_values = self.allocator.dupe(Stats.PushValue, push_values.items) catch &.{};
+            stats.potential_fusions = self.allocator.dupe(Stats.Fusion, fusions.items) catch &.{};
+            stats.jumpdests = self.allocator.dupe(usize, jumpdests.items) catch &.{};
+            stats.jumps = self.allocator.dupe(Stats.Jump, jumps.items) catch &.{};
+            
+            return stats;
         }
     };
 }
