@@ -1,18 +1,35 @@
 const std = @import("std");
 
-// Import main modules
-// pub const FrameConfig = @import("frame_config.zig").FrameConfig;
-// pub const Frame = @import("frame.zig").Frame;
+// Core frame and execution modules
+pub const FrameConfig = @import("frame_config.zig").FrameConfig;
+pub const Frame = @import("frame.zig").Frame;
+pub const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
+pub const createFrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter;
+
+// Stack and memory modules
 pub const StackConfig = @import("stack_config.zig").StackConfig;
 pub const Stack = @import("stack.zig").Stack;
 pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
+pub const Memory = @import("memory.zig").Memory;
+pub const MemoryError = @import("memory.zig").MemoryError;
+
+// Planner and bytecode analysis
 pub const Planner = @import("planner.zig").Planner;
 pub const createPlanner = @import("planner.zig").createPlanner;
-// pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
-// pub const createPlan = @import("plan.zig").createPlan;
-// pub const PlanConfig = @import("plan_config.zig").PlanConfig;
-// pub const Interpreter = @import("interpreter.zig").Interpreter; // TODO: Add when interpreter.zig is created
+pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
+pub const Plan = @import("plan.zig").Plan;
+pub const createPlan = @import("plan.zig").createPlan;
+pub const PlanConfig = @import("plan_config.zig").PlanConfig;
+pub const PlanMinimal = @import("plan_minimal.zig").PlanMinimal;
+pub const PlanAdvanced = @import("plan_advanced.zig").PlanAdvanced;
+pub const PlanDebug = @import("plan_debug.zig").PlanDebug;
+
+// EVM main module and configuration
 pub const Evm = @import("evm.zig").Evm;
+pub const EvmConfig = @import("evm.zig").EvmConfig;
+pub const PlannerStrategy = @import("evm.zig").PlannerStrategy;
+
+// Tracer modules
 pub const Tracer = @import("tracer.zig").Tracer;
 pub const DetailedStructLog = @import("tracer.zig").DetailedStructLog;
 pub const TracerConfig = @import("tracer.zig").TracerConfig;
@@ -22,13 +39,19 @@ pub const FileTracer = @import("tracer.zig").FileTracer;
 pub const NoOpTracer = @import("tracer.zig").NoOpTracer;
 pub const DebuggingTracer = @import("tracer.zig").DebuggingTracer;
 
-// Export opcode data
-// pub const opcode_data = @import("opcode_data.zig");
-// pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
-// pub const createBytecode = @import("bytecode.zig").createBytecode;
-// pub const Bytecode = @import("bytecode.zig").Bytecode;
+// Bytecode modules
+pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
+pub const Bytecode = @import("bytecode.zig").Bytecode;
+pub const createBytecode = @import("bytecode.zig").createBytecode;
+pub const BytecodeStats = @import("bytecode_stats.zig").BytecodeStats;
 
-// Export additional core types
+// Opcode and instruction data
+pub const Opcode = @import("opcode.zig").Opcode;
+pub const OpcodeData = @import("opcode_data.zig");
+pub const OpcodeSynthetic = @import("opcode_synthetic.zig");
+pub const opcode_synthetic = @import("opcode_synthetic.zig");
+
+// Database and state modules
 pub const BlockInfo = @import("block_info.zig").BlockInfo;
 pub const CallParams = @import("call_params.zig").CallParams;
 pub const CallResult = @import("call_result.zig").CallResult;
@@ -38,30 +61,61 @@ pub const Account = @import("database_interface_account.zig").Account;
 pub const AccessList = @import("access_list.zig").AccessList;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
-pub const Memory = @import("memory.zig").Memory;
-pub const MemoryError = @import("memory.zig").MemoryError;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-pub const Opcode = @import("opcode.zig").Opcode;
-pub const opcode_synthetic = @import("opcode_synthetic.zig");
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
-// pub const createPlanMinimal = @import("plan_minimal.zig").PlanMinimal;
-pub const createFrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
 
 // Run all tests
 test {
-    // Test main modules
-    // _ = FrameConfig;
-    // _ = Frame;
+    // Test core modules
+    _ = FrameConfig;
+    _ = Frame;
+    _ = FrameInterpreter;
+    _ = createFrameInterpreter;
+    
+    // Test stack and memory
     _ = StackConfig;
     _ = Stack;
+    _ = MemoryConfig;
+    _ = Memory;
+    _ = MemoryError;
+    
+    // Test planner and bytecode
     _ = Planner;
-    // _ = Interpreter;
+    _ = createPlanner;
+    _ = PlannerConfig;
+    _ = Plan;
+    _ = createPlan;
+    _ = PlanConfig;
+    _ = PlanMinimal;
+    // _ = PlanAdvanced; // TODO: Fix compilation errors in tests
+    // _ = PlanDebug; // TODO: Fix compilation errors
+    
+    // Test EVM
     _ = Evm;
+    _ = EvmConfig;
+    _ = PlannerStrategy;
+    
+    // Test tracer modules
     _ = Tracer;
     _ = DetailedStructLog;
-    // _ = BytecodeConfig;
-    // _ = createBytecode;
-    // _ = Bytecode;
+    _ = TracerConfig;
+    _ = MemoryCaptureMode;
+    _ = LoggingTracer;
+    _ = FileTracer;
+    _ = NoOpTracer;
+    _ = DebuggingTracer;
+    
+    // Test bytecode modules
+    _ = BytecodeConfig;
+    _ = Bytecode;
+    _ = createBytecode;
+    _ = BytecodeStats;
+    
+    // Test opcodes
+    _ = Opcode;
+    _ = OpcodeData;
+    _ = OpcodeSynthetic;
+    _ = opcode_synthetic;
     
     // Test additional modules
     _ = BlockInfo;
@@ -69,28 +123,10 @@ test {
     _ = CallResult;
     _ = CreatedContracts;
     _ = DatabaseInterface;
+    _ = Account;
     _ = Hardfork;
     _ = Host;
-    _ = Memory;
     _ = MemoryDatabase;
-    _ = Opcode;
-    _ = opcode_synthetic;
     _ = SelfDestruct;
-    _ = Account;
     _ = AccessList;
-    // _ = createPlanMinimal;
-    _ = createFrameInterpreter;
-    
-    // Test config modules
-    _ = MemoryConfig;
-    // _ = PlannerConfig;
-    // _ = PlanConfig;
-    _ = TracerConfig;
-    _ = MemoryCaptureMode;
-    _ = LoggingTracer;
-    _ = FileTracer;
-    _ = NoOpTracer;
-    _ = DebuggingTracer;
-    // _ = createPlan;
-    // _ = opcode_data;
 }

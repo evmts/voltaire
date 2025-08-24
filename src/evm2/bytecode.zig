@@ -257,11 +257,27 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             }
         }
         
+        /// Scalar opcode validation fallback for platforms without SIMD
+        fn validateOpcodeScalar(code: []const u8) bool {
+            const max_valid_opcode = @intFromEnum(Opcode.SELFDESTRUCT);
+            for (code) |byte| {
+                if (byte > max_valid_opcode) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         /// SIMD-accelerated opcode validation
         /// 
         /// Validates all bytecode represents valid EVM opcodes using vector operations.
         /// Processes L bytes simultaneously instead of individual scalar comparisons.
         fn validateOpcodeSimd(code: []const u8, comptime L: comptime_int) bool {
+            // Skip SIMD on WASM targets that don't support it
+            if (comptime (builtin.target.cpu.arch == .wasm32 and !builtin.target.cpu.features.isEnabled(.simd128))) {
+                // Fall back to scalar validation for WASM without SIMD
+                return validateOpcodeScalar(code);
+            }
             const max_valid_opcode = @intFromEnum(Opcode.SELFDESTRUCT);
             
             // Vector containing L copies of maximum valid opcode for parallel comparison
@@ -335,6 +351,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Pattern match for PUSH+OP fusion opportunities using SIMD
         fn findFusionPatternsSimd(self: Self, comptime L: comptime_int) !ArrayList(Stats.Fusion, null) {
+            // Skip SIMD on WASM targets that don't support it
+            if (comptime (builtin.target.cpu.arch == .wasm32 and !builtin.target.cpu.features.isEnabled(.simd128))) {
+                // Return empty list for WASM without SIMD
+                return ArrayList(Stats.Fusion, null).init(self.allocator);
+            }
             var fusions = ArrayList(Stats.Fusion, null).init(self.allocator);
             errdefer fusions.deinit();
             
@@ -892,6 +913,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// Combines vector processing with cache prefetching for optimal performance on large bytecode.
         /// Prefetching hides memory latency by loading future data while processing current chunks.
         fn markJumpdestSimd(self: Self, comptime L: comptime_int) void {
+            // Skip SIMD on WASM targets that don't support it
+            if (comptime (builtin.target.cpu.arch == .wasm32 and !builtin.target.cpu.features.isEnabled(.simd128))) {
+                // Fall back to scalar implementation for WASM without SIMD
+                return self.markJumpdestScalar();
+            }
             var i: usize = 0;
             const code_len = self.runtime_code.len;
             
@@ -957,7 +983,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     };
 }
 
-// Default configuration with EIP-3860 initcode limit of 49,152 bytes (2 * max contract size)
 const default_config = BytecodeConfig{};
 pub const BytecodeDefault = Bytecode(default_config);
 pub const BytecodeValidationError = BytecodeDefault.ValidationError;

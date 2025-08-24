@@ -1,7 +1,10 @@
 const std = @import("std");
-const c = @cImport({
+const builtin = @import("builtin");
+const c = if (builtin.target.cpu.arch != .wasm32) @cImport({
     @cInclude("../revm_wrapper/revm_wrapper.h");
-});
+}) else struct {
+    // Empty struct for WASM builds
+};
 
 pub const KeccakError = error{
     InvalidInput,
@@ -16,6 +19,12 @@ pub const KeccakError = error{
 /// This function uses the high-performance keccak-asm Rust crate which provides
 /// assembly-optimized implementations for different CPU architectures.
 pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
+    // Use standard library implementation for WASM
+    if (comptime (builtin.target.cpu.arch == .wasm32)) {
+        std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
+        return;
+    }
+    
     var error_ptr: ?*c.RevmError = null;
     
     const result = c.keccak256_asm(
@@ -54,6 +63,14 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
     
     if (inputs.len == 0) {
         return; // Nothing to do
+    }
+    
+    // Use standard library implementation for WASM
+    if (comptime (builtin.target.cpu.arch == .wasm32)) {
+        for (inputs, outputs) |input, *output| {
+            std.crypto.hash.sha3.Keccak256.hash(input, output, .{});
+        }
+        return;
     }
     
     // Create arrays of pointers and lengths for C interface
@@ -202,10 +219,10 @@ test "keccak256_u256" {
 }
 
 test "keccak256_batch" {
-    const inputs = [_][]const u8{ "Hello", "World", "" };
+    var inputs = [_][]const u8{ "Hello", "World", "" };
     var outputs: [3][32]u8 = undefined;
     
-    try keccak256_batch(&inputs, &outputs);
+    try keccak256_batch(inputs[0..], outputs[0..]);
     
     // Verify each hash individually
     var expected_hello: [32]u8 = undefined;

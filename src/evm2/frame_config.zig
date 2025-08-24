@@ -1,6 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const NoOpTracer = @import("tracer.zig").NoOpTracer;
 
 pub const FrameConfig = struct {
     const Self = @This();
@@ -12,14 +11,17 @@ pub const FrameConfig = struct {
     max_bytecode_size: u32 = 24576,
     /// The maximum gas limit for a block
     block_gas_limit: u64 = 30_000_000,
-    /// Tracer type for execution tracing. Defaults to NoOpTracer
-    TracerType: type = NoOpTracer,
+    /// Optional tracer type for execution tracing. When null, tracing is disabled with zero overhead
+    TracerType: ?type = null,
     /// Memory configuration
     memory_initial_capacity: usize = 4096,
     memory_limit: u64 = 0xFFFFFF,
     /// Whether the frame has access to a database interface for storage operations
     has_database: bool = false,
-    /// How big of a vector length to use for simd operations. 0 if simd should not be used
+    /// Vector length for SIMD operations. Auto-detects CPU capabilities for optimal performance.
+    /// Set to 0 to disable SIMD and use scalar implementations. When > 0, enables vectorized
+    /// operations for bulk stack operations (DUP/SWAP) and other suitable operations.
+    /// Common values: 4, 8, 16, 32 depending on CPU (AVX, AVX2, AVX-512 support).
     vector_length: comptime_int = std.simd.suggestVectorLengthForCpu(u8, builtin.cpu) orelse 0,
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
@@ -57,7 +59,6 @@ pub const FrameConfig = struct {
         return @as(u32, self.stack_size) * @as(u32, @intCast(@sizeOf(self.WordType)));
     }
 
-    // Limits placed on the Frame
     pub fn validate(comptime self: Self) void {
         if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
         if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");

@@ -8,7 +8,6 @@ pub const MemoryError = error{
     OutOfBounds,
 };
 
-// Factory function to create Memory type
 pub fn Memory(comptime config: MemoryConfig) type {
     config.validate();
     

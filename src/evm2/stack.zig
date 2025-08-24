@@ -23,9 +23,9 @@ pub fn Stack(comptime config: StackConfig) type {
         // Push: *stack_ptr = value; stack_ptr -= 1;
         // Pop: stack_ptr += 1; return *stack_ptr;
         stack_ptr: [*]WordType,
-        stack_base: [*]WordType, // Base pointer (high address)
-        stack_limit: [*]WordType, // Limit pointer (low address)
-        stack: *[stack_capacity]WordType align(64), // Aligned to cache line
+        stack_base: [*]WordType,
+        stack_limit: [*]WordType,
+        stack: *[stack_capacity]WordType align(64),
 
         pub fn init(allocator: std.mem.Allocator) Error!Self {
             const stack_memory = allocator.alloc(WordType, stack_capacity) catch return Error.AllocationError;
@@ -36,7 +36,6 @@ pub fn Stack(comptime config: StackConfig) type {
             const base_ptr: [*]WordType = @ptrCast(stack_array);
             
             return Self{
-                // Start at the end for downward growth
                 .stack_ptr = base_ptr + stack_capacity,
                 .stack_base = base_ptr + stack_capacity,
                 .stack_limit = base_ptr,
@@ -319,7 +318,6 @@ test "Stack pop and pop_unsafe" {
     var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
-    // Setup stack with some values
     try stack.push(10);
     try stack.push(20);
     try stack.push(30);
@@ -350,7 +348,6 @@ test "Stack set_top and set_top_unsafe" {
     var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
-    // Setup stack with some values
     try stack.push(10);
     try stack.push(20);
     try stack.push(30);
@@ -383,7 +380,6 @@ test "Stack peek and peek_unsafe" {
     var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
-    // Setup stack with values
     try stack.push(100);
     try stack.push(200);
     try stack.push(300);
@@ -413,7 +409,6 @@ test "Stack op_dup1 duplicates top stack item" {
     var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
-    // Setup stack with value
     try stack.push(42);
     try std.testing.expectEqual(@as(usize, 1), stack.size());
 
@@ -432,7 +427,6 @@ test "Stack op_dup16 duplicates 16th stack item" {
     var stack = try StackType.init(allocator);
     defer stack.deinit(allocator);
 
-    // Setup stack with 16 values
     var i: u8 = 1;
     while (i <= 16) : (i += 1) {
         try stack.push(i);
