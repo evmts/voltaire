@@ -6,7 +6,7 @@ const evm_mod = @import("evm");
 const revm_wrapper = @import("revm");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
-const TransactionContext = @import("../transaction_context.zig").TransactionContext;
+const TransactionContext = evm_mod.TransactionContext;
 
 // Test data constants
 const ERC20_TRANSFER_SELECTOR: u32 = 0xa9059cbb; // transfer(address,uint256)
@@ -955,7 +955,9 @@ fn benchmark_revm_memory_operations(allocator: std.mem.Allocator) void {
 // ============================================================================
 
 pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
@@ -966,6 +968,7 @@ pub fn main() !void {
     try stdout.print("\n⚡ Comprehensive EVM Performance Benchmarks\n", .{});
     try stdout.print("===========================================\n\n", .{});
     try stdout.print("Comparing EVM vs Legacy EVM vs REVM\n\n", .{});
+    try stdout.flush();
 
     // Contract execution benchmarks
     try bench.add("ERC20 Transfer - EVM", benchmark_evm_erc20_transfer, .{});
@@ -994,9 +997,11 @@ pub fn main() !void {
     try bench.add("Memory Ops - REVM", benchmark_revm_memory_operations, .{});
 
     try stdout.print("Running comprehensive EVM benchmarks...\n\n", .{});
+    try stdout.flush();
     try bench.run(stdout);
     
     try stdout.print("\n✅ Comprehensive EVM benchmarks completed!\n", .{});
+    try stdout.flush();
     try stdout.print("\nResults show relative performance between:\n", .{});
     try stdout.print("• EVM: New implementation with Frame-based execution\n", .{});
     try stdout.print("• Legacy EVM: Current production implementation\n", .{});

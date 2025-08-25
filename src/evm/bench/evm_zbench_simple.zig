@@ -100,7 +100,9 @@ fn benchmark_byte_operations(allocator: std.mem.Allocator) void {
 }
 
 pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
@@ -110,6 +112,7 @@ pub fn main() !void {
 
     try stdout.print("\\n🚀 EVM Simple Benchmarks (zbench)\\n", .{});
     try stdout.print("==================================\\n\\n", .{});
+    try stdout.flush();
 
     // Core EVM operation benchmarks
     try bench.add("Stack Operations", benchmark_stack_operations, .{});
@@ -124,9 +127,11 @@ pub fn main() !void {
     try bench.add("Byte Operations", benchmark_byte_operations, .{});
 
     try stdout.print("Running zbench benchmarks...\\n\\n", .{});
+    try stdout.flush();
     try bench.run(stdout);
     
     try stdout.print("\\n✅ EVM zbench benchmarks completed successfully!\\n", .{});
+    try stdout.flush();
 }
 
 test "simple benchmark compilation" {

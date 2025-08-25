@@ -10,13 +10,13 @@ const Address = primitives.Address.Address;
 
 /// Memory expansion patterns - tests memory growth under different scenarios
 fn benchmark_memory_expansion_patterns(allocator: std.mem.Allocator) void {
-    var memory = std.ArrayList(u8).init(allocator);
-    defer memory.deinit();
+    var memory = std.ArrayList(u8){};
+    defer memory.deinit(allocator);
     
     // Simulate EVM memory expansion in 32-byte chunks
     const expansion_sizes = [_]usize{ 32, 64, 128, 256, 512, 1024, 2048, 4096 };
     for (expansion_sizes) |size| {
-        memory.resize(size) catch continue;
+        memory.resize(allocator, size) catch continue;
         // Touch memory to ensure allocation
         if (memory.items.len > 0) {
             memory.items[size - 1] = 0xAA;
@@ -691,7 +691,9 @@ fn benchmark_allocation_patterns(allocator: std.mem.Allocator) void {
 // ============================================================================
 
 pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
@@ -701,6 +703,7 @@ pub fn main() !void {
 
     try stdout.print("\n🚀 EVM Comprehensive Performance Benchmarks\n", .{});
     try stdout.print("============================================\n\n", .{});
+    try stdout.flush();
 
     // Performance-Critical EVM Operations
     try bench.add("Memory Expansion Patterns", benchmark_memory_expansion_patterns, .{});
@@ -744,10 +747,12 @@ pub fn main() !void {
     try bench.add("Allocation Patterns", benchmark_allocation_patterns, .{});
 
     try stdout.print("Running comprehensive EVM performance benchmarks...\n\n", .{});
+    try stdout.flush();
     try bench.run(stdout);
     
     try stdout.print("\n✅ Comprehensive EVM benchmarks completed!\n", .{});
     try stdout.print("\nBenchmark Categories:\n", .{});
+    try stdout.flush();
     try stdout.print("• Performance-Critical: Memory, stack operations under stress\n", .{});
     try stdout.print("• Cryptographic: Hashing, address computation patterns\n", .{});
     try stdout.print("• Real-World: Solidity storage patterns, contract interactions\n", .{});

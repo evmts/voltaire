@@ -182,11 +182,11 @@ pub fn main() !void {
                     const deployed_code = fresh_evm.get_code(target_address);
                     if (deployed_code.len == 0) {
                         if (verbose) std.debug.print("CREATE succeeded but no code at computed address {x}\n", 
-                            .{std.fmt.fmtSliceHexLower(&target_address)});
+                            .{target_address});
                         use_direct_install = true;
                     } else {
                         if (verbose) std.debug.print("CREATE deployed contract at {x} with code_len={}\n",
-                            .{std.fmt.fmtSliceHexLower(&target_address), deployed_code.len});
+                            .{target_address, deployed_code.len});
                     }
                 } else if (create_result.output.len == 20) {
                     // Old-style CREATE that returns address
@@ -218,7 +218,7 @@ pub fn main() !void {
                 .storage_root = [_]u8{0} ** 32,
             });
             if (verbose) std.debug.print("Direct install at address: {x}, code_len={}, code_hash={x}\n",
-                .{ std.fmt.fmtSliceHexLower(&target_address), init_code.len, std.fmt.fmtSliceHexLower(&fresh_code_hash) });
+                .{ target_address, init_code.len, fresh_code_hash });
         }
 
         // 2) Invoke the contract runtime via CALL
@@ -246,9 +246,9 @@ pub fn main() !void {
             std.debug.print("success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", 
                 .{result.success, gas_provided, result.gas_left, gas_used, result.output.len});
             if (result.output.len > 0 and result.output.len <= 64) {
-                std.debug.print("output={x}\n", .{std.fmt.fmtSliceHexLower(result.output)});
+                std.debug.print("output={x}\n", .{result.output});
             }
-            std.debug.print("calldata={x}\n", .{std.fmt.fmtSliceHexLower(calldata)});
+            std.debug.print("calldata={x}\n", .{calldata});
         }
 
         // Optional validation: enforce minimum gas consumption to catch trivial runs
