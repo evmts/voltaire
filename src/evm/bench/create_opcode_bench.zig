@@ -86,7 +86,7 @@ fn benchmarkCreateMinimal(allocator: std.mem.Allocator) void {
     };
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 1_000_000, ctx.db_interface) catch unreachable;
+    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 1_000_000, ctx.db_interface, null, false) catch unreachable;
     defer interpreter.deinit(allocator);
     
     interpreter.frame.host = ctx.evm_instance.to_host();
@@ -125,7 +125,7 @@ fn benchmarkCreateSmallContract(allocator: std.mem.Allocator) void {
     bytecode.append(0x00) catch unreachable; // STOP
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = FrameInterpreterType.init(allocator, bytecode.items, 5_000_000, ctx.db_interface) catch unreachable;
+    var interpreter = FrameInterpreterType.init(allocator, bytecode.items, 5_000_000, ctx.db_interface, null, false) catch unreachable;
     defer interpreter.deinit(allocator);
     
     interpreter.frame.host = ctx.evm_instance.to_host();
@@ -162,7 +162,7 @@ fn benchmarkCreateMediumContract(allocator: std.mem.Allocator) void {
     };
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 10_000_000, ctx.db_interface) catch unreachable;
+    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 10_000_000, ctx.db_interface, null, false) catch unreachable;
     defer interpreter.deinit(allocator);
     
     // Pre-store init code in memory
@@ -209,7 +209,7 @@ fn benchmarkCreateLargeContract(allocator: std.mem.Allocator) void {
     };
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 20_000_000, ctx.db_interface) catch unreachable;
+    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 20_000_000, ctx.db_interface, null, false) catch unreachable;
     defer interpreter.deinit(allocator);
     
     // Pre-store init code in memory
@@ -236,7 +236,7 @@ fn benchmarkCreateWithValue(allocator: std.mem.Allocator) void {
     };
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 1_000_000, ctx.db_interface) catch unreachable;
+    var interpreter = FrameInterpreterType.init(allocator, &bytecode, 1_000_000, ctx.db_interface, null, false) catch unreachable;
     defer interpreter.deinit(allocator);
     
     interpreter.frame.host = ctx.evm_instance.to_host();
@@ -315,7 +315,7 @@ fn benchmarkCreateWithComplexInit(allocator: std.mem.Allocator) void {
     bytecode.append(0x00) catch unreachable; // STOP
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = FrameInterpreterType.init(allocator, bytecode.items, 5_000_000, ctx.db_interface) catch unreachable;
+    var interpreter = FrameInterpreterType.init(allocator, bytecode.items, 5_000_000, ctx.db_interface, null, false) catch unreachable;
     defer interpreter.deinit(allocator);
     
     interpreter.frame.host = ctx.evm_instance.to_host();
