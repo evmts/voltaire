@@ -634,13 +634,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.database.set_account(contract_address, contract_account) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
-
-            // Return the contract address as output
-            var address_bytes = std.ArrayList(u8).init(self.allocator);
-            defer address_bytes.deinit();
-            try address_bytes.appendSlice(&contract_address);
-
-            return CallResult.success_with_output(result.gas_left, address_bytes.items);
+            
+            // Return the contract address as 32 bytes (12 zero padding + 20-byte address)
+            var out32 = try self.allocator.alloc(u8, 32);
+            @memset(out32[0..12], 0);
+            @memcpy(out32[12..32], &contract_address);
+            return CallResult.success_with_output(result.gas_left, out32);
         }
 
         /// CREATE2 operation
@@ -747,13 +746,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.database.set_account(contract_address, contract_account2) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
-
-            // Return the contract address as output
-            var address_bytes = std.ArrayList(u8).init(self.allocator);
-            defer address_bytes.deinit();
-            try address_bytes.appendSlice(&contract_address);
-
-            return CallResult.success_with_output(result.gas_left, address_bytes.items);
+            
+            // Return the contract address as 32 bytes (12 zero padding + 20-byte address)
+            var out32 = try self.allocator.alloc(u8, 32);
+            @memset(out32[0..12], 0);
+            @memcpy(out32[12..32], &contract_address);
+            return CallResult.success_with_output(result.gas_left, out32);
         }
 
         /// Execute frame - replaces execute_bytecode with cleaner interface
