@@ -138,6 +138,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         logs: std.ArrayList(@import("call_result.zig").Log),
         /// Static context stack - tracks if each call depth is static
         static_stack: [config.max_call_depth]bool,
+        /// Arena allocator for per-call temporary allocations
+        internal_arena: std.heap.ArenaAllocator,
         /// Result of a call execution (re-export)
         pub const CallResult = @import("call_result.zig").CallResult;
 
@@ -168,6 +170,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .planner = planner,
                 .current_snapshot_id = 0,
                 .logs = std.ArrayList(@import("call_result.zig").Log).init(allocator),
+                .internal_arena = std.heap.ArenaAllocator.init(allocator),
             };
         }
 
@@ -184,6 +187,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.allocator.free(log.data);
             }
             self.logs.deinit();
+            self.internal_arena.deinit();
         }
         
         /// Transfer value between accounts with proper balance checks and error handling
@@ -200,6 +204,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return error.InsufficientBalance;
             }
+            
+            // Record the original balance before changing
+            try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
+            
             // Deduct from caller
             from_account.balance -= value;
             self.database.set_account(from, from_account) catch |err| {
@@ -211,6 +219,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             } orelse DEFAULT_ACCOUNT;
+            
+            // Record the original balance before changing
+            try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
+            
             to_account.balance += value;
             self.database.set_account(to, to_account) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
@@ -261,10 +273,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller) catch |err| {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
                 
                 if (caller_account == null or caller_account.?.balance < params.value) {
@@ -276,10 +285,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 @branchHint(.unlikely);
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, false) catch |err| {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
                 if (!result.success) {
                     @branchHint(.unlikely);
@@ -332,10 +338,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller) catch |err| {
                     @branchHint(.cold);
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
                 
                 if (caller_account == null or caller_account.?.balance < params.value) {
@@ -396,10 +399,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 // For precompiles in delegatecall, we still execute with preserved context
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, false) catch |err| {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
                 
                 if (!result.success) {
@@ -458,10 +458,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Check if it's a precompile
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, true) catch |err| {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
                 
                 if (!result.success) {
@@ -514,10 +511,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Get caller account
             var caller_account = self.database.get_account(params.caller) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    else => CallResult.failure(0),
-                };
+                return self.revert_and_fail(snapshot_id, err);
             } orelse DEFAULT_ACCOUNT;
             
             // Check if caller has sufficient balance
@@ -541,10 +535,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Increment caller's nonce
             caller_account.nonce += 1;
             self.database.set_account(params.caller, caller_account) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    else => CallResult.failure(0),
-                };
+                return self.revert_and_fail(snapshot_id, err);
             };
             
             // Track created contract for EIP-6780
@@ -595,10 +586,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
                 
                 self.database.set_account(contract_address, new_account) catch |err| {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
             }
             
@@ -622,10 +610,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Get caller account
             const caller_account = self.database.get_account(params.caller) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    else => CallResult.failure(0),
-                };
+                return self.revert_and_fail(snapshot_id, err);
             } orelse DEFAULT_ACCOUNT;
             
             // Check if caller has sufficient balance
@@ -699,10 +684,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
                 
                 self.database.set_account(contract_address, new_account) catch |err| {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult.failure(0),
-                    };
+                    return self.revert_and_fail(snapshot_id, err);
                 };
             }
             
@@ -715,6 +697,36 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
         
         /// Execute frame - replaces execute_bytecode with cleaner interface
+        ///
+        /// This function orchestrates the execution of EVM bytecode within a frame context,
+        /// managing the flow of host operations, static mode enforcement, and state journaling.
+        ///
+        /// Host Interface Flow:
+        /// - Creates a Host interface from self using to_host()
+        /// - Host interface provides frame access to:
+        ///   - Nested calls (CALL, DELEGATECALL, STATICCALL, CALLCODE)
+        ///   - Contract creation (CREATE, CREATE2)
+        ///   - Environment queries (gas price, block info, chain ID)
+        ///   - State operations with journaling (storage, balance modifications)
+        ///
+        /// Static Mode Enforcement:
+        /// - is_static flag is passed to FrameInterpreter for enforcement
+        /// - When true, prevents state-modifying operations:
+        ///   - SSTORE, SELFDESTRUCT, LOGx opcodes will fail
+        ///   - Nested CALLs with value transfer will fail
+        ///   - CREATE/CREATE2 operations will fail
+        /// - Static mode is propagated to all nested calls
+        ///
+        /// Journaling and State Management:
+        /// - snapshot_id parameter represents a journal checkpoint for this execution
+        /// - All state changes during execution are recorded in the journal
+        /// - On success: journal entries remain, state changes are committed
+        /// - On failure/revert: caller uses snapshot_id to revert_to_snapshot()
+        /// - Journal tracks: storage changes, balance changes, nonce changes, created contracts
+        /// - Nested calls create their own snapshots for atomic revert capability
+        ///
+        /// The function handles frame lifecycle, converts gas types appropriately,
+        /// and translates frame execution errors into proper CallResult outcomes.
         fn execute_frame(
             self: *Self,
             code: []const u8,
@@ -731,7 +743,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             _ = address;
             _ = caller;
             _ = value;
-            _ = is_static;
             
             // Increment depth
             self.depth += 1;
@@ -740,12 +751,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Convert gas to appropriate type
             const gas_i32 = @as(i32, @intCast(@min(gas, std.math.maxInt(i32))));
             
+            // Create host interface for the frame
+            const host = self.to_host();
+            
             // Create frame interpreter
             var interpreter = try frame_interpreter_mod.FrameInterpreter(config.frame_config).init(
                 self.allocator,
                 code,
                 gas_i32,
                 self.database,
+                host,
+                is_static,
             );
             defer interpreter.deinit(self.allocator);
             
@@ -1064,6 +1080,24 @@ pub fn Evm(comptime config: EvmConfig) type {
             return @intCast(self.depth);
         }
 
+        /// Get transaction origin (original sender)
+        pub fn get_tx_origin(self: *Self) Address {
+            return self.origin;
+        }
+
+        /// Get current caller address
+        pub fn get_caller(self: *Self) Address {
+            // For now, return origin. This should be updated to track current caller in call stack
+            return self.origin;
+        }
+
+        /// Get current call value
+        pub fn get_call_value(self: *Self) u256 {
+            _ = self;
+            // For now, return 0. This should be updated to track current call value in call stack
+            return 0;
+        }
+
         /// Get storage value
         pub fn get_storage(self: *Self, address: Address, slot: u256) u256 {
             return self.database.get_storage(address, slot) catch 0;
@@ -1118,6 +1152,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Convert to Host interface
         pub fn to_host(self: *Self) Host {
             return Host.init(self);
+        }
+
+        /// Helper function to handle database errors by reverting snapshot and returning failure
+        fn revert_and_fail(self: *Self, snapshot_id: JournalType.SnapshotIdType, err: anyerror) CallResult {
+            _ = err catch {};
+            self.journal.revert_to_snapshot(snapshot_id);
+            return CallResult.failure(0);
         }
 
         /// Take all logs and clear the log list
@@ -4636,14 +4677,14 @@ test "CREATE interaction - contract creates contract that creates contract" {
     defer level2_init.deinit();
     for (level2_runtime.items, 0..) |byte, i| {
         try level2_init.append(0x60); // PUSH1
-        try level2_init.append(@intCast(i));
+        try level2_init.append(@as(u8, @truncate(i)));
         try level2_init.append(0x60); // PUSH1
         try level2_init.append(byte);
         try level2_init.append(0x53); // MSTORE8
     }
     try level2_init.append(0x61); // PUSH2
-    try level2_init.append(@intCast(level2_runtime.items.len >> 8));
-    try level2_init.append(@intCast(level2_runtime.items.len & 0xFF));
+    try level2_init.append(@as(u8, @truncate(level2_runtime.items.len >> 8)));
+    try level2_init.append(@as(u8, @truncate(level2_runtime.items.len & 0xFF)));
     try level2_init.append(0x60); // PUSH1
     try level2_init.append(0x00);
     try level2_init.append(0xF3); // RETURN
@@ -4657,15 +4698,15 @@ test "CREATE interaction - contract creates contract that creates contract" {
         try level1_code.append(0x60); // PUSH1
         try level1_code.append(byte);
         try level1_code.append(0x61); // PUSH2
-        try level1_code.append(@intCast(i >> 8));
-        try level1_code.append(@intCast(i & 0xFF));
+        try level1_code.append(@as(u8, @truncate(i >> 8)));
+        try level1_code.append(@as(u8, @truncate(i & 0xFF)));
         try level1_code.append(0x53); // MSTORE8
     }
     
     // CREATE level 2
     try level1_code.append(0x61); // PUSH2
-    try level1_code.append(@intCast(level2_init.items.len >> 8));
-    try level1_code.append(@intCast(level2_init.items.len & 0xFF));
+    try level1_code.append(@as(u8, @truncate(level2_init.items.len >> 8)));
+    try level1_code.append(@as(u8, @truncate(level2_init.items.len & 0xFF)));
     try level1_code.append(0x60); // PUSH1
     try level1_code.append(0x00); // offset
     try level1_code.append(0x60); // PUSH1
