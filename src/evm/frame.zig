@@ -129,7 +129,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .database = database,
                 .logs = frame_logs,
                 .output_data = output_data,
-                .host = host,
+                .host = host orelse DefaultHost.init(),
             };
         }
         /// Clean up all frame resources.
@@ -873,21 +873,12 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const address = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
-            if (self.host) |host| {
-                _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
-                    else => return Error.AllocationError,
-                };
-            }
-            // Load value from storage
-            const value = if (self.host) |host| 
-                host.get_storage(address, slot)
-            else blk: {
-                // Fallback to direct database access
-                const db = self.database orelse return Error.InvalidOpcode;
-                break :blk db.get_storage(address, slot) catch |err| switch (err) {
-                    else => return Error.AllocationError,
-                };
+            const host = self.host;
+            _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
+                else => return Error.AllocationError,
             };
+            // Load value from storage
+            const value = host.get_storage(address, slot);
             try self.stack.push(value);
         }
         pub fn sstore(self: *Self) Error!void {
@@ -908,23 +899,14 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const address = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
-            if (self.host) |host| {
-                _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
-                    else => return Error.AllocationError,
-                };
-            }
-            // If we have a host interface, use it for journaling
-            if (self.host) |host| {
-                host.set_storage(address, slot, value) catch |err| switch (err) {
-                    else => return Error.AllocationError,
-                };
-            } else {
-                // Fallback to direct database access
-                const db = self.database orelse return Error.InvalidOpcode;
-                db.set_storage(address, slot, value) catch |err| switch (err) {
-                    else => return Error.AllocationError,
-                };
-            }
+            const host = self.host;
+            _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
+                else => return Error.AllocationError,
+            };
+            // Use host interface for journaling
+            host.set_storage(address, slot, value) catch |err| switch (err) {
+                else => return Error.AllocationError,
+            };
         }
         // Transient storage operations (EIP-1153)
         pub fn tload(self: *Self) Error!void {
@@ -1452,6 +1434,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.AllocationError;
             };
         }
+        
         /// LOG1 opcode (0xA1) - Emit log with one topic
         /// Emits a log event with data and one topic.
         /// Stack: [offset, length, topic1] → []
@@ -2068,14 +2051,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                 self.gas_remaining = 0;
             }
         }
+        
         /// CREATE2 opcode (0xF5) - Create a new contract with deterministic address
         /// Creates a new contract with an address determined by the salt and init code hash.
         /// Stack: [value, offset, size, salt] → [address]
         pub fn create2(self: *Self) Error!void {
-            const host = self.host;
             // Check static context - CREATE2 is not allowed in static context
-            if (self.host) |host| {
-                if (h.get_is_static()) {
+            const host = self.host;
+            if (host.get_is_static()) {
                 return Error.WriteProtection;
             }
             const salt = try self.stack.pop();
