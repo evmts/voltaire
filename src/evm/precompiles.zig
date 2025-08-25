@@ -568,8 +568,36 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
         };
     }
 
-    // BN254 pairing not yet implemented - fail hard
-    return error.NotImplemented;
+    // Declare the external C function from bn254_wrapper
+    const c = struct {
+        extern fn bn254_ecpairing(
+            input: [*]const u8,
+            input_len: c_uint,
+            output: [*]u8,
+            output_len: c_uint,
+        ) callconv(.C) c_int;
+        
+        const BN254_SUCCESS = 0;
+    };
+    
+    // Call the Rust BN254 implementation
+    const result = c.bn254_ecpairing(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
+    
+    if (result != c.BN254_SUCCESS) {
+        // Invalid input or computation failed
+        @memset(output, 0);
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = false,
+        };
+    }
+    
+    return PrecompileOutput{
+        .output = output,
+        .gas_used = required_gas,
+        .success = true,
+    };
 }
 
 /// 0x09: blake2f - BLAKE2F compression function
@@ -667,8 +695,30 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
         };
     }
 
-    // KZG point evaluation not yet implemented - fail hard
-    // Requires c_kzg_4844 library integration
+    // Parse input: versioned_hash(32) + z(32) + y(32) + commitment(48) + proof(48)
+    const versioned_hash = input[0..32];
+    const z = input[32..64];
+    const y = input[64..96];
+    const commitment = input[96..144];
+    const proof = input[144..192];
+    
+    // Import c_kzg functions and types
+    _ = crypto;
+    
+    // Get the default KZG settings (these should be initialized elsewhere in the system)
+    // For now, we'll return NotImplemented until we have proper KZG setup initialization
+    // The KZGSettings need to be loaded from the trusted setup file
+    _ = versioned_hash;
+    _ = z;
+    _ = y;
+    _ = commitment;
+    _ = proof;
+    
+    // TODO: Implement proper KZG point evaluation once KZGSettings are initialized
+    // This requires:
+    // 1. Loading the trusted setup file (mainnet-trusted-setup.txt)
+    // 2. Initializing KZGSettings globally
+    // 3. Calling verify_kzg_proof with the parsed inputs
     return error.NotImplemented;
 }
 
