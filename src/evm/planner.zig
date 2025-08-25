@@ -1870,3 +1870,243 @@ test "planner plan type compatibility across configurations" {
 
 // Export the factory function for creating Planner types
 pub const createPlanner = Planner;
+
+// BYTECODE EDGE CASE TESTS
+
+test "Planner bytecode edge cases - empty bytecode" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    const empty_bytecode = [_]u8{};
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    const plan = try planner.getOrAnalyze(&empty_bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Should produce valid but minimal plan
+    try std.testing.expect(plan.instructionStream.len >= 1); // At least END marker
+    try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
+}
+
+test "Planner bytecode edge cases - single byte bytecode" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Test various single byte bytecodes
+    const single_bytes = [_]u8{ 
+        @intFromEnum(Opcode.STOP),
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.JUMPDEST),
+    };
+    
+    for (single_bytes) |byte| {
+        const bytecode = [_]u8{byte};
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+        
+        // Should produce valid plan
+        try std.testing.expect(plan.instructionStream.len >= 2); // Opcode + END
+    }
+}
+
+test "Planner bytecode edge cases - maximum size bytecode" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{ .maxBytecodeSize = 24576 }).init(allocator, 4);
+    defer planner.deinit();
+    
+    // Create bytecode at maximum size
+    const max_bytecode = try allocator.alloc(u8, 24576);
+    defer allocator.free(max_bytecode);
+    
+    // Fill with JUMPDEST opcodes
+    @memset(max_bytecode, @intFromEnum(Opcode.JUMPDEST));
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    const plan = try planner.getOrAnalyze(max_bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Should produce valid plan
+    try std.testing.expect(plan.instructionStream.len > 0);
+    
+    // Jump table should be populated for JUMPDEST lookup
+    try std.testing.expect(plan.pc_to_instruction_idx != null);
+}
+
+test "Planner bytecode edge cases - truncated PUSH at end" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Test truncated PUSH instructions
+    const truncated_cases = [_][]const u8{
+        &[_]u8{@intFromEnum(Opcode.PUSH1)}, // PUSH1 with no data
+        &[_]u8{@intFromEnum(Opcode.PUSH2), 0x12}, // PUSH2 with only 1 byte
+        &[_]u8{@intFromEnum(Opcode.PUSH32), 0x01, 0x02}, // PUSH32 with only 2 bytes
+    };
+    
+    for (truncated_cases) |bytecode| {
+        const plan = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
+        
+        // Should handle gracefully with zero-padding
+        try std.testing.expect(plan.instructionStream.len > 0);
+    }
+}
+
+test "Planner bytecode edge cases - all PUSH variants" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Test each PUSH opcode with proper data
+    var push_num: u8 = 0;
+    while (push_num <= 32) : (push_num += 1) {
+        var bytecode = std.ArrayList(u8).init(allocator);
+        defer bytecode.deinit();
+        
+        if (push_num == 0) {
+            try bytecode.append(@intFromEnum(Opcode.PUSH0));
+        } else {
+            const push_opcode = 0x60 + (push_num - 1);
+            try bytecode.append(push_opcode);
+            
+            // Add appropriate data bytes
+            for (0..push_num) |i| {
+                try bytecode.append(@intCast(i & 0xFF));
+            }
+        }
+        
+        try bytecode.append(@intFromEnum(Opcode.STOP));
+        
+        const plan = try planner.getOrAnalyze(bytecode.items, handlers, Hardfork.DEFAULT);
+        
+        // Should produce valid plan
+        try std.testing.expect(plan.instructionStream.len > 0);
+        
+        // Large PUSH values should use constants array
+        if (push_num > 8) { // Assuming values > 8 bytes use pointer storage
+            try std.testing.expect(plan.u256_constants.len > 0);
+        }
+    }
+}
+
+test "Planner bytecode edge cases - pathological jump patterns" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Complex jump pattern
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 10,  // Target forward
+        @intFromEnum(Opcode.JUMP),
+        @intFromEnum(Opcode.JUMPDEST),   // PC 3
+        @intFromEnum(Opcode.PUSH1), 3,   // Target backward
+        @intFromEnum(Opcode.JUMP),
+        @intFromEnum(Opcode.JUMPDEST),   // PC 7  
+        @intFromEnum(Opcode.STOP),
+        @intFromEnum(Opcode.JUMPDEST),   // PC 10
+        @intFromEnum(Opcode.PUSH1), 7,
+        @intFromEnum(Opcode.JUMP),
+    };
+    
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Should have jump table for dynamic lookups
+    try std.testing.expect(plan.pc_to_instruction_idx != null);
+    
+    // Verify JUMPDEST positions are in jump table
+    const jump_table = plan.pc_to_instruction_idx.?;
+    try std.testing.expect(jump_table.get(3) != null);
+    try std.testing.expect(jump_table.get(7) != null);
+    try std.testing.expect(jump_table.get(10) != null);
+}
+
+test "Planner bytecode edge cases - fusion opportunities" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Bytecode with multiple fusion opportunities
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 5,
+        @intFromEnum(Opcode.ADD),       // PUSH+ADD fusion
+        @intFromEnum(Opcode.PUSH1), 10,
+        @intFromEnum(Opcode.MUL),       // PUSH+MUL fusion
+        @intFromEnum(Opcode.PUSH1), 20,
+        @intFromEnum(Opcode.JUMP),      // PUSH+JUMP fusion
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Should produce optimized plan with fusions
+    try std.testing.expect(plan.instructionStream.len > 0);
+    
+    // The plan should be shorter than naive interpretation would suggest
+    // due to fusion optimizations
+}
+
+test "Planner bytecode edge cases - consecutive JUMPDESTs" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Many consecutive JUMPDESTs
+    var bytecode: [100]u8 = undefined;
+    @memset(&bytecode, @intFromEnum(Opcode.JUMPDEST));
+    bytecode[99] = @intFromEnum(Opcode.STOP);
+    
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Should handle efficiently
+    try std.testing.expect(plan.instructionStream.len > 0);
+    try std.testing.expect(plan.pc_to_instruction_idx != null);
+    
+    // All JUMPDESTs should be in jump table
+    const jump_table = plan.pc_to_instruction_idx.?;
+    for (0..99) |i| {
+        try std.testing.expect(jump_table.get(@intCast(i)) != null);
+    }
+}
+
+test "Planner bytecode edge cases - invalid opcodes handling" {
+    const allocator = std.testing.allocator;
+    var planner = try Planner(.{}).init(allocator, 4);
+    defer planner.deinit();
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Mix of valid and invalid opcodes
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 1,
+        0x0C,  // Invalid opcode
+        @intFromEnum(Opcode.ADD),
+        0xFE,  // INVALID opcode
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Should still produce a plan (invalid opcodes handled at execution)
+    try std.testing.expect(plan.instructionStream.len > 0);
+}
