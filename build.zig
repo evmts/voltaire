@@ -892,6 +892,42 @@ pub fn build(b: *std.Build) void {
     const run_gas_edge_case_test = b.addRunArtifact(gas_edge_case_test);
     const gas_edge_case_test_step = b.step("test-gas-edge-case", "Run gas edge case tests");
     gas_edge_case_test_step.dependOn(&run_gas_edge_case_test.step);
+    
+    // Add precompiles integration tests
+    const precompiles_test = b.addTest(.{
+        .name = "precompiles-test",
+        .root_source_file = b.path("test/evm/precompiles_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    precompiles_test.root_module.addImport("evm", evm_mod);
+    precompiles_test.root_module.addImport("primitives", primitives_mod);
+    if (bn254_lib) |bn254_library| {
+        precompiles_test.linkLibrary(bn254_library);
+        precompiles_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    const run_precompiles_test = b.addRunArtifact(precompiles_test);
+    const precompiles_test_step = b.step("test-precompiles", "Run precompiles integration tests");
+    precompiles_test_step.dependOn(&run_precompiles_test.step);
+    
+    // Add precompiles regression tests
+    const precompiles_regression_test = b.addTest(.{
+        .name = "precompiles-regression-test",
+        .root_source_file = b.path("test/evm/precompiles_regression_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    precompiles_regression_test.root_module.addImport("evm", evm_mod);
+    precompiles_regression_test.root_module.addImport("primitives", primitives_mod);
+    if (bn254_lib) |bn254_library| {
+        precompiles_regression_test.linkLibrary(bn254_library);
+        precompiles_regression_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    const run_precompiles_regression_test = b.addRunArtifact(precompiles_regression_test);
+    const precompiles_regression_test_step = b.step("test-precompiles-regression", "Run precompiles regression tests");
+    precompiles_regression_test_step.dependOn(&run_precompiles_regression_test.step);
 
     // EVM E2E tests removed - file no longer exists
 
@@ -1792,6 +1828,8 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_frame_opcode_integration_test.step);
     test_step.dependOn(&run_frame_host_test.step);
     test_step.dependOn(&run_gas_edge_case_test.step);
+    test_step.dependOn(&run_precompiles_test.step);
+    test_step.dependOn(&run_precompiles_regression_test.step);
     // benchmark runner test removed - file no longer exists
 
     // Inline ops test removed - file no longer exists
