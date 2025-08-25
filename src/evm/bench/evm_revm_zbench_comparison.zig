@@ -2,6 +2,7 @@ const std = @import("std");
 const zbench = @import("zbench");
 const primitives = @import("primitives");
 const evm = @import("evm");
+const HostMock = @import("../host_mock.zig").HostMock;
 const revm = @import("revm");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
@@ -93,7 +94,7 @@ fn benchmark_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
         &ARITHMETIC_CONTRACT,
         BENCHMARK_GAS_LIMIT,
         db_interface,
-        evm.DefaultHost.init()
+        HostMock.init()
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -118,7 +119,7 @@ fn benchmark_evm_storage_contract(allocator: std.mem.Allocator) void {
         &STORAGE_CONTRACT,
         BENCHMARK_GAS_LIMIT,
         db_interface,
-        evm.DefaultHost.init()
+        HostMock.init()
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -143,7 +144,7 @@ fn benchmark_evm_stack_contract(allocator: std.mem.Allocator) void {
         &STACK_CONTRACT,
         BENCHMARK_GAS_LIMIT,
         db_interface,
-        evm.DefaultHost.init()
+        HostMock.init()
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -168,7 +169,7 @@ fn benchmark_evm_memory_contract(allocator: std.mem.Allocator) void {
         &MEMORY_CONTRACT,
         BENCHMARK_GAS_LIMIT,
         db_interface,
-        evm.DefaultHost.init()
+        HostMock.init()
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -187,7 +188,7 @@ fn benchmark_legacy_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, evm.DefaultHost.init()) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, HostMock.init()) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;
@@ -200,7 +201,7 @@ fn benchmark_legacy_evm_storage_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, evm.DefaultHost.init()) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, HostMock.init()) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;
@@ -213,7 +214,7 @@ fn benchmark_legacy_evm_stack_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, evm.DefaultHost.init()) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, HostMock.init()) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;
@@ -226,7 +227,7 @@ fn benchmark_legacy_evm_memory_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, evm.DefaultHost.init()) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, HostMock.init()) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;

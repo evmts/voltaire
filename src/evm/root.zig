@@ -81,7 +81,6 @@ pub const Account = @import("database_interface_account.zig").Account;
 pub const AccessList = @import("access_list.zig").AccessList;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
-pub const DefaultHost = @import("default_host.zig").DefaultHost;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 pub const Log = @import("logs.zig").Log;
@@ -149,7 +148,6 @@ test {
     _ = Account;
     _ = Hardfork;
     _ = Host;
-    _ = DefaultHost;
     _ = MemoryDatabase;
     _ = SelfDestruct;
     _ = AccessList;
