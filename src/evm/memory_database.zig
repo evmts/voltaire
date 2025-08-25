@@ -608,7 +608,7 @@ test "CREATE stores code and retrieves via get_code_by_address" {
     try create_bytecode.append(0x00);
     
     // Execute CREATE
-    var frame = try F.init(allocator, create_bytecode.items, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, create_bytecode.items, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = creator_address;
@@ -703,7 +703,7 @@ test "CREATE2 stores code with deterministic address" {
     try create2_bytecode.append(0x00);
     
     // Execute CREATE2
-    var frame = try F.init(allocator, create2_bytecode.items, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, create2_bytecode.items, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = creator_address;
