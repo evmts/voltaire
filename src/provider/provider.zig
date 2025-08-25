@@ -73,7 +73,7 @@ pub const Provider = struct {
         return try std.fmt.parseInt(u64, hex, 16);
     }
 
-    pub fn getBalance(self: *Provider, addr: Address) !primitives.u256 {
+    pub fn getBalance(self: *Provider, addr: Address) !u256 {
         var params = std.json.Array.init(self.allocator);
         defer params.deinit();
         
@@ -89,7 +89,7 @@ pub const Provider = struct {
         const trimmed = std.mem.trim(u8, result, "\"");
         const hex = if (std.mem.startsWith(u8, trimmed, "0x")) trimmed[2..] else trimmed;
         
-        return try std.fmt.parseInt(primitives.u256, hex, 16);
+        return try std.fmt.parseInt(u256, hex, 16);
     }
 
     pub fn getTransactionCount(self: *Provider, addr: Address) !u64 {
