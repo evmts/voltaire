@@ -186,7 +186,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             break :blk h;
         };
 
-        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void, host: ?@import("host.zig").Host) Error!Self {
+        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void, host: @import("host.zig").Host) Error!Self {
             var frame = try Frame.init(allocator, bytecode, gas_remaining, database, host);
             errdefer frame.deinit(allocator);
             var planner = try Planner.init(allocator, 32); // Small cache for frame interpreter
