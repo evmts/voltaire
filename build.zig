@@ -894,6 +894,21 @@ pub fn build(b: *std.Build) void {
     const frame_host_test_step = b.step("test-frame-host", "Run Frame host integration tests");
     frame_host_test_step.dependOn(&run_frame_host_test.step);
     
+    // Add CALL/CALLCODE/DELEGATECALL golden tests
+    const call_golden_test = b.addTest(.{
+        .name = "call-golden-test",
+        .root_source_file = b.path("src/evm/call_golden_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    call_golden_test.root_module.addImport("evm", evm_mod);
+    call_golden_test.root_module.addImport("primitives", primitives_mod);
+    call_golden_test.root_module.addImport("crypto", crypto_mod);
+    call_golden_test.root_module.addImport("build_options", build_options_mod);
+    const run_call_golden_test = b.addRunArtifact(call_golden_test);
+    const call_golden_test_step = b.step("test-call-golden", "Run CALL/CALLCODE/DELEGATECALL golden tests");
+    call_golden_test_step.dependOn(&run_call_golden_test.step);
+    
     // Add gas edge case tests
     const gas_edge_case_test = b.addTest(.{
         .name = "gas-edge-case-test",
@@ -1844,6 +1859,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_frame_integration_test.step);
     test_step.dependOn(&run_frame_opcode_integration_test.step);
     test_step.dependOn(&run_frame_host_test.step);
+    test_step.dependOn(&run_call_golden_test.step);
     test_step.dependOn(&run_gas_edge_case_test.step);
     test_step.dependOn(&run_precompiles_test.step);
     test_step.dependOn(&run_precompiles_regression_test.step);
