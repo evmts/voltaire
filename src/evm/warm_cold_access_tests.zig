@@ -2,7 +2,6 @@ const std = @import("std");
 const testing = std.testing;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const u256 = primitives.u256;
 const GasConstants = primitives.GasConstants;
 const Evm = @import("evm.zig").Evm;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;

@@ -46,9 +46,9 @@ test "EVM CALL operation - integration" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    const result = try createTestEvm(allocator);
-    var evm = result.evm;
-    var memory_db = result.memory_db;
+    const ctx = try createTestEvm(allocator);
+    var evm = ctx.evm;
+    var memory_db = ctx.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
@@ -82,19 +82,19 @@ test "EVM CALL operation - integration" {
         .input = &.{},
         .gas = 100000,
     } };
-    const result = try evm.call(params);
-    try std.testing.expect(result.success);
-    try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    try std.testing.expectEqual(@as(u8, 1), result.output[31]);
+    const call_result1 = try evm.call(params);
+    try std.testing.expect(call_result1.success);
+    try std.testing.expectEqual(@as(usize, 32), call_result1.output.len);
+    try std.testing.expectEqual(@as(u8, 1), call_result1.output[31]);
 }
 
 test "EVM CALL with value transfer - integration" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    const result = try createTestEvm(allocator);
-    var evm = result.evm;
-    var memory_db = result.memory_db;
+    const ctx2 = try createTestEvm(allocator);
+    var evm = ctx2.evm;
+    var memory_db = ctx2.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
@@ -137,9 +137,9 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    const result = try createTestEvm(allocator);
-    var evm = result.evm;
-    var memory_db = result.memory_db;
+    const ctx3 = try createTestEvm(allocator);
+    var evm = ctx3.evm;
+    var memory_db = ctx3.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
@@ -160,7 +160,6 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     };
     
     const original_caller = to_address(0x1111);
-    const caller_address = to_address(0x2222);
     const target_address = to_address(0x3333);
     
     const code_hash = try evm.database.set_code(&target_bytecode);
@@ -175,22 +174,22 @@ test "Frame DELEGATECALL preserves context - real integration test" {
         .input = &.{},
         .gas = 100000,
     } };
-    const result = try evm.call(params);
-    try std.testing.expect(result.success);
-    try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    const returned_value = std.mem.readInt(u256, result.output[0..32], .big);
+    const call_result2 = try evm.call(params);
+    try std.testing.expect(call_result2.success);
+    try std.testing.expectEqual(@as(usize, 32), call_result2.output.len);
+    const returned_value = std.mem.readInt(u256, call_result2.output[0..32], .big);
     // At top-level: expected = original_caller + 0
     const expected = to_u256(original_caller) + 0;
     try std.testing.expectEqual(expected, returned_value);
 }
 
-test "Frame STATICCALL prevents state changes - real integration test" {
+test "EVM STATICCALL prevents state changes - integration" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    const result = try createTestEvm(allocator);
-    var evm = result.evm;
-    var memory_db = result.memory_db;
+    const ctx4 = try createTestEvm(allocator);
+    var evm = ctx4.evm;
+    var memory_db = ctx4.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
@@ -217,32 +216,18 @@ test "Frame STATICCALL prevents state changes - real integration test" {
     account.code_hash = code_hash;
     try evm.database.set_account(target_address, account);
     
-    // Create frame
-    const F = Frame(.{ .has_database = true });
-    const bytecode = [_]u8{ 0xFA, 0x00 }; // STATICCALL STOP
-    const host = evm.to_host();
-    
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
-    defer frame.deinit(allocator);
-    
-    // Setup stack for STATICCALL: [gas, address, input_offset, input_size, output_offset, output_size]
-    try frame.stack.push(50000);                    // gas
-    try frame.stack.push(to_u256(target_address)); // address
-    try frame.stack.push(0);                        // input_offset
-    try frame.stack.push(0);                        // input_size
-    try frame.stack.push(0);                        // output_offset
-    try frame.stack.push(32);                       // output_size
-    
-    // Execute STATICCALL
-    try frame.staticcall();
-    
-    // Should fail because the called contract tries to modify state
-    const stack_result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 0), stack_result); // Failure
-    
+    // STATICCALL through EVM; attempt to SSTORE must fail
+    const sc_params = @import("call_params.zig").CallParams{ .staticcall = .{
+        .caller = to_address(0xABCD),
+        .to = target_address,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    const sc_result = try evm.call(sc_params);
+    try std.testing.expect(!sc_result.success);
     // Verify storage was not modified
     const storage_value = try evm.database.get_storage(target_address, 0);
-    try std.testing.expectEqual(@as(u256, 0), storage_value); // Should still be 0
+    try std.testing.expectEqual(@as(u256, 0), storage_value);
 }
 
 test "Frame CREATE operation - real integration test" {
@@ -284,35 +269,19 @@ test "Frame CREATE operation - real integration test" {
         0xF3,       // RETURN
     };
     
-    // Create frame
-    const F = Frame(.{ .has_database = true });
-    const bytecode = [_]u8{ 0xF0, 0x00 }; // CREATE STOP
-    const host = evm.to_host();
-    
-    var frame = try F.init(allocator, &bytecode, 200000, evm.database, host);
-    defer frame.deinit(allocator);
-    
-    frame.contract_address = creator_address;
-    
-    // Store init code in memory
-    try frame.memory.set_data(0, &init_code);
-    
-    // Setup stack for CREATE: [value, offset, size]
-    try frame.stack.push(1000);          // value (send 1000 wei)
-    try frame.stack.push(0);             // offset
-    try frame.stack.push(init_code.len); // size
-    
-    // Execute CREATE
-    try frame.create();
-    
-    // Get the created contract address from stack
-    const created_address_u256 = try frame.stack.pop();
-    
-    // Verify contract was created (non-zero address)
-    try std.testing.expect(created_address_u256 != 0);
-    
-    // Convert to address and verify the account exists
-    const created_address = from_u256(created_address_u256);
+    // CREATE via EVM
+    const create_params = @import("call_params.zig").CallParams{ .create = .{
+        .caller = creator_address,
+        .value = 1000,
+        .init_code = &init_code,
+        .gas = 200000,
+    } };
+    const create_result = try evm.call(create_params);
+    try std.testing.expect(create_result.success);
+    // Output contains created address bytes
+    try std.testing.expectEqual(@as(usize, 20), create_result.output.len);
+    var created_address: Address = undefined;
+    @memcpy(&created_address, create_result.output[0..20]);
     const created_account = try evm.database.get_account(created_address);
     
     try std.testing.expect(created_account != null);
