@@ -44,6 +44,7 @@ Example Response: "I detected potential sensitive information in your prompt (AP
 - **Zig standard naming conventions**: Follow the conventions used by Zig's standard library
 - **Tests in source files**: Always include tests in the same file as the source code, not in separate test files
 - **Direct imports**: Import modules directly without creating unnecessary aliases (e.g., use `address.Address` not `Address = address.Address`)
+- **No stubs**: NEVER leave stub implementations in the codebase - they can easily sneak through without being noticed and compromise functionality
 
 ### Zig Naming Conventions
 
@@ -166,6 +167,28 @@ This principle ensures code quality and prevents the accumulation of broken func
 ## CRITICAL: Zero Tolerance for Compilation and Test Failures
 
 **ABSOLUTE MANDATE**: Any code change that breaks compilation or tests is UNACCEPTABLE.
+
+## CRITICAL: Zero Tolerance for Stub Implementations
+
+**ABSOLUTE MANDATE**: No stub implementations are allowed in the codebase.
+
+**NEVER ALLOW**:
+- ❌ Functions that return `error.NotImplemented`
+- ❌ Placeholder implementations that don't perform the real operation
+- ❌ Fallback modules that replace real functionality
+- ❌ TODO comments indicating unfinished implementations
+
+**WHY THIS IS CRITICAL**:
+- Stubs can easily sneak through without being noticed
+- They create false confidence that functionality exists
+- They compromise the integrity of the system
+- They make debugging harder when functionality silently fails
+
+**REQUIRED BEHAVIOR**:
+- All functions must be fully implemented
+- If a feature cannot be implemented, it should not exist
+- Use proper error types for legitimate failure cases
+- Complete all implementations before marking work as done
 
 ## CRITICAL: Benchmark Validity Requirements
 
