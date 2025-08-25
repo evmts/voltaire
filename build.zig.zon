@@ -28,7 +28,7 @@
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.14.1",
+    .minimum_zig_version = "0.15.1",
 
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
@@ -36,22 +36,22 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .webui = .{
-            .url = "https://github.com/webui-dev/webui/archive/699119f42fc64ae42c9121bc4749b740f71949af.tar.gz",
-            .hash = "webui-2.5.0-beta.4-pxqD5esSNwCHzwq6ndnW-ShzC_nPNAzGu13l4Unk0rFl",
-        },
-        .c_kzg_4844 = .{
-            .url = "git+https://github.com/evmts/c-kzg-4844#d231873d5c815af6f1ab2e315f038fa5cb8c5294",
-            .hash = "c_kzg_4844-0.0.0-UbJ7acpiHQBNlbFymCuO9OTLut3UtdHz4OiDZBc5pCAd",
-        },
+        // .webui = .{
+        //     .url = "https://github.com/webui-dev/webui/archive/699119f42fc64ae42c9121bc4749b740f71949af.tar.gz",
+        //     .hash = "webui-2.5.0-beta.4-pxqD5esSNwCHzwq6ndnW-ShzC_nPNAzGu13l4Unk0rFl",
+        // },
+        // .c_kzg_4844 = .{
+        //     .url = "git+https://github.com/evmts/c-kzg-4844#d231873d5c815af6f1ab2e315f038fa5cb8c5294",
+        //     .hash = "c_kzg_4844-0.0.0-UbJ7acpiHQBNlbFymCuO9OTLut3UtdHz4OiDZBc5pCAd",
+        // },
         .zbench = .{
-            .url = "https://github.com/hendriknielaender/zBench/archive/refs/heads/zig-0.14.0.tar.gz",
-            .hash = "zbench-0.9.2-YTdc79DoAADA2YNklaPqRzZxd3JwgRATsHi1cfqEOd_P",
+            .url = "https://github.com/hendriknielaender/zBench/archive/refs/heads/main.tar.gz",
+            .hash = "zbench-0.11.1-YTdc7zgmAQDtDcHPFwsLeawui27WjMLWmUwrfz7pIlB2",
         },
-        .clap = .{
-            .url = "https://github.com/Hejsil/zig-clap/archive/refs/tags/0.10.0.tar.gz",
-            .hash = "clap-0.10.0-oBajB434AQBDh-Ei3YtoKIRxZacVPF1iSwp3IX_ZB8f0",
-        },
+        // .clap = .{
+        //     .url = "https://github.com/Hejsil/zig-clap/archive/refs/tags/0.10.0.tar.gz",
+        //     .hash = "clap-0.10.0-oBajB434AQBDh-Ei3YtoKIRxZacVPF1iSwp3IX_ZB8f0",
+        // },
     },
 
     // Specifies the set of files and directories that are included in this package.
