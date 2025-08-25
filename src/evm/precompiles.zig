@@ -721,21 +721,17 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
     var commitment_arr: Blob.BlobCommitment = undefined;
     @memcpy(commitment_arr[0..], commitment_bytes);
     const expected_vh = Blob.commitment_to_versioned_hash(commitment_arr);
-    if (!std.mem.eql(u8, &expected_vh.bytes, versioned_hash)) {
+    if (!std.mem.eql(u8, expected_vh.bytes[0..], versioned_hash)) {
         return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
     }
 
     // Ensure KZG settings are initialized; try lazy init from default path if not
     const kzg_setup = @import("kzg_setup.zig");
     if (!kzg_setup.isInitialized()) {
-        // Best-effort init using default trusted setup path; ignore errors and fail gracefully
         kzg_setup.init(allocator, "data/kzg/trusted_setup.txt") catch {
             return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
         };
     }
-    const settings_ptr = kzg_setup.getSettings() orelse {
-        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
-    };
 
     // Prepare c-kzg types
     const c_kzg = crypto.c_kzg;
@@ -743,25 +739,15 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
     var y32: c_kzg.Bytes32 = undefined;
     var commit48: c_kzg.Bytes48 = undefined;
     var proof48: c_kzg.Bytes48 = undefined;
-    @memcpy(z32.bytes[0..], z_bytes);
-    @memcpy(y32.bytes[0..], y_bytes);
-    @memcpy(commit48.bytes[0..], commitment_bytes);
-    @memcpy(proof48.bytes[0..], proof_bytes);
+    @memcpy(z32[0..], z_bytes);
+    @memcpy(y32[0..], y_bytes);
+    @memcpy(commit48[0..], commitment_bytes);
+    @memcpy(proof48[0..], proof_bytes);
 
-    // Some bindings alias commitment/proof types to Bytes48
-    const KZGCommitment = c_kzg.KZGCommitment;
-    const KZGProof = c_kzg.KZGProof;
-    const CommitmentPtr = *const KZGCommitment;
-    const ProofPtr = *const KZGProof;
-
-    // Reinterpret Bytes48 as KZGCommitment/Proof when they are typedefs
-    const commit_ptr: CommitmentPtr = @ptrCast(&commit48);
-    const proof_ptr: ProofPtr = @ptrCast(&proof48);
-
-    // Verify proof: p(z) = y for commitment
-    var ok: bool = false;
-    const ret = c_kzg.verify_kzg_proof(&ok, commit_ptr, &z32, &y32, proof_ptr, settings_ptr);
-    if (ret != c_kzg.C_KZG_OK or !ok) {
+    const ok = c_kzg.verifyKZGProof(&commit48, &z32, &y32, &proof48) catch {
+        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
+    };
+    if (!ok) {
         return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
     }
 
