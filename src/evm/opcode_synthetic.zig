@@ -32,6 +32,15 @@ pub const OpcodeSynthetic = enum(u8) {
     PUSH_MLOAD_POINTER = 0xBD,
     PUSH_MSTORE_INLINE = 0xBE,
     PUSH_MSTORE_POINTER = 0xBF,
+    // New: bitwise fusions and MSTORE8
+    PUSH_AND_INLINE = 0xC0,
+    PUSH_AND_POINTER = 0xC1,
+    PUSH_OR_INLINE = 0xC2,
+    PUSH_OR_POINTER = 0xC3,
+    PUSH_XOR_INLINE = 0xC4,
+    PUSH_XOR_POINTER = 0xC5,
+    PUSH_MSTORE8_INLINE = 0xC6,
+    PUSH_MSTORE8_POINTER = 0xC7,
 };
 
 // Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
@@ -84,4 +93,12 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
     try std.testing.expectEqual(@as(u8, 0xBD), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER));
     try std.testing.expectEqual(@as(u8, 0xBE), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
     try std.testing.expectEqual(@as(u8, 0xBF), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xC0), @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xC1), @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xC2), @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xC3), @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xC4), @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xC5), @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xC6), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xC7), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER));
 }

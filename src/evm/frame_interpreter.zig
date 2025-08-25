@@ -78,7 +78,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             h[@intFromEnum(Opcode.ISZERO)] = &op_iszero_handler;
             h[@intFromEnum(Opcode.AND)] = &op_and_handler;
             h[@intFromEnum(Opcode.OR)] = &op_or_handler;
-            h[@intFromEnum(Opcode.XOR)] = &xor_handler;
+            h[@intFromEnum(Opcode.XOR)] = &op_xor_handler;
             h[@intFromEnum(Opcode.NOT)] = &op_not_handler;
             h[@intFromEnum(Opcode.BYTE)] = &op_byte_handler;
             h[@intFromEnum(Opcode.SHL)] = &op_shl_handler;
@@ -162,25 +162,27 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 h[i] = &op_invalid_handler;
             }
             h[@intFromEnum(Opcode.CREATE)] = &op_create_handler;
-            h[@intFromEnum(Opcode.CALL)] = &op_invalid_handler; // Needs additional context
+            h[@intFromEnum(Opcode.CALL)] = &op_call_handler;
             h[@intFromEnum(Opcode.CALLCODE)] = &op_invalid_handler; // Deprecated
-            h[@intFromEnum(Opcode.RETURN)] = &op_invalid_handler; // Needs return handling
-            h[@intFromEnum(Opcode.DELEGATECALL)] = &op_invalid_handler; // Needs additional context
+            h[@intFromEnum(Opcode.RETURN)] = &op_return_handler;
+            h[@intFromEnum(Opcode.DELEGATECALL)] = &op_delegatecall_handler;
             for (0xf5..0xfa) |i| {
                 h[i] = &op_invalid_handler;
             }
-            h[@intFromEnum(Opcode.STATICCALL)] = &op_invalid_handler; // Needs additional context
-            h[@intFromEnum(Opcode.REVERT)] = &op_invalid_handler; // Needs return handling
+            h[@intFromEnum(Opcode.STATICCALL)] = &op_staticcall_handler;
+            h[@intFromEnum(Opcode.REVERT)] = &op_revert_handler;
             h[0xfc] = &op_invalid_handler;
             h[0xfd] = &op_invalid_handler;
             h[@intFromEnum(Opcode.INVALID)] = &op_invalid_handler;
-            h[@intFromEnum(Opcode.SELFDESTRUCT)] = &op_invalid_handler; // Needs additional context
+            h[@intFromEnum(Opcode.SELFDESTRUCT)] = &op_selfdestruct_handler; // Delegate to Frame
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)] = &push_add_inline_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER)] = &push_add_pointer_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE)] = &push_mul_inline_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_POINTER)] = &push_mul_pointer_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_INLINE)] = &push_div_inline_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_POINTER)] = &push_div_pointer_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_SUB_INLINE)] = &push_sub_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_SUB_POINTER)] = &push_sub_pointer_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_INLINE)] = &push_jump_inline_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_POINTER)] = &push_jump_pointer_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &push_jumpi_inline_handler;
@@ -190,6 +192,15 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_POINTER)] = &push_mload_pointer_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_INLINE)] = &push_mstore_inline_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_POINTER)] = &push_mstore_pointer_handler;
+            // New: bitwise and MSTORE8 fusions
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_AND_INLINE)] = &push_and_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_AND_POINTER)] = &push_and_pointer_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_OR_INLINE)] = &push_or_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_OR_POINTER)] = &push_or_pointer_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_XOR_INLINE)] = &push_xor_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_XOR_POINTER)] = &push_xor_pointer_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE8_INLINE)] = &push_mstore8_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE8_POINTER)] = &push_mstore8_pointer_handler;
             break :blk h;
         };
 
@@ -198,8 +209,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             errdefer frame.deinit(allocator);
             var planner = try Planner.init(allocator, 32); // Small cache for frame interpreter
 
-            // Use getOrAnalyze which properly sets the bytecode before analyzing
-            const plan_ptr = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
+            // Use getOrAnalyze with the actual hardfork from host
+            const plan_ptr = try planner.getOrAnalyze(bytecode, handlers, host.get_hardfork());
 
             return Self{
                 .frame = frame,
@@ -358,7 +369,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
                     const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-                    try self.stack.dup_n(n);
+            self.stack.dup_n_unsafe(n);
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
                     return dispatchNext(next_handler, self, plan_ptr);
@@ -375,7 +386,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
                     const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-                    try self.stack.swap_n(n);
+            self.stack.swap_n_unsafe(n);
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
                     return dispatchNext(next_handler, self, plan_ptr);
@@ -963,7 +974,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             return dispatchNext(next_handler, self, plan_ptr);
         }
 
-        fn xor_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+        fn op_xor_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
@@ -1182,21 +1193,34 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            // Peek at the slot to determine gas cost
-            const slot = self.stack.peek() catch return Error.StackUnderflow;
+            // Peek at the slot and value to compute gas cost without mutating stack
+            const stack_slice = self.stack.get_slice();
+            if (stack_slice.len < 2) return Error.StackUnderflow;
+            const slot: WordType = stack_slice[0];
+            const new_value: WordType = stack_slice[1];
             const address = self.contract_address;
 
             // Access the storage slot and get the gas cost (warm/cold)
-            // SSTORE has complex gas calculation based on current/new values
-            // For now, we just account for the warm/cold access
             const host = self.host;
             const access_cost = host.access_storage_slot(address, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            // SSTORE has additional gas costs beyond access
-            // Using simplified cost for now (actual EIP-2200 calculation is complex)
-            const base_cost: u16 = if (access_cost == 2100) 20000 else 2900; // Cold vs warm
-            self.consumeGasUnchecked(base_cost);
+
+            // Consume the access list cost (EIP-2929)
+            self.consumeGasUnchecked(@intCast(access_cost));
+
+            // Compute SSTORE dynamic cost per EIP-2200/EIP-3529 using GasConstants
+            const current_value: WordType = host.get_storage(address, slot);
+            const original_opt = host.get_original_storage(address, slot);
+            const original_value: WordType = original_opt orelse current_value;
+            // We already charged the cold/warm cost above, so pass false for is_cold to avoid double-charge
+            const sstore_cost = @import("primitives").GasConstants.sstore_gas_cost(
+                current_value,
+                original_value,
+                new_value,
+                false,
+            );
+            self.consumeGasUnchecked(sstore_cost);
 
             try self.sstore();
 
@@ -1242,6 +1266,68 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .JUMPDEST);
             return dispatchNext(next_handler, self, plan_ptr);
+        }
+
+        // System and call-family handlers
+        fn op_call_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            // Delegate to Frame.call which performs gas accounting per EIPs
+            try self.call();
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .CALL);
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+
+        fn op_delegatecall_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            try self.delegatecall();
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DELEGATECALL);
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+
+        fn op_staticcall_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            try self.staticcall();
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .STATICCALL);
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+
+        fn op_return_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            _ = plan;
+
+            // Frame.return halts with STOP; propagate termination
+            self.@"return"() catch |err| return err;
+            unreachable;
+        }
+
+        fn op_revert_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            _ = plan;
+
+            // Frame.revert halts with REVERT; propagate termination
+            self.revert() catch |err| return err;
+            unreachable;
+        }
+
+        fn op_selfdestruct_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            _ = plan;
+
+            // SELFDESTRUCT terminates execution; delegate to Frame and propagate
+            self.selfdestruct() catch |err| return err;
+            unreachable;
         }
 
         fn op_gas_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2113,6 +2199,125 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+
+
+        fn push_and_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_AND_INLINE)));
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a & value);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_AND_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_and_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_AND_POINTER));
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a & value_ptr.*);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_AND_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_or_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_OR_INLINE)));
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a | value);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_OR_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_or_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_OR_POINTER));
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a | value_ptr.*);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_OR_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_xor_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_XOR_INLINE)));
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a ^ value);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_XOR_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_xor_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_XOR_POINTER));
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a ^ value_ptr.*);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_XOR_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_mstore8_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const off_usize = @as(usize, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE8_INLINE)));
+            const value = self.stack.pop_unsafe();
+            const byte_value: u8 = @truncate(value & 0xFF);
+            try self.memory.set_byte_evm(off_usize, byte_value);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE8_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_mstore8_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const off_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE8_POINTER));
+            const off_usize: usize = @intCast(off_ptr.*);
+            const value = self.stack.pop_unsafe();
+            const byte_value: u8 = @truncate(value & 0xFF);
+            try self.memory.set_byte_evm(off_usize, byte_value);
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE8_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_sub_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_SUB_INLINE)));
+            const b = try self.stack.pop();
+            const result = b -% value;
+            try self.stack.push(result);
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_SUB_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_sub_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const value_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_SUB_POINTER));
+            const b = try self.stack.pop();
+            const result = b -% value_ptr.*;
+            try self.stack.push(result);
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_SUB_POINTER));
             return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_jump_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {

@@ -67,21 +67,18 @@ test "ecPairing with empty input returns correct result" {
     try testing.expectEqual(@as(u8, 1), result.output[31]);
 }
 
-test "KZG point evaluation returns NotImplemented until setup is initialized" {
+test "KZG point evaluation fails gracefully when uninitialized" {
     const allocator = testing.allocator;
     
-    // Valid 192-byte input for point evaluation
-    const input = [_]u8{0} ** 192;
+    // Well-formed 192-byte input for point evaluation but with dummy values
+    var input = [_]u8{0} ** 192;
+    // Set a KZG version byte in the versioned hash position to look structurally valid
+    input[0] = 0x01;
     
-    // This should return NotImplemented error since KZG setup isn't initialized
-    const result = precompiles.execute_point_evaluation(allocator, &input, 1_000_000) catch |err| {
-        try testing.expectEqual(error.NotImplemented, err);
-        return;
-    };
-    
-    // If we get here without error, that's unexpected
-    allocator.free(result.output);
-    try testing.expect(false); // Should not reach here
+    const result = try precompiles.execute_point_evaluation(allocator, &input, 1_000_000);
+    // No output is expected and success should be false because KZG is not initialized
+    try testing.expect(!result.success);
+    try testing.expectEqual(@as(usize, 0), result.output.len);
 }
 
 test "SHA256 precompile works correctly" {

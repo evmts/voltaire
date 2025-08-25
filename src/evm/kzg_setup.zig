@@ -15,8 +15,10 @@ pub fn init(allocator: std.mem.Allocator, trusted_setup_path: []const u8) !void 
     const file = try std.fs.cwd().openFile(trusted_setup_path, .{});
     defer file.close();
     
-    // Get the file handle for C API
-    const c_file = std.c.fopen(trusted_setup_path.ptr, "r");
+    // Get the file handle for C API (nul-terminated path required)
+    const zpath = try allocator.dupeZ(u8, trusted_setup_path);
+    defer allocator.free(zpath);
+    const c_file = std.c.fopen(zpath, "r");
     if (c_file == null) return error.FileOpenFailed;
     defer _ = std.c.fclose(c_file);
     

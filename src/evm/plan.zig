@@ -159,7 +159,12 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE),
-                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => if (@sizeOf(usize) == 8) u64 else u32,
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) => if (@sizeOf(usize) == 8) u64 else u32,
                 
                 @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
@@ -167,7 +172,12 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
-                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => *const WordType,
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER) => *const WordType,
                 
                 // JUMPDEST returns metadata inline or via pointer
                 @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) == 8)
@@ -251,7 +261,12 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE),
-                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => if (@sizeOf(usize) == 8) elem.inline_value else @as(u32, @intCast(elem.inline_value)),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) => if (@sizeOf(usize) == 8) elem.inline_value else @as(u32, @intCast(elem.inline_value)),
                 
                 @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
@@ -259,7 +274,12 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
-                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => blk: {
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER) => blk: {
                     const pointer_idx = elem.pointer_index;
                     if (pointer_idx >= self.u256_constants.len) {
                         @panic("getMetadata: pointer index out of bounds");

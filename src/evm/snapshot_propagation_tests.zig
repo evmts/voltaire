@@ -39,8 +39,17 @@ fn createTestEvm(allocator: std.mem.Allocator) !TestEvm {
     memory_db.* = MemoryDatabase.init(allocator);
     
     const db_interface = memory_db.to_database_interface();
+    const block_info = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    const gas_price: u256 = 0;
+    const origin = ZERO_ADDRESS;
+    const hardfork = Hardfork.CANCUN;
     const evm = try allocator.create(EvmType);
-    evm.* = try EvmType.init(allocator, db_interface, null, null);
+    evm.* = try EvmType.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork);
     
     return TestEvm{ .evm = evm, .memory_db = memory_db };
 }

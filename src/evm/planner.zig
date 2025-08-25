@@ -448,9 +448,29 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                             handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER);
                             fused = true;
                         }
+                        // Check for PUSH+SUB fusion
+                        else if (next_op == @intFromEnum(Opcode.SUB)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER);
+                            fused = true;
+                        }
                         // Check for PUSH+DIV fusion
                         else if (next_op == @intFromEnum(Opcode.DIV)) {
                             handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER);
+                            fused = true;
+                        }
+                        // Check for PUSH+AND fusion
+                        else if (next_op == @intFromEnum(Opcode.AND)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER);
+                            fused = true;
+                        }
+                        // Check for PUSH+OR fusion
+                        else if (next_op == @intFromEnum(Opcode.OR)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER);
+                            fused = true;
+                        }
+                        // Check for PUSH+XOR fusion
+                        else if (next_op == @intFromEnum(Opcode.XOR)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+JUMP fusion
@@ -472,6 +492,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                         // Check for PUSH+MSTORE fusion (immediate offset; value from stack)
                         else if (next_op == @intFromEnum(Opcode.MSTORE)) {
                             handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER);
+                            fused = true;
+                        }
+                        // Check for PUSH+MSTORE8 fusion
+                        else if (next_op == @intFromEnum(Opcode.MSTORE8)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER);
                             fused = true;
                         }
                     }

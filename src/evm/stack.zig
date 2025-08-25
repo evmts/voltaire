@@ -144,6 +144,13 @@ pub fn Stack(comptime config: StackConfig) type {
             return self.push(value);
         }
 
+        // Unsafe generic dup without bounds checks (validated by planner)
+        pub inline fn dup_n_unsafe(self: *Self, n: u8) void {
+            // In downward stack, nth-from-top is at index n-1
+            const value = self.stack_ptr[n - 1];
+            self.push_unsafe(value);
+        }
+
         // DUP1-DUP16 operations - individual functions calling generic dup_n
         pub fn dup1(self: *Self) Error!void { return self.dup_n(1); }
         pub fn dup2(self: *Self) Error!void { return self.dup_n(2); }
@@ -173,6 +180,13 @@ pub fn Stack(comptime config: StackConfig) type {
             }
             // Swap top with nth item
             std.mem.swap(WordType, &self.stack_ptr[0], &self.stack_ptr[n]);
+        }
+
+        // Unsafe generic swap without bounds checks (validated by planner)
+        pub inline fn swap_n_unsafe(self: *Self, n: u8) void {
+            const tmp = self.stack_ptr[0];
+            self.stack_ptr[0] = self.stack_ptr[n];
+            self.stack_ptr[n] = tmp;
         }
 
         // SWAP1-SWAP16 operations - individual functions calling generic swap_n
