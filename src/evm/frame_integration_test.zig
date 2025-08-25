@@ -83,7 +83,7 @@ test "Frame CALL operation - real integration test" {
     // Get the EVM's host interface
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
     defer frame.deinit(allocator);
     
     frame.contract_address = caller_address;
@@ -101,8 +101,8 @@ test "Frame CALL operation - real integration test" {
     try frame.op_call();
     
     // Verify success (1) was pushed to stack
-    const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 1), result);
+    const stack_result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), stack_result);
     
     // Verify the return data was written to memory
     const return_data = frame.memory.get_slice(0, 32) catch &[_]u8{};
@@ -143,7 +143,7 @@ test "Frame CALL with value transfer - real integration test" {
     const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
     defer frame.deinit(allocator);
     
     frame.contract_address = caller_address;
@@ -161,8 +161,8 @@ test "Frame CALL with value transfer - real integration test" {
     try frame.op_call();
     
     // Verify success
-    const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 1), result);
+    const stack_result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), stack_result);
     
     // Verify balances were updated
     const caller_after = try evm.database.get_account(caller_address);
@@ -212,7 +212,7 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     const bytecode = [_]u8{ 0xF4, 0x00 }; // DELEGATECALL STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
     defer frame.deinit(allocator);
     
     frame.contract_address = caller_address;
@@ -231,8 +231,8 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     try frame.op_delegatecall();
     
     // Verify success
-    const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 1), result);
+    const stack_result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), stack_result);
     
     // The target contract adds CALLER + CALLVALUE
     // In DELEGATECALL, these should be preserved from the parent context
@@ -282,7 +282,7 @@ test "Frame STATICCALL prevents state changes - real integration test" {
     const bytecode = [_]u8{ 0xFA, 0x00 }; // STATICCALL STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
     defer frame.deinit(allocator);
     
     // Setup stack for STATICCALL: [gas, address, input_offset, input_size, output_offset, output_size]
@@ -297,8 +297,8 @@ test "Frame STATICCALL prevents state changes - real integration test" {
     try frame.op_staticcall();
     
     // Should fail because the called contract tries to modify state
-    const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 0), result); // Failure
+    const stack_result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), stack_result); // Failure
     
     // Verify storage was not modified
     const storage_value = try evm.database.get_storage(target_address, 0);
@@ -349,7 +349,7 @@ test "Frame CREATE operation - real integration test" {
     const bytecode = [_]u8{ 0xF0, 0x00 }; // CREATE STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 200000, evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 200000, evm.database, host, false);
     defer frame.deinit(allocator);
     
     frame.contract_address = creator_address;

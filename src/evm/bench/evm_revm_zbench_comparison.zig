@@ -92,7 +92,9 @@ fn benchmark_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
         allocator,
         &ARITHMETIC_CONTRACT,
         BENCHMARK_GAS_LIMIT,
-        db_interface
+        db_interface,
+        null,
+        false
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -116,7 +118,9 @@ fn benchmark_evm_storage_contract(allocator: std.mem.Allocator) void {
         allocator,
         &STORAGE_CONTRACT,
         BENCHMARK_GAS_LIMIT,
-        db_interface
+        db_interface,
+        null,
+        false
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -140,7 +144,9 @@ fn benchmark_evm_stack_contract(allocator: std.mem.Allocator) void {
         allocator,
         &STACK_CONTRACT,
         BENCHMARK_GAS_LIMIT,
-        db_interface
+        db_interface,
+        null,
+        false
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -164,7 +170,9 @@ fn benchmark_evm_memory_contract(allocator: std.mem.Allocator) void {
         allocator,
         &MEMORY_CONTRACT,
         BENCHMARK_GAS_LIMIT,
-        db_interface
+        db_interface,
+        null,
+        false  // is_static
     ) catch return;
     defer interpreter.deinit(allocator);
     
@@ -183,7 +191,7 @@ fn benchmark_legacy_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, null, false) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;
@@ -196,7 +204,7 @@ fn benchmark_legacy_evm_storage_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, null, false) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;
@@ -209,7 +217,7 @@ fn benchmark_legacy_evm_stack_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, null, false) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;
@@ -222,7 +230,7 @@ fn benchmark_legacy_evm_memory_contract(allocator: std.mem.Allocator) void {
     const db_interface = memory_db.to_database_interface();
     const FrameInterpreterType = evm.createFrameInterpreter(.{ .has_database = true });
     
-    var interpreter = FrameInterpreterType.init(allocator, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface) catch return;
+    var interpreter = FrameInterpreterType.init(allocator, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT, db_interface, null, false) catch return;
     defer interpreter.deinit(allocator);
     
     interpreter.interpret() catch return;

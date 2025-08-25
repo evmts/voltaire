@@ -103,7 +103,7 @@ pub fn main() !void {
         const Interpreter = evm.createFrameInterpreter(.{
             .TracerType = evm.DebuggingTracer,
         });
-        var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {});
+        var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {}, null, false);
         defer interpreter.deinit(allocator);
 
         const start_time = std.time.nanoTimestamp();
