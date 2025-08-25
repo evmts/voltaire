@@ -871,10 +871,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
             const slot = try self.stack.pop();
             // Use the currently executing contract's address
-            const address = self.contract_address;
+            const contract_addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
             const host = self.host;
-            _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
+            _ = host.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             // Load value from storage
@@ -897,7 +897,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const slot = try self.stack.pop();
             const value = try self.stack.pop();
             // Use the currently executing contract's address
-            const address = self.contract_address;
+            const addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
             const host = self.host;
             _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
@@ -918,7 +918,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Get database interface
             const db = self.database orelse return Error.InvalidOpcode;
             // Use the currently executing contract's address
-            const address = self.contract_address;
+            const addr = self.contract_address;
             // Load value from transient storage
             const value = db.get_transient_storage(address, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
@@ -942,7 +942,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Get database interface
             const db = self.database orelse return Error.InvalidOpcode;
             // Use the currently executing contract's address
-            const address = self.contract_address;
+            const addr = self.contract_address;
             // Store value to transient storage
             db.set_transient_storage(address, slot, value) catch |err| switch (err) {
                 else => return Error.AllocationError,
@@ -967,12 +967,12 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Access the address for warm/cold accounting (EIP-2929)
             // This returns the gas cost but the frame interpreter handles gas consumption
             if (self.host) |host| {
-                _ = h.access_address(address) catch |err| switch (err) {
+                _ = host.access_address(address) catch |err| switch (err) {
                     else => return Error.AllocationError,
                 };
             }
             
-            const balance = if (self.host) |host| h.get_balance(address) else 0;
+            const balance = if (self.host) |host| host.get_balance(address) else 0;
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
         }
@@ -1014,7 +1014,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return;
             }
             const offset_usize = @as(usize, @intCast(offset));
-            const calldata = if (self.host) |host| h.get_input() else &[_]u8{};
+            const calldata = if (self.host) |host| host.get_input() else &[_]u8{};
             // Load 32 bytes from calldata, zero-padding if needed
             var word: u256 = 0;
             for (0..32) |i| {
@@ -1035,7 +1035,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [size]
         pub fn calldatasize(self: *Self) Error!void {
             const host = self.host;
-            const calldata = if (self.host) |host| h.get_input() else &[_]u8{};
+            const calldata = if (self.host) |host| host.get_input() else &[_]u8{};
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
             try self.stack.push(calldata_len);
         }
@@ -1064,7 +1064,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
-            const calldata = if (self.host) |host| h.get_input() else &[_]u8{};
+            const calldata = if (self.host) |host| host.get_input() else &[_]u8{};
             // Copy calldata to memory with bounds checking
             for (0..length_usize) |i| {
                 const src_index = offset_usize + i;
@@ -1117,7 +1117,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [gas_price]
         pub fn gasprice(self: *Self) Error!void {
             const host = self.host;
-            const gas_price = if (self.host) |host| h.get_gas_price() else 0;
+            const gas_price = if (self.host) |host| host.get_gas_price() else 0;
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
             try self.stack.push(gas_price_truncated);
         }
@@ -1173,7 +1173,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [size]
         pub fn returndatasize(self: *Self) Error!void {
             const host = self.host;
-            const return_data = if (self.host) |host| h.get_return_data() else &[_]u8{};
+            const return_data = if (self.host) |host| host.get_return_data() else &[_]u8{};
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             try self.stack.push(return_data_len);
         }
@@ -1196,7 +1196,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
             if (length_usize == 0) return;
-            const return_data = if (self.host) |host| h.get_return_data() else &[_]u8{};
+            const return_data = if (self.host) |host| host.get_return_data() else &[_]u8{};
             // Check if we're reading beyond the return data
             if (offset_usize > return_data.len or
                 (offset_usize + length_usize) > return_data.len)
@@ -1253,7 +1253,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *Self) Error!void {
             const host = self.host;
-            const chain_id = if (self.host) |host| h.get_chain_id() else 1;
+            const chain_id = if (self.host) |host| host.get_chain_id() else 1;
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
             try self.stack.push(chain_id_word);
         }
@@ -1273,7 +1273,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn blockhash(self: *Self) Error!void {
             const host = self.host;
             const block_number = try self.stack.pop();
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const current_block = block_info.number;
             // Check bounds: not current or future blocks, and within 256 recent blocks
             if (block_number >= current_block or
@@ -1305,7 +1305,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [coinbase_address]
         pub fn coinbase(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
             try self.stack.push(coinbase_word);
@@ -1315,7 +1315,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             try self.stack.push(timestamp_word);
         }
@@ -1324,7 +1324,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [block_number]
         pub fn number(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             try self.stack.push(block_number_word);
         }
@@ -1333,7 +1333,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [difficulty/prevrandao]
         pub fn difficulty(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             try self.stack.push(difficulty_word);
         }
@@ -1348,7 +1348,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             try self.stack.push(gas_limit_word);
         }
@@ -1357,7 +1357,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| host.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             try self.stack.push(base_fee_word);
         }
@@ -1372,7 +1372,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 try self.stack.push(0);
                 return;
             }
-            const blob_hash_opt = if (self.host) |host| h.get_blob_hash(index) else null;
+            const blob_hash_opt = if (self.host) |host| host.get_blob_hash(index) else null;
             // Push hash or zero if not available
             if (blob_hash_opt) |hash| {
                 // Convert [32]u8 to u256
@@ -1391,7 +1391,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *Self) Error!void {
             const host = self.host;
-            const blob_base_fee = if (self.host) |host| h.get_blob_base_fee() else 0;
+            const blob_base_fee = if (self.host) |host| host.get_blob_base_fee() else 0;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             try self.stack.push(blob_base_fee_word);
         }
@@ -2211,38 +2211,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             // SELFDESTRUCT always stops execution
             return Error.STOP;
         }
-        // SIMD-optimized stack operations
-        /// SIMD-accelerated bulk DUP operations for sequential duplicate operations
-        ///
-        /// Optimizes execution when multiple DUP operations are performed in sequence by using
-        /// vector operations to process multiple duplications simultaneously. This is particularly
-        /// beneficial for bytecode patterns that perform many consecutive DUP operations.
-        ///
-        /// ## How SIMD Optimization Works
-        ///
-        /// Traditional scalar approach processes each DUP individually:
-        /// ```
-        /// DUP1: read stack[0], push to stack
-        /// DUP3: read stack[2], push to stack
-        /// DUP5: read stack[4], push to stack
-        /// ```
-        ///
-        /// SIMD approach processes multiple DUPs simultaneously:
-        /// ```
-        /// Load vector: [stack[0], stack[2], stack[4], ...]
-        /// Push all values in vectorized chunks
-        /// ```
-        ///
-        /// ## Performance Benefits
-        /// - Reduces memory access latency through vectorized loads
-        /// - Better CPU cache utilization with contiguous memory access
-        /// - Fewer function calls and loop iterations
-        /// - Automatic fallback to scalar when SIMD unavailable
-        ///
-        /// @param L: Vector length (compile-time known, from config.vector_length)
-        /// @param indices: Array of DUP indices (1-16, stack positions to duplicate)
-        fn dup_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
-            if (comptime config.vector_length == 0 or L == 0) {
+        
+        fn dup_bulk_simd(self: *Self, L: usize, indices: []const u8) Error!void {
+            if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
                 for (indices) |n| {
                     try self.stack.dup_n(n);
@@ -2308,7 +2279,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param L: Vector length (compile-time known, from config.vector_length)
         /// @param indices: Array of SWAP indices (1-16, positions to swap with top)
         fn swap_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
-            if (comptime config.vector_length == 0 or L == 0) {
+            if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
                 for (indices) |n| {
                     try self.stack.swap_n(n);
