@@ -580,8 +580,7 @@ test "CREATE stores code and retrieves via get_code_by_address" {
     
     const creator_address = to_address(0x1000);
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
-    const F = Frame(.{ .has_database = true });
+    const FrameInterpreterType = @import("frame_interpreter.zig").FrameInterpreter(.{ .has_database = true });
     
     // Set up creator account with balance
     var creator_account = Account.zero();
@@ -616,19 +615,17 @@ test "CREATE stores code and retrieves via get_code_by_address" {
     try create_bytecode.append(0x00);
     
     // Execute CREATE
-    var frame = try F.init(allocator, create_bytecode.items, 1000000, evm.database, host);
-    defer frame.deinit(allocator);
+    var interpreter = try FrameInterpreterType.init(allocator, create_bytecode.items, 1000000, evm.database, host);
+    defer interpreter.deinit(allocator);
     
-    frame.contract_address = creator_address;
+    interpreter.frame.contract_address = creator_address;
     
-    const execute_result = frame.execute();
-    
-    // Should succeed
-    try std.testing.expectError(Frame(.{ .has_database = true }).Error.STOP, execute_result);
+    // Execute until STOP (interpret handles STOP internally)
+    try interpreter.interpret();
     
     // Get the created address from stack
-    try std.testing.expectEqual(@as(usize, 1), frame.stack.size());
-    const created_address_u256 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
+    const created_address_u256 = try interpreter.frame.stack.pop();
     const created_address = @import("primitives").Address.from_u256(created_address_u256);
     
     // Verify the created contract exists
@@ -636,7 +633,7 @@ test "CREATE stores code and retrieves via get_code_by_address" {
     try std.testing.expect(created_account != null);
     
     // Get the deployed code
-    const deployed_code = try evm.database.get_code_by_hash(created_account.?.code_hash);
+    const deployed_code = try evm.database.get_code_by_address(created_address);
     
     // The deployed code should be the runtime code (last 10 bytes of CONSTRUCTOR_CONTRACT)
     const expected_runtime_code = CONSTRUCTOR_CONTRACT[12..];
@@ -675,8 +672,7 @@ test "CREATE2 stores code with deterministic address" {
     const expected_address = try calculateCreate2Address(creator_address, salt, &CONSTRUCTOR_CONTRACT);
     
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
-    const F = Frame(.{ .has_database = true });
+    const FrameInterpreterType = @import("frame_interpreter.zig").FrameInterpreter(.{ .has_database = true });
     
     // Prepare CREATE2 bytecode
     var create2_bytecode = std.ArrayList(u8).init(allocator);
@@ -711,19 +707,17 @@ test "CREATE2 stores code with deterministic address" {
     try create2_bytecode.append(0x00);
     
     // Execute CREATE2
-    var frame = try F.init(allocator, create2_bytecode.items, 1000000, evm.database, host);
-    defer frame.deinit(allocator);
+    var interpreter = try FrameInterpreterType.init(allocator, create2_bytecode.items, 1000000, evm.database, host);
+    defer interpreter.deinit(allocator);
     
-    frame.contract_address = creator_address;
+    interpreter.frame.contract_address = creator_address;
     
-    const execute_result = frame.execute();
-    
-    // Should succeed
-    try std.testing.expectError(Frame(.{ .has_database = true }).Error.STOP, execute_result);
+    // Execute until STOP
+    try interpreter.interpret();
     
     // Get the created address from stack
-    try std.testing.expectEqual(@as(usize, 1), frame.stack.size());
-    const created_address_u256 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
+    const created_address_u256 = try interpreter.frame.stack.pop();
     const created_address = @import("primitives").Address.from_u256(created_address_u256);
     
     // Verify it matches the expected CREATE2 address
