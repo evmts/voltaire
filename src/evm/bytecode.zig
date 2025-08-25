@@ -122,6 +122,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             };
             // Build bitmaps and validate only the runtime code
             try self.buildBitmapsAndValidate();
+            // Validate immediate JUMP/JUMPI targets; deinit on failure to avoid leaks
+            self.validateImmediateJumps() catch |e| {
+                self.deinit();
+                return e;
+            };
             return self;
         }
         
@@ -131,7 +136,21 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             if (initcode.len > cfg.max_initcode_size) {
                 return error.InitcodeTooLarge;
             }
-            return init(allocator, initcode);
+            var self = Self{
+                .full_code = initcode,
+                .runtime_code = initcode, // initcode has no Solidity metadata suffix
+                .metadata = null,
+                .allocator = allocator,
+                .is_push_data = &.{},
+                .is_op_start = &.{},
+                .is_jumpdest = &.{},
+            };
+            try self.buildBitmapsAndValidate();
+            self.validateImmediateJumps() catch |e| {
+                self.deinit();
+                return e;
+            };
+            return self;
         }
         
         /// Calculate the gas cost for initcode (EIP-3860)
@@ -200,40 +219,34 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// Uses hardware popcount instruction when available
         pub fn countBitsInRange(bitmap: []const u8, start_bit: usize, end_bit: usize) usize {
             if (start_bit >= end_bit) return 0;
-            
             const start_byte = start_bit >> BITMAP_SHIFT;
-            const end_byte = (end_bit + BITMAP_MASK) >> BITMAP_SHIFT;
-            
+            const end_byte_inclusive = (end_bit - 1) >> BITMAP_SHIFT;
+            const start_offset: u3 = @intCast(start_bit & BITMAP_MASK);
+            const end_offset: u3 = @intCast((end_bit - 1) & BITMAP_MASK);
+
             var count: usize = 0;
-            
-            // Handle partial first byte
-            if (start_byte < bitmap.len) {
-                const start_offset = start_bit & BITMAP_MASK;
-                var mask: u8 = @as(u8, 0xFF) << @as(u3, @intCast(start_offset));
-                if (start_byte == end_byte - 1) {
-                    const end_offset = end_bit & BITMAP_MASK;
-                    if (end_offset != 0) {
-                        mask &= @as(u8, 0xFF) >> @as(u3, @intCast(BITS_PER_BYTE - end_offset));
-                    }
-                }
-                count += @popCount(bitmap[start_byte] & mask);
+            if (start_byte >= bitmap.len) return 0;
+
+            if (start_byte == end_byte_inclusive) {
+                const mask = (@as(u8, 0xFF) << start_offset) & (@as(u8, 0xFF) >> (7 - end_offset));
+                return @popCount(bitmap[start_byte] & mask);
             }
-            
-            // Handle full bytes in the middle
+
+            // First partial byte
+            count += @popCount(bitmap[start_byte] & (@as(u8, 0xFF) << start_offset));
+
+            // Middle full bytes
             var i = start_byte + 1;
-            while (i < end_byte - 1 and i < bitmap.len) : (i += 1) {
+            while (i < end_byte_inclusive and i < bitmap.len) : (i += 1) {
                 count += @popCount(bitmap[i]);
             }
-            
-            // Handle partial last byte
-            if (i < end_byte and i < bitmap.len and i != start_byte) {
-                const end_offset = end_bit & BITMAP_MASK;
-                if (end_offset != 0) {
-                    const mask = @as(u8, 0xFF) >> @as(u3, @intCast(BITS_PER_BYTE - end_offset));
-                    count += @popCount(bitmap[i] & mask);
-                }
+
+            // Last partial byte
+            if (i < bitmap.len) {
+                const mask_last = @as(u8, 0xFF) >> (7 - end_offset);
+                count += @popCount(bitmap[i] & mask_last);
             }
-            
+
             return count;
         }
         
@@ -308,13 +321,27 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 self.is_jumpdest[0] = 0;
                 return;
             }
-            
+
+            // Phase A: validate opcodes and PUSH bounds without allocating
+            var i: PcType = 0;
+            while (i < N) {
+                const op = self.runtime_code[i];
+                // Validate opcode value
+                _ = std.meta.intToEnum(Opcode, op) catch return error.InvalidOpcode;
+                // If PUSH, ensure data fits
+                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                    const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    if (i + n >= N) return error.TruncatedPush;
+                    i += n + 1;
+                } else {
+                    i += 1;
+                }
+            }
+
             const bitmap_bytes = (N + BITMAP_MASK) >> BITMAP_SHIFT;
-            
-            // Try to align bitmap allocations to cache line boundaries for better performance
-            // Fall back to regular allocation if allocator doesn't support aligned alloc
+
+            // Phase B: allocate bitmaps and populate
             const use_aligned = comptime !builtin.is_test;
-            
             if (use_aligned) {
                 const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
                 self.is_push_data = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
@@ -324,7 +351,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 self.is_jumpdest = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
                 errdefer self.allocator.free(self.is_jumpdest);
             } else {
-                // Use regular allocation for tests
                 self.is_push_data = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
                 errdefer self.allocator.free(self.is_push_data);
                 self.is_op_start = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
@@ -335,10 +361,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             @memset(self.is_push_data, 0);
             @memset(self.is_op_start, 0);
             @memset(self.is_jumpdest, 0);
-            
-            // First pass SIMD opcode validation removed; safe enum checks below handle validation
-            
-            var i: PcType = 0;
+
+            i = 0;
             while (i < N) {
                 @branchHint(.likely);
                 
@@ -354,16 +378,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 self.is_op_start[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
                 const op = self.runtime_code[i];
                 
-                // SECURITY: Validate opcode using safe enum conversion
-                // We need to ensure this is a valid opcode before using it
-                // Note: If SIMD validation passed, this should never fail, but we still check for defense in depth
-                const opcode_enum = std.meta.intToEnum(Opcode, op) catch {
-                    // Invalid opcode found (unlikely after SIMD validation)
-                    @branchHint(.unlikely);
-                    return error.InvalidOpcode;
-                };
-                
-                // Now we can safely check if it's a PUSH opcode
+                // Opcodes are validated above; now mark bitmaps
+                const opcode_enum = @as(Opcode, @enumFromInt(op));
+                // Check if it's a PUSH opcode
                 if (@intFromEnum(opcode_enum) >= @intFromEnum(Opcode.PUSH1) and 
                     @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32)) {
                     const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
@@ -384,12 +401,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             } else {
                 self.markJumpdestScalar();
             }
-            
-            i = 0;
+        }
+
+        /// Validate immediate JUMP/JUMPI targets encoded via preceding PUSH
+        fn validateImmediateJumps(self: *Self) ValidationError!void {
+            var i: PcType = 0;
+            const N = self.runtime_code.len;
             while (i < N) {
-                @branchHint(.likely);
                 if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
-                    @branchHint(.unlikely);
                     i += 1;
                     continue;
                 }
@@ -414,9 +433,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         const push_op = self.runtime_code[start];
                         const n = push_op - (@intFromEnum(Opcode.PUSH1) - 1);
                         const target = self.readPushValueN(start, @intCast(n)) orelse unreachable;
-                        if (target >= self.runtime_code.len) {
-                            return error.InvalidJumpDestination;
-                        }
+                        if (target >= self.runtime_code.len) return error.InvalidJumpDestination;
                         const target_pc = @as(PcType, @intCast(target));
                         if ((self.is_jumpdest[target_pc >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(target_pc & BITMAP_MASK))) == 0) {
                             return error.InvalidJumpDestination;
@@ -1213,9 +1230,12 @@ test "Bytecode SIMD fusion pattern detection" {
         0x60, 0x02, 0x03, // PUSH1 2 SUB
         0x60, 0x03, 0x02, // PUSH1 3 MUL
         0x60, 0x04, 0x04, // PUSH1 4 DIV
-        0x60, 0x0F, 0x56, // PUSH1 15 JUMP
-        0x60, 0x12, 0x57, // PUSH1 18 JUMPI
-        0x00              // STOP
+        0x60, 0x13, 0x56, // PUSH1 19 JUMP (valid target below)
+        0x60, 0x1C, 0x57, // PUSH1 28 JUMPI (valid target below)
+        0x00,             // STOP at 18
+        0x5b,             // JUMPDEST at 19
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // padding to 27
+        0x5b,             // JUMPDEST at 28
     };
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
@@ -1295,9 +1315,10 @@ test "Bytecode.countBitsInRange - basic functionality" {
     bitmap[0] = 0b00000101; // bits 0 and 2
     bitmap[1] = 0b10000001; // bits 8 and 15
     bitmap[2] = 0b00000010; // bit 17
-    bitmap[3] = 0b10000000; // bit 23
+    bitmap[2] |= 0b10000000; // bit 23 (within byte 2)
+    bitmap[3] = 0b00000000;
     
-    // Test full range
+    // Test full range (0..32 includes bit 31)
     try std.testing.expectEqual(@as(usize, 6), BytecodeDefault.countBitsInRange(bitmap, 0, 32));
     
     // Test partial ranges
@@ -1323,8 +1344,8 @@ test "Bytecode.findNextSetBit - basic functionality" {
     // Set some bits: bit 0, 2, 8, 15, 17, 23
     bitmap[0] = 0b00000101; // bits 0 and 2
     bitmap[1] = 0b10000001; // bits 8 and 15
-    bitmap[2] = 0b00000010; // bit 17
-    bitmap[3] = 0b10000000; // bit 23
+    bitmap[2] = 0b10000010; // bits 17 and 23
+    bitmap[3] = 0b00000000; // none
     
     // Find from start
     try std.testing.expectEqual(@as(?usize, 0), BytecodeDefault.findNextSetBit(bitmap, 0));
@@ -1544,10 +1565,10 @@ test "Bytecode bitmap operations edge cases - bit boundaries" {
     }
     
     // Test countBitsInRange across boundaries
-    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 0, 8));   // bits 0,7
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 0, 8));   // bits 0,2
     try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 8, 16));  // bits 8,15
-    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 16, 32)); // bits 16,31
-    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 32, 64)); // bit 32
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 16, 32)); // bits 17,23
+    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 32, 64)); // none
     
     // Test across multiple byte boundaries
     try std.testing.expectEqual(@as(usize, 4), BytecodeDefault.countBitsInRange(bitmap, 0, 16)); // bits 0,7,8,15
@@ -1583,7 +1604,7 @@ test "Bytecode SIMD markJumpdest edge cases" {
     // Create bytecode with JUMPDEST at various positions including boundaries
     var code = [_]u8{
         0x5b,             // JUMPDEST at 0
-        0x60, 0x03,       // PUSH1 3
+        0x60, 0x04,       // PUSH1 4 (valid JUMP target)
         0x56,             // JUMP
         0x5b,             // JUMPDEST at 4
         0x61, 0x5b, 0x5b, // PUSH2 0x5b5b (JUMPDEST in push data)
@@ -1591,16 +1612,15 @@ test "Bytecode SIMD markJumpdest edge cases" {
         0x7f,             // PUSH32
     };
     
+    const full_code = try allocator.alloc(u8, code.len + 32);
+    defer allocator.free(full_code);
+    std.mem.copyForwards(u8, full_code[0..code.len], &code);
     // Fill rest with data including 0x5b bytes
     var i: usize = 10;
     while (i < 10 + 32) {
-        code[i] = if ((i - 10) % 4 == 0) 0x5b else @intCast(i);
+        full_code[i] = if ((i - 10) % 4 == 0) 0x5b else @intCast(i);
         i += 1;
     }
-    
-    const full_code = try allocator.alloc(u8, code.len);
-    defer allocator.free(full_code);
-    @memcpy(full_code, &code);
     
     var bytecode = try BytecodeDefault.init(allocator, full_code);
     defer bytecode.deinit();
@@ -2371,11 +2391,11 @@ test "Bytecode edge cases - consecutive PUSH32 operations" {
         code[pos] = 0x7F; // PUSH32
         pos += 1;
         
-        // Fill with pattern based on iteration
-        for (0..32) |j| {
-            code[pos] = @intCast((i * 32 + j) & 0xFF);
-            pos += 1;
-        }
+            // Fill with pattern based on iteration
+            for (0..32) |j| {
+                code[pos] = @truncate(i * 32 + j);
+                pos += 1;
+            }
     }
     
     var bytecode = try BytecodeDefault.init(allocator, &code);
