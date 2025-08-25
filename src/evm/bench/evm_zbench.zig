@@ -314,8 +314,7 @@ fn benchmark_frame_init(allocator: std.mem.Allocator) void {
         &test_bytecode,
         1000000,
         db_interface,
-        null,
-        null,
+        createTestHost(),
     ) catch return;
     defer frame.deinit(allocator);
 }
@@ -331,8 +330,7 @@ fn benchmark_frame_init_large_bytecode(allocator: std.mem.Allocator) void {
         &large_bytecode,
         1000000,
         db_interface,
-        null,
-        null,
+        createTestHost(),
     ) catch return;
     defer frame.deinit(allocator);
 }
@@ -422,8 +420,7 @@ test "benchmark compilation" {
         &test_bytecode,
         1000000,
         db_interface,
-        null,
-        null,
+        createTestHost(),
     ) catch return;
     defer frame.deinit(allocator);
     
