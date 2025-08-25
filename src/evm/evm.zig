@@ -704,15 +704,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             }
 
-            // Execute initialization code
-            const result = self.execute_frame(
+            // Execute initialization code via IR interpreter for robustness
+            const result = self.execute_init_code(
                 params.init_code,
-                &.{}, // Empty input for CREATE2
                 remaining_gas,
                 contract_address,
-                params.caller,
-                params.value,
-                false, // is_static
                 snapshot_id,
             ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
@@ -2394,6 +2390,571 @@ test "Host interface - call type differentiation" {
 
     const delegate_result = try evm.call(delegate_params);
     try std.testing.expect(delegate_result.success);
+}
+
+test "EVM CREATE operation - basic contract creation" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Set up caller with balance
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_account = Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    // Simple init code that returns a contract with STOP opcode
+    // PUSH1 0x01 (size)
+    // PUSH1 0x00 (offset) 
+    // PUSH1 0x00 (value for MSTORE8)
+    // PUSH1 0x00 (offset for MSTORE8)
+    // MSTORE8
+    // RETURN
+    const init_code = [_]u8{ 
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (value)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x53,       // MSTORE8
+        0xF3,       // RETURN
+    };
+
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = &init_code,
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(create_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+
+    // Verify successful creation
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+
+    // Extract contract address from output (last 20 bytes)
+    const contract_address: Address = result.output[12..32].*;
+
+    // Verify contract was created
+    const created_account = (try memory_db.get_account(contract_address)).?;
+    try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
+
+    // Verify caller nonce was incremented
+    const updated_caller = (try memory_db.get_account(caller_address)).?;
+    try std.testing.expectEqual(@as(u64, 1), updated_caller.nonce);
+}
+
+test "EVM CREATE operation - with value transfer" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Set up caller with balance
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const initial_balance: u256 = 1000000;
+    const transfer_value: u256 = 12345;
+    const caller_account = Account{
+        .balance = initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    // Init code that returns empty contract
+    const init_code = [_]u8{ 0x00, 0x00, 0xF3 }; // STOP STOP RETURN
+
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = transfer_value,
+            .init_code = &init_code,
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(create_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+
+    try std.testing.expect(result.success);
+    
+    // Extract contract address
+    const contract_address: Address = result.output[12..32].*;
+    
+    // Verify balances
+    const caller_after = (try memory_db.get_account(caller_address)).?;
+    try std.testing.expectEqual(initial_balance - transfer_value, caller_after.balance);
+    
+    const contract_account = (try memory_db.get_account(contract_address)).?;
+    try std.testing.expectEqual(transfer_value, contract_account.balance);
+}
+
+test "EVM CREATE operation - insufficient balance fails" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_account = Account{
+        .balance = 100,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 1000, // More than balance
+            .init_code = &.{0x00}, // STOP
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(create_params);
+    
+    // Should fail due to insufficient balance
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(u64, 0), result.gas_left);
+}
+
+test "EVM CREATE2 operation - deterministic address creation" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_account = Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    // Simple init code
+    const init_code = [_]u8{ 
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+
+    const salt: u256 = 0x1234567890ABCDEF;
+
+    const create2_params = DefaultEvm.CallParams{
+        .create2 = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = &init_code,
+            .salt = salt,
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(create2_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+
+    // Verify successful creation
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+
+    // Extract contract address
+    const contract_address: Address = result.output[12..32].*;
+
+    // Verify contract was created
+    const created_account = (try memory_db.get_account(contract_address)).?;
+    try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
+
+    // Calculate expected address using CREATE2 formula
+    const keccak_asm = @import("keccak_asm.zig");
+    var init_code_hash: [32]u8 = undefined;
+    try keccak_asm.keccak256(&init_code, &init_code_hash);
+    const salt_bytes = @as([32]u8, @bitCast(salt));
+    const expected_address = primitives.Address.get_create2_address(caller_address, salt_bytes, init_code_hash);
+    
+    // Verify the address matches the expected CREATE2 address
+    try std.testing.expectEqualSlices(u8, &expected_address, &contract_address);
+}
+
+test "EVM CREATE2 operation - same parameters produce same address" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const init_code = [_]u8{ 0x00, 0x00, 0xF3 }; // STOP STOP RETURN
+    const salt: u256 = 0xDEADBEEF;
+
+    // Calculate expected address
+    const keccak_asm = @import("keccak_asm.zig");
+    var init_code_hash: [32]u8 = undefined;
+    try keccak_asm.keccak256(&init_code, &init_code_hash);
+    const salt_bytes = @as([32]u8, @bitCast(salt));
+    const expected_address = primitives.Address.get_create2_address(caller_address, salt_bytes, init_code_hash);
+
+    // Create caller account
+    const caller_account = Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    const create2_params = DefaultEvm.CallParams{
+        .create2 = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = &init_code,
+            .salt = salt,
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(create2_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+
+    try std.testing.expect(result.success);
+    
+    const actual_address: Address = result.output[12..32].*;
+    try std.testing.expectEqualSlices(u8, &expected_address, &actual_address);
+}
+
+test "EVM CREATE operation - collision detection" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    
+    // Calculate what the contract address will be
+    const expected_address = primitives.Address.get_contract_address(caller_address, 0);
+    
+    // Pre-create an account at that address with code
+    const existing_code = [_]u8{0x60, 0x00}; // PUSH1 0
+    const code_hash = try memory_db.set_code(&existing_code);
+    const existing_account = Account{
+        .balance = 0,
+        .nonce = 1,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(expected_address, existing_account);
+    
+    // Create caller account
+    const caller_account = Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = &.{0x00}, // STOP
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(create_params);
+    
+    // Should fail due to collision
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(u64, 0), result.gas_left);
+}
+
+test "EVM CREATE operation - init code execution and storage" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_account = Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(caller_address, caller_account);
+
+    // Init code that stores a value and returns code with PUSH1 and ADD
+    // This tests that init code can access storage and return runtime code
+    const init_code = [_]u8{
+        // Store value 42 at key 0
+        0x60, 0x2A, // PUSH1 42
+        0x60, 0x00, // PUSH1 0
+        0x55,       // SSTORE
+        
+        // Return runtime code: PUSH1 1 ADD
+        0x60, 0x04, // PUSH1 4 (size)
+        0x60, 0x1C, // PUSH1 28 (offset in this code)
+        0xF3,       // RETURN
+        
+        // Runtime code at offset 28:
+        0x60, 0x01, // PUSH1 1
+        0x01,       // ADD
+        0x00,       // STOP
+    };
+
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = &init_code,
+            .gas = 200000,
+        },
+    };
+
+    const result = try evm.call(create_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+
+    try std.testing.expect(result.success);
+    
+    const contract_address: Address = result.output[12..32].*;
+    
+    // Verify the storage was set during init
+    const stored_value = try memory_db.get_storage(contract_address, 0);
+    try std.testing.expectEqual(@as(u256, 42), stored_value);
+    
+    // Verify the runtime code was stored
+    const runtime_code = try memory_db.get_code_by_address(contract_address);
+    try std.testing.expectEqual(@as(usize, 4), runtime_code.len);
+    try std.testing.expectEqual(@as(u8, 0x60), runtime_code[0]); // PUSH1
+    try std.testing.expectEqual(@as(u8, 0x01), runtime_code[1]); // 1
+    try std.testing.expectEqual(@as(u8, 0x01), runtime_code[2]); // ADD
+    try std.testing.expectEqual(@as(u8, 0x00), runtime_code[3]); // STOP
+}
+
+test "EVM CREATE/CREATE2 - nested contract creation" {
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 3000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Create a factory contract that creates another contract
+    // Factory bytecode: CREATE opcode that deploys a simple contract
+    const factory_bytecode = [_]u8{
+        // Push init code for child contract (just returns empty code)
+        0x60, 0x03, // PUSH1 3 (size of init code)
+        0x60, 0x1A, // PUSH1 26 (offset of init code)
+        0x60, 0x00, // PUSH1 0 (value)
+        0xF0,       // CREATE
+        // Return the created address
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+        // Child init code at offset 26:
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+
+    const factory_address: Address = [_]u8{0x02} ++ [_]u8{0} ** 19;
+    const code_hash = try memory_db.set_code(&factory_bytecode);
+    try memory_db.set_account(factory_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    const caller_address: Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    try memory_db.set_account(caller_address, Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Call the factory to create a child contract
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = caller_address,
+            .to = factory_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 500000,
+        },
+    };
+
+    const result = try evm.call(call_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // The output should contain the address of the created child contract
+    const child_address: Address = result.output[12..32].*;
+    
+    // Verify child contract exists
+    const child_account = try memory_db.get_account(child_address);
+    try std.testing.expect(child_account != null);
+    try std.testing.expectEqual(@as(u64, 1), child_account.?.nonce);
 }
 
 test "EVM logs - emit_log functionality" {
