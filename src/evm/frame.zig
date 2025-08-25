@@ -873,7 +873,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
-            const host = self.host;
             _ = host.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
@@ -896,7 +895,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
-            const host = self.host;
             _ = host.access_storage_slot(addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
@@ -955,7 +953,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an address and pushes the balance of that account in wei.
         /// Stack: [address] → [balance]
         pub fn balance(self: *Self) Error!void {
-            const host = self.host;
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
             
@@ -973,7 +970,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the account that initiated the transaction.
         /// Stack: [] → [origin]
         pub fn origin(self: *Self) Error!void {
-            const host = self.host;
             const tx_origin = host.get_tx_origin();
             const origin_u256 = to_u256(tx_origin);
             try self.stack.push(origin_u256);
@@ -982,7 +978,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the account that directly called this contract.
         /// Stack: [] → [caller]
         pub fn caller(self: *Self) Error!void {
-            const host = self.host;
             const caller_addr = host.get_caller();
             const caller_u256 = to_u256(caller_addr);
             try self.stack.push(caller_u256);
@@ -991,7 +986,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the value in wei sent with the current call.
         /// Stack: [] → [value]
         pub fn callvalue(self: *Self) Error!void {
-            const host = self.host;
             const value = host.get_call_value();
             try self.stack.push(value);
         }
@@ -999,7 +993,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an offset and pushes a 32-byte word from the input data starting at that offset.
         /// Stack: [offset] → [data]
         pub fn calldataload(self: *Self) Error!void {
-            const host = self.host;
             const offset = try self.stack.pop();
             // Convert u256 to usize, checking for overflow
             if (offset > std.math.maxInt(usize)) {
@@ -1027,7 +1020,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the size of the input data in bytes.
         /// Stack: [] → [size]
         pub fn calldatasize(self: *Self) Error!void {
-            const host = self.host;
             const calldata = self.host.get_input();
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
             try self.stack.push(calldata_len);
@@ -1036,7 +1028,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Copies input data to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn calldatacopy(self: *Self) Error!void {
-            const host = self.host;
             const dest_offset = try self.stack.pop();
             const offset = try self.stack.pop();
             const length = try self.stack.pop();
@@ -1109,7 +1100,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the gas price of the current transaction.
         /// Stack: [] → [gas_price]
         pub fn gasprice(self: *Self) Error!void {
-            const host = self.host;
             const gas_price = self.host.get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
             try self.stack.push(gas_price_truncated);
@@ -1118,7 +1108,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an address and pushes the size of that account's code in bytes.
         /// Stack: [address] → [size]
         pub fn extcodesize(self: *Self) Error!void {
-            const host = self.host;
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
             const code = host.get_code(address);
@@ -1129,7 +1118,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Copies code from an external account to memory.
         /// Stack: [address, destOffset, offset, length] → []
         pub fn extcodecopy(self: *Self) Error!void {
-            const host = self.host;
             const address_u256 = try self.stack.pop();
             const dest_offset = try self.stack.pop();
             const offset = try self.stack.pop();
@@ -1165,7 +1153,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the size of the return data from the last call.
         /// Stack: [] → [size]
         pub fn returndatasize(self: *Self) Error!void {
-            const host = self.host;
             const return_data = if (self.host) |host| host.get_return_data() else &[_]u8{};
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             try self.stack.push(return_data_len);
@@ -1174,7 +1161,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Copies return data from the last call to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn returndatacopy(self: *Self) Error!void {
-            const host = self.host;
             const dest_offset = try self.stack.pop();
             const offset = try self.stack.pop();
             const length = try self.stack.pop();
@@ -1214,7 +1200,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an address and pushes the keccak256 hash of that account's code.
         /// Stack: [address] → [hash]
         pub fn extcodehash(self: *Self) Error!void {
-            const host = self.host;
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
             if (!host.account_exists(address)) {
@@ -1245,7 +1230,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the chain ID of the current network.
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *Self) Error!void {
-            const host = self.host;
             const chain_id = self.host.get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
             try self.stack.push(chain_id_word);
@@ -1254,7 +1238,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the balance of the currently executing contract.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *Self) Error!void {
-            const host = self.host;
             const bal = host.get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
@@ -1264,7 +1247,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the hash of one of the 256 most recent blocks.
         /// Stack: [block_number] → [hash]
         pub fn blockhash(self: *Self) Error!void {
-            const host = self.host;
             const block_number = try self.stack.pop();
             const block_info = self.host.get_block_info();
             const current_block = block_info.number;
@@ -1297,7 +1279,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the miner who produced the current block.
         /// Stack: [] → [coinbase_address]
         pub fn coinbase(self: *Self) Error!void {
-            const host = self.host;
             const block_info = self.host.get_block_info();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
@@ -1307,7 +1288,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the Unix timestamp of the current block.
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *Self) Error!void {
-            const host = self.host;
             const block_info = self.host.get_block_info();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             try self.stack.push(timestamp_word);
@@ -1316,7 +1296,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the number of the current block.
         /// Stack: [] → [block_number]
         pub fn number(self: *Self) Error!void {
-            const host = self.host;
             const block_info = self.host.get_block_info();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             try self.stack.push(block_number_word);
@@ -1325,7 +1304,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pre-merge: Returns difficulty. Post-merge: Returns prevrandao.
         /// Stack: [] → [difficulty/prevrandao]
         pub fn difficulty(self: *Self) Error!void {
-            const host = self.host;
             const block_info = self.host.get_block_info();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             try self.stack.push(difficulty_word);
@@ -1340,7 +1318,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the gas limit of the current block.
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *Self) Error!void {
-            const host = self.host;
             const block_info = self.host.get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             try self.stack.push(gas_limit_word);
@@ -1349,7 +1326,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the base fee per gas of the current block (EIP-3198).
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *Self) Error!void {
-            const host = self.host;
             const block_info = self.host.get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             try self.stack.push(base_fee_word);
@@ -1358,7 +1334,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the versioned hash of the blob at the given index (EIP-4844).
         /// Stack: [index] → [blob_hash]
         pub fn blobhash(self: *Self) Error!void {
-            const host = self.host;
             const index = try self.stack.pop();
             // Convert u256 to usize for array access
             if (index > std.math.maxInt(usize)) {
@@ -1383,7 +1358,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the base fee per blob gas of the current block (EIP-4844).
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *Self) Error!void {
-            const host = self.host;
             const blob_base_fee = self.host.get_blob_base_fee();
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             try self.stack.push(blob_base_fee_word);
@@ -1677,7 +1651,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Calls the contract at the given address with the provided value, input data, and gas.
         /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
         pub fn call(self: *Self) Error!void {
-            const host = self.host;
             // Check static context - CALL with non-zero value is not allowed in static context
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
@@ -1686,10 +1659,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const value = try self.stack.pop();
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
-            if (self.host) |host| {
-                if (h.get_is_static() and value > 0) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static() and value > 0) {
+                return Error.WriteProtection;
             }
             // Convert address from u256
             const addr = from_u256(address_u256);
@@ -1779,7 +1750,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Calls the contract at the given address, but preserves the caller and value from the current context.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn delegatecall(self: *Self) Error!void {
-            const host = self.host;
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
             const input_size = try self.stack.pop();
@@ -1874,7 +1844,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Calls the contract at the given address without allowing any state changes.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn staticcall(self: *Self) Error!void {
-            const host = self.host;
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
             const input_size = try self.stack.pop();
@@ -1964,7 +1933,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [value, offset, size] → [address]
         pub fn create(self: *Self) Error!void {
             // Check static context - CREATE is not allowed in static context
-            const host = self.host;
             if (host.get_is_static()) {
                 return Error.WriteProtection;
             }
@@ -2034,7 +2002,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [value, offset, size, salt] → [address]
         pub fn create2(self: *Self) Error!void {
             // Check static context - CREATE2 is not allowed in static context
-            const host = self.host;
             if (host.get_is_static()) {
                 return Error.WriteProtection;
             }
@@ -2172,20 +2139,18 @@ pub fn Frame(comptime config: FrameConfig) type {
             const recipient = from_u256(recipient_u256);
             
             // Check static context and mark for destruction if host available
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    @branchHint(.unlikely);
-                    return Error.WriteProtection;
-                }
-                
-                // Mark contract for destruction via host interface
-                host.mark_for_destruction(self.contract_address, recipient) catch |err| switch (err) {
-                    else => {
-                        @branchHint(.unlikely);
-                        return Error.OutOfGas;
-                    }
-                };
+            if (self.host.get_is_static()) {
+                @branchHint(.unlikely);
+                return Error.WriteProtection;
             }
+            
+            // Mark contract for destruction via host interface
+            self.host.mark_for_destruction(self.contract_address, recipient) catch |err| switch (err) {
+                else => {
+                    @branchHint(.unlikely);
+                    return Error.OutOfGas;
+                }
+            };
             
             // According to EIP-6780 (Cancun hardfork), SELFDESTRUCT only actually destroys
             // the contract if it was created in the same transaction. This is handled by the host.
