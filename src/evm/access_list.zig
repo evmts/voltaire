@@ -112,6 +112,8 @@ pub const AccessList = createAccessList(AccessListConfig{});
 // =============================================================================
 
 const testing = std.testing;
+const GasConstants = primitives.GasConstants;
+const u256 = primitives.u256;
 
 test "AccessList - address access tracking" {
     var access_list = AccessList.init(testing.allocator);
