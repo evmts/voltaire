@@ -557,6 +557,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Push balance to stack
             try self.stack.push(@as(WordType, @intCast(balance)));
 
+            if (interpreter.instruction_idx >= plan_ptr.instructionStream.len - 1) {
+                return Error.STOP;
+            }
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BALANCE));
             return dispatchNext(next_handler, self, plan_ptr);
         }
