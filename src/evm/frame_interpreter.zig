@@ -607,9 +607,10 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             // Consume gas (unchecked since we validated in pre-analysis)
             self.consumeGasUnchecked(opcode_info.gas_cost);
-
-            // Execute the operation
-            try self.add();
+            // Execute the operation (unsafe stack ops)
+            const b: WordType = self.stack.pop_unsafe();
+            const a: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(a +% b);
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ADD);
@@ -627,8 +628,10 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Consume gas (unchecked since we validated in pre-analysis)
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
-            // Execute the operation
-            try self.mul();
+            // Execute the operation (unsafe)
+            const b: WordType = self.stack.pop_unsafe();
+            const a: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(a *% b);
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MUL);
@@ -646,8 +649,10 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Consume gas (unchecked since we validated in pre-analysis)
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
-            // Execute the operation
-            try self.sub();
+            // Execute the operation (unsafe)
+            const b: WordType = self.stack.pop_unsafe();
+            const a: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(a -% b);
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SUB);
@@ -661,7 +666,10 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.DIV)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.div();
+            const den: WordType = self.stack.pop_unsafe();
+            const num: WordType = self.stack.peek_unsafe();
+            const res: WordType = if (den == 0) 0 else num / den;
+            self.stack.set_top_unsafe(res);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DIV);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -674,7 +682,24 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SDIV)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.sdiv();
+            const den: WordType = self.stack.pop_unsafe();
+            const num: WordType = self.stack.peek_unsafe();
+            var res: WordType = 0;
+            if (den == 0) {
+                res = 0;
+            } else {
+                const Signed = std.meta.Int(.signed, @bitSizeOf(WordType));
+                const num_s: Signed = @bitCast(num);
+                const den_s: Signed = @bitCast(den);
+                const min_s = std.math.minInt(Signed);
+                if (num_s == min_s and den_s == -1) {
+                    res = num;
+                } else {
+                    const q: Signed = @divTrunc(num_s, den_s);
+                    res = @bitCast(q);
+                }
+            }
+            self.stack.set_top_unsafe(res);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SDIV);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -687,7 +712,10 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MOD)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.mod();
+            const den: WordType = self.stack.pop_unsafe();
+            const num: WordType = self.stack.peek_unsafe();
+            const res: WordType = if (den == 0) 0 else num % den;
+            self.stack.set_top_unsafe(res);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MOD);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -700,7 +728,19 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SMOD)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.smod();
+            const den: WordType = self.stack.pop_unsafe();
+            const num: WordType = self.stack.peek_unsafe();
+            var res: WordType = 0;
+            if (den == 0) {
+                res = 0;
+            } else {
+                const Signed = std.meta.Int(.signed, @bitSizeOf(WordType));
+                const num_s: Signed = @bitCast(num);
+                const den_s: Signed = @bitCast(den);
+                const r: Signed = @rem(num_s, den_s);
+                res = @bitCast(r);
+            }
+            self.stack.set_top_unsafe(res);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SMOD);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -713,7 +753,17 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADDMOD)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.addmod();
+            const modulus: WordType = self.stack.pop_unsafe();
+            const b: WordType = self.stack.pop_unsafe();
+            const a: WordType = self.stack.peek_unsafe();
+            var res: WordType = 0;
+            if (modulus == 0) {
+                res = 0;
+            } else {
+                const sum = @addWithOverflow(a, b);
+                res = sum[0] % modulus;
+            }
+            self.stack.set_top_unsafe(res);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ADDMOD);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -726,7 +776,18 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MULMOD)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.mulmod();
+            const modulus: WordType = self.stack.pop_unsafe();
+            const b: WordType = self.stack.pop_unsafe();
+            const a: WordType = self.stack.peek_unsafe();
+            var res: WordType = 0;
+            if (modulus == 0) {
+                res = 0;
+            } else {
+                const a_m = a % modulus;
+                const b_m = b % modulus;
+                res = (a_m *% b_m) % modulus;
+            }
+            self.stack.set_top_unsafe(res);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MULMOD);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -752,7 +813,23 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SIGNEXTEND)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.signextend();
+            const ext: WordType = self.stack.pop_unsafe();
+            const value: WordType = self.stack.peek_unsafe();
+            var result: WordType = undefined;
+            if (ext >= 31) {
+                result = value;
+            } else {
+                const ext_usize: usize = @intCast(ext);
+                const bit_index = ext_usize * 8 + 7;
+                const mask: WordType = (@as(WordType, 1) << @intCast(bit_index)) - 1;
+                const sign_bit = (value >> @intCast(bit_index)) & 1;
+                if (sign_bit == 1) {
+                    result = value | ~mask;
+                } else {
+                    result = value & mask;
+                }
+            }
+            self.stack.set_top_unsafe(result);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SIGNEXTEND);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -766,7 +843,10 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LT)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.lt();
+            // a < b (unsigned); stack top is 'a'
+            const b: WordType = self.stack.pop_unsafe();
+            const a: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(if (a < b) 1 else 0);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .LT);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -779,7 +859,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.GT)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.gt();
+            const b2: WordType = self.stack.pop_unsafe();
+            const a2: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(if (a2 > b2) 1 else 0);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .GT);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -792,7 +874,12 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SLT)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.slt();
+            const b3: WordType = self.stack.pop_unsafe();
+            const a3: WordType = self.stack.peek_unsafe();
+            const Signed = std.meta.Int(.signed, @bitSizeOf(WordType));
+            const a3s: Signed = @bitCast(a3);
+            const b3s: Signed = @bitCast(b3);
+            self.stack.set_top_unsafe(if (a3s < b3s) 1 else 0);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SLT);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -805,7 +892,12 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SGT)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.sgt();
+            const b4: WordType = self.stack.pop_unsafe();
+            const a4: WordType = self.stack.peek_unsafe();
+            const Signed2 = std.meta.Int(.signed, @bitSizeOf(WordType));
+            const a4s: Signed2 = @bitCast(a4);
+            const b4s: Signed2 = @bitCast(b4);
+            self.stack.set_top_unsafe(if (a4s > b4s) 1 else 0);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SGT);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -818,7 +910,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.EQ)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.eq();
+            const b5: WordType = self.stack.pop_unsafe();
+            const a5: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(if (a5 == b5) 1 else 0);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .EQ);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -831,7 +925,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ISZERO)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.iszero();
+            const v: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(if (v == 0) 1 else 0);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ISZERO);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -845,7 +940,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.AND)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.@"and"();
+            const b6: WordType = self.stack.pop_unsafe();
+            const a6: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(a6 & b6);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .AND);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -858,7 +955,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.OR)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.@"or"();
+            const b7: WordType = self.stack.pop_unsafe();
+            const a7: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(a7 | b7);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .OR);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -871,7 +970,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.XOR)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.xor();
+            const b8: WordType = self.stack.pop_unsafe();
+            const a8: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(a8 ^ b8);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .XOR);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -884,7 +985,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.NOT)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.not();
+            const t: WordType = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(~t);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .NOT);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -897,7 +999,15 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.BYTE)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.byte();
+            const byte_index: WordType = self.stack.pop_unsafe();
+            const value: WordType = self.stack.peek_unsafe();
+            const res_b: WordType = if (byte_index >= 32) 0 else blk: {
+                const index_usize: usize = @intCast(byte_index);
+                const shift_amount = (31 - index_usize) * 8;
+                const ShiftType = std.math.Log2Int(WordType);
+                break :blk (value >> @as(ShiftType, @intCast(shift_amount))) & 0xFF;
+            };
+            self.stack.set_top_unsafe(res_b);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .BYTE);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -910,7 +1020,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SHL)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.shl();
+            const shift_l: WordType = self.stack.pop_unsafe();
+            const val_l: WordType = self.stack.peek_unsafe();
+            const ShiftTypeL = std.math.Log2Int(WordType);
+            const res_l: WordType = if (shift_l >= @bitSizeOf(WordType)) 0 else val_l << @as(ShiftTypeL, @intCast(shift_l));
+            self.stack.set_top_unsafe(res_l);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SHL);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -923,7 +1037,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SHR)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.shr();
+            const shift_r: WordType = self.stack.pop_unsafe();
+            const val_r: WordType = self.stack.peek_unsafe();
+            const ShiftTypeR = std.math.Log2Int(WordType);
+            const res_r: WordType = if (shift_r >= @bitSizeOf(WordType)) 0 else val_r >> @as(ShiftTypeR, @intCast(shift_r));
+            self.stack.set_top_unsafe(res_r);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SHR);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -936,7 +1054,21 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SAR)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.sar();
+            const shift_a: WordType = self.stack.pop_unsafe();
+            const val_a: WordType = self.stack.peek_unsafe();
+            const word_bits = @bitSizeOf(WordType);
+            const res_a: WordType = if (shift_a >= word_bits) blk: {
+                const sign_bit = val_a >> (word_bits - 1);
+                break :blk if (sign_bit == 1) @as(WordType, std.math.maxInt(WordType)) else @as(WordType, 0);
+            } else blk: {
+                const ShiftTypeA = std.math.Log2Int(WordType);
+                const shift_amount = @as(ShiftTypeA, @intCast(shift_a));
+                const SignedA = std.meta.Int(.signed, @bitSizeOf(WordType));
+                const val_signed: SignedA = @bitCast(val_a);
+                const out_signed: SignedA = val_signed >> shift_amount;
+                break :blk @as(WordType, @bitCast(out_signed));
+            };
+            self.stack.set_top_unsafe(res_a);
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SAR);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -950,7 +1082,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.POP)];
             self.consumeGasUnchecked(opcode_info.gas_cost);
-            try self.pop();
+            _ = self.stack.pop_unsafe();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .POP);
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2095,7 +2227,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             const off_usize = @as(usize, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_INLINE)));
             const val = try self.memory.get_u256_evm(off_usize);
-            try self.stack.push(val);
+            try self.stack.push(@as(WordType, @truncate(val)));
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_INLINE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2106,9 +2238,12 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
             const off_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_POINTER));
+            if (off_ptr.* > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
             const off_usize: usize = @intCast(off_ptr.*);
             const val = try self.memory.get_u256_evm(off_usize);
-            try self.stack.push(val);
+            try self.stack.push(@as(WordType, @truncate(val)));
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_POINTER));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2132,6 +2267,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
             const off_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_POINTER));
+            if (off_ptr.* > std.math.maxInt(usize)) {
+                return Error.OutOfBounds;
+            }
             const off_usize: usize = @intCast(off_ptr.*);
             const value = try self.stack.pop();
             try self.memory.set_u256_evm(off_usize, value);
@@ -2758,6 +2896,11 @@ test "FrameInterpreter fusion MSTORE_IMM and MLOAD_IMM round-trip" {
     const value: u256 = 0xDEADBEEFCAFEBABE0123456789ABCDEF;
     try interpreter.frame.stack.push(value);
 
+    // Debug: verify fused instruction stream looks sane
+    if (builtin.mode == .Debug and builtin.target.cpu.arch != .wasm32) {
+        interpreter.plan.debugPrint();
+    }
+
     // Execute program; planner should fuse both PUSH+MSTORE and PUSH+MLOAD
     try interpreter.interpret();
 
@@ -2766,6 +2909,89 @@ test "FrameInterpreter fusion MSTORE_IMM and MLOAD_IMM round-trip" {
 
     // Memory should have expanded to at least 32 bytes
     try std.testing.expect(interpreter.frame.memory.size() >= 32);
+}
+
+test "FrameInterpreter fusion pointer variants for MSTORE/MLOAD with PUSH32 offset" {
+    const allocator = std.testing.allocator;
+
+    // Construct PUSH32(0x20) followed by MSTORE, then PUSH32(0x20) and MLOAD, then STOP.
+    var buf: [2 + 32 + 1 + 2 + 32 + 1 + 1]u8 = undefined;
+    var idx: usize = 0;
+    buf[idx] = @intFromEnum(Opcode.PUSH32); idx += 1;
+    // 32-byte big-endian immediate value = 0x20
+    @memset(buf[idx..idx+31], 0); buf[idx+31] = 0x20; idx += 32;
+    buf[idx] = @intFromEnum(Opcode.MSTORE); idx += 1;
+    buf[idx] = @intFromEnum(Opcode.PUSH32); idx += 1;
+    @memset(buf[idx..idx+31], 0); buf[idx+31] = 0x20; idx += 32;
+    buf[idx] = @intFromEnum(Opcode.MLOAD); idx += 1;
+    buf[idx] = @intFromEnum(Opcode.STOP); idx += 1;
+
+    const bytecode = buf[0..idx];
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    const block_info = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance = try evm.Evm(.{}).init(allocator, db_interface, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance.deinit();
+
+    const FrameInterpreterType = FrameInterpreter(.{});
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode, 500000, {}, evm_instance.to_host());
+    defer interpreter.deinit(allocator);
+
+    // Value to store and read back
+    const value: u256 = 0xAABBCCDDEEFF00112233445566778899;
+    try interpreter.frame.stack.push(value);
+
+    try interpreter.interpret();
+
+    try std.testing.expectEqual(value, try interpreter.frame.stack.peek());
+}
+
+test "FrameInterpreter fusion JUMP_IMM and JUMPI_IMM execute correctly" {
+    const allocator = std.testing.allocator;
+
+    // Program 1: PUSH1 0x03; JUMP; JUMPDEST; STOP
+    const prog1 = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x03,
+        @intFromEnum(Opcode.JUMP),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.STOP),
+    };
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    const block_info = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance = try evm.Evm(.{}).init(allocator, db_interface, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance.deinit();
+
+    const FrameInterpreterType = FrameInterpreter(.{});
+    var interpreter1 = try FrameInterpreterType.init(allocator, &prog1, 200000, {}, evm_instance.to_host());
+    defer interpreter1.deinit(allocator);
+    try interpreter1.interpret();
+
+    // Program 2: PUSH1 0x05; PUSH1 0x01; JUMPI; JUMPDEST; STOP
+    const prog2 = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x05,
+        @intFromEnum(Opcode.PUSH1), 0x01,
+        @intFromEnum(Opcode.JUMPI),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.STOP),
+    };
+    var interpreter2 = try FrameInterpreterType.init(allocator, &prog2, 200000, {}, evm_instance.to_host());
+    defer interpreter2.deinit(allocator);
+    try interpreter2.interpret();
 }
 test "FrameInterpreter basic execution" {
     std.testing.log_level = .warn;
