@@ -1600,7 +1600,7 @@ pub fn build(b: *std.Build) void {
     evm_revm_comparison_bench_exe.root_module.addImport("revm", revm_mod);
     evm_revm_comparison_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(evm_revm_comparison_bench_exe);
+    // Do not install by default; installed via explicit build step
 
     const run_evm_revm_comparison_bench_cmd = b.addRunArtifact(evm_revm_comparison_bench_exe);
     const evm_revm_comparison_bench_step = b.step("evm-revm-comparison-bench", "Run EVM vs REVM comparison benchmarks");
@@ -1622,7 +1622,7 @@ pub fn build(b: *std.Build) void {
     simple_evm_revm_bench_exe.root_module.addImport("revm", revm_mod);
     simple_evm_revm_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(simple_evm_revm_bench_exe);
+    // Do not install by default; installed via explicit build step
 
     const run_simple_evm_revm_bench_cmd = b.addRunArtifact(simple_evm_revm_bench_exe);
     const simple_evm_revm_bench_step = b.step("simple-evm-revm-bench", "Run simple EVM vs REVM comparison benchmarks");

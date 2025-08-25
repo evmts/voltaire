@@ -68,7 +68,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         pub const SelectedPlannerType = PlannerType;
         pub const Journal = JournalType;
-        
+
         const DEFAULT_ACCOUNT = Account{
             .balance = 0,
             .nonce = 0,
@@ -77,13 +77,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         };
 
         pub const CallParams = @import("call_params.zig").CallParams;
-        
+
         /// Call stack entry to track caller and value for DELEGATECALL
         const CallStackEntry = struct {
             caller: Address,
             value: u256,
         };
-        
+
         pub const Error = error{
             InvalidJump,
             OutOfGas,
@@ -107,7 +107,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         // CACHE LINE 1 - HOT PATH (frequently accessed during execution)
         /// Current call depth (0 = root call)
         depth: DepthType,
-        /// Current snapshot ID for the active call frame  
+        /// Current snapshot ID for the active call frame
         current_snapshot_id: JournalType.SnapshotIdType,
         /// Database interface for state storage
         database: DatabaseInterface,
@@ -115,7 +115,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         journal: JournalType,
         /// Allocator for dynamic memory
         allocator: std.mem.Allocator,
-        
+
         // CACHE LINE 2 - TRANSACTION EXECUTION STATE
         /// Access list for tracking warm/cold access (EIP-2929)
         access_list: AccessList,
@@ -127,7 +127,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         current_input: []const u8,
         /// Current return data
         return_data: []const u8,
-        
+
         // CACHE LINE 3 - TRANSACTION CONTEXT
         /// Block information
         block_info: BlockInfo,
@@ -139,7 +139,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         origin: Address,
         /// Hardfork configuration
         hardfork_config: Hardfork,
-        
+
         // CACHE LINE 4+ - COLD PATH (less frequently accessed)
         /// Planner instance for bytecode analysis and optimization
         planner: PlannerType,
@@ -162,17 +162,17 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: Address, hardfork_config: Hardfork) !Self {
             var planner = try PlannerType.init(allocator, 32); // 32 plans cache
             errdefer planner.deinit();
-            
+
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
-            
+
             // EIP-3651: Warm COINBASE address at the start of transaction
             // Shanghai hardfork introduced this optimization
             if (hardfork_config.isAtLeast(.SHANGHAI)) {
                 const addresses_to_warm = [_]Address{context.coinbase};
                 try access_list.pre_warm_addresses(&addresses_to_warm);
             }
-            
+
             return Self{
                 .depth = 0,
                 .static_stack = [_]bool{false} ** config.max_call_depth,
@@ -207,17 +207,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.logs.deinit();
             self.internal_arena.deinit();
         }
-        
+
         /// Get the arena allocator for temporary allocations during the current call.
         /// This allocator is reset after each root call completes.
         pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
             return self.internal_arena.allocator();
         }
-        
+
         /// Transfer value between accounts with proper balance checks and error handling
         fn transferValueWithSnapshot(self: *Self, from: Address, to: Address, value: u256, snapshot_id: JournalType.SnapshotIdType) !void {
             if (value == 0) return;
-            
+
             // Get accounts
             var from_account = self.database.get_account(from) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
@@ -226,26 +226,26 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return error.InsufficientBalance;
             };
-            
+
             var to_account = self.database.get_account(to) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             } orelse DEFAULT_ACCOUNT;
-            
+
             // Check sufficient balance
             if (from_account.balance < value) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return error.InsufficientBalance;
             }
-            
+
             // Record original balances in journal before modification
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
-            
+
             // Update balances
             from_account.balance -= value;
             to_account.balance += value;
-            
+
             // Write to database
             self.database.set_account(from, from_account) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
@@ -277,7 +277,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             result.logs = self.takeLogs();
             return result;
         }
-        
+
         /// CALL operation
         ///
         /// Transfers value from caller to target and executes target contract code.
@@ -294,18 +294,18 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             const snapshot_id = self.journal.create_snapshot();
-            
+
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
-                
+
                 if (caller_account == null or caller_account.?.balance < params.value) {
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 }
             }
-            
+
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 @branchHint(.unlikely);
                 // Perform value transfer if any before executing precompile
@@ -330,7 +330,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
                 return CallResult.success_empty(params.gas);
             }
-            
+
             const result = self.execute_frame(
                 code,
                 params.input,
@@ -347,7 +347,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
             return result;
         }
-        
+
         /// Execute a CALLCODE operation.
         ///
         /// Executes target contract code in the caller's storage context.
@@ -362,30 +362,30 @@ pub fn Evm(comptime config: EvmConfig) type {
                 @branchHint(.cold);
                 return CallResult.failure(0);
             }
-            
+
             const snapshot_id = self.journal.create_snapshot();
-            
+
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller) catch |err| {
                     @branchHint(.cold);
                     return self.revert_and_fail(snapshot_id, err);
                 };
-                
+
                 if (caller_account == null or caller_account.?.balance < params.value) {
                     @branchHint(.unlikely);
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 }
             }
-            
+
             const code = self.database.get_code_by_address(params.to) catch &.{};
-            
+
             // If no code, it's a simple value transfer to self
             if (code.len == 0) {
                 @branchHint(.unlikely);
                 return CallResult.success_empty(params.gas);
             }
-            
+
             // CALLCODE executes the target's code in the caller's context (storage/address)
             // This is different from DELEGATECALL which also preserves msg.sender
             const result = self.execute_frame(
@@ -401,52 +401,52 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            
+
             if (!result.success) {
                 @branchHint(.unlikely);
                 self.journal.revert_to_snapshot(snapshot_id);
             }
-            
+
             return result;
         }
-        
+
         /// DELEGATECALL operation
         pub fn delegatecall_handler(self: *Self, params: anytype) Error!CallResult {
             // Validate gas
             if (params.gas == 0) {
                 return CallResult.failure(0);
             }
-            
+
             // Check depth
             if (self.depth >= config.max_call_depth) {
                 return CallResult.failure(0);
             }
-            
+
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // Check if it's a precompile
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 // For precompiles in delegatecall, we still execute with preserved context
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, false) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
-                
+
                 if (!result.success) {
                     self.journal.revert_to_snapshot(snapshot_id);
                 }
-                
+
                 return result;
             }
-            
+
             // Get contract code
             const code = self.database.get_code_by_address(params.to) catch &.{};
-            
+
             // If no code, it's an empty call
             if (code.len == 0) {
                 return CallResult.success_empty(params.gas);
             }
-            
+
             // DELEGATECALL preserves the original caller and value from parent context
             // This is the key difference from CALL - the called code executes with caller's context
             // Get the current call's value to preserve it
@@ -464,50 +464,50 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            
+
             if (!result.success) {
                 self.journal.revert_to_snapshot(snapshot_id);
             }
-            
+
             return result;
         }
-        
+
         /// STATICCALL operation
         pub fn staticcall_handler(self: *Self, params: anytype) Error!CallResult {
             // Validate gas
             if (params.gas == 0) {
                 return CallResult.failure(0);
             }
-            
+
             // Check depth
             if (self.depth >= config.max_call_depth) {
                 return CallResult.failure(0);
             }
-            
+
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // Check if it's a precompile
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, true) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
-                
+
                 if (!result.success) {
                     self.journal.revert_to_snapshot(snapshot_id);
                 }
-                
+
                 return result;
             }
-            
+
             // Get contract code
             const code = self.database.get_code_by_address(params.to) catch &.{};
-            
+
             // If no code, it's an empty call (no value transfer in static)
             if (code.len == 0) {
                 return CallResult.success_empty(params.gas);
             }
-            
+
             // Execute contract code in static mode
             const result = self.execute_frame(
                 code,
@@ -523,38 +523,38 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // In static context, any error is a failure
                 return CallResult.failure(0);
             };
-            
+
             if (!result.success) {
                 self.journal.revert_to_snapshot(snapshot_id);
             }
-            
+
             return result;
         }
-        
+
         /// CREATE operation
         pub fn create_handler(self: *Self, params: anytype) Error!CallResult {
             // Check depth
             if (self.depth >= config.max_call_depth) {
                 return CallResult.failure(0);
             }
-            
+
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // Get caller account
             var caller_account = self.database.get_account(params.caller) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             } orelse DEFAULT_ACCOUNT;
-            
+
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
-            
+
             // Calculate contract address from sender and nonce
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
-            
+
             // Check if address already has code (collision)
             const existed_before = self.database.account_exists(contract_address);
             if (existed_before) {
@@ -564,35 +564,35 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.failure(0);
                 }
             }
-            
+
             // Record and increment caller's nonce
             try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
             caller_account.nonce += 1;
             self.database.set_account(params.caller, caller_account) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
-            
+
             // Track created contract for EIP-6780
             try self.created_contracts.mark_created(contract_address);
-            
+
             // Gas cost for CREATE
             const GasConstants = primitives.GasConstants;
             const create_gas = GasConstants.CreateGas; // 32000
-            
+
             if (params.gas < create_gas) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
-            
+
             const remaining_gas = params.gas - create_gas;
-            
+
             // Transfer value to the new contract before executing init code (per spec)
             if (params.value > 0) {
                 self.transferValueWithSnapshot(params.caller, contract_address, params.value, snapshot_id) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
             }
-            
+
             // Execute initialization code via IR interpreter for robustness
             const result = self.execute_init_code(
                 params.init_code,
@@ -603,12 +603,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            
+
             if (!result.success) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return result;
             }
-            
+
             // Ensure contract account exists and set nonce to 1
             var contract_account = self.database.get_account(contract_address) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
@@ -634,43 +634,43 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.database.set_account(contract_address, contract_account) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
-            
+
             // Return the contract address as output
             var address_bytes = std.ArrayList(u8).init(self.allocator);
             defer address_bytes.deinit();
             try address_bytes.appendSlice(&contract_address);
-            
+
             return CallResult.success_with_output(result.gas_left, address_bytes.items);
         }
-        
+
         /// CREATE2 operation
         pub fn create2_handler(self: *Self, params: anytype) Error!CallResult {
             // Check depth
             if (self.depth >= config.max_call_depth) {
                 return CallResult.failure(0);
             }
-            
+
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // Get caller account
             const caller_account = self.database.get_account(params.caller) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             } orelse DEFAULT_ACCOUNT;
-            
+
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
-            
+
             // Calculate contract address from sender, salt, and init code hash
             const keccak_asm = @import("keccak_asm.zig");
             var init_code_hash_bytes: [32]u8 = undefined;
             try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
             const salt_bytes = @as([32]u8, @bitCast(params.salt));
             const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
-            
+
             // Check if address already has code (collision)
             const existed_before2 = self.database.account_exists(contract_address);
             if (existed_before2) {
@@ -680,30 +680,30 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.failure(0);
                 }
             }
-            
+
             // Track created contract for EIP-6780
             try self.created_contracts.mark_created(contract_address);
-            
+
             // Gas cost for CREATE2
             const GasConstants = primitives.GasConstants;
             const create_gas = GasConstants.CreateGas; // 32000
             const hash_cost = @as(u64, @intCast(params.init_code.len)) * GasConstants.Keccak256WordGas / 32;
             const total_gas = create_gas + hash_cost;
-            
+
             if (params.gas < total_gas) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
-            
+
             const remaining_gas = params.gas - total_gas;
-            
+
             // Transfer value to the new contract before executing init code
             if (params.value > 0) {
                 self.transferValueWithSnapshot(params.caller, contract_address, params.value, snapshot_id) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
             }
-            
+
             // Execute initialization code
             const result = self.execute_frame(
                 params.init_code,
@@ -718,12 +718,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            
+
             if (!result.success) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return result;
             }
-            
+
             // Ensure contract account exists and set nonce/code
             var contract_account2 = self.database.get_account(contract_address) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
@@ -747,15 +747,15 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.database.set_account(contract_address, contract_account2) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
-            
+
             // Return the contract address as output
             var address_bytes = std.ArrayList(u8).init(self.allocator);
             defer address_bytes.deinit();
             try address_bytes.appendSlice(&contract_address);
-            
+
             return CallResult.success_with_output(result.gas_left, address_bytes.items);
         }
-        
+
         /// Execute frame - replaces execute_bytecode with cleaner interface
         ///
         /// This function orchestrates the execution of EVM bytecode within a frame context,
@@ -808,23 +808,23 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.current_input = input;
             defer self.current_input = prev_input;
             // Bind contract address onto the frame (used by ADDRESS opcode)
-            
+
             // Increment depth and track static context
             self.depth += 1;
             defer self.depth -= 1;
-            
+
             // Store caller and value in call stack for this depth
             self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value };
-            
+
             // Track static context for this frame
             self.static_stack[self.depth - 1] = is_static;
-            
+
             // Convert gas to appropriate type
             const gas_i32 = @as(i32, @intCast(@min(gas, std.math.maxInt(i32))));
-            
+
             // Create host interface for the frame
             const host = self.to_host();
-            
+
             // Create frame interpreter
             var interpreter = try frame_interpreter_mod.FrameInterpreter(config.frame_config).init(
                 self.allocator,
@@ -836,7 +836,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Bind contract address for ADDRESS opcode
             interpreter.frame.contract_address = address;
             defer interpreter.deinit(self.allocator);
-            
+
             // Execute the frame
             interpreter.interpret() catch |err| {
                 const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
@@ -868,7 +868,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     else => CallResult.failure(0),
                 };
             };
-            
+
             // Normal completion (STOP)
             const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
             // Copy output buffer into EVM-owned memory for safety
@@ -929,7 +929,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.return_data = out_slice;
             return CallResult.success_with_output(gas_left, out_slice);
         }
-        
+
         /// Execute nested EVM call - used for calls from within the EVM
         pub fn inner_call(self: *Self, params: CallParams) !CallResult {
             // Don't reset depth to 0 for inner calls - just use call handlers
@@ -945,7 +945,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.return_data = result.output;
             return result;
         }
-        
+
         /// Execute a precompile call using the full legacy precompile system
         /// This implementation supports all standard Ethereum precompiles (0x01-0x0A)
         fn execute_precompile_call(self: *Self, address: Address, input: []const u8, gas: u64, is_static: bool) !CallResult {
@@ -1224,7 +1224,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Get block hash by number
         pub fn get_block_hash(self: *Self, block_number: u64) ?[32]u8 {
             const current_block = self.block_info.number;
-            
+
             // EVM BLOCKHASH rules:
             // - Return 0 for current block and future blocks
             // - Return 0 for blocks older than 256 blocks
@@ -1235,20 +1235,20 @@ pub fn Evm(comptime config: EvmConfig) type {
             {
                 return null;
             }
-            
+
             // For testing/simulation purposes, generate a deterministic hash
             // In a real implementation, this would look up the actual block hash
             // from the blockchain state or a block hash ring buffer
             var hash: [32]u8 = undefined;
             hash[0..8].* = std.mem.toBytes(block_number);
             hash[8..16].* = std.mem.toBytes(current_block);
-            
+
             // Fill rest with deterministic pattern based on block number
             var i: usize = 16;
             while (i < 32) : (i += 1) {
                 hash[i] = @as(u8, @truncate(block_number +% i));
             }
-            
+
             return hash;
         }
 
@@ -1272,7 +1272,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn transfer_value(self: *Self, from: Address, to: Address, value: u256) !void {
             // Don't transfer if value is zero
             if (value == 0) return;
-            
+
             // Get accounts
             var from_account = (try self.database.get_account(from)) orelse return error.AccountNotFound;
             var to_account = (try self.database.get_account(to)) orelse Account{
@@ -1281,18 +1281,18 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .code_hash = [_]u8{0} ** 32,
                 .storage_root = [_]u8{0} ** 32,
             };
-            
+
             // Check sufficient balance
             if (from_account.balance < value) return error.InsufficientBalance;
-            
+
             // Record original balances in journal before modification
             try self.journal.record_balance_change(self.current_snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(self.current_snapshot_id, to, to_account.balance);
-            
+
             // Update balances
             from_account.balance -= value;
             to_account.balance += value;
-            
+
             // Write to database
             try self.database.set_account(from, from_account);
             try self.database.set_account(to, to_account);
@@ -1347,28 +1347,28 @@ test "CallParams and CallResult structures" {
 test "EVM error type definition" {
     // Test that Error type exists and contains expected error cases
     const TestEvm = Evm(.{});
-    
+
     // Test error type is defined
     comptime {
         _ = TestEvm.Error;
     }
-    
+
     // Test that we can create error values
     const err1: TestEvm.Error = error.InvalidJump;
     const err2: TestEvm.Error = error.OutOfGas;
-    
+
     // Test that different errors are not equal
     try std.testing.expect(err1 != err2);
 }
 
 test "EVM call() entry point method" {
     const allocator = std.testing.allocator;
-    
+
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -1379,16 +1379,16 @@ test "EVM call() entry point method" {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
-    
+
     // Test that call method exists and has correct signature
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -1399,10 +1399,10 @@ test "EVM call() entry point method" {
             .gas = 1000000,
         },
     };
-    
+
     // This should return Error!CallResult
     const result = evm.call(call_params);
-    
+
     // Test that method returns expected error type
     comptime {
         const ReturnType = @TypeOf(result);
@@ -1415,12 +1415,12 @@ test "EVM call() entry point method" {
 
 test "EVM call() method routes to different handlers" {
     const allocator = std.testing.allocator;
-    
+
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -1431,16 +1431,16 @@ test "EVM call() method routes to different handlers" {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
-    
+
     // Test CALL routing
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -1452,7 +1452,7 @@ test "EVM call() method routes to different handlers" {
         },
     };
     _ = evm.call(call_params) catch {};
-    
+
     // Test DELEGATECALL routing
     const delegatecall_params = DefaultEvm.CallParams{
         .delegatecall = .{
@@ -1463,7 +1463,7 @@ test "EVM call() method routes to different handlers" {
         },
     };
     _ = evm.call(delegatecall_params) catch {};
-    
+
     // Test STATICCALL routing
     const staticcall_params = DefaultEvm.CallParams{
         .staticcall = .{
@@ -1474,7 +1474,7 @@ test "EVM call() method routes to different handlers" {
         },
     };
     _ = evm.call(staticcall_params) catch {};
-    
+
     // Test CREATE routing
     const create_params = DefaultEvm.CallParams{
         .create = .{
@@ -1485,7 +1485,7 @@ test "EVM call() method routes to different handlers" {
         },
     };
     _ = evm.call(create_params) catch {};
-    
+
     // Test CREATE2 routing
     const create2_params = DefaultEvm.CallParams{
         .create2 = .{
@@ -1501,12 +1501,12 @@ test "EVM call() method routes to different handlers" {
 
 test "EVM call_handler basic functionality" {
     const allocator = std.testing.allocator;
-    
+
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     // Add a simple contract that just STOPs
     const stop_bytecode = [_]u8{0x00}; // STOP opcode
     const contract_address: Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
@@ -1517,7 +1517,7 @@ test "EVM call_handler basic functionality" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -1528,16 +1528,16 @@ test "EVM call_handler basic functionality" {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
-    
+
     // Test call_handler directly (once it's implemented)
     const params = struct {
         caller: Address,
@@ -1552,10 +1552,10 @@ test "EVM call_handler basic functionality" {
         .input = &.{},
         .gas = 1000000,
     };
-    
+
     // This should now work with the implemented handler
     const result = try evm.call_handler(params);
-    
+
     // The implemented handler should work correctly
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
@@ -1564,18 +1564,18 @@ test "EVM call_handler basic functionality" {
 
 test "EVM staticcall handler prevents state changes" {
     const allocator = std.testing.allocator;
-    
+
     // Create test database with initial state
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     // Add a contract that tries to modify storage (should fail in staticcall)
     const sstore_bytecode = [_]u8{
-        0x60, 0x01,  // PUSH1 1
-        0x60, 0x00,  // PUSH1 0 
-        0x55,        // SSTORE (should fail in static context)
-        0x00,        // STOP
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE (should fail in static context)
+        0x00, // STOP
     };
     const contract_address: Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
     const code_hash = try memory_db.set_code(&sstore_bytecode);
@@ -1585,7 +1585,7 @@ test "EVM staticcall handler prevents state changes" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -1596,17 +1596,17 @@ test "EVM staticcall handler prevents state changes" {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
-    
-    // Test staticcall directly  
+
+    // Test staticcall directly
     const params = struct {
         caller: Address,
         to: Address,
@@ -1618,31 +1618,31 @@ test "EVM staticcall handler prevents state changes" {
         .input = &.{},
         .gas = 1000000,
     };
-    
+
     // This should now work with the implemented handler
     const result = try evm.staticcall_handler(params);
-    
+
     // Staticcall with SSTORE should fail due to static context restrictions
     try std.testing.expect(!result.success);
 }
 
 test "EVM delegatecall handler preserves caller context" {
     const allocator = std.testing.allocator;
-    
+
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     // Add a contract that returns the caller address
     // CALLER opcode pushes msg.sender to stack
     _ = [_]u8{
-        0x33,        // CALLER
-        0x60, 0x00,  // PUSH1 0
-        0x52,        // MSTORE - store caller at memory[0]
-        0x60, 0x20,  // PUSH1 32
-        0x60, 0x00,  // PUSH1 0
-        0xF3,        // RETURN - return 32 bytes from memory[0]
+        0x33, // CALLER
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE - store caller at memory[0]
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN - return 32 bytes from memory[0]
     };
     const contract_address: Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
     try memory_db.set_account(contract_address, Account{
@@ -1651,7 +1651,7 @@ test "EVM delegatecall handler preserves caller context" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -1662,17 +1662,17 @@ test "EVM delegatecall handler preserves caller context" {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const original_caller: Address = [_]u8{0xAA} ++ [_]u8{0} ** 19;
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
-    
+
     // Test delegatecall - should preserve original caller
     const params = struct {
         caller: Address,
@@ -1685,10 +1685,10 @@ test "EVM delegatecall handler preserves caller context" {
         .input = &.{},
         .gas = 1000000,
     };
-    
+
     // This should now work with the implemented handler
     const result = try evm.delegatecall_handler(params);
-    
+
     // Delegatecall with empty code should succeed
     try std.testing.expect(result.success);
 }
@@ -1845,10 +1845,10 @@ test "call method loads contract code from state" {
     defer evm.deinit();
 
     // Set up contract with bytecode [0x00] (STOP)
-    const contract_address: Address = [_]u8{0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90};
+    const contract_address: Address = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90 };
     const bytecode = [_]u8{0x00};
     const code_hash = try memory_db.set_code(&bytecode);
-    
+
     // Create account with the code
     const account = Account{
         .balance = 0,
@@ -2006,7 +2006,7 @@ test "Journal - storage change recording" {
         },
         else => try std.testing.expect(false), // Should be storage_change
     }
-    
+
     // Test get_original_storage
     const retrieved = journal.get_original_storage(address, key);
     try std.testing.expect(retrieved != null);
@@ -2064,7 +2064,7 @@ test "Journal - multiple entry types" {
     var balance_found = false;
     var nonce_found = false;
     var code_found = false;
-    
+
     for (journal.entries.items) |entry| {
         switch (entry.data) {
             .storage_change => storage_found = true,
@@ -2074,7 +2074,7 @@ test "Journal - multiple entry types" {
             else => {},
         }
     }
-    
+
     try std.testing.expect(storage_found);
     try std.testing.expect(balance_found);
     try std.testing.expect(nonce_found);
@@ -2475,7 +2475,7 @@ test "EVM logs - included in CallResult" {
     // LOG0
     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x00, 0xA0, 0x00 }; // Last 0x00 is STOP
     const code_hash = try memory_db.set_code(&bytecode);
-    
+
     const contract_address: Address = [_]u8{0x12} ++ [_]u8{0} ** 19;
     const account = Account{
         .balance = 0,
@@ -2963,11 +2963,11 @@ test "Precompiles - invalid precompile addresses" {
 
 test "Debug - Gas limit affects execution" {
     std.testing.log_level = .warn;
-    
+
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     const block_info = BlockInfo{
         .number = 1,
         .timestamp = 1000,
@@ -2977,19 +2977,19 @@ test "Debug - Gas limit affects execution" {
         .base_fee = 1000000000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Deploy a simple infinite loop contract
     // JUMPDEST (0x5b) PUSH1 0x00 (0x6000) JUMP (0x56)
-    const loop_bytecode = [_]u8{0x5b, 0x60, 0x00, 0x56};
+    const loop_bytecode = [_]u8{ 0x5b, 0x60, 0x00, 0x56 };
     const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
     const code_hash = try memory_db.set_code(&loop_bytecode);
     try memory_db.set_account(deploy_address, Account{
@@ -2998,7 +2998,7 @@ test "Debug - Gas limit affects execution" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Test 1: Very low gas limit - should fail quickly
     {
         const start_time = std.time.nanoTimestamp();
@@ -3012,12 +3012,12 @@ test "Debug - Gas limit affects execution" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         try std.testing.expect(!result.success); // Should fail
         try std.testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
-        std.log.warn("Low gas (100): elapsed = {} ns, success = {}", .{elapsed, result.success});
+        std.log.warn("Low gas (100): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
-    
+
     // Test 2: Medium gas limit
     {
         const start_time = std.time.nanoTimestamp();
@@ -3031,12 +3031,12 @@ test "Debug - Gas limit affects execution" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         try std.testing.expect(!result.success); // Should still fail (infinite loop)
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        std.log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{elapsed, result.success});
+        std.log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
-    
+
     // Test 3: High gas limit
     {
         const start_time = std.time.nanoTimestamp();
@@ -3050,20 +3050,20 @@ test "Debug - Gas limit affects execution" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         try std.testing.expect(!result.success); // Should fail after consuming all gas
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        std.log.warn("High gas (1M): elapsed = {} ns, success = {}", .{elapsed, result.success});
+        std.log.warn("High gas (1M): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 }
 
 test "Debug - Contract deployment and execution" {
     std.testing.log_level = .warn;
-    
+
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     const block_info = BlockInfo{
         .number = 1,
         .timestamp = 1000,
@@ -3073,16 +3073,16 @@ test "Debug - Contract deployment and execution" {
         .base_fee = 1000000000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Test 1: Call to non-existent contract
     {
         const empty_address: Address = [_]u8{0} ** 19 ++ [_]u8{99};
@@ -3097,12 +3097,12 @@ test "Debug - Contract deployment and execution" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         try std.testing.expect(result.success); // Empty contract succeeds immediately
         try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
-        std.log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{elapsed, result.gas_left});
+        std.log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{ elapsed, result.gas_left });
     }
-    
+
     // Test 2: Simple contract that returns immediately (STOP opcode)
     {
         const stop_bytecode = [_]u8{0x00}; // STOP
@@ -3114,7 +3114,7 @@ test "Debug - Contract deployment and execution" {
             .code_hash = code_hash,
             .storage_root = [_]u8{0} ** 32,
         });
-        
+
         const start_time = std.time.nanoTimestamp();
         const result = try evm.call(.{
             .call = .{
@@ -3126,19 +3126,19 @@ test "Debug - Contract deployment and execution" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         try std.testing.expect(result.success);
         // STOP should consume minimal gas
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used < 100); // Should use very little gas
-        std.log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{elapsed, gas_used});
+        std.log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
     }
-    
+
     // Test 3: Contract with some computation
     {
         // PUSH1 0x05, PUSH1 0x03, ADD, PUSH1 0x00, MSTORE, STOP
         // Adds 3 + 5 and stores in memory
-        const add_bytecode = [_]u8{0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x00, 0x52, 0x00};
+        const add_bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x00, 0x52, 0x00 };
         const add_address: Address = [_]u8{0} ** 19 ++ [_]u8{3};
         const code_hash = try memory_db.set_code(&add_bytecode);
         try memory_db.set_account(add_address, Account{
@@ -3147,7 +3147,7 @@ test "Debug - Contract deployment and execution" {
             .code_hash = code_hash,
             .storage_root = [_]u8{0} ** 32,
         });
-        
+
         const start_time = std.time.nanoTimestamp();
         const result = try evm.call(.{
             .call = .{
@@ -3159,22 +3159,22 @@ test "Debug - Contract deployment and execution" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         try std.testing.expect(result.success);
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used > 0); // Should use some gas
         try std.testing.expect(gas_used < 1000); // But not too much
-        std.log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{elapsed, gas_used});
+        std.log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
     }
 }
 
 test "Debug - Bytecode size affects execution time" {
     std.testing.log_level = .warn;
-    
+
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     const block_info = BlockInfo{
         .number = 1,
         .timestamp = 1000,
@@ -3184,20 +3184,20 @@ test "Debug - Bytecode size affects execution time" {
         .base_fee = 1000000000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Create a large contract that does simple operations
     var large_bytecode = std.ArrayList(u8).init(std.testing.allocator);
     defer large_bytecode.deinit();
-    
+
     // Add many PUSH1/POP pairs (each costs gas but doesn't loop)
     for (0..1000) |_| {
         try large_bytecode.append(0x60); // PUSH1
@@ -3205,7 +3205,7 @@ test "Debug - Bytecode size affects execution time" {
         try large_bytecode.append(0x50); // POP
     }
     try large_bytecode.append(0x00); // STOP
-    
+
     const large_address: Address = [_]u8{0} ** 19 ++ [_]u8{4};
     const code_hash = try memory_db.set_code(large_bytecode.items);
     try memory_db.set_account(large_address, Account{
@@ -3214,10 +3214,10 @@ test "Debug - Bytecode size affects execution time" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Test with different gas limits
-    const gas_limits = [_]u64{10000, 50000, 100000, 500000};
-    
+    const gas_limits = [_]u64{ 10000, 50000, 100000, 500000 };
+
     for (gas_limits) |gas_limit| {
         const start_time = std.time.nanoTimestamp();
         const result = try evm.call(.{
@@ -3230,11 +3230,10 @@ test "Debug - Bytecode size affects execution time" {
             },
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
-        
+
         const gas_used = gas_limit - result.gas_left;
-        std.log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", 
-            .{gas_limit, elapsed, gas_used, result.success});
-        
+        std.log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", .{ gas_limit, elapsed, gas_used, result.success });
+
         // With low gas, should fail before completing
         if (gas_limit < 50000) {
             try std.testing.expect(!result.success);
@@ -3904,13 +3903,13 @@ test "EVM contract execution - minimal benchmark reproduction" {
 
     // Simple test contract bytecode: PUSH1 0x42 PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
     // This stores 0x42 in memory at position 0 and returns 32 bytes
-    const test_bytecode = [_]u8{ 
-        0x60, 0x42,       // PUSH1 0x42
-        0x60, 0x00,       // PUSH1 0x00  
-        0x52,             // MSTORE
-        0x60, 0x20,       // PUSH1 0x20
-        0x60, 0x00,       // PUSH1 0x00
-        0xf3              // RETURN
+    const test_bytecode = [_]u8{
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0x00
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 0x20
+        0x60, 0x00, // PUSH1 0x00
+        0xf3, // RETURN
     };
 
     // Deploy the contract first
@@ -3924,7 +3923,6 @@ test "EVM contract execution - minimal benchmark reproduction" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
 
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -4039,7 +4037,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // Expected SHA-256 hash of "abc"
     const expected = [_]u8{
         0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
@@ -4051,7 +4049,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
 test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     const block_info = BlockInfo{
         .number = 1,
@@ -4062,20 +4060,20 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
         .base_fee = 1_000_000_000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Test ECRECOVER with invalid signature (all zeros)
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
     const input_data = [_]u8{0} ** 128; // Invalid signature
-    
+
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
@@ -4085,12 +4083,12 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
             .gas = 100000,
         },
     };
-    
+
     const result = try evm.call(call_params);
-    
+
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // ECRECOVER returns zero address for invalid signatures (placeholder behavior)
     for (result.output) |byte| {
         try std.testing.expectEqual(@as(u8, 0), byte);
@@ -4100,7 +4098,7 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
 test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     const block_info = BlockInfo{
         .number = 1,
@@ -4111,19 +4109,19 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
         .base_fee = 1_000_000_000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{3};
     const input_data = "test data";
-    
+
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
@@ -4133,13 +4131,13 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
             .gas = 100000,
         },
     };
-    
+
     const result = try evm.call(call_params);
-    
+
     // RIPEMD160 is a placeholder implementation (returns zeros)
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // Should be zeros (placeholder behavior)
     for (result.output) |byte| {
         try std.testing.expectEqual(@as(u8, 0), byte);
@@ -4149,7 +4147,7 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
 test "Precompile diagnosis - MODEXP (0x05) basic case works" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     const block_info = BlockInfo{
         .number = 1,
@@ -4160,27 +4158,27 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
         .base_fee = 1_000_000_000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{5};
-    
+
     // 3^4 mod 5 = 81 mod 5 = 1
     var input: [99]u8 = [_]u8{0} ** 99;
-    input[31] = 1;    // base_len = 1
-    input[63] = 1;    // exp_len = 1
-    input[95] = 1;    // mod_len = 1
-    input[96] = 3;    // base = 3
-    input[97] = 4;    // exp = 4
-    input[98] = 5;    // mod = 5
-    
+    input[31] = 1; // base_len = 1
+    input[63] = 1; // exp_len = 1
+    input[95] = 1; // mod_len = 1
+    input[96] = 3; // base = 3
+    input[97] = 4; // exp = 4
+    input[98] = 5; // mod = 5
+
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
@@ -4190,9 +4188,9 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
             .gas = 100000,
         },
     };
-    
+
     const result = try evm.call(call_params);
-    
+
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 1), result.output.len);
     try std.testing.expectEqual(@as(u8, 1), result.output[0]);
@@ -4201,7 +4199,7 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
 test "Precompile diagnosis - BN254 operations disabled" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     const block_info = BlockInfo{
         .number = 1,
@@ -4212,20 +4210,20 @@ test "Precompile diagnosis - BN254 operations disabled" {
         .base_fee = 1_000_000_000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Test ECADD (0x06)
     const ecadd_address: Address = [_]u8{0} ** 19 ++ [_]u8{6};
     const ecadd_input = [_]u8{0} ** 128; // Two zero points
-    
+
     const ecadd_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
@@ -4235,9 +4233,9 @@ test "Precompile diagnosis - BN254 operations disabled" {
             .gas = 100000,
         },
     };
-    
+
     const ecadd_result = try evm.call(ecadd_params);
-    
+
     // BN254 operations might be disabled (check build_options.no_bn254)
     // The precompile will either succeed with placeholder output or fail
     if (ecadd_result.success) {
@@ -4256,7 +4254,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
 test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     const block_info = BlockInfo{
         .number = 1,
@@ -4267,19 +4265,19 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
         .base_fee = 1_000_000_000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{9};
     const input = [_]u8{0} ** 213; // Valid BLAKE2F input length
-    
+
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
@@ -4289,12 +4287,12 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
             .gas = 100000,
         },
     };
-    
+
     const result = try evm.call(call_params);
-    
+
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 64), result.output.len);
-    
+
     // BLAKE2F placeholder returns all zeros
     for (result.output) |byte| {
         try std.testing.expectEqual(@as(u8, 0), byte);
@@ -4303,12 +4301,12 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
 
 test "EVM benchmark scenario - reproduces segfault" {
     const allocator = std.testing.allocator;
-    
+
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
-    
+
     // Deploy contract first (ERC20 approval bytecode snippet)
     const stop_bytecode = [_]u8{0x00}; // Simple STOP for now
     const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
@@ -4319,7 +4317,7 @@ test "EVM benchmark scenario - reproduces segfault" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -4330,19 +4328,19 @@ test "EVM benchmark scenario - reproduces segfault" {
         .base_fee = 1000000000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const context = TransactionContext{
         .gas_limit = 21000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm_instance = try DefaultEvm.init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm_instance.deinit();
-    
+
     // Simple calldata
     const calldata = [_]u8{0x00};
-    
+
     // Execute call (simulating benchmark)
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -4353,10 +4351,10 @@ test "EVM benchmark scenario - reproduces segfault" {
             .gas = 100000,
         },
     };
-    
+
     const result = try evm_instance.call(call_params);
     try std.testing.expect(result.success);
-    
+
     // The segfault happens in deinit, so let's explicitly test that
     // by creating and destroying multiple times
     for (0..3) |_| {
@@ -4373,10 +4371,10 @@ test "EVM benchmark scenario - reproduces segfault" {
 
 test "CREATE interaction - deployed contract can be called" {
     const allocator = std.testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var evm_instance = try DefaultEvm.init(
         allocator,
@@ -4400,21 +4398,21 @@ test "CREATE interaction - deployed contract can be called" {
         .CANCUN,
     );
     defer evm_instance.deinit();
-    
+
     // Step 1: Deploy a simple contract that returns 42
     // Init code: stores runtime code and returns it
     const runtime_code = [_]u8{
         0x60, 0x2A, // PUSH1 42
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     var init_code = std.ArrayList(u8).init(allocator);
     defer init_code.deinit();
-    
+
     // Store runtime code in memory
     for (runtime_code, 0..) |byte, i| {
         try init_code.append(0x60); // PUSH1
@@ -4423,14 +4421,14 @@ test "CREATE interaction - deployed contract can be called" {
         try init_code.append(byte);
         try init_code.append(0x53); // MSTORE8
     }
-    
+
     // Return runtime code
     try init_code.append(0x60); // PUSH1
     try init_code.append(@intCast(runtime_code.len)); // size
     try init_code.append(0x60); // PUSH1
     try init_code.append(0x00); // offset
     try init_code.append(0xF3); // RETURN
-    
+
     // Deploy the contract
     const create_result = try evm_instance.call(.{
         .create = .{
@@ -4441,14 +4439,14 @@ test "CREATE interaction - deployed contract can be called" {
         },
     });
     defer if (create_result.output.len > 0) allocator.free(create_result.output);
-    
+
     try std.testing.expect(create_result.success);
     try std.testing.expectEqual(@as(usize, 20), create_result.output.len);
-    
+
     // Get deployed contract address
     var contract_address: Address = undefined;
     @memcpy(&contract_address, create_result.output[0..20]);
-    
+
     // Step 2: Call the deployed contract
     const call_result = try evm_instance.call(.{
         .call = .{
@@ -4460,10 +4458,10 @@ test "CREATE interaction - deployed contract can be called" {
         },
     });
     defer if (call_result.output.len > 0) allocator.free(call_result.output);
-    
+
     try std.testing.expect(call_result.success);
     try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
-    
+
     // Verify returned value is 42
     var returned_value: u256 = 0;
     for (call_result.output) |byte| {
@@ -4474,10 +4472,10 @@ test "CREATE interaction - deployed contract can be called" {
 
 test "CREATE interaction - factory creates and initializes child contracts" {
     const allocator = std.testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var evm_instance = try DefaultEvm.init(
         allocator,
@@ -4501,22 +4499,22 @@ test "CREATE interaction - factory creates and initializes child contracts" {
         .CANCUN,
     );
     defer evm_instance.deinit();
-    
+
     // Child contract: stores initialization value and returns it
     const child_runtime = [_]u8{
         0x60, 0x00, // PUSH1 0
-        0x54,       // SLOAD (load value from slot 0)
+        0x54, // SLOAD (load value from slot 0)
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Child init code: stores constructor argument in slot 0
     var child_init = std.ArrayList(u8).init(allocator);
     defer child_init.deinit();
-    
+
     // Store caller-provided value in slot 0
     try child_init.append(0x60); // PUSH1
     try child_init.append(0x00); // 0 (calldata offset)
@@ -4524,7 +4522,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try child_init.append(0x60); // PUSH1
     try child_init.append(0x00); // 0 (storage slot)
     try child_init.append(0x55); // SSTORE
-    
+
     // Store runtime code in memory
     for (child_runtime, 0..) |byte, i| {
         try child_init.append(0x60); // PUSH1
@@ -4533,23 +4531,23 @@ test "CREATE interaction - factory creates and initializes child contracts" {
         try child_init.append(byte);
         try child_init.append(0x53); // MSTORE8
     }
-    
+
     // Return runtime code
     try child_init.append(0x60); // PUSH1
     try child_init.append(@intCast(child_runtime.len));
     try child_init.append(0x60); // PUSH1
     try child_init.append(0x00);
     try child_init.append(0xF3); // RETURN
-    
+
     // Factory contract: creates child with initialization value
     var factory_code = std.ArrayList(u8).init(allocator);
     defer factory_code.deinit();
-    
+
     // Load initialization value from calldata
     try factory_code.append(0x60); // PUSH1
     try factory_code.append(0x00); // 0
     try factory_code.append(0x35); // CALLDATALOAD
-    
+
     // Store child init code in memory (with constructor arg appended)
     for (child_init.items, 0..) |byte, i| {
         try factory_code.append(0x60); // PUSH1
@@ -4558,13 +4556,13 @@ test "CREATE interaction - factory creates and initializes child contracts" {
         try factory_code.append(@intCast(i));
         try factory_code.append(0x53); // MSTORE8
     }
-    
+
     // Append constructor argument to init code
     const init_size = child_init.items.len;
     try factory_code.append(0x60); // PUSH1
     try factory_code.append(@intCast(init_size)); // offset for constructor arg
     try factory_code.append(0x52); // MSTORE (store 32-byte constructor arg)
-    
+
     // CREATE child contract
     try factory_code.append(0x60); // PUSH1
     try factory_code.append(@intCast(init_size + 32)); // size including constructor arg
@@ -4573,7 +4571,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try factory_code.append(0x60); // PUSH1
     try factory_code.append(0x00); // value
     try factory_code.append(0xF0); // CREATE
-    
+
     // Return created address
     try factory_code.append(0x60); // PUSH1
     try factory_code.append(0x00); // 0
@@ -4583,13 +4581,13 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try factory_code.append(0x60); // PUSH1
     try factory_code.append(0x00); // 0
     try factory_code.append(0xF3); // RETURN
-    
+
     // Deploy factory with initialization value 123
     var deploy_data = std.ArrayList(u8).init(allocator);
     defer deploy_data.deinit();
     const init_value = [_]u8{0} ** 31 ++ [_]u8{123}; // 123 as uint256
     try deploy_data.appendSlice(&init_value);
-    
+
     const factory_result = try evm_instance.call(.{
         .create = .{
             .caller = [_]u8{0x01} ** 20,
@@ -4599,13 +4597,13 @@ test "CREATE interaction - factory creates and initializes child contracts" {
         },
     });
     defer if (factory_result.output.len > 0) allocator.free(factory_result.output);
-    
+
     try std.testing.expect(factory_result.success);
-    
+
     // Extract child contract address from output
     var child_address: Address = undefined;
     @memcpy(&child_address, factory_result.output[12..32]); // Address is in bytes 12-31
-    
+
     // Call child contract to verify initialization
     const verify_result = try evm_instance.call(.{
         .call = .{
@@ -4617,9 +4615,9 @@ test "CREATE interaction - factory creates and initializes child contracts" {
         },
     });
     defer if (verify_result.output.len > 0) allocator.free(verify_result.output);
-    
+
     try std.testing.expect(verify_result.success);
-    
+
     // Verify returned value is 123
     var returned_value: u256 = 0;
     for (verify_result.output) |byte| {
@@ -4630,10 +4628,10 @@ test "CREATE interaction - factory creates and initializes child contracts" {
 
 test "CREATE interaction - contract creates contract that creates contract" {
     const allocator = std.testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var evm_instance = try DefaultEvm.init(
         allocator,
@@ -4657,17 +4655,17 @@ test "CREATE interaction - contract creates contract that creates contract" {
         .CANCUN,
     );
     defer evm_instance.deinit();
-    
+
     // Level 3 contract (grandchild): returns constant 99
     const level3_runtime = [_]u8{
         0x60, 0x63, // PUSH1 99
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Level 3 init code
     var level3_init = std.ArrayList(u8).init(allocator);
     defer level3_init.deinit();
@@ -4683,11 +4681,11 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level3_init.append(0x60); // PUSH1
     try level3_init.append(0x00);
     try level3_init.append(0xF3); // RETURN
-    
+
     // Level 2 contract (child): creates level 3 and returns its address
     var level2_runtime = std.ArrayList(u8).init(allocator);
     defer level2_runtime.deinit();
-    
+
     // Store level 3 init code
     for (level3_init.items, 0..) |byte, i| {
         try level2_runtime.append(0x60); // PUSH1
@@ -4696,7 +4694,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
         try level2_runtime.append(@intCast(i));
         try level2_runtime.append(0x53); // MSTORE8
     }
-    
+
     // CREATE level 3
     try level2_runtime.append(0x60); // PUSH1
     try level2_runtime.append(@intCast(level3_init.items.len));
@@ -4705,7 +4703,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_runtime.append(0x60); // PUSH1
     try level2_runtime.append(0x00); // value
     try level2_runtime.append(0xF0); // CREATE
-    
+
     // Return address
     try level2_runtime.append(0x60); // PUSH1
     try level2_runtime.append(0x00); // 0
@@ -4715,7 +4713,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_runtime.append(0x60); // PUSH1
     try level2_runtime.append(0x00); // 0
     try level2_runtime.append(0xF3); // RETURN
-    
+
     // Level 2 init code
     var level2_init = std.ArrayList(u8).init(allocator);
     defer level2_init.deinit();
@@ -4732,11 +4730,11 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_init.append(0x60); // PUSH1
     try level2_init.append(0x00);
     try level2_init.append(0xF3); // RETURN
-    
+
     // Level 1 contract (parent): creates level 2
     var level1_code = std.ArrayList(u8).init(allocator);
     defer level1_code.deinit();
-    
+
     // Store level 2 init code
     for (level2_init.items, 0..) |byte, i| {
         try level1_code.append(0x60); // PUSH1
@@ -4746,7 +4744,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
         try level1_code.append(@as(u8, @truncate(i & 0xFF)));
         try level1_code.append(0x53); // MSTORE8
     }
-    
+
     // CREATE level 2
     try level1_code.append(0x61); // PUSH2
     try level1_code.append(@as(u8, @truncate(level2_init.items.len >> 8)));
@@ -4756,13 +4754,13 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level1_code.append(0x60); // PUSH1
     try level1_code.append(0x00); // value
     try level1_code.append(0xF0); // CREATE
-    
+
     // Store level 2 address
     try level1_code.append(0x60); // PUSH1
     try level1_code.append(0x00); // slot 0
     try level1_code.append(0x55); // SSTORE
     try level1_code.append(0x00); // STOP
-    
+
     // Execute level 1
     const result1 = try evm_instance.call(.{
         .create = .{
@@ -4773,15 +4771,15 @@ test "CREATE interaction - contract creates contract that creates contract" {
         },
     });
     defer if (result1.output.len > 0) allocator.free(result1.output);
-    
+
     try std.testing.expect(result1.success);
-    
+
     // Get level 2 address from storage
     const level2_addr_u256 = evm_instance.get_storage([_]u8{0x01} ** 20, 0);
     var level2_addr: Address = undefined;
     const bytes = std.mem.toBytes(level2_addr_u256);
     @memcpy(&level2_addr, bytes[12..32]);
-    
+
     // Call level 2 to get level 3 address
     const result2 = try evm_instance.call(.{
         .call = .{
@@ -4793,13 +4791,13 @@ test "CREATE interaction - contract creates contract that creates contract" {
         },
     });
     defer if (result2.output.len > 0) allocator.free(result2.output);
-    
+
     try std.testing.expect(result2.success);
-    
+
     // Get level 3 address
     var level3_addr: Address = undefined;
     @memcpy(&level3_addr, result2.output[12..32]);
-    
+
     // Call level 3 to verify it returns 99
     const result3 = try evm_instance.call(.{
         .call = .{
@@ -4811,9 +4809,9 @@ test "CREATE interaction - contract creates contract that creates contract" {
         },
     });
     defer if (result3.output.len > 0) allocator.free(result3.output);
-    
+
     try std.testing.expect(result3.success);
-    
+
     var returned_value: u256 = 0;
     for (result3.output) |byte| {
         returned_value = (returned_value << 8) | byte;
@@ -4823,10 +4821,10 @@ test "CREATE interaction - contract creates contract that creates contract" {
 
 test "CREATE interaction - created contract modifies parent storage" {
     const allocator = std.testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var evm_instance = try DefaultEvm.init(
         allocator,
@@ -4850,31 +4848,30 @@ test "CREATE interaction - created contract modifies parent storage" {
         .CANCUN,
     );
     defer evm_instance.deinit();
-    
+
     // Child contract that calls back to parent
     const child_runtime = [_]u8{
         // Call parent's setValue(42) function
         0x60, 0x2A, // PUSH1 42 (value to set)
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE (store at memory[0])
-        
+        0x52, // MSTORE (store at memory[0])
         0x60, 0x20, // PUSH1 32 (return data size)
         0x60, 0x00, // PUSH1 0 (return data offset)
         0x60, 0x20, // PUSH1 32 (input size)
         0x60, 0x00, // PUSH1 0 (input offset)
         0x60, 0x00, // PUSH1 0 (value)
-        0x33,       // CALLER (parent address)
-        0x5A,       // GAS
-        0xF1,       // CALL parent
-        
+        0x33, // CALLER (parent address)
+        0x5A, // GAS
+        0xF1, // CALL parent
+
         // Return success
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Child init code
     var child_init = std.ArrayList(u8).init(allocator);
     defer child_init.deinit();
@@ -4890,17 +4887,17 @@ test "CREATE interaction - created contract modifies parent storage" {
     try child_init.append(0x60); // PUSH1
     try child_init.append(0x00);
     try child_init.append(0xF3); // RETURN
-    
+
     // Parent contract with setValue function
     var parent_code = std.ArrayList(u8).init(allocator);
     defer parent_code.deinit();
-    
+
     // Check if being called (calldata size > 0)
     try parent_code.append(0x36); // CALLDATASIZE
     try parent_code.append(0x60); // PUSH1
     try parent_code.append(0x23); // Jump destination for setValue
     try parent_code.append(0x57); // JUMPI
-    
+
     // CREATE path (no calldata)
     // Store child init code
     for (child_init.items, 0..) |byte, i| {
@@ -4910,7 +4907,7 @@ test "CREATE interaction - created contract modifies parent storage" {
         try parent_code.append(@intCast(i));
         try parent_code.append(0x53); // MSTORE8
     }
-    
+
     // CREATE child
     try parent_code.append(0x60); // PUSH1
     try parent_code.append(@intCast(child_init.items.len));
@@ -4919,13 +4916,13 @@ test "CREATE interaction - created contract modifies parent storage" {
     try parent_code.append(0x60); // PUSH1
     try parent_code.append(0x00); // value
     try parent_code.append(0xF0); // CREATE
-    
+
     // Store child address at slot 1
     try parent_code.append(0x60); // PUSH1
     try parent_code.append(0x01); // slot 1
     try parent_code.append(0x55); // SSTORE
     try parent_code.append(0x00); // STOP
-    
+
     // setValue function (JUMPDEST at 0x23)
     try parent_code.append(0x5B); // JUMPDEST
     try parent_code.append(0x60); // PUSH1
@@ -4935,7 +4932,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     try parent_code.append(0x00); // slot 0
     try parent_code.append(0x55); // SSTORE
     try parent_code.append(0x00); // STOP
-    
+
     // Deploy parent contract
     const deploy_result = try evm_instance.call(.{
         .create = .{
@@ -4946,22 +4943,22 @@ test "CREATE interaction - created contract modifies parent storage" {
         },
     });
     defer if (deploy_result.output.len > 0) allocator.free(deploy_result.output);
-    
+
     try std.testing.expect(deploy_result.success);
-    
+
     // Get parent address (deterministic based on sender nonce)
     const parent_addr = [_]u8{0x01} ** 20; // Simplified for test
-    
+
     // Get child address from parent's storage
     const child_addr_u256 = evm_instance.get_storage(parent_addr, 1);
     var child_addr: Address = undefined;
     const bytes = std.mem.toBytes(child_addr_u256);
     @memcpy(&child_addr, bytes[12..32]);
-    
+
     // Verify parent's value storage is initially 0
     const initial_value = evm_instance.get_storage(parent_addr, 0);
     try std.testing.expectEqual(@as(u256, 0), initial_value);
-    
+
     // Call child contract, which should call back to parent
     const call_result = try evm_instance.call(.{
         .call = .{
@@ -4973,9 +4970,9 @@ test "CREATE interaction - created contract modifies parent storage" {
         },
     });
     defer if (call_result.output.len > 0) allocator.free(call_result.output);
-    
+
     try std.testing.expect(call_result.success);
-    
+
     // Verify parent's storage was modified by child
     const final_value = evm_instance.get_storage(parent_addr, 0);
     try std.testing.expectEqual(@as(u256, 42), final_value);
@@ -5088,7 +5085,7 @@ test "Arena allocator - handles multiple logs efficiently" {
     var bytecode: [501]u8 = undefined;
     for (0..100) |i| {
         const offset = i * 5;
-        bytecode[offset] = 0x60;     // PUSH1
+        bytecode[offset] = 0x60; // PUSH1
         bytecode[offset + 1] = 0x20; // 32 bytes of data
         bytecode[offset + 2] = 0x60; // PUSH1
         bytecode[offset + 3] = 0x00; // offset 0
@@ -5215,48 +5212,48 @@ test "Arena allocator - memory efficiency with nested calls" {
     const child_addr = [_]u8{0x03} ** 20;
     var parent_bytecode: [100]u8 = undefined;
     var idx: usize = 0;
-    
+
     // PUSH20 child_addr
     parent_bytecode[idx] = 0x73;
     idx += 1;
-    @memcpy(parent_bytecode[idx..idx + 20], &child_addr);
+    @memcpy(parent_bytecode[idx .. idx + 20], &child_addr);
     idx += 20;
-    
+
     // PUSH1 0 (value)
     parent_bytecode[idx] = 0x60;
     parent_bytecode[idx + 1] = 0x00;
     idx += 2;
-    
+
     // PUSH1 0 (out_size)
     parent_bytecode[idx] = 0x60;
     parent_bytecode[idx + 1] = 0x00;
     idx += 2;
-    
+
     // PUSH1 0 (out_offset)
     parent_bytecode[idx] = 0x60;
     parent_bytecode[idx + 1] = 0x00;
     idx += 2;
-    
+
     // PUSH1 0 (in_size)
     parent_bytecode[idx] = 0x60;
     parent_bytecode[idx + 1] = 0x00;
     idx += 2;
-    
+
     // PUSH1 0 (in_offset)
     parent_bytecode[idx] = 0x60;
     parent_bytecode[idx + 1] = 0x00;
     idx += 2;
-    
+
     // PUSH2 gas
     parent_bytecode[idx] = 0x61;
     parent_bytecode[idx + 1] = 0x01;
     parent_bytecode[idx + 2] = 0x00; // 256 gas
     idx += 3;
-    
+
     // CALL
     parent_bytecode[idx] = 0xF1;
     idx += 1;
-    
+
     // PUSH1 0x20 PUSH1 0x00 LOG0
     parent_bytecode[idx] = 0x60;
     parent_bytecode[idx + 1] = 0x20;
@@ -5264,7 +5261,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     parent_bytecode[idx + 3] = 0x00;
     parent_bytecode[idx + 4] = 0xA0;
     idx += 5;
-    
+
     // STOP
     parent_bytecode[idx] = 0x00;
     idx += 1;
@@ -5334,10 +5331,10 @@ test "Call context tracking - get_caller and get_call_value" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
-    
+
     const origin_addr = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
     const contract_a = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
-    
+
     const block_info = BlockInfo.init();
     const tx_context = TransactionContext{
         .gas_limit = 1_000_000,
@@ -5354,41 +5351,41 @@ test "Call context tracking - get_caller and get_call_value" {
         .CANCUN,
     );
     defer evm.deinit();
-    
+
     // Test depth 0 - should return origin
     try std.testing.expectEqual(@as(u11, 0), evm.depth);
     try std.testing.expectEqual(origin_addr, evm.get_caller());
     try std.testing.expectEqual(@as(u256, 0), evm.get_call_value());
-    
+
     // Simulate depth 1 call from origin to contract_a with value 123
     evm.depth = 1;
     evm.call_stack[0] = .{
         .caller = origin_addr,
         .value = 123,
     };
-    
+
     try std.testing.expectEqual(origin_addr, evm.get_caller());
     try std.testing.expectEqual(@as(u256, 123), evm.get_call_value());
-    
+
     // Simulate depth 2 call from contract_a to contract_b with value 456
     evm.depth = 2;
     evm.call_stack[1] = .{
         .caller = contract_a,
         .value = 456,
     };
-    
+
     try std.testing.expectEqual(contract_a, evm.get_caller());
     try std.testing.expectEqual(@as(u256, 456), evm.get_call_value());
 }
 
 test "CREATE stores deployed code bytes" {
     const allocator = std.testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -5399,16 +5396,16 @@ test "CREATE stores deployed code bytes" {
         .base_fee = 1000000000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 20_000_000_000, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Give creator account some balance
     const creator_address: Address = [_]u8{0x11} ++ [_]u8{0} ** 19;
     try memory_db.set_account(creator_address, Account{
@@ -5417,29 +5414,29 @@ test "CREATE stores deployed code bytes" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Contract that uses CREATE to deploy a simple contract
     // The deployed contract just returns 42
     const deployed_runtime = [_]u8{
         0x60, 0x2A, // PUSH1 42
-        0x60, 0x00, // PUSH1 0  
-        0x52,       // MSTORE
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Init code that deploys the runtime code
     var init_code = std.ArrayList(u8).init(allocator);
     defer init_code.deinit();
-    
+
     // Store runtime code length
     try init_code.append(0x60); // PUSH1
     try init_code.append(@intCast(deployed_runtime.len));
     try init_code.append(0x60); // PUSH1 0
     try init_code.append(0x00);
     try init_code.append(0x52); // MSTORE at 0
-    
+
     // Store actual runtime code bytes
     for (deployed_runtime, 0..) |byte, i| {
         try init_code.append(0x60); // PUSH1
@@ -5448,27 +5445,27 @@ test "CREATE stores deployed code bytes" {
         try init_code.append(@intCast(i + 32)); // offset after length
         try init_code.append(0x53); // MSTORE8
     }
-    
+
     // Return the runtime code
-    try init_code.append(0x60); // PUSH1 
+    try init_code.append(0x60); // PUSH1
     try init_code.append(@intCast(deployed_runtime.len + 32)); // size
     try init_code.append(0x60); // PUSH1
     try init_code.append(0x00); // offset
     try init_code.append(0xF3); // RETURN
-    
+
     // Contract that calls CREATE with the init code
     var creator_bytecode = std.ArrayList(u8).init(allocator);
     defer creator_bytecode.deinit();
-    
+
     // Push init code to memory
     for (init_code.items, 0..) |byte, i| {
         try creator_bytecode.append(0x60); // PUSH1
         try creator_bytecode.append(byte);
-        try creator_bytecode.append(0x60); // PUSH1  
+        try creator_bytecode.append(0x60); // PUSH1
         try creator_bytecode.append(@intCast(i));
         try creator_bytecode.append(0x53); // MSTORE8
     }
-    
+
     // CREATE: value=0, offset=0, size=init_code.len
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(@intCast(init_code.items.len)); // size
@@ -5477,7 +5474,7 @@ test "CREATE stores deployed code bytes" {
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(0x00); // value
     try creator_bytecode.append(0xF0); // CREATE
-    
+
     // Return the created address
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(0x00); // offset
@@ -5487,7 +5484,7 @@ test "CREATE stores deployed code bytes" {
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(0x00); // offset
     try creator_bytecode.append(0xF3); // RETURN
-    
+
     // Deploy creator contract
     const creator_code_hash = try memory_db.set_code(creator_bytecode.items);
     try memory_db.set_account(creator_address, Account{
@@ -5496,7 +5493,7 @@ test "CREATE stores deployed code bytes" {
         .code_hash = creator_code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Execute CREATE
     const result = try evm.call(.{
         .call = .{
@@ -5507,18 +5504,18 @@ test "CREATE stores deployed code bytes" {
             .gas = 500000,
         },
     });
-    
+
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // Extract created contract address from output
     var created_address: Address = undefined;
     @memcpy(&created_address, result.output[12..32]);
-    
+
     // Verify the deployed contract exists and has the correct code
     const deployed_code = try memory_db.get_code_by_address(created_address);
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
-    
+
     // Call the deployed contract to verify it works
     const call_result = try evm.call(.{
         .call = .{
@@ -5529,10 +5526,10 @@ test "CREATE stores deployed code bytes" {
             .gas = 100000,
         },
     });
-    
+
     try std.testing.expect(call_result.success);
     try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
-    
+
     // Verify it returns 42
     var returned_value: u256 = 0;
     for (call_result.output, 0..) |byte, i| {
@@ -5543,12 +5540,12 @@ test "CREATE stores deployed code bytes" {
 
 test "CREATE2 stores deployed code bytes" {
     const allocator = std.testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
-    
+
     // Create EVM instance
     const block_info = BlockInfo{
         .number = 1,
@@ -5559,16 +5556,16 @@ test "CREATE2 stores deployed code bytes" {
         .base_fee = 1000000000,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 20_000_000_000, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
-    
+
     // Give creator account some balance
     const creator_address: Address = [_]u8{0x22} ++ [_]u8{0} ** 19;
     try memory_db.set_account(creator_address, Account{
@@ -5577,29 +5574,29 @@ test "CREATE2 stores deployed code bytes" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Contract that uses CREATE2 to deploy a simple contract
     // The deployed contract just returns 99
     const deployed_runtime = [_]u8{
         0x60, 0x63, // PUSH1 99
-        0x60, 0x00, // PUSH1 0  
-        0x52,       // MSTORE
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Init code that deploys the runtime code
     var init_code = std.ArrayList(u8).init(allocator);
     defer init_code.deinit();
-    
+
     // Store runtime code length
     try init_code.append(0x60); // PUSH1
     try init_code.append(@intCast(deployed_runtime.len));
     try init_code.append(0x60); // PUSH1 0
     try init_code.append(0x00);
     try init_code.append(0x52); // MSTORE at 0
-    
+
     // Store actual runtime code bytes
     for (deployed_runtime, 0..) |byte, i| {
         try init_code.append(0x60); // PUSH1
@@ -5608,27 +5605,27 @@ test "CREATE2 stores deployed code bytes" {
         try init_code.append(@intCast(i + 32)); // offset after length
         try init_code.append(0x53); // MSTORE8
     }
-    
+
     // Return the runtime code
-    try init_code.append(0x60); // PUSH1 
+    try init_code.append(0x60); // PUSH1
     try init_code.append(@intCast(deployed_runtime.len + 32)); // size
     try init_code.append(0x60); // PUSH1
     try init_code.append(0x00); // offset
     try init_code.append(0xF3); // RETURN
-    
+
     // Contract that calls CREATE2 with the init code
     var creator_bytecode = std.ArrayList(u8).init(allocator);
     defer creator_bytecode.deinit();
-    
+
     // Push init code to memory
     for (init_code.items, 0..) |byte, i| {
         try creator_bytecode.append(0x60); // PUSH1
         try creator_bytecode.append(byte);
-        try creator_bytecode.append(0x60); // PUSH1  
+        try creator_bytecode.append(0x60); // PUSH1
         try creator_bytecode.append(@intCast(i));
         try creator_bytecode.append(0x53); // MSTORE8
     }
-    
+
     // CREATE2: salt, size, offset, value
     // Use salt = 0x42
     try creator_bytecode.append(0x60); // PUSH1
@@ -5640,7 +5637,7 @@ test "CREATE2 stores deployed code bytes" {
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(0x00); // value
     try creator_bytecode.append(0xF5); // CREATE2
-    
+
     // Return the created address
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(0x00); // offset
@@ -5650,7 +5647,7 @@ test "CREATE2 stores deployed code bytes" {
     try creator_bytecode.append(0x60); // PUSH1
     try creator_bytecode.append(0x00); // offset
     try creator_bytecode.append(0xF3); // RETURN
-    
+
     // Deploy creator contract
     const creator_code_hash = try memory_db.set_code(creator_bytecode.items);
     try memory_db.set_account(creator_address, Account{
@@ -5659,7 +5656,7 @@ test "CREATE2 stores deployed code bytes" {
         .code_hash = creator_code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Execute CREATE2
     const result = try evm.call(.{
         .call = .{
@@ -5670,18 +5667,18 @@ test "CREATE2 stores deployed code bytes" {
             .gas = 500000,
         },
     });
-    
+
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // Extract created contract address from output
     var created_address: Address = undefined;
     @memcpy(&created_address, result.output[12..32]);
-    
+
     // Verify the deployed contract exists and has the correct code
     const deployed_code = try memory_db.get_code_by_address(created_address);
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
-    
+
     // Call the deployed contract to verify it works
     const call_result = try evm.call(.{
         .call = .{
@@ -5692,10 +5689,10 @@ test "CREATE2 stores deployed code bytes" {
             .gas = 100000,
         },
     });
-    
+
     try std.testing.expect(call_result.success);
     try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
-    
+
     // Verify it returns 99
     var returned_value: u256 = 0;
     for (call_result.output, 0..) |byte, i| {
