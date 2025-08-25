@@ -45,6 +45,44 @@ pub fn interpret(comptime config: frame_mod.FrameConfig, program: *const IR.Prog
             .@"return" => return frame.@"return"(),
             .revert => return frame.revert(),
             .stop => return frame.stop(),
+            
+            // Storage operations
+            .sstore => {
+                try frame.sstore();
+                i += 1;
+            },
+            .sload => {
+                try frame.sload();
+                i += 1;
+            },
+            
+            // Arithmetic operations
+            .add => {
+                try frame.add();
+                i += 1;
+            },
+            .mul => {
+                try frame.mul();
+                i += 1;
+            },
+            .sub => {
+                try frame.sub();
+                i += 1;
+            },
+            .div => {
+                try frame.div();
+                i += 1;
+            },
+            .lt => {
+                try frame.lt();
+                i += 1;
+            },
+            
+            // Other operations - for now, treat as STOP
+            .other => {
+                // TODO: Implement generic opcode execution
+                return frame.stop();
+            },
         }
     }
 }
