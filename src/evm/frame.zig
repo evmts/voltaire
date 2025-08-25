@@ -873,11 +873,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
-            _ = host.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
+            _ = self.host.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             // Load value from storage
-            const value = host.get_storage(address, slot);
+            const value = self.host.get_storage(contract_addr, slot) catch return Error.AllocationError;
             try self.stack.push(value);
         }
         pub fn sstore(self: *Self) Error!void {
@@ -895,11 +895,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
-            _ = host.access_storage_slot(addr, slot) catch |err| switch (err) {
+            _ = self.host.access_storage_slot(addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             // Use host interface for journaling
-            host.set_storage(addr, slot, value) catch |err| switch (err) {
+            self.host.set_storage(addr, slot, value) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
         }
@@ -962,15 +962,15 @@ pub fn Frame(comptime config: FrameConfig) type {
                 else => return Error.AllocationError,
             };
             
-            const balance = self.host.get_balance(addr);
-            const balance_word = @as(WordType, @truncate(balance));
+            const bal = self.host.get_balance(addr);
+            const balance_word = @as(WordType, @truncate(bal));
             try self.stack.push(balance_word);
         }
         /// ORIGIN opcode (0x32) - Get execution origination address
         /// Pushes the address of the account that initiated the transaction.
         /// Stack: [] → [origin]
         pub fn origin(self: *Self) Error!void {
-            const tx_origin = host.get_tx_origin();
+            const tx_origin = self.host.get_tx_origin();
             const origin_u256 = to_u256(tx_origin);
             try self.stack.push(origin_u256);
         }
@@ -978,7 +978,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the account that directly called this contract.
         /// Stack: [] → [caller]
         pub fn caller(self: *Self) Error!void {
-            const caller_addr = host.get_caller();
+            const caller_addr = self.host.get_caller();
             const caller_u256 = to_u256(caller_addr);
             try self.stack.push(caller_u256);
         }
@@ -986,7 +986,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the value in wei sent with the current call.
         /// Stack: [] → [value]
         pub fn callvalue(self: *Self) Error!void {
-            const value = host.get_call_value();
+            const value = self.host.get_call_value();
             try self.stack.push(value);
         }
         /// CALLDATALOAD opcode (0x35) - Load word from input data
@@ -1110,7 +1110,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn extcodesize(self: *Self) Error!void {
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
-            const code = host.get_code(address);
+            const code = self.host.get_code(addr);
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
             try self.stack.push(code_len);
         }
@@ -1140,7 +1140,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
-            const code = host.get_code(address);
+            const code = self.host.get_code(addr);
             // Copy external code to memory with bounds checking
             for (0..length_usize) |i| {
                 const src_index = offset_usize + i;
@@ -1202,12 +1202,12 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn extcodehash(self: *Self) Error!void {
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
-            if (!host.account_exists(address)) {
+            if (!self.host.account_exists(addr)) {
                 // Non-existent account returns 0 per EIP-1052
                 try self.stack.push(0);
                 return;
             }
-            const code = host.get_code(address);
+            const code = self.host.get_code(addr);
             if (code.len == 0) {
                 // Existing account with empty code returns keccak256("") constant
                 const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
@@ -1238,8 +1238,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the balance of the currently executing contract.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *Self) Error!void {
-            const bal = host.get_balance(self.contract_address);
-            const balance_word = @as(WordType, @truncate(balance));
+            const bal = self.host.get_balance(self.contract_address);
+            const balance_word = @as(WordType, @truncate(bal));
             try self.stack.push(balance_word);
         }
         // Block information opcodes
@@ -1261,7 +1261,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Get block hash from host
             // Note: block_number is u256 but get_block_hash expects u64
             const block_number_u64 = @as(u64, @intCast(block_number));
-            const hash_opt = host.get_block_hash(block_number_u64);
+            const hash_opt = self.host.get_block_hash(block_number_u64);
             // Push hash or zero if not available
             if (hash_opt) |hash| {
                 // Convert [32]u8 to u256
@@ -1638,14 +1638,14 @@ pub fn Frame(comptime config: FrameConfig) type {
         ///
         /// ## Returns
         /// - `true` if the address is a precompile, `false` otherwise
-        fn is_precompile_address(self: *Self, address: Address) bool {
+        fn is_precompile_address(self: *Self, addr: Address) bool {
             _ = self; // Not used but kept for consistency with method signature
             // Check if all bytes except the last one are zero
-            for (address[0..19]) |addr_byte| {
+            for (addr[0..19]) |addr_byte| {
                 if (addr_byte != 0) return false;
             }
             // Check if the last byte is between 1 and 10 (0x01 to 0x0A)
-            return address[19] >= 1 and address[19] <= 10;
+            return addr[19] >= 1 and addr[19] <= 10;
         }
         /// CALL opcode (0xF1) - Call another contract
         /// Calls the contract at the given address with the provided value, input data, and gas.
@@ -1697,7 +1697,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
             // Calculate base call gas cost (EIP-150 & EIP-2929)
-            const base_call_gas = self._calculate_call_gas(address, value, host.get_is_static());
+            const base_call_gas = self._calculate_call_gas(addr, value, self.host.get_is_static());
             // Check if we have enough gas for the base call cost
             if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
@@ -1711,17 +1711,17 @@ pub fn Frame(comptime config: FrameConfig) type {
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas) + gas_stipend;
             // Create snapshot for potential revert
-            const snapshot_id = host.create_snapshot();
+            const snapshot_id = self.host.create_snapshot();
             // Execute the call
             const call_params = CallParams{ .call = .{
                 .caller = self.contract_address,
-                .to = address,
+                .to = addr,
                 .value = value,
                 .input = input_data,
                 .gas = forwarded_gas,
             } };
-            const result = host.inner_call(call_params) catch {
-                host.revert_to_snapshot(snapshot_id);
+            const result = self.host.inner_call(call_params) catch {
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0);
                 return;
             };
@@ -1734,7 +1734,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
                 try self.stack.push(1); // Success
             } else {
-                host.revert_to_snapshot(snapshot_id);
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0); // Failure
             }
             // Update gas accounting
@@ -1791,7 +1791,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
             // Calculate base call gas cost (EIP-150 & EIP-2929) - DELEGATECALL never transfers value
-            const base_call_gas = self._calculate_call_gas(address, 0);
+            const base_call_gas = self._calculate_call_gas(addr, 0);
             // Check if we have enough gas for the base call cost
             if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
@@ -1804,18 +1804,18 @@ pub fn Frame(comptime config: FrameConfig) type {
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas);
             // Create snapshot for potential revert
-            const snapshot_id = host.create_snapshot();
+            const snapshot_id = self.host.create_snapshot();
             // Execute the delegatecall - note: caller context is preserved by the host
             const call_params = CallParams{
                 .delegatecall = .{
                     .caller = self.contract_address, // Preserve original caller context
-                    .to = address,
+                    .to = addr,
                     .input = input_data,
                     .gas = forwarded_gas,
                 },
             };
-            const result = host.inner_call(call_params) catch {
-                host.revert_to_snapshot(snapshot_id);
+            const result = self.host.inner_call(call_params) catch {
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0);
                 return;
             };
@@ -1828,7 +1828,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
                 try self.stack.push(1); // Success
             } else {
-                host.revert_to_snapshot(snapshot_id);
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0); // Failure
             }
             // Update gas accounting
@@ -1885,7 +1885,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
             // Calculate base call gas cost (EIP-150 & EIP-2929) - STATICCALL never transfers value
-            const base_call_gas = self._calculate_call_gas(address, 0, true);
+            const base_call_gas = self._calculate_call_gas(addr, 0, true);
             // Check if we have enough gas for the base call cost
             if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
@@ -1900,11 +1900,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Execute the staticcall
             const call_params = CallParams{ .staticcall = .{
                 .caller = self.contract_address,
-                .to = address,
+                .to = addr,
                 .input = input_data,
                 .gas = forwarded_gas,
             } };
-            const result = host.inner_call(call_params) catch {
+            const result = self.host.inner_call(call_params) catch {
                 try self.stack.push(0);
                 return;
             };
@@ -1933,7 +1933,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [value, offset, size] → [address]
         pub fn create(self: *Self) Error!void {
             // Check static context - CREATE is not allowed in static context
-            if (host.get_is_static()) {
+            if (self.host.get_is_static()) {
                 return Error.WriteProtection;
             }
             const size = try self.stack.pop();
@@ -1962,7 +1962,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = max_forward_gas;
             // Create snapshot for potential revert
-            const snapshot_id = host.create_snapshot();
+            const snapshot_id = self.host.create_snapshot();
             // Execute the create
             const call_params = CallParams{ .create = .{
                 .caller = self.contract_address,
@@ -1970,8 +1970,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .init_code = input_data,
                 .gas = forwarded_gas,
             } };
-            const result = host.inner_call(call_params) catch {
-                host.revert_to_snapshot(snapshot_id);
+            const result = self.host.inner_call(call_params) catch {
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0);
                 return;
             };
@@ -1980,11 +1980,11 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Extract the created contract address from output
                 var address_bytes: [20]u8 = undefined;
                 @memcpy(&address_bytes, result.output[0..20]);
-                const address: Address = address_bytes;
-                const address_u256 = to_u256(address);
+                const addr: Address = address_bytes;
+                const address_u256 = to_u256(addr);
                 try self.stack.push(address_u256);
             } else {
-                host.revert_to_snapshot(snapshot_id);
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0); // Failure
             }
             // Update gas accounting
@@ -2002,7 +2002,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [value, offset, size, salt] → [address]
         pub fn create2(self: *Self) Error!void {
             // Check static context - CREATE2 is not allowed in static context
-            if (host.get_is_static()) {
+            if (self.host.get_is_static()) {
                 return Error.WriteProtection;
             }
             const salt = try self.stack.pop();
@@ -2032,7 +2032,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = max_forward_gas;
             // Create snapshot for potential revert
-            const snapshot_id = host.create_snapshot();
+            const snapshot_id = self.host.create_snapshot();
             // Execute the create2
             const call_params = CallParams{ .create2 = .{
                 .caller = self.contract_address,
@@ -2041,8 +2041,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .salt = salt,
                 .gas = forwarded_gas,
             } };
-            const result = host.inner_call(call_params) catch {
-                host.revert_to_snapshot(snapshot_id);
+            const result = self.host.inner_call(call_params) catch {
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0);
                 return;
             };
@@ -2051,11 +2051,11 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Extract the created contract address from output
                 var address_bytes: [20]u8 = undefined;
                 @memcpy(&address_bytes, result.output[0..20]);
-                const address: Address = address_bytes;
-                const address_u256 = to_u256(address);
+                const addr: Address = address_bytes;
+                const address_u256 = to_u256(addr);
                 try self.stack.push(address_u256);
             } else {
-                host.revert_to_snapshot(snapshot_id);
+                self.host.revert_to_snapshot(snapshot_id);
                 try self.stack.push(0); // Failure
             }
             // Update gas accounting
