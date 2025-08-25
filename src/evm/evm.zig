@@ -802,7 +802,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: JournalType.SnapshotIdType,
         ) !CallResult {
-            _ = address; // address is currently unused in this implementation
             // Bind snapshot and call input for this frame duration
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
@@ -811,8 +810,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const prev_input = self.current_input;
             self.current_input = input;
             defer self.current_input = prev_input;
-            // Currently the interpreter reads address via host; keep parameter used
-            _ = address;
+            // Bind contract address onto the frame (used by ADDRESS opcode)
             
             // Increment depth and track static context
             self.depth += 1;
@@ -838,16 +836,24 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.database,
                 host,
             );
+            // Bind contract address for ADDRESS opcode
+            interpreter.frame.contract_address = address;
             defer interpreter.deinit(self.allocator);
             
             // Execute the frame
             interpreter.interpret() catch |err| {
                 const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
-                // Update return_data buffer for parent context on any termination
-                self.return_data = interpreter.frame.output_data.items;
+                // Copy output/revert data into EVM-owned buffer to ensure lifetime beyond interpreter deinit
+                var out_slice: []const u8 = &.{};
+                if (interpreter.frame.output_data.items.len > 0) {
+                    const buf = try self.allocator.alloc(u8, interpreter.frame.output_data.items.len);
+                    @memcpy(buf, interpreter.frame.output_data.items);
+                    out_slice = buf;
+                }
+                self.return_data = out_slice;
                 return switch (err) {
-                    error.STOP => CallResult.success_with_output(gas_left, interpreter.frame.output_data.items),
-                    error.REVERT => CallResult.revert_with_data(gas_left, interpreter.frame.output_data.items),
+                    error.STOP => CallResult.success_with_output(gas_left, out_slice),
+                    error.REVERT => CallResult.revert_with_data(gas_left, out_slice),
                     error.OutOfGas => CallResult.failure(0),
                     error.InvalidJump => CallResult.failure(0),
                     error.InvalidOpcode => CallResult.failure(0),
@@ -868,9 +874,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Normal completion (STOP)
             const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
+            // Copy output buffer into EVM-owned memory for safety
+            var out_slice: []const u8 = &.{};
+            if (interpreter.frame.output_data.items.len > 0) {
+                const buf = try self.allocator.alloc(u8, interpreter.frame.output_data.items.len);
+                @memcpy(buf, interpreter.frame.output_data.items);
+                out_slice = buf;
+            }
             // Make callee return buffer visible to caller for RETURNDATA* opcodes
-            self.return_data = interpreter.frame.output_data.items;
-            return CallResult.success_with_output(gas_left, interpreter.frame.output_data.items);
+            self.return_data = out_slice;
+            return CallResult.success_with_output(gas_left, out_slice);
         }
         
         /// Execute nested EVM call - used for calls from within the EVM
