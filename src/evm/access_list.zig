@@ -246,7 +246,6 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
         .prev_randao = [_]u8{1} ** 32,
-        .blob_base_fee = 1,
     };
     
     const tx_context = @import("transaction_context.zig").TransactionContext{
@@ -293,7 +292,6 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
         .prev_randao = [_]u8{1} ** 32,
-        .blob_base_fee = 1,
     };
     
     const tx_context = @import("transaction_context.zig").TransactionContext{
@@ -333,7 +331,6 @@ test "EIP-2929: transaction pre-warming" {
         .base_fee = 10,
         .coinbase = TEST_ADDRESS_3,
         .prev_randao = [_]u8{1} ** 32,
-        .blob_base_fee = 1,
     };
     
     const tx_context = @import("transaction_context.zig").TransactionContext{
@@ -380,7 +377,6 @@ test "EIP-2929: SELFBALANCE always warm" {
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
         .prev_randao = [_]u8{1} ** 32,
-        .blob_base_fee = 1,
     };
     
     const tx_context = @import("transaction_context.zig").TransactionContext{
@@ -422,7 +418,6 @@ test "EIP-2929: access list cleared between transactions" {
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
         .prev_randao = [_]u8{1} ** 32,
-        .blob_base_fee = 1,
     };
     
     const tx_context = @import("transaction_context.zig").TransactionContext{
