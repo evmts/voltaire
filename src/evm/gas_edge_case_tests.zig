@@ -328,18 +328,10 @@ test "Memory expansion gas calculation doesn't overflow" {
     defer frame.deinit(allocator);
     
     // Test memory expansion with large offsets
-    const large_offset: u256 = 0x100000; // 1MB offset
     // memory.expansion_cost no longer public; skip this specific check pending migration
     return error.SkipZigTest;
     
-    // Verify expansion cost fits in GasType
-    try std.testing.expect(expansion_cost <= std.math.maxInt(F.GasType));
-    
-    // Test that we can safely consume this gas
-    if (frame.gas_remaining >= @as(F.GasType, @intCast(expansion_cost))) {
-        frame.gas_remaining -= @as(F.GasType, @intCast(expansion_cost));
-        try std.testing.expect(frame.gas_remaining >= 0);
-    }
+    // pending migration checks removed to avoid unreachable code
 }
 
 // ============================================================================
