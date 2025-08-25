@@ -367,7 +367,7 @@ This is a high-performance Ethereum Virtual Machine (EVM) implementation written
 2. **Minimal memory allocations** - Prefer stack allocation and upfront allocation
 3. **Strong error types** - Every component has specific error types
 4. **Module boundaries** - Clear separation between EVM components
-5. **Jump table architecture** - Efficient opcode dispatch
+5. **Handler-based architecture** - Efficient opcode dispatch via function pointers
 
 ## Codebase Structure
 
@@ -478,7 +478,7 @@ const Evm = @import("evm");
 const Address = @import("Address");
 
 // Good - same directory
-const ExecutionError = @import("execution_error.zig");
+const memory = @import("memory.zig");
 
 // Bad - parent directory (will fail)
 const Contract = @import("../frame/contract.zig");
@@ -699,7 +699,7 @@ The EVM implementation is a ground-up redesign with configurable, high-performan
    ```
 
 2. **Unsafe Operations for Performance**: 
-   - Jump table validates stack requirements
+   - Planner validates stack requirements
    - Opcodes use `_unsafe` variants for speed
    ```zig
    const top = frame.stack.pop_unsafe(); // Bounds already checked
@@ -726,16 +726,16 @@ The EVM implementation is a ground-up redesign with configurable, high-performan
 
 1. **Opcode Implementation Pattern**:
    ```zig
-   pub fn example(frame: *Frame) ExecutionError.Error!void {
-       // Pop operands (validated by jump table)
-       const b = frame.stack.pop_unsafe();
-       const a = frame.stack.peek_unsafe();
+   pub fn example(self: *Self) Error!void {
+       // Pop operands (validated by planner)
+       const b = self.stack.pop_unsafe();
+       const a = self.stack.peek_unsafe();
        
        // Perform operation
        const result = /* operation logic */;
        
        // Update stack
-       frame.stack.set_top_unsafe(result);
+       self.stack.set_top_unsafe(result);
    }
    ```
 
@@ -783,7 +783,7 @@ The EVM implementation is a ground-up redesign with configurable, high-performan
 
 ### Performance Considerations
 
-1. **Jump Table Dispatch**: Opcodes dispatched via function pointers
+1. **Handler-Based Dispatch**: Opcodes dispatched via function pointers in instruction stream
 2. **Analysis Caching**: Code analysis cached for nested calls
 3. **Memory Pooling**: Frame pool for temporary allocations
 4. **Inline Hot Paths**: Critical opcodes can be inlined
@@ -800,7 +800,7 @@ The new architecture clearly separates responsibilities:
 
 This separation enables better optimization opportunities and cleaner interfaces.
 
-#### 2. Data-Driven Design with Jump Tables
+#### 2. Data-Driven Design with Handler Tables
 
 The EVM uses pure data structures for opcode dispatch instead of switch statements:
 
@@ -901,7 +901,7 @@ When working with EVM modules:
 - Use full type paths for clarity
 ```zig
 const Address = @import("primitives").Address.Address;
-const ExecutionError = @import("execution/execution_error.zig");
+const memory = @import("memory.zig");
 ```
 
 ### EVM Module Organization
