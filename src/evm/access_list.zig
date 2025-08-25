@@ -113,7 +113,6 @@ pub const AccessList = createAccessList(AccessListConfig{});
 
 const testing = std.testing;
 const GasConstants = primitives.GasConstants;
-const u256 = primitives.u256;
 
 test "AccessList - address access tracking" {
     var access_list = AccessList.init(testing.allocator);
@@ -186,7 +185,7 @@ test "AccessList - clear functionality" {
     defer access_list.deinit();
 
     const test_address = [_]u8{1} ** 20;
-    const slot: u256 = 42;
+    const slot: primitives.u256 = 42;
 
     // Access address and storage slot
     _ = try access_list.access_address(test_address);
@@ -308,7 +307,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
     var evm = try @import("evm.zig").Evm.init(allocator, db_interface, &block_info, &tx_context);
     defer evm.deinit();
     
-    const slot: u256 = 42;
+    const slot: primitives.u256 = 42;
     
     // Test first access (cold) to a storage slot
     const cold_cost = try evm.access_storage_slot(TEST_ADDRESS_2, slot);
@@ -487,7 +486,7 @@ test "EIP-2929 - SLOAD multiple slots warm/cold pattern" {
     const contract_address = [_]u8{0x12} ** 20;
     
     // Test multiple slots
-    const slots = [_]u256{ 0, 1, 100, 0xFFFF, std.math.maxInt(u256) };
+    const slots = [_]primitives.u256{ 0, 1, 100, 0xFFFF, std.math.maxInt(primitives.u256) };
     
     // First access to each slot should be cold
     for (slots) |slot| {
@@ -538,7 +537,6 @@ test "EIP-2929 - SSTORE warm/cold access patterns" {
     var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.BERLIN);
     defer evm.deinit();
     
-    const contract_address = [_]u8{0x12} ** 20;
     const initial_gas = 1_000_000;
     
     // Execute bytecode through frame interpreter
