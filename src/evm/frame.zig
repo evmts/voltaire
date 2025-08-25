@@ -87,6 +87,10 @@ pub fn Frame(comptime config: FrameConfig) type {
         stack: Stack,
         bytecode: []const u8, // 16 bytes (slice)
         gas_remaining: GasType, // Direct gas tracking
+        /// Total refundable gas accrued during this frame (e.g., SSTORE clears)
+        gas_refund: u64 = 0,
+        /// Initial gas at frame start for refund cap calculation
+        initial_gas: GasType = 0,
         tracer: if (config.TracerType) |T| T else void,
         memory: Memory,
         database: if (config.has_database) ?DatabaseInterface else void,
@@ -124,6 +128,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .stack = stack,
                 .bytecode = bytecode,
                 .gas_remaining = @as(GasType, @intCast(@max(gas_remaining, 0))),
+                .gas_refund = 0,
+                .initial_gas = @as(GasType, @intCast(@max(gas_remaining, 0))),
                 .tracer = if (config.TracerType) |T| T.init() else {},
                 .memory = memory,
                 .database = database,
@@ -431,7 +437,17 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             _ = try self.stack.pop();
         }
         pub fn stop(self: *Self) Error!void {
-            _ = self;
+            // Apply EIP-3529 refund cap: at most 1/5th of gas used
+            if (self.gas_refund > 0) {
+                const start: u64 = @max(self.initial_gas, 0);
+                const remain: u64 = @max(self.gas_remaining, 0);
+                const used: u64 = if (start > remain) start - remain else 0;
+                const cap: u64 = used / 5; // 20% cap
+                const credit: u64 = if (self.gas_refund > cap) cap else self.gas_refund;
+                const new_remaining: u128 = @as(u128, @intCast(remain)) + credit;
+                self.gas_remaining = @as(GasType, @intCast(@min(new_remaining, @as(u128, @intCast(std.math.maxInt(GasType))))));
+                self.gas_refund = 0;
+            }
             return Error.STOP;
         }
         // Bitwise operations
@@ -500,6 +516,12 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
         // Arithmetic operations
         /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *Self) Error!void {
+            // Charge gas for simple arithmetic (fastest step)
+            const gas_cost: u64 = GasConstants.GasFastestStep;
+            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
@@ -648,12 +670,17 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
         /// Test helper: KECCAK256 hash function for direct data hashing
         /// Pushes the hash result onto the stack.
         pub fn keccak256_data(self: *Self, data: []const u8) Error!void {
-            const result = keccak_asm.keccak256_u256(data) catch |err| switch (err) {
+            var hash_bytes: [32]u8 = undefined;
+            keccak_asm.keccak256(data, &hash_bytes) catch |err| switch (err) {
                 keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
                 keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
                 else => return Error.AllocationError,
             };
-            try self.stack.push(result);
+            var hash_u256: u256 = 0;
+            for (hash_bytes) |b| {
+                hash_u256 = (hash_u256 << 8) | @as(u256, b);
+            }
+            try self.stack.push(@as(WordType, @truncate(hash_u256)));
         }
         // Comparison operations
         pub fn lt(self: *Self) Error!void {
@@ -716,8 +743,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
         /// Pops offset and size from stack, reads data from memory, and pushes hash.
         /// Stack: [offset, size] → [hash]
         pub fn keccak256(self: *Self) Error!void {
-            const offset = try self.stack.pop();
             const size = try self.stack.pop();
+            const offset = try self.stack.pop();
             // Check bounds
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
                 @branchHint(.unlikely);
@@ -751,15 +778,19 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             };
             // Get data from memory
             const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
-            // Compute keccak256 hash using assembly-optimized implementation
-            const result_u256 = keccak_asm.keccak256_u256(data) catch |err| switch (err) {
+            // Compute keccak256 hash and convert to big-endian u256
+            var hash_bytes: [32]u8 = undefined;
+            keccak_asm.keccak256(data, &hash_bytes) catch |err| switch (err) {
                 keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
                 keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
                 else => return Error.AllocationError,
             };
-            // Convert result to WordType (truncate if necessary for smaller word types)
-            const result = @as(WordType, @truncate(result_u256));
-            try self.stack.push(result);
+            var hash_u256: u256 = 0;
+            for (hash_bytes) |b| {
+                hash_u256 = (hash_u256 << 8) | @as(u256, b);
+            }
+            const result_word = @as(WordType, @truncate(hash_u256));
+            try self.stack.push(result_word);
         }
         // Memory operations
         pub fn msize(self: *Self) Error!void {
@@ -907,8 +938,9 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             if (self.host.get_is_static()) {
                 return Error.WriteProtection;
             }
-            const slot = try self.stack.pop();
+            // Stack order for SSTORE: [key, value] -> [] with top being value
             const value = try self.stack.pop();
+            const slot = try self.stack.pop();
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
@@ -2177,6 +2209,17 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             } else {
                 // Empty return data
                 self.output_data.clearRetainingCapacity();
+            }
+            // Apply EIP-3529 refund cap at return
+            if (self.gas_refund > 0) {
+                const start: u64 = @max(self.initial_gas, 0);
+                const remain: u64 = @max(self.gas_remaining, 0);
+                const used: u64 = if (start > remain) start - remain else 0;
+                const cap: u64 = used / 5;
+                const credit: u64 = if (self.gas_refund > cap) cap else self.gas_refund;
+                const new_remaining: u128 = @as(u128, @intCast(remain)) + credit;
+                self.gas_remaining = @as(GasType, @intCast(@min(new_remaining, @as(u128, @intCast(std.math.maxInt(GasType))))));
+                self.gas_refund = 0;
             }
             return Error.STOP;
         }
