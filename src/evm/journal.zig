@@ -30,8 +30,8 @@ pub fn Journal(comptime config: JournalConfig) type {
         
         /// Initialize a new journal
         pub fn init(allocator: std.mem.Allocator) Self {
-            var entries = std.ArrayList(Entry).init(allocator);
-            entries.ensureTotalCapacity(config.initial_capacity) catch {}; // Best effort
+            var entries = std.ArrayList(Entry){};
+            entries.ensureTotalCapacity(allocator, config.initial_capacity) catch {}; // Best effort
             
             return Self{
                 .entries = entries,
@@ -42,7 +42,7 @@ pub fn Journal(comptime config: JournalConfig) type {
         
         /// Deinitialize the journal
         pub fn deinit(self: *Self) void {
-            self.entries.deinit();
+            self.entries.deinit(self.allocator);
         }
         
         /// Create a new snapshot and return its ID
@@ -65,32 +65,32 @@ pub fn Journal(comptime config: JournalConfig) type {
         
         /// Record a storage change
         pub fn record_storage_change(self: *Self, snapshot_id: SnapshotIdType, address: Address, key: WordType, original_value: WordType) !void {
-            try self.entries.append(Entry.storage_change(snapshot_id, address, key, original_value));
+            try self.entries.append(self.allocator, Entry.storage_change(snapshot_id, address, key, original_value));
         }
         
         /// Record a balance change
         pub fn record_balance_change(self: *Self, snapshot_id: SnapshotIdType, address: Address, original_balance: WordType) !void {
-            try self.entries.append(Entry.balance_change(snapshot_id, address, original_balance));
+            try self.entries.append(self.allocator, Entry.balance_change(snapshot_id, address, original_balance));
         }
         
         /// Record a nonce change
         pub fn record_nonce_change(self: *Self, snapshot_id: SnapshotIdType, address: Address, original_nonce: NonceType) !void {
-            try self.entries.append(Entry.nonce_change(snapshot_id, address, original_nonce));
+            try self.entries.append(self.allocator, Entry.nonce_change(snapshot_id, address, original_nonce));
         }
         
         /// Record a code change
         pub fn record_code_change(self: *Self, snapshot_id: SnapshotIdType, address: Address, original_code_hash: [32]u8) !void {
-            try self.entries.append(Entry.code_change(snapshot_id, address, original_code_hash));
+            try self.entries.append(self.allocator, Entry.code_change(snapshot_id, address, original_code_hash));
         }
         
         /// Record account creation
         pub fn record_account_created(self: *Self, snapshot_id: SnapshotIdType, address: Address) !void {
-            try self.entries.append(Entry.account_created(snapshot_id, address));
+            try self.entries.append(self.allocator, Entry.account_created(snapshot_id, address));
         }
         
         /// Record account destruction
         pub fn record_account_destroyed(self: *Self, snapshot_id: SnapshotIdType, address: Address, beneficiary: Address, balance: WordType) !void {
-            try self.entries.append(Entry.account_destroyed(snapshot_id, address, beneficiary, balance));
+            try self.entries.append(self.allocator, Entry.account_destroyed(snapshot_id, address, beneficiary, balance));
         }
         
         /// Get the number of entries in the journal

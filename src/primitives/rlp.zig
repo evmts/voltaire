@@ -159,41 +159,41 @@ pub fn encode(allocator: Allocator, input: anytype) EncodeError![]u8 {
 
     // Handle lists
     if (info == .array or info == .pointer) {
-        var result = std.ArrayList(u8).init(allocator);
-        defer result.deinit();
+        var result = std.ArrayList(u8){};
+        defer result.deinit(allocator);
 
         // First encode each element
-        var encoded_items = std.ArrayList([]u8).init(allocator);
+        var encoded_items = std.ArrayList([]u8){};
         defer {
             for (encoded_items.items) |item| {
                 allocator.free(item);
             }
-            encoded_items.deinit();
+            encoded_items.deinit(allocator);
         }
 
         var total_len: usize = 0;
         for (input) |item| {
             const encoded_item = try encode(allocator, item);
-            try encoded_items.append(encoded_item);
+            try encoded_items.append(allocator, encoded_item);
             total_len += encoded_item.len;
         }
 
         // Calculate header
         if (total_len < 56) {
-            try result.append(0xc0 + @as(u8, @intCast(total_len)));
+            try result.append(allocator, 0xc0 + @as(u8, @intCast(total_len)));
         } else {
             const len_bytes = try encode_length(allocator, total_len);
             defer allocator.free(len_bytes);
-            try result.append(0xf7 + @as(u8, @intCast(len_bytes.len)));
-            try result.appendSlice(len_bytes);
+            try result.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
+            try result.appendSlice(allocator, len_bytes);
         }
 
         // Append encoded items
         for (encoded_items.items) |item| {
-            try result.appendSlice(item);
+            try result.appendSlice(allocator, item);
         }
 
-        return try result.toOwnedSlice();
+        return try result.toOwnedSlice(allocator);
     }
 
     // Handle comptime integers
@@ -212,12 +212,12 @@ pub fn encode(allocator: Allocator, input: anytype) EncodeError![]u8 {
             return result;
         }
 
-        var bytes = std.ArrayList(u8).init(allocator);
-        defer bytes.deinit();
+        var bytes = std.ArrayList(u8){};
+        defer bytes.deinit(allocator);
 
         var value = input;
         while (value > 0) {
-            try bytes.insert(0, @as(u8, @intCast(value & 0xff)));
+            try bytes.insert(allocator, 0, @as(u8, @intCast(value & 0xff)));
             if (@TypeOf(value) == u8) {
                 value = 0; // For u8, after extracting the byte, we're done
             } else {
@@ -262,16 +262,16 @@ pub fn encode_bytes(allocator: Allocator, bytes: []const u8) ![]u8 {
 
 /// Encodes an integer length as bytes
 pub fn encode_length(allocator: Allocator, length: usize) ![]u8 {
-    var len_bytes = std.ArrayList(u8).init(allocator);
-    defer len_bytes.deinit();
+    var len_bytes = std.ArrayList(u8){};
+    defer len_bytes.deinit(allocator);
 
     var temp = length;
     while (temp > 0) {
-        try len_bytes.insert(0, @as(u8, @intCast(temp & 0xff)));
+        try len_bytes.insert(allocator, 0, @as(u8, @intCast(temp & 0xff)));
         temp >>= 8;
     }
 
-    return try len_bytes.toOwnedSlice();
+    return try len_bytes.toOwnedSlice(allocator);
 }
 
 /// Decodes RLP encoded data.
@@ -395,24 +395,24 @@ fn _decode(allocator: Allocator, input: []const u8) !Decoded {
             };
         }
 
-        var items = std.ArrayList(Data).init(allocator);
+        var items = std.ArrayList(Data){};
         errdefer {
             // Clean up already allocated items on error
             for (items.items) |item| {
                 item.deinit(allocator);
             }
-            items.deinit();
+            items.deinit(allocator);
         }
 
         var remaining = input[1 .. 1 + length];
         while (remaining.len > 0) {
             const decoded = try _decode(allocator, remaining);
-            try items.append(decoded.data);
+            try items.append(allocator, decoded.data);
             remaining = decoded.remainder;
         }
 
         return Decoded{
-            .data = Data{ .List = try items.toOwnedSlice() },
+            .data = Data{ .List = try items.toOwnedSlice(allocator) },
             .remainder = input[1 + length ..],
         };
     }
@@ -444,24 +444,24 @@ fn _decode(allocator: Allocator, input: []const u8) !Decoded {
             return RlpError.InputTooShort;
         }
 
-        var items = std.ArrayList(Data).init(allocator);
+        var items = std.ArrayList(Data){};
         errdefer {
             // Clean up already allocated items on error
             for (items.items) |item| {
                 item.deinit(allocator);
             }
-            items.deinit();
+            items.deinit(allocator);
         }
 
         var remaining = input[1 + length_of_length .. 1 + length_of_length + total_length];
         while (remaining.len > 0) {
             const decoded = try _decode(allocator, remaining);
-            try items.append(decoded.data);
+            try items.append(allocator, decoded.data);
             remaining = decoded.remainder;
         }
 
         return Decoded{
-            .data = Data{ .List = try items.toOwnedSlice() },
+            .data = Data{ .List = try items.toOwnedSlice(allocator) },
             .remainder = input[1 + length_of_length + total_length ..],
         };
     }

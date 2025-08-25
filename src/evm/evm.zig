@@ -193,7 +193,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .hardfork_config = hardfork_config,
                 .planner = planner,
                 .current_snapshot_id = 0,
-                .logs = std.ArrayList(@import("call_result.zig").Log).init(allocator),
+                .logs = std.ArrayList(@import("call_result.zig").Log){},
                 .internal_arena = std.heap.ArenaAllocator.init(allocator),
             };
         }
@@ -205,7 +205,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.self_destruct.deinit();
             self.access_list.deinit();
             self.planner.deinit();
-            self.logs.deinit();
+            self.logs.deinit(self.allocator);
             self.internal_arena.deinit();
         }
 
@@ -1008,7 +1008,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
 
-            self.logs.append(@import("call_result.zig").Log{
+            self.logs.append(self.allocator, @import("call_result.zig").Log{
                 .address = contract_address,
                 .topics = topics_copy,
                 .data = data_copy,
@@ -1038,13 +1038,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Revert state changes to a previous snapshot
         pub fn revert_to_snapshot(self: *Self, snapshot_id: JournalType.SnapshotIdType) void {
             // Get the journal entries that need to be reverted before removing them
-            var entries_to_revert = std.ArrayList(JournalType.EntryType).init(self.allocator);
-            defer entries_to_revert.deinit();
+            var entries_to_revert = std.ArrayList(JournalType.EntryType){};
+            defer entries_to_revert.deinit(self.allocator);
 
             // Collect entries that belong to snapshots newer than or equal to the target snapshot
             for (self.journal.entries.items) |entry| {
                 if (entry.snapshot_id >= snapshot_id) {
-                    entries_to_revert.append(entry) catch {
+                    entries_to_revert.append(self.allocator, entry) catch {
                         // If we can't allocate memory for reverting, we're in a bad state
                         // But we should still remove the journal entries to maintain consistency
                         break;
@@ -1307,8 +1307,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Take all logs and clear the log list
         fn takeLogs(self: *Self) []const @import("call_result.zig").Log {
-            const logs = self.logs.toOwnedSlice() catch &.{};
-            self.logs = std.ArrayList(@import("call_result.zig").Log).init(self.allocator);
+            const logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
+            self.logs = std.ArrayList(@import("call_result.zig").Log){};
             return logs;
         }
     };
@@ -3755,16 +3755,16 @@ test "Debug - Bytecode size affects execution time" {
     defer evm.deinit();
 
     // Create a large contract that does simple operations
-    var large_bytecode = std.ArrayList(u8).init(std.testing.allocator);
-    defer large_bytecode.deinit();
+    var large_bytecode = std.ArrayList(u8){};
+    defer large_bytecode.deinit(std.testing.allocator);
 
     // Add many PUSH1/POP pairs (each costs gas but doesn't loop)
     for (0..1000) |_| {
-        try large_bytecode.append(0x60); // PUSH1
-        try large_bytecode.append(0x42); // value
-        try large_bytecode.append(0x50); // POP
+        try large_bytecode.append(std.testing.allocator, 0x60); // PUSH1
+        try large_bytecode.append(std.testing.allocator, 0x42); // value
+        try large_bytecode.append(std.testing.allocator, 0x50); // POP
     }
-    try large_bytecode.append(0x00); // STOP
+    try large_bytecode.append(std.testing.allocator, 0x00); // STOP
 
     const large_address: Address = [_]u8{0} ** 19 ++ [_]u8{4};
     const code_hash = try memory_db.set_code(large_bytecode.items);
