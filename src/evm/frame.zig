@@ -929,10 +929,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
             
             // Check if we're in static context
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static()) {
+                return Error.WriteProtection;
             }
             const slot = try self.stack.pop();
             const value = try self.stack.pop();
@@ -963,13 +961,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Access the address for warm/cold accounting (EIP-2929)
             // This returns the gas cost but the frame interpreter handles gas consumption
-            if (self.host) |host| {
-                _ = host.access_address(address) catch |err| switch (err) {
-                    else => return Error.AllocationError,
-                };
-            }
+            _ = self.host.access_address(addr) catch |err| switch (err) {
+                else => return Error.AllocationError,
+            };
             
-            const balance = self.host.get_balance(address);
+            const balance = self.host.get_balance(addr);
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
         }
@@ -1398,10 +1394,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length] → []
         pub fn log0(self: *Self) Error!void {
             // Check if we're in static context
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static()) {
+                return Error.WriteProtection;
             }
             const length = try self.stack.pop();
             const offset = try self.stack.pop();
@@ -1436,10 +1430,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Emits a log event with data and one topic.
         /// Stack: [offset, length, topic1] → []
         pub fn log1(self: *Self) Error!void {
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static()) {
+                return Error.WriteProtection;
             }
             const topic1 = try self.stack.pop();
             const length = try self.stack.pop();
@@ -1477,10 +1469,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// LOG2 opcode (0xA2) - Emit log with two topics
         /// Stack: [offset, length, topic1, topic2] → []
         pub fn log2(self: *Self) Error!void {
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static()) {
+                return Error.WriteProtection;
             }
             const topic2 = try self.stack.pop();
             const topic1 = try self.stack.pop();
@@ -1517,10 +1507,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// LOG3 opcode (0xA3) - Emit log with three topics
         /// Stack: [offset, length, topic1, topic2, topic3] → []
         pub fn log3(self: *Self) Error!void {
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static()) {
+                return Error.WriteProtection;
             }
             const topic3 = try self.stack.pop();
             const topic2 = try self.stack.pop();
@@ -1559,10 +1547,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// LOG4 opcode (0xA4) - Emit log with four topics
         /// Stack: [offset, length, topic1, topic2, topic3, topic4] → []
         pub fn log4(self: *Self) Error!void {
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
+            if (self.host.get_is_static()) {
+                return Error.WriteProtection;
             }
             const topic4 = try self.stack.pop();
             const topic3 = try self.stack.pop();
@@ -1645,24 +1631,19 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Check if this is a cold access using the Host's access list (EIP-2929)
             // Cold/warm access costs were introduced in the Berlin hardfork
             const cold_access = blk: {
-                if (self.host) |host| {
-                    // Check if we're at least at Berlin hardfork (EIP-2929)
-                    const is_berlin_or_later = host.vtable.is_hardfork_at_least(host.ptr, .BERLIN);
-                    if (!is_berlin_or_later) {
-                        // Pre-Berlin hardforks don't have cold/warm access distinction
-                        break :blk false;
-                    }
-                    // Access the address and get the gas cost
-                    const access_cost = host.vtable.access_address(host.ptr, target_address) catch {
-                        // On error, assume cold access (conservative approach for gas costs)
-                        break :blk true;
-                    };
-                    // If access cost equals cold access cost, it was a cold access
-                    break :blk access_cost == primitives.GasConstants.ColdAccountAccessCost;
-                } else {
-                    // No host available, assume cold access for safety
-                    break :blk true;
+                // Check if we're at least at Berlin hardfork (EIP-2929)
+                const is_berlin_or_later = self.host.vtable.is_hardfork_at_least(self.host.ptr, .BERLIN);
+                if (!is_berlin_or_later) {
+                    // Pre-Berlin hardforks don't have cold/warm access distinction
+                    break :blk false;
                 }
+                // Access the address and get the gas cost
+                const access_cost = self.host.vtable.access_address(self.host.ptr, target_address) catch {
+                    // On error, assume cold access (conservative approach for gas costs)
+                    break :blk true;
+                };
+                // If access cost equals cold access cost, it was a cold access
+                break :blk access_cost == primitives.GasConstants.ColdAccountAccessCost;
             };
             // Value transfer check
             const value_transfer = value > 0 and !is_static;
