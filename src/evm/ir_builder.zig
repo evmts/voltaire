@@ -60,11 +60,40 @@ pub fn build(allocator: std.mem.Allocator, bytecode: []const u8) BuildError!IR.P
                 out[count] = .{ .op = .stop, .operand = .{ .none = {} } };
                 count += 1;
             },
-            else => {
-                // For MVP, treat unknown as STOP to be safe in initcode path
-                out[count] = .{ .op = .stop, .operand = .{ .none = {} } };
+            // Storage operations
+            @intFromEnum(Opcode.SSTORE) => {
+                out[count] = .{ .op = .sstore, .operand = .{ .none = {} }, .stack_delta = -2 };
                 count += 1;
-                break;
+            },
+            @intFromEnum(Opcode.SLOAD) => {
+                out[count] = .{ .op = .sload, .operand = .{ .none = {} }, .stack_delta = 0 };
+                count += 1;
+            },
+            // Arithmetic operations
+            @intFromEnum(Opcode.ADD) => {
+                out[count] = .{ .op = .add, .operand = .{ .none = {} }, .stack_delta = -1 };
+                count += 1;
+            },
+            @intFromEnum(Opcode.MUL) => {
+                out[count] = .{ .op = .mul, .operand = .{ .none = {} }, .stack_delta = -1 };
+                count += 1;
+            },
+            @intFromEnum(Opcode.SUB) => {
+                out[count] = .{ .op = .sub, .operand = .{ .none = {} }, .stack_delta = -1 };
+                count += 1;
+            },
+            @intFromEnum(Opcode.DIV) => {
+                out[count] = .{ .op = .div, .operand = .{ .none = {} }, .stack_delta = -1 };
+                count += 1;
+            },
+            @intFromEnum(Opcode.LT) => {
+                out[count] = .{ .op = .lt, .operand = .{ .none = {} }, .stack_delta = -1 };
+                count += 1;
+            },
+            else => {
+                // For unsupported ops, use generic handler
+                out[count] = .{ .op = .other, .operand = .{ .u8 = op } };
+                count += 1;
             },
         }
     }
