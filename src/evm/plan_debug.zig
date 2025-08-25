@@ -46,15 +46,15 @@ const RevmTraceEntry = struct {
     pc: u64,
     op: u8,
     gas: u64,
-    stack: []const primitives.u256,
-    stack_after: ?[]const primitives.u256 = null,
+    stack: []const u256,
+    stack_after: ?[]const u256 = null,
     memory: ?[]const u8 = null,
     memory_after: ?[]const u8 = null,
 };
 
 /// Complete frame state for comparison
 pub const FrameState = struct {
-    stack: []primitives.u256,
+    stack: []u256,
     stack_height: usize,
     memory: []u8,
     memory_size: usize,
@@ -248,8 +248,8 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 trace[i] = RevmTraceData{
                     .pc = entry.pc,
                     .opcode = entry.op,
-                    .stack_before = try allocator.dupe(primitives.u256, entry.stack),
-                    .stack_after = try allocator.dupe(primitives.u256, entry.stack_after orelse &.{}),
+                    .stack_before = try allocator.dupe(u256, entry.stack),
+                    .stack_after = try allocator.dupe(u256, entry.stack_after orelse &.{}),
                     .memory_before = try allocator.dupe(u8, entry.memory orelse &.{}),
                     .memory_after = try allocator.dupe(u8, entry.memory_after orelse &.{}),
                     .gas_remaining = entry.gas,
@@ -749,7 +749,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             };
             
             // Allocate stack with error handling
-            state.stack = try self.allocator.dupe(primitives.u256, frame.stack.stack[0..frame.stack.next_stack_index]);
+            state.stack = try self.allocator.dupe(u256, frame.stack.stack[0..frame.stack.next_stack_index]);
             errdefer self.allocator.free(state.stack);
             
             // Allocate memory with error handling
@@ -1204,8 +1204,8 @@ test "DebugPlan REVM trace validation" {
     trace[0] = RevmTraceData{
         .pc = 0,
         .opcode = @intFromEnum(Opcode.PUSH1),
-        .stack_before = try allocator.alloc(primitives.u256, 0),
-        .stack_after = try allocator.alloc(primitives.u256, 1),
+        .stack_before = try allocator.alloc(u256, 0),
+        .stack_after = try allocator.alloc(u256, 1),
         .memory_before = try allocator.alloc(u8, 0),
         .memory_after = try allocator.alloc(u8, 0),
         .gas_remaining = 999997,
@@ -1217,8 +1217,8 @@ test "DebugPlan REVM trace validation" {
     trace[1] = RevmTraceData{
         .pc = 2,
         .opcode = @intFromEnum(Opcode.STOP),
-        .stack_before = try allocator.dupe(primitives.u256, trace[0].stack_after),
-        .stack_after = try allocator.dupe(primitives.u256, trace[0].stack_after),
+        .stack_before = try allocator.dupe(u256, trace[0].stack_after),
+        .stack_after = try allocator.dupe(u256, trace[0].stack_after),
         .memory_before = try allocator.alloc(u8, 0),
         .memory_after = try allocator.alloc(u8, 0),
         .gas_remaining = 999997,

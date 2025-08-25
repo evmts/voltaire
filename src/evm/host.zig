@@ -482,7 +482,7 @@ fn to_address(n: u32) Address {
     return addr;
 }
 
-fn to_u256(addr: Address) primitives.u256 {
+fn to_u256(addr: Address) u256 {
     return primitives.Address.to_u256(addr);
 }
 
