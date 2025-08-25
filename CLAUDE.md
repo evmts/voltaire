@@ -16,6 +16,7 @@ If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) 
 - ❌ Commented code (use Git)
 - ❌ Test failures (fix immediately)
 - ❌ Invalid benchmarks (must measure successful executions only)
+ - ❌ Using `std.debug.print` in modules — always use `log.zig` instead
 
 ## Coding Standards
 
@@ -33,6 +34,7 @@ If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) 
 - Direct imports (`address.Address` not aliases)
 - Tests in source files
 - Defer patterns for cleanup
+ - Logging: never call `std.debug.print`; import `log.zig` and use `log.debug`, `log.warn`, etc.
 
 ### Memory Management
 ```zig
