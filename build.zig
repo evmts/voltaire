@@ -831,6 +831,22 @@ pub fn build(b: *std.Build) void {
     const evm_core_test_step = b.step("test-evm-core", "Run evm.zig tests");
     evm_core_test_step.dependOn(&run_evm_core_test.step);
 
+    // Add call context tracking tests
+    const call_context_test = b.addTest(.{
+        .name = "call-context-test",
+        .root_source_file = b.path("src/evm/test_call_context.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    call_context_test.root_module.addImport("evm", evm_mod);
+    call_context_test.root_module.addImport("primitives", primitives_mod);
+    call_context_test.root_module.addImport("crypto", crypto_mod);
+    call_context_test.root_module.addImport("build_options", build_options_mod);
+    call_context_test.addIncludePath(b.path("src/bn254_wrapper"));
+    const run_call_context_test = b.addRunArtifact(call_context_test);
+    const call_context_test_step = b.step("test-call-context", "Run call context tests");
+    call_context_test_step.dependOn(&run_call_context_test.step);
+
     // Add Frame integration tests
     const frame_integration_test = b.addTest(.{
         .name = "frame-integration-test",
@@ -1824,6 +1840,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_newevm_test.step);
     // Stack validation, jump table, config, differential, staticcall, and interpret2 tests removed
     test_step.dependOn(&run_evm_core_test.step);
+    test_step.dependOn(&run_call_context_test.step);
     test_step.dependOn(&run_frame_integration_test.step);
     test_step.dependOn(&run_frame_opcode_integration_test.step);
     test_step.dependOn(&run_frame_host_test.step);
