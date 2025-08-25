@@ -951,7 +951,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Check if we're in static context
             if (self.host) |host| {
-            if (self.host) |host| {
                 if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
@@ -966,119 +965,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             db.set_transient_storage(address, slot, value) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-        }
-        // LOG operations
-        fn make_log(self: *Self, comptime num_topics: u8, allocator: std.mem.Allocator) Error!void {
-            // Use arena allocator for more efficient log allocation
-            var arena = std.heap.ArenaAllocator.init(allocator);
-            defer arena.deinit();
-            const arena_allocator = arena.allocator();
-            // Check if we're in a static call
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    @branchHint(.unlikely);
-                    return Error.WriteProtection;
-                }
-            }            const offset = try self.stack.pop();
-            const size = try self.stack.pop();
-            // Early bounds checking
-            if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
-                @branchHint(.unlikely);
-                return Error.OutOfBounds;
-            }
-            // Stack-allocated topics array
-            var topics: [4]u256 = undefined;
-            // Pop N topics in reverse order (LIFO stack order)
-            for (0..num_topics) |i| {
-                topics[num_topics - 1 - i] = try self.stack.pop();
-            }
-            const offset_usize = @as(usize, @intCast(offset));
-            const size_usize = @as(usize, @intCast(size));
-            // Handle empty data case
-            if (size_usize == 0) {
-                @branchHint(.unlikely);
-                // Emit empty log without memory operations - using arena allocator
-                const topics_slice = arena_allocator.alloc(u256, num_topics) catch return Error.AllocationError;
-                @memcpy(topics_slice, topics[0..num_topics]);
-                const empty_data = arena_allocator.alloc(u8, 0) catch {
-                    return Error.AllocationError;
-                };
-                // Transfer ownership from arena to frame's ArrayList
-                // Note: Arena memory will be cleaned up by frame.deinit() 
-                const owned_topics = allocator.dupe(u256, topics_slice) catch return Error.AllocationError;
-                const owned_data = allocator.dupe(u8, empty_data) catch {
-                    allocator.free(owned_topics);
-                    return Error.AllocationError;
-                };
-                
-                self.logs.append(Log{
-                    .address = self.contract_address,
-                    .topics = owned_topics,
-                    .data = owned_data,
-                }) catch {
-                    allocator.free(owned_topics);
-                    allocator.free(owned_data);
-                    return Error.AllocationError;
-                };
-                return;
-            }
-            // Note: Base LOG gas (375) and topic gas (375 * N) are handled by jump table as constant_gas
-            // We only need to handle dynamic costs: memory expansion and data bytes
-            // 1. Ensure memory is available for the data
-            const new_size = offset_usize + size_usize;
-            self.memory.ensure_capacity(new_size) catch |err| switch (err) {
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
-            };
-            // 2. Dynamic gas for data
-            const byte_cost = GasConstants.LogDataGas * size_usize;
-            if (byte_cost > std.math.maxInt(GasType)) {
-                @branchHint(.unlikely);
-                return Error.OutOfGas;
-            }
-            if (self.gas_remaining < @as(GasType, @intCast(byte_cost))) {
-                @branchHint(.unlikely);
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(GasType, @intCast(byte_cost));
-            // Get log data
-            const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
-            // Allocate and copy topics
-            const topics_slice = allocator.alloc(u256, num_topics) catch return Error.AllocationError;
-            @memcpy(topics_slice, topics[0..num_topics]);
-            // Allocate and copy data
-            const data_copy = allocator.alloc(u8, size_usize) catch {
-                allocator.free(topics_slice);
-                return Error.AllocationError;
-            };
-            @memcpy(data_copy, data);
-            // Emit log with data
-            self.logs.append(Log{
-                .address = self.contract_address,
-                .topics = topics_slice,
-                .data = data_copy,
-            }) catch {
-                allocator.free(topics_slice);
-                allocator.free(data_copy);
-                return Error.AllocationError;
-            };
-        }
-        pub fn log0(self: *Self, allocator: std.mem.Allocator) Error!void {
-            return self.make_log(0, allocator);
-        }
-        pub fn log1(self: *Self, allocator: std.mem.Allocator) Error!void {
-            return self.make_log(1, allocator);
-        }
-        pub fn log2(self: *Self, allocator: std.mem.Allocator) Error!void {
-            return self.make_log(2, allocator);
-        }
-        pub fn log3(self: *Self, allocator: std.mem.Allocator) Error!void {
-            return self.make_log(3, allocator);
-        }
-        pub fn log4(self: *Self, allocator: std.mem.Allocator) Error!void {
-            return self.make_log(4, allocator);
         }
         // Environment/Context opcodes
         /// ADDRESS opcode (0x30) - Get address of currently executing account
@@ -1098,13 +984,13 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Access the address for warm/cold accounting (EIP-2929)
             // This returns the gas cost but the frame interpreter handles gas consumption
-            if (host) |h| {
+            if (self.host) |host| {
                 _ = h.access_address(address) catch |err| switch (err) {
                     else => return Error.AllocationError,
                 };
             }
             
-            const balance = if (host) |h| h.get_balance(address) else 0;
+            const balance = if (self.host) |host| h.get_balance(address) else 0;
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
         }
@@ -1146,7 +1032,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return;
             }
             const offset_usize = @as(usize, @intCast(offset));
-            const calldata = if (host) |h| h.get_input() else &[_]u8{};
+            const calldata = if (self.host) |host| h.get_input() else &[_]u8{};
             // Load 32 bytes from calldata, zero-padding if needed
             var word: u256 = 0;
             for (0..32) |i| {
@@ -1167,7 +1053,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [size]
         pub fn calldatasize(self: *Self) Error!void {
             const host = self.host;
-            const calldata = if (host) |h| h.get_input() else &[_]u8{};
+            const calldata = if (self.host) |host| h.get_input() else &[_]u8{};
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
             try self.stack.push(calldata_len);
         }
@@ -1196,7 +1082,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
-            const calldata = if (host) |h| h.get_input() else &[_]u8{};
+            const calldata = if (self.host) |host| h.get_input() else &[_]u8{};
             // Copy calldata to memory with bounds checking
             for (0..length_usize) |i| {
                 const src_index = offset_usize + i;
@@ -1249,7 +1135,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [gas_price]
         pub fn gasprice(self: *Self) Error!void {
             const host = self.host;
-            const gas_price = if (host) |h| h.get_gas_price() else 0;
+            const gas_price = if (self.host) |host| h.get_gas_price() else 0;
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
             try self.stack.push(gas_price_truncated);
         }
@@ -1305,7 +1191,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [size]
         pub fn returndatasize(self: *Self) Error!void {
             const host = self.host;
-            const return_data = if (host) |h| h.get_return_data() else &[_]u8{};
+            const return_data = if (self.host) |host| h.get_return_data() else &[_]u8{};
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             try self.stack.push(return_data_len);
         }
@@ -1328,7 +1214,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
             if (length_usize == 0) return;
-            const return_data = if (host) |h| h.get_return_data() else &[_]u8{};
+            const return_data = if (self.host) |host| h.get_return_data() else &[_]u8{};
             // Check if we're reading beyond the return data
             if (offset_usize > return_data.len or
                 (offset_usize + length_usize) > return_data.len)
@@ -1385,7 +1271,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *Self) Error!void {
             const host = self.host;
-            const chain_id = if (host) |h| h.get_chain_id() else 1;
+            const chain_id = if (self.host) |host| h.get_chain_id() else 1;
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
             try self.stack.push(chain_id_word);
         }
@@ -1405,7 +1291,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn blockhash(self: *Self) Error!void {
             const host = self.host;
             const block_number = try self.stack.pop();
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const current_block = block_info.number;
             // Check bounds: not current or future blocks, and within 256 recent blocks
             if (block_number >= current_block or
@@ -1437,7 +1323,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [coinbase_address]
         pub fn coinbase(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
             try self.stack.push(coinbase_word);
@@ -1447,7 +1333,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             try self.stack.push(timestamp_word);
         }
@@ -1456,7 +1342,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [block_number]
         pub fn number(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             try self.stack.push(block_number_word);
         }
@@ -1465,7 +1351,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [difficulty/prevrandao]
         pub fn difficulty(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             try self.stack.push(difficulty_word);
         }
@@ -1480,7 +1366,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             try self.stack.push(gas_limit_word);
         }
@@ -1489,7 +1375,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *Self) Error!void {
             const host = self.host;
-            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
+            const block_info = if (self.host) |host| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             try self.stack.push(base_fee_word);
         }
@@ -1504,7 +1390,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 try self.stack.push(0);
                 return;
             }
-            const blob_hash_opt = if (host) |h| h.get_blob_hash(index) else null;
+            const blob_hash_opt = if (self.host) |host| h.get_blob_hash(index) else null;
             // Push hash or zero if not available
             if (blob_hash_opt) |hash| {
                 // Convert [32]u8 to u256
@@ -1523,7 +1409,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *Self) Error!void {
             const host = self.host;
-            const blob_base_fee = if (host) |h| h.get_blob_base_fee() else 0;
+            const blob_base_fee = if (self.host) |host| h.get_blob_base_fee() else 0;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             try self.stack.push(blob_base_fee_word);
         }
@@ -1534,8 +1420,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn log0(self: *Self) Error!void {
             // Check if we're in static context
             if (self.host) |host| {
-                if (host) |h| {
-                if (h.get_is_static()) {
+                if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1572,8 +1457,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1] → []
         pub fn log1(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host) |h| {
-                if (h.get_is_static()) {
+                if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1614,8 +1498,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1, topic2] → []
         pub fn log2(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host) |h| {
-                if (h.get_is_static()) {
+                if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1655,8 +1538,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1, topic2, topic3] → []
         pub fn log3(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host) |h| {
-                if (h.get_is_static()) {
+                if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1698,8 +1580,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1, topic2, topic3, topic4] → []
         pub fn log4(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host) |h| {
-                if (h.get_is_static()) {
+                if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1844,7 +1725,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const value = try self.stack.pop();
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
-            if (host) |h| {
+            if (self.host) |host| {
                 if (h.get_is_static() and value > 0) {
                     return Error.WriteProtection;
                 }
@@ -2123,7 +2004,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn create(self: *Self) Error!void {
             const host = self.host;
             // Check static context - CREATE is not allowed in static context
-            if (host) |h| {
+            if (self.host) |host| {
                 if (h.get_is_static()) {
                 return Error.WriteProtection;
             }
@@ -2193,7 +2074,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn create2(self: *Self) Error!void {
             const host = self.host;
             // Check static context - CREATE2 is not allowed in static context
-            if (host) |h| {
+            if (self.host) |host| {
                 if (h.get_is_static()) {
                 return Error.WriteProtection;
             }
@@ -2329,7 +2210,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn selfdestruct(self: *Self) Error!void {
             const host = self.host;
             // Check static context - SELFDESTRUCT is not allowed in static context
-            if (host) |h| {
+            if (self.host) |host| {
                 if (h.get_is_static()) {
                 @branchHint(.unlikely);
                 return Error.WriteProtection;
