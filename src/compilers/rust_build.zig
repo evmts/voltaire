@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 
 pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) !*std.Build.Step {
     // Build the Rust static library
@@ -13,11 +14,11 @@ pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, opt
     });
 
     // Add a message to show build progress
-    std.debug.print("Building Rust Foundry wrapper...\n", .{});
+    log.info("Building Rust Foundry wrapper...", .{});
 
     // Generate C bindings using cbindgen
     // Print debug information
-    std.debug.print("Looking for cbindgen...\n", .{});
+    log.info("Looking for cbindgen...", .{});
 
     // Try to use cbindgen directly from PATH first
     const cbindgen_cmd = b.addSystemCommand(&.{
@@ -37,7 +38,7 @@ pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, opt
     // Include both Linux and macOS paths for cargo
     // cbindgen_cmd.setEnvironmentVariable("PATH", "/Users/williamcory/.cargo/bin:/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin");
 
-    std.debug.print("cbindgen command configured\n", .{});
+    log.debug("cbindgen command configured", .{});
 
     cbindgen_cmd.step.dependOn(&cargo_build.step);
 

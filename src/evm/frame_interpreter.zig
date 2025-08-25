@@ -425,7 +425,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const bitwise_ops = .{
                 .{ Opcode.AND, &op_and_handler },
                 .{ Opcode.OR, &op_or_handler },
-                .{ Opcode.XOR, &xor_handler },
+                .{ Opcode.XOR, &op_xor_handler },
                 .{ Opcode.NOT, &op_not_handler },
                 .{ Opcode.BYTE, &op_byte_handler },
                 .{ Opcode.SHL, &op_shl_handler },

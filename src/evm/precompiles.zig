@@ -410,6 +410,19 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
 
     const output = try allocator.alloc(u8, 64);
     
+    // Handle identity shortcuts per EVM spec behavior expectations in tests:
+    // If one operand is the point at infinity (encoded as all zeros), return the other point.
+    if (x2 == 0 and y2 == 0) {
+        u256ToBytes(x1, output[0..32]);
+        u256ToBytes(y1, output[32..64]);
+        return PrecompileOutput{ .output = output, .gas_used = required_gas, .success = true };
+    }
+    if (x1 == 0 and y1 == 0) {
+        u256ToBytes(x2, output[0..32]);
+        u256ToBytes(y2, output[32..64]);
+        return PrecompileOutput{ .output = output, .gas_used = required_gas, .success = true };
+    }
+
     // Use the actual BN254 implementation from crypto module
     const g1_x1 = crypto.bn254.FpMont.init(x1);
     const g1_y1 = crypto.bn254.FpMont.init(y1);
@@ -484,6 +497,12 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
 
     const output = try allocator.alloc(u8, 64);
     
+    // Handle scalar or point identity edge cases explicitly
+    if (scalar == 0 or (x == 0 and y == 0)) {
+        @memset(output, 0);
+        return PrecompileOutput{ .output = output, .gas_used = required_gas, .success = true };
+    }
+
     // Use the actual BN254 implementation from crypto module
     const g1_x = crypto.bn254.FpMont.init(x);
     const g1_y = crypto.bn254.FpMont.init(y);
@@ -760,8 +779,10 @@ fn bytesToU256(bytes: []const u8) u256 {
 }
 
 fn bytesToU32(bytes: []const u8) u32 {
+    // Interpret a big-endian 32-byte field length, retaining only lower 32 bits.
+    // This handles Ethereum’s 32-byte length encoding where only the last byte is often set.
     var result: u32 = 0;
-    for (bytes[0..@min(bytes.len, 4)]) |byte| {
+    for (bytes) |byte| {
         result = (result << 8) | byte;
     }
     return result;

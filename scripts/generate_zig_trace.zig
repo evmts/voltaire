@@ -50,7 +50,8 @@ pub fn main() !void {
     try vm.state.set_balance(caller, caller_balance);
 
     // Deploy contract
-    std.debug.print("=== Deploying ERC20 Contract ===\n", .{});
+    const log = @import("log.zig");
+    log.info("=== Deploying ERC20 Contract ===", .{});
     const create_result = try vm.create_contract(
         caller,
         0,
@@ -59,7 +60,7 @@ pub fn main() !void {
     );
     defer if (create_result.output) |output| allocator.free(output);
 
-    std.debug.print("Deployment result - success: {}, gas_left: {}, gas_used: {}\n", .{
+    log.info("Deployment result - success: {}, gas_left: {}, gas_used: {}", .{
         create_result.success,
         create_result.gas_left,
         1_000_000_000 - create_result.gas_left
@@ -70,5 +71,5 @@ pub fn main() !void {
     defer trace_file.close();
     try trace_file.writeAll(trace_buffer.items);
     
-    std.debug.print("Trace written to zig_trace.json\n", .{});
+    log.info("Trace written to zig_trace.json", .{});
 }

@@ -1565,10 +1565,10 @@ test "Bytecode bitmap operations edge cases - bit boundaries" {
     }
     
     // Test countBitsInRange across boundaries
-    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 0, 8));   // bits 0,2
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 0, 8));   // bits 0,7
     try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 8, 16));  // bits 8,15
-    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 16, 32)); // bits 17,23
-    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 32, 64)); // none
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 16, 32)); // bits 16,31
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 32, 64)); // bits 32,63
     
     // Test across multiple byte boundaries
     try std.testing.expectEqual(@as(usize, 4), BytecodeDefault.countBitsInRange(bitmap, 0, 16)); // bits 0,7,8,15
@@ -1658,7 +1658,10 @@ test "Bytecode complex PUSH patterns with SIMD" {
         // Fill push data
         for (0..push_size) |i| {
             if (pos < code.len) {
-                code[pos] = @intCast((push_size * 16 + i) & 0xFF);
+                var tmp: u8 = push_size;
+                tmp = tmp *% 16;
+                tmp = tmp +% @as(u8, @intCast(i));
+                code[pos] = tmp;
                 pos += 1;
             }
         }
