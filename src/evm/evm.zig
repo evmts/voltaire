@@ -5235,10 +5235,9 @@ test "Call context tracking - get_caller and get_call_value" {
         db_interface,
         .{},
         .{},
-        .LATEST,
         100,
         origin_addr,
-        null,
+        .LATEST,
     );
     defer evm.deinit();
     
