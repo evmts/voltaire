@@ -2254,12 +2254,19 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 return Error.InvalidOpcode; // No host, can't get code
             }
             
-            // Peek at the address to determine gas cost
-            const address_u256 = self.stack.peek() catch return Error.StackUnderflow;
-            const address = primitives.Address.from_u256(address_u256);
+            // Pop all values we need for gas calculation (will push back later)
+            const address_u256 = self.stack.pop() catch return Error.StackUnderflow;
+            const dest_offset = self.stack.pop() catch return Error.StackUnderflow;
+            const offset = self.stack.pop() catch return Error.StackUnderflow;
+            const length = self.stack.pop() catch return Error.StackUnderflow;
             
-            // Peek at the length for memory expansion gas cost
-            const length = self.stack.peek(3) catch return Error.StackUnderflow;
+            // Push them back in reverse order
+            self.stack.push(length) catch return Error.StackOverflow;
+            self.stack.push(offset) catch return Error.StackOverflow;
+            self.stack.push(dest_offset) catch return Error.StackOverflow;
+            self.stack.push(address_u256) catch return Error.StackOverflow;
+            
+            const address = primitives.Address.from_u256(address_u256);
             
             // Access the address and get the gas cost (warm/cold)
             const access_cost = self.host.?.access_address(address) catch |err| switch (err) {
@@ -2268,7 +2275,6 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             // Calculate total gas cost including memory expansion
             const memory_gas = if (length > 0) blk: {
-                const dest_offset = self.stack.peek(1) catch return Error.StackUnderflow;
                 const expansion_cost = self.memory.expansion_cost(@intCast(dest_offset), @intCast(length)) catch return Error.AllocationError;
                 break :blk expansion_cost;
             } else 0;
@@ -2663,7 +2669,7 @@ test "FrameInterpreter basic execution - simple" {
 
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
     const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     std.log.warn("\n=== FrameInterpreter basic execution test ===", .{});
@@ -2686,7 +2692,7 @@ test "FrameInterpreter basic execution" {
 
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
     const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     std.log.warn("\n=== FrameInterpreter basic execution test ===", .{});
@@ -2710,7 +2716,7 @@ test "FrameInterpreter OUT_OF_BOUNDS error" {
     // Bytecode without explicit STOP: PUSH1 5
     // The planner should handle this gracefully but for now add STOP
     const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5 STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Should execute normally
@@ -2724,7 +2730,7 @@ test "FrameInterpreter invalid opcode" {
 
     // Bytecode with invalid opcode: 0xFE (INVALID)
     const bytecode = [_]u8{0xFE};
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Should return InvalidOpcode error
@@ -2738,7 +2744,7 @@ test "FrameInterpreter PUSH values metadata" {
 
     // Test PUSH1 with value stored in metadata
     const bytecode = [_]u8{ 0x60, 0xFF, 0x00 }; // PUSH1 255, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret(); // Handles STOP internally
@@ -2754,7 +2760,7 @@ test "FrameInterpreter complex bytecode sequence" {
     // PUSH1 5, PUSH1 3, ADD, PUSH1 2, MUL, STOP
     // Should compute (5 + 3) * 2 = 16
     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x02, 0x02, 0x00 };
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret(); // Handles STOP internally
@@ -2770,7 +2776,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
     // Test PUSH3 through interpreter
     {
         const bytecode = [_]u8{ 0x62, 0x12, 0x34, 0x56, 0x00 }; // PUSH3 0x123456 STOP
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
         defer interpreter.deinit(allocator);
 
         std.log.warn("\n=== PUSH3 Test Starting ===", .{});
@@ -2788,7 +2794,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         }
         bytecode[11] = 0x00; // STOP
 
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
         defer interpreter.deinit(allocator);
 
         try interpreter.interpret(); // Handles STOP internally
@@ -2809,7 +2815,7 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         }
         bytecode[21] = 0x00; // STOP
 
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
         defer interpreter.deinit(allocator);
 
         try interpreter.interpret(); // Handles STOP internally
@@ -2998,7 +3004,7 @@ test "FrameInterpreter arithmetic edge cases - large ADDMOD and MULMOD" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3048,7 +3054,7 @@ test "FrameInterpreter comparison operations - LT and GT boundary values" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter3.frame.stack.peek_unsafe());
@@ -3081,7 +3087,7 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
@@ -3162,7 +3168,7 @@ test "FrameInterpreter comparison operations - EQ and ISZERO" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
@@ -3228,7 +3234,7 @@ test "FrameInterpreter bitwise operations - NOT operation" {
     bytecode[33] = 0x19; // NOT
     bytecode[34] = 0x00; // STOP
 
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
@@ -3307,7 +3313,7 @@ test "FrameInterpreter bitwise operations - shift operations SHL, SHR, SAR" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter4.deinit(allocator);
     try interpreter4.interpret();
 
@@ -3656,7 +3662,7 @@ test "FrameInterpreter plan execution - instruction stream validation" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Verify plan was created with correct instruction count
@@ -3687,7 +3693,7 @@ test "FrameInterpreter plan execution - PC to instruction mapping" {
         0x00, // PC 11: STOP (1 byte)
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Verify PC mapping exists
@@ -3722,7 +3728,7 @@ test "FrameInterpreter JUMP execution - valid destinations" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3786,7 +3792,7 @@ test "FrameInterpreter JUMP execution - invalid destinations" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Should return InvalidJumpDestination error
@@ -3857,7 +3863,7 @@ test "FrameInterpreter handler state consistency" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3884,7 +3890,7 @@ test "FrameInterpreter complex execution - nested operations" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3922,7 +3928,7 @@ test "FrameInterpreter complex execution - loop simulation" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3942,7 +3948,7 @@ test "FrameInterpreter error recovery - stack underflow during execution" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try std.testing.expectError(error.StackUnderflow, interpreter.interpret());
@@ -3965,7 +3971,7 @@ test "FrameInterpreter error recovery - invalid opcode handling" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
@@ -3986,7 +3992,7 @@ test "FrameInterpreter instruction index tracking" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Initial instruction index should be 0
@@ -4012,7 +4018,7 @@ test "FrameInterpreter stack overflow during execution" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try std.testing.expectError(error.StackOverflow, interpreter.interpret());
@@ -4035,7 +4041,7 @@ test "FrameInterpreter memory operations integration" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4053,7 +4059,7 @@ test "FrameInterpreter pretty print functionality" {
 
     const bytecode = [_]u8{ 0x60, 0x2A, 0x00 }; // PUSH1 42, STOP
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Test pretty print before execution (should not crash)
@@ -4074,7 +4080,7 @@ test "FrameInterpreter multiple execution attempts" {
 
     const bytecode = [_]u8{ 0x60, 0x2A, 0x00 }; // PUSH1 42, STOP
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // First execution
@@ -4097,7 +4103,7 @@ test "FrameInterpreter zero-length bytecode" {
 
     const bytecode = [_]u8{}; // Empty bytecode
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Empty bytecode should either execute without error or return a specific error
@@ -4122,7 +4128,7 @@ test "FrameInterpreter host interface - ADDRESS opcode" {
     const FrameInterpreterType = FrameInterpreter(.{});
 
     const bytecode = [_]u8{ 0x30, 0x00 }; // ADDRESS, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Set a mock contract address for ADDRESS to return
@@ -4149,7 +4155,7 @@ test "FrameInterpreter host interface - multiple host calls" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Set test addresses
@@ -4406,7 +4412,7 @@ test "FrameInterpreter plan metadata - mixed PUSH sizes validation" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Verify plan was created with correct instruction count and metadata
@@ -4441,7 +4447,7 @@ test "FrameInterpreter plan metadata - instruction stream consistency" {
         0x00, // PC 9: STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     // Verify instruction stream length matches expected operations
@@ -4482,7 +4488,7 @@ test "FrameInterpreter handler error propagation - tail call chain" {
         0x00, // STOP (should never be reached)
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret(); // DIV by 0 returns 0 in EVM, doesn't error
@@ -4503,7 +4509,7 @@ test "FrameInterpreter handler error propagation - stack underflow chain" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try std.testing.expectError(error.StackUnderflow, interpreter.interpret());
@@ -4554,7 +4560,7 @@ test "FrameInterpreter multi-config - small stack size" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4575,7 +4581,7 @@ test "FrameInterpreter multi-config - stack overflow with small size" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try std.testing.expectError(error.StackOverflow, interpreter.interpret());
@@ -4769,7 +4775,7 @@ test "FrameInterpreter instruction transitions - arithmetic to memory" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4802,7 +4808,7 @@ test "FrameInterpreter instruction transitions - control flow integration" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4831,7 +4837,7 @@ test "FrameInterpreter instruction transitions - stack manipulation chains" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4839,4 +4845,182 @@ test "FrameInterpreter instruction transitions - stack manipulation chains" {
     // Should have 10 * 50 = 500
     try std.testing.expectEqual(@as(u256, 500), interpreter.frame.stack.peek_unsafe());
     try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
+}
+
+
+// BYTECODE EDGE CASE TESTS
+
+test "FrameInterpreter bytecode edge cases - empty bytecode" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Empty bytecode should execute as implicit STOP
+    const empty_bytecode = [_]u8{};
+    var interpreter = try FrameInterpreterType.init(allocator, &empty_bytecode, 1000, {}, null, false);
+    defer interpreter.deinit(allocator);
+    
+    // Should immediately stop
+    try std.testing.expectError(error.STOP, interpreter.interpret());
+    try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
+}
+
+test "FrameInterpreter bytecode edge cases - single invalid opcode" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Test various invalid opcodes
+    const invalid_opcodes = [_]u8{ 0x0C, 0x0E, 0x1E, 0x21, 0x49, 0xA5, 0xFE };
+    
+    for (invalid_opcodes) |invalid_opcode| {
+        const bytecode = [_]u8{invalid_opcode};
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000, {}, null, false);
+        defer interpreter.deinit(allocator);
+        
+        try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
+    }
+}
+
+test "FrameInterpreter bytecode edge cases - truncated PUSH at end" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // PUSH1 with no data bytes following
+    const truncated_push1 = [_]u8{0x60}; // PUSH1
+    var interpreter1 = try FrameInterpreterType.init(allocator, &truncated_push1, 1000, {}, null, false);
+    defer interpreter1.deinit(allocator);
+    
+    // Should handle truncated PUSH gracefully
+    try interpreter1.interpret();
+    // PUSH with insufficient data pushes zero-padded value
+    try std.testing.expectEqual(@as(u256, 0), interpreter1.frame.stack.peek_unsafe());
+    
+    // PUSH32 with only 2 data bytes
+    const truncated_push32 = [_]u8{0x7F, 0xAB, 0xCD}; // PUSH32 + 2 bytes
+    var interpreter2 = try FrameInterpreterType.init(allocator, &truncated_push32, 1000, {}, null, false);
+    defer interpreter2.deinit(allocator);
+    
+    try interpreter2.interpret();
+    // Should push 0xABCD000000...
+    const expected = @as(u256, 0xABCD) << (30 * 8);
+    try std.testing.expectEqual(expected, interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bytecode edge cases - maximum valid bytecode size" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Create bytecode exactly at the 24KB limit
+    var max_bytecode = try allocator.alloc(u8, 24576);
+    defer allocator.free(max_bytecode);
+    
+    // Fill with JUMPDEST opcodes (benign, single-byte opcode)
+    @memset(max_bytecode, 0x5B); // JUMPDEST
+    max_bytecode[max_bytecode.len - 1] = 0x00; // STOP at end
+    
+    var interpreter = try FrameInterpreterType.init(allocator, max_bytecode, 100000, {}, null, false);
+    defer interpreter.deinit(allocator);
+    
+    // Should execute without issues (though will run many JUMPDESTs)
+    try std.testing.expectError(error.STOP, interpreter.interpret());
+}
+
+test "FrameInterpreter bytecode edge cases - all opcodes stress test" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Create bytecode with one of each valid opcode (where safe)
+    var bytecode = std.ArrayList(u8).init(allocator);
+    defer bytecode.deinit();
+    
+    // Add some values to work with
+    try bytecode.appendSlice(&[_]u8{ 0x60, 0x01 }); // PUSH1 1
+    try bytecode.appendSlice(&[_]u8{ 0x60, 0x02 }); // PUSH1 2
+    
+    // Safe single-byte opcodes that won't cause issues
+    const safe_opcodes = [_]u8{
+        0x01, // ADD
+        0x80, // DUP1
+        0x50, // POP
+        0x5B, // JUMPDEST
+    };
+    
+    for (safe_opcodes) |opcode| {
+        try bytecode.append(opcode);
+    }
+    
+    try bytecode.append(0x00); // STOP
+    
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10000, {}, null, false);
+    defer interpreter.deinit(allocator);
+    
+    try std.testing.expectError(error.STOP, interpreter.interpret());
+}
+
+test "FrameInterpreter bytecode edge cases - interleaved PUSH and computation" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Complex bytecode with interleaved PUSH and computation
+    const bytecode = [_]u8{
+        0x7F, // PUSH32
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Max u256 value
+        0x60, 0x01, // PUSH1 1
+        0x03, // SUB (max - 1)
+        0x60, 0x02, // PUSH1 2
+        0x01, // ADD (max - 1 + 2 = max + 1 with overflow = 0)
+        0x00, // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, null, false);
+    defer interpreter.deinit(allocator);
+    
+    try std.testing.expectError(error.STOP, interpreter.interpret());
+    
+    // Should have wrapped around to 0
+    try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bytecode edge cases - alternating valid/invalid opcodes" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Bytecode with valid opcode followed by invalid
+    const bytecode = [_]u8{
+        0x60, 0x01, // PUSH1 1 (valid)
+        0x0C,       // Invalid opcode
+        0x60, 0x02, // PUSH1 2 (never reached)
+        0x00,       // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, null, false);
+    defer interpreter.deinit(allocator);
+    
+    // Should fail on invalid opcode
+    try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
+    
+    // Stack should have the first push
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
+    try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter bytecode edge cases - bytecode ending mid-instruction" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+    
+    // Bytecode that ends in the middle of a multi-byte instruction
+    const bytecode = [_]u8{
+        0x60, 0x42, // PUSH1 0x42
+        0x61,       // PUSH2 (but no data follows)
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, null, false);
+    defer interpreter.deinit(allocator);
+    
+    try interpreter.interpret();
+    
+    // Should have 0x42 and then 0 (from truncated PUSH2)
+    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.size());
 }

@@ -773,7 +773,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 gas_i32,
                 self.database,
                 host,
-                is_static,
             );
             defer interpreter.deinit(self.allocator);
             
@@ -833,32 +832,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
             }
 
-            const estimated_output_size: usize = switch (precompile_id) {
-                1 => 32, // ECRECOVER - returns 32-byte address (padded)
-                2 => 32, // SHA256 - returns 32-byte hash
-                3 => 32, // RIPEMD160 - returns 32-byte hash (padded)
-                4 => input.len, // IDENTITY - returns input data
-                5 => blk: {
-                    // MODEXP - estimate based on modulus length from input
-                    if (input.len < 96) break :blk 0;
-                    const mod_len_bytes = input[64..96];
-                    var mod_len: usize = 0;
-                    for (mod_len_bytes) |byte| {
-                        mod_len = (mod_len << 8) | byte;
-                    }
-                    break :blk @min(mod_len, 4096); // Cap at 4KB for safety
-                },
-                6 => 64, // ECADD - returns 64 bytes (2 field elements)
-                7 => 64, // ECMUL - returns 64 bytes (2 field elements)
-                8 => 32, // ECPAIRING - returns 32 bytes (boolean result padded)
-                9 => 64, // BLAKE2F - returns 64-byte hash
-                10 => 64, // KZG_POINT_EVALUATION - returns verification result
-                else => 0,
-            };
-
             // Execute precompile using arena allocator
-            const arena = self.internal_arena.allocator();
-            const result = precompiles.execute_precompile(arena, address, input, gas) catch {
+            const result = precompiles.execute_precompile(self.internal_arena.allocator(), address, input, gas) catch {
                 return CallResult{
                     .success = false,
                     .gas_left = 0,
@@ -1129,17 +1104,17 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get blob hash for the given index (EIP-4844)
         pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
-            // For now, return null - would need to implement blob support
-            _ = self;
-            _ = index;
-            return null;
+            // Convert index to usize, return null if out of bounds
+            if (index >= self.context.blob_versioned_hashes.len) {
+                return null;
+            }
+            const idx = @as(usize, @intCast(index));
+            return self.context.blob_versioned_hashes[idx];
         }
 
         /// Get blob base fee (EIP-4844)
         pub fn get_blob_base_fee(self: *Self) u256 {
-            // For now, return 0 - would need to implement blob support
-            _ = self;
-            return 0;
+            return self.context.blob_base_fee;
         }
 
         /// Convert to Host interface
