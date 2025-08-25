@@ -87,14 +87,33 @@ pub fn Memory(comptime config: MemoryConfig) type {
             return total - self.checkpoint;
         }
         
-        pub fn ensure_capacity(self: *Self, new_size: usize) !void {
+        pub inline fn ensure_capacity(self: *Self, new_size: usize) !void {
             const required_total = self.checkpoint + new_size;
             if (required_total > MEMORY_LIMIT) return MemoryError.MemoryOverflow;
-            if (required_total > self.buffer_ptr.items.len) {
-                const old_len = self.buffer_ptr.items.len;
-                try self.buffer_ptr.resize(required_total);
-                @memset(self.buffer_ptr.items[old_len..], 0);
+            
+            const current_len = self.buffer_ptr.items.len;
+            if (required_total <= current_len) return;
+            
+            // Fast path for small growth (32 bytes or less - common for single word operations)
+            const growth = required_total - current_len;
+            if (growth <= 32) {
+                // For small growth, try to use existing capacity first
+                if (required_total <= self.buffer_ptr.capacity) {
+                    // We have capacity, just extend length and zero
+                    const old_len = current_len;
+                    self.buffer_ptr.items.len = required_total;
+                    @memset(self.buffer_ptr.items[old_len..required_total], 0);
+                    return;
+                }
             }
+            
+            // Standard path for larger growth
+            const old_len = current_len;
+            // Use ensureTotalCapacity + manual growth to control zeroing
+            try self.buffer_ptr.ensureTotalCapacity(required_total);
+            self.buffer_ptr.items.len = required_total;
+            // Zero only the new portion
+            @memset(self.buffer_ptr.items[old_len..required_total], 0);
         }
         
         // EVM-compliant memory operations that expand to word boundaries
@@ -453,4 +472,102 @@ test "Memory sequential child memories" {
     try std.testing.expectEqual(@as(usize, 9), parent.size());
     const parent_view = try parent.get_slice(0, 3);
     try std.testing.expectEqualSlices(u8, &parent_data, parent_view);
+}
+
+test "Memory fast-path optimization for small growth" {
+    const allocator = std.testing.allocator;
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
+    defer memory.deinit();
+    
+    // Pre-allocate some capacity
+    try memory.buffer_ptr.ensureTotalCapacity(128);
+    const initial_capacity = memory.buffer_ptr.capacity;
+    try std.testing.expect(initial_capacity >= 128);
+    
+    // Small growth (32 bytes) should use existing capacity without reallocation
+    try memory.ensure_capacity(32);
+    try std.testing.expectEqual(@as(usize, 32), memory.buffer_ptr.items.len);
+    try std.testing.expectEqual(initial_capacity, memory.buffer_ptr.capacity);
+    
+    // Another small growth should still use existing capacity
+    try memory.ensure_capacity(64);
+    try std.testing.expectEqual(@as(usize, 64), memory.buffer_ptr.items.len);
+    try std.testing.expectEqual(initial_capacity, memory.buffer_ptr.capacity);
+    
+    // Verify zero initialization
+    const slice = try memory.get_slice(0, 64);
+    for (slice) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "Memory growth beyond fast-path threshold" {
+    const allocator = std.testing.allocator;
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
+    defer memory.deinit();
+    
+    // Start with small size
+    try memory.ensure_capacity(16);
+    try std.testing.expectEqual(@as(usize, 16), memory.buffer_ptr.items.len);
+    
+    // Growth larger than 32 bytes should use standard path
+    try memory.ensure_capacity(100);
+    try std.testing.expectEqual(@as(usize, 100), memory.buffer_ptr.items.len);
+    
+    // Verify zero initialization
+    const slice = try memory.get_slice(0, 100);
+    for (slice) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "Memory fast-path with insufficient capacity" {
+    const allocator = std.testing.allocator;
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
+    defer memory.deinit();
+    
+    // Force small initial capacity
+    memory.buffer_ptr.shrinkAndFree(0);
+    try std.testing.expectEqual(@as(usize, 0), memory.buffer_ptr.capacity);
+    
+    // Small growth should still work but will need allocation
+    try memory.ensure_capacity(20);
+    try std.testing.expectEqual(@as(usize, 20), memory.buffer_ptr.items.len);
+    try std.testing.expect(memory.buffer_ptr.capacity >= 20);
+    
+    // Verify zero initialization
+    const slice = try memory.get_slice(0, 20);
+    for (slice) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "Memory fast-path edge case at 32 bytes" {
+    const allocator = std.testing.allocator;
+    const Mem = Memory(.{});
+    var memory = try Mem.init(allocator);
+    defer memory.deinit();
+    
+    // Pre-allocate exact capacity for test
+    try memory.buffer_ptr.ensureTotalCapacity(64);
+    const initial_capacity = memory.buffer_ptr.capacity;
+    
+    // Growth of exactly 32 bytes should use fast path
+    try memory.ensure_capacity(32);
+    try std.testing.expectEqual(@as(usize, 32), memory.buffer_ptr.items.len);
+    try std.testing.expectEqual(initial_capacity, memory.buffer_ptr.capacity);
+    
+    // Growth of 33 bytes from empty should use standard path
+    memory.clear();
+    try memory.ensure_capacity(33);
+    try std.testing.expectEqual(@as(usize, 33), memory.buffer_ptr.items.len);
+    
+    // Verify zero initialization
+    const slice = try memory.get_slice(0, 33);
+    for (slice) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
 }
