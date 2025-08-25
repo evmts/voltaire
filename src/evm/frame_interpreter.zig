@@ -274,6 +274,16 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Start execution with the first handler
             const first_handler = self.plan.instructionStream[0].handler;
 
+            log.debug("Starting execution with first handler at address: 0x{x}", .{@intFromPtr(first_handler)});
+            log.debug("Instruction stream length: {}", .{self.plan.instructionStream.len});
+            
+            // Check if handler address looks invalid (close to null)
+            const handler_addr = @intFromPtr(first_handler);
+            if (handler_addr < 0x1000) {
+                std.debug.print("ERROR: first_handler has suspicious low address: 0x{x}\n", .{handler_addr});
+                @panic("suspicious first handler address");
+            }
+
             // Start execution - handlers will throw STOP when done
             first_handler(&self.frame, self.plan) catch |err| {
                 if (err == Error.STOP) return; // Normal termination
@@ -338,6 +348,15 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
         // Helper function to dispatch to next handler with WASM compatibility
         inline fn dispatchNext(next_handler: *const HandlerFn, frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            // Debug logging to catch null handler issues
+            const handler_addr = @intFromPtr(next_handler);
+            log.debug("Dispatching to handler at address: 0x{x}", .{handler_addr});
+            
+            if (handler_addr < 0x1000) {
+                std.debug.print("ERROR: next_handler has suspicious low address: 0x{x}\n", .{handler_addr});
+                @panic("suspicious handler address");
+            }
+            
             // Use a regular call for stability; compilers may still optimize into a tail call.
             return next_handler(frame, plan);
         }
@@ -379,6 +398,16 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     }
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
+                    
+                    log.debug("PUSH{} handler: instruction_idx={}, getting next handler", .{ n, interpreter.instruction_idx });
+                    const handler_addr = @intFromPtr(next_handler);
+                    if (handler_addr < 0x1000) {
+                        std.debug.print("ERROR: next_handler has suspicious low address: 0x{x}\n", .{handler_addr});
+                        std.debug.print("Current instruction_idx: {}\n", .{interpreter.instruction_idx});
+                        std.debug.print("Opcode: {}\n", .{opcode});
+                        @panic("suspicious next_handler from getNextInstruction");
+                    }
+                    
                     return dispatchNext(next_handler, self, plan_ptr);
                 }
             }.handler;
