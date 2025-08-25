@@ -75,6 +75,12 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         pub const CallParams = @import("call_params.zig").CallParams;
         
+        /// Call stack entry to track caller and value for DELEGATECALL
+        const CallStackEntry = struct {
+            caller: Address,
+            value: u256,
+        };
+        
         pub const Error = error{
             InvalidJump,
             OutOfGas,
@@ -138,6 +144,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         logs: std.ArrayList(@import("call_result.zig").Log),
         /// Static context stack - tracks if each call depth is static
         static_stack: [config.max_call_depth]bool,
+        /// Call stack - tracks caller and value for each call depth
+        call_stack: [config.max_call_depth]CallStackEntry,
         /// Arena allocator for per-call temporary allocations
         internal_arena: std.heap.ArenaAllocator,
         /// Result of a call execution (re-export)
@@ -165,6 +173,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             return Self{
                 .depth = 0,
                 .static_stack = [_]bool{false} ** config.max_call_depth,
+                .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = [_]u8{0} ** 20, .value = 0 }} ** config.max_call_depth,
                 .allocator = allocator,
                 .database = database,
                 .journal = JournalType.init(allocator),
@@ -589,7 +598,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Store the deployed code
             if (result.output.len > 0) {
                 // Store the bytecode in the database
-                self.database.set_code(result.output) catch |err| {
+                _ = self.database.set_code(result.output) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
                 
@@ -761,12 +770,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             _ = snapshot_id;
             _ = input;
             _ = address;
-            _ = caller;
-            _ = value;
             
             // Increment depth and track static context
             self.depth += 1;
             defer self.depth -= 1;
+            
+            // Store caller and value in call stack for this depth
+            self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value };
             
             // Track static context for this frame
             self.static_stack[self.depth - 1] = is_static;
@@ -1106,10 +1116,33 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get block hash by number
         pub fn get_block_hash(self: *Self, block_number: u64) ?[32]u8 {
-            // For now, return null - would need to implement block hash storage
-            _ = self;
-            _ = block_number;
-            return null;
+            const current_block = self.block_info.number;
+            
+            // EVM BLOCKHASH rules:
+            // - Return 0 for current block and future blocks
+            // - Return 0 for blocks older than 256 blocks
+            // - Return 0 for block 0 (genesis)
+            if (block_number >= current_block or
+                current_block > block_number + 256 or
+                block_number == 0)
+            {
+                return null;
+            }
+            
+            // For testing/simulation purposes, generate a deterministic hash
+            // In a real implementation, this would look up the actual block hash
+            // from the blockchain state or a block hash ring buffer
+            var hash: [32]u8 = undefined;
+            hash[0..8].* = std.mem.toBytes(block_number);
+            hash[8..16].* = std.mem.toBytes(current_block);
+            
+            // Fill rest with deterministic pattern based on block number
+            var i: usize = 16;
+            while (i < 32) : (i += 1) {
+                hash[i] = @as(u8, @truncate(block_number +% i));
+            }
+            
+            return hash;
         }
 
         /// Get blob hash for the given index (EIP-4844)
@@ -2822,7 +2855,7 @@ test "Precompiles - invalid precompile addresses" {
 // ============================================================================
 
 test "Debug - Gas limit affects execution" {
-    std.std.testing.log_level = .warn;
+    std.testing.log_level = .warn;
     
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
@@ -2918,7 +2951,7 @@ test "Debug - Gas limit affects execution" {
 }
 
 test "Debug - Contract deployment and execution" {
-    std.std.testing.log_level = .warn;
+    std.testing.log_level = .warn;
     
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
@@ -3029,7 +3062,7 @@ test "Debug - Contract deployment and execution" {
 }
 
 test "Debug - Bytecode size affects execution time" {
-    std.std.testing.log_level = .warn;
+    std.testing.log_level = .warn;
     
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
@@ -4231,7 +4264,7 @@ test "EVM benchmark scenario - reproduces segfault" {
 // ============================================================================
 
 test "CREATE interaction - deployed contract can be called" {
-    const allocator = std.std.testing.allocator;
+    const allocator = std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4301,8 +4334,8 @@ test "CREATE interaction - deployed contract can be called" {
     });
     defer if (create_result.output.len > 0) allocator.free(create_result.output);
     
-    try std.std.testing.expect(create_result.success);
-    try std.std.testing.expectEqual(@as(usize, 20), create_result.output.len);
+    try std.testing.expect(create_result.success);
+    try std.testing.expectEqual(@as(usize, 20), create_result.output.len);
     
     // Get deployed contract address
     var contract_address: Address = undefined;
@@ -4320,19 +4353,19 @@ test "CREATE interaction - deployed contract can be called" {
     });
     defer if (call_result.output.len > 0) allocator.free(call_result.output);
     
-    try std.std.testing.expect(call_result.success);
-    try std.std.testing.expectEqual(@as(usize, 32), call_result.output.len);
+    try std.testing.expect(call_result.success);
+    try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
     
     // Verify returned value is 42
     var returned_value: u256 = 0;
     for (call_result.output) |byte| {
         returned_value = (returned_value << 8) | byte;
     }
-    try std.std.testing.expectEqual(@as(u256, 42), returned_value);
+    try std.testing.expectEqual(@as(u256, 42), returned_value);
 }
 
 test "CREATE interaction - factory creates and initializes child contracts" {
-    const allocator = std.std.testing.allocator;
+    const allocator = std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4459,7 +4492,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     });
     defer if (factory_result.output.len > 0) allocator.free(factory_result.output);
     
-    try std.std.testing.expect(factory_result.success);
+    try std.testing.expect(factory_result.success);
     
     // Extract child contract address from output
     var child_address: Address = undefined;
@@ -4477,18 +4510,18 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     });
     defer if (verify_result.output.len > 0) allocator.free(verify_result.output);
     
-    try std.std.testing.expect(verify_result.success);
+    try std.testing.expect(verify_result.success);
     
     // Verify returned value is 123
     var returned_value: u256 = 0;
     for (verify_result.output) |byte| {
         returned_value = (returned_value << 8) | byte;
     }
-    try std.std.testing.expectEqual(@as(u256, 123), returned_value);
+    try std.testing.expectEqual(@as(u256, 123), returned_value);
 }
 
 test "CREATE interaction - contract creates contract that creates contract" {
-    const allocator = std.std.testing.allocator;
+    const allocator = std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4633,7 +4666,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     });
     defer if (result1.output.len > 0) allocator.free(result1.output);
     
-    try std.std.testing.expect(result1.success);
+    try std.testing.expect(result1.success);
     
     // Get level 2 address from storage
     const level2_addr_u256 = evm_instance.get_storage([_]u8{0x01} ** 20, 0);
@@ -4653,7 +4686,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     });
     defer if (result2.output.len > 0) allocator.free(result2.output);
     
-    try std.std.testing.expect(result2.success);
+    try std.testing.expect(result2.success);
     
     // Get level 3 address
     var level3_addr: Address = undefined;
@@ -4671,17 +4704,17 @@ test "CREATE interaction - contract creates contract that creates contract" {
     });
     defer if (result3.output.len > 0) allocator.free(result3.output);
     
-    try std.std.testing.expect(result3.success);
+    try std.testing.expect(result3.success);
     
     var returned_value: u256 = 0;
     for (result3.output) |byte| {
         returned_value = (returned_value << 8) | byte;
     }
-    try std.std.testing.expectEqual(@as(u256, 99), returned_value);
+    try std.testing.expectEqual(@as(u256, 99), returned_value);
 }
 
 test "CREATE interaction - created contract modifies parent storage" {
-    const allocator = std.std.testing.allocator;
+    const allocator = std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4806,7 +4839,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     });
     defer if (deploy_result.output.len > 0) allocator.free(deploy_result.output);
     
-    try std.std.testing.expect(deploy_result.success);
+    try std.testing.expect(deploy_result.success);
     
     // Get parent address (deterministic based on sender nonce)
     const parent_addr = [_]u8{0x01} ** 20; // Simplified for test
@@ -4819,7 +4852,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     
     // Verify parent's value storage is initially 0
     const initial_value = evm_instance.get_storage(parent_addr, 0);
-    try std.std.testing.expectEqual(@as(u256, 0), initial_value);
+    try std.testing.expectEqual(@as(u256, 0), initial_value);
     
     // Call child contract, which should call back to parent
     const call_result = try evm_instance.call(.{
@@ -4833,11 +4866,11 @@ test "CREATE interaction - created contract modifies parent storage" {
     });
     defer if (call_result.output.len > 0) allocator.free(call_result.output);
     
-    try std.std.testing.expect(call_result.success);
+    try std.testing.expect(call_result.success);
     
     // Verify parent's storage was modified by child
     const final_value = evm_instance.get_storage(parent_addr, 0);
-    try std.std.testing.expectEqual(@as(u256, 42), final_value);
+    try std.testing.expectEqual(@as(u256, 42), final_value);
 }
 
 test "Arena allocator - resets between calls" {
@@ -4868,10 +4901,12 @@ test "Arena allocator - resets between calls" {
     // PUSH1 0x20 PUSH1 0x00 LOG0 STOP
     const bytecode = [_]u8{ 0x60, 0x20, 0x60, 0x00, 0xA0, 0x00 };
     const contract_addr = [_]u8{0x01} ** 20;
+    const code_hash = try memory_db.set_code(&bytecode);
     try db_interface.set_account(contract_addr, .{
         .balance = 0,
         .nonce = 0,
-        .code = &bytecode,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
     });
 
     // Track arena bytes allocated before first call
@@ -4954,10 +4989,12 @@ test "Arena allocator - handles multiple logs efficiently" {
     bytecode[500] = 0x00; // STOP
 
     const contract_addr = [_]u8{0x02} ** 20;
+    const code_hash = try memory_db.set_code(&bytecode);
     try db_interface.set_account(contract_addr, .{
         .balance = 0,
         .nonce = 0,
-        .code = &bytecode,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
     });
 
     // Execute contract
@@ -5125,18 +5162,22 @@ test "Arena allocator - memory efficiency with nested calls" {
     idx += 1;
 
     const parent_addr = [_]u8{0x04} ** 20;
+    const parent_code_hash = try memory_db.set_code(parent_bytecode[0..idx]);
     try db_interface.set_account(parent_addr, .{
         .balance = 0,
         .nonce = 0,
-        .code = parent_bytecode[0..idx],
+        .code_hash = parent_code_hash,
+        .storage_root = [_]u8{0} ** 32,
     });
 
     // Child contract that also emits log
     const child_bytecode = [_]u8{ 0x60, 0x10, 0x60, 0x00, 0xA0, 0x00 }; // PUSH1 0x10 PUSH1 0x00 LOG0 STOP
+    const child_code_hash = try memory_db.set_code(&child_bytecode);
     try db_interface.set_account(child_addr, .{
         .balance = 0,
         .nonce = 0,
-        .code = &child_bytecode,
+        .code_hash = child_code_hash,
+        .storage_root = [_]u8{0} ** 32,
     });
 
     // Track arena capacity before call
@@ -5186,8 +5227,8 @@ test "Call context tracking - get_caller and get_call_value" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
-    const origin_addr = Address.fromHex("0x1111111111111111111111111111111111111111") catch unreachable;
-    const contract_a = Address.fromHex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const origin_addr = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const contract_a = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
     
     var evm = try DefaultEvm.init(
         std.testing.allocator,
@@ -5228,7 +5269,7 @@ test "Call context tracking - get_caller and get_call_value" {
 }
 
 test "CREATE stores deployed code bytes" {
-    const allocator = std.std.testing.allocator;
+    const allocator = std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -5388,7 +5429,7 @@ test "CREATE stores deployed code bytes" {
 }
 
 test "CREATE2 stores deployed code bytes" {
-    const allocator = std.std.testing.allocator;
+    const allocator = std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
