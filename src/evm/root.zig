@@ -153,4 +153,8 @@ test {
     _ = MemoryDatabase;
     _ = SelfDestruct;
     _ = AccessList;
+    
+    // Test IR interpreter
+    _ = @import("test_create_ir.zig");
+    _ = @import("test_ir_interpreter.zig");
 }
