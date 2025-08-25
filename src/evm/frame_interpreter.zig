@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const log = @import("log.zig");
 const frame_mod = @import("frame.zig");
 const planner_mod = @import("planner.zig");
 const plan_mod = @import("plan.zig");
@@ -245,27 +246,27 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
         /// Pretty print the interpreter state for debugging.
         pub fn pretty_print(self: *const Self) void {
-            std.log.warn("\n=== Frame Interpreter State ===\n", .{});
-            std.log.warn("Instruction Index: {}\n", .{self.instruction_idx});
+            log.debug("\n=== Frame Interpreter State ===\n", .{});
+            log.debug("Instruction Index: {}\n", .{self.instruction_idx});
 
             // Print frame state
             self.frame.pretty_print();
 
             // Plan info
-            std.log.warn("\nPlan: Present (use plan.debugPrint() for details)\n", .{});
+            log.debug("\nPlan: Present (use plan.debugPrint() for details)\n", .{});
             // Get current PC if possible
             if (self.plan.pc_to_instruction_idx) |map| {
                 // Find PC for current instruction index
                 var iter = map.iterator();
                 while (iter.next()) |entry| {
                     if (entry.value_ptr.* == self.instruction_idx) {
-                        std.log.warn("Current PC: {} (instruction index: {})\n", .{ entry.key_ptr.*, self.instruction_idx });
+                        log.debug("Current PC: {} (instruction index: {})\n", .{ entry.key_ptr.*, self.instruction_idx });
                         break;
                     }
                 }
             }
 
-            std.log.warn("===================\n\n", .{});
+            log.debug("===================\n\n", .{});
         }
 
         // Handler functions follow...
@@ -276,11 +277,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            std.log.warn("\n=== InvalidOpcode Debug ===", .{});
-            std.log.warn("Instruction index: {}", .{interpreter.instruction_idx});
-            std.log.warn("Bytecode: {any}", .{self.bytecode});
-            std.log.warn("Instruction stream length: {}", .{plan_ptr.instructionStream.len});
-            std.log.warn("==================\n", .{});
+            log.debug("\n=== InvalidOpcode Debug ===", .{});
+            log.debug("Instruction index: {}", .{interpreter.instruction_idx});
+            log.debug("Bytecode: {any}", .{self.bytecode});
+            log.debug("Instruction stream length: {}", .{plan_ptr.instructionStream.len});
+            log.debug("==================\n", .{});
 
             self.invalid() catch |err| return err;
             unreachable;
@@ -1259,7 +1260,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            std.log.warn("push3_handler: instruction_idx = {}, stream length = {}", .{ interpreter.instruction_idx, plan_ptr.instructionStream.len });
+            log.debug("push3_handler: instruction_idx = {}, stream length = {}", .{ interpreter.instruction_idx, plan_ptr.instructionStream.len });
             const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, .PUSH3));
             try self.stack.push(value);
 
