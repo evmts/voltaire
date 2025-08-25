@@ -3,6 +3,8 @@ const zbench = @import("zbench");
 const Frame = @import("../frame.zig").Frame;
 const FrameConfig = @import("../frame_config.zig").FrameConfig;
 const MemoryDatabase = @import("../memory_database.zig").MemoryDatabase;
+const Host = @import("../host.zig").Host;
+const Address = @import("primitives").Address.Address;
 
 // Create a test frame configuration for benchmarks
 const TestConfig = FrameConfig{
@@ -22,6 +24,112 @@ const TestFrame = Frame(TestConfig);
 const test_bytecode = [_]u8{0x60, 0x01, 0x60, 0x02}; // PUSH1 0x01, PUSH1 0x02
 const large_bytecode = [_]u8{0x60} ++ [_]u8{0x01} ** 1000; // PUSH1 with large data
 
+// Minimal test host for benchmarks
+const TestHost = struct {
+    const Self = @This();
+    pub fn get_balance(self: *Self, address: Address) u256 {
+        _ = self;
+        _ = address;
+        return 0;
+    }
+    pub fn get_code(self: *Self, address: Address) []const u8 {
+        _ = self;
+        _ = address;
+        return &.{};
+    }
+    pub fn get_code_hash(self: *Self, address: Address) [32]u8 {
+        _ = self;
+        _ = address;
+        return [_]u8{0} ** 32;
+    }
+    pub fn get_account(self: *Self, address: Address) error{AccountNotFound}!@import("../database_interface.zig").Account {
+        _ = self;
+        _ = address;
+        return error.AccountNotFound;
+    }
+    pub fn get_input(self: *Self) []const u8 {
+        _ = self;
+        return &.{};
+    }
+    pub fn get_return_data(self: *Self) []const u8 {
+        _ = self;
+        return &.{};
+    }
+    pub fn get_gas_price(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+    pub fn get_chain_id(self: *Self) u64 {
+        _ = self;
+        return 1;
+    }
+    pub fn get_block_info(self: *Self) @import("../block_info.zig").DefaultBlockInfo {
+        _ = self;
+        return @import("../block_info.zig").DefaultBlockInfo.init();
+    }
+    pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
+        _ = self;
+        _ = index;
+        return null;
+    }
+    pub fn get_blob_base_fee(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+    pub fn get_is_static(self: *Self) bool {
+        _ = self;
+        return false;
+    }
+    pub fn access_address(self: *Self, address: Address) !u64 {
+        _ = self;
+        _ = address;
+        return 0;
+    }
+    pub fn access_storage_slot(self: *Self, address: Address, slot: u256) !u64 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    pub fn get_storage(self: *Self, address: Address, slot: u256) !u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    pub fn set_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = value;
+    }
+    pub fn get_transient_storage(self: *Self, address: Address, slot: u256) !u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    pub fn set_transient_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = value;
+    }
+    pub fn mark_for_destruction(self: *Self, address: Address, beneficiary: Address) !void {
+        _ = self;
+        _ = address;
+        _ = beneficiary;
+    }
+};
+
+// Helper function to create a test host for benchmarks
+fn createTestHost() Host {
+    const holder = struct {
+        var instance: TestHost = .{};
+    };
+    return Host.init(&holder.instance);
+}
+
 fn create_test_frame(allocator: std.mem.Allocator) !TestFrame {
     var memory_db = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
@@ -31,8 +139,7 @@ fn create_test_frame(allocator: std.mem.Allocator) !TestFrame {
         &test_bytecode,
         1000000, // gas limit
         db_interface,
-        null, // host
-        null, // self_destruct
+        createTestHost(),
     );
 }
 
