@@ -518,10 +518,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
         pub fn add(self: *Self) Error!void {
             // Charge gas for simple arithmetic (fastest step)
             const gas_cost: u64 = GasConstants.GasFastestStep;
-            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            try self.consumeGasChecked(gas_cost);
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
@@ -655,6 +652,12 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
         /// Consume gas without checking (for use after static analysis)
         pub fn consumeGasUnchecked(self: *Self, amount: u64) void {
             self.gas_remaining -= @as(GasType, @intCast(amount));
+        }
+        /// Consume gas with bounds checking and safe casting
+        pub fn consumeGasChecked(self: *Self, amount: u64) Error!void {
+            const amt = std.math.cast(GasType, amount) orelse return Error.OutOfGas;
+            if (self.gas_remaining < amt) return Error.OutOfGas;
+            self.gas_remaining -= amt;
         }
         /// Check if we're out of gas at end of execution
         pub fn checkGas(self: *Self) Error!void {
@@ -1459,7 +1462,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const data_size = @as(usize, @intCast(length));
             // Base/topic/data gas via centralized constants
             const log_gas = GasConstants.log_gas_cost(0, data_size);
-            if (self.gas_remaining < @as(GasType, @intCast(log_gas))) return Error.OutOfGas;
+            try self.consumeGasChecked(log_gas);
             // Memory expansion cost (word-aligned)
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
@@ -1468,9 +1471,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const end_unaligned = offset_usize + data_size;
             const word_aligned_end = ((end_unaligned + 31) >> 5) << 5;
             const mem_expansion_cost = self.memory.get_expansion_cost(@as(u64, @intCast(word_aligned_end)));
-            const total_cost = log_gas + mem_expansion_cost;
-            if (self.gas_remaining < @as(GasType, @intCast(total_cost))) return Error.OutOfGas;
-            self.gas_remaining -= @as(GasType, @intCast(total_cost));
+            const total_cost: u64 = log_gas + mem_expansion_cost;
+            try self.consumeGasChecked(total_cost);
             // Ensure memory is expanded to read safely
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
@@ -1502,7 +1504,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const offset = try self.stack.pop();
             const data_size = @as(usize, @intCast(length));
             const log_gas = GasConstants.log_gas_cost(1, data_size);
-            if (self.gas_remaining < @as(GasType, @intCast(log_gas))) return Error.OutOfGas;
+            try self.consumeGasChecked(log_gas);
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
             }
@@ -1510,9 +1512,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const end_unaligned = offset_usize + data_size;
             const word_aligned_end = ((end_unaligned + 31) >> 5) << 5;
             const mem_expansion_cost = self.memory.get_expansion_cost(@as(u64, @intCast(word_aligned_end)));
-            const total_cost = log_gas + mem_expansion_cost;
-            if (self.gas_remaining < @as(GasType, @intCast(total_cost))) return Error.OutOfGas;
-            self.gas_remaining -= @as(GasType, @intCast(total_cost));
+            const total_cost: u64 = log_gas + mem_expansion_cost;
+            try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             // Create log entry
@@ -1546,7 +1547,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const offset = try self.stack.pop();
             const data_size = @as(usize, @intCast(length));
             const log_gas = GasConstants.log_gas_cost(2, data_size);
-            if (self.gas_remaining < @as(GasType, @intCast(log_gas))) return Error.OutOfGas;
+            try self.consumeGasChecked(log_gas);
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
             }
@@ -1554,9 +1555,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const end_unaligned = offset_usize + data_size;
             const word_aligned_end = ((end_unaligned + 31) >> 5) << 5;
             const mem_expansion_cost = self.memory.get_expansion_cost(@as(u64, @intCast(word_aligned_end)));
-            const total_cost = log_gas + mem_expansion_cost;
-            if (self.gas_remaining < @as(GasType, @intCast(total_cost))) return Error.OutOfGas;
-            self.gas_remaining -= @as(GasType, @intCast(total_cost));
+            const total_cost: u64 = log_gas + mem_expansion_cost;
+            try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             const allocator = self.logs.allocator;
@@ -1591,7 +1591,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const offset = try self.stack.pop();
             const data_size = @as(usize, @intCast(length));
             const log_gas = GasConstants.log_gas_cost(3, data_size);
-            if (self.gas_remaining < @as(GasType, @intCast(log_gas))) return Error.OutOfGas;
+            try self.consumeGasChecked(log_gas);
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
             }
@@ -1599,9 +1599,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const end_unaligned = offset_usize + data_size;
             const word_aligned_end = ((end_unaligned + 31) >> 5) << 5;
             const mem_expansion_cost = self.memory.get_expansion_cost(@as(u64, @intCast(word_aligned_end)));
-            const total_cost = log_gas + mem_expansion_cost;
-            if (self.gas_remaining < @as(GasType, @intCast(total_cost))) return Error.OutOfGas;
-            self.gas_remaining -= @as(GasType, @intCast(total_cost));
+            const total_cost: u64 = log_gas + mem_expansion_cost;
+            try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             const allocator = self.logs.allocator;
@@ -1638,7 +1637,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const offset = try self.stack.pop();
             const data_size = @as(usize, @intCast(length));
             const log_gas = GasConstants.log_gas_cost(4, data_size);
-            if (self.gas_remaining < @as(GasType, @intCast(log_gas))) return Error.OutOfGas;
+            try self.consumeGasChecked(log_gas);
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
             }
@@ -1646,9 +1645,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             const end_unaligned = offset_usize + data_size;
             const word_aligned_end = ((end_unaligned + 31) >> 5) << 5;
             const mem_expansion_cost = self.memory.get_expansion_cost(@as(u64, @intCast(word_aligned_end)));
-            const total_cost = log_gas + mem_expansion_cost;
-            if (self.gas_remaining < @as(GasType, @intCast(total_cost))) return Error.OutOfGas;
-            self.gas_remaining -= @as(GasType, @intCast(total_cost));
+            const total_cost: u64 = log_gas + mem_expansion_cost;
+            try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             const allocator = self.logs.allocator;
