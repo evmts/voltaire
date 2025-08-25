@@ -909,6 +909,36 @@ pub fn build(b: *std.Build) void {
     const call_golden_test_step = b.step("test-call-golden", "Run CALL/CALLCODE/DELEGATECALL golden tests");
     call_golden_test_step.dependOn(&run_call_golden_test.step);
     
+    // Add CREATE/CREATE2 code storage tests
+    const create_code_storage_test = b.addTest(.{
+        .name = "create-code-storage-test",
+        .root_source_file = b.path("src/evm/create_code_storage_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    create_code_storage_test.root_module.addImport("evm", evm_mod);
+    create_code_storage_test.root_module.addImport("primitives", primitives_mod);
+    create_code_storage_test.root_module.addImport("crypto", crypto_mod);
+    create_code_storage_test.root_module.addImport("build_options", build_options_mod);
+    const run_create_code_storage_test = b.addRunArtifact(create_code_storage_test);
+    const create_code_storage_test_step = b.step("test-create-code-storage", "Run CREATE/CREATE2 code storage tests");
+    create_code_storage_test_step.dependOn(&run_create_code_storage_test.step);
+    
+    // Add snapshot propagation tests
+    const snapshot_propagation_test = b.addTest(.{
+        .name = "snapshot-propagation-test",
+        .root_source_file = b.path("src/evm/snapshot_propagation_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    snapshot_propagation_test.root_module.addImport("evm", evm_mod);
+    snapshot_propagation_test.root_module.addImport("primitives", primitives_mod);
+    snapshot_propagation_test.root_module.addImport("crypto", crypto_mod);
+    snapshot_propagation_test.root_module.addImport("build_options", build_options_mod);
+    const run_snapshot_propagation_test = b.addRunArtifact(snapshot_propagation_test);
+    const snapshot_propagation_test_step = b.step("test-snapshot-propagation", "Run snapshot propagation tests");
+    snapshot_propagation_test_step.dependOn(&run_snapshot_propagation_test.step);
+    
     // Add gas edge case tests
     const gas_edge_case_test = b.addTest(.{
         .name = "gas-edge-case-test",
@@ -1860,6 +1890,8 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_frame_opcode_integration_test.step);
     test_step.dependOn(&run_frame_host_test.step);
     test_step.dependOn(&run_call_golden_test.step);
+    test_step.dependOn(&run_create_code_storage_test.step);
+    test_step.dependOn(&run_snapshot_propagation_test.step);
     test_step.dependOn(&run_gas_edge_case_test.step);
     test_step.dependOn(&run_precompiles_test.step);
     test_step.dependOn(&run_precompiles_regression_test.step);
