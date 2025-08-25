@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 
 import { EVM } from '@ethereumjs/evm';
-import { DefaultStateManager } from '@ethereumjs/statemanager';
-import { Address, Account } from '@ethereumjs/util';
-import { Chain, Common, Hardfork } from '@ethereumjs/common';
+import { SimpleStateManager } from '@ethereumjs/statemanager';
+import { Address, Account, createAddressFromString } from '@ethereumjs/util';
+import { Common, Hardfork, Mainnet } from '@ethereumjs/common';
 import { readFileSync } from 'fs';
 
-const CALLER_ADDRESS = Address.fromString('0x1000000000000000000000000000000000000001');
+const CALLER_ADDRESS = createAddressFromString('0x1000000000000000000000000000000000000001');
 
 async function main() {
     // Parse command line arguments
@@ -48,10 +48,10 @@ async function main() {
     const calldata = Buffer.from(calldataHex.replace('0x', ''), 'hex');
 
     // Create common instance for latest supported hardfork
-    const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Cancun });
+    const common = new Common({ chain: Mainnet, hardfork: Hardfork.Cancun });
     
-    // Create state manager
-    const stateManager = new DefaultStateManager();
+    // Create state manager compatible with current @ethereumjs/statemanager exports
+    const stateManager = new SimpleStateManager();
     
     // Create EVM instance
     const evm = new EVM({
@@ -60,14 +60,14 @@ async function main() {
     });
 
     // Set up caller account with large balance
-    const callerAccount = Account.fromAccountData({
-        balance: BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'),
-        nonce: BigInt(0)
-    });
+    const callerAccount = new Account(
+        BigInt(0),
+        BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'),
+    );
     await stateManager.putAccount(CALLER_ADDRESS, callerAccount);
     
     // Deploy the contract first to get runtime code
-    const contractAddress = Address.fromString('0x5FbDB2315678afecb367f032d93F642f64180aa3');
+    const contractAddress = createAddressFromString('0x5FbDB2315678afecb367f032d93F642f64180aa3');
     
     // Deploy contract using CREATE to get runtime code
     const deployResult = await evm.runCall({
@@ -89,7 +89,7 @@ async function main() {
     }
     
     // Set the runtime code at the contract address
-    await stateManager.putContractCode(contractAddress, runtimeCode);
+    await stateManager.putCode(contractAddress, runtimeCode);
 
     // Run the benchmark num_runs times
     for (let i = 0; i < numRuns; i++) {

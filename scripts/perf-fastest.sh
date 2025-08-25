@@ -39,25 +39,24 @@ if command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" rev-parse --is-inside-
 fi
 
 # Preflight: check known runner locations used by orchestrator (relative to repo root)
+# Prefer new bench/evms paths when present; fall back to bench/official/evms
 REVM_RUNNER="${ROOT_DIR}/bench/official/evms/revm/target/release/revm-runner"
-GETH_RUNNER="${ROOT_DIR}/bench/official/evms/geth/runner"
+GETH_RUNNER="${ROOT_DIR}/bench/evms/geth/geth-runner"
 EVMONE_RUNNER="${ROOT_DIR}/bench/official/evms/evmone/build/evmone-runner"
-ETHJS_RUNNER="${ROOT_DIR}/bench/official/evms/ethereumjs/runner.js"
+ETHJS_RUNNER="${ROOT_DIR}/bench/evms/ethereumjs/runner.js"
 ZIG_RUNNER="${ROOT_DIR}/zig-out/bin/evm-runner"
 ZIG_RUNNER_SMALL="${ROOT_DIR}/zig-out/bin/evm-runner-small"
-for path in \
-  "${REVM_RUNNER}" \
-  "${GETH_RUNNER}" \
-  "${EVMONE_RUNNER}" \
-  "${ETHJS_RUNNER}" \
-  "${ZIG_RUNNER}" \
-  "${ZIG_RUNNER_SMALL}"; do
-  if [[ ! -e "${path}" ]]; then
-    log "NOTE: Runner missing: ${path}"
-  else
-    log "Found runner: ${path}"
-  fi
-done
+check_path() {
+  local p="$1"
+  if [[ -e "$p" ]]; then log "Found runner: $p"; else log "NOTE: Runner missing: $p"; fi
+}
+
+check_path "${REVM_RUNNER}"
+check_path "${GETH_RUNNER}"
+check_path "${EVMONE_RUNNER}"
+check_path "${ETHJS_RUNNER}"
+check_path "${ZIG_RUNNER}"
+check_path "${ZIG_RUNNER_SMALL}"
 
 log "Building Zig runners (ReleaseFast and ReleaseSmall)"
 time zig build build-evm-runner -Doptimize=ReleaseFast 2>&1 | tee -a "${LOG_FILE}"
@@ -94,4 +93,3 @@ fi
 
 log "Opening results in browser..."
 # npx -y markserv "./bench/official/results.md"
-

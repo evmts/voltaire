@@ -22,6 +22,7 @@ pub fn main() !void {
         \\--next                     Use call_mini for Zig EVM (simplified lazy jumpdest validation)
         \\--call2                    Use call2 for Zig EVM (interpret2 with tailcall dispatch)
         \\--show-output              Show output from hyperfine
+        \\--js-runtime <NAME>        JavaScript runtime for EthereumJS (bun|node)
         \\--diff <TEST>              Run differential trace comparison between REVM and Zig for a specific test case
         \\--diff-output <DIR>        Output directory for differential traces (default: differential_traces)
         \\--detailed                 Run detailed performance analysis with additional metrics
@@ -35,6 +36,7 @@ pub fn main() !void {
         .FORMAT = clap.parsers.string,
         .TEST = clap.parsers.string,
         .DIR = clap.parsers.string,
+        .NAME2 = clap.parsers.string,
     };
 
     var diag = clap.Diagnostic{};
@@ -65,6 +67,7 @@ pub fn main() !void {
     const use_next = res.args.next != 0;
     const use_call2 = res.args.call2 != 0;
     const show_output = res.args.@"show-output" != 0;
+    const js_runtime = res.args.@"js-runtime" orelse "bun";
     const diff_test = res.args.diff;
     const diff_output_dir = res.args.@"diff-output" orelse "differential_traces";
     const detailed = res.args.detailed != 0;
@@ -72,7 +75,7 @@ pub fn main() !void {
 
     if (diff_test) |test_name| {
         // Differential trace mode
-        var orchestrator = try Orchestrator.init(allocator, "zig", 1, 1, 1, 1, 1, 1, false, use_next, use_call2, show_output);
+        var orchestrator = try Orchestrator.init(allocator, "zig", 1, 1, 1, 1, 1, 1, false, use_next, use_call2, show_output, js_runtime);
         defer orchestrator.deinit();
 
         try orchestrator.discoverTestCases();
@@ -106,7 +109,7 @@ pub fn main() !void {
         for (evms) |evm| {
             std.debug.print("\n=== Running benchmarks for {s} ===\n", .{evm});
 
-            var orchestrator = try Orchestrator.init(allocator, evm, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, use_call2, show_output);
+            var orchestrator = try Orchestrator.init(allocator, evm, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, use_call2, show_output, js_runtime);
             defer orchestrator.deinit();
 
             try orchestrator.discoverTestCases();
@@ -140,7 +143,7 @@ pub fn main() !void {
         }
     } else {
         // Single EVM mode
-        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, use_call2, show_output);
+        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, use_call2, show_output, js_runtime);
         defer orchestrator.deinit();
 
         // Discover test cases
@@ -375,7 +378,7 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     try file.writeAll("- All implementations use optimized builds:\n");
     try file.writeAll("  - Zig (Call2): ReleaseFast with tailcall-based interpreter\n");
     try file.writeAll("  - Rust (REVM): --release\n");
-    try file.writeAll("  - JavaScript (EthereumJS): Bun runtime\n");
+    try file.writeAll("  - JavaScript (EthereumJS): JS runtime (bun or node)\n");
     try file.writeAll("  - Go (geth): -O3 optimizations\n");
     try file.writeAll("  - C++ (evmone): -O3 -march=native\n");
     try file.writeAll("- Lower values indicate better performance\n");
@@ -404,6 +407,7 @@ fn printHelp() !void {
         \\  --js-runs <NUM>            Number of runs for JavaScript/EthereumJS (defaults to --num-runs)
         \\  --internal-runs <NUM>      Number of internal runs per hyperfine execution (default: 100)
         \\  --js-internal-runs <NUM>   Number of internal runs for JavaScript (defaults to --internal-runs)
+        \\  --js-runtime <NAME>        JavaScript runtime for EthereumJS (bun|node)
         \\  --snailtracer-internal-runs <NUM>   Number of internal runs for snailtracer (defaults to --internal-runs)
         \\  --js-snailtracer-internal-runs <NUM>   Number of internal runs for JavaScript snailtracer (defaults to --js-internal-runs)
         \\  --export <FORMAT>          Export results (json, markdown, detailed)

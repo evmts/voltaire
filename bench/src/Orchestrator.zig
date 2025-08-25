@@ -32,6 +32,7 @@ include_all_cases: bool,
 use_next: bool,
 use_call2: bool,
 show_output: bool,
+js_runtime: []const u8,
 test_cases: []TestCase,
 results: std.ArrayList(BenchmarkResult),
 
@@ -52,7 +53,7 @@ pub const BenchmarkResult = struct {
     internal_runs: u32,
 };
 
-pub fn init(allocator: std.mem.Allocator, evm_name: []const u8, num_runs: u32, internal_runs: u32, js_runs: u32, js_internal_runs: u32, snailtracer_internal_runs: u32, js_snailtracer_internal_runs: u32, include_all_cases: bool, use_next: bool, use_call2: bool, show_output: bool) !Orchestrator {
+pub fn init(allocator: std.mem.Allocator, evm_name: []const u8, num_runs: u32, internal_runs: u32, js_runs: u32, js_internal_runs: u32, snailtracer_internal_runs: u32, js_snailtracer_internal_runs: u32, include_all_cases: bool, use_next: bool, use_call2: bool, show_output: bool, js_runtime: []const u8) !Orchestrator {
     return Orchestrator{
         .allocator = allocator,
         .evm_name = evm_name,
@@ -66,6 +67,7 @@ pub fn init(allocator: std.mem.Allocator, evm_name: []const u8, num_runs: u32, i
         .use_next = use_next,
         .use_call2 = use_call2,
         .show_output = show_output,
+        .js_runtime = js_runtime,
         .test_cases = &[_]TestCase{},
         .results = std.ArrayList(BenchmarkResult).init(allocator),
     };
@@ -721,7 +723,8 @@ pub fn discoverTestCases(self: *Orchestrator) !void {
     // Resolve cases directory relative to the installed executable
     const project_root = try getProjectRoot(self.allocator);
     defer self.allocator.free(project_root);
-    const cases_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "cases" });
+    // Test cases live under bench/cases (not bench/official/cases)
+    const cases_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "cases" });
     defer self.allocator.free(cases_path);
 
     const cases_dir = try std.fs.openDirAbsolute(cases_path, .{ .iterate = true });
@@ -836,9 +839,9 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     } else if (std.mem.eql(u8, self.evm_name, "zig-call2")) {
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" });
     } else if (std.mem.eql(u8, self.evm_name, "ethereumjs")) {
-        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "ethereumjs", "runner.js" });
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "evms", "ethereumjs", "runner.js" });
     } else if (std.mem.eql(u8, self.evm_name, "geth")) {
-        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "geth", "runner" });
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "evms", "geth", "geth-runner" });
     } else if (std.mem.eql(u8, self.evm_name, "evmone")) {
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "evmone", "build", "evmone-runner" });
     } else {
@@ -855,7 +858,7 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     const next_flag = if (self.use_next and std.mem.eql(u8, self.evm_name, "zig")) " --next" else "";
     const call2_flag = "";
     // For EthereumJS, invoke via bun explicitly to avoid shebang/exec issues
-    const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) "bun " else "";
+    const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) (if (std.mem.eql(u8, self.js_runtime, "node")) "node " else "bun ") else "";
     const hyperfine_cmd = try std.fmt.allocPrint(self.allocator, "{s}{s} --contract-code-path {s} --calldata {s} --num-runs {}{s}{s}", .{ js_prefix, runner_path, test_case.bytecode_path, trimmed_calldata, internal_runs_to_use, next_flag, call2_flag });
     defer self.allocator.free(hyperfine_cmd);
 
@@ -1244,9 +1247,9 @@ fn buildRunnerCommand(self: *Orchestrator, test_case: TestCase) ![]const u8 {
     } else if (std.mem.eql(u8, self.evm_name, "zig-call2")) {
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" });
     } else if (std.mem.eql(u8, self.evm_name, "ethereumjs")) {
-        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "ethereumjs", "runner.js" });
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "evms", "ethereumjs", "runner.js" });
     } else if (std.mem.eql(u8, self.evm_name, "geth")) {
-        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "geth", "runner" });
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "evms", "geth", "geth-runner" });
     } else if (std.mem.eql(u8, self.evm_name, "evmone")) {
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "evmone", "build", "evmone-runner" });
     } else {
@@ -1269,7 +1272,7 @@ fn buildRunnerCommand(self: *Orchestrator, test_case: TestCase) ![]const u8 {
     const call2_flag = "";
     
     // For EthereumJS, invoke via bun explicitly
-    const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) "bun " else "";
+    const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) (if (std.mem.eql(u8, self.js_runtime, "node")) "node " else "bun ") else "";
     
     return try std.fmt.allocPrint(self.allocator, "{s}{s} --contract-code-path {s} --calldata {s} --num-runs {s}{s}{s}", .{ 
         js_prefix, 
@@ -1483,7 +1486,7 @@ fn exportMarkdown(self: *Orchestrator) !void {
 test "Orchestrator.init creates proper instance" {
     const allocator = std.testing.allocator;
 
-    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false);
+    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false, "bun");
     defer orchestrator.deinit();
 
     try std.testing.expectEqualStrings("test-evm", orchestrator.evm_name);
@@ -1503,7 +1506,7 @@ test "Orchestrator.init creates proper instance" {
 test "Orchestrator.deinit properly cleans up memory" {
     const allocator = std.testing.allocator;
 
-    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false);
+    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false, "bun");
 
     // Manually add test cases to verify cleanup
     var test_cases = try allocator.alloc(TestCase, 2);
@@ -1555,7 +1558,7 @@ test "formatTimeWithUnit selects appropriate unit" {
 test "parseHyperfineJson extracts values correctly" {
     const allocator = std.testing.allocator;
 
-    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false);
+    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false, "bun");
     defer orchestrator.deinit();
 
     const json_data =
@@ -1593,7 +1596,7 @@ test "parseHyperfineJson extracts values correctly" {
 test "parseHyperfineJson handles null stddev" {
     const allocator = std.testing.allocator;
 
-    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false);
+    var orchestrator = try Orchestrator.init(allocator, "test-evm", 10, 5, 3, 2, 1, 1, false, false, false, false, "bun");
     defer orchestrator.deinit();
 
     const json_data =

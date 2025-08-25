@@ -111,7 +111,7 @@ pub fn main() !void {
     };
 
     const context = evm.TransactionContext{
-        .gas_limit = 21000000,
+        .gas_limit = 30000000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
@@ -119,20 +119,37 @@ pub fn main() !void {
     var evm_instance = try evm.DefaultEvm.init(allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm_instance.deinit();
 
-    // Deploy contract first
-    const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const code_hash = try memory_db.set_code(init_code);
-    
-    // Debug: Print deployment info
-    std.debug.print("Debug: Deploying contract at address: {x}, code_len={}, code_hash={x}\n", 
-        .{std.fmt.fmtSliceHexLower(&deploy_address), init_code.len, std.fmt.fmtSliceHexLower(&code_hash)});
-    
-    try memory_db.set_account(deploy_address, evm.Account{
-        .nonce = 0,
-        .balance = 0,
-        .code_hash = code_hash,
-        .storage_root = [_]u8{0} ** 32,
-    });
+    // Deploy contract using CREATE by executing init code
+    const deploy_params = evm.DefaultEvm.CallParams{ .create = .{
+        .caller = primitives.ZERO_ADDRESS,
+        .value = 0,
+        .init_code = init_code,
+        .gas = 10_000_000,
+    }};
+    var used_create: bool = false;
+    var deploy_address: Address = undefined;
+    const deploy_result = evm_instance.call(deploy_params) catch |err| blk: {
+        std.debug.print("EVM create error (will fallback to direct install): {}\n", .{err});
+        break :blk evm.CallResult.failure(0);
+    };
+    if (deploy_result.success and deploy_result.output.len >= 20) {
+        @memcpy(&deploy_address, deploy_result.output[0..20]);
+        used_create = true;
+        std.debug.print("Debug: Deployed contract at address: {x}, code_len={}\n", 
+            .{std.fmt.fmtSliceHexLower(&deploy_address), init_code.len});
+    } else {
+        // Fallback: treat provided code as runtime and install directly
+        deploy_address = [_]u8{0} ** 19 ++ [_]u8{1};
+        const code_hash = try memory_db.set_code(init_code);
+        try memory_db.set_account(deploy_address, evm.Account{
+            .nonce = 0,
+            .balance = 0,
+            .code_hash = code_hash,
+            .storage_root = [_]u8{0} ** 32,
+        });
+        std.debug.print("Debug: Fallback install at address: {x}, code_len={}, code_hash={x}\n", 
+            .{ std.fmt.fmtSliceHexLower(&deploy_address), init_code.len, std.fmt.fmtSliceHexLower(&code_hash) });
+    }
 
     // Run benchmarks
     for (0..num_runs) |run_idx| {
@@ -165,8 +182,9 @@ pub fn main() !void {
             std.debug.print("Debug: calldata={x}\n", .{std.fmt.fmtSliceHexLower(calldata)});
         }
         
-        // Free the result output to prevent memory leak and use-after-free
-        defer if (result.output.len > 0) allocator.free(result.output);
+        // Do not free result.output here. Ownership is managed by the EVM.
+        // Freeing it caused an invalid free/double free under the debug allocator
+        // and crashes during hyperfine warmup.
         
         if (!result.success) {
             std.debug.print("Contract execution failed\n", .{});
