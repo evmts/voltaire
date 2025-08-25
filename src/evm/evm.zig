@@ -68,7 +68,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         pub const SelectedPlannerType = PlannerType;
         pub const Journal = JournalType;
-
+        pub const CallResult = @import("call_result.zig").CallResult;
+        
         const DEFAULT_ACCOUNT = Account{
             .balance = 0,
             .nonce = 0,
@@ -151,8 +152,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         call_stack: [config.max_call_depth]CallStackEntry,
         /// Arena allocator for per-call temporary allocations
         internal_arena: std.heap.ArenaAllocator,
-        /// Result of a call execution (re-export)
-        pub const CallResult = @import("call_result.zig").CallResult;
+        /// Small reusable buffer for fixed-size outputs (e.g., 32-byte address)
+        small_output_buf: [64]u8 = undefined,
 
         /// Initialize a new EVM instance.
         ///
@@ -636,7 +637,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             
             // Return the contract address as 32 bytes (12 zero padding + 20-byte address)
-            var out32 = try self.allocator.alloc(u8, 32);
+            const out32 = self.small_output_buf[0..32];
             @memset(out32[0..12], 0);
             @memcpy(out32[12..32], &contract_address);
             return CallResult.success_with_output(result.gas_left, out32);
@@ -748,7 +749,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             
             // Return the contract address as 32 bytes (12 zero padding + 20-byte address)
-            var out32 = try self.allocator.alloc(u8, 32);
+            const out32 = self.small_output_buf[0..32];
             @memset(out32[0..12], 0);
             @memcpy(out32[12..32], &contract_address);
             return CallResult.success_with_output(result.gas_left, out32);
