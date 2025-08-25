@@ -939,6 +939,21 @@ pub fn build(b: *std.Build) void {
     const snapshot_propagation_test_step = b.step("test-snapshot-propagation", "Run snapshot propagation tests");
     snapshot_propagation_test_step.dependOn(&run_snapshot_propagation_test.step);
     
+    // Add LOG static context tests  
+    const log_static_context_test = b.addTest(.{
+        .name = "log-static-context-test",
+        .root_source_file = b.path("src/evm/log_static_context_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    log_static_context_test.root_module.addImport("evm", evm_mod);
+    log_static_context_test.root_module.addImport("primitives", primitives_mod);
+    log_static_context_test.root_module.addImport("crypto", crypto_mod);
+    log_static_context_test.root_module.addImport("build_options", build_options_mod);
+    const run_log_static_context_test = b.addRunArtifact(log_static_context_test);
+    const log_static_context_test_step = b.step("test-log-static-context", "Run LOG static context tests");
+    log_static_context_test_step.dependOn(&run_log_static_context_test.step);
+    
     // Add gas edge case tests
     const gas_edge_case_test = b.addTest(.{
         .name = "gas-edge-case-test",
@@ -1892,6 +1907,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_call_golden_test.step);
     test_step.dependOn(&run_create_code_storage_test.step);
     test_step.dependOn(&run_snapshot_propagation_test.step);
+    test_step.dependOn(&run_log_static_context_test.step);
     test_step.dependOn(&run_gas_edge_case_test.step);
     test_step.dependOn(&run_precompiles_test.step);
     test_step.dependOn(&run_precompiles_regression_test.step);
