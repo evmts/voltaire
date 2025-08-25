@@ -593,15 +593,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             }
             
-            // Execute initialization code
-            const result = self.execute_frame(
+            // Execute initialization code via IR interpreter for robustness
+            const result = self.execute_init_code(
                 params.init_code,
-                &.{}, // Empty input for CREATE
                 remaining_gas,
                 contract_address,
-                params.caller,
-                params.value,
-                false, // is_static
                 snapshot_id,
             ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
@@ -802,6 +798,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: JournalType.SnapshotIdType,
         ) !CallResult {
+            // caller/value used in call stack assignment below
             // Bind snapshot and call input for this frame duration
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
@@ -885,6 +882,53 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.return_data = out_slice;
             return CallResult.success_with_output(gas_left, out_slice);
         }
+
+        /// Execute initialization code using the IR interpreter
+        fn execute_init_code(
+            self: *Self,
+            code: []const u8,
+            gas: u64,
+            address: Address,
+            snapshot_id: JournalType.SnapshotIdType,
+        ) !CallResult {
+            const prev_snapshot = self.current_snapshot_id;
+            self.current_snapshot_id = snapshot_id;
+            defer self.current_snapshot_id = prev_snapshot;
+
+            const host = self.to_host();
+            var frame = try frame_mod.Frame(config.frame_config).init(self.allocator, code, @as(i32, @intCast(@min(gas, std.math.maxInt(i32)))), self.database, host);
+            defer frame.deinit(self.allocator);
+            frame.contract_address = address;
+            const ir_builder = @import("ir_builder.zig");
+            var arena = std.heap.ArenaAllocator.init(self.allocator);
+            defer arena.deinit();
+            var program = try ir_builder.build(arena.allocator(), code);
+            const ir_interp = @import("ir_interpreter.zig");
+            ir_interp.interpret(config.frame_config, &program, &frame) catch |err| {
+                const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+                var out_slice: []const u8 = &.{};
+                if (frame.output_data.items.len > 0) {
+                    const buf = try self.allocator.alloc(u8, frame.output_data.items.len);
+                    @memcpy(buf, frame.output_data.items);
+                    out_slice = buf;
+                }
+                self.return_data = out_slice;
+                return switch (err) {
+                    error.STOP => CallResult.success_with_output(gas_left, out_slice),
+                    error.REVERT => CallResult.revert_with_data(gas_left, out_slice),
+                    else => CallResult.failure(0),
+                };
+            };
+            const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+            var out_slice: []const u8 = &.{};
+            if (frame.output_data.items.len > 0) {
+                const buf = try self.allocator.alloc(u8, frame.output_data.items.len);
+                @memcpy(buf, frame.output_data.items);
+                out_slice = buf;
+            }
+            self.return_data = out_slice;
+            return CallResult.success_with_output(gas_left, out_slice);
+        }
         
         /// Execute nested EVM call - used for calls from within the EVM
         pub fn inner_call(self: *Self, params: CallParams) !CallResult {
@@ -965,9 +1009,9 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Emit log event
         pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
-            const arena = self.internal_arena.allocator();
-            const topics_copy = arena.dupe(u256, topics) catch return;
-            const data_copy = arena.dupe(u8, data) catch return;
+            // Allocate copies with the main allocator so tests can free via evm.allocator
+            const topics_copy = self.allocator.dupe(u256, topics) catch return;
+            const data_copy = self.allocator.dupe(u8, data) catch return;
 
             self.logs.append(@import("call_result.zig").Log{
                 .address = contract_address,
