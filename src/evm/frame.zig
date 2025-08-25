@@ -1791,7 +1791,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
             // Calculate base call gas cost (EIP-150 & EIP-2929) - DELEGATECALL never transfers value
-            const base_call_gas = self._calculate_call_gas(addr, 0);
+            const base_call_gas = self._calculate_call_gas(addr, 0, self.is_static);
             // Check if we have enough gas for the base call cost
             if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
@@ -4539,7 +4539,7 @@ test "Frame LOG4 operation with multiple topics" {
     try frame.stack.push(0); // offset
     try frame.stack.push(0); // size (empty data)
     // Execute LOG4
-    try frame.log4(allocator);
+    try frame.log4();
     // Verify log was created
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
     const log_entry = frame.logs.items[0];
@@ -4566,7 +4566,7 @@ test "Frame LOG4 operation with multiple topics" {
 //     try frame.stack.push(0); // offset
 //     try frame.stack.push(10); // size
 //     // Execute LOG0 should fail
-//     try std.testing.expectError(error.WriteProtection, frame.log0(allocator));
+//     try std.testing.expectError(error.WriteProtection, frame.log0());
 // }
 test "Frame LOG with out of bounds memory access" {
     const allocator = std.testing.allocator;
@@ -4579,7 +4579,7 @@ test "Frame LOG with out of bounds memory access" {
     try frame.stack.push(std.math.maxInt(u256)); // offset too large
     try frame.stack.push(10); // size
     // Execute LOG0 should fail
-    try std.testing.expectError(error.OutOfBounds, frame.log0(allocator));
+    try std.testing.expectError(error.OutOfBounds, frame.log0());
 }
 test "Frame LOG gas consumption" {
     const allocator = std.testing.allocator;
@@ -5034,7 +5034,7 @@ test "Frame log operations edge cases - maximum topics and static context" {
     // // Test LOG0 in static context
     // try frame.stack.push(0); // offset
     // try frame.stack.push(0); // size
-    // try std.testing.expectError(error.WriteProtection, frame.log0(allocator));
+    // try std.testing.expectError(error.WriteProtection, frame.log0());
     // // Test LOG4 in static context
     // try frame.stack.push(1); // topic4
     // try frame.stack.push(2); // topic3
@@ -5042,7 +5042,7 @@ test "Frame log operations edge cases - maximum topics and static context" {
     // try frame.stack.push(4); // topic1
     // try frame.stack.push(0); // offset
     // try frame.stack.push(0); // size
-    // try std.testing.expectError(error.WriteProtection, frame.log4(allocator));
+    // try std.testing.expectError(error.WriteProtection, frame.log4());
     // // Reset static context for successful tests
     // frame.is_static = false;
     // Test LOG with maximum size data
@@ -5149,7 +5149,7 @@ test "Frame bytecode edge cases - bytecode too large" {
     defer allocator.free(oversized_bytecode);
     @memset(oversized_bytecode, @intFromEnum(Opcode.JUMPDEST));
     
-    try std.testing.expectError(error.BytecodeTooLarge, F.init(allocator, oversized_bytecode, 1000000, void{}, null));
+    try std.testing.expectError(error.BytecodeTooLarge, F.init(allocator, oversized_bytecode, 1000000, void{}, createTestHost()));
 }
 test "Frame bytecode edge cases - truncated PUSH operations" {
     const allocator = std.testing.allocator;
