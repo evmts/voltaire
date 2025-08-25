@@ -78,7 +78,7 @@ pub export fn evm_test_simple_execution() c_int {
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize frame interpreter
-    handle.interpreter = frame_c.FrameInterpreter.init(allocator, handle.bytecode_owned, 1000000, {}, null, false) catch {
+    handle.interpreter = frame_c.FrameInterpreter.init(allocator, handle.bytecode_owned, 1000000, {}, null) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return -1;
@@ -123,7 +123,7 @@ pub export fn evm_test_stack_operations() c_int {
     };
     errdefer allocator.free(handle.bytecode_owned);
 
-    handle.interpreter = frame_c.FrameInterpreter.init(allocator, handle.bytecode_owned, 1000000, {}, null, false) catch {
+    handle.interpreter = frame_c.FrameInterpreter.init(allocator, handle.bytecode_owned, 1000000, {}, null) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return -1;
