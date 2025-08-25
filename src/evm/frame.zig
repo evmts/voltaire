@@ -36,6 +36,7 @@ const logs = @import("logs.zig");
 const Log = logs.Log;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const block_info_mod = @import("block_info.zig");
+const BlockInfo = block_info_mod.DefaultBlockInfo;
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
 const hardfork_mod = @import("hardfork.zig");
@@ -101,7 +102,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         contract_address: Address = [_]u8{0} ** 20,
         self_destruct: ?*SelfDestruct = null,
 
-        host: Host,
+        host: ?Host = null,
 
         // Cold data - less frequently accessed during execution
         logs: std.ArrayList(Log),
@@ -1021,7 +1022,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Check if we're in static context
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1084,7 +1086,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Check if we're in static context
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1113,7 +1116,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const arena_allocator = arena.allocator();
             // Check if we're in a static call
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     @branchHint(.unlikely);
                     return Error.WriteProtection;
                 }
@@ -1252,7 +1256,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an address and pushes the balance of that account in wei.
         /// Stack: [address] → [balance]
         pub fn op_balance(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const address_u256 = try self.stack.pop();
             const address = from_u256(address_u256);
             
@@ -1271,7 +1275,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the account that initiated the transaction.
         /// Stack: [] → [origin]
         pub fn op_origin(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const origin = host.get_tx_origin();
             const origin_u256 = to_u256(origin);
             try self.stack.push(origin_u256);
@@ -1281,7 +1285,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the account that directly called this contract.
         /// Stack: [] → [caller]
         pub fn op_caller(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const caller = host.get_caller();
             const caller_u256 = to_u256(caller);
             try self.stack.push(caller_u256);
@@ -1291,7 +1295,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the value in wei sent with the current call.
         /// Stack: [] → [value]
         pub fn op_callvalue(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const value = host.get_call_value();
             try self.stack.push(value);
         }
@@ -1300,7 +1304,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an offset and pushes a 32-byte word from the input data starting at that offset.
         /// Stack: [offset] → [data]
         pub fn op_calldataload(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const offset = try self.stack.pop();
 
             // Convert u256 to usize, checking for overflow
@@ -1310,7 +1314,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             const offset_usize = @as(usize, @intCast(offset));
-            const calldata = host.get_input();
+            const calldata = if (host) |h| h.get_input() else &[_]u8{};
 
             // Load 32 bytes from calldata, zero-padding if needed
             var word: u256 = 0;
@@ -1333,8 +1337,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the size of the input data in bytes.
         /// Stack: [] → [size]
         pub fn op_calldatasize(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const calldata = host.get_input();
+            const host = self.host;
+            const calldata = if (host) |h| h.get_input() else &[_]u8{};
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
             try self.stack.push(calldata_len);
         }
@@ -1343,7 +1347,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Copies input data to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn op_calldatacopy(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             const dest_offset = try self.stack.pop();
             const offset = try self.stack.pop();
@@ -1370,7 +1374,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 else => return Error.AllocationError,
             };
 
-            const calldata = host.get_input();
+            const calldata = if (host) |h| h.get_input() else &[_]u8{};
 
             // Copy calldata to memory with bounds checking
             for (0..length_usize) |i| {
@@ -1431,8 +1435,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the gas price of the current transaction.
         /// Stack: [] → [gas_price]
         pub fn op_gasprice(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const gas_price = host.get_gas_price();
+            const host = self.host;
+            const gas_price = if (host) |h| h.get_gas_price() else 0;
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
             try self.stack.push(gas_price_truncated);
         }
@@ -1441,7 +1445,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an address and pushes the size of that account's code in bytes.
         /// Stack: [address] → [size]
         pub fn op_extcodesize(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const address_u256 = try self.stack.pop();
             const address = from_u256(address_u256);
             const code = host.get_code(address);
@@ -1453,7 +1457,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Copies code from an external account to memory.
         /// Stack: [address, destOffset, offset, length] → []
         pub fn op_extcodecopy(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             const address_u256 = try self.stack.pop();
             const dest_offset = try self.stack.pop();
@@ -1497,8 +1501,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the size of the return data from the last call.
         /// Stack: [] → [size]
         pub fn op_returndatasize(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const return_data = host.get_return_data();
+            const host = self.host;
+            const return_data = if (host) |h| h.get_return_data() else &[_]u8{};
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             try self.stack.push(return_data_len);
         }
@@ -1507,7 +1511,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Copies return data from the last call to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn op_returndatacopy(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             const dest_offset = try self.stack.pop();
             const offset = try self.stack.pop();
@@ -1527,7 +1531,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             if (length_usize == 0) return;
 
-            const return_data = host.get_return_data();
+            const return_data = if (host) |h| h.get_return_data() else &[_]u8{};
 
             // Check if we're reading beyond the return data
             if (offset_usize > return_data.len or
@@ -1556,7 +1560,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pops an address and pushes the keccak256 hash of that account's code.
         /// Stack: [address] → [hash]
         pub fn op_extcodehash(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const address_u256 = try self.stack.pop();
             const address = from_u256(address_u256);
 
@@ -1593,8 +1597,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the chain ID of the current network.
         /// Stack: [] → [chain_id]
         pub fn op_chainid(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const chain_id = host.get_chain_id();
+            const host = self.host;
+            const chain_id = if (host) |h| h.get_chain_id() else 1;
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
             try self.stack.push(chain_id_word);
         }
@@ -1603,7 +1607,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the balance of the currently executing contract.
         /// Stack: [] → [balance]
         pub fn op_selfbalance(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const balance = host.get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
@@ -1615,10 +1619,10 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the hash of one of the 256 most recent blocks.
         /// Stack: [block_number] → [hash]
         pub fn op_blockhash(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const block_number = try self.stack.pop();
 
-            const block_info = host.get_block_info();
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const current_block = block_info.number;
 
             // Check bounds: not current or future blocks, and within 256 recent blocks
@@ -1653,8 +1657,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the address of the miner who produced the current block.
         /// Stack: [] → [coinbase_address]
         pub fn op_coinbase(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const block_info = host.get_block_info();
+            const host = self.host;
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
             try self.stack.push(coinbase_word);
@@ -1664,8 +1668,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the Unix timestamp of the current block.
         /// Stack: [] → [timestamp]
         pub fn op_timestamp(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const block_info = host.get_block_info();
+            const host = self.host;
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             try self.stack.push(timestamp_word);
         }
@@ -1674,8 +1678,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the number of the current block.
         /// Stack: [] → [block_number]
         pub fn op_number(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const block_info = host.get_block_info();
+            const host = self.host;
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             try self.stack.push(block_number_word);
         }
@@ -1684,8 +1688,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pre-merge: Returns difficulty. Post-merge: Returns prevrandao.
         /// Stack: [] → [difficulty/prevrandao]
         pub fn op_difficulty(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const block_info = host.get_block_info();
+            const host = self.host;
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             try self.stack.push(difficulty_word);
         }
@@ -1701,8 +1705,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the gas limit of the current block.
         /// Stack: [] → [gas_limit]
         pub fn op_gaslimit(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const block_info = host.get_block_info();
+            const host = self.host;
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             try self.stack.push(gas_limit_word);
         }
@@ -1711,8 +1715,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the base fee per gas of the current block (EIP-3198).
         /// Stack: [] → [base_fee]
         pub fn op_basefee(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const block_info = host.get_block_info();
+            const host = self.host;
+            const block_info = if (host) |h| h.get_block_info() else block_info_mod.DefaultBlockInfo.init();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             try self.stack.push(base_fee_word);
         }
@@ -1721,7 +1725,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the versioned hash of the blob at the given index (EIP-4844).
         /// Stack: [index] → [blob_hash]
         pub fn op_blobhash(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
             const index = try self.stack.pop();
 
             // Convert u256 to usize for array access
@@ -1730,7 +1734,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return;
             }
 
-            const blob_hash_opt = host.get_blob_hash(index);
+            const blob_hash_opt = if (host) |h| h.get_blob_hash(index) else null;
 
             // Push hash or zero if not available
             if (blob_hash_opt) |hash| {
@@ -1750,8 +1754,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the base fee per blob gas of the current block (EIP-4844).
         /// Stack: [] → [blob_base_fee]
         pub fn op_blobbasefee(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
-            const blob_base_fee = host.get_blob_base_fee();
+            const host = self.host;
+            const blob_base_fee = if (host) |h| h.get_blob_base_fee() else 0;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             try self.stack.push(blob_base_fee_word);
         }
@@ -1764,7 +1768,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_log0(self: *Self) Error!void {
             // Check if we're in static context
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1810,7 +1815,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1] → []
         pub fn op_log1(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1860,7 +1866,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1, topic2] → []
         pub fn op_log2(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1909,7 +1916,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1, topic2, topic3] → []
         pub fn op_log3(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1960,7 +1968,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [offset, length, topic1, topic2, topic3, topic4] → []
         pub fn op_log4(self: *Self) Error!void {
             if (self.host) |host| {
-                if (host.get_is_static()) {
+                if (host) |h| {
+                if (h.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -2118,7 +2127,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Calls the contract at the given address with the provided value, input data, and gas.
         /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
         pub fn op_call(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             // Check static context - CALL with non-zero value is not allowed in static context
             const output_size = try self.stack.pop();
@@ -2129,9 +2138,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
 
-            const host = self.host orelse return Error.AllocationError;
-            if (host.get_is_static() and value > 0) {
-                return Error.WriteProtection;
+            if (host) |h| {
+                if (h.get_is_static() and value > 0) {
+                    return Error.WriteProtection;
+                }
             }
 
             // Convert address from u256
@@ -2238,7 +2248,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Calls the contract at the given address, but preserves the caller and value from the current context.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn op_delegatecall(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
@@ -2351,7 +2361,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Calls the contract at the given address without allowing any state changes.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn op_staticcall(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
@@ -2457,10 +2467,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Creates a new contract using the provided initialization code and value.
         /// Stack: [value, offset, size] → [address]
         pub fn op_create(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             // Check static context - CREATE is not allowed in static context
-            if (host.get_is_static()) {
+            if (host) |h| {
+                if (h.get_is_static()) {
                 return Error.WriteProtection;
             }
 
@@ -2539,10 +2550,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Creates a new contract with an address determined by the salt and init code hash.
         /// Stack: [value, offset, size, salt] → [address]
         pub fn op_create2(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             // Check static context - CREATE2 is not allowed in static context
-            if (host.get_is_static()) {
+            if (host) |h| {
+                if (h.get_is_static()) {
                 return Error.WriteProtection;
             }
 
@@ -2703,10 +2715,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Marks the current contract for destruction and transfers its balance to the recipient.
         /// Stack: [recipient] → []
         pub fn selfdestruct(self: *Self) Error!void {
-            const host = self.host orelse return Error.AllocationError;
+            const host = self.host;
 
             // Check static context - SELFDESTRUCT is not allowed in static context
-            if (host.get_is_static()) {
+            if (host) |h| {
+                if (h.get_is_static()) {
                 @branchHint(.unlikely);
                 return Error.WriteProtection;
             }
@@ -3710,7 +3723,6 @@ test "Frame init validates bytecode size" {
     defer allocator.free(large_bytecode);
     @memset(large_bytecode, 0x00);
 
-    const host = createTestHost();
     try std.testing.expectError(error.BytecodeTooLarge, SmallFrame.init(allocator, large_bytecode, 0, {}, host));
 
     // Test with empty bytecode

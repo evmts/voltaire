@@ -2,12 +2,14 @@ const std = @import("std");
 const frame_interpreter_mod = @import("frame_interpreter.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const address_utils = primitives.Address;
 const opcode_data = @import("opcode_data.zig");
 const Opcode = @import("opcode.zig").Opcode;
 const Host = @import("host.zig").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
+const ZERO_ADDRESS = @import("primitives").ZERO_ADDRESS;
 const Hardfork = @import("hardfork.zig").Hardfork;
 
 // Mock host implementation for testing
@@ -65,7 +67,7 @@ const MockHost = struct {
     
     pub fn get_block_info(self: *MockHost) BlockInfo {
         _ = self;
-        return BlockInfo{};
+        return BlockInfo.init();
     }
     
     pub fn emit_log(self: *MockHost, contract_address: Address, topics: []const u256, data: []const u8) void {
@@ -239,7 +241,7 @@ test "BALANCE opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.balance_calls);
     
     // Verify balance is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     const balance = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(mock_host.test_balance, balance);
 }
@@ -282,9 +284,9 @@ test "ORIGIN opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.origin_calls);
     
     // Verify origin is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     const origin = try interpreter.frame.stack.pop();
-    try std.testing.expectEqual(primitives.Address.to_u256(mock_host.test_origin), origin);
+    try std.testing.expectEqual(address_utils.to_u256(mock_host.test_origin), origin);
 }
 
 test "ORIGIN opcode without host - test skipped" {
@@ -325,9 +327,9 @@ test "CALLER opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.caller_calls);
     
     // Verify caller is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     const caller = try interpreter.frame.stack.pop();
-    try std.testing.expectEqual(primitives.Address.to_u256(mock_host.test_caller), caller);
+    try std.testing.expectEqual(address_utils.to_u256(mock_host.test_caller), caller);
 }
 
 test "CALLVALUE opcode with host - successful execution" {
@@ -362,7 +364,7 @@ test "CALLVALUE opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.callvalue_calls);
     
     // Verify callvalue is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     const callvalue = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(mock_host.test_callvalue, callvalue);
 }
@@ -402,7 +404,7 @@ test "CREATE opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.inner_call_calls);
     
     // Verify result is on stack (0 for our mock)
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
 }
 
 test "CREATE opcode without host - test skipped" {
@@ -456,5 +458,5 @@ test "Multiple host operations in sequence" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.balance_calls);
     
     // Stack should have 4 values
-    try std.testing.expectEqual(@as(usize, 4), interpreter.frame.stack.getDepth());
+    try std.testing.expectEqual(@as(usize, 4), interpreter.frame.stack.size());
 }

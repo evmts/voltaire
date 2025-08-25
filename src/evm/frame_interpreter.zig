@@ -504,7 +504,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const address = primitives.Address.from_u256(address_u256);
 
             // Access the address and get the gas cost (warm/cold)
-            const gas_cost = self.host.?.access_address(address) catch |err| switch (err) {
+            const gas_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
 
@@ -512,7 +512,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(@intCast(gas_cost));
 
             // Get balance from host
-            const balance = self.host.?.get_balance(address);
+            const balance = self.host.get_balance(address);
 
             // Push balance to stack
             try self.stack.push(@as(WordType, @intCast(balance)));
@@ -538,7 +538,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
             // Get origin from host's transaction context
-            const origin_addr = self.host.?.get_tx_origin();
+            const origin_addr = self.host.get_tx_origin();
             const origin = primitives.Address.to_u256(origin_addr);
 
             // Push origin to stack
@@ -565,7 +565,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
             // Get caller from host
-            const caller_addr = self.host.?.get_caller();
+            const caller_addr = self.host.get_caller();
             const caller_u256 = primitives.Address.to_u256(caller_addr);
 
             // Push caller to stack
@@ -592,7 +592,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(opcode_info.gas_cost);
 
             // Get call value from host
-            const value = self.host.?.get_call_value();
+            const value = self.host.get_call_value();
 
             // Push value to stack (cast u256 to WordType)
             try self.stack.push(@intCast(value));
@@ -2231,7 +2231,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const address = primitives.Address.from_u256(address_u256);
             
             // Access the address and get the gas cost (warm/cold)
-            const gas_cost = self.host.?.access_address(address) catch |err| switch (err) {
+            const gas_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             
@@ -2269,7 +2269,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const address = primitives.Address.from_u256(address_u256);
             
             // Access the address and get the gas cost (warm/cold)
-            const access_cost = self.host.?.access_address(address) catch |err| switch (err) {
+            const access_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             
@@ -2328,7 +2328,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const address = primitives.Address.from_u256(address_u256);
             
             // Access the address and get the gas cost (warm/cold)
-            const gas_cost = self.host.?.access_address(address) catch |err| switch (err) {
+            const gas_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             
@@ -2430,7 +2430,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
 
             // Access own address and get the gas cost (should always be warm)
-            const gas_cost = self.host.?.access_address(self.contract_address) catch |err| switch (err) {
+            const gas_cost = self.host.access_address(self.contract_address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
 
@@ -2637,7 +2637,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             } };
 
             // Execute CREATE through host
-            const result = try self.host.?.inner_call(params);
+            const result = try self.host.inner_call(params);
 
             // Update gas remaining
             // Set gas to result.gas_left - need to create a new gas manager
