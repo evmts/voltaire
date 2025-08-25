@@ -877,6 +877,21 @@ pub fn build(b: *std.Build) void {
     const run_frame_host_test = b.addRunArtifact(frame_host_test);
     const frame_host_test_step = b.step("test-frame-host", "Run Frame host integration tests");
     frame_host_test_step.dependOn(&run_frame_host_test.step);
+    
+    // Add gas edge case tests
+    const gas_edge_case_test = b.addTest(.{
+        .name = "gas-edge-case-test",
+        .root_source_file = b.path("src/evm/gas_edge_case_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    gas_edge_case_test.root_module.addImport("evm", evm_mod);
+    gas_edge_case_test.root_module.addImport("primitives", primitives_mod);
+    gas_edge_case_test.root_module.addImport("crypto", crypto_mod);
+    gas_edge_case_test.root_module.addImport("build_options", build_options_mod);
+    const run_gas_edge_case_test = b.addRunArtifact(gas_edge_case_test);
+    const gas_edge_case_test_step = b.step("test-gas-edge-case", "Run gas edge case tests");
+    gas_edge_case_test_step.dependOn(&run_gas_edge_case_test.step);
 
     // EVM E2E tests removed - file no longer exists
 
@@ -1776,6 +1791,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_frame_integration_test.step);
     test_step.dependOn(&run_frame_opcode_integration_test.step);
     test_step.dependOn(&run_frame_host_test.step);
+    test_step.dependOn(&run_gas_edge_case_test.step);
     // benchmark runner test removed - file no longer exists
 
     // Inline ops test removed - file no longer exists
