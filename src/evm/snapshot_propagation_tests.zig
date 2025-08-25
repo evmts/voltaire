@@ -178,9 +178,9 @@ test "Nested call with inner success - both changes preserved" {
     defer interpreter.deinit(allocator);
     
     interpreter.frame.contract_address = outer_address;
-    interpreter.frame.caller = caller_address;
-    interpreter.frame.value = 100;
-    interpreter.frame.calldata = calldata.items;
+    // caller context is managed by EVM host; no direct field
+    // value is provided by EVM host during CALLs; not set here
+    // Note: calldata is provided via host.get_input(), not as direct field
     
     // Interpret until STOP/RETURN (skipped above)
     try interpreter.interpret();
@@ -268,9 +268,9 @@ test "Triple nested calls with middle revert - correct snapshot boundaries" {
     defer interpreter.deinit(allocator);
     
     interpreter.frame.contract_address = level1_address;
-    interpreter.frame.caller = caller_address;
-    interpreter.frame.value = 200;
-    interpreter.frame.calldata = calldata.items;
+    // caller context is managed by EVM host; no direct field
+    // value is provided by EVM host during CALLs; not set here
+    // Note: calldata is provided via host.get_input(), not as direct field
     
     // Interpret until STOP/RETURN (skipped above)
     try interpreter.interpret();
@@ -384,8 +384,8 @@ test "Storage changes in same transaction with multiple snapshots" {
     defer interpreter.deinit(allocator);
     
     interpreter.frame.contract_address = contract_address;
-    interpreter.frame.caller = contract_address;
-    interpreter.frame.value = 0;
+    // caller context is managed by EVM host; no direct field
+    // value is provided by EVM host during CALLs; not set here
     
     // Should stop successfully (interpret handles STOP internally)
     try interpreter.interpret();

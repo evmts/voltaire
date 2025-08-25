@@ -8,7 +8,6 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const primitives = @import("primitives");
 const CallParams = @import("call_params.zig").CallParams;
-const host_mod = @import("host.zig");
 const Hardfork = @import("hardfork.zig").Hardfork;
 const evm = @import("evm.zig");
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
@@ -49,6 +48,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         instruction_idx: Plan.InstructionIndexType,
         allocator: std.mem.Allocator,
         planner: Planner,
+        // Optional fast mapping: instruction index -> PC (for O(1) current PC)
+        idx_to_pc: []Plan.PcType = &[_]Plan.PcType{},
 
         // Comptime handler table initialization
         const handlers = blk: {
@@ -212,32 +213,51 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Use getOrAnalyze with the actual hardfork from host
             const plan_ptr = try planner.getOrAnalyze(bytecode, handlers, host.get_hardfork());
 
+            // Build reverse mapping (instruction_idx -> pc) if pc map exists
+            var idx_to_pc: []Plan.PcType = &[_]Plan.PcType{};
+            if (plan_ptr.pc_to_instruction_idx) |pc_map| {
+                idx_to_pc = try allocator.alloc(Plan.PcType, plan_ptr.instructionStream.len);
+                // Fill with sentinel (max value) indicating invalid
+                const invalid_pc: Plan.PcType = std.math.maxInt(Plan.PcType);
+                @memset(idx_to_pc, invalid_pc);
+                var it = pc_map.iterator();
+                while (it.next()) |e| {
+                    const pc = e.key_ptr.*;
+                    const idx = e.value_ptr.*;
+                    if (idx < idx_to_pc.len) idx_to_pc[idx] = pc;
+                }
+            }
+
             return Self{
                 .frame = frame,
                 .plan = plan_ptr,
                 .instruction_idx = 0,
                 .allocator = allocator,
                 .planner = planner,
+                .idx_to_pc = idx_to_pc,
             };
         }
 
-        /// Get current PC by looking up instruction index in plan
+        /// Get current PC by instruction index (O(1) if mapping present)
         pub fn getCurrentPc(self: *const Self) ?Plan.PcType {
-            if (self.plan.pc_to_instruction_idx) |map| {
-                var iter = map.iterator();
-                while (iter.next()) |entry| {
-                    if (entry.value_ptr.* == self.instruction_idx) {
-                        return entry.key_ptr.*;
-                    }
+            if (self.idx_to_pc.len != 0) {
+                const pc = self.idx_to_pc[self.instruction_idx];
+                const invalid_pc: Plan.PcType = std.math.maxInt(Plan.PcType);
+                if (pc != invalid_pc) {
+                    return pc;
+                } else {
+                    return null;
                 }
+            } else {
+                return null;
             }
-            return null;
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.frame.deinit(allocator);
             // Don't deinit the plan - it's owned by the planner cache
             self.planner.deinit();
+            if (self.idx_to_pc.len != 0) allocator.free(self.idx_to_pc);
         }
 
         pub fn interpret(self: *Self) !void {
@@ -318,14 +338,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
         // Helper function to dispatch to next handler with WASM compatibility
         inline fn dispatchNext(next_handler: *const HandlerFn, frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            if (comptime is_wasm) {
-                // On WASM, use a regular call and loop
-                // This will be optimized by the compiler into a jump
-                return next_handler(frame, plan);
-            } else {
-                // On other platforms, use tail call optimization
-                return @call(.always_tail, next_handler, .{ frame, plan });
-            }
+            // Use a regular call for stability; compilers may still optimize into a tail call.
+            return next_handler(frame, plan);
         }
 
         // Comptime PUSH handler generation
@@ -337,21 +351,31 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
                     const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
+                    // Reconstruct immediate directly from bytecode using current PC
                     if (n == 0) {
-                        // PUSH0 pushes zero without metadata
                         try self.stack.push(0);
-                    } else if (n <= 8 and @sizeOf(usize) == 8) {
-                        // PUSH1-8 on 64-bit platforms fit inline
-                        const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, opcode));
-                        try self.stack.push(value);
-                    } else if (n <= 4 and @sizeOf(usize) == 4) {
-                        // PUSH1-4 on 32-bit platforms fit inline
-                        const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, opcode));
-                        try self.stack.push(value);
                     } else {
-                        // Larger PUSH values use pointer
-                        const value_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, opcode);
-                        try self.stack.push(value_ptr.*);
+                        const pc_opt = interpreter.getCurrentPc();
+                        if (pc_opt) |pc_val| {
+                            // pc_val points at the PUSH opcode; immediate starts at pc+1
+                            var acc: WordType = 0;
+                            var j: usize = 0;
+                            while (j < n) : (j += 1) {
+                                const off = @as(usize, @intCast(pc_val)) + 1 + j;
+                                if (off >= self.bytecode.len) break; // safety
+                                acc = (acc << 8) | self.bytecode[off];
+                            }
+                            try self.stack.push(acc);
+                        } else {
+                            // Fallback to plan metadata if PC mapping unavailable
+                            if ((n <= 8 and @sizeOf(usize) == 8) or (n <= 4 and @sizeOf(usize) == 4)) {
+                                const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, opcode));
+                                try self.stack.push(value);
+                            } else {
+                                const value_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, opcode);
+                                try self.stack.push(value_ptr.*);
+                            }
+                        }
                     }
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
@@ -1210,9 +1234,13 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(@intCast(access_cost));
 
             // Compute SSTORE dynamic cost per EIP-2200/EIP-3529 using GasConstants
-            const current_value: WordType = host.get_storage(address, slot);
-            const original_opt = host.get_original_storage(address, slot);
-            const original_value: WordType = original_opt orelse current_value;
+            const cur_u256 = host.get_storage(address, slot);
+            const current_value: WordType = @as(WordType, @truncate(cur_u256));
+            const original_opt_u256 = host.get_original_storage(address, slot);
+            const original_value: WordType = if (original_opt_u256) |ov|
+                @as(WordType, @truncate(ov))
+            else
+                current_value;
             // We already charged the cold/warm cost above, so pass false for is_cold to avoid double-charge
             const sstore_cost = @import("primitives").GasConstants.sstore_gas_cost(
                 current_value,
@@ -1221,6 +1249,13 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 false,
             );
             self.consumeGasUnchecked(sstore_cost);
+
+            // Track refund effects (EIP-3529): only clear-to-zero grants 4800; cancel if revived
+            if (current_value != 0 and new_value == 0) {
+                self.gas_refund += 4800;
+            } else if (current_value == 0 and new_value != 0 and original_value != 0) {
+                if (self.gas_refund >= 4800) self.gas_refund -= 4800 else self.gas_refund = 0;
+            }
 
             try self.sstore();
 
