@@ -105,6 +105,8 @@ pub const AbiEncoding = @import("abi_encoding.zig");
 pub const Numeric = @import("numeric.zig");
 pub const GasConstants = @import("gas_constants.zig");
 pub const Uint = @import("uint.zig").Uint;
+// Note: Zig 0.14 includes a builtin `u256` primitive. Avoid exporting
+// a shadowing alias here to prevent name conflicts in tests/builds.
 
 // State management
 pub const State = @import("state.zig");
@@ -126,3 +128,7 @@ pub const Siwe = @import("siwe.zig");
 pub const ZERO_ADDRESS = Address.ZERO_ADDRESS;
 pub const EMPTY_CODE_HASH = State.EMPTY_CODE_HASH;
 pub const EMPTY_TRIE_ROOT = State.EMPTY_TRIE_ROOT;
+
+// Expose crypto package for primitives submodules that need hashing
+// Enables imports via `@import("root").crypto` within this package
+pub const crypto = @import("crypto");

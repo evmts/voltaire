@@ -1,9 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
-const crypto_pkg = @import("crypto");
-const hash = crypto_pkg.Hash;
 const hex = @import("hex.zig");
-const Hash = hash.Hash;
+const Hash = [32]u8;
+const Sha256 = std.crypto.hash.sha2.Sha256;
 const Allocator = std.mem.Allocator;
 
 // EIP-4844 Blob Transaction Constants
@@ -31,17 +30,18 @@ pub const BlobError = error{
 pub const Blob = [BYTES_PER_BLOB]u8;
 pub const BlobCommitment = [48]u8;
 pub const BlobProof = [48]u8;
-pub const VersionedHash = Hash;
+pub const VersionedHash = struct { bytes: [32]u8 };
 
 // Create versioned hash from commitment
 pub fn commitment_to_versioned_hash(commitment: BlobCommitment) VersionedHash {
     // versioned_hash = BLOB_COMMITMENT_VERSION_KZG ++ sha256(commitment)[1:]
     var hash_input: [48]u8 = commitment;
-    const sha256_hash = hash.sha256(&hash_input);
+    var sha256_hash: [32]u8 = undefined;
+    Sha256.hash(&hash_input, &sha256_hash, .{});
 
-    var versioned: VersionedHash = undefined;
+    var versioned = VersionedHash{ .bytes = undefined };
     versioned.bytes[0] = BLOB_COMMITMENT_VERSION_KZG;
-    @memcpy(versioned.bytes[1..32], sha256_hash.bytes[1..32]);
+    @memcpy(versioned.bytes[1..32], sha256_hash[1..32]);
 
     return versioned;
 }
