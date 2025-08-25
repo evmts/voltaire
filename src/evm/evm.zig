@@ -958,8 +958,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
             }
 
-            // Execute precompile using arena allocator
-            const result = precompiles.execute_precompile(self.internal_arena.allocator(), address, input, gas) catch {
+            // Execute precompile using main allocator so tests can free outputs
+            const result = precompiles.execute_precompile(self.allocator, address, input, gas) catch {
                 return CallResult{
                     .success = false,
                     .gas_left = 0,
@@ -968,18 +968,18 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
 
             // Handle precompile result
+            // Copy output into owned buffer and free original to avoid leaks
+            var out_slice: []const u8 = &.{};
+            if (result.output.len > 0) {
+                const buf = try self.allocator.dupe(u8, result.output);
+                // Original was allocated with self.allocator in precompile
+                self.allocator.free(result.output);
+                out_slice = buf;
+            }
             if (result.success) {
-                return CallResult{
-                    .success = true,
-                    .gas_left = gas - result.gas_used,
-                    .output = result.output,
-                };
+                return CallResult{ .success = true, .gas_left = gas - result.gas_used, .output = out_slice };
             } else {
-                return CallResult{
-                    .success = false,
-                    .gas_left = 0,
-                    .output = &.{},
-                };
+                return CallResult{ .success = false, .gas_left = 0, .output = out_slice };
             }
         }
 
@@ -2805,7 +2805,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
     };
 
     const result = try evm.call(call_params);
-    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
+    defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(test_data.len, result.output.len);
@@ -2855,7 +2855,7 @@ test "Precompiles - SHA256 precompile (0x02)" {
     };
 
     const result = try evm.call(call_params);
-    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
+    defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 always returns 32 bytes
@@ -5110,7 +5110,7 @@ test "Arena allocator - handles multiple logs efficiently" {
             .gas = 5000000,
         },
     });
-    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
+    defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 100), result.logs.len);
@@ -5159,7 +5159,7 @@ test "Arena allocator - precompile outputs use arena" {
             .gas = 100000,
         },
     });
-    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
+    defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 output is 32 bytes
@@ -5296,7 +5296,7 @@ test "Arena allocator - memory efficiency with nested calls" {
             .gas = 1000000,
         },
     });
-    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
+    defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 2), result.logs.len); // Parent and child logs
