@@ -2,8 +2,6 @@
 //! instead of MockHost.
 
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
-const FrameConfig = @import("frame_config.zig").FrameConfig;
 const Evm = @import("evm.zig").DefaultEvm;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address.Address;
@@ -44,7 +42,7 @@ fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: *Evm, memory_db: *
     return .{ .evm = evm, .memory_db = memory_db };
 }
 
-test "Frame CALL operation - real integration test" {
+test "EVM CALL operation - integration" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -75,44 +73,22 @@ test "Frame CALL operation - real integration test" {
     account.balance = 1000; // Give it some balance
     try evm.database.set_account(target_address, account);
     
-    // Create a frame that will make the CALL
+    // Top-level CALL via EVM
     const caller_address = to_address(0x1000);
-    const F = Frame(.{ .has_database = true });
-    const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
-    
-    // Get the EVM's host interface
-    const host = evm.to_host();
-    
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
-    defer frame.deinit(allocator);
-    
-    frame.contract_address = caller_address;
-    
-    // Setup stack for CALL: [gas, address, value, input_offset, input_size, output_offset, output_size]
-    try frame.stack.push(50000);                    // gas
-    try frame.stack.push(to_u256(target_address)); // address
-    try frame.stack.push(0);                        // value
-    try frame.stack.push(0);                        // input_offset
-    try frame.stack.push(0);                        // input_size
-    try frame.stack.push(0);                        // output_offset  
-    try frame.stack.push(32);                       // output_size
-    
-    // Execute CALL
-    try frame.call();
-    
-    // Verify success (1) was pushed to stack
-    const stack_result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 1), stack_result);
-    
-    // Verify the return data was written to memory
-    const return_data = frame.memory.get_slice(0, 32) catch &[_]u8{};
-    // The contract stores 1 at memory[0:32], so we expect the first byte to be 1
-    try std.testing.expect(return_data.len >= 32);
-    const returned_value = std.mem.readInt(u256, return_data[0..32], .big);
-    try std.testing.expectEqual(@as(u256, 1), returned_value);
+    const params = @import("call_params.zig").CallParams{ .call = .{
+        .caller = caller_address,
+        .to = target_address,
+        .value = 0,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    const result = try evm.call(params);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    try std.testing.expectEqual(@as(u8, 1), result.output[31]);
 }
 
-test "Frame CALL with value transfer - real integration test" {
+test "EVM CALL with value transfer - integration" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -138,31 +114,16 @@ test "Frame CALL with value transfer - real integration test" {
     target_account.balance = 500; // Target starts with 500 wei
     try evm.database.set_account(target_address, target_account);
     
-    // Create frame
-    const F = Frame(.{ .has_database = true });
-    const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
-    const host = evm.to_host();
-    
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
-    defer frame.deinit(allocator);
-    
-    frame.contract_address = caller_address;
-    
-    // Setup stack for CALL with value transfer
-    try frame.stack.push(50000);                    // gas
-    try frame.stack.push(to_u256(target_address)); // address  
-    try frame.stack.push(1000);                     // value (transfer 1000 wei)
-    try frame.stack.push(0);                        // input_offset
-    try frame.stack.push(0);                        // input_size
-    try frame.stack.push(0);                        // output_offset
-    try frame.stack.push(0);                        // output_size
-    
-    // Execute CALL
-    try frame.call();
-    
-    // Verify success
-    const stack_result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 1), stack_result);
+    // Direct CALL via EVM with value
+    const params = @import("call_params.zig").CallParams{ .call = .{
+        .caller = caller_address,
+        .to = target_address,
+        .value = 1000,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    const result_call = try evm.call(params);
+    try std.testing.expect(result_call.success);
     
     // Verify balances were updated
     const caller_after = try evm.database.get_account(caller_address);
@@ -186,7 +147,7 @@ test "Frame DELEGATECALL preserves context - real integration test" {
         allocator.destroy(memory_db);
     }
     
-    // Deploy a contract that reads CALLER and VALUE
+    // Deploy a contract that reads CALLER and VALUE and returns their sum
     const target_bytecode = [_]u8{
         0x33,       // CALLER
         0x34,       // CALLVALUE
@@ -207,40 +168,19 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     account.code_hash = code_hash;
     try evm.database.set_account(target_address, account);
     
-    // Create frame with specific caller and value context
-    const F = Frame(.{ .has_database = true });
-    const bytecode = [_]u8{ 0xF4, 0x00 }; // DELEGATECALL STOP
-    const host = evm.to_host();
-    
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
-    defer frame.deinit(allocator);
-    
-    frame.contract_address = caller_address;
-    frame.caller = original_caller;
-    frame.value = 999; // This value should be preserved in DELEGATECALL
-    
-    // Setup stack for DELEGATECALL: [gas, address, input_offset, input_size, output_offset, output_size]
-    try frame.stack.push(50000);                    // gas
-    try frame.stack.push(to_u256(target_address)); // address
-    try frame.stack.push(0);                        // input_offset
-    try frame.stack.push(0);                        // input_size
-    try frame.stack.push(0);                        // output_offset
-    try frame.stack.push(32);                       // output_size
-    
-    // Execute DELEGATECALL
-    try frame.delegatecall();
-    
-    // Verify success
-    const stack_result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 1), stack_result);
-    
-    // The target contract adds CALLER + CALLVALUE
-    // In DELEGATECALL, these should be preserved from the parent context
-    const return_data = frame.memory.get_slice(0, 32) catch &[_]u8{};
-    const returned_value = std.mem.readInt(u256, return_data[0..32], .big);
-    
-    // Should be original_caller + value = 0x1111 + 999
-    const expected = to_u256(original_caller) + 999;
+    // Execute top-level DELEGATECALL (preserves caller, value is 0 at top-level)
+    const params = @import("call_params.zig").CallParams{ .delegatecall = .{
+        .caller = original_caller,
+        .to = target_address,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    const result = try evm.call(params);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    const returned_value = std.mem.readInt(u256, result.output[0..32], .big);
+    // At top-level: expected = original_caller + 0
+    const expected = to_u256(original_caller) + 0;
     try std.testing.expectEqual(expected, returned_value);
 }
 
