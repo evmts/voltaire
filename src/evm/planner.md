@@ -7,7 +7,7 @@ Bytecode analysis and optimization system for EVM execution plans.
 ```zig
 const PlannerType = Planner(config);
 var planner = try PlannerType.init(allocator, cache_capacity);
-const plan = try planner.getOrAnalyze(bytecode, handlers);
+const plan = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
 ```
 
 ## Description
@@ -85,7 +85,7 @@ pub fn init(allocator: std.mem.Allocator, cache_capacity: usize) !Self
 pub fn deinit(self: *Self) void
 
 // Get cached plan or analyze new bytecode
-pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const PlanType
+pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn, hardfork: Hardfork) !*const PlanType
 
 // Cache management
 pub fn clearCache(self: *Self) void
@@ -102,7 +102,7 @@ pub fn create_instruction_stream(
     handlers: [256]*const HandlerFn
 ) !PlanType
 
-// Minimal analysis (TODO: currently incomplete)
+// Minimal analysis (currently incomplete; returns no plan object)
 pub fn create_minimal_plan(
     self: *Self,
     allocator: std.mem.Allocator, 
@@ -191,8 +191,8 @@ if (n <= @sizeOf(usize)) {
 ```
 
 **Platform Differences**:
-- **64-bit**: Inline values up to 8 bytes, pointers for larger
-- **32-bit**: Inline values up to 4 bytes, pointers for larger
+- 64-bit: Inline values up to 8 bytes; JUMPDEST metadata is inlined in the stream
+- 32-bit: Inline values up to 4 bytes; JUMPDEST metadata is stored in `Plan.jumpdest_metadata` and referenced via pointer in the stream
 
 ### Cache Performance
 
@@ -207,8 +207,11 @@ const CacheNode = struct {
 };
 
 // O(1) cache operations
-pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const PlanType {
-    const key = std.hash.Wyhash.hash(0, bytecode);
+pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn, hardfork: Hardfork) !*const PlanType {
+    var hasher = std.hash.Wyhash.init(0);
+    hasher.update(bytecode);
+    hasher.update(std.mem.asBytes(&hardfork));
+    const key = hasher.final();
     
     if (self.cache_map.get(key)) |node| {
         self.moveToFront(node);  // O(1) LRU update
@@ -283,7 +286,7 @@ var planner = try Planner(.{}).init(allocator, 64);
 defer planner.deinit();
 
 // Get optimized plan (cached if available)
-const plan = try planner.getOrAnalyze(bytecode, handlers);
+const plan = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
 
 // Execute using plan (in frame or interpreter)
 var instruction_idx: u32 = 0;
@@ -307,7 +310,7 @@ The planner's output enables highly efficient EVM execution:
 ### Current Limitations
 
 1. **Minimal Planning**: `create_minimal_plan` is incomplete (returns void, should return PlanMinimal)
-2. **Hit Rate Tracking**: Cache statistics don't track hit/miss ratios yet
+2. **Hit Rate Tracking**: Cache statistics include hits, misses, and hit ratio
 3. **Advanced Strategies**: Only basic fusion implemented, advanced optimizations pending
 
 ### Future Enhancements

@@ -472,6 +472,24 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                         );
                     }
                 },
+                @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER) => {
+                    if (opcode2 != @intFromEnum(Opcode.MLOAD)) {
+                        std.debug.panic(
+                            "DebugPlan: PUSH_MLOAD fusion but second opcode is not MLOAD: {}",
+                            .{opcode2}
+                        );
+                    }
+                },
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => {
+                    if (opcode2 != @intFromEnum(Opcode.MSTORE)) {
+                        std.debug.panic(
+                            "DebugPlan: PUSH_MSTORE fusion but second opcode is not MSTORE: {}",
+                            .{opcode2}
+                        );
+                    }
+                },
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER) => {
                     if (opcode2 != @intFromEnum(Opcode.MUL)) {

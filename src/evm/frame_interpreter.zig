@@ -10,6 +10,8 @@ const primitives = @import("primitives");
 const CallParams = @import("call_params.zig").CallParams;
 const host_mod = @import("host.zig");
 const Hardfork = @import("hardfork.zig").Hardfork;
+const evm = @import("evm.zig");
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 
 
 /// Create a FrameInterpreter with the given configuration
@@ -183,6 +185,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_POINTER)] = &push_jump_pointer_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &push_jumpi_inline_handler;
             h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &push_jumpi_pointer_handler;
+            // New fusions: PUSH+MLOAD/MSTORE (immediate offset)
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_INLINE)] = &push_mload_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_POINTER)] = &push_mload_pointer_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_INLINE)] = &push_mstore_inline_handler;
+            h[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_POINTER)] = &push_mstore_pointer_handler;
             break :blk h;
         };
 
@@ -2081,6 +2088,58 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
         }
 
+        fn push_mload_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const off_usize = @as(usize, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_INLINE)));
+            const val = try self.memory.get_u256_evm(off_usize);
+            try self.stack.push(val);
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_mload_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const off_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_POINTER));
+            const off_usize: usize = @intCast(off_ptr.*);
+            const val = try self.memory.get_u256_evm(off_usize);
+            try self.stack.push(val);
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MLOAD_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+
+        fn push_mstore_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const off_usize = @as(usize, plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_INLINE)));
+            const value = try self.stack.pop();
+            try self.memory.set_u256_evm(off_usize, value);
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_INLINE));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+        fn push_mstore_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+
+            const off_ptr = plan_ptr.getMetadata(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_POINTER));
+            const off_usize: usize = @intCast(off_ptr.*);
+            const value = try self.stack.pop();
+            try self.memory.set_u256_evm(off_usize, value);
+
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MSTORE_POINTER));
+            return dispatchNext(next_handler, self, plan_ptr);
+        }
+
         fn out_of_bounds_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             _ = frame;
             _ = plan;
@@ -2630,11 +2689,26 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 test "FrameInterpreter basic execution - simple" {
     std.testing.log_level = .warn;
     const allocator = std.testing.allocator;
+    
+    // Create memory database and EVM instance for proper host
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const block_info = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance = try evm.Evm(.{}).init(allocator, db_interface, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance.deinit();
+    
     const FrameInterpreterType = FrameInterpreter(.{});
 
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
     const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance.to_host());
     defer interpreter.deinit(allocator);
 
     std.log.warn("\n=== FrameInterpreter basic execution test ===", .{});
@@ -2650,6 +2724,49 @@ test "FrameInterpreter basic execution - simple" {
     // Check final stack state
     try std.testing.expectEqual(@as(u256, 52), interpreter.frame.stack.peek_unsafe()); // 42 + 10 = 52
 }
+
+test "FrameInterpreter fusion MSTORE_IMM and MLOAD_IMM round-trip" {
+    const allocator = std.testing.allocator;
+
+    // Build bytecode: PUSH1 0x00; MSTORE; PUSH1 0x00; MLOAD; STOP
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.MSTORE),
+        @intFromEnum(Opcode.PUSH1), 0x00,
+        @intFromEnum(Opcode.MLOAD),
+        @intFromEnum(Opcode.STOP),
+    };
+
+    // Minimal EVM/host to satisfy interpreter
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    const block_info = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance = try evm.Evm(.{}).init(allocator, db_interface, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance.deinit();
+
+    const FrameInterpreterType = FrameInterpreter(.{});
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 500000, {}, evm_instance.to_host());
+    defer interpreter.deinit(allocator);
+
+    // Push a value to be stored; MSTORE will pop it and write at offset 0
+    const value: u256 = 0xDEADBEEFCAFEBABE0123456789ABCDEF;
+    try interpreter.frame.stack.push(value);
+
+    // Execute program; planner should fuse both PUSH+MSTORE and PUSH+MLOAD
+    try interpreter.interpret();
+
+    // Verify round-trip: top of stack equals original value
+    try std.testing.expectEqual(value, try interpreter.frame.stack.peek());
+
+    // Memory should have expanded to at least 32 bytes
+    try std.testing.expect(interpreter.frame.memory.size() >= 32);
+}
 test "FrameInterpreter basic execution" {
     std.testing.log_level = .warn;
     const allocator = std.testing.allocator;
@@ -2657,7 +2774,19 @@ test "FrameInterpreter basic execution" {
 
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
     const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+    // Create a minimal EVM instance to provide a Host
+    var memory_db2 = MemoryDatabase.init(allocator);
+    defer memory_db2.deinit();
+    const db_interface2 = memory_db2.to_database_interface();
+    const block_info2 = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context2 = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance2 = try evm.Evm(.{}).init(allocator, db_interface2, block_info2, tx_context2, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance2.deinit();
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance2.to_host());
     defer interpreter.deinit(allocator);
 
     std.log.warn("\n=== FrameInterpreter basic execution test ===", .{});
@@ -2681,7 +2810,19 @@ test "FrameInterpreter OUT_OF_BOUNDS error" {
     // Bytecode without explicit STOP: PUSH1 5
     // The planner should handle this gracefully but for now add STOP
     const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5 STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+    // Create a minimal EVM instance to provide a Host
+    var memory_db3 = MemoryDatabase.init(allocator);
+    defer memory_db3.deinit();
+    const db_interface3 = memory_db3.to_database_interface();
+    const block_info3 = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context3 = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance3 = try evm.Evm(.{}).init(allocator, db_interface3, block_info3, tx_context3, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance3.deinit();
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance3.to_host());
     defer interpreter.deinit(allocator);
 
     // Should execute normally
@@ -2695,7 +2836,19 @@ test "FrameInterpreter invalid opcode" {
 
     // Bytecode with invalid opcode: 0xFE (INVALID)
     const bytecode = [_]u8{0xFE};
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+    // Create a minimal EVM instance to provide a Host
+    var memory_db4 = MemoryDatabase.init(allocator);
+    defer memory_db4.deinit();
+    const db_interface4 = memory_db4.to_database_interface();
+    const block_info4 = @import("block_info.zig").DefaultBlockInfo.init();
+    const tx_context4 = @import("transaction_context.zig").TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = [_]u8{0} ** 20,
+        .chain_id = 1,
+    };
+    var evm_instance4 = try evm.Evm(.{}).init(allocator, db_interface4, block_info4, tx_context4, 0, [_]u8{0} ** 20, .CANCUN);
+    defer evm_instance4.deinit();
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance4.to_host());
     defer interpreter.deinit(allocator);
 
     // Should return InvalidOpcode error
@@ -2741,7 +2894,19 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
     // Test PUSH3 through interpreter
     {
         const bytecode = [_]u8{ 0x62, 0x12, 0x34, 0x56, 0x00 }; // PUSH3 0x123456 STOP
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+        // Create a minimal EVM instance to provide a Host
+        var memory_db5 = MemoryDatabase.init(allocator);
+        defer memory_db5.deinit();
+        const db_interface5 = memory_db5.to_database_interface();
+        const block_info5 = @import("block_info.zig").DefaultBlockInfo.init();
+        const tx_context5 = @import("transaction_context.zig").TransactionContext{
+            .gas_limit = 1_000_000,
+            .coinbase = [_]u8{0} ** 20,
+            .chain_id = 1,
+        };
+        var evm_instance5 = try evm.Evm(.{}).init(allocator, db_interface5, block_info5, tx_context5, 0, [_]u8{0} ** 20, .CANCUN);
+        defer evm_instance5.deinit();
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance5.to_host());
         defer interpreter.deinit(allocator);
 
         std.log.warn("\n=== PUSH3 Test Starting ===", .{});
@@ -2759,7 +2924,19 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         }
         bytecode[11] = 0x00; // STOP
 
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+        // Create a minimal EVM instance to provide a Host
+        var memory_db6 = MemoryDatabase.init(allocator);
+        defer memory_db6.deinit();
+        const db_interface6 = memory_db6.to_database_interface();
+        const block_info6 = @import("block_info.zig").DefaultBlockInfo.init();
+        const tx_context6 = @import("transaction_context.zig").TransactionContext{
+            .gas_limit = 1_000_000,
+            .coinbase = [_]u8{0} ** 20,
+            .chain_id = 1,
+        };
+        var evm_instance6 = try evm.Evm(.{}).init(allocator, db_interface6, block_info6, tx_context6, 0, [_]u8{0} ** 20, .CANCUN);
+        defer evm_instance6.deinit();
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance6.to_host());
         defer interpreter.deinit(allocator);
 
         try interpreter.interpret(); // Handles STOP internally
@@ -2780,7 +2957,19 @@ test "FrameInterpreter handles all PUSH opcodes correctly" {
         }
         bytecode[21] = 0x00; // STOP
 
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
+        // Create a minimal EVM instance to provide a Host
+        var memory_db7 = MemoryDatabase.init(allocator);
+        defer memory_db7.deinit();
+        const db_interface7 = memory_db7.to_database_interface();
+        const block_info7 = @import("block_info.zig").DefaultBlockInfo.init();
+        const tx_context7 = @import("transaction_context.zig").TransactionContext{
+            .gas_limit = 1_000_000,
+            .coinbase = [_]u8{0} ** 20,
+            .chain_id = 1,
+        };
+        var evm_instance7 = try evm.Evm(.{}).init(allocator, db_interface7, block_info7, tx_context7, 0, [_]u8{0} ** 20, .CANCUN);
+        defer evm_instance7.deinit();
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm_instance7.to_host());
         defer interpreter.deinit(allocator);
 
         try interpreter.interpret(); // Handles STOP internally
@@ -2853,7 +3042,7 @@ test "FrameInterpreter arithmetic edge cases - division by zero" {
 
     // Test DIV by zero: PUSH1 0, PUSH1 5, DIV -> should return 0
     const bytecode_div = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x04, 0x00 }; // PUSH1 0, PUSH1 5, DIV, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_div, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_div, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -2874,7 +3063,7 @@ test "FrameInterpreter arithmetic edge cases - modulo by zero" {
 
     // Test MOD by zero: PUSH1 0, PUSH1 7, MOD -> should return 0
     const bytecode_mod = [_]u8{ 0x60, 0x00, 0x60, 0x07, 0x06, 0x00 }; // PUSH1 0, PUSH1 7, MOD, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_mod, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_mod, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -2882,7 +3071,7 @@ test "FrameInterpreter arithmetic edge cases - modulo by zero" {
 
     // Test SMOD by zero: should also return 0
     const bytecode_smod = [_]u8{ 0x60, 0x00, 0x60, 0x07, 0x07, 0x00 }; // PUSH1 0, PUSH1 7, SMOD, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_smod, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_smod, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
 
     try interpreter2.interpret();
@@ -2906,7 +3095,7 @@ test "FrameInterpreter arithmetic edge cases - signed division" {
     bytecode[35] = 0x05; // SDIV
     const bytecode_with_stop = bytecode ++ [_]u8{0x00}; // Add STOP
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_with_stop, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_with_stop, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -2922,7 +3111,7 @@ test "FrameInterpreter arithmetic edge cases - ADDMOD and MULMOD with zero modul
 
     // Test ADDMOD with zero modulus: (5 + 3) % 0 -> should return 0
     const bytecode_addmod = [_]u8{ 0x60, 0x00, 0x60, 0x03, 0x60, 0x05, 0x08, 0x00 }; // PUSH1 0, PUSH1 3, PUSH1 5, ADDMOD, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_addmod, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_addmod, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -2930,7 +3119,7 @@ test "FrameInterpreter arithmetic edge cases - ADDMOD and MULMOD with zero modul
 
     // Test MULMOD with zero modulus: (5 * 3) % 0 -> should return 0
     const bytecode_mulmod = [_]u8{ 0x60, 0x00, 0x60, 0x03, 0x60, 0x05, 0x09, 0x00 }; // PUSH1 0, PUSH1 3, PUSH1 5, MULMOD, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_mulmod, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_mulmod, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
 
     try interpreter2.interpret();
@@ -2984,14 +3173,14 @@ test "FrameInterpreter comparison operations - LT and GT boundary values" {
 
     // Test LT with equal values: 5 < 5 -> false (0)
     const bytecode_lt_equal = [_]u8{ 0x60, 0x05, 0x60, 0x05, 0x10, 0x00 }; // PUSH1 5, PUSH1 5, LT, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_lt_equal, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_lt_equal, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
 
     // Test LT with different values: 3 < 5 -> true (1)
     const bytecode_lt_true = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x10, 0x00 }; // PUSH1 5, PUSH1 3, LT, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_lt_true, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_lt_true, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
@@ -3019,7 +3208,7 @@ test "FrameInterpreter comparison operations - LT and GT boundary values" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter3.frame.stack.peek_unsafe());
@@ -3080,7 +3269,7 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
     // STOP
     bytecode2[idx] = 0x00;
 
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode2, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode2, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
@@ -3140,14 +3329,14 @@ test "FrameInterpreter comparison operations - EQ and ISZERO" {
 
     // Test ISZERO with zero: 0 == 0 -> true (1)
     const bytecode_iszero_true = [_]u8{ 0x60, 0x00, 0x15, 0x00 }; // PUSH1 0, ISZERO, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_iszero_true, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_iszero_true, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
 
     // Test ISZERO with non-zero: 42 == 0 -> false (0)
     const bytecode_iszero_false = [_]u8{ 0x60, 0x2A, 0x15, 0x00 }; // PUSH1 42, ISZERO, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_iszero_false, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_iszero_false, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
@@ -3159,21 +3348,21 @@ test "FrameInterpreter bitwise operations - AND, OR, XOR with patterns" {
 
     // Test AND with all bits set: 0xFF & 0x0F -> 0x0F
     const bytecode_and = [_]u8{ 0x60, 0x0F, 0x60, 0xFF, 0x16, 0x00 }; // PUSH1 0x0F, PUSH1 0xFF, AND, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_and, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_and, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 0x0F), interpreter.frame.stack.peek_unsafe());
 
     // Test OR with disjoint patterns: 0xF0 | 0x0F -> 0xFF
     const bytecode_or = [_]u8{ 0x60, 0x0F, 0x60, 0xF0, 0x17, 0x00 }; // PUSH1 0x0F, PUSH1 0xF0, OR, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_or, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_or, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0xFF), interpreter2.frame.stack.peek_unsafe());
 
     // Test XOR with same value: 0xAA ^ 0xAA -> 0
     const bytecode_xor = [_]u8{ 0x60, 0xAA, 0x60, 0xAA, 0x18, 0x00 }; // PUSH1 0xAA, PUSH1 0xAA, XOR, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_xor, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_xor, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
@@ -3185,7 +3374,7 @@ test "FrameInterpreter bitwise operations - NOT operation" {
 
     // Test NOT with zero: ~0 -> max u256
     const bytecode_not_zero = [_]u8{ 0x60, 0x00, 0x19, 0x00 }; // PUSH1 0, NOT, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_not_zero, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_not_zero, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(std.math.maxInt(u256), interpreter.frame.stack.peek_unsafe());
@@ -3199,7 +3388,7 @@ test "FrameInterpreter bitwise operations - NOT operation" {
     bytecode[33] = 0x19; // NOT
     bytecode[34] = 0x00; // STOP
 
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
@@ -3211,21 +3400,21 @@ test "FrameInterpreter bitwise operations - BYTE operation edge cases" {
 
     // Test BYTE with index 0 (most significant byte): BYTE(0, 0xFF00) -> 0xFF
     const bytecode_byte_0 = [_]u8{ 0x61, 0xFF, 0x00, 0x60, 0x00, 0x1A, 0x00 }; // PUSH2 0xFF00, PUSH1 0, BYTE, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_byte_0, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_byte_0, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 0x00), interpreter.frame.stack.peek_unsafe()); // byte 0 of 0xFF00 is 0x00
 
     // Test BYTE with index 1: BYTE(1, 0xFF00) -> 0x00
     const bytecode_byte_1 = [_]u8{ 0x61, 0xFF, 0x00, 0x60, 0x01, 0x1A, 0x00 }; // PUSH2 0xFF00, PUSH1 1, BYTE, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_byte_1, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_byte_1, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0xFF), interpreter2.frame.stack.peek_unsafe());
 
     // Test BYTE with out-of-bounds index: BYTE(32, value) -> 0
     const bytecode_byte_oob = [_]u8{ 0x60, 0xFF, 0x60, 0x20, 0x1A, 0x00 }; // PUSH1 0xFF, PUSH1 32, BYTE, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_byte_oob, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_byte_oob, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
@@ -3237,21 +3426,21 @@ test "FrameInterpreter bitwise operations - shift operations SHL, SHR, SAR" {
 
     // Test SHL with small shift: 1 << 4 -> 16
     const bytecode_shl = [_]u8{ 0x60, 0x01, 0x60, 0x04, 0x1B, 0x00 }; // PUSH1 1, PUSH1 4, SHL, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_shl, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_shl, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 16), interpreter.frame.stack.peek_unsafe());
 
     // Test SHR with logical shift: 16 >> 4 -> 1
     const bytecode_shr = [_]u8{ 0x60, 0x10, 0x60, 0x04, 0x1C, 0x00 }; // PUSH1 16, PUSH1 4, SHR, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_shr, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_shr, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
 
     // Test SHL with large shift (should wrap to 0): any_value << 256 -> 0
     const bytecode_shl_overflow = [_]u8{ 0x60, 0xFF, 0x61, 0x01, 0x00, 0x1B, 0x00 }; // PUSH1 255, PUSH2 256, SHL, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_shl_overflow, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_shl_overflow, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
@@ -3278,7 +3467,7 @@ test "FrameInterpreter bitwise operations - shift operations SHL, SHR, SAR" {
     // STOP
     bytecode[idx] = 0x00;
 
-    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, null);
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
     defer interpreter4.deinit(allocator);
     try interpreter4.interpret();
 
@@ -3293,7 +3482,7 @@ test "FrameInterpreter stack error conditions - stack underflow" {
 
     // Test POP on empty stack - should cause underflow error
     const bytecode_pop_empty = [_]u8{ 0x50, 0x00 }; // POP, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_pop_empty, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_pop_empty, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return stack underflow error
@@ -3307,7 +3496,7 @@ test "FrameInterpreter stack error conditions - ADD with insufficient stack" {
 
     // Test ADD with only one value on stack - should cause underflow
     const bytecode_add_underflow = [_]u8{ 0x60, 0x05, 0x01, 0x00 }; // PUSH1 5, ADD, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_add_underflow, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_add_underflow, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return stack underflow error
@@ -3321,7 +3510,7 @@ test "FrameInterpreter stack error conditions - DUP with insufficient stack" {
 
     // Test DUP2 with only one value on stack - should cause underflow
     const bytecode_dup_underflow = [_]u8{ 0x60, 0x05, 0x81, 0x00 }; // PUSH1 5, DUP2, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_dup_underflow, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_dup_underflow, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return stack underflow error
@@ -3335,7 +3524,7 @@ test "FrameInterpreter stack error conditions - SWAP with insufficient stack" {
 
     // Test SWAP1 with empty stack - should cause underflow
     const bytecode_swap_underflow = [_]u8{ 0x90, 0x00 }; // SWAP1, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_swap_underflow, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_swap_underflow, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return stack underflow error
@@ -3349,7 +3538,7 @@ test "FrameInterpreter stack operations - DUP1 through DUP16 functionality" {
 
     // Test DUP1: duplicates top stack item
     const bytecode_dup1 = [_]u8{ 0x60, 0x42, 0x80, 0x00 }; // PUSH1 0x42, DUP1, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_dup1, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_dup1, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
 
@@ -3359,7 +3548,7 @@ test "FrameInterpreter stack operations - DUP1 through DUP16 functionality" {
     // Test DUP2: duplicates second stack item
     // Create stack: [0x10, 0x20] then DUP2 -> [0x10, 0x20, 0x10]
     const bytecode_dup2 = [_]u8{ 0x60, 0x10, 0x60, 0x20, 0x81, 0x00 }; // PUSH1 0x10, PUSH1 0x20, DUP2, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_dup2, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_dup2, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
 
@@ -3374,7 +3563,7 @@ test "FrameInterpreter stack operations - SWAP1 through SWAP16 functionality" {
     // Test SWAP1: swaps top two stack items
     // Create stack: [0x10, 0x20] then SWAP1 -> [0x20, 0x10]
     const bytecode_swap1 = [_]u8{ 0x60, 0x10, 0x60, 0x20, 0x90, 0x00 }; // PUSH1 0x10, PUSH1 0x20, SWAP1, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_swap1, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_swap1, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
 
@@ -3384,7 +3573,7 @@ test "FrameInterpreter stack operations - SWAP1 through SWAP16 functionality" {
     // Test SWAP2: swaps top with third item
     // Create stack: [0x10, 0x20, 0x30] then SWAP2 -> [0x30, 0x20, 0x10]
     const bytecode_swap2 = [_]u8{ 0x60, 0x10, 0x60, 0x20, 0x60, 0x30, 0x91, 0x00 }; // PUSH1 0x10, PUSH1 0x20, PUSH1 0x30, SWAP2, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_swap2, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_swap2, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
 
@@ -3398,7 +3587,7 @@ test "FrameInterpreter jump operations - invalid jump destinations" {
 
     // Test JUMP to invalid destination (out of bounds)
     const bytecode_jump_oob = [_]u8{ 0x61, 0xFF, 0xFF, 0x56, 0x00 }; // PUSH2 0xFFFF, JUMP, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jump_oob, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jump_oob, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return InvalidJump error for out-of-bounds destination
@@ -3413,7 +3602,7 @@ test "FrameInterpreter jump operations - jump to middle of PUSH data" {
     // Create bytecode: PUSH2 data, PUSH1 1, JUMP
     // Trying to jump to PC=1 which is middle of PUSH2 data (invalid)
     const bytecode_jump_push_data = [_]u8{ 0x61, 0x12, 0x34, 0x60, 0x01, 0x56, 0x00 }; // PUSH2 0x1234, PUSH1 1, JUMP, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jump_push_data, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jump_push_data, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return InvalidJump error for jumping into PUSH data
@@ -3428,7 +3617,7 @@ test "FrameInterpreter jump operations - valid JUMP to JUMPDEST" {
     // Create valid jump: PUSH1 4, JUMP, JUMPDEST, PUSH1 0x42, STOP
     // Jump destination (PC=4) is a valid JUMPDEST
     const bytecode_valid_jump = [_]u8{ 0x60, 0x04, 0x56, 0xFF, 0x5B, 0x60, 0x42, 0x00 }; // PUSH1 4, JUMP, INVALID, JUMPDEST, PUSH1 0x42, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_valid_jump, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_valid_jump, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3444,7 +3633,7 @@ test "FrameInterpreter jump operations - JUMPI conditional behavior" {
     // Test JUMPI with false condition (0) - should not jump
     // PUSH1 7 (dest), PUSH1 0 (condition), JUMPI, PUSH1 0x11, STOP, JUMPDEST, PUSH1 0x22, STOP
     const bytecode_jumpi_false = [_]u8{ 0x60, 0x07, 0x60, 0x00, 0x57, 0x60, 0x11, 0x00, 0x5B, 0x60, 0x22, 0x00 };
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jumpi_false, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jumpi_false, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3454,7 +3643,7 @@ test "FrameInterpreter jump operations - JUMPI conditional behavior" {
 
     // Test JUMPI with true condition (non-zero) - should jump
     const bytecode_jumpi_true = [_]u8{ 0x60, 0x08, 0x60, 0x01, 0x57, 0x60, 0x11, 0x00, 0x5B, 0x60, 0x22, 0x00 };
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_jumpi_true, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_jumpi_true, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
 
     try interpreter2.interpret();
@@ -3469,7 +3658,7 @@ test "FrameInterpreter jump operations - JUMPI with invalid destination when con
 
     // Test JUMPI with true condition but invalid destination
     const bytecode_jumpi_invalid = [_]u8{ 0x61, 0xFF, 0xFF, 0x60, 0x01, 0x57, 0x00 }; // PUSH2 0xFFFF, PUSH1 1, JUMPI, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jumpi_invalid, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_jumpi_invalid, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     // Should return InvalidJump error when condition is true and destination is invalid
@@ -3484,7 +3673,7 @@ test "FrameInterpreter jump operations - PC opcode returns correct program count
     // Test PC opcode: PUSH1 0x42, PC, STOP
     // PC should return 2 (position after PUSH1 instruction)
     const bytecode_pc = [_]u8{ 0x60, 0x42, 0x58, 0x00 }; // PUSH1 0x42, PC, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_pc, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_pc, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -3499,7 +3688,7 @@ test "FrameInterpreter environment operations - ADDRESS, CALLER, ORIGIN, CALLVAL
 
     // Test ADDRESS opcode - should return current contract address (0x00 for default)
     const bytecode_address = [_]u8{ 0x30, 0x00 }; // ADDRESS, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_address, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_address, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
 
@@ -3508,7 +3697,7 @@ test "FrameInterpreter environment operations - ADDRESS, CALLER, ORIGIN, CALLVAL
 
     // Test CALLER opcode - should return caller address (0x00 for default)
     const bytecode_caller = [_]u8{ 0x33, 0x00 }; // CALLER, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_caller, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_caller, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
 
@@ -3517,7 +3706,7 @@ test "FrameInterpreter environment operations - ADDRESS, CALLER, ORIGIN, CALLVAL
 
     // Test ORIGIN opcode - should return transaction origin (0x00 for default)
     const bytecode_origin = [_]u8{ 0x32, 0x00 }; // ORIGIN, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_origin, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_origin, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
 
@@ -3526,7 +3715,7 @@ test "FrameInterpreter environment operations - ADDRESS, CALLER, ORIGIN, CALLVAL
 
     // Test CALLVALUE opcode - should return value sent with call (0x00 for default)
     const bytecode_callvalue = [_]u8{ 0x34, 0x00 }; // CALLVALUE, STOP
-    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_callvalue, 1000000, {}, null);
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_callvalue, 1000000, {}, evm.DefaultHost.init());
     defer interpreter4.deinit(allocator);
     try interpreter4.interpret();
 
@@ -3540,28 +3729,28 @@ test "FrameInterpreter EXP operation with edge cases" {
 
     // Test EXP with small values: 2^3 = 8
     const bytecode_exp_small = [_]u8{ 0x60, 0x03, 0x60, 0x02, 0x0A, 0x00 }; // PUSH1 3, PUSH1 2, EXP, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_exp_small, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_exp_small, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
     try std.testing.expectEqual(@as(u256, 8), interpreter.frame.stack.peek_unsafe());
 
     // Test EXP with zero exponent: 5^0 = 1
     const bytecode_exp_zero = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x0A, 0x00 }; // PUSH1 0, PUSH1 5, EXP, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
 
     // Test EXP with zero base: 0^5 = 0
     const bytecode_exp_zero_base = [_]u8{ 0x60, 0x05, 0x60, 0x00, 0x0A, 0x00 }; // PUSH1 5, PUSH1 0, EXP, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero_base, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero_base, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter3.frame.stack.peek_unsafe());
 
     // Test EXP edge case: 0^0 = 1 (per EVM spec)
     const bytecode_exp_zero_zero = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0x0A, 0x00 }; // PUSH1 0, PUSH1 0, EXP, STOP
-    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero_zero, 1000000, {}, null);
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_exp_zero_zero, 1000000, {}, evm.DefaultHost.init());
     defer interpreter4.deinit(allocator);
     try interpreter4.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter4.frame.stack.peek_unsafe());
@@ -3573,7 +3762,7 @@ test "FrameInterpreter SIGNEXTEND operation with all byte positions" {
 
     // Test SIGNEXTEND with byte position 0: sign extend from bit 7 (0x80 -> 0xFF...FF80)
     const bytecode_signext_0 = [_]u8{ 0x60, 0x80, 0x60, 0x00, 0x0B, 0x00 }; // PUSH1 0x80, PUSH1 0, SIGNEXTEND, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_signext_0, 1000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_signext_0, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     try interpreter.interpret();
 
@@ -3583,14 +3772,14 @@ test "FrameInterpreter SIGNEXTEND operation with all byte positions" {
 
     // Test SIGNEXTEND with positive value: 0x7F -> 0x7F (no sign extension needed)
     const bytecode_signext_pos = [_]u8{ 0x60, 0x7F, 0x60, 0x00, 0x0B, 0x00 }; // PUSH1 0x7F, PUSH1 0, SIGNEXTEND, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_signext_pos, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_signext_pos, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0x7F), interpreter2.frame.stack.peek_unsafe());
 
     // Test SIGNEXTEND with byte position 1: sign extend from bit 15
     const bytecode_signext_1 = [_]u8{ 0x61, 0x80, 0x00, 0x60, 0x01, 0x0B, 0x00 }; // PUSH2 0x8000, PUSH1 1, SIGNEXTEND, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_signext_1, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_signext_1, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
 
@@ -3600,7 +3789,7 @@ test "FrameInterpreter SIGNEXTEND operation with all byte positions" {
 
     // Test SIGNEXTEND with out-of-bounds byte position (>= 32) - should return value unchanged
     const bytecode_signext_oob = [_]u8{ 0x60, 0x80, 0x60, 0x20, 0x0B, 0x00 }; // PUSH1 0x80, PUSH1 32, SIGNEXTEND, STOP
-    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_signext_oob, 1000000, {}, null);
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_signext_oob, 1000000, {}, evm.DefaultHost.init());
     defer interpreter4.deinit(allocator);
     try interpreter4.interpret();
 
@@ -3719,7 +3908,7 @@ test "FrameInterpreter JUMPI execution - conditional jumps" {
         0x00, // STOP
     };
 
-    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_true, 1000000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_true, 1000000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
 
     try interpreter1.interpret();
@@ -3738,7 +3927,7 @@ test "FrameInterpreter JUMPI execution - conditional jumps" {
         0x00, // STOP
     };
 
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_false, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_false, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
 
     try interpreter2.interpret();
@@ -3778,7 +3967,7 @@ test "FrameInterpreter gas consumption - instruction costs" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, initial_gas, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, initial_gas, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     const start_gas = @max(interpreter.frame.gas_remaining, 0);
@@ -3805,7 +3994,7 @@ test "FrameInterpreter gas consumption - out of gas" {
     };
 
     // Start with very low gas
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1, {}, null); // Very low gas
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1, {}, evm.DefaultHost.init()); // Very low gas
     defer interpreter.deinit(allocator);
 
     // Should run out of gas during execution
@@ -4071,17 +4260,9 @@ test "FrameInterpreter zero-length bytecode" {
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
-    // Empty bytecode should either execute without error or return a specific error
-    const result = interpreter.interpret();
-
-    // Test that we handle this gracefully (either success or expected error)
-    if (result) {
-        // Success case - verify clean state
-        try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
-    } else |err| {
-        // Error case - verify it's an expected error type
-        try std.testing.expect(err == error.OutOfBounds or err == error.InvalidOpcode or err == error.STOP);
-    }
+    // Empty bytecode returns success (implicit STOP) and leaves stack empty
+    try interpreter.interpret();
+    try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
 }
 
 // ========== ADDITIONAL HIGH-VALUE TEST CATEGORIES ==========
@@ -4151,28 +4332,28 @@ test "FrameInterpreter PUSH instructions - all sizes boundary values" {
 
     // Test PUSH1 with 0x00
     const bytecode_push1_zero = [_]u8{ 0x60, 0x00, 0x00 }; // PUSH1 0, STOP
-    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_push1_zero, 1000000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_push1_zero, 1000000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
     try interpreter1.interpret();
     try std.testing.expectEqual(@as(u256, 0x00), interpreter1.frame.stack.peek_unsafe());
 
     // Test PUSH1 with 0xFF (maximum for 1 byte)
     const bytecode_push1_max = [_]u8{ 0x60, 0xFF, 0x00 }; // PUSH1 255, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_push1_max, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_push1_max, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0xFF), interpreter2.frame.stack.peek_unsafe());
 
     // Test PUSH2 with maximum value (0xFFFF)
     const bytecode_push2_max = [_]u8{ 0x61, 0xFF, 0xFF, 0x00 }; // PUSH2 65535, STOP
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_push2_max, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_push2_max, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(@as(u256, 0xFFFF), interpreter3.frame.stack.peek_unsafe());
 
     // Test PUSH4 with specific pattern
     const bytecode_push4 = [_]u8{ 0x63, 0xDE, 0xAD, 0xBE, 0xEF, 0x00 }; // PUSH4 0xDEADBEEF, STOP
-    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_push4, 1000000, {}, null);
+    var interpreter4 = try FrameInterpreterType.init(allocator, &bytecode_push4, 1000000, {}, evm.DefaultHost.init());
     defer interpreter4.deinit(allocator);
     try interpreter4.interpret();
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), interpreter4.frame.stack.peek_unsafe());
@@ -4184,7 +4365,7 @@ test "FrameInterpreter PUSH instructions - large sizes" {
 
     // Test PUSH8 with 64-bit pattern
     const bytecode_push8 = [_]u8{ 0x67, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x00 }; // PUSH8, STOP
-    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_push8, 1000000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_push8, 1000000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
     try interpreter1.interpret();
     try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0), interpreter1.frame.stack.peek_unsafe());
@@ -4197,7 +4378,7 @@ test "FrameInterpreter PUSH instructions - large sizes" {
     }
     bytecode_push16[17] = 0x00; // STOP
 
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_push16, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_push16, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
 
@@ -4216,7 +4397,7 @@ test "FrameInterpreter PUSH instructions - large sizes" {
     }
     bytecode_push32[33] = 0x00; // STOP
 
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_push32, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_push32, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
     try interpreter3.interpret();
     try std.testing.expectEqual(std.math.maxInt(u256), interpreter3.frame.stack.peek_unsafe());
@@ -4234,7 +4415,7 @@ test "FrameInterpreter PUSH instructions - zero patterns" {
     }
     bytecode_push16_zero[17] = 0x00; // STOP
 
-    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_push16_zero, 1000000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_push16_zero, 1000000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
     try interpreter1.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter1.frame.stack.peek_unsafe());
@@ -4247,7 +4428,7 @@ test "FrameInterpreter PUSH instructions - zero patterns" {
     }
     bytecode_push32_zero[33] = 0x00; // STOP
 
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_push32_zero, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_push32_zero, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 0), interpreter2.frame.stack.peek_unsafe());
@@ -4261,7 +4442,7 @@ test "FrameInterpreter bytecode parsing - truncated PUSH instructions" {
 
     // Test PUSH1 with missing data (truncated)
     const bytecode_truncated_push1 = [_]u8{0x60}; // PUSH1 without data byte
-    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_truncated_push1, 1000000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_truncated_push1, 1000000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
 
     // Should handle truncated PUSH gracefully (error or treat as 0)
@@ -4276,7 +4457,7 @@ test "FrameInterpreter bytecode parsing - truncated PUSH instructions" {
 
     // Test PUSH4 with only 2 bytes of data (truncated)
     const bytecode_truncated_push4 = [_]u8{ 0x63, 0xDE, 0xAD }; // PUSH4 with only 2 bytes
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_truncated_push4, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_truncated_push4, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
 
     const result2 = interpreter2.interpret();
@@ -4295,7 +4476,7 @@ test "FrameInterpreter bytecode parsing - truncated PUSH instructions" {
     }
     // Missing 16 bytes for PUSH32
 
-    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_truncated_push32, 1000000, {}, null);
+    var interpreter3 = try FrameInterpreterType.init(allocator, &bytecode_truncated_push32, 1000000, {}, evm.DefaultHost.init());
     defer interpreter3.deinit(allocator);
 
     const result3 = interpreter3.interpret();
@@ -4313,7 +4494,7 @@ test "FrameInterpreter bytecode parsing - malformed instruction sequences" {
 
     // Test bytecode ending mid-instruction (PUSH1 but no STOP)
     const bytecode_no_stop = [_]u8{ 0x60, 0x42 }; // PUSH1 42, no STOP
-    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_no_stop, 1000000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &bytecode_no_stop, 1000000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
 
     const result1 = interpreter1.interpret();
@@ -4327,7 +4508,7 @@ test "FrameInterpreter bytecode parsing - malformed instruction sequences" {
 
     // Test completely invalid opcode sequence
     const bytecode_invalid = [_]u8{ 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD }; // All invalid opcodes
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_invalid, 1000000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_invalid, 1000000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
 
     // Should fail with InvalidOpcode on first instruction
@@ -4350,7 +4531,7 @@ test "FrameInterpreter bytecode parsing - boundary instruction sequences" {
     }
     try large_bytecode.append(0x00); // STOP
 
-    var interpreter = try FrameInterpreterType.init(allocator, large_bytecode.items, 10000000, {}, null); // High gas
+    var interpreter = try FrameInterpreterType.init(allocator, large_bytecode.items, 10000000, {}, evm.DefaultHost.init()); // High gas
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4501,7 +4682,7 @@ test "FrameInterpreter handler error propagation - gas exhaustion" {
     };
 
     // Start with very low gas to trigger out-of-gas
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10, {}, null); // Very low gas
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10, {}, evm.DefaultHost.init()); // Very low gas
     defer interpreter.deinit(allocator);
 
     try std.testing.expectError(error.OutOfGas, interpreter.interpret());
@@ -4560,14 +4741,14 @@ test "FrameInterpreter multi-config - different word types" {
     // Test with u128 word type
     const bytecode = [_]u8{ 0x60, 0xFF, 0x00 }; // PUSH1 255, STOP
 
-    var interpreter128 = try FrameInterpreterType128.init(allocator, &bytecode, 1000000, {}, null);
+    var interpreter128 = try FrameInterpreterType128.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
     defer interpreter128.deinit(allocator);
 
     try interpreter128.interpret();
     try std.testing.expectEqual(@as(u128, 255), interpreter128.frame.stack.peek_unsafe());
 
     // Test with u64 word type
-    var interpreter64 = try FrameInterpreterType64.init(allocator, &bytecode, 1000000, {}, null);
+    var interpreter64 = try FrameInterpreterType64.init(allocator, &bytecode, 1000000, {}, evm.DefaultHost.init());
     defer interpreter64.deinit(allocator);
 
     try interpreter64.interpret();
@@ -4581,7 +4762,7 @@ test "FrameInterpreter multi-config - bytecode size limits" {
     // Test with bytecode at the limit
     const bytecode_at_limit = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x60, 0x03, 0x02, 0x60, 0x04 }; // 10 bytes
 
-    var interpreter_valid = try FrameInterpreterTypeSmall.init(allocator, &bytecode_at_limit, 1000000, {}, null);
+    var interpreter_valid = try FrameInterpreterTypeSmall.init(allocator, &bytecode_at_limit, 1000000, {}, evm.DefaultHost.init());
     defer interpreter_valid.deinit(allocator);
 
     // Should succeed with bytecode at limit
@@ -4591,7 +4772,7 @@ test "FrameInterpreter multi-config - bytecode size limits" {
     // Test with bytecode over the limit
     const bytecode_over_limit = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x60, 0x03, 0x02, 0x60, 0x04, 0x00 }; // 11 bytes
 
-    try std.testing.expectError(error.BytecodeTooLarge, FrameInterpreterTypeSmall.init(allocator, &bytecode_over_limit, 1000000, {}));
+    try std.testing.expectError(error.BytecodeTooLarge, FrameInterpreterTypeSmall.init(allocator, &bytecode_over_limit, 1000000, {}, evm.DefaultHost.init()));
 }
 
 // 7. DATABASE INTEGRATION TESTS ⭐⭐⭐
@@ -4600,7 +4781,6 @@ test "FrameInterpreter database integration - SLOAD/SSTORE operations" {
     const allocator = std.testing.allocator;
 
     // Create database
-    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
@@ -4608,7 +4788,7 @@ test "FrameInterpreter database integration - SLOAD/SSTORE operations" {
     // SSTORE bytecode: PUSH1 0x42 PUSH1 0x01 SSTORE STOP
     const bytecode = [_]u8{ 0x60, 0x42, 0x60, 0x01, 0x55, 0x00 };
 
-    var frame_interpreter = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode, 100000, db_interface);
+    var frame_interpreter = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode, 100000, db_interface, evm.DefaultHost.init());
     defer frame_interpreter.deinit(allocator);
 
     // Execute SSTORE operation
@@ -4619,7 +4799,6 @@ test "FrameInterpreter database integration - storage boundary conditions" {
     const allocator = std.testing.allocator;
 
     // Create database
-    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
@@ -4627,14 +4806,14 @@ test "FrameInterpreter database integration - storage boundary conditions" {
     // Test storage at slot 0 - SSTORE: PUSH1 0x42 PUSH1 0x00 SSTORE STOP
     const bytecode_slot0 = [_]u8{ 0x60, 0x42, 0x60, 0x00, 0x55, 0x00 };
 
-    var frame_interpreter = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode_slot0, 100000, db_interface);
+    var frame_interpreter = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode_slot0, 100000, db_interface, evm.DefaultHost.init());
     defer frame_interpreter.deinit(allocator);
 
     try frame_interpreter.interpret();
 
     // Test SLOAD from slot 0 - SLOAD: PUSH1 0x00 SLOAD STOP
     const bytecode_load = [_]u8{ 0x60, 0x00, 0x54, 0x00 };
-    var frame_interpreter2 = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode_load, 100000, db_interface);
+    var frame_interpreter2 = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode_load, 100000, db_interface, evm.DefaultHost.init());
     defer frame_interpreter2.deinit(allocator);
 
     try frame_interpreter2.interpret();
@@ -4660,7 +4839,7 @@ test "FrameInterpreter stress test - long execution sequence" {
     }
     try long_bytecode.append(0x00); // STOP
 
-    var interpreter = try FrameInterpreterType.init(allocator, long_bytecode.items, 10000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, long_bytecode.items, 10000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4685,7 +4864,7 @@ test "FrameInterpreter stress test - maximum stack usage" {
     // Test operations at capacity
     try stack_fill_bytecode.appendSlice(&[_]u8{ 0x80, 0x50, 0x00 }); // DUP1, POP, STOP
 
-    var interpreter = try FrameInterpreterType.init(allocator, stack_fill_bytecode.items, 10000000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, stack_fill_bytecode.items, 10000000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4708,7 +4887,7 @@ test "FrameInterpreter stress test - memory intensive operations" {
         0x00, // STOP
     };
 
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000000, {}, null); // High gas for memory
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000000, {}, evm.DefaultHost.init()); // High gas for memory
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -4821,11 +5000,11 @@ test "FrameInterpreter bytecode edge cases - empty bytecode" {
     
     // Empty bytecode should execute as implicit STOP
     const empty_bytecode = [_]u8{};
-    var interpreter = try FrameInterpreterType.init(allocator, &empty_bytecode, 1000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, &empty_bytecode, 1000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     
-    // Should immediately stop
-    try std.testing.expectError(error.STOP, interpreter.interpret());
+    // Should immediately return success (implicit STOP)
+    try interpreter.interpret();
     try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
 }
 
@@ -4838,7 +5017,7 @@ test "FrameInterpreter bytecode edge cases - single invalid opcode" {
     
     for (invalid_opcodes) |invalid_opcode| {
         const bytecode = [_]u8{invalid_opcode};
-        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000, {}, null);
+        var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000, {}, evm.DefaultHost.init());
         defer interpreter.deinit(allocator);
         
         try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
@@ -4851,7 +5030,7 @@ test "FrameInterpreter bytecode edge cases - truncated PUSH at end" {
     
     // PUSH1 with no data bytes following
     const truncated_push1 = [_]u8{0x60}; // PUSH1
-    var interpreter1 = try FrameInterpreterType.init(allocator, &truncated_push1, 1000, {}, null);
+    var interpreter1 = try FrameInterpreterType.init(allocator, &truncated_push1, 1000, {}, evm.DefaultHost.init());
     defer interpreter1.deinit(allocator);
     
     // Should handle truncated PUSH gracefully
@@ -4861,7 +5040,7 @@ test "FrameInterpreter bytecode edge cases - truncated PUSH at end" {
     
     // PUSH32 with only 2 data bytes
     const truncated_push32 = [_]u8{0x7F, 0xAB, 0xCD}; // PUSH32 + 2 bytes
-    var interpreter2 = try FrameInterpreterType.init(allocator, &truncated_push32, 1000, {}, null);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &truncated_push32, 1000, {}, evm.DefaultHost.init());
     defer interpreter2.deinit(allocator);
     
     try interpreter2.interpret();
@@ -4882,11 +5061,11 @@ test "FrameInterpreter bytecode edge cases - maximum valid bytecode size" {
     @memset(max_bytecode, 0x5B); // JUMPDEST
     max_bytecode[max_bytecode.len - 1] = 0x00; // STOP at end
     
-    var interpreter = try FrameInterpreterType.init(allocator, max_bytecode, 100000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, max_bytecode, 100000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     
-    // Should execute without issues (though will run many JUMPDESTs)
-    try std.testing.expectError(error.STOP, interpreter.interpret());
+    // Should execute without issues (interpret() returns success on STOP)
+    try interpreter.interpret();
 }
 
 test "FrameInterpreter bytecode edge cases - all opcodes stress test" {
@@ -4915,10 +5094,10 @@ test "FrameInterpreter bytecode edge cases - all opcodes stress test" {
     
     try bytecode.append(0x00); // STOP
     
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10000, {}, null);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     
-    try std.testing.expectError(error.STOP, interpreter.interpret());
+    try interpreter.interpret();
 }
 
 test "FrameInterpreter bytecode edge cases - interleaved PUSH and computation" {
@@ -4942,7 +5121,7 @@ test "FrameInterpreter bytecode edge cases - interleaved PUSH and computation" {
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, evm.DefaultHost.init());
     defer interpreter.deinit(allocator);
     
-    try std.testing.expectError(error.STOP, interpreter.interpret());
+    try interpreter.interpret();
     
     // Should have wrapped around to 0
     try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());

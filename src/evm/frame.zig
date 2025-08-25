@@ -164,27 +164,33 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
         /// Create a deep copy of the frame.
         /// This is used by DebugPlan to create a sidecar frame for validation.
-        pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
-            // Copy stack
+pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
+            // Copy stack using public API
             var new_stack = Stack.init(allocator) catch {
                 return Error.AllocationError;
             };
             errdefer new_stack.deinit(allocator);
-            // Copy stack contents
-            @memcpy(new_stack.stack[0..self.stack.next_stack_index], self.stack.stack[0..self.stack.next_stack_index]);
-            new_stack.next_stack_index = self.stack.next_stack_index;
-            // Copy memory
+            const src_stack_slice = self.stack.get_slice();
+            if (src_stack_slice.len > 0) {
+                // Reconstruct by pushing from bottom to top so top matches exactly
+                var i: usize = src_stack_slice.len;
+                while (i > 0) {
+                    i -= 1;
+                    try new_stack.push(src_stack_slice[i]);
+                }
+            }
+
+            // Copy memory using current API
             var new_memory = Memory.init(allocator) catch {
                 return Error.AllocationError;
             };
             errdefer new_memory.deinit();
-            // Copy memory contents
-            if (self.memory.len() > 0) {
-                new_memory.resize(self.memory.len()) catch {
-                    return Error.AllocationError;
-                };
-                @memcpy(new_memory.data()[0..self.memory.len()], self.memory.data()[0..self.memory.len()]);
+            const mem_size = self.memory.size();
+            if (mem_size > 0) {
+                const bytes = self.memory.get_slice(0, mem_size) catch unreachable;
+                try new_memory.set_data(0, bytes);
             }
+
             // Copy logs
             var new_logs = std.ArrayList(Log).init(allocator);
             errdefer new_logs.deinit();
@@ -210,16 +216,18 @@ pub fn Frame(comptime config: FrameConfig) type {
                     return Error.AllocationError;
                 };
             }
-            // Copy output data
+
+            // Copy output data buffer
             var new_output_data = std.ArrayList(u8).init(allocator);
             errdefer new_output_data.deinit();
             new_output_data.appendSlice(self.output_data.items) catch {
                 return Error.AllocationError;
             };
+
             return Self{
                 .stack = new_stack,
-                .bytecode = self.bytecode, // Bytecode is immutable, share reference
-                .gas_remaining = self.gas_remaining, // Copy gas remaining state
+                .bytecode = self.bytecode,
+                .gas_remaining = self.gas_remaining,
                 .tracer = if (config.TracerType) |_| self.tracer else {},
                 .memory = new_memory,
                 .database = self.database,
@@ -240,28 +248,34 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
             // Compare stack
-            if (self.stack.next_stack_index != other.stack.next_stack_index) {
+            const self_count = self.stack.size();
+            const other_count = other.stack.size();
+            if (self_count != other_count) {
                 if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
-                    std.debug.panic("Frame.assertEqual: stack size mismatch: {} vs {}", .{ self.stack.next_stack_index, other.stack.next_stack_index });
+                    std.debug.panic("Frame.assertEqual: stack size mismatch: {} vs {}", .{ self_count, other_count });
                 }
             }
-            for (0..self.stack.next_stack_index) |i| {
-                if (self.stack.stack[i] != other.stack.stack[i]) {
+            const self_stack_slice = self.stack.get_slice();
+            const other_stack_slice = other.stack.get_slice();
+            for (self_stack_slice, 0..) |v, i| {
+                if (v != other_stack_slice[i]) {
                     if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
-                        std.debug.panic("Frame.assertEqual: stack[{}] mismatch: {} vs {}", .{ i, self.stack.stack[i], other.stack.stack[i] });
+                        std.debug.panic("Frame.assertEqual: stack[{}] mismatch: {} vs {}", .{ i, v, other_stack_slice[i] });
                     }
                 }
             }
             // Compare memory
-            if (self.memory.len() != other.memory.len()) {
+            if (self.memory.size() != other.memory.size()) {
                 if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
-                    std.debug.panic("Frame.assertEqual: memory size mismatch: {} vs {}", .{ self.memory.len(), other.memory.len() });
+                    std.debug.panic("Frame.assertEqual: memory size mismatch: {} vs {}", .{ self.memory.size(), other.memory.size() });
                 }
             }
-            if (self.memory.len() > 0) {
-                const self_data = self.memory.data();
-                const other_data = other.memory.data();
-                for (0..self.memory.len()) |i| {
+            const mem_sz = self.memory.size();
+            if (mem_sz > 0) {
+                const self_data = self.memory.get_slice(0, mem_sz) catch &[_]u8{};
+                const other_data = other.memory.get_slice(0, mem_sz) catch &[_]u8{};
+                var i: usize = 0;
+                while (i < mem_sz) : (i += 1) {
                     if (self_data[i] != other_data[i]) {
                         if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
                             std.debug.panic("Frame.assertEqual: memory[{}] mismatch: {} vs {}", .{ i, self_data[i], other_data[i] });
@@ -1791,7 +1805,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             else
                 self.memory.get_slice(input_offset_usize, input_size_usize) catch &[_]u8{};
             // Calculate base call gas cost (EIP-150 & EIP-2929) - DELEGATECALL never transfers value
-            const base_call_gas = self._calculate_call_gas(addr, 0, self.is_static);
+            // is_static flag now retrieved via host; default to false in this older test path
+            const base_call_gas = self._calculate_call_gas(addr, 0, false);
             // Check if we have enough gas for the base call cost
             if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);

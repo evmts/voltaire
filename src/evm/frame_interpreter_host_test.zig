@@ -234,9 +234,8 @@ test "BALANCE opcode with host - successful execution" {
     );
     defer interpreter.deinit(allocator);
     
-    // Execute should succeed
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.STOP, result);
+    // Execute should succeed (interpret() returns success on STOP)
+    try interpreter.interpret();
     
     // Verify host was called
     try std.testing.expectEqual(@as(u32, 1), mock_host.balance_calls);
@@ -277,9 +276,8 @@ test "ORIGIN opcode with host - successful execution" {
     );
     defer interpreter.deinit(allocator);
     
-    // Execute should succeed
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.STOP, result);
+    // Execute should succeed (interpret() returns success on STOP)
+    try interpreter.interpret();
     
     // Verify host was called
     try std.testing.expectEqual(@as(u32, 1), mock_host.origin_calls);
@@ -320,9 +318,8 @@ test "CALLER opcode with host - successful execution" {
     );
     defer interpreter.deinit(allocator);
     
-    // Execute should succeed
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.STOP, result);
+    // Execute should succeed (interpret() returns success on STOP)
+    try interpreter.interpret();
     
     // Verify host was called
     try std.testing.expectEqual(@as(u32, 1), mock_host.caller_calls);
@@ -357,9 +354,8 @@ test "CALLVALUE opcode with host - successful execution" {
     );
     defer interpreter.deinit(allocator);
     
-    // Execute should succeed
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.STOP, result);
+    // Execute should succeed (interpret() returns success on STOP)
+    try interpreter.interpret();
     
     // Verify host was called
     try std.testing.expectEqual(@as(u32, 1), mock_host.callvalue_calls);
@@ -397,9 +393,8 @@ test "CREATE opcode with host - successful execution" {
     );
     defer interpreter.deinit(allocator);
     
-    // Execute should succeed
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.STOP, result);
+    // Execute should succeed (interpret() returns success on STOP)
+    try interpreter.interpret();
     
     // Verify host was called
     try std.testing.expectEqual(@as(u32, 1), mock_host.inner_call_calls);
@@ -448,9 +443,8 @@ test "Multiple host operations in sequence" {
     );
     defer interpreter.deinit(allocator);
     
-    // Execute should succeed
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.STOP, result);
+    // Execute should succeed (interpret() returns success on STOP)
+    try interpreter.interpret();
     
     // Verify all host methods were called
     try std.testing.expectEqual(@as(u32, 1), mock_host.origin_calls);

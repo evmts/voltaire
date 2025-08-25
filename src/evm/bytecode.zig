@@ -64,6 +64,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             InvalidJumpDestination,
             OutOfMemory,
             InitcodeTooLarge,
+            BytecodeTooLarge,
         };
 
         pub const Stats = @import("bytecode_stats.zig").BytecodeStats;
@@ -85,10 +86,15 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
             // First, try to parse metadata to separate runtime code
             const metadata = parseSolidityMetadataFromBytes(code);
-            const runtime_code = if (metadata) |m| 
+            const runtime_code = if (metadata) |m|
                 code[0..code.len - m.metadata_length]
-            else 
+            else
                 code;
+
+            // Enforce EIP-170: maximum runtime bytecode size
+            if (runtime_code.len > cfg.max_bytecode_size) {
+                return error.BytecodeTooLarge;
+            }
             
             var self = Self{
                 .full_code = code,
@@ -1122,8 +1128,8 @@ test "Bytecode.analyzeJumpDests" {
 
 test "Bytecode validation - invalid opcode" {
     const allocator = std.testing.allocator;
-    // Test bytecode with invalid opcode 0xFE
-    const code = [_]u8{ 0x60, 0x01, 0xFE }; // PUSH1 0x01 INVALID
+    // Test bytecode with invalid opcode 0x0C (unassigned)
+    const code = [_]u8{ 0x60, 0x01, 0x0C }; // PUSH1 0x01 <invalid>
     const result = BytecodeDefault.init(allocator, &code);
     try std.testing.expectError(error.InvalidOpcode, result);
 }
@@ -1374,8 +1380,8 @@ test "Bytecode.getStats - runtime code detection" {
 test "Bytecode SIMD opcode validation" {
     const allocator = std.testing.allocator;
     
-    // Test bytecode with invalid opcode (0xFF is not a valid opcode)
-    const invalid_code = [_]u8{ 0x60, 0x01, 0xFF, 0x00 }; // PUSH1 1 INVALID STOP
+    // Test bytecode with invalid opcode (0x0C is not assigned)
+    const invalid_code = [_]u8{ 0x60, 0x01, 0x0C, 0x00 }; // PUSH1 1 <invalid> STOP
     const result = BytecodeDefault.init(allocator, &invalid_code);
     try std.testing.expectError(BytecodeDefault.ValidationError.InvalidOpcode, result);
     
@@ -1386,6 +1392,17 @@ test "Bytecode SIMD opcode validation" {
     
     // Should pass validation
     try std.testing.expectEqual(@as(usize, 6), bytecode.len());
+}
+
+test "Bytecode EIP-170 runtime size validation" {
+    const allocator = std.testing.allocator;
+    // Create runtime code exceeding the EIP-170 limit by 1 byte
+    const oversized = try allocator.alloc(u8, default_config.max_bytecode_size + 1);
+    defer allocator.free(oversized);
+    @memset(oversized, 0x00);
+
+    const res = BytecodeDefault.init(allocator, oversized);
+    try std.testing.expectError(error.BytecodeTooLarge, res);
 }
 
 test "Bytecode initcode validation - EIP-3860" {

@@ -93,6 +93,9 @@ pub fn Plan(comptime cfg: PlanConfig) type {
         instructionStream: []InstructionElement,
         /// Constants array for values too large to fit inline.
         u256_constants: []WordType,
+        /// Jumpdest metadata backing storage for 32-bit targets.
+        /// On 64-bit this remains empty (metadata is inlined in the stream).
+        jumpdest_metadata: []JumpDestMetadata,
         /// PC to instruction index mapping for jump operations.
         /// Key is PC value, value is instruction stream index.
         pc_to_instruction_idx: ?std.AutoHashMap(PcType, InstructionIndexType),
@@ -151,13 +154,17 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
-                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => if (@sizeOf(usize) == 8) u64 else u32,
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => if (@sizeOf(usize) == 8) u64 else u32,
                 
                 @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
-                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => *const WordType,
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => *const WordType,
                 
                 // JUMPDEST returns metadata inline or via pointer
                 @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) == 8)
@@ -239,13 +246,17 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
-                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => if (@sizeOf(usize) == 8) elem.inline_value else @as(u32, @intCast(elem.inline_value)),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => if (@sizeOf(usize) == 8) elem.inline_value else @as(u32, @intCast(elem.inline_value)),
                 
                 @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
                 @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
-                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => blk: {
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => blk: {
                     const pointer_idx = elem.pointer_index;
                     if (pointer_idx >= self.u256_constants.len) {
                         @panic("getMetadata: pointer index out of bounds");
@@ -253,7 +264,7 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                     break :blk &self.u256_constants[pointer_idx];
                 },
                 
-                @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) == 8) elem.jumpdest_metadata else elem.jumpdest_pointer.*,
+                @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) == 8) elem.jumpdest_metadata else elem.jumpdest_pointer,
                 @intFromEnum(Opcode.PC) => @as(PcType, @intCast(elem.inline_value)),
                 
                 else => @compileError("Opcode has no metadata"),
@@ -312,7 +323,7 @@ pub fn Plan(comptime cfg: PlanConfig) type {
             
             // Get the handler at the new position
             if (idx.* >= self.instructionStream.len) {
-                std.log.warn("getNextInstruction: idx {} >= instructionStream.len {}", .{idx.*, self.instructionStream.len});
+                log.warn("getNextInstruction: idx {} >= instructionStream.len {}", .{idx.*, self.instructionStream.len});
                 @panic("instruction index out of bounds");
             }
             const handler = self.instructionStream[idx.*].handler;
@@ -396,17 +407,19 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                     entries.append(.{ .pc = entry.key_ptr.*, .idx = entry.value_ptr.* }) catch {};
                 }
                 
-                // Sort by PC
-                const Entry = @TypeOf(entries.items[0]);
-                std.sort.block(Entry, entries.items, {}, struct {
-                    fn lessThan(_: void, a: Entry, b: Entry) bool {
-                        return a.pc < b.pc;
+                if (entries.items.len > 0) {
+                    // Sort by PC
+                    const Entry = @TypeOf(entries.items[0]);
+                    std.sort.block(Entry, entries.items, {}, struct {
+                        fn lessThan(_: void, a: Entry, b: Entry) bool {
+                            return a.pc < b.pc;
+                        }
+                    }.lessThan);
+                    
+                    // Print sorted entries
+                    for (entries.items) |entry| {
+                        log.debug("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
                     }
-                }.lessThan);
-                
-                // Print sorted entries
-                for (entries.items) |entry| {
-                    log.debug("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
                 }
             }
             
@@ -417,12 +430,14 @@ pub fn Plan(comptime cfg: PlanConfig) type {
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             if (self.instructionStream.len > 0) allocator.free(self.instructionStream);
             if (self.u256_constants.len > 0) allocator.free(self.u256_constants);
+            if (self.jumpdest_metadata.len > 0) allocator.free(self.jumpdest_metadata);
             if (self.pc_to_instruction_idx) |*map| {
                 map.deinit();
                 self.pc_to_instruction_idx = null;
             }
             self.instructionStream = &.{};
             self.u256_constants = &.{};
+            self.jumpdest_metadata = &.{};
         }
     };
 }
@@ -504,6 +519,7 @@ test "Plan getMetadata for PUSH opcodes" {
     var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -552,6 +568,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -591,6 +608,7 @@ test "Plan getMetadata for synthetic opcodes" {
     var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -634,6 +652,7 @@ test "Plan getMetadata for JUMPDEST" {
     var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -660,6 +679,7 @@ test "Plan getMetadata for PC opcode" {
     var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -688,6 +708,7 @@ test "Plan getNextInstruction advances correctly" {
     var plan = TestPlan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -724,6 +745,7 @@ test "Plan getInstructionIndexForPc" {
     var plan = TestPlan{
         .instructionStream = &.{},
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = map,
     };
     
@@ -750,6 +772,7 @@ test "Plan deinit frees resources" {
     var plan = TestPlan{
         .instructionStream = stream,
         .u256_constants = constants,
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = map,
     };
     

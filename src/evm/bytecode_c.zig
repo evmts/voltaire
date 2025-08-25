@@ -111,9 +111,31 @@ pub export fn evm_bytecode_get_opcode_at(handle: ?*const BytecodeHandle, positio
 /// @return 1 if valid jump destination, 0 otherwise
 pub export fn evm_bytecode_is_jump_dest(handle: ?*const BytecodeHandle, position: usize) c_int {
     const h = handle orelse return 0;
-    
     if (position >= h.raw_data.len) return 0;
-    return if (h.raw_data[position] == 0x5B) 1 else 0; // JUMPDEST opcode
+
+    // Walk the bytecode, skipping PUSH data, and check if `position` is a JUMPDEST
+    var pc: usize = 0;
+    while (pc < h.raw_data.len) {
+        const byte = h.raw_data[pc];
+        // Try to interpret as an opcode; invalid bytes treated as 1-byte instruction
+        const op = std.meta.intToEnum(Opcode, byte) catch {
+            if (pc == position) return 0; // not JUMPDEST
+            pc += 1;
+            continue;
+        };
+
+        if (@intFromEnum(op) >= 0x60 and @intFromEnum(op) <= 0x7f) {
+            const push_size: usize = @intFromEnum(op) - 0x5f; // 1..32
+            // If target lies within push data, it's not a jumpdest
+            if (position > pc and position <= pc + push_size) return 0;
+            pc += 1 + push_size;
+            continue;
+        }
+
+        if (pc == position and op == .JUMPDEST) return 1;
+        pc += 1;
+    }
+    return 0;
 }
 
 // ============================================================================
@@ -419,7 +441,8 @@ pub export fn evm_bytecode_opcode_name(opcode_value: u8) [*:0]const u8 {
 /// @param opcode_value Opcode value (0-255)
 /// @return 1 if valid opcode, 0 otherwise
 pub export fn evm_bytecode_is_valid_opcode(opcode_value: u8) c_int {
-    return if (std.meta.intToEnum(Opcode, opcode_value)) |_| 1 else |_| 0;
+    _ = std.meta.intToEnum(Opcode, opcode_value) catch return 0;
+    return 1;
 }
 
 // ============================================================================

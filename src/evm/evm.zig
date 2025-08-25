@@ -39,6 +39,9 @@ const TransactionContext = @import("transaction_context.zig").TransactionContext
 const journal_mod = @import("journal.zig");
 const JournalConfig = @import("journal_config.zig").JournalConfig;
 
+/// Backward-compatible re-export for tests expecting DefaultHost on evm module
+pub const DefaultHost = @import("default_host.zig").DefaultHost;
+
 /// Creates a configured EVM instance type.
 ///
 /// The EVM is parameterized by compile-time configuration for optimal
@@ -5230,14 +5233,20 @@ test "Call context tracking - get_caller and get_call_value" {
     const origin_addr = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
     const contract_a = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
     
+    const block_info = BlockInfo.init();
+    const tx_context = TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
     var evm = try DefaultEvm.init(
         std.testing.allocator,
         db_interface,
-        .{},
-        .{},
+        block_info,
+        tx_context,
         100,
         origin_addr,
-        .LATEST,
+        .CANCUN,
     );
     defer evm.deinit();
     

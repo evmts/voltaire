@@ -34,36 +34,37 @@ pub fn Stack(comptime config: StackConfig) type {
 
         const Self = @This();
 
+        // Ownership: exact aligned slice returned by alignedAlloc
+        buf: []align(64) WordType,
+
         // Downward stack growth: stack_ptr points to next empty slot
         // Push: *stack_ptr = value; stack_ptr -= 1;
         // Pop: stack_ptr += 1; return *stack_ptr;
         stack_ptr: [*]WordType,
         stack_base: [*]WordType,
         stack_limit: [*]WordType,
-        stack: *[stack_capacity]WordType align(64),
 
         /// Initialize a new stack with allocated memory.
         ///
         /// Allocates cache-aligned memory and sets up pointer boundaries.
         /// Stack pointer starts at the top (highest address) and grows downward.
         pub fn init(allocator: std.mem.Allocator) Error!Self {
-            const stack_memory = allocator.alloc(WordType, stack_capacity) catch return Error.AllocationError;
-            errdefer allocator.free(stack_memory);
-            @memset(stack_memory, 0);
-            
-            const stack_array: *[stack_capacity]WordType = @ptrCast(&stack_memory[0]);
-            const base_ptr: [*]WordType = @ptrCast(stack_array);
-            
+            const memory = allocator.alignedAlloc(WordType, 64, stack_capacity) catch return Error.AllocationError;
+            errdefer allocator.free(memory);
+            @memset(memory, 0);
+
+            const base_ptr: [*]WordType = memory.ptr;
+
             return Self{
-                .stack_ptr = base_ptr + stack_capacity,
-                .stack_base = base_ptr + stack_capacity,
+                .buf = memory,
+                .stack_ptr = base_ptr + memory.len,
+                .stack_base = base_ptr + memory.len,
                 .stack_limit = base_ptr,
-                .stack = stack_array,
             };
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            allocator.free(@as([*]WordType, @ptrCast(self.stack))[0..stack_capacity]);
+            allocator.free(self.buf);
         }
 
         pub inline fn push_unsafe(self: *Self, value: WordType) void {

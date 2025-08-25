@@ -136,6 +136,7 @@ pub const ValidationError = error{
     InvalidJumpDestination,  // Invalid jump target
     OutOfMemory,            // Memory allocation failure
     InitcodeTooLarge,       // Initcode exceeds EIP-3860 limit
+    BytecodeTooLarge,       // Runtime bytecode exceeds EIP-170 limit
 };
 
 // Validation example with error handling
@@ -144,6 +145,7 @@ var bytecode = BytecodeDefault.init(allocator, untrusted_code) catch |err| {
         error.InvalidOpcode => log.err("Bytecode contains invalid opcode"),
         error.TruncatedPush => log.err("PUSH instruction truncated"),
         error.InitcodeTooLarge => log.err("Initcode too large: {} bytes", .{untrusted_code.len}),
+        error.BytecodeTooLarge => log.err("Runtime bytecode too large: {} bytes", .{untrusted_code.len}),
         else => err,
     };
 };

@@ -27,6 +27,11 @@ pub const OpcodeSynthetic = enum(u8) {
     PUSH_JUMPI_POINTER = 0xB9,
     PUSH_SUB_INLINE = 0xBA,
     PUSH_SUB_POINTER = 0xBB,
+    // New: PUSH+MLOAD and PUSH+MSTORE fusions (immediate offset)
+    PUSH_MLOAD_INLINE = 0xBC,
+    PUSH_MLOAD_POINTER = 0xBD,
+    PUSH_MSTORE_INLINE = 0xBE,
+    PUSH_MSTORE_POINTER = 0xBF,
 };
 
 // Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
@@ -75,5 +80,8 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
     try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER));
     try std.testing.expectEqual(@as(u8, 0xBA), @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE));
     try std.testing.expectEqual(@as(u8, 0xBB), @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xBC), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xBD), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xBE), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xBF), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER));
 }
-
