@@ -2479,3 +2479,225 @@ test "Bytecode complex jump validation - maximum PUSH32 target" {
     // Should successfully validate the large jump target
     try std.testing.expect(bytecode.isValidJumpDest(1000));
 }
+
+// BYTECODE EDGE CASE TESTS
+
+test "Bytecode edge cases - empty bytecode" {
+    const allocator = std.testing.allocator;
+    
+    // Empty bytecode should be valid
+    const empty_code = [_]u8{};
+    var bytecode = try BytecodeDefault.init(allocator, &empty_code);
+    defer bytecode.deinit();
+    
+    try std.testing.expectEqual(@as(usize, 0), bytecode.len());
+    try std.testing.expectEqual(@as(?u8, null), bytecode.get(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+}
+
+test "Bytecode edge cases - single byte bytecode" {
+    const allocator = std.testing.allocator;
+    
+    // Test various single-byte bytecodes
+    const single_bytes = [_]u8{ 0x00, 0x01, 0x5B, 0xFD, 0xFF };
+    
+    for (single_bytes) |byte| {
+        const code = [_]u8{byte};
+        
+        if (byte == 0xFE) { // INVALID opcode
+            try std.testing.expectError(error.InvalidOpcode, BytecodeDefault.init(allocator, &code));
+        } else {
+            var bytecode = try BytecodeDefault.init(allocator, &code);
+            defer bytecode.deinit();
+            
+            try std.testing.expectEqual(@as(usize, 1), bytecode.len());
+            try std.testing.expectEqual(@as(?u8, byte), bytecode.get(0));
+            try std.testing.expectEqual(byte == 0x5B, bytecode.isValidJumpDest(0)); // Only JUMPDEST
+        }
+    }
+}
+
+test "Bytecode edge cases - maximum size bytecode" {
+    const allocator = std.testing.allocator;
+    
+    // Test at exactly the maximum allowed size
+    const max_code = try allocator.alloc(u8, 24576);
+    defer allocator.free(max_code);
+    
+    // Fill with valid opcodes
+    @memset(max_code, 0x5B); // JUMPDEST
+    
+    var bytecode = try BytecodeDefault.init(allocator, max_code);
+    defer bytecode.deinit();
+    
+    try std.testing.expectEqual(@as(usize, 24576), bytecode.len());
+    
+    // All positions should be valid jump destinations
+    try std.testing.expect(bytecode.isValidJumpDest(0));
+    try std.testing.expect(bytecode.isValidJumpDest(100));
+    try std.testing.expect(bytecode.isValidJumpDest(24575));
+    try std.testing.expect(!bytecode.isValidJumpDest(24576)); // Out of bounds
+}
+
+test "Bytecode edge cases - all PUSH opcodes at end" {
+    const allocator = std.testing.allocator;
+    
+    // Test each PUSH opcode when it appears at the end of bytecode
+    var push_num: u8 = 1;
+    while (push_num <= 32) : (push_num += 1) {
+        const push_opcode = 0x60 + (push_num - 1);
+        
+        // Create bytecode with PUSH at end with insufficient data
+        var code = try allocator.alloc(u8, push_num); // One byte short
+        defer allocator.free(code);
+        
+        code[0] = push_opcode;
+        for (1..push_num) |i| {
+            code[i] = @intCast(i);
+        }
+        
+        // Should fail with TruncatedPush
+        try std.testing.expectError(error.TruncatedPush, BytecodeDefault.init(allocator, code));
+    }
+}
+
+test "Bytecode edge cases - alternating valid/invalid opcodes" {
+    const allocator = std.testing.allocator;
+    
+    // Bytecode with alternating valid and invalid opcodes
+    const code = [_]u8{
+        0x00, // STOP (valid)
+        0xFE, // INVALID (invalid)
+        0x01, // ADD (valid)
+        0x0C, // Invalid opcode
+    };
+    
+    // Should fail on first invalid opcode
+    try std.testing.expectError(error.InvalidOpcode, BytecodeDefault.init(allocator, &code));
+}
+
+test "Bytecode edge cases - JUMPDEST in PUSH data" {
+    const allocator = std.testing.allocator;
+    
+    // JUMPDEST (0x5B) appearing as data in PUSH should not be a valid jump dest
+    const code = [_]u8{
+        0x60, 0x5B, // PUSH1 0x5B (data looks like JUMPDEST)
+        0x50,       // POP
+        0x5B,       // Real JUMPDEST at position 3
+        0x00,       // STOP
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Position 1 should NOT be a valid jump dest (it's PUSH data)
+    try std.testing.expect(!bytecode.isValidJumpDest(1));
+    
+    // Position 3 should be a valid jump dest
+    try std.testing.expect(bytecode.isValidJumpDest(3));
+}
+
+test "Bytecode edge cases - consecutive PUSH32 operations" {
+    const allocator = std.testing.allocator;
+    
+    // Multiple PUSH32 operations in a row
+    var code: [198]u8 = undefined; // 3 * (1 + 32) * 2 = 198 bytes
+    var pos: usize = 0;
+    
+    // Add 3 PUSH32 operations
+    for (0..3) |i| {
+        code[pos] = 0x7F; // PUSH32
+        pos += 1;
+        
+        // Fill with pattern based on iteration
+        for (0..32) |j| {
+            code[pos] = @intCast((i * 32 + j) & 0xFF);
+            pos += 1;
+        }
+    }
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Verify no positions in PUSH data are valid jump destinations
+    for (0..3) |i| {
+        const push_start = i * 33;
+        // The PUSH32 opcode itself is not a valid jump dest
+        try std.testing.expect(!bytecode.isValidJumpDest(@intCast(push_start)));
+        
+        // None of the 32 data bytes should be valid jump dests
+        for (1..33) |j| {
+            try std.testing.expect(!bytecode.isValidJumpDest(@intCast(push_start + j)));
+        }
+    }
+}
+
+test "Bytecode edge cases - metadata parsing" {
+    const allocator = std.testing.allocator;
+    
+    // Bytecode with Solidity metadata at the end
+    // Format: <bytecode> 0xa2 0x64 "ipfs" <34 bytes hash> 0x64 "solc" <3 bytes version> 0x00 0x33
+    var code_with_metadata = std.ArrayList(u8).init(allocator);
+    defer code_with_metadata.deinit();
+    
+    // Add some regular bytecode
+    try code_with_metadata.appendSlice(&[_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }); // PUSH1 1 PUSH1 2 ADD STOP
+    
+    // Add metadata marker
+    try code_with_metadata.appendSlice(&[_]u8{ 0xa2, 0x64 });
+    try code_with_metadata.appendSlice("ipfs");
+    
+    // Add 34 bytes of hash
+    for (0..34) |i| {
+        try code_with_metadata.append(@intCast(i & 0xFF));
+    }
+    
+    try code_with_metadata.append(0x64);
+    try code_with_metadata.appendSlice("solc");
+    
+    // Add version bytes
+    try code_with_metadata.appendSlice(&[_]u8{ 0x00, 0x08, 0x13 }); // version 0.8.19
+    
+    // Add length
+    try code_with_metadata.appendSlice(&[_]u8{ 0x00, 0x33 });
+    
+    var bytecode = try BytecodeDefault.init(allocator, code_with_metadata.items);
+    defer bytecode.deinit();
+    
+    // Should have parsed metadata
+    try std.testing.expect(bytecode.metadata != null);
+    
+    // Runtime code should exclude metadata
+    try std.testing.expect(bytecode.runtime_code.len < bytecode.full_code.len);
+}
+
+test "Bytecode edge cases - pathological jump patterns" {
+    const allocator = std.testing.allocator;
+    
+    // Create bytecode with complex jump patterns
+    const code = [_]u8{
+        0x60, 0x0A, // PUSH1 10 (forward jump)
+        0x56,       // JUMP
+        0x5B,       // JUMPDEST at 3
+        0x60, 0x08, // PUSH1 8 (backward jump)
+        0x56,       // JUMP
+        0x5B,       // JUMPDEST at 7
+        0x00,       // STOP
+        0x5B,       // JUMPDEST at 10 (target of first jump)
+        0x60, 0x07, // PUSH1 7
+        0x56,       // JUMP to middle JUMPDEST
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // All JUMPDESTs should be valid
+    try std.testing.expect(bytecode.isValidJumpDest(3));
+    try std.testing.expect(bytecode.isValidJumpDest(7));
+    try std.testing.expect(bytecode.isValidJumpDest(10));
+    
+    // Non-JUMPDEST positions should be invalid
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(1));
+    try std.testing.expect(!bytecode.isValidJumpDest(2));
+}
