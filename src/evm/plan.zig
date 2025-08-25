@@ -3,6 +3,7 @@
 //! Contains an instruction stream with interleaved handler pointers,
 //! metadata, and inline constants for efficient tail-call execution.
 const std = @import("std");
+const log = @import("log.zig");
 const Opcode = @import("opcode.zig").Opcode;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
 pub const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
@@ -331,30 +332,30 @@ pub fn Plan(comptime cfg: PlanConfig) type {
         
         /// Debug print the plan structure.
         pub fn debugPrint(self: *const Self) void {
-            std.debug.print("\n=== Plan Debug Info ===\n", .{});
-            std.debug.print("Instruction Stream Length: {}\n", .{self.instructionStream.len});
-            std.debug.print("Constants Array Length: {}\n", .{self.u256_constants.len});
+            log.debug("\n=== Plan Debug Info ===\n", .{});
+            log.debug("Instruction Stream Length: {}\n", .{self.instructionStream.len});
+            log.debug("Constants Array Length: {}\n", .{self.u256_constants.len});
             if (self.pc_to_instruction_idx) |map| {
-                std.debug.print("PC Mappings: {} entries\n", .{map.count()});
+                log.debug("PC Mappings: {} entries\n", .{map.count()});
             } else {
-                std.debug.print("PC Mappings: none\n", .{});
+                log.debug("PC Mappings: none\n", .{});
             }
-            std.debug.print("\nInstruction Stream:\n", .{});
+            log.debug("\nInstruction Stream:\n", .{});
             var i: InstructionIndexType = 0;
             while (i < self.instructionStream.len) : (i += 1) {
                 const elem = self.instructionStream[i];
                 if (@intFromPtr(elem.handler) > 0x10000) {
-                    std.debug.print("  [{d:4}] Handler: ", .{i});
-                    std.debug.print("0x{x}\n", .{@intFromPtr(elem.handler)});
+                    log.debug("  [{d:4}] Handler: ", .{i});
+                    log.debug("0x{x}\n", .{@intFromPtr(elem.handler)});
                 } else {
-                    std.debug.print("  [{d:4}] Metadata: ", .{i});
+                    log.debug("  [{d:4}] Metadata: ", .{i});
                     if (@sizeOf(usize) == 8) {
                         const as_u64 = elem.inline_value;
                         if (as_u64 <= 0xFFFFFFFF) {
-                            std.debug.print("inline_value = 0x{x} ({})", .{ as_u64, as_u64 });
+                            log.debug("inline_value = 0x{x} ({})", .{ as_u64, as_u64 });
                         } else {
                             const as_jumpdest = elem.jumpdest_metadata;
-                            std.debug.print("jumpdest {{ gas: {}, min_stack: {}, max_stack: {} }}", .{
+                            log.debug("jumpdest {{ gas: {}, min_stack: {}, max_stack: {} }}", .{
                                 as_jumpdest.gas,
                                 as_jumpdest.min_stack,
                                 as_jumpdest.max_stack,
@@ -362,30 +363,30 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                         }
                     } else {
                         if (elem.pointer_index < self.u256_constants.len) {
-                            std.debug.print("pointer_index = {} -> 0x{x}", .{ 
+                            log.debug("pointer_index = {} -> 0x{x}", .{ 
                                 elem.pointer_index, 
                                 self.u256_constants[elem.pointer_index] 
                             });
                         } else {
-                            std.debug.print("inline_value = 0x{x} ({})", .{ 
+                            log.debug("inline_value = 0x{x} ({})", .{ 
                                 elem.inline_value, 
                                 elem.inline_value 
                             });
                         }
                     }
-                    std.debug.print("\n", .{});
+                    log.debug("\n", .{});
                 }
             }
             
             if (self.u256_constants.len > 0) {
-                std.debug.print("\nConstants Array:\n", .{});
+                log.debug("\nConstants Array:\n", .{});
                 for (self.u256_constants, 0..) |constant, idx| {
-                    std.debug.print("  [{}] = 0x{x}\n", .{ idx, constant });
+                    log.debug("  [{}] = 0x{x}\n", .{ idx, constant });
                 }
             }
             
             if (self.pc_to_instruction_idx) |map| {
-                std.debug.print("\nPC to Instruction Mappings:\n", .{});
+                log.debug("\nPC to Instruction Mappings:\n", .{});
                 var iter = map.iterator();
                 var entries = std.ArrayList(struct { pc: PcType, idx: InstructionIndexType }).init(std.heap.page_allocator);
                 defer entries.deinit();
@@ -405,11 +406,11 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 
                 // Print sorted entries
                 for (entries.items) |entry| {
-                    std.debug.print("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
+                    log.debug("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
                 }
             }
             
-            std.debug.print("=================================\n\n", .{});
+            log.debug("=================================\n\n", .{});
         }
         
         /// Free Plan-owned slices.
