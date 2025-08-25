@@ -152,7 +152,12 @@ pub fn build(b: *std.Build) void {
     });
 
     const c_kzg_lib = c_kzg_dep.artifact("c_kzg_4844");
+    // The dependency exposes the module under the package name
+    const c_kzg_mod = c_kzg_dep.module("c_kzg_4844");
+    // Expose c-kzg to modules that import it
     primitives_mod.linkLibrary(c_kzg_lib);
+    crypto_mod.addImport("c_kzg", c_kzg_mod);
+    crypto_mod.linkLibrary(c_kzg_lib);
 
     // Add zbench dependency
     const zbench_dep = b.dependency("zbench", .{
