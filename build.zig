@@ -894,35 +894,35 @@ pub fn build(b: *std.Build) void {
     const frame_host_test_step = b.step("test-frame-host", "Run Frame host integration tests");
     frame_host_test_step.dependOn(&run_frame_host_test.step);
     
-    // Add CALL/CALLCODE/DELEGATECALL golden tests
-    const call_golden_test = b.addTest(.{
-        .name = "call-golden-test",
-        .root_source_file = b.path("src/evm/call_golden_tests.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    call_golden_test.root_module.addImport("evm", evm_mod);
-    call_golden_test.root_module.addImport("primitives", primitives_mod);
-    call_golden_test.root_module.addImport("crypto", crypto_mod);
-    call_golden_test.root_module.addImport("build_options", build_options_mod);
-    const run_call_golden_test = b.addRunArtifact(call_golden_test);
-    const call_golden_test_step = b.step("test-call-golden", "Run CALL/CALLCODE/DELEGATECALL golden tests");
-    call_golden_test_step.dependOn(&run_call_golden_test.step);
+    // TODO: Add CALL/CALLCODE/DELEGATECALL golden tests (missing file)
+    // const call_golden_test = b.addTest(.{
+    //     .name = "call-golden-test",
+    //     .root_source_file = b.path("src/evm/call_golden_tests.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // call_golden_test.root_module.addImport("evm", evm_mod);
+    // call_golden_test.root_module.addImport("primitives", primitives_mod);
+    // call_golden_test.root_module.addImport("crypto", crypto_mod);
+    // call_golden_test.root_module.addImport("build_options", build_options_mod);
+    // const run_call_golden_test = b.addRunArtifact(call_golden_test);
+    // const call_golden_test_step = b.step("test-call-golden", "Run CALL/CALLCODE/DELEGATECALL golden tests");
+    // call_golden_test_step.dependOn(&run_call_golden_test.step);
     
-    // Add CREATE/CREATE2 code storage tests
-    const create_code_storage_test = b.addTest(.{
-        .name = "create-code-storage-test",
-        .root_source_file = b.path("src/evm/create_code_storage_tests.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    create_code_storage_test.root_module.addImport("evm", evm_mod);
-    create_code_storage_test.root_module.addImport("primitives", primitives_mod);
-    create_code_storage_test.root_module.addImport("crypto", crypto_mod);
-    create_code_storage_test.root_module.addImport("build_options", build_options_mod);
-    const run_create_code_storage_test = b.addRunArtifact(create_code_storage_test);
-    const create_code_storage_test_step = b.step("test-create-code-storage", "Run CREATE/CREATE2 code storage tests");
-    create_code_storage_test_step.dependOn(&run_create_code_storage_test.step);
+    // TODO: Add CREATE/CREATE2 code storage tests (missing file)
+    // const create_code_storage_test = b.addTest(.{
+    //     .name = "create-code-storage-test",
+    //     .root_source_file = b.path("src/evm/create_code_storage_tests.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // create_code_storage_test.root_module.addImport("evm", evm_mod);
+    // create_code_storage_test.root_module.addImport("primitives", primitives_mod);
+    // create_code_storage_test.root_module.addImport("crypto", crypto_mod);
+    // create_code_storage_test.root_module.addImport("build_options", build_options_mod);
+    // const run_create_code_storage_test = b.addRunArtifact(create_code_storage_test);
+    // const create_code_storage_test_step = b.step("test-create-code-storage", "Run CREATE/CREATE2 code storage tests");
+    // create_code_storage_test_step.dependOn(&run_create_code_storage_test.step);
     
     // Add snapshot propagation tests
     const snapshot_propagation_test = b.addTest(.{
@@ -1904,8 +1904,8 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_frame_integration_test.step);
     test_step.dependOn(&run_frame_opcode_integration_test.step);
     test_step.dependOn(&run_frame_host_test.step);
-    test_step.dependOn(&run_call_golden_test.step);
-    test_step.dependOn(&run_create_code_storage_test.step);
+    // test_step.dependOn(&run_call_golden_test.step); // Missing file
+    // test_step.dependOn(&run_create_code_storage_test.step); // Missing file
     test_step.dependOn(&run_snapshot_propagation_test.step);
     test_step.dependOn(&run_log_static_context_test.step);
     test_step.dependOn(&run_gas_edge_case_test.step);
