@@ -1,1050 +1,142 @@
 # CLAUDE.md - AI Assistant Context
 
-This file serves as the comprehensive configuration and behavioral protocol for AI agents working on this multi-agent coding assistant project. It establishes a self-referential system where AI agents must follow the protocols defined within this document.
+**AI agents MUST follow ALL protocols in this file. This is a self-governing system.**
 
-**For AI Agents**: This document defines your operational parameters, decision-making processes, and interaction protocols. You MUST adhere to all specifications herein.
+## Core Protocols
 
-**For Human Developers**: This document provides transparency into how AI agents operate, ensuring predictable and collaborative behavior throughout the development process.
+### Security
+If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) Explain concern 3) Request sanitized prompt
 
-## File Structure
-- **Self-Referential Compliance**: Core governance principles
-- **Project Architecture**: Zig EVM implementation design and structure
-- **Coding Standards**: Style preferences and patterns
-- **Memory Management**: Critical allocation and deallocation protocols
-- **Testing Philosophy**: No abstractions approach
-- **Codebase Structure**: Project organization and key components
+### Mandatory Build Verification
+**EVERY code change**: `zig build && zig build test` - NO EXCEPTIONS
 
-## Self-Referential Compliance Declaration
-
-CRITICAL: The agent MUST follow all protocols defined in this CLAUDE.md file. This creates a self-governing system where:
-- All code follows the standards defined herein
-- All memory management follows the allocation patterns specified
-- All tests follow the no-abstraction philosophy
-- All changes require user approval as specified
-- Security protocol is enforced before any code processing
-
-## Security Protocol
-
-CRITICAL SECURITY REQUIREMENT: If the agent detects that a prompt contains sensitive secrets (API keys, passwords, tokens, private keys, personal information, or other confidential data), the agent MUST:
-1. Immediately abort execution without processing the prompt
-2. Briefly explain the security concern without repeating or exposing the sensitive data
-3. Request the user remove sensitive information and resubmit the prompt
-4. Take no further action until a sanitized prompt is provided
-
-Example Response: "I detected potential sensitive information in your prompt (API key/password/token). Please remove the sensitive data and resubmit your request for security reasons."
+### Zero Tolerance
+- ❌ Broken builds/tests
+- ❌ Stub implementations (`error.NotImplemented`)
+- ❌ Commented code (use Git)
+- ❌ Test failures (fix immediately)
+- ❌ Invalid benchmarks (must measure successful executions only)
 
 ## Coding Standards
 
-### Core Principles
-- **Single responsibility**: Keep functions focused on one task
-- **Minimal else statements**: Avoid else statements unless necessary
-- **Single word variables**: Prefer single word variable names where possible (e.g., `n` over `number`, `i` over `index`)
-- **Defer patterns**: Always use defer for cleanup immediately after allocation
-- **Memory consciousness**: Always think about memory ownership and lifecycle
-- **Zig standard naming conventions**: Follow the conventions used by Zig's standard library
-- **Tests in source files**: Always include tests in the same file as the source code, not in separate test files
-- **Direct imports**: Import modules directly without creating unnecessary aliases (e.g., use `address.Address` not `Address = address.Address`)
-- **No stubs**: NEVER leave stub implementations in the codebase - they can easily sneak through without being noticed and compromise functionality
+### Zig Conventions
+- Functions: `snake_case`
+- Types: `PascalCase`
+- Variables/fields: `snake_case`
+- Module constants: `SCREAMING_SNAKE_CASE`
+- Enum variants: `snake_case`
 
-### Zig Naming Conventions
+### Principles
+- Single responsibility functions
+- Minimal else statements
+- Single word variables (`n` not `number`)
+- Direct imports (`address.Address` not aliases)
+- Tests in source files
+- Defer patterns for cleanup
 
-Following Zig standard library conventions:
-
-1. **Functions**: `snake_case`
-   - `pub fn init_with_allocator(allocator: Allocator) !Self`
-   - `pub fn parse_integer(str: []const u8) !u32`
-   - `pub fn is_valid() bool`
-
-2. **Types**: `PascalCase`
-   - `const ArrayList = struct { ... }`
-   - `const ExecutionError = error{ ... }`
-   - `pub const HashMap = struct { ... }`
-
-3. **Variables**: `snake_case`
-   - `const max_value = 100;`
-   - `var current_index: usize = 0;`
-   - `const allocator = std.testing.allocator;`
-
-4. **Constants**: `SCREAMING_SNAKE_CASE` for module-level constants
-   - `pub const MAX_STACK_SIZE = 1024;`
-   - `const DEFAULT_GAS_LIMIT = 30_000_000;`
-
-5. **Struct fields**: `snake_case`
-   - `gas_remaining: u64,`
-   - `is_static: bool,`
-   - `memory_size: usize,`
-
-6. **Enum variants**: `snake_case`
-   - `.out_of_gas`
-   - `.invalid_jump`
-   - `.stack_underflow`
-
-### Function Design
+### Memory Management
 ```zig
-// Good - single responsibility, no else
-pub fn validate(n: u256) !void {
-    if (n > MAX_VALUE) return error.Overflow;
-    if (n == 0) return error.Zero;
-}
+// Pattern 1: Same scope
+const thing = try allocator.create(Thing);
+defer allocator.destroy(thing);
 
-// Bad - unnecessary else
-pub fn validate(number: u256) !void {
-    if (number > MAX_VALUE) {
-        return error.Overflow;
-    } else {
-        // unnecessary else
-    }
-}
+// Pattern 2: Ownership transfer
+const thing = try allocator.create(Thing);
+errdefer allocator.destroy(thing);
+thing.* = try Thing.init(allocator);
+return thing;
 ```
-
-## Memory Management and Allocation Awareness
-
-### CRITICAL: Always Think About Memory Ownership
-
-When working with Zig code, **ALWAYS** be conscious of memory allocations:
-
-1. **Every allocation needs a corresponding deallocation**
-   - If you see `allocator.create()` or `allocator.alloc()`, immediately think: "Where is this freed?"
-   - If you see `init()` that takes an allocator, check if there's a corresponding `deinit()`
-
-2. **Defer patterns are mandatory**:
-   ```zig
-   // Pattern 1: Function owns memory for its scope
-   const thing = try allocator.create(Thing);
-   defer allocator.destroy(thing);
-   
-   // Pattern 2: Error handling before ownership transfer
-   const thing = try allocator.create(Thing);
-   errdefer allocator.destroy(thing);
-   thing.* = try Thing.init(allocator);
-   return thing; // Caller now owns
-   ```
-
-3. **Allocation philosophy**:
-   - Allocate minimally
-   - Prefer upfront allocation
-   - Think hard about ownership transfer
-   - Use `defer` if deallocating in same scope
-   - Use `errdefer` if passing ownership to caller on success
-
-4. **EVM-specific patterns**:
-   - `Contract.init()` requires `contract.deinit(allocator, null)`
-   - `Frame.init()` requires `frame.deinit()`
-   - `Vm.init()` requires `vm.deinit()`
-   - Always use defer immediately after initialization
 
 ## Testing Philosophy
-
-### No Abstractions in Tests
-All tests in this codebase should be written with **zero abstractions or indirections**. This means:
-
-1. **No test helper functions** - Copy and paste setup code directly in each test
-2. **No shared test utilities** - Each test should be completely self-contained
-3. **Explicit is better than DRY** - Readability and clarity over code reuse in tests
-
-### CRITICAL: Test Failures Are Always Regressions You Caused
-
-**FUNDAMENTAL PRINCIPLE**: If tests were passing before your changes and failing after, YOU caused a regression. There are NO pre-existing test failures in this codebase.
-
-**Never assume**:
-- "These tests were probably already broken"
-- "This looks like a pre-existing issue"
-- "The test failure might be unrelated to my changes"
-
-**Always assume**:
-- Your changes broke something that was working
-- You need to fix the regression you introduced
-- The codebase was in a working state before your modifications
-
-**When tests fail after your changes**:
-1. **STOP** - Don't continue with additional changes
-2. **Fix the regression** - Debug and resolve the failing tests
-3. **Verify the fix** - Ensure all tests pass again
-4. **Only then proceed** - Continue with your work after restoring functionality
-
-This principle ensures code quality and prevents the accumulation of broken functionality.
-
-## CRITICAL: Zero Tolerance for Compilation and Test Failures
-
-**ABSOLUTE MANDATE**: Any code change that breaks compilation or tests is UNACCEPTABLE.
-
-## CRITICAL: Zero Tolerance for Stub Implementations
-
-**ABSOLUTE MANDATE**: No stub implementations are allowed in the codebase.
-
-**NEVER ALLOW**:
-- ❌ Functions that return `error.NotImplemented`
-- ❌ Placeholder implementations that don't perform the real operation
-- ❌ Fallback modules that replace real functionality
-- ❌ TODO comments indicating unfinished implementations
-
-**WHY THIS IS CRITICAL**:
-- Stubs can easily sneak through without being noticed
-- They create false confidence that functionality exists
-- They compromise the integrity of the system
-- They make debugging harder when functionality silently fails
-
-**REQUIRED BEHAVIOR**:
-- All functions must be fully implemented
-- If a feature cannot be implemented, it should not exist
-- Use proper error types for legitimate failure cases
-- Complete all implementations before marking work as done
-
-## CRITICAL: Benchmark Validity Requirements
-
-**ABSOLUTE MANDATE**: Benchmarks MUST ONLY measure successful executions.
-
-**NEVER ALLOW**:
-- ❌ Benchmarking failing transactions
-- ❌ Benchmarking reverting calls
-- ❌ Ignoring execution failures in benchmarks
-- ❌ Reporting timings for failed operations
-
-**WHY THIS IS CRITICAL**:
-- Failed transactions have different execution paths
-- Reverts short-circuit execution
-- Measuring failures gives FALSE performance data
-- Invalid benchmarks are WORSE than no benchmarks
-
-**REQUIRED BEHAVIOR**:
-- All benchmark transactions MUST succeed
-- Setup proper initial state for all operations
-- For ERC20: Ensure sender has sufficient token balance
-- For contracts: Deploy and initialize correctly
-- Exit with error if ANY benchmark operation fails
-
-### MANDATORY BUILD VERIFICATION PROTOCOL
-
-**EVERY SINGLE CODE CHANGE** must be immediately followed by:
-
-```bash
-zig build && zig build test
-```
-
-**NO EXCEPTIONS. NO SHORTCUTS. NO DELAYS.**
-
-### Why This is NON-NEGOTIABLE
-
-1. **Build and tests are FAST** - Under 10 seconds total
-2. **Broken code blocks ALL development** - No excuses
-3. **Professional standards** - Working code is the baseline, not an aspiration
-4. **Debugging hell** - Broken state makes it impossible to isolate issues
-5. **Wasted time** - Fixing broken code later takes exponentially more time
-
-### IMMEDIATE CONSEQUENCES OF VIOLATIONS
-
-If you make ANY code change without verifying the build:
-- You are operating unprofessionally
-- You are creating technical debt
-- You are wasting everyone's time
-- You are violating the fundamental requirement of working code
-
-### MANDATORY VERIFICATION STEPS
-
-**AFTER EVERY SINGLE EDIT** (not just commits):
-
-1. **IMMEDIATELY** run `zig build`
-2. **IMMEDIATELY** run `zig build test`
-3. **ONLY PROCEED** if both commands succeed with zero errors
-4. **IF EITHER FAILS** - STOP everything and fix it before making any other changes
-
-### ABSOLUTELY FORBIDDEN PRACTICES
-
-- ❌ Making multiple changes without testing
-- ❌ "I'll test it later"
-- ❌ "It's just a small change"
-- ❌ "I'll fix the build issues at the end"
-- ❌ Assuming changes work without verification
-- ❌ Continuing development with broken builds
-
-### REQUIRED MINDSET
-
-- ✅ **Working code is the ONLY acceptable state**
-- ✅ **Test after EVERY change**
-- ✅ **Fix broken builds IMMEDIATELY**
-- ✅ **Never commit broken code**
-- ✅ **Professional development practices**
-
-### ENFORCEMENT
-
-This is not a suggestion. This is a **HARD REQUIREMENT**. Violation of this protocol demonstrates unprofessional development practices and is unacceptable.
-
-**THE CODEBASE MUST ALWAYS COMPILE AND PASS TESTS.**
-
-**NO EXCEPTIONS.**
-
-### CRITICAL REMINDER
-
-Every single code change must be verified immediately - no exceptions, no shortcuts, no delays.
-
-## CRITICAL: Debugging Philosophy - No Speculation, Only Evidence
-
-**FUNDAMENTAL PRINCIPLE**: Never guess what causes bugs. Always use logging and direct evidence to understand issues.
-
-### MANDATORY DEBUGGING PROTOCOL
-
-When encountering bugs, crashes, or unexpected behavior:
-
-1. **NEVER SPECULATE** about root causes without direct evidence
-2. **ALWAYS ADD LOGGING** to understand what is actually happening
-3. **TRACE EXECUTION** step by step until the exact failure point is identified
-4. **VERIFY ASSUMPTIONS** with concrete evidence before making changes
-
-### FORBIDDEN DEBUGGING PRACTICES
-
-- ❌ "This might be because..."
-- ❌ "It's probably a null pointer..."
-- ❌ "The issue could be..."
-- ❌ Making changes based on guesses
-- ❌ "Let me try this and see if it works"
-
-### REQUIRED DEBUGGING PRACTICES
-
-- ✅ Add debug logging to trace execution
-- ✅ "Let me add logging to see what's happening"
-- ✅ Verify each assumption with concrete evidence
-- ✅ Trace execution until exact failure point is found
-- ✅ Only make changes after understanding the root cause
-
-### Logging and Tracing
-
-- `Log.debug` calls are compiled out at comptime in non-safe builds by default, so they impose no runtime overhead in release. Do not rely on side effects within debug log expressions. If a log requires heavy formatting or backtracing, still prefer gating it with a comptime flag (e.g., `builtin.mode == .Debug or .ReleaseSafe`).
-
-### ENFORCEMENT
-
-Speculating about bugs without evidence demonstrates unprofessional debugging practices. All debugging must be evidence-based.
-
-### Why This Approach?
-- **Tests are documentation** - A developer should understand what's being tested without jumping between files
-- **Tests should be obvious** - No mental overhead from abstractions
-- **Copy-paste is encouraged** - Verbose, repetitive test code is acceptable and preferred
-- **Each test tells a complete story** - From setup to assertion, everything is visible
-
-### Example Pattern
-
-```zig
-// Good - everything inline
-test "ADD opcode adds two values" {
-    const allocator = std.testing.allocator;
-    
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface, null, null);
-    defer vm.deinit();
-
-    var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
-    defer contract.deinit(allocator, null);
-
-    var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-    defer frame.deinit();
-
-    try frame.stack.push(5);
-    try frame.stack.push(10);
-
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
-
-    const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 15), result);
-}
-```
+- **NO abstractions** - Copy/paste setup code
+- **NO helpers** - Self-contained tests
+- **Test failures = YOUR regression** - Fix immediately
+- Evidence-based debugging only (no speculation)
 
 ## Project Architecture
 
 ### Guillotine: Zig EVM Implementation
+High-performance EVM focused on correctness, minimal allocations, strong typing.
 
-This is a high-performance Ethereum Virtual Machine (EVM) implementation written in Zig, designed for:
-- Correctness and spec compliance
-- Minimal allocations and high performance
-- Strong typing and comprehensive error handling
-- Modularity and testability
+### Module System
+- `Guillotine_lib` - Main library (src/root.zig)
+- `evm` - EVM implementation (src/evm/root.zig)
+- `primitives` - Ethereum primitives
+- `crypto` - Cryptographic functions
+- `bn254_wrapper` - BN254 curve operations
 
-### Key Design Decisions
-1. **No abstractions in tests** - Tests serve as documentation
-2. **Minimal memory allocations** - Prefer stack allocation and upfront allocation
-3. **Strong error types** - Every component has specific error types
-4. **Module boundaries** - Clear separation between EVM components
-5. **Handler-based architecture** - Efficient opcode dispatch via function pointers
-
-## Codebase Structure
-
-### Root Level
-- `build.zig` - Build configuration defining modules and dependencies
-- `build.zig.zon` - Package dependencies
-- `src/` - Main source code
-- `test/` - Integration tests spanning multiple modules
-- `CLAUDE.md` - This file (AI agent configuration)
-
-### Module System (defined in build.zig)
-- **`Guillotine_lib`** - Main library module (src/root.zig)
-- **`evm`** - High-performance EVM implementation module (src/evm/root.zig)
-- **`primitives`** - Ethereum primitives (Address, u256, RLP, Hex)
-- **`crypto`** - Cryptographic functions (Keccak256, secp256k1, etc.)
-- **`bn254_wrapper`** - BN254 elliptic curve operations (temporary Rust wrapper)
-
-### Core EVM Components (`src/evm/`)
-
-#### Virtual Machine Core
-- `evm.zig` - Main VM implementation orchestrating execution and state management
-- `root.zig` - Module exports and comprehensive documentation
-- `evm_config.zig` - EVM configuration parameters
-
-#### Execution Framework
-- `frame.zig` - Lightweight execution context with stack, memory, and gas tracking
-- `frame_config.zig` - Frame configuration for compile-time optimization
-- `frame_interpreter.zig` - Frame-based interpreter implementation
-- `stack.zig` - High-performance 256-bit word stack (pointer-based, downward growth)
-- `stack_config.zig` - Stack configuration and type selection
-- `memory.zig` - EVM-compliant memory with hierarchical isolation and lazy expansion
-- `memory_config.zig` - Memory configuration and limits
-
-#### Bytecode Analysis and Optimization
-- `planner.zig` - Bytecode analysis and optimization system
-- `planner_config.zig` - Planner configuration
-- `planner_strategy.zig` - Strategy selection (minimal vs advanced)
-- `plan.zig` - Runtime execution plan with instruction stream
-- `plan_config.zig` - Plan configuration
-- `plan_minimal.zig` - Minimal planning implementation
-- `plan_advanced.zig` - Advanced optimization with opcode fusion
-- `plan_debug.zig` - Debug planning with validation
-- `bytecode.zig` - Bytecode representation and utilities
-- `bytecode_config.zig` - Bytecode configuration
-- `bytecode_stats.zig` - Bytecode analysis statistics
-
-#### Opcodes and Instructions
-- `opcode.zig` - EVM opcode enumeration
-- `opcode_data.zig` - Opcode metadata (gas costs, stack effects)
-- `opcode_synthetic.zig` - Synthetic fused opcodes for optimization
-
-#### State Management
-- `database_interface.zig` - Pluggable vtable-based storage interface
-- `database_interface_account.zig` - Account data structures
-- `memory_database.zig` - In-memory database implementation
-- `journal.zig` - State change tracking for transaction reverts
-- `journal_entry.zig` - Individual journal entry types
-- `journal_config.zig` - Journal configuration
-- `access_list.zig` - EIP-2929 warm/cold access tracking
-- `access_list_config.zig` - Access list configuration
-
-#### External Interfaces
-- `host.zig` - Host interface for external operations (calls, creates, environment)
-- `call_params.zig` - Parameters for different call types
-- `call_result.zig` - Call operation results
-- `created_contracts.zig` - Contract creation tracking (EIP-6780)
-- `self_destruct.zig` - Self-destruct tracking
-- `logs.zig` - Event log management
-
-#### Transaction and Block Context
-- `transaction_context.zig` - Transaction-level context
-- `block_info.zig` - Block information with configurable storage
-- `block_info_config.zig` - Block info configuration
-
-#### Precompiled Contracts
-- `precompiles.zig` - Standard Ethereum precompiled contracts
-
-#### Hard Fork Support
-- `hardfork.zig` - Ethereum hard fork enumeration and rules
-
-#### Tracing and Debugging
-- `tracer.zig` - Configurable execution tracing system
-  - NoOpTracer (zero overhead)
-  - DebuggingTracer (step-by-step debugging)
-  - LoggingTracer (structured logging)
-  - FileTracer (file output)
-
-#### Performance Utilities
-- `keccak_asm.zig` - Optimized Keccak-256 implementation
-
-### Test Organization
-- **Unit tests**: Colocated with implementation files
-- **Integration tests**: In `test/evm/` directory
-  - Each test file is self-contained
-  - No test utilities or helpers
-  - Direct setup and assertion
+### Key EVM Components
+**Core**: evm.zig, frame.zig, stack.zig, memory.zig
+**Planning**: planner.zig, plan_*.zig (bytecode optimization)
+**State**: database_interface.zig, journal.zig, access_list.zig
+**External**: host.zig, call_params.zig, precompiles.zig
 
 ### Import Rules
-
-1. **No relative imports with `../`** - Cannot import from parent directories
-2. **Same folder imports** - Can import files in the same directory directly
-3. **Subfolder imports** - Can import from subdirectories
-4. **Cross-module imports** - Must use the module system defined in `build.zig`
-
 ```zig
-// Good - importing from module system
+// Good
 const Evm = @import("evm");
-const Address = @import("Address");
-
-// Good - same directory
 const memory = @import("memory.zig");
 
-// Bad - parent directory (will fail)
+// Bad - no parent imports
 const Contract = @import("../frame/contract.zig");
 ```
 
-## Build and Test Commands
-
-**CRITICAL REQUIREMENT**: ALWAYS run `zig build && zig build test` before committing ANY changes.
-
-### Why This is Critical
-- **Build and tests run very fast** (usually under 10 seconds)
-- **Regressions are unacceptable** - broken builds/tests block all development
-- **No exceptions** - even small changes can break imports or cause test failures
-- **Fast feedback loop** - catches issues immediately before they propagate
-
-## MANDATORY SUCCESS CRITERIA
-
-**ZERO TOLERANCE POLICY**: The agent is STRICTLY FORBIDDEN from claiming success, completion, or using positive language (✅, "working", "successful", etc.) if ANY of the following conditions exist:
-
-1. **Any build command fails** - `zig build`, `zig build test`, `zig build fuzz`, etc.
-2. **Any test fails** - Even a single failing test means the system is broken
-3. **Any compilation errors** - All code must compile cleanly
-4. **Any runtime errors** - All functionality must work correctly in practice
-5. **Any memory leaks** - All memory must be properly managed
-6. **Any functionality is incomplete** - Features must be fully implemented and tested
-
-**REQUIRED BEHAVIOR**:
-- If ANY test fails, the agent MUST investigate the root cause
-- If ANY functionality is broken, the agent MUST fix it completely
-- The agent MUST NOT use success indicators until ALL issues are resolved
-- The agent MUST NOT claim "infrastructure is working" if tests are failing
-- The agent MUST be completely honest about broken functionality
-
-**VIOLATION CONSEQUENCES**: Claiming success with failing tests is grounds for immediate termination of the agent's assistance.
-
-### Required Workflow
+## Commands
 ```bash
-# Before making ANY commit, ALWAYS run:
-zig build && zig build test
-
-# Only commit if both commands succeed
-git add ...
-git commit -m "..."
+zig build test              # ALWAYS use this, never 'zig test'
+zig build                   # Build project
+zig build build-evm-runner  # Build benchmarks
 ```
 
-### Commit Message Convention
-
-**MANDATORY**: All commit messages MUST use emoji conventional commits format.
-
-#### Format
+## Commit Format
 ```
 <emoji> <type>: <description>
-
-[optional body]
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
-#### Required Emojis by Type
-- 🎉 `feat`: new features
-- 🐛 `fix`: bug fixes  
-- 🔧 `ci`: CI/CD changes
-- 📚 `docs`: documentation
-- 🎨 `style`: formatting, no code change
-- ♻️ `refactor`: code restructuring
-- ⚡ `perf`: performance improvements
-- ✅ `test`: adding/updating tests
-- 🔨 `build`: build system changes
-- 📦 `deps`: dependency updates
+Emojis: 🎉feat 🐛fix 🔧ci 📚docs 🎨style ♻️refactor ⚡perf ✅test 🔨build 📦deps
 
-#### Examples
-```bash
-git commit -m "🎉 feat: add EIP-4844 blob transaction support"
-git commit -m "🐛 fix: resolve memory leak in contract cleanup"
-git commit -m "🔧 ci: add Ubuntu native build to CI workflow"
-```
+## EVM Architecture
 
-### Standard Commands
-**IMPORTANT**: Always use `zig build test`, never use `zig test` directly.
+### Design Patterns
+1. **Strong error types** per component
+2. **Unsafe ops** for performance (pre-validated)
+3. **Cache-conscious** struct layout
+4. **Handler tables** for O(1) dispatch
+5. **Bytecode optimization** via Planner
 
-```bash
-zig build test                              # Run all tests (correct way)
-zig build                                   # Build the project
-zig build run                               # Run the executable
-zig build bench                             # Run benchmarks
-zig build build-evm-runner                  # Build the official benchmark runner
-```
+### Key Separations
+- **Frame**: Executes opcodes
+- **Plan**: Manages PC/jumps
+- **Host**: External operations
 
-Do NOT use:
-```bash
-zig test src/file.zig                       # Wrong - will fail with import errors
-```
-
-### Running Official EVM Benchmarks
-
-The project includes official EVM benchmarks in `bench/` for performance testing:
-
-1. **Install hyperfine** (required):
-   ```bash
-   brew install hyperfine  # macOS
-   cargo install hyperfine # Linux/other
-   ```
-
-2. **Build the benchmark runners**:
-   ```bash
-   # Core Zig runners
-   zig build build-evm-runner
-   zig build build-orchestrator
-   
-   # EthereumJS dependencies (required for comparison benchmarks)
-   cd bench/evms/ethereumjs && bun install && cd ../../../..
-   ```
-
-3. **Run benchmarks**:
-   ```bash
-   # Single benchmark example
-   hyperfine --runs 10 --warmup 3 \
-     "zig-out/bin/evm-runner --contract-code-path bench/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
-   
-   # Cross-EVM comparison benchmarks
-   ./zig-out/bin/orchestrator --compare --export markdown
-   ```
-
-Available benchmark cases:
-- `erc20-approval-transfer` - ERC20 approval and transfer
-- `erc20-mint` - ERC20 minting
-- `erc20-transfer` - Basic ERC20 transfers
-- `snailtracer` - Complex computation
-- `ten-thousand-hashes` - Hash-intensive operations
-
-### Enabling Debug Logging in Tests
-
-To see `std.log.debug` output when running tests, add this to your test file:
-
+### Opcode Pattern
 ```zig
-test {
-    std.testing.log_level = .warn;
+pub fn add(self: *Self) Error!void {
+    const b = self.stack.pop_unsafe();
+    const a = self.stack.peek_unsafe();
+    self.stack.set_top_unsafe(a +% b);
 }
 ```
 
-This will enable all debug logging statements in the code being tested, which is essential for debugging EVM execution issues.
-
-## Commenting Guidelines
-
-### Comments Should Be Minimal and Purposeful
-- **Only add useful and necessary comments** - avoid overcommenting
-- **Do not add comments for obvious operations** - code should be self-explanatory
-- **Avoid explaining what the code does** - explain why when needed
-- **No redundant comments** - if removing code, don't add comments about what was removed
-
-### Code Removal Policy
-- **NEVER comment out code** - always delete unused or obsolete code completely
-- **Do not leave commented-out code blocks** - remove them entirely
-- **Version control tracks history** - there's no need to preserve old code as comments
-- **Clean codebase only** - the codebase should only contain active, working code
-
-## Source Control Best Practices
-
-### CRITICAL: Git is Our Only Source Control
-
-**ABSOLUTE MANDATE**: We use Git for version control. The following practices are FORBIDDEN:
-
-1. **NEVER comment out code** - Delete it completely, Git preserves history
-2. **NEVER comment out tests** - If a test is failing, fix it or understand why
-3. **NEVER create .bak files** - Git handles version history, not manual backups
-4. **NEVER use comments as source control** - Comments are for documentation, not history
-
-### Handling Failing Tests
-
-**FORBIDDEN PRACTICES**:
-- ❌ Commenting out failing tests to make the build pass
-- ❌ Deleting tests that expose bugs
-- ❌ Skipping tests without understanding the root cause
-- ❌ Creating backup files of tests before modifying them
-
-**REQUIRED PRACTICES**:
-- ✅ Fix the code that causes tests to fail
-- ✅ If a test is invalid, update it to match correct behavior
-- ✅ Use Git to track all changes, including test modifications
-- ✅ Every test must pass - no exceptions
-
-### Why This Matters
-
-1. **Commented code creates confusion** - Is it still needed? Why was it disabled?
-2. **Backup files pollute the codebase** - Git already tracks all history
-3. **Disabled tests hide regressions** - Every test exists for a reason
-4. **Clean code is professional** - The codebase should only contain active, working code
-
-### ENFORCEMENT
-
-Creating .bak files or commenting out code/tests demonstrates unprofessional development practices and violates our source control principles.
-
-## EVM Architecture and Development Guidelines
-
-### EVM Module Structure
-
-The EVM implementation is a ground-up redesign with configurable, high-performance components:
-
-#### Core Components
-- **Evm (evm.zig)**: Transaction-level execution orchestrator with pluggable components
-- **Frame**: Lightweight execution context - handles opcodes but NOT PC/jumps or calls
-- **Stack**: Cache-aligned pointer-based stack with downward growth for optimal performance
-- **Memory**: EVM-compliant memory with lazy expansion and hierarchical checkpoints
-- **DatabaseInterface**: Type-safe vtable-based storage abstraction with zero overhead
-
-#### Key Design Patterns
-
-1. **Strong Error Types**: Every component has specific error types
-   ```zig
-   pub const MemoryError = error{
-       OutOfMemory,
-       InvalidOffset,
-       MemoryLimitExceeded,
-       // ... specific errors
-   };
-   ```
-
-2. **Unsafe Operations for Performance**: 
-   - Planner validates stack requirements
-   - Opcodes use `_unsafe` variants for speed
-   ```zig
-   const top = frame.stack.pop_unsafe(); // Bounds already checked
-   ```
-
-3. **Comprehensive Documentation**: Every opcode includes:
-   - Stack input/output specification
-   - Gas costs
-   - Execution steps
-   - Examples
-
-4. **Cache-Conscious Field Layout**: Structs organized by access patterns
-   ```zig
-   // Hot fields together (cache line 1)
-   stack: Stack,
-   pc: u32,
-   gas_remaining: i64,
-   
-   // Cold fields together (later cache lines)
-   tracer: ?std.io.AnyWriter,
-   ```
-
-### EVM-Specific Coding Standards
-
-1. **Opcode Implementation Pattern**:
-   ```zig
-   pub fn example(self: *Self) Error!void {
-       // Pop operands (validated by planner)
-       const b = self.stack.pop_unsafe();
-       const a = self.stack.peek_unsafe();
-       
-       // Perform operation
-       const result = /* operation logic */;
-       
-       // Update stack
-       self.stack.set_top_unsafe(result);
-   }
-   ```
-
-2. **Memory Management in EVM**:
-   - Use checkpoint system for nested calls
-   - Shared buffer with lazy expansion
-   - Always calculate gas before expansion
-   ```zig
-   const checkpoint = memory.get_checkpoint();
-   const child_memory = try memory.init_child_memory(checkpoint);
-   defer child_memory.deinit();
-   ```
-
-3. **Error Handling Philosophy**:
-   - Normal termination (STOP, RETURN) are errors for control flow
-   - Real errors indicate failure conditions
-   - Database errors are propagated from state interface
-   ```zig
-   return switch (err) {
-       Error.STOP => RunResult{ .success = output },
-       Error.REVERT => RunResult{ .revert = output },
-       else => RunResult{ .failure = err },
-   };
-   ```
-
-4. **Gas Calculation Rules**:
-   - Check gas before operations
-   - Use wrapping arithmetic for gas costs
-   - Track gas as i64 (negative = out of gas)
-   ```zig
-   frame.gas_remaining -= cost;
-   if (frame.gas_remaining < 0) return error.OutOfGas;
-   ```
-
-### EVM Testing Patterns
-
-1. **In-File Tests**: All unit tests colocated with implementation
-2. **Fuzz Testing**: Use for boundary conditions and edge cases
-3. **No Test Abstractions**: Each test is self-contained
-4. **Test Categories**:
-   - Basic operations
-   - Edge cases (overflow, underflow)
-   - Gas consumption
-   - Error conditions
-
-### Performance Considerations
-
-1. **Handler-Based Dispatch**: Opcodes dispatched via function pointers in instruction stream
-2. **Analysis Caching**: Code analysis cached for nested calls
-3. **Memory Pooling**: Frame pool for temporary allocations
-4. **Inline Hot Paths**: Critical opcodes can be inlined
-
-### Advanced Architectural Patterns
-
-#### 1. Separation of Concerns - Frame vs Plan vs Host
-
-The new architecture clearly separates responsibilities:
-
-- **Frame**: Executes individual opcodes with stack/memory/storage operations
-- **Plan**: Manages PC, jump validation, and instruction dispatch via optimized instruction stream
-- **Host**: Handles external operations (calls, creates, environment queries)
-
-This separation enables better optimization opportunities and cleaner interfaces.
-
-#### 2. Data-Driven Design with Handler Tables
-
-The EVM uses pure data structures for opcode dispatch instead of switch statements:
-
-```zig
-// OpcodeMetadata - Struct of Arrays for cache efficiency
-pub const OpcodeMetadata = struct {
-    execute_funcs: [256]ExecutionFunc align(CACHE_LINE_SIZE),
-    constant_gas: [256]u64 align(CACHE_LINE_SIZE),
-    min_stack: [256]u32,
-    max_stack: [256]u32,
-    // ... other arrays
-};
-
-// Direct O(1) dispatch without branching
-const opcode = bytecode[pc];
-const handler = table.execute_funcs[opcode];
-```
-
-Benefits:
-- No branch prediction penalties
-- Hot data (functions, gas) in contiguous cache lines
-- Cold data separated to avoid cache pollution
-
-#### 3. Advanced Bytecode Optimization via Planner
-
-The Planner transforms raw bytecode into optimized execution plans:
-
-```zig
-pub const Plan = struct {
-    instructionStream: []InstructionElement,    // Handler pointers + inline data
-    u256_constants: []WordType,                 // Large constants array
-    pc_to_instruction_idx: ?HashMap(PcType, InstructionIndexType), // Jump mapping
-};
-```
-
-**Optimization Strategies**:
-- **Opcode Fusion**: Common patterns detected and fused (PUSH+ADD → PUSH_ADD_INLINE)
-- **Constant Inlining**: Small values embedded directly in instruction stream
-- **Platform-Specific**: Different strategies for 32-bit vs 64-bit architectures
-- **Jump Validation**: Pre-validated JUMPDEST locations for O(1) jump checking
-- **Synthetic Opcodes**: Extended instruction set for optimized patterns
-
-#### 4. Cache-Conscious Struct Layout
-
-Structs are carefully organized by access patterns:
-
-```zig
-// EVM struct layout with cache line annotations
-pub const Evm = struct {
-    // CACHE LINE 1-2 (128 bytes) - HOT PATH
-    state: EvmState,        // Frequently accessed
-    access_list: AccessList,
-    journal: CallJournal,
-    allocator: Allocator,
-    gas_refunds: i64,
-    
-    // CACHE LINE 3 (64 bytes) - TRANSACTION LIFECYCLE
-    created_contracts: CreatedContracts,
-    self_destruct: SelfDestruct,
-    internal_arena: ArenaAllocator,
-    
-    // CACHE LINE 5+ - COLD PATH
-    table: OpcodeMetadata,  // Large, rarely accessed
-    context: Context,       // Transaction context
-    tracer: ?AnyWriter,     // Debug only
-};
-```
-
-#### 5. Comptime Validation and Documentation
-
-While explicit size/alignment assertions aren't common, the codebase uses:
-
-1. **Alignment directives** for performance:
-   ```zig
-   execute_funcs: [256]ExecutionFunc align(CACHE_LINE_SIZE),
-   ```
-
-2. **Size-aware type selection**:
-   ```zig
-   pub const InstructionElement = if (@sizeOf(usize) == 8)
-       u64  // 64-bit platforms
-   else if (@sizeOf(usize) == 4)
-       u32; // 32-bit platforms
-   ```
-
-3. **Comptime configuration validation**:
-   ```zig
-   pub fn validate(self: @This()) void {
-       if (self.stack_size > 1024) @compileError("Stack size exceeds EVM limit");
-       if (self.max_bytecode_size > 24576) @compileError("Bytecode size exceeds EVM limit");
-   }
-   ```
-
-### Module Dependencies
-
-When working with EVM modules:
-- Import from module system, not relative paths
-- Use full type paths for clarity
-```zig
-const Address = @import("primitives").Address.Address;
-const memory = @import("memory.zig");
-```
-
-### EVM Module Organization
-
-The new EVM architecture is organized as a flat module structure:
-
-1. **Core Execution**:
-   - `evm.zig` - Transaction-level orchestrator
-   - `frame.zig` - Opcode execution context (~2000 lines)
-   - `frame_interpreter.zig` - Frame-based interpreter
-   - `host.zig` - External operations interface
-
-2. **Performance Components**:
-   - `stack.zig` - Pointer-based stack with cache alignment
-   - `memory.zig` - Hierarchical memory with lazy expansion
-   - `planner.zig` - Bytecode optimization engine
-   - `plan_*.zig` - Different planning strategies
-
-3. **State Management**:
-   - `database_interface.zig` - Zero-cost vtable abstraction
-   - `memory_database.zig` - Reference implementation
-   - `journal.zig` - Transaction revert tracking
-   - `access_list.zig` - EIP-2929 implementation
-
-4. **Opcodes and Data**:
-   - `opcode.zig` - Standard EVM opcodes
-   - `opcode_synthetic.zig` - Fused optimization opcodes
-   - `opcode_data.zig` - Gas costs and stack effects
-
-5. **Configuration**:
-   - `*_config.zig` - Compile-time configuration for each component
-   - Enables platform-specific optimization and type selection
-
-### Working with EVM State
-
-1. **Database Interface Pattern**:
-   ```zig
-   pub const DatabaseInterface = struct {
-       get_account: *const fn(self: *anyopaque, address: Address) DatabaseError!Account,
-       set_account: *const fn(self: *anyopaque, address: Address, account: Account) DatabaseError!void,
-       // ... other methods
-   };
-   ```
-
-2. **Journaling for Reverts**:
-   - All state changes are journaled
-   - Snapshots enable nested transaction rollback
-   - Self-destruct and created contracts tracked separately
-
-3. **Access List (EIP-2929/2930)**:
-   - Tracks warm/cold storage access
-   - Reduces gas costs for repeated access
-   - Pre-warming for transaction access lists
-
-## Frame.zig Navigation Guide
-
-### File Structure Overview for `src/evm/frame.zig` (~2000+ lines)
-
-**CRITICAL**: This file contains all opcode implementations. Use targeted reads with offset/limit or Grep for specific sections.
-
-#### Key Components in Frame:
-- **Configuration**: Generic Frame type parameterized by FrameConfig
-- **Stack Operations**: All PUSH, POP, DUP, SWAP operations
-- **Arithmetic**: ADD, SUB, MUL, DIV, MOD, EXP, etc.
-- **Bitwise**: AND, OR, XOR, NOT, SHL, SHR, SAR
-- **Comparison**: LT, GT, EQ, ISZERO
-- **Memory**: MLOAD, MSTORE, MSIZE, MCOPY
-- **Storage**: SLOAD, SSTORE, TLOAD, TSTORE (via database interface)
-- **Hashing**: KECCAK256
-- **Logging**: LOG0-LOG4
-
-#### Common Search Patterns:
+## Frame.zig Navigation (~2000 lines)
+Contains all opcodes. Search patterns:
 ```bash
-# Find specific opcode implementation (e.g., add, mul, sstore)
-grep -n "pub fn [opcode_name]" src/evm/frame.zig
-
-# Find all opcodes (they don't have op_ prefix)
-grep -n "pub fn add\|pub fn mul\|pub fn sub" src/evm/frame.zig
-
-# Find gas consumption patterns
+grep -n "pub fn add" src/evm/frame.zig
 grep -n "gas_remaining" src/evm/frame.zig
 ```
 
-#### Important Notes:
-- Frame does NOT handle PC, JUMP/JUMPI (managed by Plan)
-- Frame does NOT handle CALL/CREATE (managed by Host/EVM)
-- All opcode functions follow pattern: `pub fn name(self: *Self) Error!void` (NO `op_` prefix!)
-- Unsafe stack operations used when bounds pre-validated by planner
+## References
+- Zig docs: https://ziglang.org/documentation/0.14.1/
+- revm/: Reference Rust implementation
 
-## Essential Documentation References
-
-### Zig Programming Language Documentation
-- **Zig Language Reference**: https://ziglang.org/documentation/0.14.1/
-  - Complete language specification and syntax reference
-  - Memory management patterns and allocator usage
-  - Comptime programming and metaprogramming
-  - Error handling with error unions and error sets
-  
-- **Zig Standard Library**: https://ziglang.org/documentation/master/std/
-  - Standard library modules and functions
-  - Data structures (ArrayList, HashMap, etc.)
-  - I/O operations and file system interfaces
-  - Testing framework and debugging tools
-
-### Ethereum Specifications
-- **Ethereum Yellow Paper**: Technical specification of the EVM
-- **EIP Repository**: Ethereum Improvement Proposals for protocol changes
-
-### Reference Implementation
-- **revm codebase**: The `revm/` directory contains a reference Rust implementation of the EVM
-  - Use this to verify correct behavior when implementing opcodes
-  - Check `revm/crates/interpreter/src/instructions/contract.rs` for CALL/DELEGATECALL/STATICCALL implementations
-  - DELEGATECALL preserves the original caller and value from the parent context
-
-## Interactive Collaboration Requirements
-
-This project operates on mandatory interactive collaboration - every significant decision, change, or implementation requires user partnership and approval. Key principles:
-
-- No autonomous decisions on architecture, implementation details, or workflow changes
-- Always present proposals and wait for explicit approval
-- Treat every interaction as a collaborative partnership
-- When uncertain, ask rather than assume
-- Document all decisions and their rationale
-
-## Important: When Things Don't Go As Planned
-
-**If the plan outlined by the user isn't working:**
-1. **STOP immediately** - Don't try to continue or find workarounds
-2. **Explain clearly** what is happening and why it's not working
-3. **Wait for instructions** - Let the user provide guidance on how to proceed
-4. **Don't assume** - Ask for clarification rather than guessing the next step
-
-This ensures we stay aligned with the project's intentions and don't create unintended complexity.
-
-## Amendment Protocol
-
-When this CLAUDE.md file needs updates:
-1. Present proposed changes clearly with rationale
-2. Show before/after diffs for modified sections
-3. Explain impact on existing workflows
-4. Request explicit approval before implementing changes
-5. Document amendment history in commit messages
+## Collaboration
+- Present proposals, wait for approval
+- If plan fails: STOP, explain, wait for guidance
+- Interactive partnership required
 
 ---
-
-*This configuration establishes a self-referential system where the AI agent governs its own behavior according to these documented protocols, ensuring consistent, collaborative, and methodical development practices.*
+*Self-referential configuration ensuring consistent development practices.*
