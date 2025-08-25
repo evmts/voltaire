@@ -863,6 +863,21 @@ pub fn build(b: *std.Build) void {
     const frame_opcode_integration_test_step = b.step("test-frame-opcode-integration", "Run Frame opcode integration tests");
     frame_opcode_integration_test_step.dependOn(&run_frame_opcode_integration_test.step);
 
+    // Add Frame host integration tests
+    const frame_host_test = b.addTest(.{
+        .name = "frame-host-test",
+        .root_source_file = b.path("src/evm/frame_interpreter_host_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    frame_host_test.root_module.addImport("evm", evm_mod);
+    frame_host_test.root_module.addImport("primitives", primitives_mod);
+    frame_host_test.root_module.addImport("crypto", crypto_mod);
+    frame_host_test.root_module.addImport("build_options", build_options_mod);
+    const run_frame_host_test = b.addRunArtifact(frame_host_test);
+    const frame_host_test_step = b.step("test-frame-host", "Run Frame host integration tests");
+    frame_host_test_step.dependOn(&run_frame_host_test.step);
+
     // EVM E2E tests removed - file no longer exists
 
     // Comprehensive Differential tests removed - file no longer exists
@@ -1760,6 +1775,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_evm_core_test.step);
     test_step.dependOn(&run_frame_integration_test.step);
     test_step.dependOn(&run_frame_opcode_integration_test.step);
+    test_step.dependOn(&run_frame_host_test.step);
     // benchmark runner test removed - file no longer exists
 
     // Inline ops test removed - file no longer exists
