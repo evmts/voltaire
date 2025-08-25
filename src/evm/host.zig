@@ -20,7 +20,11 @@ pub const Host = struct {
     /// Function pointer table for the implementation
     vtable: *const VTable,
 
-    /// Virtual function table defining all host operations
+    /// Virtual function table defining all host operations.
+    ///
+    /// Performance note: Methods are ordered roughly by frequency of use.
+    /// Hot path methods (storage, balance, etc.) are placed first for
+    /// better cache locality during execution.
     pub const VTable = struct {
         /// Get account balance
         get_balance: *const fn (ptr: *anyopaque, address: Address) u256,
@@ -42,6 +46,10 @@ pub const Host = struct {
         create_snapshot: *const fn (ptr: *anyopaque) u32,
         /// Revert state changes to a previous snapshot
         revert_to_snapshot: *const fn (ptr: *anyopaque, snapshot_id: u32) void,
+        /// Get storage value
+        get_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256) u256,
+        /// Set storage value with journaling
+        set_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256, value: u256) anyerror!void,
         /// Record a storage change in the journal
         record_storage_change: *const fn (ptr: *anyopaque, address: Address, slot: u256, original_value: u256) anyerror!void,
         /// Get the original storage value from the journal
@@ -60,10 +68,6 @@ pub const Host = struct {
         /// Get metadata for the current frame
         get_is_static: *const fn (ptr: *anyopaque) bool,
         get_depth: *const fn (ptr: *anyopaque) u11,
-        /// Get storage value
-        get_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256) u256,
-        /// Set storage value
-        set_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256, value: u256) anyerror!void,
         /// Get transaction gas price
         get_gas_price: *const fn (ptr: *anyopaque) u256,
         /// Get return data from last call
@@ -248,17 +252,17 @@ pub const Host = struct {
 
             fn vtable_get_tx_origin(ptr: *anyopaque) Address {
                 const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.get_tx_origin();
+                return self.*.get_tx_origin();
             }
 
             fn vtable_get_caller(ptr: *anyopaque) Address {
                 const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.get_caller();
+                return self.*.get_caller();
             }
 
             fn vtable_get_call_value(ptr: *anyopaque) u256 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.get_call_value();
+                return self.*.get_call_value();
             }
 
             const vtable = VTable{
@@ -303,17 +307,17 @@ pub const Host = struct {
     }
 
     /// Get account balance
-    pub fn get_balance(self: Host, address: Address) u256 {
+    pub inline fn get_balance(self: Host, address: Address) u256 {
         return self.vtable.get_balance(self.ptr, address);
     }
 
     /// Check if account exists
-    pub fn account_exists(self: Host, address: Address) bool {
+    pub inline fn account_exists(self: Host, address: Address) bool {
         return self.vtable.account_exists(self.ptr, address);
     }
 
     /// Get account code
-    pub fn get_code(self: Host, address: Address) []const u8 {
+    pub inline fn get_code(self: Host, address: Address) []const u8 {
         return self.vtable.get_code(self.ptr, address);
     }
 
@@ -364,12 +368,12 @@ pub const Host = struct {
 
 
     /// Access an address and return the gas cost (EIP-2929)
-    pub fn access_address(self: Host, address: Address) !u64 {
+    pub inline fn access_address(self: Host, address: Address) !u64 {
         return self.vtable.access_address(self.ptr, address);
     }
 
     /// Access a storage slot and return the gas cost (EIP-2929)
-    pub fn access_storage_slot(self: Host, contract_address: Address, slot: u256) !u64 {
+    pub inline fn access_storage_slot(self: Host, contract_address: Address, slot: u256) !u64 {
         return self.vtable.access_storage_slot(self.ptr, contract_address, slot);
     }
 
@@ -393,7 +397,7 @@ pub const Host = struct {
     }
 
     /// Get whether the current frame is static (read-only)
-    pub fn get_is_static(self: Host) bool {
+    pub inline fn get_is_static(self: Host) bool {
         return self.vtable.get_is_static(self.ptr);
     }
 
@@ -403,12 +407,12 @@ pub const Host = struct {
     }
 
     /// Get storage value
-    pub fn get_storage(self: Host, address: Address, slot: u256) u256 {
+    pub inline fn get_storage(self: Host, address: Address, slot: u256) u256 {
         return self.vtable.get_storage(self.ptr, address, slot);
     }
 
     /// Set storage value
-    pub fn set_storage(self: Host, address: Address, slot: u256, value: u256) !void {
+    pub inline fn set_storage(self: Host, address: Address, slot: u256, value: u256) !void {
         return self.vtable.set_storage(self.ptr, address, slot, value);
     }
 
@@ -448,12 +452,12 @@ pub const Host = struct {
     }
 
     /// Get caller of current execution context
-    pub fn get_caller(self: Host) Address {
+    pub inline fn get_caller(self: Host) Address {
         return self.vtable.get_caller(self.ptr);
     }
 
     /// Get value sent with current call
-    pub fn get_call_value(self: Host) u256 {
+    pub inline fn get_call_value(self: Host) u256 {
         return self.vtable.get_call_value(self.ptr);
     }
 };
