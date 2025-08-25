@@ -245,7 +245,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .gas_limit = 30_000_000,
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .difficulty = [_]u8{1} ** 32,
+        .prev_randao = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -292,7 +292,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .gas_limit = 30_000_000,
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .difficulty = [_]u8{1} ** 32,
+        .prev_randao = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -332,7 +332,7 @@ test "EIP-2929: transaction pre-warming" {
         .gas_limit = 30_000_000,
         .base_fee = 10,
         .coinbase = TEST_ADDRESS_3,
-        .difficulty = [_]u8{1} ** 32,
+        .prev_randao = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -379,7 +379,7 @@ test "EIP-2929: SELFBALANCE always warm" {
         .gas_limit = 30_000_000,
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .difficulty = [_]u8{1} ** 32,
+        .prev_randao = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -421,7 +421,7 @@ test "EIP-2929: access list cleared between transactions" {
         .gas_limit = 30_000_000,
         .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .difficulty = [_]u8{1} ** 32,
+        .prev_randao = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
