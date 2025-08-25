@@ -151,6 +151,17 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: Address, hardfork_config: Hardfork) !Self {
             var planner = try PlannerType.init(allocator, 32); // 32 plans cache
             errdefer planner.deinit();
+            
+            var access_list = AccessList.init(allocator);
+            errdefer access_list.deinit();
+            
+            // EIP-3651: Warm COINBASE address at the start of transaction
+            // Shanghai hardfork introduced this optimization
+            if (hardfork_config.isAtLeast(.SHANGHAI)) {
+                const addresses_to_warm = [_]Address{context.coinbase};
+                try access_list.pre_warm_addresses(&addresses_to_warm);
+            }
+            
             return Self{
                 .depth = 0,
                 .static_stack = [_]bool{false} ** config.max_call_depth,
@@ -159,7 +170,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .journal = JournalType.init(allocator),
                 .created_contracts = CreatedContracts.init(allocator),
                 .self_destruct = SelfDestruct.init(allocator),
-                .access_list = AccessList.init(allocator),
+                .access_list = access_list,
                 .block_info = block_info,
                 .context = context,
                 .current_input = &.{},
@@ -181,13 +192,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.self_destruct.deinit();
             self.access_list.deinit();
             self.planner.deinit();
-            // Free log data
-            for (self.logs.items) |log| {
-                self.allocator.free(log.topics);
-                self.allocator.free(log.data);
-            }
             self.logs.deinit();
             self.internal_arena.deinit();
+        }
+        
+        /// Get the arena allocator for temporary allocations during the current call.
+        /// This allocator is reset after each root call completes.
+        pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
+            return self.internal_arena.allocator();
         }
         
         /// Transfer value between accounts with proper balance checks and error handling
@@ -237,10 +249,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) Error!CallResult {
             self.depth = 0;
-            for (self.logs.items) |log| {
-                self.allocator.free(log.topics);
-                self.allocator.free(log.data);
-            }
+            _ = self.internal_arena.reset(.retain_capacity);
             self.logs.clearRetainingCapacity();
             var result = switch (params) {
                 .call => |p| try self.call_handler(p),
@@ -744,9 +753,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             _ = caller;
             _ = value;
             
-            // Increment depth
+            // Increment depth and track static context
             self.depth += 1;
             defer self.depth -= 1;
+            
+            // Track static context for this frame
+            self.static_stack[self.depth - 1] = is_static;
             
             // Convert gas to appropriate type
             const gas_i32 = @as(i32, @intCast(@min(gas, std.math.maxInt(i32))));
@@ -844,17 +856,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                 else => 0,
             };
 
-            const output_buffer = self.allocator.alloc(u8, estimated_output_size) catch |err| {
-                return err;
-            };
-            errdefer self.allocator.free(output_buffer);
-
-            // NOTE: ChainRules integration for precompiles is pending precompile implementation
-            // const chain_rules = ChainRules.for_hardfork(self.hardfork_config);
-
-            // Execute precompile
-            const result = precompiles.execute_precompile(self.allocator, address, input, gas) catch {
-                self.allocator.free(output_buffer);
+            // Execute precompile using arena allocator
+            const arena = self.internal_arena.allocator();
+            const result = precompiles.execute_precompile(arena, address, input, gas) catch {
                 return CallResult{
                     .success = false,
                     .gas_left = 0,
@@ -864,17 +868,12 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Handle precompile result
             if (result.success) {
-                // Copy output data to our buffer
-                const output_len = @min(result.output.len, output_buffer.len);
-                @memcpy(output_buffer[0..output_len], result.output[0..output_len]);
-                
                 return CallResult{
                     .success = true,
                     .gas_left = gas - result.gas_used,
-                    .output = output_buffer[0..output_len],
+                    .output = result.output,
                 };
             } else {
-                self.allocator.free(output_buffer);
                 return CallResult{
                     .success = false,
                     .gas_left = 0,
@@ -907,21 +906,15 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Emit log event
         pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
-            // Make copies of the data since the caller's data might be temporary
-            const topics_copy = self.allocator.dupe(u256, topics) catch return;
-            const data_copy = self.allocator.dupe(u8, data) catch {
-                self.allocator.free(topics_copy);
-                return;
-            };
+            const arena = self.internal_arena.allocator();
+            const topics_copy = arena.dupe(u256, topics) catch return;
+            const data_copy = arena.dupe(u8, data) catch return;
 
             self.logs.append(@import("call_result.zig").Log{
                 .address = contract_address,
                 .topics = topics_copy,
                 .data = data_copy,
-            }) catch {
-                self.allocator.free(topics_copy);
-                self.allocator.free(data_copy);
-            };
+            }) catch return;
         }
 
         /// Execute nested EVM call - for Host interface
