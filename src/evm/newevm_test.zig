@@ -1,5 +1,6 @@
 const std = @import("std");
 const evm = @import("root.zig");
+const Hardfork = @import("hardfork.zig").Hardfork;
 const testing = std.testing;
 const primitives = @import("primitives");
 
@@ -12,7 +13,17 @@ test "EVM basic initialization" {
     const db_interface = memory_db.to_database_interface();
     
     const DefaultEvmType = evm.DefaultEvm;
-    var vm = try DefaultEvmType.init(allocator, db_interface);
+    const block_info = evm.BlockInfo.init();
+    const tx_context = evm.TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    const gas_price: u256 = 0;
+    const origin = primitives.ZERO_ADDRESS;
+    const hardfork = Hardfork.CANCUN;
+    
+    var vm = try DefaultEvmType.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork);
     defer vm.deinit();
     
     // Test that VM initialized correctly

@@ -43,6 +43,7 @@ pub fn main() !void {
     var contract_code_path: ?[]const u8 = null;
     var calldata_hex: ?[]const u8 = null;
     var num_runs: u32 = 1;
+    var verbose: bool = false;
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -70,6 +71,8 @@ pub fn main() !void {
                 std.process.exit(1);
             };
             i += 1;
+        } else if (std.mem.eql(u8, args[i], "--verbose")) {
+            verbose = true;
         } else {
             std.debug.print("Error: Unknown argument {s}\n", .{args[i]});
             std.process.exit(1);
@@ -129,13 +132,13 @@ pub fn main() !void {
     var used_create: bool = false;
     var deploy_address: Address = undefined;
     const deploy_result = evm_instance.call(deploy_params) catch |err| blk: {
-        std.debug.print("EVM create error (will fallback to direct install): {}\n", .{err});
+        if (verbose) std.debug.print("EVM create error (will fallback to direct install): {}\n", .{err});
         break :blk evm.CallResult.failure(0);
     };
     if (deploy_result.success and deploy_result.output.len >= 20) {
         @memcpy(&deploy_address, deploy_result.output[0..20]);
         used_create = true;
-        std.debug.print("Debug: Deployed contract at address: {x}, code_len={}\n", 
+        if (verbose) std.debug.print("Deployed contract at address: {x}, code_len={}\n", 
             .{std.fmt.fmtSliceHexLower(&deploy_address), init_code.len});
     } else {
         // Fallback: treat provided code as runtime and install directly
@@ -147,7 +150,7 @@ pub fn main() !void {
             .code_hash = code_hash,
             .storage_root = [_]u8{0} ** 32,
         });
-        std.debug.print("Debug: Fallback install at address: {x}, code_len={}, code_hash={x}\n", 
+        if (verbose) std.debug.print("Fallback install at address: {x}, code_len={}, code_hash={x}\n", 
             .{ std.fmt.fmtSliceHexLower(&deploy_address), init_code.len, std.fmt.fmtSliceHexLower(&code_hash) });
     }
 
@@ -171,15 +174,15 @@ pub fn main() !void {
         const end_time = std.time.nanoTimestamp();
         
         // Debug: Print gas usage info
-        const gas_provided = 10000000;
-        const gas_used = gas_provided - result.gas_left;
-        if (run_idx == 0) { // Only print for first run
-            std.debug.print("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", 
+        if (verbose and run_idx == 0) {
+            const gas_provided = 10000000;
+            const gas_used = gas_provided - result.gas_left;
+            std.debug.print("success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", 
                 .{result.success, gas_provided, result.gas_left, gas_used, result.output.len});
             if (result.output.len > 0 and result.output.len <= 64) {
-                std.debug.print("Debug: output={x}\n", .{std.fmt.fmtSliceHexLower(result.output)});
+                std.debug.print("output={x}\n", .{std.fmt.fmtSliceHexLower(result.output)});
             }
-            std.debug.print("Debug: calldata={x}\n", .{std.fmt.fmtSliceHexLower(calldata)});
+            std.debug.print("calldata={x}\n", .{std.fmt.fmtSliceHexLower(calldata)});
         }
         
         // Do not free result.output here. Ownership is managed by the EVM.

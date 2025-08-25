@@ -122,14 +122,10 @@ const STORE_AND_SUCCESS_CONTRACT = [_]u8{
     0xF3,       // RETURN
 };
 
-test "Nested call with inner revert - outer changes preserved, inner reverted" {
-    const skip = std.time.nanoTimestamp() >= 0; // runtime-true skip guard
-    if (skip) return error.SkipZigTest;
-}
+test "Nested call with inner revert - outer changes preserved, inner reverted" { return error.SkipZigTest; }
 
 test "Nested call with inner success - both changes preserved" {
-    const skip = std.time.nanoTimestamp() >= 0; // runtime-true skip guard
-    if (skip) return error.SkipZigTest;
+    return error.SkipZigTest;
     const allocator = std.testing.allocator;
     
     const result = try createTestEvm(allocator);
@@ -211,8 +207,7 @@ test "Nested call with inner success - both changes preserved" {
 }
 
 test "Triple nested calls with middle revert - correct snapshot boundaries" {
-    const skip = std.time.nanoTimestamp() >= 0; // runtime-true skip guard
-    if (skip) return error.SkipZigTest;
+    return error.SkipZigTest;
     const allocator = std.testing.allocator;
     
     const result = try createTestEvm(allocator);

@@ -71,8 +71,14 @@ if [[ ! -x "${ORCH_BIN}" ]]; then
   exit 1
 fi
 
+JS_RUNTIME_FLAG=( )
+if [[ -n "${JS_RUNTIME:-}" ]]; then
+  JS_RUNTIME_FLAG=("--js-runtime" "${JS_RUNTIME}")
+  log "Using JS runtime for EthereumJS: ${JS_RUNTIME}"
+fi
+
 log "Running orchestrator with compare mode (single run per case)"
-log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1"
+log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1 ${JS_RUNTIME_FLAG[*]}"
 time "${ORCH_BIN}" \
   --compare \
   --export markdown \
@@ -82,6 +88,7 @@ time "${ORCH_BIN}" \
   --js-internal-runs 1 \
   --snailtracer-internal-runs 1 \
   --js-snailtracer-internal-runs 1 \
+  "${JS_RUNTIME_FLAG[@]}" \
   2>&1 | tee -a "${LOG_FILE}"
 
 RESULTS_MD="${ROOT_DIR}/bench/official/results.md"
