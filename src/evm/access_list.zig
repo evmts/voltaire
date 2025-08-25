@@ -185,7 +185,7 @@ test "AccessList - clear functionality" {
     defer access_list.deinit();
 
     const test_address = [_]u8{1} ** 20;
-    const slot: primitives.u256 = 42;
+    const slot: u256 = 42;
 
     // Access address and storage slot
     _ = try access_list.access_address(test_address);
@@ -243,9 +243,9 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .timestamp = 1000,
         .difficulty = 100,
         .gas_limit = 30_000_000,
-        .basefee = 10,
+        .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .prevrandao = [_]u8{1} ** 32,
+        .difficulty = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -275,7 +275,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
     
     // Test second access (warm) to the same address
     const warm_cost = try evm.access_address(TEST_ADDRESS_2);
-    try testing.expectEqual(GasConstants.WarmAccessCost, warm_cost);
+    try testing.expectEqual(GasConstants.WarmStorageReadCost, warm_cost);
 }
 
 test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
@@ -290,9 +290,9 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .timestamp = 1000,
         .difficulty = 100,
         .gas_limit = 30_000_000,
-        .basefee = 10,
+        .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .prevrandao = [_]u8{1} ** 32,
+        .difficulty = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -307,7 +307,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
     var evm = try @import("evm.zig").Evm.init(allocator, db_interface, &block_info, &tx_context);
     defer evm.deinit();
     
-    const slot: primitives.u256 = 42;
+    const slot: u256 = 42;
     
     // Test first access (cold) to a storage slot
     const cold_cost = try evm.access_storage_slot(TEST_ADDRESS_2, slot);
@@ -330,9 +330,9 @@ test "EIP-2929: transaction pre-warming" {
         .timestamp = 1000,
         .difficulty = 100,
         .gas_limit = 30_000_000,
-        .basefee = 10,
+        .base_fee = 10,
         .coinbase = TEST_ADDRESS_3,
-        .prevrandao = [_]u8{1} ** 32,
+        .difficulty = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -356,13 +356,13 @@ test "EIP-2929: transaction pre-warming" {
     
     // All pre-warmed addresses should have warm access cost
     const origin_cost = try evm.access_address(TEST_ADDRESS_1);
-    try testing.expectEqual(GasConstants.WarmAccessCost, origin_cost);
+    try testing.expectEqual(GasConstants.WarmStorageReadCost, origin_cost);
     
     const target_cost = try evm.access_address(TEST_ADDRESS_2);
-    try testing.expectEqual(GasConstants.WarmAccessCost, target_cost);
+    try testing.expectEqual(GasConstants.WarmStorageReadCost, target_cost);
     
     const coinbase_cost = try evm.access_address(TEST_ADDRESS_3);
-    try testing.expectEqual(GasConstants.WarmAccessCost, coinbase_cost);
+    try testing.expectEqual(GasConstants.WarmStorageReadCost, coinbase_cost);
 }
 
 test "EIP-2929: SELFBALANCE always warm" {
@@ -377,9 +377,9 @@ test "EIP-2929: SELFBALANCE always warm" {
         .timestamp = 1000,
         .difficulty = 100,
         .gas_limit = 30_000_000,
-        .basefee = 10,
+        .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .prevrandao = [_]u8{1} ** 32,
+        .difficulty = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -404,7 +404,7 @@ test "EIP-2929: SELFBALANCE always warm" {
     
     // Contract's own address should always be warm
     const self_cost = try evm.access_address(contract_address);
-    try testing.expectEqual(GasConstants.WarmAccessCost, self_cost);
+    try testing.expectEqual(GasConstants.WarmStorageReadCost, self_cost);
 }
 
 test "EIP-2929: access list cleared between transactions" {
@@ -419,9 +419,9 @@ test "EIP-2929: access list cleared between transactions" {
         .timestamp = 1000,
         .difficulty = 100,
         .gas_limit = 30_000_000,
-        .basefee = 10,
+        .base_fee = 10,
         .coinbase = ZERO_ADDRESS,
-        .prevrandao = [_]u8{1} ** 32,
+        .difficulty = [_]u8{1} ** 32,
         .blob_base_fee = 1,
     };
     
@@ -452,7 +452,7 @@ test "EIP-2929: access list cleared between transactions" {
 test "EIP-2929: correct gas costs" {
     // Verify that gas constants match EIP-2929 specification
     try testing.expectEqual(@as(u64, 2600), GasConstants.ColdAccountAccessCost);
-    try testing.expectEqual(@as(u64, 100), GasConstants.WarmAccessCost);
+    try testing.expectEqual(@as(u64, 100), GasConstants.WarmStorageReadCost);
     try testing.expectEqual(@as(u64, 2100), GasConstants.ColdSloadCost);
     try testing.expectEqual(@as(u64, 100), GasConstants.WarmStorageReadCost);
 }
@@ -486,7 +486,7 @@ test "EIP-2929 - SLOAD multiple slots warm/cold pattern" {
     const contract_address = [_]u8{0x12} ** 20;
     
     // Test multiple slots
-    const slots = [_]primitives.u256{ 0, 1, 100, 0xFFFF, std.math.maxInt(primitives.u256) };
+    const slots = [_]u256{ 0, 1, 100, 0xFFFF, std.math.maxInt(u256) };
     
     // First access to each slot should be cold
     for (slots) |slot| {
@@ -609,12 +609,14 @@ test "EIP-2929 - CALL warm/cold recipient costs" {
         .nonce = 0,
         .balance = 1_000_000_000_000_000_000, // 1 ETH
         .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
     });
     
     try memory_db.set_account(recipient1, .{
         .nonce = 0,
         .balance = 0,
         .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
     });
     
     const db_interface = memory_db.to_database_interface();
