@@ -9,6 +9,7 @@
 //! The planner includes an LRU cache to avoid re-analyzing frequently
 //! executed contracts, significantly improving performance.
 const std = @import("std");
+const log = @import("log.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const plan_mod = @import("plan.zig");
@@ -396,6 +397,10 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             var constants = std.ArrayList(Cfg.WordType).init(allocator);
             errdefer constants.deinit();
             
+            // Backing store for 32-bit JumpDest metadata (unused on 64-bit)
+            var jumpdests = std.ArrayList(JumpDestMetadata).init(allocator);
+            errdefer jumpdests.deinit();
+            
             // Build PC to instruction index mapping
             var pc_map = std.AutoHashMap(PcType, InstructionIndexType).init(allocator);
             errdefer pc_map.deinit();
@@ -448,12 +453,22 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                             handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER);
                             fused = true;
                         }
+                        // Check for PUSH+MLOAD fusion (immediate offset)
+                        else if (next_op == @intFromEnum(Opcode.MLOAD)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER);
+                            fused = true;
+                        }
+                        // Check for PUSH+MSTORE fusion (immediate offset; value from stack)
+                        else if (next_op == @intFromEnum(Opcode.MSTORE)) {
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER);
+                            fused = true;
+                        }
                     }
                     
                     // Add handler pointer (normal or fused)
                     const handler_ptr = handlers[handler_op];
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
-                        std.debug.print("WARNING: Uninitialized handler for opcode {x} at PC {}\n", .{handler_op, i});
+                        log.warn("Uninitialized handler for opcode {x} at PC {}", .{handler_op, i});
                     }
                     try stream.append(.{ .handler = handler_ptr });
                     
@@ -491,7 +506,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     // JUMPDEST needs metadata
                     const handler_ptr = handlers[op];
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
-                        std.debug.print("WARNING: Uninitialized handler for JUMPDEST at PC {}\n", .{i});
+                        log.warn("Uninitialized handler for JUMPDEST at PC {}", .{i});
                     }
                     try stream.append(.{ .handler = handler_ptr });
                     
@@ -506,18 +521,10 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                             if (@sizeOf(usize) == 8) {
                                 try stream.append(.{ .jumpdest_metadata = jd_metadata });
                             } else {
-                                // On 32-bit systems, store in constants array and use pointer
-                                const const_idx = constants.items.len;
-                                // Store metadata as bytes in a u256
-                                var value: Cfg.WordType = 0;
-                                const metadata_bytes = std.mem.asBytes(&jd_metadata);
-                                var j: usize = 0;
-                                while (j < @sizeOf(JumpDestMetadata)) : (j += 1) {
-                                    value = (value << 8) | metadata_bytes[@sizeOf(JumpDestMetadata) - 1 - j];
-                                }
-                                try constants.append(value);
-                                // Get pointer to the actual location in the constants array
-                                const metadata_ptr = @as(*const JumpDestMetadata, @ptrCast(&constants.items[const_idx]));
+                                // On 32-bit systems, store in dedicated JumpDest metadata array and use pointer
+                                const jd_idx = jumpdests.items.len;
+                                try jumpdests.append(jd_metadata);
+                                const metadata_ptr = &jumpdests.items[jd_idx];
                                 try stream.append(.{ .jumpdest_pointer = metadata_ptr });
                             }
                             metadata_found = true;
@@ -558,6 +565,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             return PlanType{
                 .instructionStream = try stream.toOwnedSlice(),
                 .u256_constants = try constants.toOwnedSlice(),
+                .jumpdest_metadata = try jumpdests.toOwnedSlice(),
                 .pc_to_instruction_idx = pc_map,
             };
         }
@@ -903,6 +911,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
         var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .jumpdest_metadata = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
@@ -923,6 +932,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
         var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .jumpdest_metadata = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
@@ -943,6 +953,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
         var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .jumpdest_metadata = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
@@ -974,6 +985,7 @@ test "getMetadata: large PUSH opcodes return pointer to u256" {
     var plan = Planner(.{}).Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = constants,
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer {
@@ -1001,6 +1013,7 @@ test "getMetadata: PC returns PcType" {
     var plan = Planner(.{}).Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -1025,6 +1038,7 @@ test "getMetadata: fusion opcodes" {
         var plan = Planner(.{}).Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .jumpdest_metadata = &.{},
             .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
@@ -1049,6 +1063,7 @@ test "getNextInstruction: fusion opcodes advance correctly" {
     var plan = Planner(.{}).Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
+        .jumpdest_metadata = &.{},
         .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
@@ -1426,6 +1441,52 @@ test "fusion detection: PUSH+DIV fusion" {
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
     try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
     try std.testing.expectEqual(@as(usize, 10), plan.instructionStream[1].inline_value);
+}
+
+test "fusion detection: PUSH+MLOAD fusion" {
+    const allocator = std.testing.allocator;
+    const PlannerType = Planner(.{});
+    var planner = try PlannerType.init(allocator, 0);
+    defer planner.deinit();
+
+    // Bytecode: PUSH1 0x20; MLOAD; STOP
+    const code = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x20, @intFromEnum(Opcode.MLOAD), @intFromEnum(Opcode.STOP) };
+
+    // Handlers array initialized to a default, override fusion slot for test
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testFusionHandler;
+    handlers[@intFromEnum(Opcode.MLOAD)] = &testFusionHandler;
+    handlers[@intFromEnum(Opcode.STOP)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER)] = &testFusionHandler;
+
+    const plan_ptr = try planner.getOrAnalyze(&code, handlers, .DEFAULT);
+    const plan = plan_ptr.*;
+
+    // First instruction should be our fusion handler (inline here)
+    try std.testing.expectEqual(@intFromPtr(testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
+}
+
+test "fusion detection: PUSH+MSTORE fusion" {
+    const allocator = std.testing.allocator;
+    const PlannerType = Planner(.{});
+    var planner = try PlannerType.init(allocator, 0);
+    defer planner.deinit();
+
+    // Stack before: <value>
+    // Bytecode: PUSH1 0x00; MSTORE; STOP (offset is immediate)
+    const code = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x00, @intFromEnum(Opcode.MSTORE), @intFromEnum(Opcode.STOP) };
+
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testFusionHandler;
+    handlers[@intFromEnum(Opcode.MSTORE)] = &testFusionHandler;
+    handlers[@intFromEnum(Opcode.STOP)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER)] = &testFusionHandler;
+
+    const plan_ptr = try planner.getOrAnalyze(&code, handlers, .DEFAULT);
+    const plan = plan_ptr.*;
+    try std.testing.expectEqual(@intFromPtr(testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
 }
 
 test "fusion detection: PUSH+JUMPI fusion" {
@@ -2107,6 +2168,5 @@ test "Planner bytecode edge cases - invalid opcodes handling" {
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
-    // Should still produce a plan (invalid opcodes handled at execution)
     try std.testing.expect(plan.instructionStream.len > 0);
 }
