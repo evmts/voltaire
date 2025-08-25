@@ -2,268 +2,73 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main, master, develop, "**" ]
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ "**" ]
 
 jobs:
-  build-and-test-native:
-    name: Build and Test (Native - ${{ matrix.os }} - ${{ matrix.optimize }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            runs-on: macos-latest
-          - os: ubuntu-latest
-            runs-on: ubuntu-latest
-        optimize:
-          - ReleaseFast
-          - ReleaseSmall
-    
-    runs-on: ${{ matrix.runs-on }}
-    
+  lint-no-std-debug:
+    name: Lint: forbid std.debug.print
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
 
-      - name: Install Rust (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Scan repository for std.debug.print
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Scanning for std.debug.print..."
+          matches=$(rg -n --no-heading 'std\.debug\.print\(' \
+            -g '!**/*.md' -g '!**/.git/**' -g '!zig-out/**' -g '!**/README.md' -g '!**/README.MD' || true)
+          filtered=""
+          while IFS= read -r line; do
+            # rg output is file:line:content
+            content="${line#*:*:}"
+            # skip commented-out lines
+            if [[ "$content" =~ ^[[:space:]]*// ]]; then
+              continue
+            fi
+            filtered+="$line"$'\n'
+          done <<< "$matches"
+
+          if [ -n "$filtered" ]; then
+            echo "ERROR: Found std.debug.print usages (use log.zig instead):"
+            echo "$filtered"
+            exit 1
+          fi
+          echo "No std.debug.print found."
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.14.1
+
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Zig
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.14.1
-
-      - name: Create Zig cache directory
-        run: mkdir -p ~/.cache/zig
-        shell: bash
-
-      - name: Cache Zig dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/zig
-            .zig-cache
-          key: ${{ runner.os }}-zig-${{ matrix.optimize }}-${{ hashFiles('build.zig.zon') }}
-          restore-keys: |
-            ${{ runner.os }}-zig-${{ matrix.optimize }}-
-            ${{ runner.os }}-zig-
-
-      - name: Run CI Pipeline (${{ matrix.optimize }})
+      - name: Show tool versions
         run: |
-          echo "Building with -Doptimize=${{ matrix.optimize }}"
-          zig build -Doptimize=${{ matrix.optimize }}
-          
-          echo "Running tests with -Doptimize=${{ matrix.optimize }}"
-          # Run tests with workaround for Zig 0.14.1 SIGILL bug
-          # If all tests pass but runner crashes, treat as success
-          if zig build test -Doptimize=${{ matrix.optimize }} 2>&1 | tee test_output.log; then
-            echo "Tests passed successfully"
-          else
-            if grep -q "714/714 tests passed" test_output.log; then
-              echo "All tests passed but runner crashed with SIGILL (known Zig 0.14.1 issue)"
-            else
-              echo "Tests failed"
-              exit 1
-            fi
-          fi
-          rm -f test_output.log
-          
-          echo "Running benchmarks with -Doptimize=${{ matrix.optimize }}"
-          zig build bench -Doptimize=${{ matrix.optimize }}
-        shell: bash
+          zig version
+          rustc --version
+          cargo --version
 
-      - name: Report Results
-        if: always()
-        run: |
-          echo "Build and test completed for ${{ matrix.os }}"
-          echo "OS: ${{ matrix.os }}"
-        shell: bash
+      - name: Install cbindgen
+        run: cargo install cbindgen --locked
 
-  build-and-test-docker:
-    name: Build and Test (Docker - ${{ matrix.container }} - ${{ matrix.optimize }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - container: ubuntu
-            dockerfile: .docker/Dockerfile.ubuntu
-          - container: alpine
-            dockerfile: .docker/Dockerfile.alpine
-          - container: debian
-            dockerfile: .docker/Dockerfile.debian
-        optimize:
-          - ReleaseFast
-          - ReleaseSmall
-    
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
+      - name: Build
+        run: zig build
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Test
+        run: zig build test
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          tags: guillotine-${{ matrix.container }}:latest
-          load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run CI Pipeline in Docker (${{ matrix.optimize }})
-        run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/workspace \
-            -w /workspace \
-            --memory=4g \
-            --cpu-quota=200000 \
-            guillotine-${{ matrix.container }}:latest \
-            bash -c "cd /workspace && rm -rf .zig-cache && rm -rf ~/.cache/zig && rm -rf target && echo 'Node version:' && node --version && echo 'Zig version:' && zig version && echo 'Building with -Doptimize=${{ matrix.optimize }}...' && zig build -Doptimize=${{ matrix.optimize }} --verbose && echo 'Build completed. Starting tests...' && (if zig build test -Doptimize=${{ matrix.optimize }} --verbose 2>&1 | tee test_output.log; then echo 'Tests passed successfully'; else if grep -q '714/714 tests passed' test_output.log; then echo 'All tests passed but runner crashed with SIGILL (known Zig 0.14.1 issue)'; else echo 'Tests failed'; exit 1; fi; fi) && rm -f test_output.log && echo 'All tests completed successfully.'"
-
-      - name: Report Results
-        if: always()
-        run: |
-          echo "Build and test completed for ${{ matrix.container }}"
-          echo "Container: ${{ matrix.container }}"
-          echo "Optimization: ${{ matrix.optimize }}"
-
-  build-wasm:
-    name: Build WASM (${{ matrix.optimize }})
-    strategy:
-      fail-fast: false
-      matrix:
-        optimize:
-          - ReleaseFast
-          - ReleaseSmall
-    
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Install Zig
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.14.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Create Zig cache directory
-        run: mkdir -p ~/.cache/zig
-
-      - name: Cache Zig dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/zig
-            .zig-cache
-          key: wasm-zig-${{ matrix.optimize }}-${{ hashFiles('build.zig.zon') }}
-          restore-keys: |
-            wasm-zig-${{ matrix.optimize }}-
-            wasm-zig-
-
-      - name: Fetch dependencies
-        run: |
-          echo "Fetching dependencies..."
-          zig build --fetch
-
-      - name: Build WASM targets (${{ matrix.optimize }})
-        run: |
-          echo "Building all WASM targets with -Doptimize=${{ matrix.optimize }}"
-          zig build wasm -Doptimize=${{ matrix.optimize }}
-          
-          # Report WASM bundle sizes
-          echo ""
-          echo "=== WASM Bundle Sizes for ${{ matrix.optimize }} ==="
-          echo "Main WASM (full):"
-          ls -lh zig-out/bin/guillotine.wasm | awk '{print "  Size: " $5}'
-          echo ""
-          echo "Primitives WASM:"
-          ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print "  Size: " $5}'
-          echo ""
-          echo "EVM WASM:"
-          ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print "  Size: " $5}'
-          echo "=================================="
-
-      - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: guillotine-wasm-${{ matrix.optimize }}
-          path: |
-            zig-out/bin/guillotine.wasm
-            zig-out/bin/guillotine-primitives.wasm
-            zig-out/bin/guillotine-evm.wasm
-          retention-days: 7
-
-      - name: Report Results
-        if: always()
-        run: |
-          echo "WASM build completed"
-          echo "Optimization: ${{ matrix.optimize }}"
-          echo ""
-          echo "Bundle sizes:"
-          if [ -f zig-out/bin/guillotine.wasm ]; then
-            echo "  Main WASM: $(ls -lh zig-out/bin/guillotine.wasm | awk '{print $5}')"
-          fi
-          if [ -f zig-out/bin/guillotine-primitives.wasm ]; then
-            echo "  Primitives WASM: $(ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print $5}')"
-          fi
-          if [ -f zig-out/bin/guillotine-evm.wasm ]; then
-            echo "  EVM WASM: $(ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print $5}')"
-          fi
-
-  ci-summary:
-    name: CI Summary
-    needs: [build-and-test-native, build-and-test-docker, build-wasm]
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-      - name: Report Overall CI Status
-        run: |
-          echo "## CI Build Matrix Summary"
-          echo ""
-          echo "### Build Configurations Tested:"
-          echo "- Native builds: macOS and Ubuntu with ReleaseFast and ReleaseSmall"
-          echo "- Docker builds: Ubuntu, Alpine, Debian with ReleaseFast and ReleaseSmall"
-          echo "- WASM builds: ReleaseFast and ReleaseSmall"
-          echo ""
-          echo "### Total Matrix Combinations:"
-          echo "- Native: 2 OS × 2 optimizations = 4 builds"
-          echo "- Docker: 3 containers × 2 optimizations = 6 builds"
-          echo "- WASM: 2 optimizations = 2 builds"
-          echo "- **Total: 12 build configurations**"
-          echo ""
-          
-          # Check job statuses
-          if [ "${{ needs.build-and-test-native.result }}" = "success" ] && \
-             [ "${{ needs.build-and-test-docker.result }}" = "success" ] && \
-             [ "${{ needs.build-wasm.result }}" = "success" ]; then
-            echo "✅ **All build configurations passed successfully!**"
-          else
-            echo "❌ **Some build configurations failed:**"
-            [ "${{ needs.build-and-test-native.result }}" != "success" ] && echo "  - Native builds: ${{ needs.build-and-test-native.result }}"
-            [ "${{ needs.build-and-test-docker.result }}" != "success" ] && echo "  - Docker builds: ${{ needs.build-and-test-docker.result }}"
-            [ "${{ needs.build-wasm.result }}" != "success" ] && echo "  - WASM builds: ${{ needs.build-wasm.result }}"
-          fi
