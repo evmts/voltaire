@@ -161,6 +161,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             
             // Add to cache
             try self.addToCache(key, plan);
+            // We've finished analyzing and building the plan, so the transient
+            // BytecodeType held by the planner is no longer needed. Free it
+            // to avoid retaining the last analyzed bytecode buffer.
+            self.bytecode.deinit();
+            self.bytecode_initialized = false;
             
             // Return reference to cached plan
             return &self.cache_map.get(key).?.plan;
@@ -407,12 +412,18 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             
             // Build instruction stream with handlers and metadata
             i = 0;
+            // Dense PC->instruction index table for fast JUMP/JUMPI
+            var dense_pc_to_idx = try allocator.alloc(?PlanType.InstructionIndexType, N);
+            errdefer allocator.free(dense_pc_to_idx);
+            // Initialize all to null (non-start PCs or out-of-range)
+            for (dense_pc_to_idx) |*slot| slot.* = null;
             while (i < N) {
                 const op = self.bytecode.get(@intCast(i)) orelse break;
                 
                 // Record PC to instruction index mapping
                 const current_instruction_idx = @as(InstructionIndexType, @intCast(stream.items.len));
                 try pc_map.put(@as(PcType, @intCast(i)), current_instruction_idx);
+                dense_pc_to_idx[i] = current_instruction_idx;
                 
                 // Handle PUSH opcodes
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
@@ -547,7 +558,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     // Other non-PUSH opcodes - just add the handler
                     const handler_ptr = handlers[op];
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
-                        std.debug.print("WARNING: Uninitialized handler for opcode {x} at PC {}\n", .{op, i});
+                        log.warn("Uninitialized handler for opcode {x} at PC {}", .{ op, i });
                     }
                     try stream.append(.{ .handler = handler_ptr });
                     i += 1;
@@ -567,6 +578,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                 .u256_constants = try constants.toOwnedSlice(),
                 .jumpdest_metadata = try jumpdests.toOwnedSlice(),
                 .pc_to_instruction_idx = pc_map,
+                .pc_to_instruction_idx_dense = dense_pc_to_idx,
             };
         }
 
@@ -1464,7 +1476,7 @@ test "fusion detection: PUSH+MLOAD fusion" {
     const plan = plan_ptr.*;
 
     // First instruction should be our fusion handler (inline here)
-    try std.testing.expectEqual(@intFromPtr(testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
 }
 
 test "fusion detection: PUSH+MSTORE fusion" {
@@ -1486,7 +1498,7 @@ test "fusion detection: PUSH+MSTORE fusion" {
 
     const plan_ptr = try planner.getOrAnalyze(&code, handlers, .DEFAULT);
     const plan = plan_ptr.*;
-    try std.testing.expectEqual(@intFromPtr(testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
 }
 
 test "fusion detection: PUSH+JUMPI fusion" {

@@ -1,6 +1,7 @@
 /// Plan: Runtime data structure for the EVM interpreter.
 /// Contains the instruction stream (handler pointers + metadata) and constants.
 const std = @import("std");
+const log = @import("log.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
@@ -248,14 +249,13 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 else => false,
             };
 
-            // Get the current handler before advancing
+            // Get the current handler, then advance index
+            if (idx.* >= self.instructionStream.len) {
+                @panic("instruction index out of bounds");
+            }
             const handler = self.instructionStream[idx.*].handler;
-            
-            // Advance index
             idx.* += 1;
             if (has_metadata) idx.* += 1;
-            
-            // Return the handler
             return handler;
         }
         
@@ -267,30 +267,29 @@ pub fn Plan(comptime cfg: PlanConfig) type {
         
         /// Pretty print the plan for debugging.
         pub fn debugPrint(self: *const Self) void {
-            std.debug.print("\n=== Plan Debug Visualization ===\n", .{});
-            std.debug.print("Instruction Stream Length: {}\n", .{self.instructionStream.len});
-            std.debug.print("Constants Length: {}\n", .{self.u256_constants.len});
+            log.debug("\n=== Plan Debug Visualization ===\n", .{});
+            log.debug("Instruction Stream Length: {}\n", .{self.instructionStream.len});
+            log.debug("Constants Length: {}\n", .{self.u256_constants.len});
             if (self.pc_to_instruction_idx) |map| {
-                std.debug.print("PC Mappings: {} entries\n", .{map.count()});
+                log.debug("PC Mappings: {} entries\n", .{map.count()});
             } else {
-                std.debug.print("PC Mappings: none\n", .{});
+                log.debug("PC Mappings: none\n", .{});
             }
-            std.debug.print("\nInstruction Stream:\n", .{});
+            log.debug("\nInstruction Stream:\n", .{});
             var i: InstructionIndexType = 0;
             while (i < self.instructionStream.len) : (i += 1) {
                 const elem = self.instructionStream[i];
                 if (@intFromPtr(elem.handler) > 0x10000) {
-                    std.debug.print("  [{d:4}] Handler: ", .{i});
-                    std.debug.print("0x{x}\n", .{@intFromPtr(elem.handler)});
+                    log.debug("  [{d:4}] Handler: 0x{x}\n", .{ i, @intFromPtr(elem.handler) });
                 } else {
-                    std.debug.print("  [{d:4}] Metadata: ", .{i});
+                    log.debug("  [{d:4}] Metadata: ", .{i});
                     if (@sizeOf(usize) == 8) {
                         const as_u64 = elem.inline_value;
                         if (as_u64 <= 0xFFFFFFFF) {
-                            std.debug.print("inline_value = 0x{x} ({})", .{ as_u64, as_u64 });
+                            log.debug("inline_value = 0x{x} ({})", .{ as_u64, as_u64 });
                         } else {
                             const as_jumpdest = elem.jumpdest_metadata;
-                            std.debug.print("jumpdest {{ gas: {}, min_stack: {}, max_stack: {} }}", .{
+                            log.debug("jumpdest { gas: {}, min_stack: {}, max_stack: {} }", .{
                                 as_jumpdest.gas,
                                 as_jumpdest.min_stack,
                                 as_jumpdest.max_stack,
@@ -298,30 +297,30 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                         }
                     } else {
                         if (elem.pointer_index < self.u256_constants.len) {
-                            std.debug.print("pointer_index = {} -> 0x{x}", .{ 
+                            log.debug("pointer_index = {} -> 0x{x}", .{ 
                                 elem.pointer_index, 
                                 self.u256_constants[elem.pointer_index] 
                             });
                         } else {
-                            std.debug.print("inline_value = 0x{x} ({})", .{ 
+                            log.debug("inline_value = 0x{x} ({})", .{ 
                                 elem.inline_value, 
                                 elem.inline_value 
                             });
                         }
                     }
-                    std.debug.print("\n", .{});
+                    log.debug("\n", .{});
                 }
             }
             
             if (self.u256_constants.len > 0) {
-                std.debug.print("\nConstants Array:\n", .{});
+                log.debug("\nConstants Array:\n", .{});
                 for (self.u256_constants, 0..) |constant, idx| {
-                    std.debug.print("  [{}] = 0x{x}\n", .{ idx, constant });
+                    log.debug("  [{}] = 0x{x}\n", .{ idx, constant });
                 }
             }
             
             if (self.pc_to_instruction_idx) |map| {
-                std.debug.print("\nPC to Instruction Mappings:\n", .{});
+                log.debug("\nPC to Instruction Mappings:\n", .{});
                 var iter = map.iterator();
                 var entries = std.ArrayList(struct { pc: PcType, idx: InstructionIndexType }).init(std.heap.page_allocator);
                 defer entries.deinit();
@@ -341,11 +340,11 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 
                 // Print sorted entries
                 for (entries.items) |entry| {
-                    std.debug.print("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
+                    log.debug("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
                 }
             }
             
-            std.debug.print("=================================\n\n", .{});
+            log.debug("=================================\n\n", .{});
         }
         
         /// Free Plan-owned slices.
@@ -366,179 +365,8 @@ pub fn Plan(comptime cfg: PlanConfig) type {
 /// Used by FrameMinimal for simple bytecode execution without optimization.
 pub const PlanAdvanced = Plan;
 
-pub const PlanMinimal = struct {
-    /// Bytecode with validation and analysis (leverages bytecode.zig)
-    bytecode: BytecodeType,
-    /// Jump table of handlers indexed by opcode
-    handlers: [256]*const HandlerFn,
-    
-    /// Create bytecode type with matching configuration
-    const BytecodeType = createBytecode(.{
-        .maxBytecodeSize = 65535, // Use u16 for PcType
-        .max_initcode_size = 65535, // Must be at least as large as max_bytecode_size
-    });
-    
-    /// Type aliases for compatibility with advanced plan
-    pub const PcType = u16;
-    pub const InstructionIndexType = u16;
-    pub const WordType = u256;
-    
-    /// Get metadata for opcodes that have it, reading directly from bytecode.
-    /// For PlanMinimal, idx is the PC value, not an instruction index.
-    pub fn getMetadata(
-        self: *const PlanMinimal,
-        idx: *InstructionIndexType,
-        comptime opcode: anytype,
-    ) blk: {
-        // Determine metadata type based on opcode
-        const MetadataType = if (@TypeOf(opcode) == u8) {
-            // For PlanMinimal, we don't support synthetic opcodes
-            @compileError("PlanMinimal does not support synthetic opcodes");
-        } else blk2: {
-            const op = if (@TypeOf(opcode) == Opcode) 
-                opcode 
-            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                @field(Opcode, @tagName(opcode))
-            else 
-                @compileError("Invalid opcode type");
-            const MetadataType2 = switch (op) {
-                // PUSH opcodes return granular types
-                .PUSH1 => u8,
-                .PUSH2 => u16,
-                .PUSH3 => u24,
-                .PUSH4 => u32,
-                .PUSH5 => u40,
-                .PUSH6 => u48,
-                .PUSH7 => u56,
-                .PUSH8 => u64,
-                // Larger PUSH opcodes always return pointer for PlanMinimal
-                .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
-                .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => *const u256,
-                
-                // JUMPDEST returns a dummy metadata struct for compatibility
-                .JUMPDEST => JumpDestMetadata,
-                
-                // PC returns the current PC value
-                .PC => PcType,
-                
-                // All other opcodes have no metadata
-                else => @compileError("Opcode has no metadata"),
-            };
-            break :blk2 MetadataType2;
-        };
-        break :blk MetadataType;
-    } {
-        // Get metadata from the next element in instruction stream
-        const metadata_idx = idx.* + 1;
-        if (metadata_idx >= self.instructionStream.len) {
-            @panic("getMetadata: trying to read past end of instruction stream");
-        }
-        
-        // TODO: This section needs to be properly implemented like in plan.zig
-        // For now, return a placeholder to fix the build
-        @panic("getMetadata not properly implemented in plan_advanced.zig");
-    }
-    
-    /// Get the next instruction handler and advance the PC.
-    /// For PlanMinimal, this reads the opcode at current PC and returns handler.
-    pub fn getNextInstruction(
-        self: *const PlanMinimal,
-        idx: *InstructionIndexType,
-        comptime opcode: anytype,
-    ) *const HandlerFn {
-        const pc = idx.*;
-        if (pc >= self.bytecode.len()) {
-            @panic("getNextInstruction: PC out of bounds");
-        }
-        
-        // Determine if opcode has metadata to skip
-        const has_metadata = comptime blk: {
-            break :blk if (@TypeOf(opcode) == u8)
-                // PlanMinimal doesn't support synthetic opcodes
-                false
-            else blk2: {
-                const op = if (@TypeOf(opcode) == Opcode) 
-                    opcode 
-                else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                    @field(Opcode, @tagName(opcode))
-                else 
-                    @compileError("Invalid opcode type");
-                const result = switch (op) {
-                // PUSH opcodes have metadata
-                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
-                .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
-                .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
-                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31,
-                .PUSH32,
-                // JUMPDEST has metadata
-                .JUMPDEST,
-                // PC has metadata
-                .PC => true,
-                // All other opcodes have no metadata
-                else => false,
-                };
-                break :blk2 result;
-            };
-        };
-        
-        // Advance PC based on opcode using bytecode's getInstructionSize
-        if (has_metadata) {
-            // For PUSH opcodes, use bytecode.getNextPc for correct advancement
-            if (self.bytecode.getNextPc(pc)) |next_pc| {
-                idx.* = @intCast(next_pc);
-            } else {
-                // End of bytecode
-                idx.* = @intCast(self.bytecode.len());
-            }
-        } else {
-            // No metadata, advance by 1
-            idx.* = @intCast(pc + 1);
-        }
-        
-        // Get the handler for the next instruction
-        if (idx.* >= self.bytecode.len()) {
-            // Return STOP handler for end of bytecode
-            return self.handlers[@intFromEnum(Opcode.STOP)];
-        }
-        
-        const next_opcode = self.bytecode.raw()[idx.*];
-        return self.handlers[next_opcode];
-    }
-    
-    /// Get instruction index for a given PC value.
-    /// For PlanMinimal, instruction index equals PC.
-    pub fn getInstructionIndexForPc(self: *const PlanMinimal, pc: PcType) ?InstructionIndexType {
-        _ = self;
-        // In minimal plan, instruction index is the same as PC
-        return pc;
-    }
-    
-    /// Check if a PC is a valid JUMPDEST (delegates to bytecode.zig).
-    pub fn isValidJumpDest(self: *const PlanMinimal, pc: usize) bool {
-        return self.bytecode.isValidJumpDest(pc);
-    }
-    
-    /// Check if a PC is an opcode start (delegates to bytecode.zig).
-    pub fn isOpcodeStart(self: *const PlanMinimal, pc: usize) bool {
-        if (pc >= self.bytecode.len()) return false;
-        return (self.bytecode.is_op_start[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
-    }
-    
-    /// Initialize a PlanMinimal with bytecode and handlers.
-    pub fn init(allocator: std.mem.Allocator, code: []const u8, handlers: [256]*const HandlerFn) !PlanMinimal {
-        const bytecode = try BytecodeType.init(allocator, code);
-        return PlanMinimal{
-            .bytecode = bytecode,
-            .handlers = handlers,
-        };
-    }
-    
-    /// Free the allocated resources (delegates to bytecode.zig).
-    pub fn deinit(self: *PlanMinimal) void {
-        self.bytecode.deinit();
-    }
-};
+// Re-export the minimal plan as a concrete default-config type to avoid duplication.
+pub const PlanMinimal = @import("plan_minimal.zig").PlanMinimal(.{});
 
 // Test handler function that does nothing (for testing)
 fn testHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {

@@ -8,10 +8,11 @@ const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn;
 
 /// Metadata for JUMPDEST opcodes (dummy struct for compatibility).
+/// Use signed i16 for stack bounds to match other plan variants.
 pub const JumpDestMetadata = packed struct(u64) {
     gas: u32 = 0,
-    min_stack: u16 = 0,
-    max_stack: u16 = 0,
+    min_stack: i16 = 0,
+    max_stack: i16 = 0,
 };
 
 /// Factory function to create a PlanMinimal type with the given configuration.
@@ -29,6 +30,9 @@ pub fn PlanMinimal(comptime cfg: PlanConfig) type {
         bytecode: BytecodeType,
         /// Jump table of handlers indexed by opcode
         handlers: [256]*const HandlerFn,
+        /// Scratch storage for large PUSH values (9..32 bytes) returned by getMetadata.
+        /// This avoids heap allocation; pointer is only valid until next getMetadata call.
+        scratch_u256: u256 = 0,
         
         /// Type aliases from config
         pub const PcType = cfg.PcType();
@@ -105,13 +109,23 @@ pub fn PlanMinimal(comptime cfg: PlanConfig) type {
             .PUSH6 => self.bytecode.readPushValue(pc, 6) orelse @panic("PUSH6 data out of bounds"),
             .PUSH7 => self.bytecode.readPushValue(pc, 7) orelse @panic("PUSH7 data out of bounds"),
             .PUSH8 => self.bytecode.readPushValue(pc, 8) orelse @panic("PUSH8 data out of bounds"),
-            // Larger PUSH opcodes return pointer to static value
+            // Larger PUSH opcodes return pointer to a computed u256 value
             .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
             .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
             .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
-                // For simplicity in minimal plan, we panic on large pushes
-                // Real implementation would need to store these values somewhere
-                @panic("PlanMinimal does not support large PUSH opcodes");
+                // Compute big-endian value directly from bytecode into scratch_u256
+                const op_byte = self.bytecode.raw()[pc];
+                const n: usize = op_byte - (@intFromEnum(Opcode.PUSH1) - 1);
+                var val: u256 = 0;
+                var j: usize = 0;
+                const data_start = pc + 1;
+                const data_end = @min(self.bytecode.len(), data_start + n);
+                while (data_start + j < data_end) : (j += 1) {
+                    val = (val << 8) | @as(u256, self.bytecode.raw()[data_start + j]);
+                }
+                // Store into scratch and return pointer
+                @constCast(self).scratch_u256 = val;
+                return &@constCast(self).scratch_u256;
             },
             
             // JUMPDEST returns dummy metadata
@@ -218,6 +232,7 @@ pub fn PlanMinimal(comptime cfg: PlanConfig) type {
             return Self{
                 .bytecode = bytecode,
                 .handlers = handlers,
+                .scratch_u256 = 0,
             };
         }
     

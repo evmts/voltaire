@@ -99,6 +99,9 @@ pub fn Plan(comptime cfg: PlanConfig) type {
         /// PC to instruction index mapping for jump operations.
         /// Key is PC value, value is instruction stream index.
         pc_to_instruction_idx: ?std.AutoHashMap(PcType, InstructionIndexType),
+        /// Dense PC->instruction index table (fast path). Length equals bytecode length.
+        /// Entry is null when PC is not an instruction start (e.g., PUSH data or out of range).
+        pc_to_instruction_idx_dense: ?[]?InstructionIndexType = null,
         
         /// Get metadata for opcodes that have it.
         pub fn getMetadata(
@@ -317,24 +320,32 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 else => false,
             };
 
-            // Advance index past current instruction and its metadata
-            idx.* += 1;
-            if (has_metadata) idx.* += 1;
-            
-            // Get the handler at the new position
+            // Get the current handler, then advance index
             if (idx.* >= self.instructionStream.len) {
                 log.warn("getNextInstruction: idx {} >= instructionStream.len {}", .{idx.*, self.instructionStream.len});
                 @panic("instruction index out of bounds");
             }
             const handler = self.instructionStream[idx.*].handler;
-            
-            // Return the handler
+
+            // Advance past current instruction and its metadata
+            idx.* += 1;
+            if (has_metadata) idx.* += 1;
+
+            // Return the current handler
             return handler;
         }
         
         /// Get instruction index for a given PC value.
         /// Returns null if PC is not a valid instruction start.
         pub fn getInstructionIndexForPc(self: *const Self, pc: PcType) ?InstructionIndexType {
+            // Fast path: dense array lookup if available
+            if (self.pc_to_instruction_idx_dense) |dense| {
+                const idx_usize: usize = @intCast(pc);
+                if (idx_usize < dense.len) {
+                    if (dense[idx_usize]) |val| return val;
+                }
+            }
+            // Fallback: hashmap lookup
             if (self.pc_to_instruction_idx) |map| {
                 return map.get(pc);
             }
@@ -434,6 +445,10 @@ pub fn Plan(comptime cfg: PlanConfig) type {
             if (self.pc_to_instruction_idx) |*map| {
                 map.deinit();
                 self.pc_to_instruction_idx = null;
+            }
+            if (self.pc_to_instruction_idx_dense) |dense| {
+                allocator.free(dense);
+                self.pc_to_instruction_idx_dense = null;
             }
             self.instructionStream = &.{};
             self.u256_constants = &.{};
