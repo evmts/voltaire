@@ -34,6 +34,12 @@ comptime {
 /// Takes frame and plan. Uses tail call recursion.
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn;
 
+// Fallback end-of-stream handler used when advancing beyond the last instruction
+fn end_of_stream_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+    _ = frame; _ = plan;
+    return error.STOP;
+}
+
 /// Instruction stream element for 32-bit platforms.
 pub const InstructionElement32 = packed union {
     handler: *const HandlerFn,
@@ -343,9 +349,16 @@ pub fn Plan(comptime cfg: PlanConfig) type {
             // Get the current handler, then advance index
             if (idx.* >= self.instructionStream.len) {
                 log.warn("getNextInstruction: idx {} >= instructionStream.len {}", .{idx.*, self.instructionStream.len});
-                @panic("instruction index out of bounds");
+                return &end_of_stream_handler;
             }
             const handler = self.instructionStream[idx.*].handler;
+            
+            // Debug logging for null handler issue
+            const handler_addr = @intFromPtr(handler);
+            std.debug.print("getNextInstruction: idx={}, opcode_value=0x{x}, handler_addr=0x{x}\n", .{ idx.*, opcode_value, handler_addr });
+            if (handler_addr < 0x1000) {
+                std.debug.print("ERROR: handler from instructionStream[{}] has null/low address: 0x{x}\n", .{ idx.*, handler_addr });
+            }
 
             // Advance past current instruction and its metadata
             idx.* += 1;
