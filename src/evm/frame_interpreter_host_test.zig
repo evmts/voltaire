@@ -19,8 +19,8 @@ const MockHost = struct {
     inner_call_calls: u32 = 0,
     
     test_balance: u256 = 1000,
-    test_origin: Address = Address.from_u256(0xdeadbeef),
-    test_caller: Address = Address.from_u256(0xcafebabe),
+    test_origin: Address = [_]u8{0} ** 19 ++ [_]u8{0xde},
+    test_caller: Address = [_]u8{0} ** 19 ++ [_]u8{0xca},
     test_callvalue: u256 = 42,
     
     pub fn get_balance(self: *MockHost, address: Address) u256 {
@@ -206,7 +206,7 @@ test "BALANCE opcode with host - successful execution" {
     const allocator = std.testing.allocator;
     
     // Bytecode: PUSH20 address, BALANCE
-    const test_address = Address.from_u256(0x1234567890abcdef);
+    const test_address = [_]u8{0} ** 12 ++ [_]u8{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef};
     var bytecode = std.ArrayList(u8).init(allocator);
     defer bytecode.deinit();
     
@@ -227,8 +227,7 @@ test "BALANCE opcode with host - successful execution" {
         bytecode.items,
         1000000,
         {},
-        host,
-        false
+        host
     );
     defer interpreter.deinit(allocator);
     
@@ -240,40 +239,15 @@ test "BALANCE opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.balance_calls);
     
     // Verify balance is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
     const balance = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(mock_host.test_balance, balance);
 }
 
-test "BALANCE opcode without host - fails with InvalidOpcode" {
-    const allocator = std.testing.allocator;
-    
-    // Bytecode: PUSH20 address, BALANCE
-    const test_address = Address.from_u256(0x1234567890abcdef);
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
-    
-    try bytecode.append(0x73); // PUSH20
-    try bytecode.appendSlice(&test_address);
-    try bytecode.append(0x31); // BALANCE
-    
-    const FrameInterpreterType = frame_interpreter_mod.FrameInterpreter(.{
-        .has_database = false,
-    });
-    
-    var interpreter = try FrameInterpreterType.init(
-        allocator,
-        bytecode.items,
-        1000000,
-        {},
-        null, // No host
-        false
-    );
-    defer interpreter.deinit(allocator);
-    
-    // Should fail with InvalidOpcode
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.InvalidOpcode, result);
+test "BALANCE opcode without host - test skipped" {
+    // Host is now required, so frames cannot be created without a host
+    // This makes the test invalid since we can't test the null host case
+    return error.SkipZigTest;
 }
 
 test "ORIGIN opcode with host - successful execution" {
@@ -296,8 +270,7 @@ test "ORIGIN opcode with host - successful execution" {
         bytecode,
         1000000,
         {},
-        host,
-        false
+        host
     );
     defer interpreter.deinit(allocator);
     
@@ -309,35 +282,15 @@ test "ORIGIN opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.origin_calls);
     
     // Verify origin is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
     const origin = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(primitives.Address.to_u256(mock_host.test_origin), origin);
 }
 
-test "ORIGIN opcode without host - fails with InvalidOpcode" {
-    const allocator = std.testing.allocator;
-    
-    const bytecode = &[_]u8{
-        0x32, // ORIGIN
-    };
-    
-    const FrameInterpreterType = frame_interpreter_mod.FrameInterpreter(.{
-        .has_database = false,
-    });
-    
-    var interpreter = try FrameInterpreterType.init(
-        allocator,
-        bytecode,
-        1000000,
-        {},
-        null, // No host
-        false
-    );
-    defer interpreter.deinit(allocator);
-    
-    // Should fail with InvalidOpcode
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.InvalidOpcode, result);
+test "ORIGIN opcode without host - test skipped" {
+    // Host is now required, so frames cannot be created without a host
+    // This makes the test invalid since we can't test the null host case
+    return error.SkipZigTest;
 }
 
 test "CALLER opcode with host - successful execution" {
@@ -360,8 +313,7 @@ test "CALLER opcode with host - successful execution" {
         bytecode,
         1000000,
         {},
-        host,
-        false
+        host
     );
     defer interpreter.deinit(allocator);
     
@@ -373,7 +325,7 @@ test "CALLER opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.caller_calls);
     
     // Verify caller is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
     const caller = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(primitives.Address.to_u256(mock_host.test_caller), caller);
 }
@@ -398,8 +350,7 @@ test "CALLVALUE opcode with host - successful execution" {
         bytecode,
         1000000,
         {},
-        host,
-        false
+        host
     );
     defer interpreter.deinit(allocator);
     
@@ -411,7 +362,7 @@ test "CALLVALUE opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.callvalue_calls);
     
     // Verify callvalue is on stack
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
     const callvalue = try interpreter.frame.stack.pop();
     try std.testing.expectEqual(mock_host.test_callvalue, callvalue);
 }
@@ -439,8 +390,7 @@ test "CREATE opcode with host - successful execution" {
         bytecode,
         1000000,
         {},
-        host,
-        false
+        host
     );
     defer interpreter.deinit(allocator);
     
@@ -452,71 +402,19 @@ test "CREATE opcode with host - successful execution" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.inner_call_calls);
     
     // Verify result is on stack (0 for our mock)
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.getDepth());
 }
 
-test "CREATE opcode without host - fails with InvalidOpcode" {
-    const allocator = std.testing.allocator;
-    
-    const bytecode = &[_]u8{
-        0x60, 0x00, // PUSH1 0 (offset)
-        0x60, 0x00, // PUSH1 0 (size)
-        0x60, 0x00, // PUSH1 0 (value)
-        0xf0,       // CREATE
-    };
-    
-    const FrameInterpreterType = frame_interpreter_mod.FrameInterpreter(.{
-        .has_database = false,
-    });
-    
-    var interpreter = try FrameInterpreterType.init(
-        allocator,
-        bytecode,
-        1000000,
-        {},
-        null, // No host
-        false
-    );
-    defer interpreter.deinit(allocator);
-    
-    // Should fail with InvalidOpcode
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.InvalidOpcode, result);
+test "CREATE opcode without host - test skipped" {
+    // Host is now required, so frames cannot be created without a host
+    // This makes the test invalid since we can't test the null host case
+    return error.SkipZigTest;
 }
 
-test "Host operations don't modify state before null check" {
-    const allocator = std.testing.allocator;
-    
-    // Test BALANCE with insufficient stack items but no host
-    const bytecode = &[_]u8{
-        0x31, // BALANCE (requires 1 stack item)
-    };
-    
-    const FrameInterpreterType = frame_interpreter_mod.FrameInterpreter(.{
-        .has_database = false,
-    });
-    
-    var interpreter = try FrameInterpreterType.init(
-        allocator,
-        bytecode,
-        1000000,
-        {},
-        null, // No host
-        false
-    );
-    defer interpreter.deinit(allocator);
-    
-    // Should fail with InvalidOpcode (not StackUnderflow)
-    // This proves the host check happens before stack operations
-    const result = interpreter.interpret();
-    try std.testing.expectError(FrameInterpreterType.Error.InvalidOpcode, result);
-    
-    // Stack should still be empty (no pop occurred)
-    try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.len());
-    
-    // Gas should not have been consumed for the opcode
-    // Only the base interpreter overhead should be consumed
-    try std.testing.expect(interpreter.frame.gas_remaining > 999000);
+test "Host operations don't modify state before null check - test skipped" {
+    // Host is now required, so frames cannot be created without a host
+    // This makes the test invalid since we can't test the null host case
+    return error.SkipZigTest;
 }
 
 test "Multiple host operations in sequence" {
@@ -543,8 +441,7 @@ test "Multiple host operations in sequence" {
         bytecode,
         1000000,
         {},
-        host,
-        false
+        host
     );
     defer interpreter.deinit(allocator);
     
@@ -559,5 +456,5 @@ test "Multiple host operations in sequence" {
     try std.testing.expectEqual(@as(u32, 1), mock_host.balance_calls);
     
     // Stack should have 4 values
-    try std.testing.expectEqual(@as(usize, 4), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 4), interpreter.frame.stack.getDepth());
 }

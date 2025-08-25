@@ -11,7 +11,7 @@ const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const @"u256" = primitives.u256;
+const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 const to_u256 = primitives.Address.to_u256;
 
 // ============================================================================
@@ -21,7 +21,7 @@ const to_u256 = primitives.Address.to_u256;
 const NoOpHost = struct {
     const Self = @This();
     
-    pub fn get_balance(self: *Self, address: Address) @"u256" {
+    pub fn get_balance(self: *Self, address: Address) u256 {
         _ = self;
         _ = address;
         return 0;
@@ -45,14 +45,14 @@ const NoOpHost = struct {
             .number = 0,
             .timestamp = 0,
             .gas_limit = 30_000_000,
-            .coinbase = Address.ZERO,
+            .coinbase = ZERO_ADDRESS,
             .difficulty = 0,
             .base_fee = 0,
             .prev_randao = [_]u8{0} ** 32,
         };
     }
     
-    pub fn emit_log(self: *Self, contract_address: Address, topics: []const @"u256", data: []const u8) void {
+    pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
         _ = self;
         _ = contract_address;
         _ = topics;
@@ -91,28 +91,28 @@ const NoOpHost = struct {
         _ = snapshot_id;
     }
     
-    pub fn get_storage(self: *Self, address: Address, slot: @"u256") @"u256" {
+    pub fn get_storage(self: *Self, address: Address, slot: u256) u256 {
         _ = self;
         _ = address;
         _ = slot;
         return 0;
     }
     
-    pub fn set_storage(self: *Self, address: Address, slot: @"u256", value: @"u256") !void {
+    pub fn set_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
         _ = self;
         _ = address;
         _ = slot;
         _ = value;
     }
     
-    pub fn record_storage_change(self: *Self, address: Address, slot: @"u256", original_value: @"u256") !void {
+    pub fn record_storage_change(self: *Self, address: Address, slot: u256, original_value: u256) !void {
         _ = self;
         _ = address;
         _ = slot;
         _ = original_value;
     }
     
-    pub fn get_original_storage(self: *Self, address: Address, slot: @"u256") ?@"u256" {
+    pub fn get_original_storage(self: *Self, address: Address, slot: u256) ?u256 {
         _ = self;
         _ = address;
         _ = slot;
@@ -125,7 +125,7 @@ const NoOpHost = struct {
         return 0;
     }
     
-    pub fn access_storage_slot(self: *Self, contract_address: Address, slot: @"u256") !u64 {
+    pub fn access_storage_slot(self: *Self, contract_address: Address, slot: u256) !u64 {
         _ = self;
         _ = contract_address;
         _ = slot;
@@ -164,7 +164,7 @@ const NoOpHost = struct {
         return 0;
     }
     
-    pub fn get_gas_price(self: *Self) @"u256" {
+    pub fn get_gas_price(self: *Self) u256 {
         _ = self;
         return 0;
     }
@@ -185,28 +185,28 @@ const NoOpHost = struct {
         return null;
     }
     
-    pub fn get_blob_hash(self: *Self, index: @"u256") ?[32]u8 {
+    pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
         _ = self;
         _ = index;
         return null;
     }
     
-    pub fn get_blob_base_fee(self: *Self) @"u256" {
+    pub fn get_blob_base_fee(self: *Self) u256 {
         _ = self;
         return 0;
     }
     
     pub fn get_tx_origin(self: *Self) Address {
         _ = self;
-        return Address.ZERO;
+        return ZERO_ADDRESS;
     }
     
     pub fn get_caller(self: *Self) Address {
         _ = self;
-        return Address.ZERO;
+        return ZERO_ADDRESS;
     }
     
-    pub fn get_call_value(self: *Self) @"u256" {
+    pub fn get_call_value(self: *Self) u256 {
         _ = self;
         return 0;
     }
@@ -328,7 +328,7 @@ test "Memory expansion gas calculation doesn't overflow" {
     defer frame.deinit(allocator);
     
     // Test memory expansion with large offsets
-    const large_offset: @"u256" = 0x100000; // 1MB offset
+    const large_offset: u256 = 0x100000; // 1MB offset
     const expansion_cost = try frame.memory.expansion_cost(@intCast(large_offset), 32);
     
     // Verify expansion cost fits in GasType
@@ -354,6 +354,7 @@ const MockHost = struct {
     pub fn inner_call(self: *Self, params: CallParams) !CallResult {
         const gas = switch (params) {
             .call => |p| p.gas,
+            .callcode => |p| p.gas,
             .delegatecall => |p| p.gas,
             .staticcall => |p| p.gas,
             .create => |p| p.gas,
@@ -395,7 +396,7 @@ const MockHost = struct {
     }
     
     // Add all other required host methods
-    pub fn get_balance(self: *Self, address: Address) @"u256" {
+    pub fn get_balance(self: *Self, address: Address) u256 {
         _ = self;
         _ = address;
         return 0;
@@ -419,14 +420,14 @@ const MockHost = struct {
             .number = 0,
             .timestamp = 0,
             .gas_limit = 30_000_000,
-            .coinbase = Address.ZERO,
+            .coinbase = ZERO_ADDRESS,
             .difficulty = 0,
             .base_fee = 0,
             .prev_randao = [_]u8{0} ** 32,
         };
     }
     
-    pub fn emit_log(self: *Self, contract_address: Address, topics: []const @"u256", data: []const u8) void {
+    pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
         _ = self;
         _ = contract_address;
         _ = topics;
@@ -444,28 +445,28 @@ const MockHost = struct {
         return false;
     }
     
-    pub fn get_storage(self: *Self, address: Address, slot: @"u256") @"u256" {
+    pub fn get_storage(self: *Self, address: Address, slot: u256) u256 {
         _ = self;
         _ = address;
         _ = slot;
         return 0;
     }
     
-    pub fn set_storage(self: *Self, address: Address, slot: @"u256", value: @"u256") !void {
+    pub fn set_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
         _ = self;
         _ = address;
         _ = slot;
         _ = value;
     }
     
-    pub fn record_storage_change(self: *Self, address: Address, slot: @"u256", original_value: @"u256") !void {
+    pub fn record_storage_change(self: *Self, address: Address, slot: u256, original_value: u256) !void {
         _ = self;
         _ = address;
         _ = slot;
         _ = original_value;
     }
     
-    pub fn get_original_storage(self: *Self, address: Address, slot: @"u256") ?@"u256" {
+    pub fn get_original_storage(self: *Self, address: Address, slot: u256) ?u256 {
         _ = self;
         _ = address;
         _ = slot;
@@ -478,7 +479,7 @@ const MockHost = struct {
         return 0; // Assume warm access
     }
     
-    pub fn access_storage_slot(self: *Self, contract_address: Address, slot: @"u256") !u64 {
+    pub fn access_storage_slot(self: *Self, contract_address: Address, slot: u256) !u64 {
         _ = self;
         _ = contract_address;
         _ = slot;
@@ -517,7 +518,7 @@ const MockHost = struct {
         return 0;
     }
     
-    pub fn get_gas_price(self: *Self) @"u256" {
+    pub fn get_gas_price(self: *Self) u256 {
         _ = self;
         return 0;
     }
@@ -538,28 +539,28 @@ const MockHost = struct {
         return null;
     }
     
-    pub fn get_blob_hash(self: *Self, index: @"u256") ?[32]u8 {
+    pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
         _ = self;
         _ = index;
         return null;
     }
     
-    pub fn get_blob_base_fee(self: *Self) @"u256" {
+    pub fn get_blob_base_fee(self: *Self) u256 {
         _ = self;
         return 0;
     }
     
     pub fn get_tx_origin(self: *Self) Address {
         _ = self;
-        return Address.ZERO;
+        return ZERO_ADDRESS;
     }
     
     pub fn get_caller(self: *Self) Address {
         _ = self;
-        return Address.ZERO;
+        return ZERO_ADDRESS;
     }
     
-    pub fn get_call_value(self: *Self) @"u256" {
+    pub fn get_call_value(self: *Self) u256 {
         _ = self;
         return 0;
     }
@@ -582,7 +583,7 @@ test "CALL gas forwarding with exactly 64 gas remaining" {
     
     // Setup stack for CALL: gas, to, value, in_offset, in_size, out_offset, out_size
     try frame.stack.push(64); // gas to forward
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(0); // value
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
@@ -595,7 +596,7 @@ test "CALL gas forwarding with exactly 64 gas remaining" {
     
     // Verify the call succeeded
     const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(@"u256", 1), result);
+    try std.testing.expectEqual(@as(u256, 1), result);
 }
 
 test "CALL gas forwarding with less than 64 gas" {
@@ -615,7 +616,7 @@ test "CALL gas forwarding with less than 64 gas" {
     
     // Setup stack for CALL
     try frame.stack.push(30); // gas to forward
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(0); // value
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
@@ -627,7 +628,7 @@ test "CALL gas forwarding with less than 64 gas" {
     try frame.op_call();
     
     const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(@"u256", 1), result);
+    try std.testing.expectEqual(@as(u256, 1), result);
 }
 
 test "CALL with value transfer adds 2300 gas stipend correctly" {
@@ -647,7 +648,7 @@ test "CALL with value transfer adds 2300 gas stipend correctly" {
     
     // Setup stack for CALL with value transfer
     try frame.stack.push(1000); // gas to forward
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(100); // value > 0 (triggers stipend)
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
@@ -657,7 +658,7 @@ test "CALL with value transfer adds 2300 gas stipend correctly" {
     try frame.op_call();
     
     const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(@"u256", 1), result);
+    try std.testing.expectEqual(@as(u256, 1), result);
     
     // The forwarded gas should include the 2300 stipend
     // This is verified implicitly by the mock host receiving the gas
@@ -680,7 +681,7 @@ test "CALL stipend behavior when insufficient gas for base cost" {
     
     // Setup stack for CALL with value transfer
     try frame.stack.push(1000); // gas to forward (more than available)
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(100); // value > 0
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
@@ -691,7 +692,7 @@ test "CALL stipend behavior when insufficient gas for base cost" {
     
     // Should push 0 (failure) without adding stipend
     const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(@"u256", 0), result);
+    try std.testing.expectEqual(@as(u256, 0), result);
 }
 
 test "DELEGATECALL preserves gas forwarding semantics without stipend" {
@@ -711,7 +712,7 @@ test "DELEGATECALL preserves gas forwarding semantics without stipend" {
     
     // Setup stack for DELEGATECALL (no value parameter)
     try frame.stack.push(1000); // gas to forward
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
     try frame.stack.push(0); // out_offset
@@ -720,7 +721,7 @@ test "DELEGATECALL preserves gas forwarding semantics without stipend" {
     try frame.op_delegatecall();
     
     const result = try frame.stack.pop();
-    try std.testing.expectEqual(@as(@"u256", 1), result);
+    try std.testing.expectEqual(@as(u256, 1), result);
     
     // DELEGATECALL should never add stipend (no value transfer)
 }
@@ -798,7 +799,7 @@ test "Multiple nested CALL operations with cumulative gas forwarding" {
     
     // First CALL
     try frame.stack.push(100_000); // gas to forward
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(0); // value
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
@@ -813,7 +814,7 @@ test "Multiple nested CALL operations with cumulative gas forwarding" {
     
     // Second CALL with remaining gas
     try frame.stack.push(50_000); // gas to forward
-    try frame.stack.push(to_u256(Address.ZERO)); // to
+    try frame.stack.push(to_u256(ZERO_ADDRESS)); // to
     try frame.stack.push(0); // value
     try frame.stack.push(0); // in_offset
     try frame.stack.push(0); // in_size
