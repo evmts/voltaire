@@ -43,6 +43,7 @@ pub fn main() !void {
     var contract_code_path: ?[]const u8 = null;
     var calldata_hex: ?[]const u8 = null;
     var num_runs: u32 = 1;
+    var min_gas: u64 = 0;
     var verbose: bool = false;
 
     var i: usize = 1;
@@ -73,6 +74,16 @@ pub fn main() !void {
             i += 1;
         } else if (std.mem.eql(u8, args[i], "--verbose")) {
             verbose = true;
+        } else if (std.mem.eql(u8, args[i], "--min-gas")) {
+            if (i + 1 >= args.len) {
+                std.debug.print("Error: --min-gas requires a value\n", .{});
+                std.process.exit(1);
+            }
+            min_gas = std.fmt.parseInt(u64, args[i + 1], 10) catch {
+                std.debug.print("Error: --min-gas must be a number\n", .{});
+                std.process.exit(1);
+            };
+            i += 1;
         } else {
             std.debug.print("Error: Unknown argument {s}\n", .{args[i]});
             std.process.exit(1);
@@ -122,52 +133,107 @@ pub fn main() !void {
     var evm_instance = try evm.DefaultEvm.init(allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm_instance.deinit();
 
-    // Deploy contract using CREATE by executing init code
-    const deploy_params = evm.DefaultEvm.CallParams{ .create = .{
-        .caller = primitives.ZERO_ADDRESS,
-        .value = 0,
-        .init_code = init_code,
-        .gas = 10_000_000,
-    }};
-    var used_create: bool = false;
-    var deploy_address: Address = undefined;
-    const deploy_result = evm_instance.call(deploy_params) catch |err| blk: {
-        if (verbose) std.debug.print("EVM create error (will fallback to direct install): {}\n", .{err});
-        break :blk evm.CallResult.failure(0);
-    };
-    if (deploy_result.success and deploy_result.output.len >= 20) {
-        @memcpy(&deploy_address, deploy_result.output[0..20]);
-        used_create = true;
-        if (verbose) std.debug.print("Deployed contract at address: {x}, code_len={}\n", 
-            .{std.fmt.fmtSliceHexLower(&deploy_address), init_code.len});
-    } else {
-        // Fallback: treat provided code as runtime and install directly
-        deploy_address = [_]u8{0} ** 19 ++ [_]u8{1};
-        const code_hash = try memory_db.set_code(init_code);
-        try memory_db.set_account(deploy_address, evm.Account{
-            .nonce = 0,
-            .balance = 0,
-            .code_hash = code_hash,
-            .storage_root = [_]u8{0} ** 32,
-        });
-        if (verbose) std.debug.print("Fallback install at address: {x}, code_len={}, code_hash={x}\n", 
-            .{ std.fmt.fmtSliceHexLower(&deploy_address), init_code.len, std.fmt.fmtSliceHexLower(&code_hash) });
-    }
+    // We attempt to deploy via CREATE first. If the provided bytecode is actually
+    // runtime (not init) and CREATE produces empty runtime code, we fall back to
+    // directly installing it as runtime code.
+    // deploy_address is determined per-run depending on CREATE success
 
-    // Run benchmarks
+    // Run benchmarks - create fresh EVM instance for each run to ensure consistent state
     for (0..num_runs) |run_idx| {
+        // Create fresh EVM instance for each run to avoid state corruption
+        var fresh_memory_db = evm.MemoryDatabase.init(allocator);
+        defer fresh_memory_db.deinit();
+        const fresh_db_interface = evm.DatabaseInterface.init(&fresh_memory_db);
+
+        var fresh_evm = try evm.DefaultEvm.init(allocator, fresh_db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+        defer fresh_evm.deinit();
+
+        // 1) Try CREATE deployment path with provided bytecode as init code
+        var target_address: Address = [_]u8{0} ** 20;
+        var use_direct_install = false;
+        {
+            const create_params = evm.DefaultEvm.CallParams{
+                .create = .{
+                    .caller = primitives.ZERO_ADDRESS,
+                    .value = 0,
+                    .init_code = init_code,
+                    .gas = 10_000_000,
+                },
+            };
+
+            const maybe_create_result: ?evm.CallResult = blk: {
+                const r = fresh_evm.call(create_params) catch |err| {
+                    if (verbose) std.debug.print("CREATE failed with error: {}. Falling back to direct install.\n", .{err});
+                    break :blk null;
+                };
+                break :blk r;
+            };
+
+            if (maybe_create_result) |create_result| {
+                if (!create_result.success) {
+                    if (verbose) std.debug.print("CREATE failed: success=false, gas_left={}, output_len={}\n", 
+                        .{create_result.gas_left, create_result.output.len});
+                    use_direct_install = true;
+                } else if (create_result.output.len == 0) {
+                    // CREATE succeeded but returned no address - this is expected for init code
+                    // The address should be calculated deterministically
+                    const nonce: u64 = 0;
+                    target_address = try primitives.Address.calculate_create_address(allocator, primitives.ZERO_ADDRESS, nonce);
+                    const deployed_code = fresh_evm.get_code(target_address);
+                    if (deployed_code.len == 0) {
+                        if (verbose) std.debug.print("CREATE succeeded but no code at computed address {x}\n", 
+                            .{std.fmt.fmtSliceHexLower(&target_address)});
+                        use_direct_install = true;
+                    } else {
+                        if (verbose) std.debug.print("CREATE deployed contract at {x} with code_len={}\n",
+                            .{std.fmt.fmtSliceHexLower(&target_address), deployed_code.len});
+                    }
+                } else if (create_result.output.len == 20) {
+                    // Old-style CREATE that returns address
+                    @memcpy(&target_address, create_result.output[0..20]);
+                    const deployed_code = fresh_evm.get_code(target_address);
+                    if (deployed_code.len == 0) {
+                        if (verbose) std.debug.print("CREATE returned address but no code found\n", .{});
+                        use_direct_install = true;
+                    }
+                } else {
+                    if (verbose) std.debug.print("CREATE returned unexpected output length: {}\n", .{create_result.output.len});
+                    use_direct_install = true;
+                }
+            } else {
+                use_direct_install = true;
+            }
+        }
+
+        if (use_direct_install) {
+            // Directly install provided bytecode as runtime
+            const fresh_code_hash = try fresh_memory_db.set_code(init_code);
+            // Choose a fixed address for direct install
+            // Use a non-precompile address (avoid 0x01..0x0a)
+            target_address = [_]u8{0} ** 19 ++ [_]u8{0x11};
+            try fresh_memory_db.set_account(target_address, evm.Account{
+                .nonce = 0,
+                .balance = 0,
+                .code_hash = fresh_code_hash,
+                .storage_root = [_]u8{0} ** 32,
+            });
+            if (verbose) std.debug.print("Direct install at address: {x}, code_len={}, code_hash={x}\n",
+                .{ std.fmt.fmtSliceHexLower(&target_address), init_code.len, std.fmt.fmtSliceHexLower(&fresh_code_hash) });
+        }
+
+        // 2) Invoke the contract runtime via CALL
         const call_params = evm.DefaultEvm.CallParams{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
-                .to = deploy_address,
+                .to = target_address,
                 .value = 0,
                 .input = calldata,
-                .gas = 10000000, // Increased from 100k to 10M
+                .gas = 10_000_000,
             },
         };
 
         const start_time = std.time.nanoTimestamp();
-        const result = evm_instance.call(call_params) catch |err| {
+        const result = fresh_evm.call(call_params) catch |err| {
             std.debug.print("EVM execution error: {}\n", .{err});
             std.process.exit(1);
         };
@@ -184,7 +250,17 @@ pub fn main() !void {
             }
             std.debug.print("calldata={x}\n", .{std.fmt.fmtSliceHexLower(calldata)});
         }
-        
+
+        // Optional validation: enforce minimum gas consumption to catch trivial runs
+        if (min_gas > 0) {
+            const gas_provided: u64 = 10_000_000;
+            const gas_used: u64 = gas_provided - result.gas_left;
+            if (gas_used < min_gas) {
+                std.debug.print("Error: gas_used={} < min_gas={} (likely trivial execution)\n", .{ gas_used, min_gas });
+                std.process.exit(2);
+            }
+        }
+
         // Do not free result.output here. Ownership is managed by the EVM.
         // Freeing it caused an invalid free/double free under the debug allocator
         // and crashes during hyperfine warmup.

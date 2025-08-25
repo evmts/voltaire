@@ -78,18 +78,31 @@ if [[ -n "${JS_RUNTIME:-}" ]]; then
 fi
 
 log "Running orchestrator with compare mode (single run per case)"
-log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1 ${JS_RUNTIME_FLAG[*]}"
-time "${ORCH_BIN}" \
-  --compare \
-  --export markdown \
-  --num-runs 1 \
-  --js-runs 1 \
-  --internal-runs 1 \
-  --js-internal-runs 1 \
-  --snailtracer-internal-runs 1 \
-  --js-snailtracer-internal-runs 1 \
-  "${JS_RUNTIME_FLAG[@]}" \
-  2>&1 | tee -a "${LOG_FILE}"
+log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1 ${JS_RUNTIME_FLAG[*]:-}"
+if [[ ${#JS_RUNTIME_FLAG[@]} -gt 0 ]]; then
+  time "${ORCH_BIN}" \
+    --compare \
+    --export markdown \
+    --num-runs 1 \
+    --js-runs 1 \
+    --internal-runs 1 \
+    --js-internal-runs 1 \
+    --snailtracer-internal-runs 1 \
+    --js-snailtracer-internal-runs 1 \
+    "${JS_RUNTIME_FLAG[@]}" \
+    2>&1 | tee -a "${LOG_FILE}"
+else
+  time "${ORCH_BIN}" \
+    --compare \
+    --export markdown \
+    --num-runs 1 \
+    --js-runs 1 \
+    --internal-runs 1 \
+    --js-internal-runs 1 \
+    --snailtracer-internal-runs 1 \
+    --js-snailtracer-internal-runs 1 \
+    2>&1 | tee -a "${LOG_FILE}"
+fi
 
 RESULTS_MD="${ROOT_DIR}/bench/official/results.md"
 if [[ -f "${RESULTS_MD}" ]]; then
