@@ -308,6 +308,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
                 @branchHint(.unlikely);
+                // Perform value transfer if any before executing precompile
+                if (params.value > 0) {
+                    self.transferValueWithSnapshot(params.caller, params.to, params.value, snapshot_id) catch |err| {
+                        return self.revert_and_fail(snapshot_id, err);
+                    };
+                }
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, false) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
@@ -550,7 +556,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
             
             // Check if address already has code (collision)
-            if (self.database.account_exists(contract_address)) {
+            const existed_before = self.database.account_exists(contract_address);
+            if (existed_before) {
                 const existing = self.database.get_account(contract_address) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
@@ -558,7 +565,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }
             }
             
-            // Increment caller's nonce
+            // Record and increment caller's nonce
+            try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
             caller_account.nonce += 1;
             self.database.set_account(params.caller, caller_account) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
@@ -577,6 +585,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             
             const remaining_gas = params.gas - create_gas;
+            
+            // Transfer value to the new contract before executing init code (per spec)
+            if (params.value > 0) {
+                self.transferValueWithSnapshot(params.caller, contract_address, params.value, snapshot_id) catch |err| {
+                    return self.revert_and_fail(snapshot_id, err);
+                };
+            }
             
             // Execute initialization code
             const result = self.execute_frame(
@@ -598,29 +613,31 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return result;
             }
             
-            // Store the deployed code
-            if (result.output.len > 0) {
-                // Store the bytecode in the database
-                _ = self.database.set_code(result.output) catch |err| {
-                    return self.revert_and_fail(snapshot_id, err);
-                };
-                
-                // Compute code hash
-                var code_hash_bytes: [32]u8 = undefined;
-                const keccak_asm = @import("keccak_asm.zig");
-                try keccak_asm.keccak256(result.output, &code_hash_bytes);
-                
-                const new_account = Account{
-                    .balance = params.value,
-                    .nonce = 1, // Contract accounts start with nonce 1
-                    .code_hash = code_hash_bytes,
-                    .storage_root = [_]u8{0} ** 32,
-                };
-                
-                self.database.set_account(contract_address, new_account) catch |err| {
-                    return self.revert_and_fail(snapshot_id, err);
-                };
+            // Ensure contract account exists and set nonce to 1
+            var contract_account = self.database.get_account(contract_address) catch |err| {
+                return self.revert_and_fail(snapshot_id, err);
+            } orelse DEFAULT_ACCOUNT;
+            // For a new account, record creation
+            if (!existed_before) {
+                try self.journal.record_account_created(snapshot_id, contract_address);
             }
+            // Set nonce to 1 for contract accounts
+            if (contract_account.nonce != 1) {
+                try self.journal.record_nonce_change(snapshot_id, contract_address, contract_account.nonce);
+                contract_account.nonce = 1;
+            }
+            // Store the deployed code (empty code is allowed)
+            if (result.output.len > 0) {
+                const code_hash_bytes = self.database.set_code(result.output) catch |err| {
+                    return self.revert_and_fail(snapshot_id, err);
+                };
+                // Journal code change
+                try self.journal.record_code_change(snapshot_id, contract_address, contract_account.code_hash);
+                contract_account.code_hash = code_hash_bytes;
+            }
+            self.database.set_account(contract_address, contract_account) catch |err| {
+                return self.revert_and_fail(snapshot_id, err);
+            };
             
             // Return the contract address as output
             var address_bytes = std.ArrayList(u8).init(self.allocator);
@@ -659,7 +676,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
             
             // Check if address already has code (collision)
-            if (self.database.account_exists(contract_address)) {
+            const existed_before2 = self.database.account_exists(contract_address);
+            if (existed_before2) {
                 const existing = self.database.get_account(contract_address) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
@@ -683,6 +701,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             const remaining_gas = params.gas - total_gas;
             
+            // Transfer value to the new contract before executing init code
+            if (params.value > 0) {
+                self.transferValueWithSnapshot(params.caller, contract_address, params.value, snapshot_id) catch |err| {
+                    return self.revert_and_fail(snapshot_id, err);
+                };
+            }
+            
             // Execute initialization code
             const result = self.execute_frame(
                 params.init_code,
@@ -703,22 +728,29 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return result;
             }
             
-            // Store the deployed code
+            // Ensure contract account exists and set nonce/code
+            var contract_account2 = self.database.get_account(contract_address) catch |err| {
+                return self.revert_and_fail(snapshot_id, err);
+            } orelse DEFAULT_ACCOUNT;
+            // Record creation for new accounts
+            if (!existed_before2) {
+                try self.journal.record_account_created(snapshot_id, contract_address);
+            }
+            // Set nonce to 1 for contracts
+            if (contract_account2.nonce != 1) {
+                try self.journal.record_nonce_change(snapshot_id, contract_address, contract_account2.nonce);
+                contract_account2.nonce = 1;
+            }
             if (result.output.len > 0) {
-                var code_hash_bytes: [32]u8 = undefined;
-                try keccak_asm.keccak256(result.output, &code_hash_bytes);
-                
-                const new_account = Account{
-                    .balance = params.value,
-                    .nonce = 1, // CREATE2 contracts start with nonce 1
-                    .code_hash = code_hash_bytes,
-                    .storage_root = [_]u8{0} ** 32,
-                };
-                
-                self.database.set_account(contract_address, new_account) catch |err| {
+                const stored_hash = self.database.set_code(result.output) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
+                try self.journal.record_code_change(snapshot_id, contract_address, contract_account2.code_hash);
+                contract_account2.code_hash = stored_hash;
             }
+            self.database.set_account(contract_address, contract_account2) catch |err| {
+                return self.revert_and_fail(snapshot_id, err);
+            };
             
             // Return the contract address as output
             var address_bytes = std.ArrayList(u8).init(self.allocator);
@@ -770,8 +802,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: JournalType.SnapshotIdType,
         ) !CallResult {
-            _ = snapshot_id;
-            _ = input;
+            _ = address; // address is currently unused in this implementation
+            // Bind snapshot and call input for this frame duration
+            const prev_snapshot = self.current_snapshot_id;
+            self.current_snapshot_id = snapshot_id;
+            defer self.current_snapshot_id = prev_snapshot;
+
+            const prev_input = self.current_input;
+            self.current_input = input;
+            defer self.current_input = prev_input;
+            // Currently the interpreter reads address via host; keep parameter used
             _ = address;
             
             // Increment depth and track static context
@@ -803,6 +843,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Execute the frame
             interpreter.interpret() catch |err| {
                 const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
+                // Update return_data buffer for parent context on any termination
+                self.return_data = interpreter.frame.output_data.items;
                 return switch (err) {
                     error.STOP => CallResult.success_with_output(gas_left, interpreter.frame.output_data.items),
                     error.REVERT => CallResult.revert_with_data(gas_left, interpreter.frame.output_data.items),
@@ -826,20 +868,25 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Normal completion (STOP)
             const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
+            // Make callee return buffer visible to caller for RETURNDATA* opcodes
+            self.return_data = interpreter.frame.output_data.items;
             return CallResult.success_with_output(gas_left, interpreter.frame.output_data.items);
         }
         
         /// Execute nested EVM call - used for calls from within the EVM
         pub fn inner_call(self: *Self, params: CallParams) !CallResult {
             // Don't reset depth to 0 for inner calls - just use call handlers
-            switch (params) {
-                .call => |p| return try self.call_handler(p),
-                .callcode => |p| return try self.callcode_handler(p),
-                .delegatecall => |p| return try self.delegatecall_handler(p),
-                .staticcall => |p| return try self.staticcall_handler(p),
-                .create => |p| return try self.create_handler(p),
-                .create2 => |p| return try self.create2_handler(p),
-            }
+            const result = switch (params) {
+                .call => |p| try self.call_handler(p),
+                .callcode => |p| try self.callcode_handler(p),
+                .delegatecall => |p| try self.delegatecall_handler(p),
+                .staticcall => |p| try self.staticcall_handler(p),
+                .create => |p| try self.create_handler(p),
+                .create2 => |p| try self.create2_handler(p),
+            };
+            // Update return data buffer for parent frame semantics
+            self.return_data = result.output;
+            return result;
         }
         
         /// Execute a precompile call using the full legacy precompile system
