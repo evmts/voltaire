@@ -242,7 +242,8 @@ test "CallResult log memory management - proper cleanup" {
     defer {
         const deinit_status = gpa.deinit();
         if (deinit_status == .leak) {
-            std.debug.print("Memory leak detected in CallResult log cleanup test!\n", .{});
+            const log = @import("log.zig");
+            log.warn("Memory leak detected in CallResult log cleanup test!", .{});
             testing.expect(false) catch {};
         }
     }
@@ -279,7 +280,8 @@ test "CallResult deinitLogsSlice - memory management for takeLogs result" {
     defer {
         const deinit_status = gpa.deinit();
         if (deinit_status == .leak) {
-            std.debug.print("Memory leak detected in deinitLogsSlice test!\n", .{});
+            const log = @import("log.zig");
+            log.warn("Memory leak detected in deinitLogsSlice test!", .{});
             testing.expect(false) catch {};
         }
     }

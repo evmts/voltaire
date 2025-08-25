@@ -354,18 +354,17 @@ test "CREATE gas cost analysis" {
     // Test gas costs for different init code sizes
     const test_sizes = [_]usize{ 0, 100, 1024, 10240, 24576, 49152 };
     
-    std.debug.print("\n=== CREATE Gas Cost Analysis ===\n", .{});
-    std.debug.print("Size (bytes) | Base Cost | Init Cost | Total Cost\n", .{});
-    std.debug.print("-------------|-----------|-----------|------------\n", .{});
+    const log = @import("log.zig");
+    log.debug("\n=== CREATE Gas Cost Analysis ===\n", .{});
+    log.debug("Size (bytes) | Base Cost | Init Cost | Total Cost\n", .{});
+    log.debug("-------------|-----------|-----------|------------\n", .{});
     
     for (test_sizes) |size| {
         const base_cost = 32000; // CREATE base cost
         const init_cost = size * 200; // 200 gas per byte (EIP-3860)
         const total_cost = base_cost + init_cost;
         
-        std.debug.print("{d:>12} | {d:>9} | {d:>9} | {d:>10}\n", .{
-            size, base_cost, init_cost, total_cost
-        });
+        log.debug("{d:>12} | {d:>9} | {d:>9} | {d:>10}\n", .{ size, base_cost, init_cost, total_cost });
     }
     
     // Verify costs match expectations

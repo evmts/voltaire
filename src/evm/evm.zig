@@ -4191,7 +4191,8 @@ test "Precompile diagnosis - BN254 operations disabled" {
         }
     } else {
         // BN254 operations disabled - this is expected behavior
-        std.debug.print("BN254 operations are disabled (no_bn254 build option)\n", .{});
+        const log = @import("log.zig");
+        log.warn("BN254 operations are disabled (no_bn254 build option)", .{});
     }
 }
 
