@@ -203,8 +203,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
         
         /// Transfer value between accounts with proper balance checks and error handling
-        fn transfer_value(self: *Self, from: Address, to: Address, value: u256, snapshot_id: JournalType.SnapshotIdType) !void {
-            if (value == 0) return; 
+        fn transferValueWithSnapshot(self: *Self, from: Address, to: Address, value: u256, snapshot_id: JournalType.SnapshotIdType) !void {
+            if (value == 0) return;
+            
+            // Get accounts
             var from_account = self.database.get_account(from) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
@@ -212,30 +214,31 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return error.InsufficientBalance;
             };
-            if (from_account.balance < value) {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return error.InsufficientBalance;
-            }
             
-            // Record the original balance before changing
-            try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
-            
-            // Deduct from caller
-            from_account.balance -= value;
-            self.database.set_account(from, from_account) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return err;
-            };
-            // Add to recipient
             var to_account = self.database.get_account(to) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             } orelse DEFAULT_ACCOUNT;
             
-            // Record the original balance before changing
+            // Check sufficient balance
+            if (from_account.balance < value) {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return error.InsufficientBalance;
+            }
+            
+            // Record original balances in journal before modification
+            try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
             
+            // Update balances
+            from_account.balance -= value;
             to_account.balance += value;
+            
+            // Write to database
+            self.database.set_account(from, from_account) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return err;
+            };
             self.database.set_account(to, to_account) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
@@ -304,7 +307,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             const code = self.database.get_code_by_address(params.to) catch &.{};
             if (code.len == 0) {
-                self.transfer_value(params.caller, params.to, params.value, snapshot_id) catch {
+                self.transferValueWithSnapshot(params.caller, params.to, params.value, snapshot_id) catch {
                     return CallResult.failure(0);
                 };
                 return CallResult.success_empty(params.gas);
@@ -1115,6 +1118,37 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Get blob base fee (EIP-4844)
         pub fn get_blob_base_fee(self: *Self) u256 {
             return self.context.blob_base_fee;
+        }
+
+        /// Transfer value between accounts with proper journaling
+        /// This method ensures balance changes are recorded in the journal for potential reverts
+        pub fn transfer_value(self: *Self, from: Address, to: Address, value: u256) !void {
+            // Don't transfer if value is zero
+            if (value == 0) return;
+            
+            // Get accounts
+            var from_account = (try self.database.get_account(from)) orelse return error.AccountNotFound;
+            var to_account = (try self.database.get_account(to)) orelse Account{
+                .balance = 0,
+                .nonce = 0,
+                .code_hash = [_]u8{0} ** 32,
+                .storage_root = [_]u8{0} ** 32,
+            };
+            
+            // Check sufficient balance
+            if (from_account.balance < value) return error.InsufficientBalance;
+            
+            // Record original balances in journal before modification
+            try self.journal.record_balance_change(self.current_snapshot_id, from, from_account.balance);
+            try self.journal.record_balance_change(self.current_snapshot_id, to, to_account.balance);
+            
+            // Update balances
+            from_account.balance -= value;
+            to_account.balance += value;
+            
+            // Write to database
+            try self.database.set_account(from, from_account);
+            try self.database.set_account(to, to_account);
         }
 
         /// Convert to Host interface
@@ -4903,4 +4937,353 @@ test "CREATE interaction - created contract modifies parent storage" {
     // Verify parent's storage was modified by child
     const final_value = evm_instance.get_storage(parent_addr, 0);
     try std.testing.expectEqual(@as(u256, 42), final_value);
+}
+
+test "Arena allocator - resets between calls" {
+    const testing = std.testing;
+
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Simple contract that emits a log
+    // PUSH1 0x20 PUSH1 0x00 LOG0 STOP
+    const bytecode = [_]u8{ 0x60, 0x20, 0x60, 0x00, 0xA0, 0x00 };
+    const contract_addr = [_]u8{0x01} ** 20;
+    try db_interface.set_account(contract_addr, .{
+        .balance = 0,
+        .nonce = 0,
+        .code = &bytecode,
+    });
+
+    // Track arena bytes allocated before first call
+    const initial_arena_bytes = evm.internal_arena.queryCapacity();
+
+    // First call - should allocate in arena
+    const result1 = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = contract_addr,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 100000,
+        },
+    });
+    defer if (result1.output.len > 0) testing.allocator.free(result1.output);
+
+    try testing.expect(result1.success);
+    try testing.expectEqual(@as(usize, 1), result1.logs.len);
+
+    // Arena should have allocated memory for the log
+    const after_first_call = evm.internal_arena.queryCapacity();
+    try testing.expect(after_first_call >= initial_arena_bytes);
+
+    // Second call - arena should be reset
+    const result2 = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = contract_addr,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 100000,
+        },
+    });
+    defer if (result2.output.len > 0) testing.allocator.free(result2.output);
+
+    try testing.expect(result2.success);
+    try testing.expectEqual(@as(usize, 1), result2.logs.len);
+
+    // Arena capacity should be retained but memory reused
+    const after_second_call = evm.internal_arena.queryCapacity();
+    try testing.expectEqual(after_first_call, after_second_call);
+}
+
+test "Arena allocator - handles multiple logs efficiently" {
+    const testing = std.testing;
+
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 10000000, // Higher gas limit for many logs
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Contract that emits 100 logs
+    // Build bytecode dynamically: (PUSH1 0x20 PUSH1 0x00 LOG0) * 100 + STOP
+    var bytecode: [501]u8 = undefined;
+    for (0..100) |i| {
+        const offset = i * 5;
+        bytecode[offset] = 0x60;     // PUSH1
+        bytecode[offset + 1] = 0x20; // 32 bytes of data
+        bytecode[offset + 2] = 0x60; // PUSH1
+        bytecode[offset + 3] = 0x00; // offset 0
+        bytecode[offset + 4] = 0xA0; // LOG0
+    }
+    bytecode[500] = 0x00; // STOP
+
+    const contract_addr = [_]u8{0x02} ** 20;
+    try db_interface.set_account(contract_addr, .{
+        .balance = 0,
+        .nonce = 0,
+        .code = &bytecode,
+    });
+
+    // Execute contract
+    const result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = contract_addr,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 5000000,
+        },
+    });
+    defer if (result.output.len > 0) testing.allocator.free(result.output);
+
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 100), result.logs.len);
+
+    // All logs should have been allocated from arena
+    for (result.logs) |log| {
+        try testing.expectEqual(@as(usize, 0), log.topics.len);
+        try testing.expectEqual(@as(usize, 32), log.data.len);
+    }
+}
+
+test "Arena allocator - precompile outputs use arena" {
+    const testing = std.testing;
+
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Call SHA256 precompile (address 0x02)
+    const precompile_addr = primitives.Address.from_u256(2);
+    const input = "Hello, World!";
+
+    const result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = precompile_addr,
+            .value = 0,
+            .input = input,
+            .gas = 100000,
+        },
+    });
+    defer if (result.output.len > 0) testing.allocator.free(result.output);
+
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 output is 32 bytes
+
+    // Multiple precompile calls should reuse arena
+    const result2 = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = precompile_addr,
+            .value = 0,
+            .input = "Another test input",
+            .gas = 100000,
+        },
+    });
+    defer if (result2.output.len > 0) testing.allocator.free(result2.output);
+
+    try testing.expect(result2.success);
+    try testing.expectEqual(@as(usize, 32), result2.output.len);
+}
+
+test "Arena allocator - memory efficiency with nested calls" {
+    const testing = std.testing;
+
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Parent contract that calls child and emits log
+    // PUSH20 <child_addr> PUSH1 0 PUSH1 0 PUSH1 0 PUSH1 0 PUSH1 0 PUSH2 <gas> CALL
+    // PUSH1 0x20 PUSH1 0x00 LOG0 STOP
+    const child_addr = [_]u8{0x03} ** 20;
+    var parent_bytecode: [100]u8 = undefined;
+    var idx: usize = 0;
+    
+    // PUSH20 child_addr
+    parent_bytecode[idx] = 0x73;
+    idx += 1;
+    @memcpy(parent_bytecode[idx..idx + 20], &child_addr);
+    idx += 20;
+    
+    // PUSH1 0 (value)
+    parent_bytecode[idx] = 0x60;
+    parent_bytecode[idx + 1] = 0x00;
+    idx += 2;
+    
+    // PUSH1 0 (out_size)
+    parent_bytecode[idx] = 0x60;
+    parent_bytecode[idx + 1] = 0x00;
+    idx += 2;
+    
+    // PUSH1 0 (out_offset)
+    parent_bytecode[idx] = 0x60;
+    parent_bytecode[idx + 1] = 0x00;
+    idx += 2;
+    
+    // PUSH1 0 (in_size)
+    parent_bytecode[idx] = 0x60;
+    parent_bytecode[idx + 1] = 0x00;
+    idx += 2;
+    
+    // PUSH1 0 (in_offset)
+    parent_bytecode[idx] = 0x60;
+    parent_bytecode[idx + 1] = 0x00;
+    idx += 2;
+    
+    // PUSH2 gas
+    parent_bytecode[idx] = 0x61;
+    parent_bytecode[idx + 1] = 0x01;
+    parent_bytecode[idx + 2] = 0x00; // 256 gas
+    idx += 3;
+    
+    // CALL
+    parent_bytecode[idx] = 0xF1;
+    idx += 1;
+    
+    // PUSH1 0x20 PUSH1 0x00 LOG0
+    parent_bytecode[idx] = 0x60;
+    parent_bytecode[idx + 1] = 0x20;
+    parent_bytecode[idx + 2] = 0x60;
+    parent_bytecode[idx + 3] = 0x00;
+    parent_bytecode[idx + 4] = 0xA0;
+    idx += 5;
+    
+    // STOP
+    parent_bytecode[idx] = 0x00;
+    idx += 1;
+
+    const parent_addr = [_]u8{0x04} ** 20;
+    try db_interface.set_account(parent_addr, .{
+        .balance = 0,
+        .nonce = 0,
+        .code = parent_bytecode[0..idx],
+    });
+
+    // Child contract that also emits log
+    const child_bytecode = [_]u8{ 0x60, 0x10, 0x60, 0x00, 0xA0, 0x00 }; // PUSH1 0x10 PUSH1 0x00 LOG0 STOP
+    try db_interface.set_account(child_addr, .{
+        .balance = 0,
+        .nonce = 0,
+        .code = &child_bytecode,
+    });
+
+    // Track arena capacity before call
+    const initial_capacity = evm.internal_arena.queryCapacity();
+
+    // Execute parent contract
+    const result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = parent_addr,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 1000000,
+        },
+    });
+    defer if (result.output.len > 0) testing.allocator.free(result.output);
+
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 2), result.logs.len); // Parent and child logs
+
+    // Arena should have grown to accommodate logs
+    const final_capacity = evm.internal_arena.queryCapacity();
+    try testing.expect(final_capacity >= initial_capacity);
+
+    // Second call should reuse arena capacity
+    const result2 = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = parent_addr,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 1000000,
+        },
+    });
+    defer if (result2.output.len > 0) testing.allocator.free(result2.output);
+
+    try testing.expect(result2.success);
+    try testing.expectEqual(@as(usize, 2), result2.logs.len);
+
+    // Arena capacity should be retained
+    const final_capacity2 = evm.internal_arena.queryCapacity();
+    try testing.expectEqual(final_capacity, final_capacity2);
 }

@@ -2888,7 +2888,7 @@ test "FrameInterpreter arithmetic edge cases - division by zero" {
 
     // Test DIV by zero: PUSH1 0, PUSH1 5, DIV -> should return 0
     const bytecode_div = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x04, 0x00 }; // PUSH1 0, PUSH1 5, DIV, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_div, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_div, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -2896,7 +2896,7 @@ test "FrameInterpreter arithmetic edge cases - division by zero" {
 
     // Test SDIV by zero: should also return 0
     const bytecode_sdiv = [_]u8{ 0x60, 0x00, 0x60, 0x05, 0x05, 0x00 }; // PUSH1 0, PUSH1 5, SDIV, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_sdiv, 1000000, {}, null, false);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_sdiv, 1000000, {}, null);
     defer interpreter2.deinit(allocator);
 
     try interpreter2.interpret();
@@ -2909,7 +2909,7 @@ test "FrameInterpreter arithmetic edge cases - modulo by zero" {
 
     // Test MOD by zero: PUSH1 0, PUSH1 7, MOD -> should return 0
     const bytecode_mod = [_]u8{ 0x60, 0x00, 0x60, 0x07, 0x06, 0x00 }; // PUSH1 0, PUSH1 7, MOD, STOP
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_mod, 1000000, {}, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode_mod, 1000000, {}, null);
     defer interpreter.deinit(allocator);
 
     try interpreter.interpret();
@@ -2917,7 +2917,7 @@ test "FrameInterpreter arithmetic edge cases - modulo by zero" {
 
     // Test SMOD by zero: should also return 0
     const bytecode_smod = [_]u8{ 0x60, 0x00, 0x60, 0x07, 0x07, 0x00 }; // PUSH1 0, PUSH1 7, SMOD, STOP
-    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_smod, 1000000, {}, null, false);
+    var interpreter2 = try FrameInterpreterType.init(allocator, &bytecode_smod, 1000000, {}, null);
     defer interpreter2.deinit(allocator);
 
     try interpreter2.interpret();
