@@ -300,8 +300,8 @@ pub const DebuggingTracer = struct {
                 .pc = pc,
                 .opcode = opcode,
                 .opcode_name = getOpcodeName(opcode),
-                .gas_before = @as(i32, @intCast(gas)),
-                .gas_after = @as(i32, @intCast(gas)), // Will be updated in afterOp
+                .gas_before = @as(i32, @intCast(@min(gas, std.math.maxInt(i32)))),
+                .gas_after = @as(i32, @intCast(@min(gas, std.math.maxInt(i32)))), // Will be updated in afterOp
                 .gas_cost = 0,    // Will be calculated in afterOp
                 .stack_before = stack_copy,
                 .stack_after = &[_]u256{}, // Will be updated in afterOp
@@ -327,8 +327,8 @@ pub const DebuggingTracer = struct {
             // Update the current step with after state
             if (self.steps.items.len > 0) {
                 const current_step = &self.steps.items[self.steps.items.len - 1];
-                current_step.gas_after = @as(i32, @intCast(gas));
-                current_step.gas_cost = @intCast(@max(0, current_step.gas_before - @as(i32, @intCast(gas))));
+                current_step.gas_after = @as(i32, @intCast(@min(gas, std.math.maxInt(i32))));
+                current_step.gas_cost = @intCast(@max(0, current_step.gas_before - @as(i32, @intCast(@min(gas, std.math.maxInt(i32))))));
                 current_step.stack_after = stack_copy;
                 current_step.memory_size_after = if (@hasField(FrameType, "memory")) frame.memory.size() else 0;
             } else {
