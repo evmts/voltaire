@@ -134,7 +134,7 @@ pub export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initi
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize frame interpreter  
-    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}) catch {
+    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null, false) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
@@ -164,7 +164,7 @@ pub export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     handle.interpreter.frame.deinit(allocator);
 
     // Reinitialize interpreter with same bytecode
-    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}) catch |err| {
+    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}, null, false) catch |err| {
         return zigErrorToCError(err);
     };
 
@@ -402,7 +402,7 @@ pub export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize,
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize debug frame interpreter
-    handle.interpreter = DebugFrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}) catch {
+    handle.interpreter = DebugFrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null, false) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
