@@ -15,6 +15,21 @@ const Opcode = @import("opcode.zig").Opcode;
 const bytecode_config = @import("bytecode_config.zig");
 const BytecodeConfig = bytecode_config.BytecodeConfig;
 
+// Optional SIMD opcode validation placeholder. Some build targets may still
+// reference a SIMD pre-pass; provide a safe scalar fallback.
+fn validateOpcodeScalar(code: []const u8) bool {
+    for (code) |op| {
+        _ = std.meta.intToEnum(Opcode, op) catch return false;
+    }
+    return true;
+}
+
+fn validateOpcodeSimd(code: []const u8, comptime L: comptime_int) bool {
+    _ = L;
+    // Fallback to scalar validation; SIMD specialization can be added later.
+    return validateOpcodeScalar(code);
+}
+
 // SECURITY MODEL: Untrusted Bytecode Validation
 // ==============================================
 // This module implements a two-phase security model for handling untrusted EVM bytecode:
@@ -136,11 +151,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         
         /// Get the length of the bytecode
         pub inline fn len(self: Self) PcType {
-            // https://ziglang.org/documentation/master/#intCast
-            // @intCast converts between integer types, runtime safety-checked
-            if (self.runtime_code.len > std.math.maxInt(PcType)) {
-                std.debug.panic("Bytecode length {} exceeds max PcType value {}\n", .{ self.runtime_code.len, std.math.maxInt(PcType) });
-            }
+            // Guaranteed by config that runtime_code.len fits in PcType
+            std.debug.assert(self.runtime_code.len <= std.math.maxInt(PcType));
             return @intCast(self.runtime_code.len);
         }
         
@@ -276,208 +288,12 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             }
         }
         
-        /// Scalar opcode validation fallback for platforms without SIMD
-        fn validateOpcodeScalar(code: []const u8) bool {
-            const max_valid_opcode = @intFromEnum(Opcode.SELFDESTRUCT);
-            for (code) |byte| {
-                if (byte > max_valid_opcode) {
-                    return false;
-                }
-            }
-            return true;
-        }
+        // NOTE: Opcode validation occurs during bitmap construction via safe enum conversion.
+        // A separate SIMD pre-pass was removed to avoid redundant and incomplete checks.
 
-        /// SIMD-accelerated opcode validation
-        /// 
-        /// Validates all bytecode represents valid EVM opcodes using vector operations.
-        /// Processes L bytes simultaneously instead of individual scalar comparisons.
-        fn validateOpcodeSimd(code: []const u8, comptime L: comptime_int) bool {
-            // Skip SIMD on WASM targets that don't support it
-            if (comptime (builtin.target.cpu.arch == .wasm32 and !builtin.target.cpu.features.isEnabled(.simd128))) {
-                // Fall back to scalar validation for WASM without SIMD
-                return validateOpcodeScalar(code);
-            }
-            const max_valid_opcode = @intFromEnum(Opcode.SELFDESTRUCT);
-            
-            // Vector containing L copies of maximum valid opcode for parallel comparison
-            const splat_max: @Vector(L, u8) = @splat(max_valid_opcode);
-            
-            var i: usize = 0;
-            // Process bytecode in L-byte chunks using vector operations
-            while (i + L <= code.len) : (i += L) {
-                // Load consecutive bytes into vector for parallel processing
-                var arr: [L]u8 = undefined;
-                inline for (0..L) |k| arr[k] = code[i + k];
-                const v: @Vector(L, u8) = arr;
-                
-                // Compare all L bytes against maximum valid opcode simultaneously
-                // Single vector operation replaces L scalar comparisons
-                const gt_max: @Vector(L, bool) = v > splat_max;
-                const gt_max_arr: [L]bool = gt_max;
-                
-                // Early termination if any byte exceeds valid opcode range
-                inline for (gt_max_arr) |exceeds| {
-                    if (exceeds) {
-                        @branchHint(.unlikely);
-                        return false;
-                    }
-                }
-            }
-            // Check remaining bytes
-            while (i < code.len) : (i += 1) {
-                if (code[i] > max_valid_opcode) {
-                    @branchHint(.unlikely);
-                    return false;
-                }
-            }
-            return true;
-        }
+        // (removed unused setBitmapBitsSimd)
 
-        /// Set bits in bitmap using SIMD operations
-        fn setBitmapBitsSimd(bitmap: []u8, indices: []const usize, comptime L: comptime_int) void {
-            // Group indices by their byte positions for better cache efficiency
-            var i: usize = 0;
-            
-            // Process L indices at a time
-            while (i + L <= indices.len) : (i += L) {
-                // Create vectors for byte indices and bit masks
-                var byte_indices: [L]usize = undefined;
-                var bit_masks: [L]u8 = undefined;
-                
-                inline for (0..L) |j| {
-                    const idx = indices[i + j];
-                    byte_indices[j] = idx >> BITMAP_SHIFT;
-                    bit_masks[j] = @as(u8, 1) << @intCast(idx & BITMAP_MASK);
-                }
-                
-                // Apply all masks (still sequential but with better locality)
-                inline for (0..L) |j| {
-                    if (byte_indices[j] < bitmap.len) {
-                        bitmap[byte_indices[j]] |= bit_masks[j];
-                    }
-                }
-            }
-            
-            // Handle remaining indices
-            while (i < indices.len) : (i += 1) {
-                const idx = indices[i];
-                const byte_idx = idx >> BITMAP_SHIFT;
-                if (byte_idx < bitmap.len) {
-                    bitmap[byte_idx] |= @as(u8, 1) << @intCast(idx & BITMAP_MASK);
-                }
-            }
-        }
-
-        /// Pattern match for PUSH+OP fusion opportunities using SIMD
-        fn findFusionPatternsSimd(self: Self, comptime L: comptime_int) !ArrayList(Stats.Fusion, null) {
-            // Skip SIMD on WASM targets that don't support it
-            if (comptime (builtin.target.cpu.arch == .wasm32 and !builtin.target.cpu.features.isEnabled(.simd128))) {
-                // Return empty list for WASM without SIMD
-                return ArrayList(Stats.Fusion, null).init(self.allocator);
-            }
-            var fusions = ArrayList(Stats.Fusion, null).init(self.allocator);
-            errdefer fusions.deinit();
-            
-            const push1 = @intFromEnum(Opcode.PUSH1);
-            const push32 = @intFromEnum(Opcode.PUSH32);
-            
-            // Fusion targets
-            const fusion_ops = [_]u8{
-                @intFromEnum(Opcode.ADD),
-                @intFromEnum(Opcode.SUB),
-                @intFromEnum(Opcode.MUL),
-                @intFromEnum(Opcode.DIV),
-                @intFromEnum(Opcode.JUMP),
-                @intFromEnum(Opcode.JUMPI),
-            };
-            
-            // SIMD-accelerated opcode fusion detection
-            // 
-            // Identifies PUSH+operation patterns (e.g., PUSH1 0x01 ADD) for optimization.
-            // Uses vector operations to check multiple fusion targets simultaneously.
-            
-            // Vectors containing L copies of each fusion target opcode
-            const splat_add: @Vector(L, u8) = @splat(@intFromEnum(Opcode.ADD));
-            const splat_sub: @Vector(L, u8) = @splat(@intFromEnum(Opcode.SUB));
-            const splat_mul: @Vector(L, u8) = @splat(@intFromEnum(Opcode.MUL));
-            const splat_div: @Vector(L, u8) = @splat(@intFromEnum(Opcode.DIV));
-            const splat_jump: @Vector(L, u8) = @splat(@intFromEnum(Opcode.JUMP));
-            const splat_jumpi: @Vector(L, u8) = @splat(@intFromEnum(Opcode.JUMPI));
-            
-            var i: usize = 0;
-            while (i < self.runtime_code.len) {
-                // Skip positions that aren't instruction starts using bitmap lookup
-                if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
-                    @branchHint(.unlikely);
-                    i += 1;
-                    continue;
-                }
-                
-                const op = self.runtime_code[i];
-                if (op >= push1 and op <= push32) {
-                    // Calculate PUSH instruction size and next opcode position
-                    const push_size = 1 + (op - (push1 - 1));
-                    const next_op_pos = i + push_size;
-                    
-                    // Use SIMD for fusion pattern detection when sufficient bytes available
-                    if (next_op_pos < self.runtime_code.len and next_op_pos + L <= self.runtime_code.len) {
-                        // Load L bytes starting after PUSH data for parallel pattern matching
-                        var arr: [L]u8 = undefined;
-                        inline for (0..L) |k| arr[k] = if (next_op_pos + k < self.runtime_code.len) self.runtime_code[next_op_pos + k] else 0;
-                        const v: @Vector(L, u8) = arr;
-                        
-                        // Compare vector against all fusion patterns simultaneously
-                        // Single pass replaces multiple sequential pattern checks
-                        const eq_add: @Vector(L, bool) = v == splat_add;
-                        const eq_sub: @Vector(L, bool) = v == splat_sub;
-                        const eq_mul: @Vector(L, bool) = v == splat_mul;
-                        const eq_div: @Vector(L, bool) = v == splat_div;
-                        const eq_jump: @Vector(L, bool) = v == splat_jump;
-                        const eq_jumpi: @Vector(L, bool) = v == splat_jumpi;
-                        
-                        // Check if the first position matches any fusion op
-                        const eq_add_arr: [L]bool = eq_add;
-                        const eq_sub_arr: [L]bool = eq_sub;
-                        const eq_mul_arr: [L]bool = eq_mul;
-                        const eq_div_arr: [L]bool = eq_div;
-                        const eq_jump_arr: [L]bool = eq_jump;
-                        const eq_jumpi_arr: [L]bool = eq_jumpi;
-                        
-                        if (eq_add_arr[0] or eq_sub_arr[0] or eq_mul_arr[0] or eq_div_arr[0] or eq_jump_arr[0] or eq_jumpi_arr[0]) {
-                            const target_op = if (eq_add_arr[0]) Opcode.ADD
-                                else if (eq_sub_arr[0]) Opcode.SUB
-                                else if (eq_mul_arr[0]) Opcode.MUL
-                                else if (eq_div_arr[0]) Opcode.DIV
-                                else if (eq_jump_arr[0]) Opcode.JUMP
-                                else Opcode.JUMPI;
-                            
-                            try fusions.append(.{
-                                .pc = i,
-                                .second_opcode = target_op,
-                            });
-                        }
-                    } else if (next_op_pos < self.runtime_code.len) {
-                        // Fallback to scalar check for edge cases
-                        const next_op = self.runtime_code[next_op_pos];
-                        for (fusion_ops) |fusion_op| {
-                            if (next_op == fusion_op) {
-                                const target_op = std.meta.intToEnum(Opcode, fusion_op) catch unreachable;
-                                try fusions.append(.{
-                                    .pc = i,
-                                    .second_opcode = target_op,
-                                });
-                                break;
-                            }
-                        }
-                    }
-                    i = next_op_pos;
-                } else {
-                    i += 1;
-                }
-            }
-            
-            return fusions;
-        }
+        // (removed SIMD fusion detection; scalar detection in getStats)
 
         /// Build bitmaps and validate bytecode
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
@@ -520,12 +336,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             @memset(self.is_op_start, 0);
             @memset(self.is_jumpdest, 0);
             
-            // First pass: validate all opcodes using SIMD if available
-            if (comptime cfg.vector_length > 0) {
-                if (!validateOpcodeSimd(self.runtime_code, cfg.vector_length)) {
-                    return error.InvalidOpcode;
-                }
-            }
+            // First pass SIMD opcode validation removed; safe enum checks below handle validation
             
             var i: PcType = 0;
             while (i < N) {
@@ -668,7 +479,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         
         /// Metadata information extracted from Solidity compiler metadata
         pub const SolidityMetadata = struct {
-            ipfs_hash: [32]u8,
+            // 34-byte IPFS multihash (0x12 0x20 prefix + 32-byte digest)
+            ipfs_hash: [34]u8,
             solc_version: [3]u8, // major, minor, patch
             metadata_length: usize,
         };
@@ -709,10 +521,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             if (metadata[pos] != 0x58 or metadata[pos + 1] != 0x22) return null;
             pos += 2;
             
-            if (pos + 32 > metadata.len) return null;
-            var ipfs_hash: [32]u8 = undefined;
-            @memcpy(&ipfs_hash, metadata[pos..pos + 32]);
-            pos += 32;
+            if (pos + 34 > metadata.len) return null;
+            var ipfs_hash: [34]u8 = undefined;
+            @memcpy(&ipfs_hash, metadata[pos..pos + 34]);
+            pos += 34;
             
             // Second entry should be "solc"
             if (pos + 5 >= metadata.len) return null;
@@ -743,66 +555,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// Parse Solidity metadata from the end of bytecode (for backwards compatibility)
         /// Returns null if no valid metadata is found
         pub fn parseSolidityMetadata(self: Self) ?SolidityMetadata {
-            // Minimum metadata size: 2 (length) + 4 (ipfs) + 32 (hash) + 4 (solc) + 3 (version) = 45 bytes
-            if (self.full_code.len < 45) return null;
-            
-            // Get the last 2 bytes which encode the metadata length
-            const len_offset = self.full_code.len - 2;
-            const metadata_len = (@as(u16, self.full_code[len_offset]) << 8) | self.full_code[len_offset + 1];
-            
-            // Verify metadata length is reasonable
-            if (metadata_len < 43 or metadata_len > self.full_code.len) return null;
-            
-            // Calculate where metadata starts
-            const metadata_start = self.full_code.len - 2 - metadata_len;
-            const metadata = self.full_code[metadata_start..self.full_code.len - 2];
-            
-            // Parse CBOR-encoded metadata
-            // Expected format: 0xa2 (map with 2 entries) 0x64 (4-byte string) "ipfs" 0x58 0x22 (34 bytes) <32-byte hash>
-            //                  0x64 (4-byte string) "solc" <3-byte version>
-            var pos: usize = 0;
-            
-            // Check CBOR map header (0xa2 = map with 2 items)
-            if (pos >= metadata.len or metadata[pos] != 0xa2) return null;
-            pos += 1;
-            
-            // First entry should be "ipfs"
-            if (pos + 5 >= metadata.len) return null;
-            if (metadata[pos] != 0x64) return null; // 4-byte string
-            pos += 1;
-            
-            if (!std.mem.eql(u8, metadata[pos..pos + 4], "ipfs")) return null;
-            pos += 4;
-            
-            // IPFS hash (0x58 = byte string, 0x22 = 34 bytes following)
-            if (pos + 2 >= metadata.len) return null;
-            if (metadata[pos] != 0x58 or metadata[pos + 1] != 0x22) return null;
-            pos += 2;
-            
-            if (pos + 32 > metadata.len) return null;
-            var ipfs_hash: [32]u8 = undefined;
-            @memcpy(&ipfs_hash, metadata[pos..pos + 32]);
-            pos += 32;
-            
-            // Second entry should be "solc"
-            if (pos + 5 >= metadata.len) return null;
-            if (metadata[pos] != 0x64) return null; // 4-byte string
-            pos += 1;
-            
-            if (!std.mem.eql(u8, metadata[pos..pos + 4], "solc")) return null;
-            pos += 4;
-            
-            // Solc version (3 bytes: major, minor, patch)
-            if (pos + 3 > metadata.len) return null;
-            const major = metadata[pos];
-            const minor = metadata[pos + 1];
-            const patch = metadata[pos + 2];
-            
-            return SolidityMetadata{
-                .ipfs_hash = ipfs_hash,
-                .solc_version = .{ major, minor, patch },
-                .metadata_length = metadata_len + 2, // Include the length bytes
-            };
+            return parseSolidityMetadataFromBytes(self.full_code);
         }
         
         /// Get statistics about the bytecode
@@ -819,12 +572,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
             var push_values = ArrayList(Stats.PushValue, null).init(self.allocator);
             defer push_values.deinit();
-            // Use SIMD fusion detection if available
-            var simd_fusions: ?ArrayList(Stats.Fusion, null) = null;
-            if (comptime cfg.vector_length > 0) {
-                simd_fusions = try self.findFusionPatternsSimd(cfg.vector_length);
-            }
-            defer if (simd_fusions) |*f| f.deinit();
+            // Fusion detection: use scalar approach (simple and robust)
             
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
             var fusions = ArrayList(Stats.Fusion, null).init(self.allocator);
@@ -859,8 +607,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         try push_values.append(.{ .pc = i, .value = value });
                         const next_pc = i + 1 + n;
                         
-                        // Skip fusion detection if using SIMD (already done)
-                        if (simd_fusions == null and next_pc < self.runtime_code.len) {
+                        // Detect simple PUSH+OP fusion opportunities
+                        if (next_pc < self.runtime_code.len) {
                             const next_op = self.runtime_code[next_pc];
                             if (next_op == @intFromEnum(Opcode.JUMP) or
                                 next_op == @intFromEnum(Opcode.JUMPI) or
@@ -892,12 +640,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             
             stats.push_values = try self.allocator.dupe(Stats.PushValue, push_values.items);
             
-            // Use SIMD fusions if available, otherwise use scalar detected fusions
-            if (simd_fusions) |simd_f| {
-                stats.potential_fusions = try self.allocator.dupe(Stats.Fusion, simd_f.items);
-            } else {
-                stats.potential_fusions = try self.allocator.dupe(Stats.Fusion, fusions.items);
-            }
+            // Use scalar-detected fusions
+            stats.potential_fusions = try self.allocator.dupe(Stats.Fusion, fusions.items);
             const jumpdests_usize = try self.allocator.alloc(usize, jumpdests.items.len);
             for (jumpdests.items, 0..) |pc, idx| {
                 jumpdests_usize[idx] = @intCast(pc);
@@ -1640,12 +1384,13 @@ test "Bytecode.parseSolidityMetadata" {
         0xa2, // CBOR map with 2 entries
         0x64, 0x69, 0x70, 0x66, 0x73, // "ipfs"
         0x58, 0x22, // 34 bytes following
-        // 32-byte IPFS hash
+        // 34-byte IPFS multihash (0x12 0x20 prefix + 32-byte digest)
         0x12, 0x20, 0x2c, 0x24, 0x7f, 0x39, 0xd6, 0x15, 0xd7, 0xf6, 0x69, 0x42, 0xcd, 0x6e, 0xd5, 0x05,
         0xd8, 0xea, 0x34, 0xfb, 0xfc, 0xbe, 0x16, 0xac, 0x87, 0x5e, 0xd0, 0x8c, 0x4a, 0x9c, 0x22, 0x93,
+        0xaa, 0xbb, // last 2 bytes of digest to reach 34 bytes
         0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
         0x00, 0x08, 0x1e, // version 0.8.30
-        0x00, 0x33, // metadata length: 51 bytes
+        0x00, 0x32, // metadata length: 50 bytes
     };
     
     var bytecode = try BytecodeDefault.init(allocator, &code_with_metadata);
@@ -1667,7 +1412,7 @@ test "Bytecode.parseSolidityMetadata" {
         try std.testing.expectEqual(@as(u8, 30), m.solc_version[2]); // patch (0x1e = 30)
         
         // Check metadata length
-        try std.testing.expectEqual(@as(usize, 53), m.metadata_length); // 51 + 2 length bytes
+        try std.testing.expectEqual(@as(usize, 52), m.metadata_length); // 50 + 2 length bytes
     }
     
     // Test with bytecode that has no metadata
