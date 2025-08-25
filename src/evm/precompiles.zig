@@ -17,68 +17,10 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-// Use fallback modules for now - TODO: Re-enable when module dependency issues resolved
-// const crypto_real = @import("crypto");
-// const build_options_real = @import("build_options");
-const crypto = crypto_fallback;
-const build_options = build_options_fallback;
+// Use the real crypto and build_options modules
+const crypto = @import("crypto");
+const build_options = @import("build_options");
 
-// Temporary fallback crypto module with proper signatures
-const crypto_fallback = struct {
-    pub const secp256k1 = struct {
-        pub fn unaudited_recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !Address {
-            _ = hash; _ = recovery_id; _ = r; _ = s;
-            return error.NotImplemented;
-        }
-    };
-    pub const Ripemd160 = struct {
-        pub const RIPEMD160 = struct {
-            pub fn init() @This() { return .{}; }
-            pub fn update(self: *@This(), data: []const u8) void { _ = self; _ = data; }
-            pub fn final(self: *@This()) [20]u8 { _ = self; return [_]u8{0} ** 20; }
-        };
-    };
-    pub const ModExp = struct {
-        pub fn unaudited_modexp(allocator: std.mem.Allocator, base: []const u8, exp: []const u8, mod: []const u8, output: []u8) !void {
-            _ = allocator; _ = base; _ = exp; _ = mod; _ = output;
-            return error.NotImplemented;
-        }
-    };
-    pub const bn254 = struct {
-        pub const FpMont = struct {
-            pub const ONE = FpMont{};
-            pub fn init(val: u256) FpMont { _ = val; return .{}; }
-        };
-        pub const G1 = struct {
-            x: FpMont = .{},
-            y: FpMont = .{},
-            z: FpMont = .{},
-            
-            pub fn isOnCurve(self: @This()) bool { _ = self; return false; }
-            pub fn add(self: @This(), other: *const @This()) @This() { _ = self; _ = other; return .{}; }
-            pub fn mul(self: @This(), scalar: u256) @This() { _ = self; _ = scalar; return .{}; }
-            pub fn mul_by_int(self: @This(), scalar: u256) @This() { _ = self; _ = scalar; return .{}; }
-            pub fn toAffine(self: @This()) struct { 
-                x: struct { pub fn toStandardRepresentation(s: @This()) u256 { _ = s; return 0; } }, 
-                y: struct { pub fn toStandardRepresentation(s: @This()) u256 { _ = s; return 0; } } 
-            } { 
-                _ = self; 
-                return .{ .x = .{}, .y = .{} }; 
-            }
-        };
-    };
-    pub const Blake2 = struct {
-        pub fn unaudited_blake2f_compress(h: *[8]u64, m: *[16]u64, t: [2]u64, f: bool, rounds: u32) void {
-            _ = h; _ = m; _ = t; _ = f; _ = rounds;
-        }
-    };
-};
-
-const build_options_fallback = struct {
-    pub const no_precompiles = false;
-    pub const no_bn254 = false;
-    pub const enable_tracing = false;
-};
 
 /// Precompile addresses (Ethereum mainnet)
 pub const ECRECOVER_ADDRESS = primitives.Address.from_u256(1);
@@ -626,16 +568,8 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
         };
     }
 
-    // NOTE: Full BN254 pairing implementation needed
-    // Currently placeholder - returns false for non-empty input
-    // See GitHub issue for BN254 pairing implementation
-    // output[31] remains 0 (false)
-
-    return PrecompileOutput{
-        .output = output,
-        .gas_used = required_gas,
-        .success = true,
-    };
+    // BN254 pairing not yet implemented - fail hard
+    return error.NotImplemented;
 }
 
 /// 0x09: blake2f - BLAKE2F compression function
@@ -715,6 +649,7 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
 /// Input: 192 bytes (versioned_hash + z + y + commitment + proof)
 /// Output: 64 bytes (FIELD_ELEMENTS_PER_BLOB + BLS_MODULUS)
 pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
+    _ = allocator;
     const required_gas = GasCosts.POINT_EVALUATION;
     if (gas_limit < required_gas) {
         return PrecompileOutput{
@@ -732,27 +667,9 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
         };
     }
 
-    // For now, return a placeholder implementation
-    // Full KZG implementation would require c_kzg library integration
-    const output = try allocator.alloc(u8, 64);
-    @memset(output, 0);
-    
-    // Set FIELD_ELEMENTS_PER_BLOB (4096) in first 32 bytes
-    output[28] = 0x10; // 4096 in big-endian
-    
-    // Set BLS_MODULUS in last 32 bytes  
-    // 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-    const bls_modulus = [32]u8{
-        0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48, 0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
-        0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
-    };
-    @memcpy(output[32..64], &bls_modulus);
-
-    return PrecompileOutput{
-        .output = output,
-        .gas_used = required_gas,
-        .success = true,
-    };
+    // KZG point evaluation not yet implemented - fail hard
+    // Requires c_kzg_4844 library integration
+    return error.NotImplemented;
 }
 
 // Utility functions for byte manipulation
