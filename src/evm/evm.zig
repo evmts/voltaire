@@ -431,13 +431,15 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // DELEGATECALL preserves the original caller and value from parent context
             // This is the key difference from CALL - the called code executes with caller's context
+            // Get the current call's value to preserve it
+            const current_value = if (self.depth > 0) self.call_stack[self.depth - 1].value else 0;
             const result = self.execute_frame(
                 code,
                 params.input,
                 params.gas,
                 params.to,
                 params.caller, // Preserve original caller
-                0, // Value is preserved from parent context, not passed
+                current_value, // Preserve value from parent context
                 false, // is_static
                 snapshot_id,
             ) catch {
@@ -1058,15 +1060,14 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get current caller address
         pub fn get_caller(self: *Self) Address {
-            // For now, return origin. This should be updated to track current caller in call stack
-            return self.origin;
+            if (self.depth == 0) return self.origin;
+            return self.call_stack[self.depth - 1].caller;
         }
 
         /// Get current call value
         pub fn get_call_value(self: *Self) u256 {
-            _ = self;
-            // For now, return 0. This should be updated to track current call value in call stack
-            return 0;
+            if (self.depth == 0) return 0;
+            return self.call_stack[self.depth - 1].value;
         }
 
         /// Get storage value
@@ -5286,4 +5287,53 @@ test "Arena allocator - memory efficiency with nested calls" {
     // Arena capacity should be retained
     const final_capacity2 = evm.internal_arena.queryCapacity();
     try testing.expectEqual(final_capacity, final_capacity2);
+}
+
+test "Call context tracking - get_caller and get_call_value" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const origin_addr = Address.fromHex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const contract_a = Address.fromHex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const contract_b = Address.fromHex("0x3333333333333333333333333333333333333333") catch unreachable;
+    
+    var evm = try DefaultEvm.init(
+        testing.allocator,
+        db_interface,
+        .{},
+        .{},
+        .LATEST,
+        100,
+        origin_addr,
+        null,
+    );
+    defer evm.deinit();
+    
+    // Test depth 0 - should return origin
+    try testing.expectEqual(@as(u11, 0), evm.depth);
+    try testing.expectEqual(origin_addr, evm.get_caller());
+    try testing.expectEqual(@as(u256, 0), evm.get_call_value());
+    
+    // Simulate depth 1 call from origin to contract_a with value 123
+    evm.depth = 1;
+    evm.call_stack[0] = .{
+        .caller = origin_addr,
+        .value = 123,
+    };
+    
+    try testing.expectEqual(origin_addr, evm.get_caller());
+    try testing.expectEqual(@as(u256, 123), evm.get_call_value());
+    
+    // Simulate depth 2 call from contract_a to contract_b with value 456
+    evm.depth = 2;
+    evm.call_stack[1] = .{
+        .caller = contract_a,
+        .value = 456,
+    };
+    
+    try testing.expectEqual(contract_a, evm.get_caller());
+    try testing.expectEqual(@as(u256, 456), evm.get_call_value());
 }
