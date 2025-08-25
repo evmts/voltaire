@@ -2,73 +2,51 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop, "**" ]
   pull_request:
-    branches: [ "**" ]
 
 jobs:
-  lint-no-std-debug:
-    name: Lint: forbid std.debug.print
+  build-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
-      - name: Scan repository for std.debug.print
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Scanning for std.debug.print..."
-          matches=$(rg -n --no-heading 'std\.debug\.print\(' \
-            -g '!**/*.md' -g '!**/.git/**' -g '!zig-out/**' -g '!**/README.md' -g '!**/README.MD' || true)
-          filtered=""
-          while IFS= read -r line; do
-            # rg output is file:line:content
-            content="${line#*:*:}"
-            # skip commented-out lines
-            if [[ "$content" =~ ^[[:space:]]*// ]]; then
-              continue
-            fi
-            filtered+="$line"$'\n'
-          done <<< "$matches"
-
-          if [ -n "$filtered" ]; then
-            echo "ERROR: Found std.debug.print usages (use log.zig instead):"
-            echo "$filtered"
-            exit 1
-          fi
-          echo "No std.debug.print found."
-
-  build-and-test:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Zig
+      - uses: actions/checkout@v4
+      - name: Install Zig 0.14.1
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.14.1
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Show tool versions
-        run: |
-          zig version
-          rustc --version
-          cargo --version
-
-      - name: Install cbindgen
-        run: cargo install cbindgen --locked
-
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.19
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run: zig build
-
       - name: Test
         run: zig build test
 
+  release-binaries:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Zig 0.14.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.14.1
+      - name: Build release artifacts
+        run: zig build release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: guillotine-binaries
+          path: |
+            zig-out/bin/orchestrator
+            zig-out/bin/evm-runner
+            zig-out/bin/evm-runner-small

@@ -60,7 +60,7 @@ bench/official/
    cd evms/ethereumjs && bun install
    
    # Geth
-   cd evms/geth && go build -o runner runner.go
+   cd evms/geth && go build -o geth-runner runner.go
    
    # evmone
    cd evms/evmone && mkdir build && cd build && cmake .. && make
@@ -74,7 +74,7 @@ Run benchmarks for a specific EVM implementation:
 
 ```bash
 # From project root
-zig-out/bin/bench-orchestrator --evm zig --num-runs 50
+zig-out/bin/orchestrator --evm zig --num-runs 50
 ```
 
 ### Compare All EVMs
@@ -83,7 +83,7 @@ Compare performance across all available implementations:
 
 ```bash
 # From project root
-zig-out/bin/bench-orchestrator --compare --export markdown
+zig-out/bin/orchestrator --compare --export markdown
 ```
 
 This generates a comprehensive comparison in `bench/official/results.md`.
@@ -94,7 +94,7 @@ You can also run specific test cases directly:
 
 ```bash
 hyperfine --runs 10 --warmup 3 \
-  "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+  "zig-out/bin/evm-runner --contract-code-path bench/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
 ```
 
 ## Test Cases
@@ -152,11 +152,26 @@ To add a new benchmark test case:
 
 To modify the benchmark system:
 
-- **Orchestrator logic**: Edit `src/Orchestrator.zig`
-- **CLI interface**: Edit `src/main.zig`
+- **Orchestrator logic**: Edit `bench/src/Orchestrator.zig`
+- **CLI interface**: Edit `bench/src/main.zig`
 - **EVM runners**: Edit files in `evms/*/`
 
 Remember to rebuild after changes:
 ```bash
-zig build build-bench-orchestrator
+zig build build-orchestrator
+
+### JavaScript Runtime
+
+EthereumJS can be run on Bun (default) or Node. Choose via orchestrator flag or environment variable:
+
+```bash
+# Node runtime
+zig-out/bin/orchestrator --evm ethereumjs --js-runtime node --num-runs 1 --internal-runs 1
+
+# Bun runtime (default)
+zig-out/bin/orchestrator --evm ethereumjs --num-runs 1 --internal-runs 1
+
+# With perf-fastest.sh
+JS_RUNTIME=node ./scripts/perf-fastest.sh
+```
 ```

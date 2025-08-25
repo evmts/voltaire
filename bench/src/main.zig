@@ -9,6 +9,7 @@ pub fn main() !void {
 
     const params = comptime clap.parseParamsComptime(
         \\-h, --help                 Display this help and exit.
+        \\-V, --version              Show version information and exit
         \\-e, --evm <NAME>           EVM implementation to benchmark (default: zig)
         \\-n, --num-runs <NUM>       Number of runs per test case (default: 10)
         \\--js-runs <NUM>            Number of runs for JavaScript/EthereumJS (defaults to --num-runs value)
@@ -51,6 +52,11 @@ pub fn main() !void {
 
     if (res.args.help != 0) {
         try printHelp();
+        return;
+    }
+    if (res.args.version != 0) {
+        const stdout = std.io.getStdOut().writer();
+        try stdout.print("Guillotine Orchestrator {s}\n", .{version()});
         return;
     }
 
@@ -496,4 +502,7 @@ test "TimeUnit enum has correct values" {
     try std.testing.expect(micro != milli);
     try std.testing.expect(milli != secs);
     try std.testing.expect(micro != secs);
+}
+fn version() []const u8 {
+    return "0.1.0"; // TODO: wire from build options
 }
