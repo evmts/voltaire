@@ -129,7 +129,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .database = database,
                 .logs = frame_logs,
                 .output_data = output_data,
-                .host = host orelse DefaultHost.init(),
+                .host = host,
             };
         }
         /// Clean up all frame resources.
@@ -920,7 +920,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Load value from transient storage
-            const value = db.get_transient_storage(address, slot) catch |err| switch (err) {
+            const value = db.get_transient_storage(addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             try self.stack.push(value);
@@ -944,7 +944,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Store value to transient storage
-            db.set_transient_storage(address, slot, value) catch |err| switch (err) {
+            db.set_transient_storage(addr, slot, value) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
         }
@@ -962,7 +962,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn balance(self: *Self) Error!void {
             const host = self.host;
             const address_u256 = try self.stack.pop();
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             
             // Access the address for warm/cold accounting (EIP-2929)
             // This returns the gas cost but the frame interpreter handles gas consumption
@@ -981,8 +981,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [origin]
         pub fn origin(self: *Self) Error!void {
             const host = self.host;
-            const origin = host.get_tx_origin();
-            const origin_u256 = to_u256(origin);
+            const tx_origin = host.get_tx_origin();
+            const origin_u256 = to_u256(tx_origin);
             try self.stack.push(origin_u256);
         }
         /// CALLER opcode (0x33) - Get caller address
@@ -990,8 +990,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [caller]
         pub fn caller(self: *Self) Error!void {
             const host = self.host;
-            const caller = host.get_caller();
-            const caller_u256 = to_u256(caller);
+            const caller_addr = host.get_caller();
+            const caller_u256 = to_u256(caller_addr);
             try self.stack.push(caller_u256);
         }
         /// CALLVALUE opcode (0x34) - Get deposited value by instruction/transaction
@@ -1127,7 +1127,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn extcodesize(self: *Self) Error!void {
             const host = self.host;
             const address_u256 = try self.stack.pop();
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             const code = host.get_code(address);
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
             try self.stack.push(code_len);
@@ -1148,7 +1148,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             {
                 return Error.OutOfBounds;
             }
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             const dest_offset_usize = @as(usize, @intCast(dest_offset));
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
@@ -1223,7 +1223,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn extcodehash(self: *Self) Error!void {
             const host = self.host;
             const address_u256 = try self.stack.pop();
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             if (!host.account_exists(address)) {
                 // Non-existent account returns 0 per EIP-1052
                 try self.stack.push(0);
@@ -1262,7 +1262,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *Self) Error!void {
             const host = self.host;
-            const balance = host.get_balance(self.contract_address);
+            const bal = host.get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
         }
@@ -1714,7 +1714,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
             // Convert address from u256
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
                 try self.stack.push(0);
@@ -1809,7 +1809,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
             // Convert address from u256
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
                 try self.stack.push(0);
@@ -1904,7 +1904,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
             // Convert address from u256
-            const address = from_u256(address_u256);
+            const addr = from_u256(address_u256);
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
                 try self.stack.push(0);
@@ -2215,7 +2215,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             return Error.STOP;
         }
         
-        /// SIMD-accelerated bulk DUP operations for sequential duplicate operations
         fn dup_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
             if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
@@ -5346,3 +5345,4 @@ test "Frame bytecode edge cases - bytecode with only PUSH data" {
     defer frame.deinit(allocator);
     
     try std.testing.expectEqual(@as(usize, 33), frame.bytecode.len);
+}
