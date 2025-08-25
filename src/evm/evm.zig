@@ -15,7 +15,6 @@
 //! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
 //! EVM passes itself as a host to the Frame so Frame can get data from EVM that is not on frame and execute inner calls
 const std = @import("std");
-const testing = std.testing;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
@@ -2726,8 +2725,6 @@ test "Precompiles - SHA256 precompile (0x02)" {
 }
 
 test "Precompiles - disabled configuration" {
-    const testing = std.testing;
-
     // Create EVM with precompiles disabled
     const NoPrecompileEvm = Evm(.{ .enable_precompiles = false });
 
@@ -3166,8 +3163,6 @@ test "Security - bounds checking and edge cases" {
 }
 
 test "EVM with minimal planner strategy" {
-    const testing = std.testing;
-
     // Define EVM config with minimal planner strategy
     const MinimalEvmConfig = EvmConfig{
         .planner_strategy = .minimal,
@@ -3221,8 +3216,6 @@ test "EVM with minimal planner strategy" {
 }
 
 test "EVM with advanced planner strategy" {
-    const testing = std.testing;
-
     // Define EVM config with advanced planner strategy
     const AdvancedEvmConfig = EvmConfig{
         .planner_strategy = .advanced,
