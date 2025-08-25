@@ -89,8 +89,8 @@ const MockHostWithStaticContext = struct {
     
     pub fn emit_log(self: *MockHostWithStaticContext, contract_address: Address, topics: []const u256, data: []const u8) void {
         // Store the log for verification
-        var topics_copy = self.allocator.alloc(u256, topics.len) catch return;
-        var data_copy = self.allocator.alloc(u8, data.len) catch return;
+        const topics_copy = self.allocator.alloc(u256, topics.len) catch return;
+        const data_copy = self.allocator.alloc(u8, data.len) catch return;
         
         @memcpy(topics_copy, topics);
         @memcpy(data_copy, data);

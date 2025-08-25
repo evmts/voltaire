@@ -103,7 +103,10 @@ pub fn main() !void {
         const Interpreter = evm.createFrameInterpreter(.{
             .TracerType = evm.DebuggingTracer,
         });
-        var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {}, null);
+        // Create a default host for debugging
+        var default_host = @import("evm").DefaultHost{};
+        const host = @import("evm").Host.init(&default_host);
+        var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {}, host);
         defer interpreter.deinit(allocator);
 
         const start_time = std.time.nanoTimestamp();

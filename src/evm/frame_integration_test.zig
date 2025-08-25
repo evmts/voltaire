@@ -83,7 +83,7 @@ test "Frame CALL operation - real integration test" {
     // Get the EVM's host interface
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = caller_address;
@@ -143,7 +143,7 @@ test "Frame CALL with value transfer - real integration test" {
     const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = caller_address;
@@ -212,7 +212,7 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     const bytecode = [_]u8{ 0xF4, 0x00 }; // DELEGATECALL STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = caller_address;
@@ -282,7 +282,7 @@ test "Frame STATICCALL prevents state changes - real integration test" {
     const bytecode = [_]u8{ 0xFA, 0x00 }; // STATICCALL STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host, false);
+    var frame = try F.init(allocator, &bytecode, 100000, evm.database, host);
     defer frame.deinit(allocator);
     
     // Setup stack for STATICCALL: [gas, address, input_offset, input_size, output_offset, output_size]
@@ -349,7 +349,7 @@ test "Frame CREATE operation - real integration test" {
     const bytecode = [_]u8{ 0xF0, 0x00 }; // CREATE STOP
     const host = evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 200000, evm.database, host, false);
+    var frame = try F.init(allocator, &bytecode, 200000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = creator_address;

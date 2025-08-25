@@ -88,7 +88,7 @@ test "CREATE edge case - maximum init code size (48KB)" {
     try bytecode.append(0x00);
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 15_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 15_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     // Pre-store the init code in memory
@@ -164,7 +164,7 @@ test "CREATE edge case - init code size exceeds 48KB" {
     try bytecode.append(0xF0);
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     interpreter.frame.host = evm_instance.to_host();
@@ -200,7 +200,7 @@ test "CREATE edge case - insufficient gas for init code" {
     const insufficient_gas = 100000;
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, insufficient_gas, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, insufficient_gas, db_interface, null);
     defer interpreter.deinit(allocator);
     
     // Use real EVM instance for proper gas handling
@@ -272,7 +272,7 @@ test "CREATE edge case - memory expansion overflow" {
     try bytecode.append(0xF0);
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     // Use real EVM instance for proper overflow handling
@@ -361,7 +361,7 @@ test "CREATE edge case - all gas consumed by subcall" {
     try bytecode.append(0x00); // STOP
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 1_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 1_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     // Use real EVM instance for realistic behavior
@@ -456,7 +456,7 @@ test "CREATE edge case - nested CREATE depth limit" {
     try bytecode.append(0x00); // STOP
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
@@ -567,7 +567,7 @@ test "CREATE real scenario - deploy ERC20 token contract" {
     try bytecode.append(0x00); // STOP
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
@@ -678,7 +678,7 @@ test "CREATE real scenario - factory pattern deployment" {
     try bytecode.append(0x00); // STOP
     
     const FrameInterpreterType = frame_interpreter.FrameInterpreter(.{ .has_database = true });
-    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null, false);
+    var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface, null);
     defer interpreter.deinit(allocator);
     
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(

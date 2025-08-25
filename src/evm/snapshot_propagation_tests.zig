@@ -158,7 +158,7 @@ test "Nested call with inner revert - outer changes preserved, inner reverted" {
     const host = evm.to_host();
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &STORE_AND_CALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &STORE_AND_CALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = outer_address;
@@ -244,7 +244,7 @@ test "Nested call with inner success - both changes preserved" {
     const host = evm.to_host();
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &STORE_AND_CALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &STORE_AND_CALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = outer_address;
@@ -335,7 +335,7 @@ test "Triple nested calls with middle revert - correct snapshot boundaries" {
     const host = evm.to_host();
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &STORE_AND_CALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &STORE_AND_CALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = level1_address;
@@ -452,7 +452,7 @@ test "Storage changes in same transaction with multiple snapshots" {
     const host = evm.to_host();
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &test_bytecode, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &test_bytecode, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = contract_address;

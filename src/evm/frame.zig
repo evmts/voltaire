@@ -877,7 +877,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 else => return Error.AllocationError,
             };
             // Load value from storage
-            const value = self.host.get_storage(contract_addr, slot) catch return Error.AllocationError;
+            const value = self.host.get_storage(contract_addr, slot);
             try self.stack.push(value);
         }
         pub fn sstore(self: *Self) Error!void {
@@ -1153,7 +1153,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the size of the return data from the last call.
         /// Stack: [] → [size]
         pub fn returndatasize(self: *Self) Error!void {
-            const return_data = if (self.host) |host| host.get_return_data() else &[_]u8{};
+            const return_data = self.host.get_return_data();
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             try self.stack.push(return_data_len);
         }
@@ -1175,7 +1175,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
             if (length_usize == 0) return;
-            const return_data = if (self.host) |host| host.get_return_data() else &[_]u8{};
+            const return_data = self.host.get_return_data();
             // Check if we're reading beyond the return data
             if (offset_usize > return_data.len or
                 (offset_usize + length_usize) > return_data.len)
@@ -1312,7 +1312,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns the prevrandao value from the beacon chain.
         /// Stack: [] → [prevrandao]
         pub fn prevrandao(self: *Self) Error!void {
-            return self.op_difficulty();
+            return self.difficulty();
         }
         /// GASLIMIT opcode (0x45) - Get current block gas limit
         /// Pushes the gas limit of the current block.
@@ -4479,7 +4479,7 @@ test "Frame LOG0 operation" {
     try frame.stack.push(@as(u256, data_offset)); // offset
     try frame.stack.push(test_data.len); // size
     // Execute LOG0
-    try frame.log0(allocator);
+    try frame.log0();
     // Verify log was created
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
     const log_entry = frame.logs.items[0];
@@ -4509,7 +4509,7 @@ test "Frame LOG1 operation with topic" {
     try frame.stack.push(@as(u256, data_offset)); // offset
     try frame.stack.push(test_data.len); // size
     // Execute LOG1
-    try frame.log1(allocator);
+    try frame.log1();
     // Verify log was created
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
     const log_entry = frame.logs.items[0];
@@ -4599,7 +4599,7 @@ test "Frame LOG gas consumption" {
     try frame.stack.push(@as(u256, data_offset)); // offset
     try frame.stack.push(test_data.len); // size
     // Execute LOG0
-    try frame.log0(allocator);
+    try frame.log0();
     // Verify gas was consumed for data bytes
     const expected_gas_consumed = @as(i32, @intCast(GasConstants.LogDataGas * test_data.len));
     try std.testing.expectEqual(initial_gas - expected_gas_consumed, @max(frame.gas_remaining, 0));
@@ -5055,7 +5055,7 @@ test "Frame log operations edge cases - maximum topics and static context" {
     // Test LOG0 with large data
     try frame.stack.push(0); // offset
     try frame.stack.push(@as(u256, max_data_size)); // size
-    try frame.log0(allocator);
+    try frame.log0();
     // Verify log was created with correct size
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
     const large_log = frame.logs.items[0];

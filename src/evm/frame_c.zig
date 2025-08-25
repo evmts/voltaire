@@ -2,7 +2,7 @@ const std = @import("std");
 const evm = @import("evm");
 const frame_mod = evm;
 const tracer_mod = evm;
-const Host = @import("host.zig").Host;
+const Host = evm.Host;
 const Address = @import("primitives").Address.Address;
 
 // ============================================================================
@@ -71,7 +71,7 @@ const CApiHost = struct {
         return [_]u8{0} ** 32;
     }
     
-    pub fn get_account(self: *Self, address: Address) error{AccountNotFound}!@import("database_interface.zig").Account {
+    pub fn get_account(self: *Self, address: Address) error{AccountNotFound}!evm.Account {
         _ = self;
         _ = address;
         return error.AccountNotFound;
@@ -92,14 +92,20 @@ const CApiHost = struct {
         return 0;
     }
     
-    pub fn get_chain_id(self: *Self) u64 {
+    pub fn get_chain_id(self: *Self) u16 {
         _ = self;
         return 1;
     }
     
-    pub fn get_block_info(self: *Self) @import("block_info.zig").DefaultBlockInfo {
+    pub fn get_block_hash(self: *Self, block_number: u64) ?[32]u8 {
         _ = self;
-        return @import("block_info.zig").DefaultBlockInfo.init();
+        _ = block_number;
+        return null;
+    }
+    
+    pub fn get_block_info(self: *Self) evm.BlockInfo {
+        _ = self;
+        return evm.BlockInfo.init();
     }
     
     pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
@@ -131,7 +137,7 @@ const CApiHost = struct {
         return 0;
     }
     
-    pub fn get_storage(self: *Self, address: Address, slot: u256) !u256 {
+    pub fn get_storage(self: *Self, address: Address, slot: u256) u256 {
         _ = self;
         _ = address;
         _ = slot;
@@ -186,19 +192,77 @@ const CApiHost = struct {
         return false;
     }
     
-    pub fn create_snapshot(self: *Self) u64 {
+    pub fn create_snapshot(self: *Self) u32 {
         _ = self;
         return 0;
     }
     
-    pub fn inner_call(self: *Self, params: @import("call_params.zig").CallParams) !@import("call_result.zig").CallResult {
+    pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
+        _ = self;
+        _ = contract_address;
+        _ = topics;
+        _ = data;
+        // No-op for C API
+    }
+    
+    pub fn register_created_contract(self: *Self, address: Address) void {
+        _ = self;
+        _ = address;
+        // No-op for C API
+    }
+    
+    pub fn was_created_in_tx(self: *Self, address: Address) bool {
+        _ = self;
+        _ = address;
+        return false;
+    }
+    
+    pub fn revert_to_snapshot(self: *Self, snapshot_id: u16) void {
+        _ = self;
+        _ = snapshot_id;
+        // No-op for C API
+    }
+    
+    pub fn get_depth(self: *Self) u11 {
+        _ = self;
+        return 0;
+    }
+    
+    pub fn record_storage_change(self: *Self, address: Address, slot: u256, original_value: u256) void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = original_value;
+        // No-op for C API
+    }
+    
+    pub fn get_original_storage(self: *Self, address: Address, slot: u256) u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    
+    pub fn is_hardfork_at_least(self: *Self, target: evm.Hardfork) bool {
+        _ = self;
+        _ = target;
+        return true;
+    }
+    
+    pub fn get_hardfork(self: *Self) evm.Hardfork {
+        _ = self;
+        return evm.Hardfork.SHANGHAI;
+    }
+    
+    pub fn inner_call(self: *Self, params: evm.CallParams) !evm.CallResult {
         _ = self;
         _ = params;
         // Return a failure result for C API
-        return @import("call_result.zig").CallResult{
+        return evm.CallResult{
             .success = false,
             .output = &.{},
-            .gas_used = 0,
+            .gas_left = 0,
+            .logs = &.{},
         };
     }
 };
@@ -207,7 +271,7 @@ const CApiHost = struct {
 var c_api_host_instance = CApiHost{};
 
 // Helper function to create host for C API
-fn createCApiHost() Host {
+pub fn createCApiHost() Host {
     return Host.init(&c_api_host_instance);
 }
 
@@ -332,7 +396,7 @@ pub export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     handle.interpreter.frame.deinit(allocator);
 
     // Reinitialize interpreter with same bytecode
-    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}, null) catch |err| {
+    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(new_gas), {}, createCApiHost()) catch |err| {
         return zigErrorToCError(err);
     };
 

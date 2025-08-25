@@ -212,7 +212,7 @@ test "All precompiles are recognized correctly" {
     try testing.expect(precompiles.is_precompile(precompiles.POINT_EVALUATION_ADDRESS));
     
     // Test non-precompile addresses
-    try testing.expect(!precompiles.is_precompile(Address.ZERO));
+    try testing.expect(!precompiles.is_precompile(primitives.ZERO_ADDRESS));
     try testing.expect(!precompiles.is_precompile(primitives.Address.from_u256(11)));
 }
 

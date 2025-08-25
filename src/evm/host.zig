@@ -686,11 +686,12 @@ test "CALL golden test - msg.sender and msg.value correctness" {
     
     // Execute transaction from origin -> nested_call -> sender_value
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
+    const frame_mod = @import("frame.zig");
+    const Frame = frame_mod.Frame;
     const F = Frame(.{ .has_database = true });
     
     // Create frame simulating call from origin to nested_call contract
-    var frame = try F.init(allocator, &NESTED_CALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &NESTED_CALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = nested_call_address;
@@ -760,11 +761,12 @@ test "DELEGATECALL golden test - msg.sender and msg.value preservation" {
     
     // Execute transaction
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
+    const frame_mod = @import("frame.zig");
+    const Frame = frame_mod.Frame;
     const F = Frame(.{ .has_database = true });
     
     // Create frame simulating call from origin to nested_delegatecall contract
-    var frame = try F.init(allocator, &NESTED_DELEGATECALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &NESTED_DELEGATECALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = nested_delegatecall_address;
@@ -837,11 +839,12 @@ test "CALLCODE golden test - msg.sender changes but msg.value is passed" {
     
     // Execute transaction
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
+    const frame_mod = @import("frame.zig");
+    const Frame = frame_mod.Frame;
     const F = Frame(.{ .has_database = true });
     
     // Create frame simulating call from origin to nested_callcode contract
-    var frame = try F.init(allocator, &NESTED_CALLCODE_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &NESTED_CALLCODE_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = nested_callcode_address;
@@ -922,10 +925,11 @@ test "Nested CALL chain - msg.sender and msg.value correctness" {
     
     // Execute transaction
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
+    const frame_mod = @import("frame.zig");
+    const Frame = frame_mod.Frame;
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &NESTED_CALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &NESTED_CALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = level1_address;
@@ -991,10 +995,11 @@ test "DELEGATECALL chain preserves original context through multiple levels" {
     
     // Execute
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
+    const frame_mod = @import("frame.zig");
+    const Frame = frame_mod.Frame;
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &NESTED_DELEGATECALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &NESTED_DELEGATECALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     frame.contract_address = middle_address;
@@ -1061,10 +1066,11 @@ test "Mixed CALL and DELEGATECALL - context changes correctly" {
     try calldata.appendSlice(&contract2_address);
     
     const host = evm.to_host();
-    const Frame = @import("frame.zig").Frame;
+    const frame_mod = @import("frame.zig");
+    const Frame = frame_mod.Frame;
     const F = Frame(.{ .has_database = true });
     
-    var frame = try F.init(allocator, &NESTED_DELEGATECALL_CONTRACT, 1000000, evm.database, host, false);
+    var frame = try F.init(allocator, &NESTED_DELEGATECALL_CONTRACT, 1000000, evm.database, host);
     defer frame.deinit(allocator);
     
     // This frame represents the state after CALL from origin to contract1
