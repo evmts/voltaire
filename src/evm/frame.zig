@@ -308,23 +308,23 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
         /// Pretty print the frame state for debugging.
         pub fn pretty_print(self: *const Self) void {
-            log.warn("\n=== Frame State ===\n", .{});
-            log.warn("Gas Remaining: {}\n", .{@max(self.gas_remaining, 0)});
-            log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
+            log.debug("\n=== Frame State ===\n", .{});
+            log.debug("Gas Remaining: {}\n", .{@max(self.gas_remaining, 0)});
+            log.debug("Bytecode Length: {}\n", .{self.bytecode.len});
             // Show bytecode (first 50 bytes or less)
             const show_bytes = @min(self.bytecode.len, 50);
-            log.warn("Bytecode (first {} bytes): ", .{show_bytes});
+            log.debug("Bytecode (first {} bytes): ", .{show_bytes});
             for (self.bytecode[0..show_bytes]) |b| {
-                log.warn("{x:0>2} ", .{b});
+                log.debug("{x:0>2} ", .{b});
             }
             if (self.bytecode.len > 50) {
-                log.warn("... ({} more bytes)", .{self.bytecode.len - 50});
+                log.debug("... ({} more bytes)", .{self.bytecode.len - 50});
             }
-            log.warn("\n", .{});
+            log.debug("\n", .{});
             // Stack state
-            log.warn("\nStack (size={}, capacity={}):\n", .{ self.stack.size(), Stack.stack_capacity });
+            log.debug("\nStack (size={}, capacity={}):\n", .{ self.stack.size(), Stack.stack_capacity });
             if (self.stack.size() == 0) {
-                log.warn("  [empty]\n", .{});
+                log.debug("  [empty]\n", .{});
             } else {
                 // Show top 10 stack items
                 const show_items = @min(self.stack.size(), 10);
@@ -334,84 +334,84 @@ pub fn Frame(comptime config: FrameConfig) type {
                     const value = stack_slice[i]; // In downward stack, [0] is top
                     const idx = i;
                     if (i == 0) {
-                        log.warn("  [{d:3}] 0x{x:0>64} <- TOP\n", .{ idx, value });
+                        log.debug("  [{d:3}] 0x{x:0>64} <- TOP\n", .{ idx, value });
                     } else {
-                        log.warn("  [{d:3}] 0x{x:0>64}\n", .{ idx, value });
+                        log.debug("  [{d:3}] 0x{x:0>64}\n", .{ idx, value });
                     }
                 }
                 if (self.stack.size() > 10) {
-                    log.warn("  ... ({} more items)\n", .{self.stack.size() - 10});
+                    log.debug("  ... ({} more items)\n", .{self.stack.size() - 10});
                 }
             }
             // Memory state
-            log.warn("\nMemory (size={}):\n", .{self.memory.size()});
+            log.debug("\nMemory (size={}):\n", .{self.memory.size()});
             if (self.memory.size() == 0) {
-                log.warn("  [empty]\n", .{});
+                log.debug("  [empty]\n", .{});
             } else {
                 // Show first 256 bytes of memory in hex dump format
                 const show_mem = @min(self.memory.size(), 256);
                 var offset: usize = 0;
                 while (offset < show_mem) : (offset += 32) {
                     const end = @min(offset + 32, show_mem);
-                    log.warn("  0x{x:0>4}: ", .{offset});
+                    log.debug("  0x{x:0>4}: ", .{offset});
                     // Hex bytes
                     var i = offset;
                     while (i < end) : (i += 1) {
                         const b = self.memory.get_byte(i) catch 0;
-                        log.warn("{x:0>2} ", .{b});
+                        log.debug("{x:0>2} ", .{b});
                     }
                     // Pad if less than 32 bytes
                     if (end - offset < 32) {
                         var pad = end - offset;
                         while (pad < 32) : (pad += 1) {
-                            log.warn("   ", .{});
+                            log.debug("   ", .{});
                         }
                     }
                     // ASCII representation
-                    log.warn(" |", .{});
+                    log.debug(" |", .{});
                     i = offset;
                     while (i < end) : (i += 1) {
                         const b = self.memory.get_byte(i) catch 0;
                         if (b >= 32 and b <= 126) {
-                            log.warn("{c}", .{b});
+                            log.debug("{c}", .{b});
                         } else {
-                            log.warn(".", .{});
+                            log.debug(".", .{});
                         }
                     }
-                    log.warn("|\n", .{});
+                    log.debug("|\n", .{});
                 }
                 if (self.memory.size() > 256) {
-                    log.warn("  ... ({} more bytes)\n", .{self.memory.size() - 256});
+                    log.debug("  ... ({} more bytes)\n", .{self.memory.size() - 256});
                 }
             }
             // Log state
-            log.warn("\nLogs (count={}):\n", .{self.logs.items.len});
+            log.debug("\nLogs (count={}):\n", .{self.logs.items.len});
             if (self.logs.items.len == 0) {
-                log.warn("  [empty]\n", .{});
+                log.debug("  [empty]\n", .{});
             } else {
                 for (self.logs.items, 0..) |log_item, i| {
-                    log.warn("  Log[{}]:\n", .{i});
-                    log.warn("    Address: 0x", .{});
+                    log.debug("  Log[{}]:\n", .{i});
+                    log.debug("    Address: 0x", .{});
                     for (log_item.address) |b| {
-                        log.warn("{x:0>2}", .{b});
+                        log.debug("{x:0>2}", .{b});
                     }
-                    log.warn("\n", .{});
-                    log.warn("    Topics ({}):\n", .{log_item.topics.len});
+                    log.debug("\n", .{});
+                    log.debug("    Topics ({}):\n", .{log_item.topics.len});
                     for (log_item.topics, 0..) |topic, j| {
-                        log.warn("      [{}] 0x{x:0>64}\n", .{ j, topic });
+                        log.debug("      [{}] 0x{x:0>64}\n", .{ j, topic });
                     }
-                    log.warn("    Data ({} bytes): 0x", .{log_item.data.len});
+                    log.debug("    Data ({} bytes): 0x", .{log_item.data.len});
                     const show_data = @min(log_item.data.len, 64);
                     for (log_item.data[0..show_data]) |b| {
-                        log.warn("{x:0>2}", .{b});
+                        log.debug("{x:0>2}", .{b});
                     }
                     if (log_item.data.len > 64) {
-                        log.warn("... ({} more bytes)", .{log_item.data.len - 64});
+                        log.debug("... ({} more bytes)", .{log_item.data.len - 64});
                     }
-                    log.warn("\n", .{});
+                    log.debug("\n", .{});
                 }
             }
-            log.warn("===================\n\n", .{});
+            log.debug("===================\n\n", .{});
         }
         pub fn pop(self: *Self) Error!void {
             _ = try self.stack.pop();
@@ -900,11 +900,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             const addr = self.contract_address;
             // Access the storage slot for warm/cold accounting (EIP-2929)
             const host = self.host;
-            _ = host.access_storage_slot(address, slot) catch |err| switch (err) {
+            _ = host.access_storage_slot(addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             // Use host interface for journaling
-            host.set_storage(address, slot, value) catch |err| switch (err) {
+            host.set_storage(addr, slot, value) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
         }
@@ -2212,7 +2212,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             return Error.STOP;
         }
         
-        fn dup_bulk_simd(self: *Self, L: usize, indices: []const u8) Error!void {
+        fn dup_bulk_simd(self: *Self, comptime L: usize, indices: []const u8) !void {
             if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
                 for (indices) |n| {
@@ -2278,7 +2278,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         ///
         /// @param L: Vector length (compile-time known, from config.vector_length)
         /// @param indices: Array of SWAP indices (1-16, positions to swap with top)
-        fn swap_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
+        fn swap_bulk_simd(self: *Self, comptime L: usize, indices: []const u8) !void {
             if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
                 for (indices) |n| {
@@ -2335,7 +2335,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (comptime config.vector_length > 0 and config.vector_length >= 4) {
                 // Use SIMD for single DUP if vector length supports it
                 const indices = [_]u8{n};
-                return self.dup_bulk_simd(config.vector_length, &indices);
+                return self.dup_bulk_simd(&indices, config.vector_length);
             } else {
                 // Fallback to existing implementation
                 return self.stack.dup_n(n);
@@ -5342,4 +5342,3 @@ test "Frame bytecode edge cases - bytecode with only PUSH data" {
     defer frame.deinit(allocator);
     
     try std.testing.expectEqual(@as(usize, 33), frame.bytecode.len);
-}
