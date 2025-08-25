@@ -2190,29 +2190,33 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Marks the current contract for destruction and transfers its balance to the recipient.
         /// Stack: [recipient] → []
         pub fn selfdestruct(self: *Self) Error!void {
-            const host = self.host;
-            // Check static context - SELFDESTRUCT is not allowed in static context
-            if (self.host) |host| {
-                if (h.get_is_static()) {
-                @branchHint(.unlikely);
-                return Error.WriteProtection;
-            }
             const recipient_u256 = try self.stack.pop();
             const recipient = from_u256(recipient_u256);
-            // Mark contract for destruction via host interface
-            host.mark_for_destruction(self.contract_address, recipient) catch |err| switch (err) {
-                else => {
+            
+            // Check static context and mark for destruction if host available
+            if (self.host) |host| {
+                if (host.get_is_static()) {
                     @branchHint(.unlikely);
-                    return Error.OutOfGas;
+                    return Error.WriteProtection;
                 }
-            };
+                
+                // Mark contract for destruction via host interface
+                host.mark_for_destruction(self.contract_address, recipient) catch |err| switch (err) {
+                    else => {
+                        @branchHint(.unlikely);
+                        return Error.OutOfGas;
+                    }
+                };
+            }
+            
             // According to EIP-6780 (Cancun hardfork), SELFDESTRUCT only actually destroys
             // the contract if it was created in the same transaction. This is handled by the host.
             // SELFDESTRUCT always stops execution
             return Error.STOP;
         }
         
-        fn dup_bulk_simd(self: *Self, comptime L: usize, indices: []const u8) !void {
+        /// SIMD-accelerated bulk DUP operations for sequential duplicate operations
+        fn dup_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
             if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
                 for (indices) |n| {
@@ -2278,7 +2282,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         ///
         /// @param L: Vector length (compile-time known, from config.vector_length)
         /// @param indices: Array of SWAP indices (1-16, positions to swap with top)
-        fn swap_bulk_simd(self: *Self, comptime L: usize, indices: []const u8) !void {
+        fn swap_bulk_simd(self: *Self, indices: []const u8, L: usize) !void {
             if (config.vector_length == 0 or L == 0) {
                 // Fallback to scalar operations
                 for (indices) |n| {
@@ -2362,7 +2366,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (comptime config.vector_length > 0 and config.vector_length >= 4) {
                 // Use SIMD for single SWAP if vector length supports it
                 const indices = [_]u8{n};
-                return self.swap_bulk_simd(config.vector_length, &indices);
+                return self.swap_bulk_simd(&indices, config.vector_length);
             } else {
                 // Fallback to existing implementation
                 return self.stack.swap_n(n);
