@@ -12,6 +12,20 @@ pub const IROp = enum(u8) {
     @"return",  // operand: none (stack: [offset, size])
     revert,     // operand: none (stack: [offset, size])
     stop,       // operand: none (terminal)
+    
+    // Storage ops (needed for CREATE tests)
+    sstore,     // operand: none (stack: [key, value])
+    sload,      // operand: none (stack: [key])
+    
+    // Arithmetic ops (needed for tests)
+    add,        // operand: none (stack: [a, b])
+    mul,        // operand: none (stack: [a, b])
+    sub,        // operand: none (stack: [a, b])
+    div,        // operand: none (stack: [a, b])
+    lt,         // operand: none (stack: [a, b])
+    
+    // Other ops (execute via frame)
+    other,      // operand: u8 (original opcode)
 };
 
 pub const Operand = union(enum) {
