@@ -93,7 +93,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Contract execution context
         contract_address: Address = [_]u8{0} ** 20,
         self_destruct: ?*SelfDestruct = null,
-        host: ?Host = null,
+        host: Host,
         // Cold data - less frequently accessed during execution
         logs: std.ArrayList(Log),
         output_data: std.ArrayList(u8),
@@ -101,7 +101,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         ///
         /// Creates stack, memory, and other execution components. Validates
         /// bytecode size and allocates resources with proper cleanup on failure.
-        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: ?Host) Error!Self {
+        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: Host) Error!Self {
             if (bytecode.len > max_bytecode_size) {
                 @branchHint(.unlikely);
                 return Error.BytecodeTooLarge;
