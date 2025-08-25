@@ -8,6 +8,7 @@ const Opcode = @import("opcode.zig").Opcode;
 const Host = @import("host.zig").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
+const Log = @import("logs.zig").Log;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
 const ZERO_ADDRESS = @import("primitives").ZERO_ADDRESS;
 const Hardfork = @import("hardfork.zig").Hardfork;
@@ -49,7 +50,7 @@ const MockHost = struct {
     pub fn inner_call(self: *MockHost, params: CallParams) !CallResult {
         _ = params;
         self.inner_call_calls += 1;
-        return CallResult.success(1000); // Return success with gas left
+        return CallResult.success_empty(1000); // Return success with gas left
     }
     
     // Stub implementations for other required host methods
