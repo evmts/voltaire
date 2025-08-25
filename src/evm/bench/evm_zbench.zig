@@ -300,7 +300,7 @@ fn benchmark_keccak256(allocator: std.mem.Allocator) void {
     frame.stack.push(32) catch return; // length
     
     // Benchmark: KECCAK256 operation
-    frame.op_keccak256() catch return;
+    frame.keccak256() catch return;
 }
 
 fn benchmark_frame_init(allocator: std.mem.Allocator) void {
