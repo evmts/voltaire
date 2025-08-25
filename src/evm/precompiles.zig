@@ -677,49 +677,77 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
 /// Input: 192 bytes (versioned_hash + z + y + commitment + proof)
 /// Output: 64 bytes (FIELD_ELEMENTS_PER_BLOB + BLS_MODULUS)
 pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
-    _ = allocator;
     const required_gas = GasCosts.POINT_EVALUATION;
     if (gas_limit < required_gas) {
-        return PrecompileOutput{
-            .output = &.{},
-            .gas_used = gas_limit,
-            .success = false,
-        };
+        return PrecompileOutput{ .output = &.{}, .gas_used = gas_limit, .success = false };
     }
 
     if (input.len != 192) {
-        return PrecompileOutput{
-            .output = &.{},
-            .gas_used = required_gas,
-            .success = false,
-        };
+        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
     }
 
     // Parse input: versioned_hash(32) + z(32) + y(32) + commitment(48) + proof(48)
     const versioned_hash = input[0..32];
-    const z = input[32..64];
-    const y = input[64..96];
-    const commitment = input[96..144];
-    const proof = input[144..192];
-    
-    // Import c_kzg functions and types
-    _ = crypto;
-    
-    // Get the default KZG settings (these should be initialized elsewhere in the system)
-    // For now, we'll return NotImplemented until we have proper KZG setup initialization
-    // The KZGSettings need to be loaded from the trusted setup file
-    _ = versioned_hash;
-    _ = z;
-    _ = y;
-    _ = commitment;
-    _ = proof;
-    
-    // TODO: Implement proper KZG point evaluation once KZGSettings are initialized
-    // This requires:
-    // 1. Loading the trusted setup file (mainnet-trusted-setup.txt)
-    // 2. Initializing KZGSettings globally
-    // 3. Calling verify_kzg_proof with the parsed inputs
-    return error.NotImplemented;
+    const z_bytes = input[32..64];
+    const y_bytes = input[64..96];
+    const commitment_bytes = input[96..144];
+    const proof_bytes = input[144..192];
+
+    // Validate versioned hash and that it corresponds to the commitment
+    const primitives_mod = primitives; // alias
+    const Blob = primitives_mod.Blob;
+    if (versioned_hash[0] != Blob.BLOB_COMMITMENT_VERSION_KZG) {
+        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
+    }
+    var commitment_arr: Blob.BlobCommitment = undefined;
+    @memcpy(commitment_arr[0..], commitment_bytes);
+    const expected_vh = Blob.commitment_to_versioned_hash(commitment_arr);
+    if (!std.mem.eql(u8, &expected_vh.bytes, versioned_hash)) {
+        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
+    }
+
+    // Ensure KZG settings are initialized; try lazy init from default path if not
+    const kzg_setup = @import("kzg_setup.zig");
+    if (!kzg_setup.isInitialized()) {
+        // Best-effort init using default trusted setup path; ignore errors and fail gracefully
+        kzg_setup.init(allocator, "data/kzg/trusted_setup.txt") catch {
+            return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
+        };
+    }
+    const settings_ptr = kzg_setup.getSettings() orelse {
+        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
+    };
+
+    // Prepare c-kzg types
+    const c_kzg = crypto.c_kzg;
+    var z32: c_kzg.Bytes32 = undefined;
+    var y32: c_kzg.Bytes32 = undefined;
+    var commit48: c_kzg.Bytes48 = undefined;
+    var proof48: c_kzg.Bytes48 = undefined;
+    @memcpy(z32.bytes[0..], z_bytes);
+    @memcpy(y32.bytes[0..], y_bytes);
+    @memcpy(commit48.bytes[0..], commitment_bytes);
+    @memcpy(proof48.bytes[0..], proof_bytes);
+
+    // Some bindings alias commitment/proof types to Bytes48
+    const KZGCommitment = c_kzg.KZGCommitment;
+    const KZGProof = c_kzg.KZGProof;
+    const CommitmentPtr = *const KZGCommitment;
+    const ProofPtr = *const KZGProof;
+
+    // Reinterpret Bytes48 as KZGCommitment/Proof when they are typedefs
+    const commit_ptr: CommitmentPtr = @ptrCast(&commit48);
+    const proof_ptr: ProofPtr = @ptrCast(&proof48);
+
+    // Verify proof: p(z) = y for commitment
+    var ok: bool = false;
+    const ret = c_kzg.verify_kzg_proof(&ok, commit_ptr, &z32, &y32, proof_ptr, settings_ptr);
+    if (ret != c_kzg.C_KZG_OK or !ok) {
+        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
+    }
+
+    // Success, no output per spec
+    return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = true };
 }
 
 // Utility functions for byte manipulation
