@@ -13,6 +13,12 @@ const std = @import("std");
 const frame_mod = @import("frame.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+const Host = @import("host.zig").Host;
+const block_info_mod = @import("block_info.zig");
+const call_params_mod = @import("call_params.zig");
+const call_result_mod = @import("call_result.zig");
+const hardfork_mod = @import("hardfork.zig");
 
 // ============================================================================
 // NO-OP TRACER
@@ -801,7 +807,7 @@ test "tracer captures basic frame state with writer" {
         .block_gas_limit = 1000,
     });
     
-    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     // Push some values onto the stack
@@ -834,7 +840,7 @@ test "tracer writes JSON to writer" {
     const allocator = std.testing.allocator;
     
     const Frame = frame_mod.Frame(.{});
-    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     try test_frame.stack.push(3);
@@ -862,7 +868,7 @@ test "logging tracer writes to stdout" {
     const allocator = std.testing.allocator;
     
     const Frame = frame_mod.Frame(.{});
-    var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     var tracer = LoggingTracer.init(allocator);
@@ -890,7 +896,7 @@ test "file tracer writes to file" {
     
     // Create frame
     const Frame = frame_mod.Frame(.{});
-    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     // PC is now managed by plan, not frame
@@ -917,7 +923,7 @@ test "tracer with gas cost computation" {
     const allocator = std.testing.allocator;
     
     const Frame = frame_mod.Frame(.{});
-    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x01 }, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x01 }, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     var output = std.ArrayList(u8).init(allocator);
@@ -958,7 +964,7 @@ test "tracer handles empty stack with JSON output" {
     const allocator = std.testing.allocator;
     
     const Frame = frame_mod.Frame(.{});
-    var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     var output = std.ArrayList(u8).init(allocator);
@@ -975,7 +981,7 @@ test "tracer handles large stack values in JSON" {
     const allocator = std.testing.allocator;
     
     const Frame = frame_mod.Frame(.{});
-    var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, null);
+    var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, createTestHost());
     defer test_frame.deinit(allocator);
     
     try test_frame.stack.push(std.math.maxInt(u256));
@@ -1010,6 +1016,196 @@ test "NoOpTracer has zero runtime cost" {
     tracer.beforeOp(0, 0x00, TestFrame, &test_frame);
     tracer.afterOp(0, 0x00, TestFrame, &test_frame);
     tracer.onError(0, error.TestError, TestFrame, &test_frame);
+}
+
+// Minimal test host for tracer tests
+const TestHost = struct {
+    const Self = @This();
+
+    pub fn get_balance(self: *Self, address: Address) u256 {
+        _ = self;
+        _ = address;
+        return 0;
+    }
+
+    pub fn account_exists(self: *Self, address: Address) bool {
+        _ = self;
+        _ = address;
+        return false;
+    }
+
+    pub fn get_code(self: *Self, address: Address) []const u8 {
+        _ = self;
+        _ = address;
+        return &[_]u8{};
+    }
+
+    pub fn get_block_info(self: *Self) block_info_mod.DefaultBlockInfo {
+        _ = self;
+        return .{};
+    }
+
+    pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
+        _ = self;
+        _ = contract_address;
+        _ = topics;
+        _ = data;
+    }
+
+    pub fn inner_call(self: *Self, params: call_params_mod.CallParams) !call_result_mod.CallResult {
+        _ = self;
+        _ = params;
+        return error.NotImplemented;
+    }
+
+    pub fn register_created_contract(self: *Self, address: Address) !void {
+        _ = self;
+        _ = address;
+    }
+
+    pub fn was_created_in_tx(self: *Self, address: Address) bool {
+        _ = self;
+        _ = address;
+        return false;
+    }
+
+    pub fn create_snapshot(self: *Self) u32 {
+        _ = self;
+        return 0;
+    }
+
+    pub fn revert_to_snapshot(self: *Self, snapshot_id: u32) void {
+        _ = self;
+        _ = snapshot_id;
+    }
+
+    pub fn get_storage(self: *Self, address: Address, slot: u256) u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+
+    pub fn set_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = value;
+    }
+
+    pub fn record_storage_change(self: *Self, address: Address, slot: u256, original_value: u256) !void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = original_value;
+    }
+
+    pub fn get_original_storage(self: *Self, address: Address, slot: u256) ?u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return null;
+    }
+
+    pub fn access_address(self: *Self, address: Address) !u64 {
+        _ = self;
+        _ = address;
+        return 0;
+    }
+
+    pub fn access_storage_slot(self: *Self, contract_address: Address, slot: u256) !u64 {
+        _ = self;
+        _ = contract_address;
+        _ = slot;
+        return 0;
+    }
+
+    pub fn mark_for_destruction(self: *Self, contract_address: Address, recipient: Address) !void {
+        _ = self;
+        _ = contract_address;
+        _ = recipient;
+    }
+
+    pub fn get_input(self: *Self) []const u8 {
+        _ = self;
+        return &[_]u8{};
+    }
+
+    pub fn is_hardfork_at_least(self: *Self, target: hardfork_mod.Hardfork) bool {
+        _ = self;
+        _ = target;
+        return true;
+    }
+
+    pub fn get_hardfork(self: *Self) hardfork_mod.Hardfork {
+        _ = self;
+        return .latest;
+    }
+
+    pub fn get_is_static(self: *Self) bool {
+        _ = self;
+        return false;
+    }
+
+    pub fn get_depth(self: *Self) u11 {
+        _ = self;
+        return 0;
+    }
+
+    pub fn get_gas_price(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+
+    pub fn get_return_data(self: *Self) []const u8 {
+        _ = self;
+        return &[_]u8{};
+    }
+
+    pub fn get_chain_id(self: *Self) u16 {
+        _ = self;
+        return 1;
+    }
+
+    pub fn get_block_hash(self: *Self, block_number: u64) ?[32]u8 {
+        _ = self;
+        _ = block_number;
+        return null;
+    }
+
+    pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
+        _ = self;
+        _ = index;
+        return null;
+    }
+
+    pub fn get_blob_base_fee(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+
+    pub fn get_tx_origin(self: *Self) Address {
+        _ = self;
+        return ZERO_ADDRESS;
+    }
+
+    pub fn get_caller(self: *Self) Address {
+        _ = self;
+        return ZERO_ADDRESS;
+    }
+
+    pub fn get_call_value(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+};
+
+// Helper function to create a test host for tracer tests
+fn createTestHost() Host {
+    const holder = struct {
+        var instance: TestHost = .{};
+    };
+    return Host.init(&holder.instance);
 }
 
 test "DebuggingTracer basic functionality" {

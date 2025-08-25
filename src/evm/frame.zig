@@ -1022,8 +1022,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Check if we're in static context
             if (self.host) |host| {
-                if (host) |h| {
-                if (h.get_is_static()) {
+                
+                if (host.get_is_static()) {
                     return Error.WriteProtection;
                 }
             }
@@ -1056,7 +1056,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
 
         // Transient storage operations (EIP-1153)
-        pub fn tload(self: *Self) Error!void {
+        pub fn op_tload(self: *Self) Error!void {
             // TLOAD loads a value from transient storage
             if (comptime !config.has_database) {
                 return Error.InvalidOpcode;
@@ -1078,7 +1078,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             try self.stack.push(value);
         }
 
-        pub fn tstore(self: *Self) Error!void {
+        pub fn op_tstore(self: *Self) Error!void {
             // TSTORE stores a value to transient storage
             if (comptime !config.has_database) {
                 return Error.InvalidOpcode;
@@ -1262,11 +1262,13 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // Access the address for warm/cold accounting (EIP-2929)
             // This returns the gas cost but the frame interpreter handles gas consumption
-            _ = host.access_address(address) catch |err| switch (err) {
-                else => return Error.AllocationError,
-            };
+            if (host) |h| {
+                _ = h.access_address(address) catch |err| switch (err) {
+                    else => return Error.AllocationError,
+                };
+            }
             
-            const balance = host.get_balance(address);
+            const balance = if (host) |h| h.get_balance(address) else 0;
             const balance_word = @as(WordType, @truncate(balance));
             try self.stack.push(balance_word);
         }
@@ -3102,7 +3104,7 @@ const TestHost = struct {
 
     pub fn get_block_info(self: *Self) block_info_mod.DefaultBlockInfo {
         _ = self;
-        return .{};
+        return block_info_mod.DefaultBlockInfo.init();
     }
 
     pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {
@@ -3199,7 +3201,7 @@ const TestHost = struct {
 
     pub fn get_hardfork(self: *Self) hardfork_mod.Hardfork {
         _ = self;
-        return .latest;
+        return hardfork_mod.Hardfork.DEFAULT;
     }
 
     pub fn get_is_static(self: *Self) bool {
