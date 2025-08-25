@@ -726,7 +726,7 @@ The EVM implementation is a ground-up redesign with configurable, high-performan
 
 1. **Opcode Implementation Pattern**:
    ```zig
-   pub fn op_example(frame: *Frame) ExecutionError.Error!void {
+   pub fn example(frame: *Frame) ExecutionError.Error!void {
        // Pop operands (validated by jump table)
        const b = frame.stack.pop_unsafe();
        const a = frame.stack.peek_unsafe();
@@ -975,11 +975,11 @@ The new EVM architecture is organized as a flat module structure:
 
 #### Common Search Patterns:
 ```bash
-# Find specific opcode implementation
-grep -n "pub fn op_[opcode_name]" src/evm/frame.zig
+# Find specific opcode implementation (e.g., add, mul, sstore)
+grep -n "pub fn [opcode_name]" src/evm/frame.zig
 
-# Find all opcodes
-grep -n "pub fn op_" src/evm/frame.zig | head -20
+# Find all opcodes (they don't have op_ prefix)
+grep -n "pub fn add\|pub fn mul\|pub fn sub" src/evm/frame.zig
 
 # Find gas consumption patterns
 grep -n "gas_remaining" src/evm/frame.zig
@@ -988,7 +988,7 @@ grep -n "gas_remaining" src/evm/frame.zig
 #### Important Notes:
 - Frame does NOT handle PC, JUMP/JUMPI (managed by Plan)
 - Frame does NOT handle CALL/CREATE (managed by Host/EVM)
-- All opcode functions follow pattern: `pub fn op_name(self: *Self) Error!void`
+- All opcode functions follow pattern: `pub fn name(self: *Self) Error!void` (NO `op_` prefix!)
 - Unsafe stack operations used when bounds pre-validated by planner
 
 ## Essential Documentation References
