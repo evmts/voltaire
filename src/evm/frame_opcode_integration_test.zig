@@ -23,7 +23,7 @@ test "Frame op_add basic integration test" {
     const bytecode = [_]u8{ 0x01, 0x00 }; // ADD STOP
     const host = test_evm.evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host, false);
     defer frame.deinit(allocator);
     
     // Setup stack for ADD operation
@@ -50,7 +50,7 @@ test "Frame op_mul basic integration test" {
     const bytecode = [_]u8{ 0x02, 0x00 }; // MUL STOP
     const host = test_evm.evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host, false);
     defer frame.deinit(allocator);
     
     // Setup stack for MUL operation
@@ -81,7 +81,7 @@ test "Frame op_sload op_sstore integration test with real database" {
     const bytecode = [_]u8{ 0x55, 0x54, 0x00 }; // SSTORE SLOAD STOP
     const host = test_evm.evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host, false);
     defer frame.deinit(allocator);
     
     frame.contract_address = contract_address;
@@ -116,7 +116,7 @@ test "Frame op_keccak256 integration test with memory" {
     const bytecode = [_]u8{ 0x20, 0x00 }; // KECCAK256 STOP
     const host = test_evm.evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host, false);
     defer frame.deinit(allocator);
     
     // Store test data "hello" in memory at offset 0
@@ -155,7 +155,7 @@ test "Frame op_balance integration test with real accounts" {
     const bytecode = [_]u8{ 0x31, 0x00 }; // BALANCE STOP
     const host = test_evm.evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host);
+    var frame = try F.init(allocator, &bytecode, 100000, test_evm.evm.database, host, false);
     defer frame.deinit(allocator);
     
     // Setup stack for BALANCE operation
@@ -181,7 +181,7 @@ test "Frame gas consumption tracking in real EVM context" {
     const bytecode = [_]u8{ 0x01, 0x00 }; // ADD STOP
     const host = test_evm.evm.to_host();
     
-    var frame = try F.init(allocator, &bytecode, 100, test_evm.evm.database, host); // Low gas limit
+    var frame = try F.init(allocator, &bytecode, 100, test_evm.evm.database, host, false); // Low gas limit
     defer frame.deinit(allocator);
     
     const initial_gas = frame.gas_remaining;
