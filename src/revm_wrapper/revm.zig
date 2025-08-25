@@ -149,7 +149,7 @@ pub const Revm = struct {
 
     /// Set account balance
     pub fn setBalance(self: *Revm, address: Address, balance: u256) !void {
-        const balance_hex = try std.fmt.allocPrintZ(self.allocator, "0x{x}", .{balance});
+        const balance_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{balance});
         defer self.allocator.free(balance_hex);
 
         var error_ptr: ?*c.RevmError = null;
@@ -169,7 +169,7 @@ pub const Revm = struct {
 
     /// Set account code
     pub fn setCode(self: *Revm, address: Address, code: []const u8) !void {
-        const code_hex = try std.fmt.allocPrintZ(self.allocator, "0x{s}", .{std.fmt.fmtSliceHexLower(code)});
+        const code_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{code});
         defer self.allocator.free(code_hex);
 
         var error_ptr: ?*c.RevmError = null;
@@ -189,10 +189,10 @@ pub const Revm = struct {
 
     /// Set storage value
     pub fn setStorage(self: *Revm, address: Address, slot: u256, value: u256) !void {
-        const slot_hex = try std.fmt.allocPrintZ(self.allocator, "0x{x}", .{slot});
+        const slot_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{slot});
         defer self.allocator.free(slot_hex);
 
-        const value_hex = try std.fmt.allocPrintZ(self.allocator, "0x{x}", .{value});
+        const value_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{value});
         defer self.allocator.free(value_hex);
 
         var error_ptr: ?*c.RevmError = null;
@@ -213,7 +213,7 @@ pub const Revm = struct {
 
     /// Get storage value
     pub fn getStorage(self: *Revm, address: Address, slot: u256) !u256 {
-        const slot_hex = try std.fmt.allocPrintZ(self.allocator, "0x{x}", .{slot});
+        const slot_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{slot});
         defer self.allocator.free(slot_hex);
 
         var out_value: [67]u8 = undefined; // 0x + 64 hex chars + null
@@ -272,7 +272,7 @@ pub const Revm = struct {
         input: []const u8,
         gas_limit: u64,
     ) !ExecutionResult {
-        const value_hex = try std.fmt.allocPrintZ(self.allocator, "0x{x}", .{value});
+        const value_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{value});
         defer self.allocator.free(value_hex);
 
         var result_ptr: ?*c.ExecutionResult = null;
@@ -370,10 +370,10 @@ pub const Revm = struct {
         gas_limit: u64,
         trace_path: []const u8,
     ) !ExecutionResult {
-        const value_hex = try std.fmt.allocPrintZ(self.allocator, "0x{x}", .{value});
+        const value_hex = try std.fmt.allocPrint(self.allocator, "0x{x}\x00", .{value});
         defer self.allocator.free(value_hex);
 
-        const trace_path_z = try std.fmt.allocPrintZ(self.allocator, "{s}", .{trace_path});
+        const trace_path_z = try std.fmt.allocPrint(self.allocator, "{s}\x00", .{trace_path});
         defer self.allocator.free(trace_path_z);
 
         var result_ptr: ?*c.ExecutionResult = null;

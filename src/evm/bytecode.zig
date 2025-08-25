@@ -344,11 +344,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             const use_aligned = comptime !builtin.is_test;
             if (use_aligned) {
                 const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
-                self.is_push_data = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
+                self.is_push_data = self.allocator.alignedAlloc(u8, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, CACHE_LINE_SIZE))), aligned_bitmap_bytes) catch return error.OutOfMemory;
                 errdefer self.allocator.free(self.is_push_data);
-                self.is_op_start = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
+                self.is_op_start = self.allocator.alignedAlloc(u8, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, CACHE_LINE_SIZE))), aligned_bitmap_bytes) catch return error.OutOfMemory;
                 errdefer self.allocator.free(self.is_op_start);
-                self.is_jumpdest = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
+                self.is_jumpdest = self.allocator.alignedAlloc(u8, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, CACHE_LINE_SIZE))), aligned_bitmap_bytes) catch return error.OutOfMemory;
                 errdefer self.allocator.free(self.is_jumpdest);
             } else {
                 self.is_push_data = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;

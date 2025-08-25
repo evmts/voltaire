@@ -443,12 +443,12 @@ pub fn Plan(comptime cfg: PlanConfig) type {
             if (self.pc_to_instruction_idx) |map| {
                 log.debug("\nPC to Instruction Mappings:\n", .{});
                 var iter = map.iterator();
-                var entries = std.ArrayList(struct { pc: PcType, idx: InstructionIndexType }).init(std.heap.page_allocator);
-                defer entries.deinit();
+                var entries = std.ArrayList(struct { pc: PcType, idx: InstructionIndexType }){};
+                defer entries.deinit(std.heap.page_allocator);
                 
                 // Collect entries for sorting
                 while (iter.next()) |entry| {
-                    entries.append(.{ .pc = entry.key_ptr.*, .idx = entry.value_ptr.* }) catch {};
+                    entries.append(std.heap.page_allocator, .{ .pc = entry.key_ptr.*, .idx = entry.value_ptr.* }) catch {};
                 }
                 
                 if (entries.items.len > 0) {

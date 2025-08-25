@@ -29,7 +29,7 @@ pub inline fn addWithCarry(a: u64, b: u64, carry: u8) struct { sum: u64, carry: 
             : [a] "0" (a),
               [b] "r" (b),
               [carry] "r" (carry),
-            : "cc"
+            : .{ .cc = true }
         );
         return .{ .sum = sum, .carry = new_carry };
     } else {
@@ -56,7 +56,7 @@ pub inline fn subWithBorrow(a: u64, b: u64, borrow: u8) struct { diff: u64, borr
             : [a] "0" (a),
               [b] "r" (b),
               [borrow] "r" (borrow),
-            : "cc"
+            : .{ .cc = true }
         );
         return .{ .diff = diff, .borrow = new_borrow };
     } else {
@@ -384,7 +384,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                         break;
                     }
 
-                    // Use optimized multiplication  
+                    // Use optimized multiplication
                     const mul_result = mul64x64(self.limbs[i], rhs.limbs[j]);
 
                     // Add low part + carry to current position
@@ -3868,7 +3868,7 @@ test "wrapping_mul" {
     try testing.expectEqual(ab_native, ab.to_u256().?);
 
     // Additional test cases for edge cases
-    
+
     // Test with max values that overflow
     const max = U256.MAX;
     const max_native = max.to_u256().?;

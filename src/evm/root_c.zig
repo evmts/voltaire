@@ -22,14 +22,16 @@ const precompiles_c = @import("precompiles_c.zig");
 const hardfork_c = @import("hardfork_c.zig");
 
 // Export all C API modules
-pub usingnamespace frame_c;
-pub usingnamespace bytecode_c;
-pub usingnamespace memory_c;
-pub usingnamespace stack_c;
-pub usingnamespace plan_c;
-pub usingnamespace planner_c;
-pub usingnamespace precompiles_c;
-pub usingnamespace hardfork_c;
+// Note: In Zig 0.15.1, usingnamespace is removed. We need to explicitly re-export.
+// For C API compatibility, we re-export all public exports from each module.
+comptime {
+    @export(frame_c.evm_frame_create, .{ .name = "evm_frame_create" });
+    @export(frame_c.evm_frame_destroy, .{ .name = "evm_frame_destroy" });
+    @export(frame_c.evm_frame_reset, .{ .name = "evm_frame_reset" });
+    @export(frame_c.evm_frame_execute, .{ .name = "evm_frame_execute" });
+    // TODO: Add all other exports from frame_c, bytecode_c, memory_c, stack_c, plan_c, planner_c, precompiles_c, hardfork_c
+    // For now, this module will have limited exports until all functions are enumerated
+}
 
 const allocator = std.heap.c_allocator;
 

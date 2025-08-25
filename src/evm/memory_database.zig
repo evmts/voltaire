@@ -84,7 +84,7 @@ pub const MemoryDatabase = struct {
             .storage = std.hash_map.HashMap(StorageKey, u256, StorageKeyContext, 80).init(allocator),
             .transient_storage = std.hash_map.HashMap(StorageKey, u256, StorageKeyContext, 80).init(allocator),
             .codes = std.hash_map.HashMap([32]u8, []u8, CodeHashContext, 80).init(allocator),
-            .snapshots = std.ArrayList(Snapshot).init(allocator),
+            .snapshots = std.ArrayList(Snapshot){},
             .next_snapshot_id = 0,
             .batch_in_progress = false,
             .batch_changes = null,
@@ -108,7 +108,7 @@ pub const MemoryDatabase = struct {
             snapshot.accounts.deinit();
             snapshot.storage.deinit();
         }
-        self.snapshots.deinit();
+        self.snapshots.deinit(self.allocator);
         
         // Free batch changes if any
         if (self.batch_changes) |*batch| {
@@ -284,7 +284,7 @@ pub const MemoryDatabase = struct {
             try snapshot_storage.put(entry.key_ptr.*, entry.value_ptr.*);
         }
         
-        try self.snapshots.append(Snapshot{
+        try self.snapshots.append(self.allocator, Snapshot{
             .id = snapshot_id,
             .accounts = snapshot_accounts,
             .storage = snapshot_storage,

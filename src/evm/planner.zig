@@ -396,15 +396,15 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             allocator.free(jump_list);
 
             // Build instruction stream
-            var stream = std.ArrayList(InstructionElement).init(allocator);
-            errdefer stream.deinit();
+            var stream = std.ArrayList(InstructionElement){};
+            errdefer stream.deinit(allocator);
             
-            var constants = std.ArrayList(Cfg.WordType).init(allocator);
-            errdefer constants.deinit();
+            var constants = std.ArrayList(Cfg.WordType){};
+            errdefer constants.deinit(allocator);
             
             // Backing store for 32-bit JumpDest metadata (unused on 64-bit)
-            var jumpdests = std.ArrayList(JumpDestMetadata).init(allocator);
-            errdefer jumpdests.deinit();
+            var jumpdests = std.ArrayList(JumpDestMetadata){};
+            errdefer jumpdests.deinit(allocator);
             
             // Build PC to instruction index mapping
             var pc_map = std.AutoHashMap(PcType, InstructionIndexType).init(allocator);
@@ -506,7 +506,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
                         log.warn("Uninitialized handler for opcode {x} at PC {}", .{handler_op, i});
                     }
-                    try stream.append(.{ .handler = handler_ptr });
+                    try stream.append(allocator, .{ .handler = handler_ptr });
                     
                     // Extract the push value (bytecode already validated; safe to read)
                     // Decide if value fits inline or needs pointer
@@ -517,7 +517,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                         while (j < n and j < @sizeOf(usize)) : (j += 1) {
                             value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
                         }
-                        try stream.append(.{ .inline_value = value });
+                        try stream.append(allocator, .{ .inline_value = value });
                     } else {
                         // Too large - store in constants array
                         var value: Cfg.WordType = 0;
@@ -526,8 +526,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                             value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
                         }
                         const const_idx = constants.items.len;
-                        try constants.append(value);
-                        try stream.append(.{ .pointer_index = const_idx });
+                        try constants.append(allocator, value);
+                        try stream.append(allocator, .{ .pointer_index = const_idx });
                     }
                     
                     // Skip the next instruction if we fused
@@ -542,7 +542,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
                         log.warn("Uninitialized handler for JUMPDEST at PC {}", .{i});
                     }
-                    try stream.append(.{ .handler = handler_ptr });
+                    try stream.append(allocator, .{ .handler = handler_ptr });
                     
                     // Find the block metadata for this JUMPDEST
                     var metadata_found = false;
@@ -553,13 +553,13 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                             
                             // On 64-bit systems, store metadata directly
                             if (@sizeOf(usize) == 8) {
-                                try stream.append(.{ .jumpdest_metadata = jd_metadata });
+                                try stream.append(allocator, .{ .jumpdest_metadata = jd_metadata });
                             } else {
                                 // On 32-bit systems, store in dedicated JumpDest metadata array and use pointer
                                 const jd_idx = jumpdests.items.len;
-                                try jumpdests.append(jd_metadata);
+                                try jumpdests.append(allocator, jd_metadata);
                                 const metadata_ptr = &jumpdests.items[jd_idx];
-                                try stream.append(.{ .jumpdest_pointer = metadata_ptr });
+                                try stream.append(allocator, .{ .jumpdest_pointer = metadata_ptr });
                             }
                             metadata_found = true;
                             break;
@@ -574,8 +574,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     i += 1;
                 } else if (op == @intFromEnum(Opcode.PC)) {
                     // PC opcode needs to store the current program counter value
-                    try stream.append(.{ .handler = handlers[op] });
-                    try stream.append(.{ .inline_value = @intCast(i) });
+                    try stream.append(allocator, .{ .handler = handlers[op] });
+                    try stream.append(allocator, .{ .inline_value = @intCast(i) });
                     i += 1;
                 } else {
                     if (N <= 64) {
@@ -586,7 +586,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
                         log.warn("Uninitialized handler for opcode {x} at PC {}", .{ op, i });
                     }
-                    try stream.append(.{ .handler = handler_ptr });
+                    try stream.append(allocator, .{ .handler = handler_ptr });
                     i += 1;
                 }
             }
@@ -600,9 +600,9 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             allocator.free(blocks);
             
             return PlanType{
-                .instructionStream = try stream.toOwnedSlice(),
-                .u256_constants = try constants.toOwnedSlice(),
-                .jumpdest_metadata = try jumpdests.toOwnedSlice(),
+                .instructionStream = try stream.toOwnedSlice(allocator),
+                .u256_constants = try constants.toOwnedSlice(allocator),
+                .jumpdest_metadata = try jumpdests.toOwnedSlice(allocator),
                 .pc_to_instruction_idx = pc_map,
                 .pc_to_instruction_idx_dense = dense_pc_to_idx,
             };

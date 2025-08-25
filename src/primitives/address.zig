@@ -278,11 +278,11 @@ pub fn calculate_create_address(allocator: std.mem.Allocator, creator: Address, 
     const nonce_slice = if (nonce == 0) &[_]u8{} else nonce_bytes[nonce_start..];
 
     // Create a list for RLP encoding [creator_address, nonce]
-    var list = std.ArrayList([]const u8).init(allocator);
-    defer list.deinit();
+    var list = std.ArrayList([]const u8){};
+    defer list.deinit(allocator);
 
-    try list.append(&creator);
-    try list.append(nonce_slice);
+    try list.append(allocator, &creator);
+    try list.append(allocator, nonce_slice);
 
     // RLP encode the list
     const encoded = try rlp.encode(allocator, list.items);

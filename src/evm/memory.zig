@@ -50,9 +50,9 @@ pub fn Memory(comptime config: MemoryConfig) type {
         pub fn init(allocator: std.mem.Allocator) !Self {
             const buffer_ptr = try allocator.create(std.ArrayList(u8));
             errdefer allocator.destroy(buffer_ptr);
-            buffer_ptr.* = std.ArrayList(u8).init(allocator);
-            errdefer buffer_ptr.deinit();
-            try buffer_ptr.ensureTotalCapacity(INITIAL_CAPACITY);
+            buffer_ptr.* = std.ArrayList(u8){};
+            errdefer buffer_ptr.deinit(allocator);
+            try buffer_ptr.ensureTotalCapacity(allocator, INITIAL_CAPACITY);
             return Self{
                 .checkpoint = 0,
                 .buffer_ptr = buffer_ptr,
@@ -72,7 +72,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
         
         pub fn deinit(self: *Self) void {
             if (self.owns_buffer) {
-                self.buffer_ptr.deinit();
+                self.buffer_ptr.deinit(self.allocator);
                 self.allocator.destroy(self.buffer_ptr);
             }
         }
@@ -110,7 +110,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
             // Standard path for larger growth
             const old_len = current_len;
             // Use ensureTotalCapacity + manual growth to control zeroing
-            try self.buffer_ptr.ensureTotalCapacity(required_total);
+            try self.buffer_ptr.ensureTotalCapacity(self.allocator, required_total);
             self.buffer_ptr.items.len = required_total;
             // Zero only the new portion
             @memset(self.buffer_ptr.items[old_len..required_total], 0);

@@ -120,8 +120,8 @@ pub const DebuggingTracer = struct {
         return .{
             .allocator = allocator,
             .breakpoints = std.AutoHashMap(u32, void).init(allocator),
-            .steps = std.ArrayList(ExecutionStep).init(allocator),
-            .state_snapshots = std.ArrayList(StateSnapshot).init(allocator),
+            .steps = std.ArrayList(ExecutionStep){},
+            .state_snapshots = std.ArrayList(StateSnapshot){},
         };
     }
     
@@ -134,13 +134,13 @@ pub const DebuggingTracer = struct {
                 self.allocator.free(msg);
             }
         }
-        self.steps.deinit();
+        self.steps.deinit(self.allocator);
         
         // Free state snapshots
         for (self.state_snapshots.items) |*snapshot| {
             self.allocator.free(snapshot.stack);
         }
-        self.state_snapshots.deinit();
+        self.state_snapshots.deinit(self.allocator);
         
         self.breakpoints.deinit();
     }
@@ -220,7 +220,7 @@ pub const DebuggingTracer = struct {
             .timestamp = std.time.milliTimestamp(),
         };
         
-        try self.state_snapshots.append(snapshot);
+        try self.state_snapshots.append(self.allocator, snapshot);
         
         // Limit snapshots to prevent memory growth
         if (self.state_snapshots.items.len > self.max_history) {
@@ -312,7 +312,7 @@ pub const DebuggingTracer = struct {
                 .error_msg = null,
             };
             
-            try self.steps.append(step);
+            try self.steps.append(self.allocator, step);
             
             // Limit history size
             if (self.steps.items.len > self.max_history) {

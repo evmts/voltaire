@@ -101,6 +101,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Cold data - less frequently accessed during execution
         logs: std.ArrayList(Log),
         output_data: std.ArrayList(u8),
+        allocator: std.mem.Allocator,
         /// Initialize a new execution frame.
         ///
         /// Creates stack, memory, and other execution components. Validates
@@ -120,9 +121,9 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.AllocationError;
             };
             errdefer memory.deinit();
-            var frame_logs = std.ArrayList(Log).init(allocator);
-            errdefer frame_logs.deinit();
-            var output_data = std.ArrayList(u8).init(allocator);
+            var frame_logs = std.ArrayList(Log){};
+            errdefer frame_logs.deinit(allocator);
+            var output_data = std.ArrayList(u8){};
             errdefer output_data.deinit();
             return Self{
                 .stack = stack,
@@ -136,6 +137,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .logs = frame_logs,
                 .output_data = output_data,
                 .host = host,
+                .allocator = allocator,
             };
         }
         /// Clean up all frame resources.
@@ -147,8 +149,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 allocator.free(log_entry.topics);
                 allocator.free(log_entry.data);
             }
-            self.logs.deinit();
-            self.output_data.deinit();
+            self.logs.deinit(allocator);
+            self.output_data.deinit(allocator);
         }
         /// Helper function to call tracer beforeOp if tracer is configured
         pub inline fn traceBeforeOp(self: *Self, pc: u32, opcode: u8) void {
@@ -198,8 +200,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             }
 
             // Copy logs
-            var new_logs = std.ArrayList(Log).init(allocator);
-            errdefer new_logs.deinit();
+            var new_logs = std.ArrayList(Log){};
+            errdefer new_logs.deinit(allocator);
             for (self.logs.items) |log_entry| {
                 // Allocate and copy topics
                 const topics_copy = allocator.alloc(u256, log_entry.topics.len) catch {
@@ -212,7 +214,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                     return Error.AllocationError;
                 };
                 @memcpy(data_copy, log_entry.data);
-                new_logs.append(Log{
+                new_logs.append(allocator, Log{
                     .address = log_entry.address,
                     .topics = topics_copy,
                     .data = data_copy,
@@ -224,9 +226,9 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             }
 
             // Copy output data buffer
-            var new_output_data = std.ArrayList(u8).init(allocator);
-            errdefer new_output_data.deinit();
-            new_output_data.appendSlice(self.output_data.items) catch {
+            var new_output_data = std.ArrayList(u8){};
+            errdefer new_output_data.deinit(allocator);
+            new_output_data.appendSlice(allocator, self.output_data.items) catch {
                 return Error.AllocationError;
             };
 
@@ -234,6 +236,8 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .stack = new_stack,
                 .bytecode = self.bytecode,
                 .gas_remaining = self.gas_remaining,
+                .gas_refund = self.gas_refund,
+                .initial_gas = self.initial_gas,
                 .tracer = if (config.TracerType) |_| self.tracer else {},
                 .memory = new_memory,
                 .database = self.database,
@@ -242,6 +246,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .logs = new_logs,
                 .output_data = new_output_data,
                 .host = self.host,
+                .allocator = allocator,
             };
         }
         /// Compare two frames for equality.
@@ -1477,7 +1482,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             // Create log entry
-            const allocator = self.logs.allocator;
+            const allocator = self.allocator;
             const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
             const topics_array = allocator.alloc(u256, 0) catch return Error.AllocationError;
             const log_entry = Log{
@@ -1485,7 +1490,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .topics = topics_array,
                 .data = data_copy,
             };
-            self.logs.append(log_entry) catch {
+            self.logs.append(self.allocator, log_entry) catch {
                 allocator.free(data_copy);
                 allocator.free(topics_array);
                 return Error.AllocationError;
@@ -1517,7 +1522,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             // Create log entry
-            const allocator = self.logs.allocator;
+            const allocator = self.allocator;
             const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
             const topics_array = allocator.alloc(u256, 1) catch {
                 allocator.free(data_copy);
@@ -1529,7 +1534,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .topics = topics_array,
                 .data = data_copy,
             };
-            self.logs.append(log_entry) catch {
+            self.logs.append(self.allocator, log_entry) catch {
                 allocator.free(data_copy);
                 allocator.free(topics_array);
                 return Error.AllocationError;
@@ -1559,7 +1564,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
-            const allocator = self.logs.allocator;
+            const allocator = self.allocator;
             const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
             const topics_array = allocator.alloc(u256, 2) catch {
                 allocator.free(data_copy);
@@ -1572,7 +1577,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .topics = topics_array,
                 .data = data_copy,
             };
-            self.logs.append(log_entry) catch {
+            self.logs.append(self.allocator, log_entry) catch {
                 allocator.free(data_copy);
                 allocator.free(topics_array);
                 return Error.AllocationError;
@@ -1603,7 +1608,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
-            const allocator = self.logs.allocator;
+            const allocator = self.allocator;
             const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
             const topics_array = allocator.alloc(u256, 3) catch {
                 allocator.free(data_copy);
@@ -1617,7 +1622,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .topics = topics_array,
                 .data = data_copy,
             };
-            self.logs.append(log_entry) catch {
+            self.logs.append(self.allocator, log_entry) catch {
                 allocator.free(data_copy);
                 allocator.free(topics_array);
                 return Error.AllocationError;
@@ -1649,7 +1654,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             try self.consumeGasChecked(total_cost);
             self.memory.ensure_capacity(word_aligned_end) catch return Error.OutOfBounds;
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
-            const allocator = self.logs.allocator;
+            const allocator = self.allocator;
             const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
             const topics_array = allocator.alloc(u256, 4) catch {
                 allocator.free(data_copy);
@@ -1664,7 +1669,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 .topics = topics_array,
                 .data = data_copy,
             };
-            self.logs.append(log_entry) catch {
+            self.logs.append(self.allocator, log_entry) catch {
                 allocator.free(data_copy);
                 allocator.free(topics_array);
                 return Error.AllocationError;
@@ -2201,7 +2206,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 // Clear any existing output data
                 self.output_data.clearRetainingCapacity();
                 // Store the return data
-                self.output_data.appendSlice(return_data) catch {
+                self.output_data.appendSlice(self.allocator, return_data) catch {
                     return Error.AllocationError;
                 };
             } else {
@@ -2244,7 +2249,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 // Clear any existing output data
                 self.output_data.clearRetainingCapacity();
                 // Store the revert data
-                self.output_data.appendSlice(revert_data) catch {
+                self.output_data.appendSlice(self.allocator, revert_data) catch {
                     return Error.AllocationError;
                 };
             } else {

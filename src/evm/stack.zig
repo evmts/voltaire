@@ -49,7 +49,7 @@ pub fn Stack(comptime config: StackConfig) type {
         /// Allocates cache-aligned memory and sets up pointer boundaries.
         /// Stack pointer starts at the top (highest address) and grows downward.
         pub fn init(allocator: std.mem.Allocator) Error!Self {
-            const memory = allocator.alignedAlloc(WordType, 64, stack_capacity) catch return Error.AllocationError;
+            const memory = allocator.alignedAlloc(WordType, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, 64))), stack_capacity) catch return Error.AllocationError;
             errdefer allocator.free(memory);
             @memset(memory, 0);
 

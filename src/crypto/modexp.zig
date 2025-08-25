@@ -290,7 +290,7 @@ fn read_big_endian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
     }
 
     // Convert bytes to hex string and use setString
-    const hex_string = try std.fmt.allocPrint(big.allocator, "{}", .{std.fmt.fmtSliceHexUpper(bytes)});
+    const hex_string = try std.fmt.allocPrint(big.allocator, "{X}", .{bytes});
     defer big.allocator.free(hex_string);
 
     try big.setString(16, hex_string);

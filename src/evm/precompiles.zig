@@ -594,7 +594,7 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
             input_len: c_uint,
             output: [*]u8,
             output_len: c_uint,
-        ) callconv(.C) c_int;
+        ) callconv(.c) c_int;
         
         const BN254_SUCCESS = 0;
     };
@@ -733,26 +733,12 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
         };
     }
 
-    // Prepare c-kzg types
-    const c_kzg = crypto.c_kzg;
-    var z32: c_kzg.Bytes32 = undefined;
-    var y32: c_kzg.Bytes32 = undefined;
-    var commit48: c_kzg.Bytes48 = undefined;
-    var proof48: c_kzg.Bytes48 = undefined;
-    @memcpy(z32[0..], z_bytes);
-    @memcpy(y32[0..], y_bytes);
-    @memcpy(commit48[0..], commitment_bytes);
-    @memcpy(proof48[0..], proof_bytes);
-
-    const ok = c_kzg.verifyKZGProof(&commit48, &z32, &y32, &proof48) catch {
-        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
-    };
-    if (!ok) {
-        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
-    }
-
-    // Success, no output per spec
-    return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = true };
+    // c_kzg is disabled for Zig 0.15.1 - return failure
+    // TODO: Re-enable when c_kzg is updated for Zig 0.15.1
+    _ = z_bytes;
+    _ = y_bytes;
+    _ = proof_bytes;
+    return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
 }
 
 // Utility functions for byte manipulation
