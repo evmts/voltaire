@@ -2,6 +2,8 @@ const std = @import("std");
 const evm = @import("evm");
 const frame_mod = evm;
 const tracer_mod = evm;
+const Host = @import("host.zig").Host;
+const Address = @import("primitives").Address.Address;
 
 // ============================================================================
 // FRAME C API - EVM Frame operations exported to C
@@ -42,6 +44,172 @@ pub const EVM_ERROR_NULL_POINTER: c_int = -10;
 pub const EVM_ERROR_WRITE_PROTECTION: c_int = -11;
 pub const EVM_ERROR_REVERT: c_int = -12;
 pub const EVM_ERROR_UNKNOWN: c_int = -99;
+
+// ============================================================================
+// C API HOST
+// ============================================================================
+
+// Minimal host implementation for C API
+const CApiHost = struct {
+    const Self = @This();
+    
+    pub fn get_balance(self: *Self, address: Address) u256 {
+        _ = self;
+        _ = address;
+        return 0;
+    }
+    
+    pub fn get_code(self: *Self, address: Address) []const u8 {
+        _ = self;
+        _ = address;
+        return &.{};
+    }
+    
+    pub fn get_code_hash(self: *Self, address: Address) [32]u8 {
+        _ = self;
+        _ = address;
+        return [_]u8{0} ** 32;
+    }
+    
+    pub fn get_account(self: *Self, address: Address) error{AccountNotFound}!@import("database_interface.zig").Account {
+        _ = self;
+        _ = address;
+        return error.AccountNotFound;
+    }
+    
+    pub fn get_input(self: *Self) []const u8 {
+        _ = self;
+        return &.{};
+    }
+    
+    pub fn get_return_data(self: *Self) []const u8 {
+        _ = self;
+        return &.{};
+    }
+    
+    pub fn get_gas_price(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+    
+    pub fn get_chain_id(self: *Self) u64 {
+        _ = self;
+        return 1;
+    }
+    
+    pub fn get_block_info(self: *Self) @import("block_info.zig").DefaultBlockInfo {
+        _ = self;
+        return @import("block_info.zig").DefaultBlockInfo.init();
+    }
+    
+    pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
+        _ = self;
+        _ = index;
+        return null;
+    }
+    
+    pub fn get_blob_base_fee(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+    
+    pub fn get_is_static(self: *Self) bool {
+        _ = self;
+        return false;
+    }
+    
+    pub fn access_address(self: *Self, address: Address) !u64 {
+        _ = self;
+        _ = address;
+        return 0;
+    }
+    
+    pub fn access_storage_slot(self: *Self, address: Address, slot: u256) !u64 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    
+    pub fn get_storage(self: *Self, address: Address, slot: u256) !u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    
+    pub fn set_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = value;
+    }
+    
+    pub fn get_transient_storage(self: *Self, address: Address, slot: u256) !u256 {
+        _ = self;
+        _ = address;
+        _ = slot;
+        return 0;
+    }
+    
+    pub fn set_transient_storage(self: *Self, address: Address, slot: u256, value: u256) !void {
+        _ = self;
+        _ = address;
+        _ = slot;
+        _ = value;
+    }
+    
+    pub fn mark_for_destruction(self: *Self, address: Address, beneficiary: Address) !void {
+        _ = self;
+        _ = address;
+        _ = beneficiary;
+    }
+    
+    pub fn get_tx_origin(self: *Self) Address {
+        _ = self;
+        return [_]u8{0} ** 20;
+    }
+    
+    pub fn get_caller(self: *Self) Address {
+        _ = self;
+        return [_]u8{0} ** 20;
+    }
+    
+    pub fn get_call_value(self: *Self) u256 {
+        _ = self;
+        return 0;
+    }
+    
+    pub fn account_exists(self: *Self, address: Address) bool {
+        _ = self;
+        _ = address;
+        return false;
+    }
+    
+    pub fn create_snapshot(self: *Self) u64 {
+        _ = self;
+        return 0;
+    }
+    
+    pub fn inner_call(self: *Self, params: @import("call_params.zig").CallParams) !@import("call_result.zig").CallResult {
+        _ = self;
+        _ = params;
+        // Return a failure result for C API
+        return @import("call_result.zig").CallResult{
+            .success = false,
+            .output = &.{},
+            .gas_used = 0,
+        };
+    }
+};
+
+// Global instance of C API host
+var c_api_host_instance = CApiHost{};
+
+// Helper function to create host for C API
+fn createCApiHost() Host {
+    return Host.init(&c_api_host_instance);
+}
 
 // ============================================================================
 // INTERNAL HELPERS
@@ -134,7 +302,7 @@ pub export fn evm_frame_create(bytecode: [*]const u8, bytecode_len: usize, initi
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize frame interpreter  
-    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null) catch {
+    handle.interpreter = FrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, createCApiHost()) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
@@ -402,7 +570,7 @@ pub export fn evm_debug_frame_create(bytecode: [*]const u8, bytecode_len: usize,
     errdefer allocator.free(handle.bytecode_owned);
 
     // Initialize debug frame interpreter
-    handle.interpreter = DebugFrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, null) catch {
+    handle.interpreter = DebugFrameInterpreter.init(allocator, handle.bytecode_owned, @intCast(initial_gas), {}, createCApiHost()) catch {
         allocator.free(handle.bytecode_owned);
         allocator.destroy(handle);
         return null;
