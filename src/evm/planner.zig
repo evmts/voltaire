@@ -508,28 +508,26 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     }
                     try stream.append(.{ .handler = handler_ptr });
                     
-                    // Extract the push value
-                    if (i + n < N) {
-                        // Decide if value fits inline or needs pointer
-                        if (n <= @sizeOf(usize)) {
-                            // Fits inline - build value from bytes
-                            var value: usize = 0;
-                            var j: usize = 0;
-                            while (j < n and j < @sizeOf(usize)) : (j += 1) {
-                                value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
-                            }
-                            try stream.append(.{ .inline_value = value });
-                        } else {
-                            // Too large - store in constants array
-                            var value: Cfg.WordType = 0;
-                            var j: usize = 0;
-                            while (j < n) : (j += 1) {
-                                value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
-                            }
-                            const const_idx = constants.items.len;
-                            try constants.append(value);
-                            try stream.append(.{ .pointer_index = const_idx });
+                    // Extract the push value (bytecode already validated; safe to read)
+                    // Decide if value fits inline or needs pointer
+                    if (n <= @sizeOf(usize)) {
+                        // Fits inline - build value from bytes
+                        var value: usize = 0;
+                        var j: usize = 0;
+                        while (j < n and j < @sizeOf(usize)) : (j += 1) {
+                            value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
                         }
+                        try stream.append(.{ .inline_value = value });
+                    } else {
+                        // Too large - store in constants array
+                        var value: Cfg.WordType = 0;
+                        var j: usize = 0;
+                        while (j < n) : (j += 1) {
+                            value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
+                        }
+                        const const_idx = constants.items.len;
+                        try constants.append(value);
+                        try stream.append(.{ .pointer_index = const_idx });
                     }
                     
                     // Skip the next instruction if we fused
@@ -580,6 +578,9 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     try stream.append(.{ .inline_value = @intCast(i) });
                     i += 1;
                 } else {
+                    if (N <= 64) {
+                        log.warn("Planner: non-PUSH op {x} at PC {} -> stream_idx {}", .{ op, i, stream.items.len });
+                    }
                     // Other non-PUSH opcodes - just add the handler
                     const handler_ptr = handlers[op];
                     if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {

@@ -8,6 +8,150 @@ const primitives = @import("primitives");
 
 const precompiles = evm.precompiles;
 const Address = primitives.Address.Address;
+const crypto = @import("../../src/crypto/root.zig");
+
+test "Point Evaluation precompile - valid proof roundtrip" {
+    const allocator = std.testing.allocator;
+
+    // Initialize trusted setup
+    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
+    defer kzg_setup.deinit(allocator);
+
+    // Build a simple blob (all zero)
+    var blob: crypto.c_kzg.Blob = [_]u8{0} ** crypto.c_kzg.BYTES_PER_BLOB;
+
+    // Compute commitment
+    const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
+
+    // Choose an evaluation point z and compute proof + y
+    var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
+    z[31] = 0x02; // small non-zero
+    const proof_y = try crypto.c_kzg.computeKZGProof(&blob, &z);
+    const proof = proof_y.proof;
+    const y = proof_y.y;
+
+    // Build versioned hash from commitment
+    const commit48: primitives.Blob.BlobCommitment = commitment;
+    const versioned_hash = primitives.Blob.commitment_to_versioned_hash(commit48);
+
+    // Assemble precompile input: vh(32) | z(32) | y(32) | commitment(48) | proof(48)
+    var input: [192]u8 = undefined;
+    @memcpy(input[0..32], versioned_hash.bytes[0..]);
+    @memcpy(input[32..64], z[0..]);
+    @memcpy(input[64..96], y[0..]);
+    @memcpy(input[96..144], commitment[0..]);
+    @memcpy(input[144..192], proof[0..]);
+
+    const gas = precompiles.GasCosts.POINT_EVALUATION + 1000;
+    const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
+    // No output on success; just success flag and gas usage
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
+    try std.testing.expect(result.gas_used == precompiles.GasCosts.POINT_EVALUATION);
+}
+
+test "Point Evaluation precompile - invalid proof fails" {
+    const allocator = std.testing.allocator;
+
+    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
+    defer kzg_setup.deinit(allocator);
+
+    var blob: crypto.c_kzg.Blob = [_]u8{1} ** crypto.c_kzg.BYTES_PER_BLOB;
+    const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
+
+    var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
+    z[31] = 0x03;
+    const proof_y = try crypto.c_kzg.computeKZGProof(&blob, &z);
+    var proof = proof_y.proof;
+    var y = proof_y.y;
+
+    // Corrupt y to force verification failure
+    y[31] ^= 0x01;
+
+    const commit48: primitives.Blob.BlobCommitment = commitment;
+    const versioned_hash = primitives.Blob.commitment_to_versioned_hash(commit48);
+
+    var input: [192]u8 = undefined;
+    @memcpy(input[0..32], versioned_hash.bytes[0..]);
+    @memcpy(input[32..64], z[0..]);
+    @memcpy(input[64..96], y[0..]);
+    @memcpy(input[96..144], commitment[0..]);
+    @memcpy(input[144..192], proof[0..]);
+
+    const gas = precompiles.GasCosts.POINT_EVALUATION + 1000;
+    const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "Point Evaluation precompile - mismatched versioned hash fails" {
+    const allocator = std.testing.allocator;
+
+    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
+    defer kzg_setup.deinit(allocator);
+
+    var blob: crypto.c_kzg.Blob = [_]u8{2} ** crypto.c_kzg.BYTES_PER_BLOB;
+    const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
+
+    var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
+    z[31] = 0x04;
+    const proof_y = try crypto.c_kzg.computeKZGProof(&blob, &z);
+    const proof = proof_y.proof;
+    const y = proof_y.y;
+
+    // Build versioned hash and then corrupt the version byte
+    const commit48: primitives.Blob.BlobCommitment = commitment;
+    var versioned_hash = primitives.Blob.commitment_to_versioned_hash(commit48);
+    versioned_hash.bytes[0] = 0x02; // invalid version
+
+    var input: [192]u8 = undefined;
+    @memcpy(input[0..32], versioned_hash.bytes[0..]);
+    @memcpy(input[32..64], z[0..]);
+    @memcpy(input[64..96], y[0..]);
+    @memcpy(input[96..144], commitment[0..]);
+    @memcpy(input[144..192], proof[0..]);
+
+    const gas = precompiles.GasCosts.POINT_EVALUATION + 1000;
+    const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
+    try std.testing.expect(!result.success);
+}
+
+test "Point Evaluation precompile - insufficient gas" {
+    const allocator = std.testing.allocator;
+
+    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
+    defer kzg_setup.deinit(allocator);
+
+    var blob: crypto.c_kzg.Blob = [_]u8{3} ** crypto.c_kzg.BYTES_PER_BLOB;
+    const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
+    var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
+    const proof_y = try crypto.c_kzg.computeKZGProof(&blob, &z);
+
+    var input: [192]u8 = undefined;
+    const versioned_hash = primitives.Blob.commitment_to_versioned_hash(commitment);
+    @memcpy(input[0..32], versioned_hash.bytes[0..]);
+    @memcpy(input[32..64], z[0..]);
+    @memcpy(input[64..96], proof_y.y[0..]);
+    @memcpy(input[96..144], commitment[0..]);
+    @memcpy(input[144..192], proof_y.proof[0..]);
+
+    const gas = precompiles.GasCosts.POINT_EVALUATION - 1; // insufficient
+    const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(gas, result.gas_used);
+}
+
+test "Point Evaluation precompile - invalid input length fails" {
+    const allocator = std.testing.allocator;
+    var bad: [191]u8 = [_]u8{0} ** 191; // should be 192
+    const result = try precompiles.execute_point_evaluation(allocator, &bad, precompiles.GasCosts.POINT_EVALUATION + 100);
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
+}
 
 test "SHA256 precompile with test vectors" {
     const allocator = testing.allocator;
