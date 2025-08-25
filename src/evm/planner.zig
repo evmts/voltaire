@@ -451,7 +451,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     }
                     
                     // Add handler pointer (normal or fused)
-                    try stream.append(.{ .handler = handlers[handler_op] });
+                    const handler_ptr = handlers[handler_op];
+                    if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
+                        std.debug.print("WARNING: Uninitialized handler for opcode {x} at PC {}\n", .{handler_op, i});
+                    }
+                    try stream.append(.{ .handler = handler_ptr });
                     
                     // Extract the push value
                     if (i + n < N) {
@@ -485,7 +489,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     }
                 } else if (op == @intFromEnum(Opcode.JUMPDEST)) {
                     // JUMPDEST needs metadata
-                    try stream.append(.{ .handler = handlers[op] });
+                    const handler_ptr = handlers[op];
+                    if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
+                        std.debug.print("WARNING: Uninitialized handler for JUMPDEST at PC {}\n", .{i});
+                    }
+                    try stream.append(.{ .handler = handler_ptr });
                     
                     // Find the block metadata for this JUMPDEST
                     var metadata_found = false;
@@ -530,7 +538,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     i += 1;
                 } else {
                     // Other non-PUSH opcodes - just add the handler
-                    try stream.append(.{ .handler = handlers[op] });
+                    const handler_ptr = handlers[op];
+                    if (@intFromPtr(handler_ptr) == 0xaaaaaaaaaaaaaaaa) {
+                        std.debug.print("WARNING: Uninitialized handler for opcode {x} at PC {}\n", .{op, i});
+                    }
+                    try stream.append(.{ .handler = handler_ptr });
                     i += 1;
                 }
             }

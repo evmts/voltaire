@@ -197,13 +197,13 @@ pub fn Plan(comptime cfg: PlanConfig) type {
             
             // Return based on the opcode's metadata type  
             return switch (comptime opcode_value) {
-                @intFromEnum(Opcode.PUSH1) => @as(u8, @intCast(elem.inline_value)),
-                @intFromEnum(Opcode.PUSH2) => @as(u16, @intCast(elem.inline_value)),
-                @intFromEnum(Opcode.PUSH3) => @as(u24, @intCast(elem.inline_value)),
-                @intFromEnum(Opcode.PUSH4) => @as(u32, @intCast(elem.inline_value)),
-                @intFromEnum(Opcode.PUSH5) => @as(u40, @intCast(elem.inline_value)),
-                @intFromEnum(Opcode.PUSH6) => @as(u48, @intCast(elem.inline_value)),
-                @intFromEnum(Opcode.PUSH7) => @as(u56, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH1) => @as(u8, @truncate(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH2) => @as(u16, @truncate(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH3) => @as(u24, @truncate(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH4) => @as(u32, @truncate(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH5) => @as(u40, @truncate(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH6) => @as(u48, @truncate(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH7) => @as(u56, @truncate(elem.inline_value)),
                 @intFromEnum(Opcode.PUSH8) => elem.inline_value,
                 
                 // Larger PUSH opcodes
@@ -305,17 +305,16 @@ pub fn Plan(comptime cfg: PlanConfig) type {
                 else => false,
             };
 
-            // Get the current handler before advancing
+            // Advance index past current instruction and its metadata
+            idx.* += 1;
+            if (has_metadata) idx.* += 1;
+            
+            // Get the handler at the new position
             if (idx.* >= self.instructionStream.len) {
                 std.log.warn("getNextInstruction: idx {} >= instructionStream.len {}", .{idx.*, self.instructionStream.len});
                 @panic("instruction index out of bounds");
             }
             const handler = self.instructionStream[idx.*].handler;
-            
-            // Advance index
-            idx.* += 1;
-            if (has_metadata) idx.* += 1;
-            
             
             // Return the handler
             return handler;
