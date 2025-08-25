@@ -145,19 +145,27 @@ pub fn build(b: *std.Build) void {
         break :blk lib;
     } else null;
 
-    // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
-    const c_kzg_dep = b.dependency("c_kzg_4844", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const c_kzg_lib = c_kzg_dep.artifact("c_kzg_4844");
-    // The dependency exposes the module under the package name
-    const c_kzg_mod = c_kzg_dep.module("c_kzg_4844");
-    // Expose c-kzg to modules that import it
-    primitives_mod.linkLibrary(c_kzg_lib);
-    crypto_mod.addImport("c_kzg", c_kzg_mod);
-    crypto_mod.linkLibrary(c_kzg_lib);
+    // Optional C-KZG-4844 Zig bindings (require network to fetch blst).
+    // Use with: zig build -Denable_c_kzg=true to enable real bindings.
+    const enable_c_kzg = b.option(bool, "enable_c_kzg", "Enable real c-kzg-4844 dependency (requires network)") orelse true;
+    var c_kzg_lib: ?*std.Build.Step.Compile = null;
+    if (enable_c_kzg) {
+        const c_kzg_dep = b.dependency("c_kzg_4844", .{
+            .target = target,
+            .optimize = optimize,
+        });
+        const lib = c_kzg_dep.artifact("c_kzg_4844");
+        const c_kzg_mod = c_kzg_dep.module("c_kzg_4844");
+        // Ensure C headers (ckzg.h) used by the Zig binding are visible
+        c_kzg_mod.addIncludePath(c_kzg_dep.path("src"));
+        c_kzg_mod.addIncludePath(c_kzg_dep.path("blst/bindings"));
+        // Expose c-kzg to modules that import it
+        crypto_mod.addImport("c_kzg", c_kzg_mod);
+        crypto_mod.linkLibrary(lib);
+        // Link c-kzg into primitives/evm modules when enabled
+        primitives_mod.linkLibrary(lib);
+        c_kzg_lib = lib;
+    }
 
     // Add zbench dependency
     const zbench_dep = b.dependency("zbench", .{
@@ -183,8 +191,8 @@ pub fn build(b: *std.Build) void {
         evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
     }
 
-    // Link c-kzg library to EVM module
-    evm_mod.linkLibrary(c_kzg_lib);
+    // Link c-kzg library to EVM module if enabled
+    if (c_kzg_lib) |lib_c_kzg| evm_mod.linkLibrary(lib_c_kzg);
 
     // Create REVM library that depends on workspace build
     const revm_lib = if (rust_target != null) blk: {
