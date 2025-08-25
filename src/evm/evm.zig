@@ -15,6 +15,7 @@
 //! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
 //! EVM passes itself as a host to the Frame so Frame can get data from EVM that is not on frame and execute inner calls
 const std = @import("std");
+const testing = std.testing;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
@@ -588,6 +589,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Store the deployed code
             if (result.output.len > 0) {
+                // Store the bytecode in the database
+                self.database.set_code(result.output) catch |err| {
+                    return self.revert_and_fail(snapshot_id, err);
+                };
+                
+                // Compute code hash
                 var code_hash_bytes: [32]u8 = undefined;
                 const keccak_asm = @import("keccak_asm.zig");
                 try keccak_asm.keccak256(result.output, &code_hash_bytes);
@@ -1176,8 +1183,6 @@ pub fn Evm(comptime config: EvmConfig) type {
 pub const DefaultEvm = Evm(.{});
 
 test "CallParams and CallResult structures" {
-    const testing = std.testing;
-
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = ZERO_ADDRESS,
@@ -1194,15 +1199,13 @@ test "CallParams and CallResult structures" {
         .output = &.{},
     };
 
-    try testing.expect(call_params == .call);
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(u64, 900000), result.gas_left);
-    try testing.expectEqual(@as(usize, 0), result.output.len);
+    try std.testing.expect(call_params == .call);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(u64, 900000), result.gas_left);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
 }
 
 test "EVM error type definition" {
-    const testing = std.testing;
-    
     // Test that Error type exists and contains expected error cases
     const TestEvm = Evm(.{});
     
@@ -1216,12 +1219,11 @@ test "EVM error type definition" {
     const err2: TestEvm.Error = error.OutOfGas;
     
     // Test that different errors are not equal
-    try testing.expect(err1 != err2);
+    try std.testing.expect(err1 != err2);
 }
 
 test "EVM call() entry point method" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
     
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
@@ -1273,8 +1275,7 @@ test "EVM call() entry point method" {
 }
 
 test "EVM call() method routes to different handlers" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
     
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
@@ -1360,8 +1361,7 @@ test "EVM call() method routes to different handlers" {
 }
 
 test "EVM call_handler basic functionality" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
     
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
@@ -1418,14 +1418,13 @@ test "EVM call_handler basic functionality" {
     const result = try evm.call_handler(params);
     
     // The implemented handler should work correctly
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
-    try testing.expectEqual(@as(usize, 0), result.output.len);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
 }
 
 test "EVM staticcall handler prevents state changes" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
     
     // Create test database with initial state
     var memory_db = MemoryDatabase.init(allocator);
@@ -1485,12 +1484,11 @@ test "EVM staticcall handler prevents state changes" {
     const result = try evm.staticcall_handler(params);
     
     // Staticcall with SSTORE should fail due to static context restrictions
-    try testing.expect(!result.success);
+    try std.testing.expect(!result.success);
 }
 
 test "EVM delegatecall handler preserves caller context" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
     
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
@@ -1553,12 +1551,10 @@ test "EVM delegatecall handler preserves caller context" {
     const result = try evm.delegatecall_handler(params);
     
     // Delegatecall with empty code should succeed
-    try testing.expect(result.success);
+    try std.testing.expect(result.success);
 }
 
 test "Evm creation with custom config" {
-    const testing = std.testing;
-
     const CustomEvm = Evm(.{
         .max_call_depth = 512,
         .max_input_size = 65536, // 64KB
@@ -1569,7 +1565,7 @@ test "Evm creation with custom config" {
     });
 
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -1589,17 +1585,15 @@ test "Evm creation with custom config" {
         .chain_id = 1,
     };
 
-    var evm = try CustomEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try CustomEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    try testing.expectEqual(@as(u9, 0), evm.depth);
+    try std.testing.expectEqual(@as(u9, 0), evm.depth);
 }
 
 test "Evm call depth limit" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -1619,7 +1613,7 @@ test "Evm call depth limit" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Set depth to max
@@ -1636,17 +1630,15 @@ test "Evm call depth limit" {
         },
     });
 
-    try testing.expect(!result.success);
-    try testing.expectEqual(@as(u64, 0), result.gas_left);
-    try testing.expectEqual(@as(usize, 0), result.output.len);
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(u64, 0), result.gas_left);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
 }
 
 // TDD Tests for call method implementation
 test "call method basic functionality - simple STOP" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -1666,7 +1658,7 @@ test "call method basic functionality - simple STOP" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     _ = [_]u8{0x00};
@@ -1684,15 +1676,13 @@ test "call method basic functionality - simple STOP" {
     // This should work when call method is properly implemented
     const result = try evm.call(call_params);
 
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
 }
 
 test "call method loads contract code from state" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -1712,7 +1702,7 @@ test "call method loads contract code from state" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Set up contract with bytecode [0x00] (STOP)
@@ -1741,15 +1731,13 @@ test "call method loads contract code from state" {
 
     const result = try evm.call(call_params);
 
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
 }
 
 test "call method handles CREATE operation" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -1769,7 +1757,7 @@ test "call method handles CREATE operation" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Create contract with simple init code that returns [0x00] (STOP)
@@ -1786,15 +1774,13 @@ test "call method handles CREATE operation" {
 
     const result = try evm.call(create_params);
 
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
 }
 
 test "call method handles gas limit properly" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -1814,7 +1800,7 @@ test "call method handles gas limit properly" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Call with very low gas (should fail or return with low gas left)
@@ -1831,35 +1817,33 @@ test "call method handles gas limit properly" {
     const result = try evm.call(call_params);
 
     // Should either fail or consume most/all gas
-    try testing.expect(result.gas_left <= 10);
+    try std.testing.expect(result.gas_left <= 10);
 }
 
 test "Journal - snapshot creation and management" {
-    const testing = std.testing;
     const JournalType = journal_mod.Journal(.{});
 
-    var journal = JournalType.init(testing.allocator);
+    var journal = JournalType.init(std.testing.allocator);
     defer journal.deinit();
 
-    try testing.expectEqual(@as(u32, 0), journal.next_snapshot_id);
-    try testing.expectEqual(@as(usize, 0), journal.entry_count());
+    try std.testing.expectEqual(@as(u32, 0), journal.next_snapshot_id);
+    try std.testing.expectEqual(@as(usize, 0), journal.entry_count());
 
     // Create snapshots
     const snapshot1 = journal.create_snapshot();
     const snapshot2 = journal.create_snapshot();
     const snapshot3 = journal.create_snapshot();
 
-    try testing.expectEqual(@as(u32, 0), snapshot1);
-    try testing.expectEqual(@as(u32, 1), snapshot2);
-    try testing.expectEqual(@as(u32, 2), snapshot3);
-    try testing.expectEqual(@as(u32, 3), journal.next_snapshot_id);
+    try std.testing.expectEqual(@as(u32, 0), snapshot1);
+    try std.testing.expectEqual(@as(u32, 1), snapshot2);
+    try std.testing.expectEqual(@as(u32, 2), snapshot3);
+    try std.testing.expectEqual(@as(u32, 3), journal.next_snapshot_id);
 }
 
 test "Journal - storage change recording" {
-    const testing = std.testing;
     const JournalType = journal_mod.Journal(.{});
 
-    var journal = JournalType.init(testing.allocator);
+    var journal = JournalType.init(std.testing.allocator);
     defer journal.deinit();
 
     const snapshot_id = journal.create_snapshot();
@@ -1871,30 +1855,29 @@ test "Journal - storage change recording" {
     try journal.record_storage_change(snapshot_id, address, key, original_value);
 
     // Verify entry was recorded
-    try testing.expectEqual(@as(usize, 1), journal.entry_count());
+    try std.testing.expectEqual(@as(usize, 1), journal.entry_count());
     const entry = journal.entries.items[0];
-    try testing.expectEqual(snapshot_id, entry.snapshot_id);
+    try std.testing.expectEqual(snapshot_id, entry.snapshot_id);
 
     switch (entry.data) {
         .storage_change => |sc| {
-            try testing.expectEqual(address, sc.address);
-            try testing.expectEqual(key, sc.key);
-            try testing.expectEqual(original_value, sc.original_value);
+            try std.testing.expectEqual(address, sc.address);
+            try std.testing.expectEqual(key, sc.key);
+            try std.testing.expectEqual(original_value, sc.original_value);
         },
-        else => try testing.expect(false), // Should be storage_change
+        else => try std.testing.expect(false), // Should be storage_change
     }
     
     // Test get_original_storage
     const retrieved = journal.get_original_storage(address, key);
-    try testing.expect(retrieved != null);
-    try testing.expectEqual(original_value, retrieved.?);
+    try std.testing.expect(retrieved != null);
+    try std.testing.expectEqual(original_value, retrieved.?);
 }
 
 test "Journal - revert to snapshot" {
-    const testing = std.testing;
     const JournalType = journal_mod.Journal(.{});
 
-    var journal = JournalType.init(testing.allocator);
+    var journal = JournalType.init(std.testing.allocator);
     defer journal.deinit();
 
     const snapshot1 = journal.create_snapshot();
@@ -1907,23 +1890,22 @@ test "Journal - revert to snapshot" {
     try journal.record_storage_change(snapshot2, ZERO_ADDRESS, 3, 30);
     try journal.record_storage_change(snapshot3, ZERO_ADDRESS, 4, 40);
 
-    try testing.expectEqual(@as(usize, 4), journal.entry_count());
+    try std.testing.expectEqual(@as(usize, 4), journal.entry_count());
 
     // Revert to snapshot2 - should remove entries with snapshot_id >= 2
     journal.revert_to_snapshot(snapshot2);
 
-    try testing.expectEqual(@as(usize, 2), journal.entry_count());
+    try std.testing.expectEqual(@as(usize, 2), journal.entry_count());
     // Verify remaining entries are from snapshot1
     for (journal.entries.items) |entry| {
-        try testing.expect(entry.snapshot_id < snapshot2);
+        try std.testing.expect(entry.snapshot_id < snapshot2);
     }
 }
 
 test "Journal - multiple entry types" {
-    const testing = std.testing;
     const JournalType = journal_mod.Journal(.{});
 
-    var journal = JournalType.init(testing.allocator);
+    var journal = JournalType.init(std.testing.allocator);
     defer journal.deinit();
 
     const snapshot_id = journal.create_snapshot();
@@ -1936,7 +1918,7 @@ test "Journal - multiple entry types" {
     try journal.record_nonce_change(snapshot_id, address, 5);
     try journal.record_code_change(snapshot_id, address, code_hash);
 
-    try testing.expectEqual(@as(usize, 4), journal.entry_count());
+    try std.testing.expectEqual(@as(usize, 4), journal.entry_count());
 
     // Verify all entry types exist
     var storage_found = false;
@@ -1954,22 +1936,21 @@ test "Journal - multiple entry types" {
         }
     }
     
-    try testing.expect(storage_found);
-    try testing.expect(balance_found);
-    try testing.expect(nonce_found);
-    try testing.expect(code_found);
+    try std.testing.expect(storage_found);
+    try std.testing.expect(balance_found);
+    try std.testing.expect(nonce_found);
+    try std.testing.expect(code_found);
 }
 
 test "Journal - empty revert" {
-    const testing = std.testing;
     const JournalType = journal_mod.Journal(.{});
 
-    var journal = JournalType.init(testing.allocator);
+    var journal = JournalType.init(std.testing.allocator);
     defer journal.deinit();
 
     // Revert with no entries should not crash
     journal.revert_to_snapshot(0);
-    try testing.expectEqual(@as(usize, 0), journal.entry_count());
+    try std.testing.expectEqual(@as(usize, 0), journal.entry_count());
 
     // Create entries and revert to future snapshot
     const snapshot = journal.create_snapshot();
@@ -1977,25 +1958,21 @@ test "Journal - empty revert" {
 
     // Revert to future snapshot (should remove all entries)
     journal.revert_to_snapshot(999);
-    try testing.expectEqual(@as(usize, 0), journal.entry_count());
+    try std.testing.expectEqual(@as(usize, 0), journal.entry_count());
 }
 
 test "EvmConfig - depth type selection" {
-    const testing = std.testing;
-
     const config_u8 = EvmConfig{ .max_call_depth = 255 };
-    try testing.expectEqual(u8, config_u8.get_depth_type());
+    try std.testing.expectEqual(u8, config_u8.get_depth_type());
 
     const config_u11 = EvmConfig{ .max_call_depth = 1024 };
-    try testing.expectEqual(u11, config_u11.get_depth_type());
+    try std.testing.expectEqual(u11, config_u11.get_depth_type());
 
     const config_boundary = EvmConfig{ .max_call_depth = 256 };
-    try testing.expectEqual(u11, config_boundary.get_depth_type());
+    try std.testing.expectEqual(u11, config_boundary.get_depth_type());
 }
 
 test "EvmConfig - custom configurations" {
-    const testing = std.testing;
-
     const custom_config = EvmConfig{
         .max_call_depth = 512,
         .max_input_size = 65536,
@@ -2008,7 +1985,7 @@ test "EvmConfig - custom configurations" {
     const CustomEvm = Evm(custom_config);
 
     // Create test database and verify custom EVM compiles
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2028,30 +2005,26 @@ test "EvmConfig - custom configurations" {
         .chain_id = 1,
     };
 
-    var evm = try CustomEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try CustomEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    try testing.expectEqual(@as(u10, 0), evm.depth); // Should be u10 for 512 max depth
+    try std.testing.expectEqual(@as(u10, 0), evm.depth); // Should be u10 for 512 max depth
 }
 
 test "TransactionContext creation and fields" {
-    const testing = std.testing;
-
     const context = TransactionContext{
         .gas_limit = 5000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 137, // Polygon
     };
 
-    try testing.expectEqual(@as(u64, 5000000), context.gas_limit);
-    try testing.expectEqual(ZERO_ADDRESS, context.coinbase);
-    try testing.expectEqual(@as(u16, 137), context.chain_id);
+    try std.testing.expectEqual(@as(u64, 5000000), context.gas_limit);
+    try std.testing.expectEqual(ZERO_ADDRESS, context.coinbase);
+    try std.testing.expectEqual(@as(u16, 137), context.chain_id);
 }
 
 test "Evm initialization with all parameters" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2074,28 +2047,26 @@ test "Evm initialization with all parameters" {
     const gas_price: u256 = 30000000000; // 30 gwei
     const origin = ZERO_ADDRESS;
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, gas_price, origin, .LONDON);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, gas_price, origin, .LONDON);
     defer evm.deinit();
 
     // Verify all fields were set correctly
-    try testing.expectEqual(@as(u11, 0), evm.depth);
-    try testing.expectEqual(block_info.number, evm.block_info.number);
-    try testing.expectEqual(context.chain_id, evm.context.chain_id);
-    try testing.expectEqual(gas_price, evm.gas_price);
-    try testing.expectEqual(origin, evm.origin);
-    try testing.expectEqual(Hardfork.LONDON, evm.hardfork_config);
+    try std.testing.expectEqual(@as(u11, 0), evm.depth);
+    try std.testing.expectEqual(block_info.number, evm.block_info.number);
+    try std.testing.expectEqual(context.chain_id, evm.context.chain_id);
+    try std.testing.expectEqual(gas_price, evm.gas_price);
+    try std.testing.expectEqual(origin, evm.origin);
+    try std.testing.expectEqual(Hardfork.LONDON, evm.hardfork_config);
 
     // Verify sub-components initialized
-    try testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);
-    try testing.expectEqual(@as(usize, 0), evm.journal.entry_count());
+    try std.testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);
+    try std.testing.expectEqual(@as(usize, 0), evm.journal.entry_count());
 }
 
 // Duplicate test removed - see earlier occurrence
 
 test "Host interface - get_balance functionality" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2115,7 +2086,7 @@ test "Host interface - get_balance functionality" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const address = ZERO_ADDRESS;
@@ -2131,17 +2102,15 @@ test "Host interface - get_balance functionality" {
     try memory_db.set_account(address, account);
 
     const retrieved_balance = evm.get_balance(address);
-    try testing.expectEqual(balance, retrieved_balance);
+    try std.testing.expectEqual(balance, retrieved_balance);
 
     const zero_address = [_]u8{1} ++ [_]u8{0} ** 19;
     const zero_balance = evm.get_balance(zero_address);
-    try testing.expectEqual(@as(u256, 0), zero_balance);
+    try std.testing.expectEqual(@as(u256, 0), zero_balance);
 }
 
 test "Host interface - storage operations" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2161,7 +2130,7 @@ test "Host interface - storage operations" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const address = ZERO_ADDRESS;
@@ -2170,24 +2139,22 @@ test "Host interface - storage operations" {
 
     // Initially should return zero
     const initial_value = evm.get_storage(address, key);
-    try testing.expectEqual(@as(u256, 0), initial_value);
+    try std.testing.expectEqual(@as(u256, 0), initial_value);
 
     // Set storage value
     try evm.set_storage(address, key, value);
 
     // Retrieve and verify
     const retrieved_value = evm.get_storage(address, key);
-    try testing.expectEqual(value, retrieved_value);
+    try std.testing.expectEqual(value, retrieved_value);
 
     const different_key: u256 = 99;
     const different_value = evm.get_storage(address, different_key);
-    try testing.expectEqual(@as(u256, 0), different_value);
+    try std.testing.expectEqual(@as(u256, 0), different_value);
 }
 
 test "Host interface - account_exists functionality" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2207,7 +2174,7 @@ test "Host interface - account_exists functionality" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const address = ZERO_ADDRESS;
@@ -2220,17 +2187,15 @@ test "Host interface - account_exists functionality" {
     try memory_db.set_account(address, account);
 
     const exists = evm.account_exists(address);
-    try testing.expect(exists);
+    try std.testing.expect(exists);
 
     const non_existing = [_]u8{1} ++ [_]u8{0} ** 19;
     const does_not_exist = evm.account_exists(non_existing);
-    try testing.expect(!does_not_exist);
+    try std.testing.expect(!does_not_exist);
 }
 
 test "Host interface - call type differentiation" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2250,7 +2215,7 @@ test "Host interface - call type differentiation" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const call_params = DefaultEvm.CallParams{
@@ -2264,7 +2229,7 @@ test "Host interface - call type differentiation" {
     };
 
     const call_result = try evm.call(call_params);
-    try testing.expect(call_result.success);
+    try std.testing.expect(call_result.success);
 
     // Test STATICCALL operation (no value transfer allowed)
     const static_params = DefaultEvm.CallParams{
@@ -2277,7 +2242,7 @@ test "Host interface - call type differentiation" {
     };
 
     const static_result = try evm.call(static_params);
-    try testing.expect(static_result.success);
+    try std.testing.expect(static_result.success);
 
     // Test DELEGATECALL operation (preserves caller context)
     const delegate_params = DefaultEvm.CallParams{
@@ -2290,13 +2255,11 @@ test "Host interface - call type differentiation" {
     };
 
     const delegate_result = try evm.call(delegate_params);
-    try testing.expect(delegate_result.success);
+    try std.testing.expect(delegate_result.success);
 }
 
 test "EVM logs - emit_log functionality" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2316,7 +2279,7 @@ test "EVM logs - emit_log functionality" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test emit_log functionality
@@ -2328,25 +2291,23 @@ test "EVM logs - emit_log functionality" {
     evm.emit_log(test_address, &topics, data);
 
     // Verify log was stored
-    try testing.expectEqual(@as(usize, 1), evm.logs.items.len);
+    try std.testing.expectEqual(@as(usize, 1), evm.logs.items.len);
     const log = evm.logs.items[0];
-    try testing.expectEqual(test_address, log.address);
-    try testing.expectEqual(@as(usize, 2), log.topics.len);
-    try testing.expectEqual(@as(u256, 0x1234), log.topics[0]);
-    try testing.expectEqual(@as(u256, 0x5678), log.topics[1]);
-    try testing.expectEqualStrings("test log data", log.data);
+    try std.testing.expectEqual(test_address, log.address);
+    try std.testing.expectEqual(@as(usize, 2), log.topics.len);
+    try std.testing.expectEqual(@as(u256, 0x1234), log.topics[0]);
+    try std.testing.expectEqual(@as(u256, 0x5678), log.topics[1]);
+    try std.testing.expectEqualStrings("test log data", log.data);
 
     // Test takeLogs
     const taken_logs = evm.takeLogs();
     defer DefaultEvm.CallResult.deinitLogsSlice(taken_logs, evm.allocator);
-    try testing.expectEqual(@as(usize, 1), taken_logs.len);
-    try testing.expectEqual(@as(usize, 0), evm.logs.items.len); // Should be empty after taking
+    try std.testing.expectEqual(@as(usize, 1), taken_logs.len);
+    try std.testing.expectEqual(@as(usize, 0), evm.logs.items.len); // Should be empty after taking
 }
 
 test "EVM logs - included in CallResult" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2366,7 +2327,7 @@ test "EVM logs - included in CallResult" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Create bytecode that emits LOG0 (0xA0 opcode)
@@ -2399,22 +2360,20 @@ test "EVM logs - included in CallResult" {
     defer {
         // Clean up logs
         for (result.logs) |log| {
-            testing.allocator.free(log.topics);
-            testing.allocator.free(log.data);
+            std.testing.allocator.free(log.topics);
+            std.testing.allocator.free(log.data);
         }
-        testing.allocator.free(result.logs);
+        std.testing.allocator.free(result.logs);
     }
 
     // For now, we expect no logs because LOG0 isn't implemented in the frame
     // This test just verifies the infrastructure works
-    try testing.expect(result.success);
-    try testing.expect(result.logs.len == 0); // Will be > 0 when LOG opcodes are implemented
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.logs.len == 0); // Will be > 0 when LOG opcodes are implemented
 }
 
 test "Host interface - hardfork compatibility checks" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2435,26 +2394,24 @@ test "Host interface - hardfork compatibility checks" {
     };
 
     // Test with different hardfork configurations
-    var london_evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .LONDON);
+    var london_evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .LONDON);
     defer london_evm.deinit();
 
-    try testing.expectEqual(Hardfork.LONDON, london_evm.get_hardfork());
-    try testing.expect(london_evm.is_hardfork_at_least(.HOMESTEAD));
-    try testing.expect(london_evm.is_hardfork_at_least(.LONDON));
-    try testing.expect(!london_evm.is_hardfork_at_least(.CANCUN));
+    try std.testing.expectEqual(Hardfork.LONDON, london_evm.get_hardfork());
+    try std.testing.expect(london_evm.is_hardfork_at_least(.HOMESTEAD));
+    try std.testing.expect(london_evm.is_hardfork_at_least(.LONDON));
+    try std.testing.expect(!london_evm.is_hardfork_at_least(.CANCUN));
 
-    var cancun_evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var cancun_evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer cancun_evm.deinit();
 
-    try testing.expectEqual(Hardfork.CANCUN, cancun_evm.get_hardfork());
-    try testing.expect(cancun_evm.is_hardfork_at_least(.LONDON));
-    try testing.expect(cancun_evm.is_hardfork_at_least(.CANCUN));
+    try std.testing.expectEqual(Hardfork.CANCUN, cancun_evm.get_hardfork());
+    try std.testing.expect(cancun_evm.is_hardfork_at_least(.LONDON));
+    try std.testing.expect(cancun_evm.is_hardfork_at_least(.CANCUN));
 }
 
 test "Host interface - access cost operations" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2474,7 +2431,7 @@ test "Host interface - access cost operations" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .BERLIN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
 
     const address = ZERO_ADDRESS;
@@ -2485,14 +2442,12 @@ test "Host interface - access cost operations" {
     const storage_cost = try evm.access_storage_slot(address, slot);
 
     // Cold access costs
-    try testing.expectEqual(@as(u64, 2600), address_cost);
-    try testing.expectEqual(@as(u64, 2100), storage_cost);
+    try std.testing.expectEqual(@as(u64, 2600), address_cost);
+    try std.testing.expectEqual(@as(u64, 2100), storage_cost);
 }
 
 test "Host interface - input size validation" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2512,12 +2467,12 @@ test "Host interface - input size validation" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Create input that exceeds max_input_size (131072 bytes)
-    const large_input = try testing.allocator.alloc(u8, 200000);
-    defer testing.allocator.free(large_input);
+    const large_input = try std.testing.allocator.alloc(u8, 200000);
+    defer std.testing.allocator.free(large_input);
     @memset(large_input, 0xFF);
 
     const call_params = DefaultEvm.CallParams{
@@ -2533,14 +2488,12 @@ test "Host interface - input size validation" {
     const result = try evm.call(call_params);
 
     // Should fail due to input size limit
-    try testing.expect(!result.success);
-    try testing.expectEqual(@as(u64, 0), result.gas_left);
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(u64, 0), result.gas_left);
 }
 
 test "Call types - CREATE2 with salt" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2560,7 +2513,7 @@ test "Call types - CREATE2 with salt" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // PUSH1 0 PUSH1 0 RETURN (empty contract)
@@ -2577,17 +2530,15 @@ test "Call types - CREATE2 with salt" {
     };
 
     const result = try evm.call(create2_params);
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
 }
 
 test "Error handling - nested call depth tracking" {
-    const testing = std.testing;
-
     // Use smaller depth limit for testing
     const TestEvm = Evm(.{ .max_call_depth = 3 });
 
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2607,10 +2558,10 @@ test "Error handling - nested call depth tracking" {
         .chain_id = 1,
     };
 
-    var evm = try TestEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try TestEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    try testing.expectEqual(@as(u2, 0), evm.depth);
+    try std.testing.expectEqual(@as(u2, 0), evm.depth);
 
     const call_params = TestEvm.CallParams{
         .call = .{
@@ -2625,20 +2576,18 @@ test "Error handling - nested call depth tracking" {
     // Call should succeed when depth < max
     evm.depth = 2;
     const result1 = try evm.inner_call(call_params);
-    try testing.expect(result1.success);
-    try testing.expectEqual(@as(u2, 2), evm.depth); // Should restore depth
+    try std.testing.expect(result1.success);
+    try std.testing.expectEqual(@as(u2, 2), evm.depth); // Should restore depth
 
     // Call should fail when depth >= max
     evm.depth = 3;
     const result2 = try evm.inner_call(call_params);
-    try testing.expect(!result2.success);
-    try testing.expectEqual(@as(u64, 0), result2.gas_left);
+    try std.testing.expect(!result2.success);
+    try std.testing.expectEqual(@as(u64, 0), result2.gas_left);
 }
 
 test "Error handling - precompile execution" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2658,7 +2607,7 @@ test "Error handling - precompile execution" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test calling ECRECOVER precompile (address 0x01)
@@ -2677,13 +2626,11 @@ test "Error handling - precompile execution" {
 
     const result = try evm.call(call_params);
     // ECRECOVER should handle invalid input gracefully
-    try testing.expect(result.gas_left < 100000); // Some gas should be consumed
+    try std.testing.expect(result.gas_left < 100000); // Some gas should be consumed
 }
 
 test "Precompiles - IDENTITY precompile (0x04)" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2703,7 +2650,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test IDENTITY precompile - should return input data unchanged
@@ -2721,21 +2668,19 @@ test "Precompiles - IDENTITY precompile (0x04)" {
     };
 
     const result = try evm.call(call_params);
-    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
 
-    try testing.expect(result.success);
-    try testing.expectEqual(test_data.len, result.output.len);
-    try testing.expectEqualStrings(test_data, result.output);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(test_data.len, result.output.len);
+    try std.testing.expectEqualStrings(test_data, result.output);
 
     // Gas cost should be 15 + 3 * 1 = 18 (base + 3 * word count)
     const expected_gas_cost = 15 + 3 * ((test_data.len + 31) / 32);
-    try testing.expectEqual(100000 - expected_gas_cost, result.gas_left);
+    try std.testing.expectEqual(100000 - expected_gas_cost, result.gas_left);
 }
 
 test "Precompiles - SHA256 precompile (0x02)" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2755,7 +2700,7 @@ test "Precompiles - SHA256 precompile (0x02)" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test SHA256 precompile
@@ -2773,11 +2718,11 @@ test "Precompiles - SHA256 precompile (0x02)" {
     };
 
     const result = try evm.call(call_params);
-    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
 
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 always returns 32 bytes
-    try testing.expect(result.gas_left < 100000); // Gas should be consumed
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 always returns 32 bytes
+    try std.testing.expect(result.gas_left < 100000); // Gas should be consumed
 }
 
 test "Precompiles - disabled configuration" {
@@ -2786,7 +2731,7 @@ test "Precompiles - disabled configuration" {
     // Create EVM with precompiles disabled
     const NoPrecompileEvm = Evm(.{ .enable_precompiles = false });
 
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2806,7 +2751,7 @@ test "Precompiles - disabled configuration" {
         .chain_id = 1,
     };
 
-    var evm = try NoPrecompileEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try NoPrecompileEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Try to call IDENTITY precompile - should be treated as regular call
@@ -2826,15 +2771,13 @@ test "Precompiles - disabled configuration" {
     const result = try evm.call(call_params);
 
     // Should succeed but not execute as precompile (no special precompile behavior)
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 0), result.output.len); // No precompile output
-    try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len); // No precompile output
+    try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
 }
 
 test "Precompiles - invalid precompile addresses" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -2854,7 +2797,7 @@ test "Precompiles - invalid precompile addresses" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test invalid precompile address (0x0B - beyond supported range)
@@ -2873,8 +2816,8 @@ test "Precompiles - invalid precompile addresses" {
     const result = try evm.call(call_params);
 
     // Should succeed as regular call (not precompile)
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
 }
 
 // ============================================================================
@@ -2882,10 +2825,9 @@ test "Precompiles - invalid precompile addresses" {
 // ============================================================================
 
 test "Debug - Gas limit affects execution" {
-    const testing = std.testing;
-    std.testing.log_level = .warn;
+    std.std.testing.log_level = .warn;
     
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
     
@@ -2905,7 +2847,7 @@ test "Debug - Gas limit affects execution" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     // Deploy a simple infinite loop contract
@@ -2934,8 +2876,8 @@ test "Debug - Gas limit affects execution" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
         
-        try testing.expect(!result.success); // Should fail
-        try testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
+        try std.testing.expect(!result.success); // Should fail
+        try std.testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
         std.log.warn("Low gas (100): elapsed = {} ns, success = {}", .{elapsed, result.success});
     }
     
@@ -2953,8 +2895,8 @@ test "Debug - Gas limit affects execution" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
         
-        try testing.expect(!result.success); // Should still fail (infinite loop)
-        try testing.expectEqual(@as(u64, 0), result.gas_left);
+        try std.testing.expect(!result.success); // Should still fail (infinite loop)
+        try std.testing.expectEqual(@as(u64, 0), result.gas_left);
         std.log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{elapsed, result.success});
     }
     
@@ -2972,17 +2914,16 @@ test "Debug - Gas limit affects execution" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
         
-        try testing.expect(!result.success); // Should fail after consuming all gas
-        try testing.expectEqual(@as(u64, 0), result.gas_left);
+        try std.testing.expect(!result.success); // Should fail after consuming all gas
+        try std.testing.expectEqual(@as(u64, 0), result.gas_left);
         std.log.warn("High gas (1M): elapsed = {} ns, success = {}", .{elapsed, result.success});
     }
 }
 
 test "Debug - Contract deployment and execution" {
-    const testing = std.testing;
-    std.testing.log_level = .warn;
+    std.std.testing.log_level = .warn;
     
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
     
@@ -3002,7 +2943,7 @@ test "Debug - Contract deployment and execution" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     // Test 1: Call to non-existent contract
@@ -3020,8 +2961,8 @@ test "Debug - Contract deployment and execution" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
         
-        try testing.expect(result.success); // Empty contract succeeds immediately
-        try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
+        try std.testing.expect(result.success); // Empty contract succeeds immediately
+        try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
         std.log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{elapsed, result.gas_left});
     }
     
@@ -3049,10 +2990,10 @@ test "Debug - Contract deployment and execution" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
         
-        try testing.expect(result.success);
+        try std.testing.expect(result.success);
         // STOP should consume minimal gas
         const gas_used = 100000 - result.gas_left;
-        try testing.expect(gas_used < 100); // Should use very little gas
+        try std.testing.expect(gas_used < 100); // Should use very little gas
         std.log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{elapsed, gas_used});
     }
     
@@ -3082,19 +3023,18 @@ test "Debug - Contract deployment and execution" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
         
-        try testing.expect(result.success);
+        try std.testing.expect(result.success);
         const gas_used = 100000 - result.gas_left;
-        try testing.expect(gas_used > 0); // Should use some gas
-        try testing.expect(gas_used < 1000); // But not too much
+        try std.testing.expect(gas_used > 0); // Should use some gas
+        try std.testing.expect(gas_used < 1000); // But not too much
         std.log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{elapsed, gas_used});
     }
 }
 
 test "Debug - Bytecode size affects execution time" {
-    const testing = std.testing;
-    std.testing.log_level = .warn;
+    std.std.testing.log_level = .warn;
     
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
     
@@ -3114,11 +3054,11 @@ test "Debug - Bytecode size affects execution time" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     // Create a large contract that does simple operations
-    var large_bytecode = std.ArrayList(u8).init(testing.allocator);
+    var large_bytecode = std.ArrayList(u8).init(std.testing.allocator);
     defer large_bytecode.deinit();
     
     // Add many PUSH1/POP pairs (each costs gas but doesn't loop)
@@ -3160,20 +3100,18 @@ test "Debug - Bytecode size affects execution time" {
         
         // With low gas, should fail before completing
         if (gas_limit < 50000) {
-            try testing.expect(!result.success);
-            try testing.expectEqual(@as(u64, 0), result.gas_left);
+            try std.testing.expect(!result.success);
+            try std.testing.expectEqual(@as(u64, 0), result.gas_left);
         } else {
             // With enough gas, should complete
-            try testing.expect(result.success);
-            try testing.expect(result.gas_left > 0);
+            try std.testing.expect(result.success);
+            try std.testing.expect(result.gas_left > 0);
         }
     }
 }
 
 test "Security - bounds checking and edge cases" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3193,7 +3131,7 @@ test "Security - bounds checking and edge cases" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test maximum gas limit
@@ -3208,15 +3146,15 @@ test "Security - bounds checking and edge cases" {
     };
 
     const max_gas_result = try evm.call(max_gas_params);
-    try testing.expect(max_gas_result.gas_left <= std.math.maxInt(u64));
+    try std.testing.expect(max_gas_result.gas_left <= std.math.maxInt(u64));
 
     // Test invalid address operations
     const invalid_address = [_]u8{0xFF} ** 20;
     const balance = evm.get_balance(invalid_address);
-    try testing.expectEqual(@as(u256, 0), balance);
+    try std.testing.expectEqual(@as(u256, 0), balance);
 
     const exists = evm.account_exists(invalid_address);
-    try testing.expect(!exists);
+    try std.testing.expect(!exists);
 
     // Test max u256 storage operations
     const max_key: u256 = std.math.maxInt(u256);
@@ -3224,7 +3162,7 @@ test "Security - bounds checking and edge cases" {
 
     try evm.set_storage(ZERO_ADDRESS, max_key, max_value);
     const retrieved_max = evm.get_storage(ZERO_ADDRESS, max_key);
-    try testing.expectEqual(max_value, retrieved_max);
+    try std.testing.expectEqual(max_value, retrieved_max);
 }
 
 test "EVM with minimal planner strategy" {
@@ -3237,7 +3175,7 @@ test "EVM with minimal planner strategy" {
     const MinimalEvm = Evm(MinimalEvmConfig);
 
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3257,7 +3195,7 @@ test "EVM with minimal planner strategy" {
         .chain_id = 1,
     };
 
-    var evm = try MinimalEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try MinimalEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test basic execution with minimal planner
@@ -3279,7 +3217,7 @@ test "EVM with minimal planner strategy" {
     };
 
     const result = try evm.call(call_params);
-    try testing.expect(result.success);
+    try std.testing.expect(result.success);
 }
 
 test "EVM with advanced planner strategy" {
@@ -3292,7 +3230,7 @@ test "EVM with advanced planner strategy" {
     const AdvancedEvm = Evm(AdvancedEvmConfig);
 
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3312,7 +3250,7 @@ test "EVM with advanced planner strategy" {
         .chain_id = 1,
     };
 
-    var evm = try AdvancedEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try AdvancedEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test basic execution with advanced planner
@@ -3334,7 +3272,7 @@ test "EVM with advanced planner strategy" {
     };
 
     const result = try evm.call(call_params);
-    try testing.expect(result.success);
+    try std.testing.expect(result.success);
 }
 
 // =============================================================================
@@ -3342,10 +3280,8 @@ test "EVM with advanced planner strategy" {
 // =============================================================================
 
 test "journal state application - storage change rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3365,7 +3301,7 @@ test "journal state application - storage change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const test_address = [_]u8{0x12} ++ [_]u8{0} ** 19;
@@ -3392,21 +3328,19 @@ test "journal state application - storage change rollback" {
 
     // Verify new value is set
     const current_value = try evm.database.get_storage(test_address, storage_key);
-    try testing.expectEqual(new_value, current_value);
+    try std.testing.expectEqual(new_value, current_value);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify storage value was reverted
     const reverted_value = try evm.database.get_storage(test_address, storage_key);
-    try testing.expectEqual(original_value, reverted_value);
+    try std.testing.expectEqual(original_value, reverted_value);
 }
 
 test "journal state application - balance change rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3426,7 +3360,7 @@ test "journal state application - balance change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const test_address = [_]u8{0x34} ++ [_]u8{0} ** 19;
@@ -3455,21 +3389,19 @@ test "journal state application - balance change rollback" {
 
     // Verify new balance is set
     const current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(new_balance, current_account.balance);
+    try std.testing.expectEqual(new_balance, current_account.balance);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify balance was reverted
     const reverted_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(original_balance, reverted_account.balance);
+    try std.testing.expectEqual(original_balance, reverted_account.balance);
 }
 
 test "journal state application - nonce change rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3489,7 +3421,7 @@ test "journal state application - nonce change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const test_address = [_]u8{0x56} ++ [_]u8{0} ** 19;
@@ -3518,21 +3450,19 @@ test "journal state application - nonce change rollback" {
 
     // Verify new nonce is set
     const current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(new_nonce, current_account.nonce);
+    try std.testing.expectEqual(new_nonce, current_account.nonce);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify nonce was reverted
     const reverted_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(original_nonce, reverted_account.nonce);
+    try std.testing.expectEqual(original_nonce, reverted_account.nonce);
 }
 
 test "journal state application - code change rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3552,7 +3482,7 @@ test "journal state application - code change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const test_address = [_]u8{0x78} ++ [_]u8{0} ** 19;
@@ -3581,21 +3511,19 @@ test "journal state application - code change rollback" {
 
     // Verify new code hash is set
     const current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
+    try std.testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify code hash was reverted
     const reverted_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
+    try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
 }
 
 test "journal state application - multiple changes rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3615,7 +3543,7 @@ test "journal state application - multiple changes rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const test_address = [_]u8{0x9A} ++ [_]u8{0} ** 19;
@@ -3685,29 +3613,27 @@ test "journal state application - multiple changes rollback" {
 
     // Verify all new values are set
     const current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(new_balance, current_account.balance);
-    try testing.expectEqual(new_nonce, current_account.nonce);
-    try testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
+    try std.testing.expectEqual(new_balance, current_account.balance);
+    try std.testing.expectEqual(new_nonce, current_account.nonce);
+    try std.testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
     const current_storage = try evm.database.get_storage(test_address, storage_key);
-    try testing.expectEqual(new_storage, current_storage);
+    try std.testing.expectEqual(new_storage, current_storage);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify all values were reverted
     const reverted_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(original_balance, reverted_account.balance);
-    try testing.expectEqual(original_nonce, reverted_account.nonce);
-    try testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
+    try std.testing.expectEqual(original_balance, reverted_account.balance);
+    try std.testing.expectEqual(original_nonce, reverted_account.nonce);
+    try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
     const reverted_storage = try evm.database.get_storage(test_address, storage_key);
-    try testing.expectEqual(original_storage, reverted_storage);
+    try std.testing.expectEqual(original_storage, reverted_storage);
 }
 
 test "journal state application - nested snapshots rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3727,7 +3653,7 @@ test "journal state application - nested snapshots rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     const test_address = [_]u8{0xBE} ++ [_]u8{0} ** 19;
@@ -3770,24 +3696,22 @@ test "journal state application - nested snapshots rollback" {
 
     // Verify final state
     var current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(final_balance, current_account.balance);
+    try std.testing.expectEqual(final_balance, current_account.balance);
 
     // Revert to second snapshot (should restore middle state)
     evm.revert_to_snapshot(snapshot2);
     current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(middle_balance, current_account.balance);
+    try std.testing.expectEqual(middle_balance, current_account.balance);
 
     // Revert to first snapshot (should restore original state)
     evm.revert_to_snapshot(snapshot1);
     current_account = (try evm.database.get_account(test_address)).?;
-    try testing.expectEqual(original_balance, current_account.balance);
+    try std.testing.expectEqual(original_balance, current_account.balance);
 }
 
 test "journal state application - empty journal rollback" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3807,7 +3731,7 @@ test "journal state application - empty journal rollback" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Create snapshot with no changes
@@ -3817,14 +3741,12 @@ test "journal state application - empty journal rollback" {
     evm.revert_to_snapshot(snapshot_id);
 
     // Test passes if no error is thrown
-    try testing.expect(true);
+    try std.testing.expect(true);
 }
 
 test "EVM contract execution - minimal benchmark reproduction" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3844,7 +3766,7 @@ test "EVM contract execution - minimal benchmark reproduction" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Simple test contract bytecode: PUSH1 0x42 PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
@@ -3885,16 +3807,14 @@ test "EVM contract execution - minimal benchmark reproduction" {
     const result = try evm.call(call_params);
 
     // Verify execution succeeded
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
-    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
 }
 
 test "Precompile - IDENTITY (0x04) basic functionality" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3914,7 +3834,7 @@ test "Precompile - IDENTITY (0x04) basic functionality" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test calling IDENTITY precompile (0x04) - should return input as-is
@@ -3935,16 +3855,14 @@ test "Precompile - IDENTITY (0x04) basic functionality" {
     const result = try evm.call(call_params);
 
     // Verify execution succeeded
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
-    try testing.expectEqualSlices(u8, input_data, result.output);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqualSlices(u8, input_data, result.output);
 }
 
 test "Precompile - SHA256 (0x02) basic functionality" {
-    const testing = std.testing;
-
     // Create test database
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -3964,7 +3882,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Test calling SHA256 precompile (0x02)
@@ -3985,22 +3903,20 @@ test "Precompile - SHA256 (0x02) basic functionality" {
     const result = try evm.call(call_params);
 
     // Verify execution succeeded
-    try testing.expect(result.success);
-    try testing.expect(result.gas_left > 0);
-    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
     
     // Expected SHA-256 hash of "abc"
     const expected = [_]u8{
         0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
         0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
     };
-    try testing.expectEqualSlices(u8, &expected, result.output);
+    try std.testing.expectEqualSlices(u8, &expected, result.output);
 }
 
 test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
-    const testing = std.testing;
-    
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
@@ -4020,7 +3936,7 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     // Test ECRECOVER with invalid signature (all zeros)
@@ -4039,19 +3955,17 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
     
     const result = try evm.call(call_params);
     
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
     
     // ECRECOVER returns zero address for invalid signatures (placeholder behavior)
     for (result.output) |byte| {
-        try testing.expectEqual(@as(u8, 0), byte);
+        try std.testing.expectEqual(@as(u8, 0), byte);
     }
 }
 
 test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
-    const testing = std.testing;
-    
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
@@ -4071,7 +3985,7 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{3};
@@ -4090,19 +4004,17 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
     const result = try evm.call(call_params);
     
     // RIPEMD160 is a placeholder implementation (returns zeros)
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
     
     // Should be zeros (placeholder behavior)
     for (result.output) |byte| {
-        try testing.expectEqual(@as(u8, 0), byte);
+        try std.testing.expectEqual(@as(u8, 0), byte);
     }
 }
 
 test "Precompile diagnosis - MODEXP (0x05) basic case works" {
-    const testing = std.testing;
-    
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
@@ -4122,7 +4034,7 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{5};
@@ -4148,15 +4060,13 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
     
     const result = try evm.call(call_params);
     
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 1), result.output.len);
-    try testing.expectEqual(@as(u8, 1), result.output[0]);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 1), result.output.len);
+    try std.testing.expectEqual(@as(u8, 1), result.output[0]);
 }
 
 test "Precompile diagnosis - BN254 operations disabled" {
-    const testing = std.testing;
-    
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
@@ -4176,7 +4086,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     // Test ECADD (0x06)
@@ -4198,10 +4108,10 @@ test "Precompile diagnosis - BN254 operations disabled" {
     // BN254 operations might be disabled (check build_options.no_bn254)
     // The precompile will either succeed with placeholder output or fail
     if (ecadd_result.success) {
-        try testing.expectEqual(@as(usize, 64), ecadd_result.output.len);
+        try std.testing.expectEqual(@as(usize, 64), ecadd_result.output.len);
         // Placeholder implementation returns all zeros
         for (ecadd_result.output) |byte| {
-            try testing.expectEqual(@as(u8, 0), byte);
+            try std.testing.expectEqual(@as(u8, 0), byte);
         }
     } else {
         // BN254 operations disabled - this is expected behavior
@@ -4210,9 +4120,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
 }
 
 test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
-    const testing = std.testing;
-    
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
@@ -4232,7 +4140,7 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
     
     const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{9};
@@ -4250,18 +4158,17 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
     
     const result = try evm.call(call_params);
     
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 64), result.output.len);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 64), result.output.len);
     
     // BLAKE2F placeholder returns all zeros
     for (result.output) |byte| {
-        try testing.expectEqual(@as(u8, 0), byte);
+        try std.testing.expectEqual(@as(u8, 0), byte);
     }
 }
 
 test "EVM benchmark scenario - reproduces segfault" {
-    const testing = std.testing;
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
     
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
@@ -4314,14 +4221,14 @@ test "EVM benchmark scenario - reproduces segfault" {
     };
     
     const result = try evm_instance.call(call_params);
-    try testing.expect(result.success);
+    try std.testing.expect(result.success);
     
     // The segfault happens in deinit, so let's explicitly test that
     // by creating and destroying multiple times
     for (0..3) |_| {
         var temp_evm = try DefaultEvm.init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
         const temp_result = try temp_evm.call(call_params);
-        try testing.expect(temp_result.success);
+        try std.testing.expect(temp_result.success);
         temp_evm.deinit(); // This is where the segfault happens
     }
 }
@@ -4331,7 +4238,7 @@ test "EVM benchmark scenario - reproduces segfault" {
 // ============================================================================
 
 test "CREATE interaction - deployed contract can be called" {
-    const allocator = std.testing.allocator;
+    const allocator = std.std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4401,8 +4308,8 @@ test "CREATE interaction - deployed contract can be called" {
     });
     defer if (create_result.output.len > 0) allocator.free(create_result.output);
     
-    try std.testing.expect(create_result.success);
-    try std.testing.expectEqual(@as(usize, 20), create_result.output.len);
+    try std.std.testing.expect(create_result.success);
+    try std.std.testing.expectEqual(@as(usize, 20), create_result.output.len);
     
     // Get deployed contract address
     var contract_address: Address = undefined;
@@ -4420,19 +4327,19 @@ test "CREATE interaction - deployed contract can be called" {
     });
     defer if (call_result.output.len > 0) allocator.free(call_result.output);
     
-    try std.testing.expect(call_result.success);
-    try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
+    try std.std.testing.expect(call_result.success);
+    try std.std.testing.expectEqual(@as(usize, 32), call_result.output.len);
     
     // Verify returned value is 42
     var returned_value: u256 = 0;
     for (call_result.output) |byte| {
         returned_value = (returned_value << 8) | byte;
     }
-    try std.testing.expectEqual(@as(u256, 42), returned_value);
+    try std.std.testing.expectEqual(@as(u256, 42), returned_value);
 }
 
 test "CREATE interaction - factory creates and initializes child contracts" {
-    const allocator = std.testing.allocator;
+    const allocator = std.std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4559,7 +4466,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     });
     defer if (factory_result.output.len > 0) allocator.free(factory_result.output);
     
-    try std.testing.expect(factory_result.success);
+    try std.std.testing.expect(factory_result.success);
     
     // Extract child contract address from output
     var child_address: Address = undefined;
@@ -4577,18 +4484,18 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     });
     defer if (verify_result.output.len > 0) allocator.free(verify_result.output);
     
-    try std.testing.expect(verify_result.success);
+    try std.std.testing.expect(verify_result.success);
     
     // Verify returned value is 123
     var returned_value: u256 = 0;
     for (verify_result.output) |byte| {
         returned_value = (returned_value << 8) | byte;
     }
-    try std.testing.expectEqual(@as(u256, 123), returned_value);
+    try std.std.testing.expectEqual(@as(u256, 123), returned_value);
 }
 
 test "CREATE interaction - contract creates contract that creates contract" {
-    const allocator = std.testing.allocator;
+    const allocator = std.std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4733,7 +4640,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     });
     defer if (result1.output.len > 0) allocator.free(result1.output);
     
-    try std.testing.expect(result1.success);
+    try std.std.testing.expect(result1.success);
     
     // Get level 2 address from storage
     const level2_addr_u256 = evm_instance.get_storage([_]u8{0x01} ** 20, 0);
@@ -4753,7 +4660,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     });
     defer if (result2.output.len > 0) allocator.free(result2.output);
     
-    try std.testing.expect(result2.success);
+    try std.std.testing.expect(result2.success);
     
     // Get level 3 address
     var level3_addr: Address = undefined;
@@ -4771,17 +4678,17 @@ test "CREATE interaction - contract creates contract that creates contract" {
     });
     defer if (result3.output.len > 0) allocator.free(result3.output);
     
-    try std.testing.expect(result3.success);
+    try std.std.testing.expect(result3.success);
     
     var returned_value: u256 = 0;
     for (result3.output) |byte| {
         returned_value = (returned_value << 8) | byte;
     }
-    try std.testing.expectEqual(@as(u256, 99), returned_value);
+    try std.std.testing.expectEqual(@as(u256, 99), returned_value);
 }
 
 test "CREATE interaction - created contract modifies parent storage" {
-    const allocator = std.testing.allocator;
+    const allocator = std.std.testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -4906,7 +4813,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     });
     defer if (deploy_result.output.len > 0) allocator.free(deploy_result.output);
     
-    try std.testing.expect(deploy_result.success);
+    try std.std.testing.expect(deploy_result.success);
     
     // Get parent address (deterministic based on sender nonce)
     const parent_addr = [_]u8{0x01} ** 20; // Simplified for test
@@ -4919,7 +4826,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     
     // Verify parent's value storage is initially 0
     const initial_value = evm_instance.get_storage(parent_addr, 0);
-    try std.testing.expectEqual(@as(u256, 0), initial_value);
+    try std.std.testing.expectEqual(@as(u256, 0), initial_value);
     
     // Call child contract, which should call back to parent
     const call_result = try evm_instance.call(.{
@@ -4933,17 +4840,15 @@ test "CREATE interaction - created contract modifies parent storage" {
     });
     defer if (call_result.output.len > 0) allocator.free(call_result.output);
     
-    try std.testing.expect(call_result.success);
+    try std.std.testing.expect(call_result.success);
     
     // Verify parent's storage was modified by child
     const final_value = evm_instance.get_storage(parent_addr, 0);
-    try std.testing.expectEqual(@as(u256, 42), final_value);
+    try std.std.testing.expectEqual(@as(u256, 42), final_value);
 }
 
 test "Arena allocator - resets between calls" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -4963,7 +4868,7 @@ test "Arena allocator - resets between calls" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Simple contract that emits a log
@@ -4989,14 +4894,14 @@ test "Arena allocator - resets between calls" {
             .gas = 100000,
         },
     });
-    defer if (result1.output.len > 0) testing.allocator.free(result1.output);
+    defer if (result1.output.len > 0) std.testing.allocator.free(result1.output);
 
-    try testing.expect(result1.success);
-    try testing.expectEqual(@as(usize, 1), result1.logs.len);
+    try std.testing.expect(result1.success);
+    try std.testing.expectEqual(@as(usize, 1), result1.logs.len);
 
     // Arena should have allocated memory for the log
     const after_first_call = evm.internal_arena.queryCapacity();
-    try testing.expect(after_first_call >= initial_arena_bytes);
+    try std.testing.expect(after_first_call >= initial_arena_bytes);
 
     // Second call - arena should be reset
     const result2 = try evm.call(.{
@@ -5008,20 +4913,18 @@ test "Arena allocator - resets between calls" {
             .gas = 100000,
         },
     });
-    defer if (result2.output.len > 0) testing.allocator.free(result2.output);
+    defer if (result2.output.len > 0) std.testing.allocator.free(result2.output);
 
-    try testing.expect(result2.success);
-    try testing.expectEqual(@as(usize, 1), result2.logs.len);
+    try std.testing.expect(result2.success);
+    try std.testing.expectEqual(@as(usize, 1), result2.logs.len);
 
     // Arena capacity should be retained but memory reused
     const after_second_call = evm.internal_arena.queryCapacity();
-    try testing.expectEqual(after_first_call, after_second_call);
+    try std.testing.expectEqual(after_first_call, after_second_call);
 }
 
 test "Arena allocator - handles multiple logs efficiently" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -5041,7 +4944,7 @@ test "Arena allocator - handles multiple logs efficiently" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Contract that emits 100 logs
@@ -5074,22 +4977,20 @@ test "Arena allocator - handles multiple logs efficiently" {
             .gas = 5000000,
         },
     });
-    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
 
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 100), result.logs.len);
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 100), result.logs.len);
 
     // All logs should have been allocated from arena
     for (result.logs) |log| {
-        try testing.expectEqual(@as(usize, 0), log.topics.len);
-        try testing.expectEqual(@as(usize, 32), log.data.len);
+        try std.testing.expectEqual(@as(usize, 0), log.topics.len);
+        try std.testing.expectEqual(@as(usize, 32), log.data.len);
     }
 }
 
 test "Arena allocator - precompile outputs use arena" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -5109,7 +5010,7 @@ test "Arena allocator - precompile outputs use arena" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Call SHA256 precompile (address 0x02)
@@ -5125,10 +5026,10 @@ test "Arena allocator - precompile outputs use arena" {
             .gas = 100000,
         },
     });
-    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
 
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 output is 32 bytes
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 output is 32 bytes
 
     // Multiple precompile calls should reuse arena
     const result2 = try evm.call(.{
@@ -5140,16 +5041,14 @@ test "Arena allocator - precompile outputs use arena" {
             .gas = 100000,
         },
     });
-    defer if (result2.output.len > 0) testing.allocator.free(result2.output);
+    defer if (result2.output.len > 0) std.testing.allocator.free(result2.output);
 
-    try testing.expect(result2.success);
-    try testing.expectEqual(@as(usize, 32), result2.output.len);
+    try std.testing.expect(result2.success);
+    try std.testing.expectEqual(@as(usize, 32), result2.output.len);
 }
 
 test "Arena allocator - memory efficiency with nested calls" {
-    const testing = std.testing;
-
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = DatabaseInterface.init(&memory_db);
 
@@ -5169,7 +5068,7 @@ test "Arena allocator - memory efficiency with nested calls" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
     // Parent contract that calls child and emits log
@@ -5260,14 +5159,14 @@ test "Arena allocator - memory efficiency with nested calls" {
             .gas = 1000000,
         },
     });
-    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    defer if (result.output.len > 0) std.testing.allocator.free(result.output);
 
-    try testing.expect(result.success);
-    try testing.expectEqual(@as(usize, 2), result.logs.len); // Parent and child logs
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 2), result.logs.len); // Parent and child logs
 
     // Arena should have grown to accommodate logs
     const final_capacity = evm.internal_arena.queryCapacity();
-    try testing.expect(final_capacity >= initial_capacity);
+    try std.testing.expect(final_capacity >= initial_capacity);
 
     // Second call should reuse arena capacity
     const result2 = try evm.call(.{
@@ -5279,29 +5178,26 @@ test "Arena allocator - memory efficiency with nested calls" {
             .gas = 1000000,
         },
     });
-    defer if (result2.output.len > 0) testing.allocator.free(result2.output);
+    defer if (result2.output.len > 0) std.testing.allocator.free(result2.output);
 
-    try testing.expect(result2.success);
-    try testing.expectEqual(@as(usize, 2), result2.logs.len);
+    try std.testing.expect(result2.success);
+    try std.testing.expectEqual(@as(usize, 2), result2.logs.len);
 
     // Arena capacity should be retained
     const final_capacity2 = evm.internal_arena.queryCapacity();
-    try testing.expectEqual(final_capacity, final_capacity2);
+    try std.testing.expectEqual(final_capacity, final_capacity2);
 }
 
 test "Call context tracking - get_caller and get_call_value" {
-    const testing = std.testing;
-    
-    var memory_db = MemoryDatabase.init(testing.allocator);
+    var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
     const origin_addr = Address.fromHex("0x1111111111111111111111111111111111111111") catch unreachable;
     const contract_a = Address.fromHex("0x2222222222222222222222222222222222222222") catch unreachable;
-    const contract_b = Address.fromHex("0x3333333333333333333333333333333333333333") catch unreachable;
     
     var evm = try DefaultEvm.init(
-        testing.allocator,
+        std.testing.allocator,
         db_interface,
         .{},
         .{},
@@ -5313,9 +5209,9 @@ test "Call context tracking - get_caller and get_call_value" {
     defer evm.deinit();
     
     // Test depth 0 - should return origin
-    try testing.expectEqual(@as(u11, 0), evm.depth);
-    try testing.expectEqual(origin_addr, evm.get_caller());
-    try testing.expectEqual(@as(u256, 0), evm.get_call_value());
+    try std.testing.expectEqual(@as(u11, 0), evm.depth);
+    try std.testing.expectEqual(origin_addr, evm.get_caller());
+    try std.testing.expectEqual(@as(u256, 0), evm.get_call_value());
     
     // Simulate depth 1 call from origin to contract_a with value 123
     evm.depth = 1;
@@ -5324,8 +5220,8 @@ test "Call context tracking - get_caller and get_call_value" {
         .value = 123,
     };
     
-    try testing.expectEqual(origin_addr, evm.get_caller());
-    try testing.expectEqual(@as(u256, 123), evm.get_call_value());
+    try std.testing.expectEqual(origin_addr, evm.get_caller());
+    try std.testing.expectEqual(@as(u256, 123), evm.get_call_value());
     
     // Simulate depth 2 call from contract_a to contract_b with value 456
     evm.depth = 2;
@@ -5334,6 +5230,329 @@ test "Call context tracking - get_caller and get_call_value" {
         .value = 456,
     };
     
-    try testing.expectEqual(contract_a, evm.get_caller());
-    try testing.expectEqual(@as(u256, 456), evm.get_call_value());
+    try std.testing.expectEqual(contract_a, evm.get_caller());
+    try std.testing.expectEqual(@as(u256, 456), evm.get_call_value());
+}
+
+test "CREATE stores deployed code bytes" {
+    const allocator = std.std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const tx_context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 20_000_000_000, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Give creator account some balance
+    const creator_address: Address = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    try memory_db.set_account(creator_address, Account{
+        .balance = 1_000_000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Contract that uses CREATE to deploy a simple contract
+    // The deployed contract just returns 42
+    const deployed_runtime = [_]u8{
+        0x60, 0x2A, // PUSH1 42
+        0x60, 0x00, // PUSH1 0  
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+    
+    // Init code that deploys the runtime code
+    var init_code = std.ArrayList(u8).init(allocator);
+    defer init_code.deinit();
+    
+    // Store runtime code length
+    try init_code.append(0x60); // PUSH1
+    try init_code.append(@intCast(deployed_runtime.len));
+    try init_code.append(0x60); // PUSH1 0
+    try init_code.append(0x00);
+    try init_code.append(0x52); // MSTORE at 0
+    
+    // Store actual runtime code bytes
+    for (deployed_runtime, 0..) |byte, i| {
+        try init_code.append(0x60); // PUSH1
+        try init_code.append(byte);
+        try init_code.append(0x60); // PUSH1
+        try init_code.append(@intCast(i + 32)); // offset after length
+        try init_code.append(0x53); // MSTORE8
+    }
+    
+    // Return the runtime code
+    try init_code.append(0x60); // PUSH1 
+    try init_code.append(@intCast(deployed_runtime.len + 32)); // size
+    try init_code.append(0x60); // PUSH1
+    try init_code.append(0x00); // offset
+    try init_code.append(0xF3); // RETURN
+    
+    // Contract that calls CREATE with the init code
+    var creator_bytecode = std.ArrayList(u8).init(allocator);
+    defer creator_bytecode.deinit();
+    
+    // Push init code to memory
+    for (init_code.items, 0..) |byte, i| {
+        try creator_bytecode.append(0x60); // PUSH1
+        try creator_bytecode.append(byte);
+        try creator_bytecode.append(0x60); // PUSH1  
+        try creator_bytecode.append(@intCast(i));
+        try creator_bytecode.append(0x53); // MSTORE8
+    }
+    
+    // CREATE: value=0, offset=0, size=init_code.len
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(@intCast(init_code.items.len)); // size
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // offset
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // value
+    try creator_bytecode.append(0xF0); // CREATE
+    
+    // Return the created address
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // offset
+    try creator_bytecode.append(0x52); // MSTORE
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x20); // size
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // offset
+    try creator_bytecode.append(0xF3); // RETURN
+    
+    // Deploy creator contract
+    const creator_code_hash = try memory_db.set_code(creator_bytecode.items);
+    try memory_db.set_account(creator_address, Account{
+        .balance = 1_000_000,
+        .nonce = 0,
+        .code_hash = creator_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Execute CREATE
+    const result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = creator_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 500000,
+        },
+    });
+    
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // Extract created contract address from output
+    var created_address: Address = undefined;
+    @memcpy(&created_address, result.output[12..32]);
+    
+    // Verify the deployed contract exists and has the correct code
+    const deployed_code = try memory_db.get_code_by_address(created_address);
+    try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
+    
+    // Call the deployed contract to verify it works
+    const call_result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = created_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 100000,
+        },
+    });
+    
+    try std.testing.expect(call_result.success);
+    try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
+    
+    // Verify it returns 42
+    var returned_value: u256 = 0;
+    for (call_result.output, 0..) |byte, i| {
+        returned_value |= @as(u256, byte) << @intCast(8 * (31 - i));
+    }
+    try std.testing.expectEqual(@as(u256, 42), returned_value);
+}
+
+test "CREATE2 stores deployed code bytes" {
+    const allocator = std.std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const tx_context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 20_000_000_000, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Give creator account some balance
+    const creator_address: Address = [_]u8{0x22} ++ [_]u8{0} ** 19;
+    try memory_db.set_account(creator_address, Account{
+        .balance = 1_000_000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Contract that uses CREATE2 to deploy a simple contract
+    // The deployed contract just returns 99
+    const deployed_runtime = [_]u8{
+        0x60, 0x63, // PUSH1 99
+        0x60, 0x00, // PUSH1 0  
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+    
+    // Init code that deploys the runtime code
+    var init_code = std.ArrayList(u8).init(allocator);
+    defer init_code.deinit();
+    
+    // Store runtime code length
+    try init_code.append(0x60); // PUSH1
+    try init_code.append(@intCast(deployed_runtime.len));
+    try init_code.append(0x60); // PUSH1 0
+    try init_code.append(0x00);
+    try init_code.append(0x52); // MSTORE at 0
+    
+    // Store actual runtime code bytes
+    for (deployed_runtime, 0..) |byte, i| {
+        try init_code.append(0x60); // PUSH1
+        try init_code.append(byte);
+        try init_code.append(0x60); // PUSH1
+        try init_code.append(@intCast(i + 32)); // offset after length
+        try init_code.append(0x53); // MSTORE8
+    }
+    
+    // Return the runtime code
+    try init_code.append(0x60); // PUSH1 
+    try init_code.append(@intCast(deployed_runtime.len + 32)); // size
+    try init_code.append(0x60); // PUSH1
+    try init_code.append(0x00); // offset
+    try init_code.append(0xF3); // RETURN
+    
+    // Contract that calls CREATE2 with the init code
+    var creator_bytecode = std.ArrayList(u8).init(allocator);
+    defer creator_bytecode.deinit();
+    
+    // Push init code to memory
+    for (init_code.items, 0..) |byte, i| {
+        try creator_bytecode.append(0x60); // PUSH1
+        try creator_bytecode.append(byte);
+        try creator_bytecode.append(0x60); // PUSH1  
+        try creator_bytecode.append(@intCast(i));
+        try creator_bytecode.append(0x53); // MSTORE8
+    }
+    
+    // CREATE2: salt, size, offset, value
+    // Use salt = 0x42
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x42); // salt
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(@intCast(init_code.items.len)); // size
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // offset
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // value
+    try creator_bytecode.append(0xF5); // CREATE2
+    
+    // Return the created address
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // offset
+    try creator_bytecode.append(0x52); // MSTORE
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x20); // size
+    try creator_bytecode.append(0x60); // PUSH1
+    try creator_bytecode.append(0x00); // offset
+    try creator_bytecode.append(0xF3); // RETURN
+    
+    // Deploy creator contract
+    const creator_code_hash = try memory_db.set_code(creator_bytecode.items);
+    try memory_db.set_account(creator_address, Account{
+        .balance = 1_000_000,
+        .nonce = 0,
+        .code_hash = creator_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Execute CREATE2
+    const result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = creator_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 500000,
+        },
+    });
+    
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // Extract created contract address from output
+    var created_address: Address = undefined;
+    @memcpy(&created_address, result.output[12..32]);
+    
+    // Verify the deployed contract exists and has the correct code
+    const deployed_code = try memory_db.get_code_by_address(created_address);
+    try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
+    
+    // Call the deployed contract to verify it works
+    const call_result = try evm.call(.{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = created_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 100000,
+        },
+    });
+    
+    try std.testing.expect(call_result.success);
+    try std.testing.expectEqual(@as(usize, 32), call_result.output.len);
+    
+    // Verify it returns 99
+    var returned_value: u256 = 0;
+    for (call_result.output, 0..) |byte, i| {
+        returned_value |= @as(u256, byte) << @intCast(8 * (31 - i));
+    }
+    try std.testing.expectEqual(@as(u256, 99), returned_value);
 }
