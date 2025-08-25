@@ -1985,10 +1985,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Creates a new contract using the provided initialization code and value.
         /// Stack: [value, offset, size] → [address]
         pub fn create(self: *Self) Error!void {
-            const host = self.host;
             // Check static context - CREATE is not allowed in static context
-            if (self.host) |host| {
-                if (h.get_is_static()) {
+            const host = self.host;
+            if (host.get_is_static()) {
                 return Error.WriteProtection;
             }
             const size = try self.stack.pop();
@@ -2126,7 +2125,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// RETURN opcode (0xF3) - Halt execution returning data
         /// Halts execution and returns data from memory.
         /// Stack: [offset, size] → []
-        pub fn return(self: *Self) Error!void {
+        pub fn @"return"(self: *Self) Error!void {
             const size = try self.stack.pop();
             const offset = try self.stack.pop();
             // Bounds checking for memory offset and size

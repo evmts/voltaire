@@ -13,7 +13,7 @@ const CallParams = @import("call_params.zig").CallParams;
 const toAddress = TestHelpers.toAddress;
 const addressToU256 = TestHelpers.addressToU256;
 
-test "Frame op_call basic functionality" {
+test "Frame call basic functionality" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -42,14 +42,14 @@ test "Frame op_call basic functionality" {
     try frame.stack.push(32);                             // output_size
     
     // Execute CALL
-    try frame.op_call();
+    try frame.call();
     
     // Should push success (1) to stack
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
 }
 
-test "Frame op_call static context with value fails" {
+test "Frame call static context with value fails" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -78,10 +78,10 @@ test "Frame op_call static context with value fails" {
     try frame.stack.push(0);                              // output_size
     
     // Should fail with WriteProtection
-    try std.testing.expectError(error.WriteProtection, frame.op_call());
+    try std.testing.expectError(error.WriteProtection, frame.call());
 }
 
-test "Frame op_call stack underflow" {
+test "Frame call stack underflow" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -102,10 +102,10 @@ test "Frame op_call stack underflow" {
     try frame.stack.push(100);
     
     // Should fail with stack underflow
-    try std.testing.expectError(error.StackUnderflow, frame.op_call());
+    try std.testing.expectError(error.StackUnderflow, frame.call());
 }
 
-test "Frame op_delegatecall basic functionality" {
+test "Frame delegatecall basic functionality" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -138,14 +138,14 @@ test "Frame op_delegatecall basic functionality" {
     try frame.stack.push(32);                             // output_size
     
     // Execute DELEGATECALL
-    try frame.op_delegatecall();
+    try frame.delegatecall();
     
     // Should push success (1) to stack
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
 }
 
-test "Frame op_staticcall basic functionality" {
+test "Frame staticcall basic functionality" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -173,14 +173,14 @@ test "Frame op_staticcall basic functionality" {
     try frame.stack.push(32);                             // output_size
     
     // Execute STATICCALL
-    try frame.op_staticcall();
+    try frame.staticcall();
     
     // Should push success (1) to stack
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
 }
 
-test "Frame op_staticcall prevents state changes" {
+test "Frame staticcall prevents state changes" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -208,14 +208,14 @@ test "Frame op_staticcall prevents state changes" {
     try frame.stack.push(32);                             // output_size
     
     // Execute STATICCALL
-    try frame.op_staticcall();
+    try frame.staticcall();
     
     // Should fail because the called contract tries to modify state
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result); // Failure
 }
 
-test "Frame op_create basic functionality" {
+test "Frame create basic functionality" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -246,7 +246,7 @@ test "Frame op_create basic functionality" {
     try frame.stack.push(init_code.len); // size
     
     // Execute CREATE
-    try frame.op_create();
+    try frame.create();
     
     // Get the created contract address from stack
     const created_address_u256 = try frame.stack.pop();
@@ -255,7 +255,7 @@ test "Frame op_create basic functionality" {
     try std.testing.expect(created_address_u256 != 0);
 }
 
-test "Frame op_create static context fails" {
+test "Frame create static context fails" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -277,10 +277,10 @@ test "Frame op_create static context fails" {
     try frame.stack.push(0);   // size
     
     // Should fail with WriteProtection
-    try std.testing.expectError(error.WriteProtection, frame.op_create());
+    try std.testing.expectError(error.WriteProtection, frame.create());
 }
 
-test "Frame op_create2 basic functionality" {
+test "Frame create2 basic functionality" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -312,7 +312,7 @@ test "Frame op_create2 basic functionality" {
     try frame.stack.push(0x123456789abcdef0); // salt
     
     // Execute CREATE2
-    try frame.op_create2();
+    try frame.create2();
     
     // Get the created contract address from stack
     const created_address_u256 = try frame.stack.pop();
@@ -321,7 +321,7 @@ test "Frame op_create2 basic functionality" {
     try std.testing.expect(created_address_u256 != 0);
 }
 
-test "Frame op_selfdestruct basic functionality" {
+test "Frame selfdestruct basic functionality" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -349,10 +349,10 @@ test "Frame op_selfdestruct basic functionality" {
     try frame.stack.push(addressToU256(recipient_address));
     
     // Execute SELFDESTRUCT
-    try frame.op_selfdestruct();
+    try frame.selfdestruct();
 }
 
-test "Frame op_selfdestruct static context fails" {
+test "Frame selfdestruct static context fails" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -372,10 +372,10 @@ test "Frame op_selfdestruct static context fails" {
     try frame.stack.push(0x22); // recipient
     
     // Should fail with WriteProtection
-    try std.testing.expectError(error.WriteProtection, frame.op_selfdestruct());
+    try std.testing.expectError(error.WriteProtection, frame.selfdestruct());
 }
 
-test "Frame op_selfdestruct stack underflow" {
+test "Frame selfdestruct stack underflow" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -391,7 +391,7 @@ test "Frame op_selfdestruct stack underflow" {
     defer frame.deinit(allocator);
     
     // Empty stack - should fail
-    try std.testing.expectError(error.StackUnderflow, frame.op_selfdestruct());
+    try std.testing.expectError(error.StackUnderflow, frame.selfdestruct());
 }
 
 test "Frame system opcodes with failing calls" {
@@ -423,14 +423,14 @@ test "Frame system opcodes with failing calls" {
     try frame.stack.push(32);                             // output_size
     
     // Execute CALL
-    try frame.op_call();
+    try frame.call();
     
     // Should push failure (0) to stack
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result); // Failed call
 }
 
-test "Frame op_call with value transfer" {
+test "Frame call with value transfer" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
@@ -464,7 +464,7 @@ test "Frame op_call with value transfer" {
     try frame.stack.push(0);                              // output_size
     
     // Execute CALL
-    try frame.op_call();
+    try frame.call();
     
     // Verify success
     const result = try frame.stack.pop();

@@ -2153,7 +2153,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_calldataload();
+            try self.calldataload();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATALOAD));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2164,7 +2164,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_calldatasize();
+            try self.calldatasize();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATASIZE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2175,7 +2175,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_calldatacopy();
+            try self.calldatacopy();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATACOPY));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2187,7 +2187,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_codesize();
+            try self.codesize();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CODESIZE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2198,7 +2198,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_codecopy();
+            try self.codecopy();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CODECOPY));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2209,7 +2209,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_gasprice();
+            try self.gasprice();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.GASPRICE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2238,7 +2238,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Consume the dynamic gas cost
             self.consumeGasUnchecked(@intCast(gas_cost));
 
-            try self.op_extcodesize();
+            try self.extcodesize();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODESIZE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2285,7 +2285,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Consume the total gas cost
             self.consumeGasUnchecked(@intCast(total_gas));
 
-            try self.op_extcodecopy();
+            try self.extcodecopy();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODECOPY));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2296,7 +2296,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_returndatasize();
+            try self.returndatasize();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.RETURNDATASIZE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2307,7 +2307,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_returndatacopy();
+            try self.returndatacopy();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.RETURNDATACOPY));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2335,7 +2335,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Consume the dynamic gas cost
             self.consumeGasUnchecked(@intCast(gas_cost));
 
-            try self.op_extcodehash();
+            try self.extcodehash();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODEHASH));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2347,7 +2347,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_blockhash();
+            try self.blockhash();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOCKHASH));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2358,7 +2358,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_coinbase();
+            try self.coinbase();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.COINBASE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2369,7 +2369,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_timestamp();
+            try self.timestamp();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.TIMESTAMP));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2380,7 +2380,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_number();
+            try self.number();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.NUMBER));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2391,7 +2391,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_difficulty();
+            try self.difficulty();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.DIFFICULTY));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2402,7 +2402,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_gaslimit();
+            try self.gaslimit();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.GASLIMIT));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2413,7 +2413,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_chainid();
+            try self.chainid();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CHAINID));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2437,7 +2437,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Consume the dynamic gas cost (should be 5 gas as it's pre-warmed)
             self.consumeGasUnchecked(@intCast(gas_cost));
 
-            try self.op_selfbalance();
+            try self.selfbalance();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.SELFBALANCE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2448,7 +2448,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_basefee();
+            try self.basefee();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BASEFEE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2459,7 +2459,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_blobhash();
+            try self.blobhash();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOBHASH));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2470,7 +2470,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            try self.op_blobbasefee();
+            try self.blobbasefee();
 
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOBBASEFEE));
             return dispatchNext(next_handler, self, plan_ptr);

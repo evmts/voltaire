@@ -592,7 +592,7 @@ test "CALL gas forwarding with exactly 64 gas remaining" {
     
     // After consuming base call gas (700), should have exactly 64 gas
     // 63/64 of 64 = 63 gas should be forwarded
-    try frame.op_call();
+    try frame.call();
     
     // Verify the call succeeded
     const result = try frame.stack.pop();
@@ -625,7 +625,7 @@ test "CALL gas forwarding with less than 64 gas" {
     
     // After consuming base call gas, should have 30 gas
     // 63/64 of 30 = 29 gas should be forwarded (30 - 30/64 = 30 - 0 = 30)
-    try frame.op_call();
+    try frame.call();
     
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
@@ -655,7 +655,7 @@ test "CALL with value transfer adds 2300 gas stipend correctly" {
     try frame.stack.push(0); // out_offset
     try frame.stack.push(0); // out_size
     
-    try frame.op_call();
+    try frame.call();
     
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
@@ -688,7 +688,7 @@ test "CALL stipend behavior when insufficient gas for base cost" {
     try frame.stack.push(0); // out_offset
     try frame.stack.push(0); // out_size
     
-    try frame.op_call();
+    try frame.call();
     
     // Should push 0 (failure) without adding stipend
     const result = try frame.stack.pop();
@@ -718,7 +718,7 @@ test "DELEGATECALL preserves gas forwarding semantics without stipend" {
     try frame.stack.push(0); // out_offset
     try frame.stack.push(0); // out_size
     
-    try frame.op_delegatecall();
+    try frame.delegatecall();
     
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
@@ -775,7 +775,7 @@ test "CREATE2 with maximum allowed gas forwarding" {
     const init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0xF3}; // PUSH1 0 PUSH1 0 RETURN
     try frame.memory.set_data(0, &init_code);
     
-    try frame.op_create2();
+    try frame.create2();
     
     const result = try frame.stack.pop();
     // Should succeed with proper gas forwarding
@@ -807,7 +807,7 @@ test "Multiple nested CALL operations with cumulative gas forwarding" {
     try frame.stack.push(0); // out_size
     
     const initial_gas = frame.gas_remaining;
-    try frame.op_call();
+    try frame.call();
     
     // Verify gas was consumed
     try std.testing.expect(frame.gas_remaining < initial_gas);
@@ -822,7 +822,7 @@ test "Multiple nested CALL operations with cumulative gas forwarding" {
     try frame.stack.push(0); // out_size
     
     const gas_before_second = frame.gas_remaining;
-    try frame.op_call();
+    try frame.call();
     
     // Verify cumulative gas accounting
     try std.testing.expect(frame.gas_remaining < gas_before_second);

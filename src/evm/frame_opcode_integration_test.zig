@@ -31,7 +31,7 @@ test "Frame op_add basic integration test" {
     try frame.stack.push(20);
     
     // Execute ADD
-    try frame.op_add();
+    try frame.add();
     
     // Verify result
     const result = try frame.stack.pop();
@@ -58,7 +58,7 @@ test "Frame op_mul basic integration test" {
     try frame.stack.push(6);
     
     // Execute MUL
-    try frame.op_mul();
+    try frame.mul();
     
     // Verify result
     const result = try frame.stack.pop();
@@ -89,11 +89,11 @@ test "Frame op_sload op_sstore integration test with real database" {
     // Test SSTORE: store value 42 at slot 0
     try frame.stack.push(0);  // slot
     try frame.stack.push(42); // value
-    try frame.op_sstore();
+    try frame.sstore();
     
     // Test SLOAD: load value from slot 0
     try frame.stack.push(0);  // slot
-    try frame.op_sload();
+    try frame.sload();
     
     // Verify the stored value was loaded correctly
     const loaded_value = try frame.stack.pop();
@@ -128,7 +128,7 @@ test "Frame op_keccak256 integration test with memory" {
     try frame.stack.push(test_data.len); // length
     
     // Execute KECCAK256
-    try frame.op_keccak256();
+    try frame.keccak256();
     
     // Verify we got a result (should be keccak256 hash of "hello")
     const result = try frame.stack.pop();
@@ -162,7 +162,7 @@ test "Frame op_balance integration test with real accounts" {
     try frame.stack.push(addressToU256(target_address));
     
     // Execute BALANCE
-    try frame.op_balance();
+    try frame.balance();
     
     // Verify the balance is correct
     const balance = try frame.stack.pop();
@@ -191,7 +191,7 @@ test "Frame gas consumption tracking in real EVM context" {
     try frame.stack.push(20);
     
     // Execute ADD
-    try frame.op_add();
+    try frame.add();
     
     // Verify gas was consumed
     try std.testing.expect(frame.gas_remaining < initial_gas);

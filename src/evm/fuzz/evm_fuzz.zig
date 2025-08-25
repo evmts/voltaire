@@ -249,27 +249,27 @@ test "fuzz arithmetic operations overflow/underflow" {
     // Test arithmetic operations with edge case values
     frame.stack.push(a) catch return;
     frame.stack.push(b) catch return;
-    frame.op_add() catch {};
+    frame.add() catch {};
     
     frame.stack.push(a) catch return;
     frame.stack.push(b) catch return;
-    frame.op_sub() catch {};
+    frame.sub() catch {};
     
     frame.stack.push(a) catch return;
     frame.stack.push(b) catch return;
-    frame.op_mul() catch {};
+    frame.mul() catch {};
     
     frame.stack.push(a) catch return;
     frame.stack.push(b) catch return;
-    frame.op_div() catch {};
+    frame.div() catch {};
     
     frame.stack.push(a) catch return;
     frame.stack.push(b) catch return;
-    frame.op_mod() catch {};
+    frame.mod() catch {};
     
     frame.stack.push(a) catch return;
     frame.stack.push(b) catch return;
-    frame.op_exp() catch {};
+    frame.exp() catch {};
 }
 
 test "fuzz control flow with invalid jumps" {
@@ -317,14 +317,14 @@ test "fuzz control flow with invalid jumps" {
     // Test JUMP with fuzzed destinations
     const jump_dest = std.mem.readInt(u32, input[0..4], .big) % code.items.len;
     frame.stack.push(jump_dest) catch return;
-    frame.op_jump() catch {};
+    frame.jump() catch {};
     
     // Test JUMPI with fuzzed condition and destination
     if (input.len >= 8) {
         const condition = std.mem.readInt(u32, input[4..8], .big);
         frame.stack.push(jump_dest) catch return;
         frame.stack.push(condition) catch return;
-        frame.op_jumpi() catch {};
+        frame.jumpi() catch {};
     }
 }
 

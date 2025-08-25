@@ -98,7 +98,7 @@ test "Frame CALL operation - real integration test" {
     try frame.stack.push(32);                       // output_size
     
     // Execute CALL
-    try frame.op_call();
+    try frame.call();
     
     // Verify success (1) was pushed to stack
     const stack_result = try frame.stack.pop();
@@ -158,7 +158,7 @@ test "Frame CALL with value transfer - real integration test" {
     try frame.stack.push(0);                        // output_size
     
     // Execute CALL
-    try frame.op_call();
+    try frame.call();
     
     // Verify success
     const stack_result = try frame.stack.pop();
@@ -228,7 +228,7 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     try frame.stack.push(32);                       // output_size
     
     // Execute DELEGATECALL
-    try frame.op_delegatecall();
+    try frame.delegatecall();
     
     // Verify success
     const stack_result = try frame.stack.pop();
@@ -294,7 +294,7 @@ test "Frame STATICCALL prevents state changes - real integration test" {
     try frame.stack.push(32);                       // output_size
     
     // Execute STATICCALL
-    try frame.op_staticcall();
+    try frame.staticcall();
     
     // Should fail because the called contract tries to modify state
     const stack_result = try frame.stack.pop();
@@ -363,7 +363,7 @@ test "Frame CREATE operation - real integration test" {
     try frame.stack.push(init_code.len); // size
     
     // Execute CREATE
-    try frame.op_create();
+    try frame.create();
     
     // Get the created contract address from stack
     const created_address_u256 = try frame.stack.pop();
