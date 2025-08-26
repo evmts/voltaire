@@ -13,33 +13,32 @@ const evm = @import("evm.zig");
 const HostMock = @import("host_mock.zig").HostMock;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 
-
 /// Create a FrameInterpreter with the given configuration
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     return FrameInterpreter(config);
 }
 
+// TODO rename this interpreter
 // FrameInterpreter combines a Frame with a Plan to execute EVM bytecode
 pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     config.validate();
-    const Frame = frame_mod.Frame(config);
-    const Planner = planner_mod.Planner(.{
-        .WordType = config.WordType,
-        .maxBytecodeSize = config.max_bytecode_size,
-        .stack_size = config.stack_size,
-    });
-    const Plan = plan_mod.Plan(.{
-        .WordType = config.WordType,
-        .maxBytecodeSize = config.max_bytecode_size,
-    });
 
     return struct {
+        pub const Frame = frame_mod.Frame(config);
+        pub const Planner = planner_mod.Planner(.{
+            .WordType = config.WordType,
+            .maxBytecodeSize = config.max_bytecode_size,
+            .stack_size = config.stack_size,
+        });
+        pub const Plan = plan_mod.Plan(.{
+            .WordType = config.WordType,
+            .maxBytecodeSize = config.max_bytecode_size,
+        });
         pub const WordType = config.WordType;
         pub const Error = Frame.Error || error{ OutOfMemory, TruncatedPush, InvalidJumpDestination, MissingJumpDestMetadata, InitcodeTooLarge };
+        pub const HandlerFn = plan_mod.HandlerFn;
 
         const Self = @This();
-
-        const HandlerFn = plan_mod.HandlerFn;
 
         // Check if we're building for WASM
         const is_wasm = builtin.target.cpu.arch == .wasm32;
@@ -261,36 +260,12 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             if (self.idx_to_pc.len != 0) allocator.free(self.idx_to_pc);
         }
 
+        // TODO this will return on STOP or RETURN
         pub fn interpret(self: *Self) !void {
-            // Debug print the plan in debug builds (disabled for WASM)
-            if (builtin.mode == .Debug and builtin.target.cpu.arch != .wasm32) {
-                self.plan.debugPrint();
-            }
+            self.plan.debugPrint();
 
-            // Handle empty bytecode (no instructions)
-            if (self.plan.instructionStream.len == 0) {
-                return; // Empty bytecode succeeds immediately
-            }
-            
-            // Start execution with the first handler
-            const first_handler = self.plan.instructionStream[0].handler;
-
-            log.debug("Starting execution with first handler at address: 0x{x}", .{@intFromPtr(first_handler)});
-            log.debug("Instruction stream length: {}", .{self.plan.instructionStream.len});
-            
-            // Check if handler address looks invalid (close to null)
-            const handler_addr = @intFromPtr(first_handler);
-            if (handler_addr < 0x1000) {
-                std.debug.print("ERROR: first_handler has suspicious low address: 0x{x}\n", .{handler_addr});
-                @panic("suspicious first handler address");
-            }
-
-            // Start execution - handlers will throw STOP when done
-            first_handler(&self.frame, self.plan) catch |err| {
-                if (err == Error.STOP) return; // Normal termination
-                return err;
-            };
-            unreachable;
+            if (self.plan.instructionStream.len == 0) return;
+            return try self.plan.instructionStream[0].handler(&self.frame, self.plan);
         }
 
         /// Pretty print the interpreter state for debugging.
@@ -349,16 +324,6 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
         // Helper function to dispatch to next handler with WASM compatibility
         inline fn dispatchNext(next_handler: *const HandlerFn, frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            // Debug logging to catch null handler issues
-            const handler_addr = @intFromPtr(next_handler);
-            log.debug("Dispatching to handler at address: 0x{x}", .{handler_addr});
-            
-            if (handler_addr < 0x1000) {
-                std.debug.print("ERROR: next_handler has suspicious low address: 0x{x}\n", .{handler_addr});
-                @panic("suspicious handler address");
-            }
-            
-            // Use a regular call for stability; compilers may still optimize into a tail call.
             return next_handler(frame, plan);
         }
 
@@ -399,7 +364,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     }
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
-                    
+
                     log.debug("PUSH{} handler: instruction_idx={}, getting next handler", .{ n, interpreter.instruction_idx });
                     const handler_addr = @intFromPtr(next_handler);
                     if (handler_addr < 0x1000) {
@@ -408,7 +373,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                         std.debug.print("Opcode: {}\n", .{opcode});
                         @panic("suspicious next_handler from getNextInstruction");
                     }
-                    
+
                     return dispatchNext(next_handler, self, plan_ptr);
                 }
             }.handler;
@@ -423,7 +388,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
                     const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            self.stack.dup_n_unsafe(n);
+                    self.stack.dup_n_unsafe(n);
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
                     return dispatchNext(next_handler, self, plan_ptr);
@@ -440,7 +405,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
                     const interpreter = @as(*Self, @fieldParentPtr("frame", self));
 
-            self.stack.swap_n_unsafe(n);
+                    self.stack.swap_n_unsafe(n);
 
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
                     return dispatchNext(next_handler, self, plan_ptr);
@@ -2270,7 +2235,6 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             return dispatchNext(next_handler, self, plan_ptr);
         }
 
-
         fn push_and_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
@@ -2669,18 +2633,18 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
-            
+
             // Check if we have a host first
-            
+
             // Peek at the address to determine gas cost
             const address_u256 = self.stack.peek() catch return Error.StackUnderflow;
             const address = primitives.Address.from_u256(address_u256);
-            
+
             // Access the address and get the gas cost (warm/cold)
             const gas_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Consume the dynamic gas cost
             self.consumeGasUnchecked(@intCast(gas_cost));
 
@@ -2694,38 +2658,38 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
-            
+
             // Check if we have a host first
-            
+
             // Pop all values we need for gas calculation (will push back later)
             const address_u256 = self.stack.pop() catch return Error.StackUnderflow;
             const dest_offset = self.stack.pop() catch return Error.StackUnderflow;
             const offset = self.stack.pop() catch return Error.StackUnderflow;
             const length = self.stack.pop() catch return Error.StackUnderflow;
-            
+
             // Push them back in reverse order
             self.stack.push(length) catch return Error.StackOverflow;
             self.stack.push(offset) catch return Error.StackOverflow;
             self.stack.push(dest_offset) catch return Error.StackOverflow;
             self.stack.push(address_u256) catch return Error.StackOverflow;
-            
+
             const address = primitives.Address.from_u256(address_u256);
-            
+
             // Access the address and get the gas cost (warm/cold)
             const access_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Calculate total gas cost including memory expansion
             const memory_gas = if (length > 0) blk: {
                 const end_address = @as(u64, @intCast(dest_offset)) + @as(u64, @intCast(length));
                 const expansion_cost = self.memory.get_expansion_cost(end_address);
                 break :blk expansion_cost;
             } else 0;
-            
+
             const copy_gas = (primitives.GasConstants.CopyGas * ((length + 31) / 32));
             const total_gas = access_cost + memory_gas + copy_gas;
-            
+
             // Consume the total gas cost
             self.consumeGasUnchecked(@intCast(total_gas));
 
@@ -2761,18 +2725,18 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
-            
+
             // Check if we have a host first
-            
+
             // Peek at the address to determine gas cost
             const address_u256 = self.stack.peek() catch return Error.StackUnderflow;
             const address = primitives.Address.from_u256(address_u256);
-            
+
             // Access the address and get the gas cost (warm/cold)
             const gas_cost = self.host.access_address(address) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Consume the dynamic gas cost
             self.consumeGasUnchecked(@intCast(gas_cost));
 
@@ -3100,12 +3064,12 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 test "FrameInterpreter basic execution - simple" {
     std.testing.log_level = .warn;
     const allocator = std.testing.allocator;
-    
+
     // Create memory database and EVM instance for proper host
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
-    
+
     const block_info = @import("block_info.zig").DefaultBlockInfo.init();
     const tx_context = @import("transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
@@ -3114,7 +3078,7 @@ test "FrameInterpreter basic execution - simple" {
     };
     var evm_instance = try evm.Evm(.{}).init(allocator, db_interface, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
     defer evm_instance.deinit();
-    
+
     const FrameInterpreterType = FrameInterpreter(.{});
 
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
@@ -3141,10 +3105,9 @@ test "FrameInterpreter fusion MSTORE_IMM and MLOAD_IMM round-trip" {
 
     // Build bytecode: PUSH1 0x00; MSTORE; PUSH1 0x00; MLOAD; STOP
     const bytecode = [_]u8{
-        @intFromEnum(Opcode.PUSH1), 0x00,
-        @intFromEnum(Opcode.MSTORE),
-        @intFromEnum(Opcode.PUSH1), 0x00,
-        @intFromEnum(Opcode.MLOAD),
+        @intFromEnum(Opcode.PUSH1),  0x00,
+        @intFromEnum(Opcode.MSTORE), @intFromEnum(Opcode.PUSH1),
+        0x00,                        @intFromEnum(Opcode.MLOAD),
         @intFromEnum(Opcode.STOP),
     };
 
@@ -3190,14 +3153,23 @@ test "FrameInterpreter fusion pointer variants for MSTORE/MLOAD with PUSH32 offs
     // Construct PUSH32(0x20) followed by MSTORE, then PUSH32(0x20) and MLOAD, then STOP.
     var buf: [2 + 32 + 1 + 2 + 32 + 1 + 1]u8 = undefined;
     var idx: usize = 0;
-    buf[idx] = @intFromEnum(Opcode.PUSH32); idx += 1;
+    buf[idx] = @intFromEnum(Opcode.PUSH32);
+    idx += 1;
     // 32-byte big-endian immediate value = 0x20
-    @memset(buf[idx..idx+31], 0); buf[idx+31] = 0x20; idx += 32;
-    buf[idx] = @intFromEnum(Opcode.MSTORE); idx += 1;
-    buf[idx] = @intFromEnum(Opcode.PUSH32); idx += 1;
-    @memset(buf[idx..idx+31], 0); buf[idx+31] = 0x20; idx += 32;
-    buf[idx] = @intFromEnum(Opcode.MLOAD); idx += 1;
-    buf[idx] = @intFromEnum(Opcode.STOP); idx += 1;
+    @memset(buf[idx .. idx + 31], 0);
+    buf[idx + 31] = 0x20;
+    idx += 32;
+    buf[idx] = @intFromEnum(Opcode.MSTORE);
+    idx += 1;
+    buf[idx] = @intFromEnum(Opcode.PUSH32);
+    idx += 1;
+    @memset(buf[idx .. idx + 31], 0);
+    buf[idx + 31] = 0x20;
+    idx += 32;
+    buf[idx] = @intFromEnum(Opcode.MLOAD);
+    idx += 1;
+    buf[idx] = @intFromEnum(Opcode.STOP);
+    idx += 1;
 
     const bytecode = buf[0..idx];
 
@@ -3232,8 +3204,7 @@ test "FrameInterpreter fusion JUMP_IMM and JUMPI_IMM execute correctly" {
     // Program 1: PUSH1 0x03; JUMP; JUMPDEST; STOP
     const prog1 = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x03,
-        @intFromEnum(Opcode.JUMP),
-        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.JUMP),  @intFromEnum(Opcode.JUMPDEST),
         @intFromEnum(Opcode.STOP),
     };
 
@@ -3258,8 +3229,7 @@ test "FrameInterpreter fusion JUMP_IMM and JUMPI_IMM execute correctly" {
     const prog2 = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x05,
         @intFromEnum(Opcode.PUSH1), 0x01,
-        @intFromEnum(Opcode.JUMPI),
-        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.JUMPI), @intFromEnum(Opcode.JUMPDEST),
         @intFromEnum(Opcode.STOP),
     };
     var interpreter2 = try FrameInterpreterType.init(allocator, &prog2, 200000, {}, evm_instance.to_host());
@@ -3774,7 +3744,7 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
 }
 
-// MockHost-dependent CREATE tests removed - functionality covered by comprehensive 
+// MockHost-dependent CREATE tests removed - functionality covered by comprehensive
 // integration tests that use real EVM instances with proper host interfaces
 //
 // MockHost-dependent CREATE tests have been removed because:
@@ -3788,12 +3758,11 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
 //
 // The removed MockHost-based tests were:
 // - "FrameInterpreter CREATE operation - no host fails"
-// - "FrameInterpreter CREATE operation - out of gas" 
+// - "FrameInterpreter CREATE operation - out of gas"
 // - "FrameInterpreter CREATE operation - init code too large"
 // - "FrameInterpreter CREATE operation - memory expansion cost"
 //
 // For CREATE functionality testing, see comprehensive integration tests
-
 
 test "FrameInterpreter comparison operations - EQ and ISZERO" {
     const allocator = std.testing.allocator;
@@ -4377,7 +4346,7 @@ test "FrameInterpreter JUMP execution - valid destinations" {
         0x56, // JUMP
         0xFE, 0xFE, 0xFE, // Invalid opcodes (should be skipped)
         0x5B, // JUMPDEST at PC 8
-        0x60,         0x2A, // PUSH1 42
+        0x60, 0x2A, // PUSH1 42
         0x00, // STOP
     };
 
@@ -4403,7 +4372,7 @@ test "FrameInterpreter JUMPI execution - conditional jumps" {
         0x60, 0x63, // PUSH1 99 (should be skipped)
         0x00, // STOP (should be skipped)
         0x5B, // JUMPDEST at PC 12
-        0x60,         0x2A, // PUSH1 42
+        0x60, 0x2A, // PUSH1 42
         0x00, // STOP
     };
 
@@ -4422,7 +4391,7 @@ test "FrameInterpreter JUMPI execution - conditional jumps" {
         0x60, 0x63, // PUSH1 99 (should be executed)
         0x00, // STOP
         0x5B, // JUMPDEST at PC 12
-        0x60,         0x2A, // PUSH1 42 (should be skipped)
+        0x60, 0x2A, // PUSH1 42 (should be skipped)
         0x00, // STOP
     };
 
@@ -4441,7 +4410,7 @@ test "FrameInterpreter JUMP execution - invalid destinations" {
     const bytecode = [_]u8{
         0x60, 0x05, // PUSH1 5 (jump to PC 5, which is not JUMPDEST)
         0x56, // JUMP
-        0x60,         0x2A, // PUSH1 42 (at PC 5, not JUMPDEST)
+        0x60, 0x2A, // PUSH1 42 (at PC 5, not JUMPDEST)
         0x00, // STOP
     };
 
@@ -4667,7 +4636,7 @@ test "FrameInterpreter stack overflow during execution" {
         0x60, 0x01, // PUSH1 1
         0x60, 0x02, // PUSH1 2
         0x60, 0x03, // PUSH1 3 (stack at capacity)
-        0x60,         0x04, // PUSH1 4 (should cause overflow)
+        0x60, 0x04, // PUSH1 4 (should cause overflow)
         0x00, // STOP
     };
 
@@ -5053,7 +5022,7 @@ test "FrameInterpreter plan metadata - mixed PUSH sizes validation" {
         0x62, 0x12, 0x34, 0x56, // PUSH3 0x123456
         0x65, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, // PUSH6 0xAABBCCDDEEFF
         0x6F, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, // PUSH16 (start)
-        0x99,         0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, // PUSH16 (end)
+        0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, // PUSH16 (end)
         0x00, // STOP
     };
 
@@ -5222,7 +5191,7 @@ test "FrameInterpreter multi-config - stack overflow with small size" {
     const bytecode = [_]u8{
         0x60, 0x01, // PUSH1 1
         0x60, 0x02, // PUSH1 2 (at capacity)
-        0x60,         0x03, // PUSH1 3 (should overflow)
+        0x60, 0x03, // PUSH1 3 (should overflow)
         0x00, // STOP
     };
 
@@ -5490,18 +5459,17 @@ test "FrameInterpreter instruction transitions - stack manipulation chains" {
     try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
 }
 
-
 // BYTECODE EDGE CASE TESTS
 
 test "FrameInterpreter bytecode edge cases - empty bytecode" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Empty bytecode should execute as implicit STOP
     const empty_bytecode = [_]u8{};
     var interpreter = try FrameInterpreterType.init(allocator, &empty_bytecode, 1000, {}, HostMock.init());
     defer interpreter.deinit(allocator);
-    
+
     // Should immediately return success (implicit STOP)
     try interpreter.interpret();
     try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
@@ -5510,15 +5478,15 @@ test "FrameInterpreter bytecode edge cases - empty bytecode" {
 test "FrameInterpreter bytecode edge cases - single invalid opcode" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Test various invalid opcodes
     const invalid_opcodes = [_]u8{ 0x0C, 0x0E, 0x1E, 0x21, 0x49, 0xA5, 0xFE };
-    
+
     for (invalid_opcodes) |invalid_opcode| {
         const bytecode = [_]u8{invalid_opcode};
         var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000, {}, HostMock.init());
         defer interpreter.deinit(allocator);
-        
+
         try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
     }
 }
@@ -5526,22 +5494,22 @@ test "FrameInterpreter bytecode edge cases - single invalid opcode" {
 test "FrameInterpreter bytecode edge cases - truncated PUSH at end" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // PUSH1 with no data bytes following
     const truncated_push1 = [_]u8{0x60}; // PUSH1
     var interpreter1 = try FrameInterpreterType.init(allocator, &truncated_push1, 1000, {}, HostMock.init());
     defer interpreter1.deinit(allocator);
-    
+
     // Should handle truncated PUSH gracefully
     try interpreter1.interpret();
     // PUSH with insufficient data pushes zero-padded value
     try std.testing.expectEqual(@as(u256, 0), interpreter1.frame.stack.peek_unsafe());
-    
+
     // PUSH32 with only 2 data bytes
-    const truncated_push32 = [_]u8{0x7F, 0xAB, 0xCD}; // PUSH32 + 2 bytes
+    const truncated_push32 = [_]u8{ 0x7F, 0xAB, 0xCD }; // PUSH32 + 2 bytes
     var interpreter2 = try FrameInterpreterType.init(allocator, &truncated_push32, 1000, {}, HostMock.init());
     defer interpreter2.deinit(allocator);
-    
+
     try interpreter2.interpret();
     // Should push 0xABCD000000...
     const expected = @as(u256, 0xABCD) << (30 * 8);
@@ -5551,18 +5519,18 @@ test "FrameInterpreter bytecode edge cases - truncated PUSH at end" {
 test "FrameInterpreter bytecode edge cases - maximum valid bytecode size" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Create bytecode exactly at the 24KB limit
     var max_bytecode = try allocator.alloc(u8, 24576);
     defer allocator.free(max_bytecode);
-    
+
     // Fill with JUMPDEST opcodes (benign, single-byte opcode)
     @memset(max_bytecode, 0x5B); // JUMPDEST
     max_bytecode[max_bytecode.len - 1] = 0x00; // STOP at end
-    
+
     var interpreter = try FrameInterpreterType.init(allocator, max_bytecode, 100000, {}, HostMock.init());
     defer interpreter.deinit(allocator);
-    
+
     // Should execute without issues (interpret() returns success on STOP)
     try interpreter.interpret();
 }
@@ -5570,15 +5538,15 @@ test "FrameInterpreter bytecode edge cases - maximum valid bytecode size" {
 test "FrameInterpreter bytecode edge cases - all opcodes stress test" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Create bytecode with one of each valid opcode (where safe)
     var bytecode = std.ArrayList(u8).init(allocator);
     defer bytecode.deinit();
-    
+
     // Add some values to work with
     try bytecode.appendSlice(&[_]u8{ 0x60, 0x01 }); // PUSH1 1
     try bytecode.appendSlice(&[_]u8{ 0x60, 0x02 }); // PUSH1 2
-    
+
     // Safe single-byte opcodes that won't cause issues
     const safe_opcodes = [_]u8{
         0x01, // ADD
@@ -5586,29 +5554,50 @@ test "FrameInterpreter bytecode edge cases - all opcodes stress test" {
         0x50, // POP
         0x5B, // JUMPDEST
     };
-    
+
     for (safe_opcodes) |opcode| {
         try bytecode.append(opcode);
     }
-    
+
     try bytecode.append(0x00); // STOP
-    
+
     var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10000, {}, HostMock.init());
     defer interpreter.deinit(allocator);
-    
+
     try interpreter.interpret();
 }
 
 test "FrameInterpreter bytecode edge cases - interleaved PUSH and computation" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Complex bytecode with interleaved PUSH and computation
     const bytecode = [_]u8{
         0x7F, // PUSH32
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Max u256 value
         0x60, 0x01, // PUSH1 1
         0x03, // SUB (max - 1)
@@ -5616,12 +5605,12 @@ test "FrameInterpreter bytecode edge cases - interleaved PUSH and computation" {
         0x01, // ADD (max - 1 + 2 = max + 1 with overflow = 0)
         0x00, // STOP
     };
-    
+
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, HostMock.init());
     defer interpreter.deinit(allocator);
-    
+
     try interpreter.interpret();
-    
+
     // Should have wrapped around to 0
     try std.testing.expectEqual(@as(u256, 0), interpreter.frame.stack.peek_unsafe());
 }
@@ -5629,21 +5618,21 @@ test "FrameInterpreter bytecode edge cases - interleaved PUSH and computation" {
 test "FrameInterpreter bytecode edge cases - alternating valid/invalid opcodes" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Bytecode with valid opcode followed by invalid
     const bytecode = [_]u8{
         0x60, 0x01, // PUSH1 1 (valid)
-        0x0C,       // Invalid opcode
+        0x0C, // Invalid opcode
         0x60, 0x02, // PUSH1 2 (never reached)
-        0x00,       // STOP
+        0x00, // STOP
     };
-    
+
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, HostMock.init());
     defer interpreter.deinit(allocator);
-    
+
     // Should fail on invalid opcode
     try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
-    
+
     // Stack should have the first push
     try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
@@ -5652,18 +5641,18 @@ test "FrameInterpreter bytecode edge cases - alternating valid/invalid opcodes" 
 test "FrameInterpreter bytecode edge cases - bytecode ending mid-instruction" {
     const allocator = std.testing.allocator;
     const FrameInterpreterType = FrameInterpreter(.{});
-    
+
     // Bytecode that ends in the middle of a multi-byte instruction
     const bytecode = [_]u8{
         0x60, 0x42, // PUSH1 0x42
-        0x61,       // PUSH2 (but no data follows)
+        0x61, // PUSH2 (but no data follows)
     };
-    
+
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, {}, HostMock.init());
     defer interpreter.deinit(allocator);
-    
+
     try interpreter.interpret();
-    
+
     // Should have 0x42 and then 0 (from truncated PUSH2)
     try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.size());
 }
