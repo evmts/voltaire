@@ -1,17 +1,18 @@
 /// Frame configuration parameters for customizable EVM execution contexts
-/// 
+///
 /// Defines compile-time configuration for Frame instances including:
 /// - Stack size and word type (u256, u128, etc.)
-/// - Memory limits and initial capacity  
+/// - Memory limits and initial capacity
 /// - Gas tracking precision (i32 vs i64)
 /// - Database and tracing capabilities
 /// - Platform-specific optimizations
-/// 
+///
 /// Configuration is validated at compile time to ensure optimal performance
 /// and catch invalid parameter combinations early.
 const std = @import("std");
 const builtin = @import("builtin");
 
+// TODO add the Eip type from evm
 pub const FrameConfig = struct {
     const Self = @This();
     /// The maximum stack size for the evm. Defaults to 1024
@@ -65,7 +66,7 @@ pub const FrameConfig = struct {
         else
             i64;
     }
-    
+
     /// The amount of data the frame plans on allocating based on config
     pub fn get_requested_alloc(comptime self: Self) u32 {
         return @as(u32, self.stack_size) * @as(u32, @intCast(@sizeOf(self.WordType)));

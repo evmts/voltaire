@@ -2,7 +2,7 @@ const primitives = @import("primitives");
 const AccessList = @import("access_list.zig").AccessList;
 
 // EIPs is a comptime known configuration of Eip and hardfork specific behavior
-export const Eips = struct {
+pub const Eips = struct {
     const Self = @This();
 
     hardfork: Hardfork,
