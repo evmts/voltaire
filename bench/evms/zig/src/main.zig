@@ -149,10 +149,10 @@ pub fn main() !void {
         defer fresh_evm.deinit();
 
         // 1) Try CREATE deployment path with provided bytecode as init code
-        var target_address: Address = [_]u8{0} ** 20;
+        var target_address: Address = Address.ZERO_ADDRESS;
         var use_direct_install = false;
         {
-            const create_params = evm.DefaultEvm.CallParams{
+            const create_params = evm.CallParams{
                 .create = .{
                     .caller = primitives.ZERO_ADDRESS,
                     .value = 0,
@@ -190,7 +190,7 @@ pub fn main() !void {
                     }
                 } else if (create_result.output.len == 20) {
                     // Old-style CREATE that returns address
-                    @memcpy(&target_address, create_result.output[0..20]);
+                    @memcpy(&target_address.bytes, create_result.output[0..20]);
                     const deployed_code = fresh_evm.get_code(target_address);
                     if (deployed_code.len == 0) {
                         if (verbose) std.debug.print("CREATE returned address but no code found\n", .{});
@@ -210,8 +210,8 @@ pub fn main() !void {
             const fresh_code_hash = try fresh_memory_db.set_code(init_code);
             // Choose a fixed address for direct install
             // Use a non-precompile address (avoid 0x01..0x0a)
-            target_address = [_]u8{0} ** 19 ++ [_]u8{0x11};
-            try fresh_memory_db.set_account(target_address, evm.Account{
+            target_address = Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x11} };
+            try fresh_memory_db.set_account(target_address.bytes, evm.Account{
                 .nonce = 0,
                 .balance = 0,
                 .code_hash = fresh_code_hash,
@@ -222,7 +222,7 @@ pub fn main() !void {
         }
 
         // 2) Invoke the contract runtime via CALL
-        const call_params = evm.DefaultEvm.CallParams{
+        const call_params = evm.CallParams{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = target_address,

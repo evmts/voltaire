@@ -104,7 +104,7 @@ pub fn main() !void {
             .TracerType = evm.DebuggingTracer,
         });
         // Create a default host for debugging
-        var default_host = @import("evm").DefaultHost{};
+        var default_host = @import("evm").HostMock{};
         const host = @import("evm").Host.init(&default_host);
         var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {}, host);
         defer interpreter.deinit(allocator);
