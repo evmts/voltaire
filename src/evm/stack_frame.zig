@@ -59,6 +59,58 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             .WordType = config.WordType,
         });
 
+        /// The schedule is the internal data structure on StackFrame that controls
+        /// dispatching new opcodes and providing bytecode data such as push values to those
+        /// Opcodes. It is structured as an unbounded array pointer. For most opcodes the only
+        /// Data they will get from the schedule is the next operation to execute. It will execute
+        /// That operation with tail call recursion to minimize dispatch overhead and help branch prediction.
+        /// This also helps cache efficiency because the Schedule array is ordered in exactly the order
+        /// Our opcodes need to read the data. For JUMPDEST or BEGIN it will batch block related operations
+        /// Together
+        const Schedule = struct {
+            schedule: [*]const Item,
+            pub const JumpDestMetadata = packed struct(u64) {
+                gas: u32 = 0,
+                min_stack: i16 = 0,
+                max_stack: i16 = 0,
+            };
+            pub const PushInlineMetadata = packed struct(u64) { value: u64 };
+            pub const PushPointerMetadata = packed struct(u64) { value: *u256 };
+            pub const PcMetadata = packed struct { value: PcType };
+            const OpcodeHandler = *const fn (frame: Self, next_handler: Schedule) Error!Success;
+            pub const Item = union {
+                jump_dest: JumpDestMetadata,
+                push_inline: PushInlineMetadata,
+                push_pointer: PushPointerMetadata,
+                pc: PcMetadata,
+                opcode_handler: OpcodeHandler,
+            };
+            pub fn getOpData(self: Schedule, comptime opcode: Opcode) switch (opcode) {
+                .PC => struct { metadata: PcMetadata, next: Schedule },
+                .PUSH1 => struct { metadata: PushInlineMetadata, next: Schedule },
+                .JUMPDEST => struct { metadata: JumpDestMetadata, next: Schedule },
+                else => struct { next: Schedule },
+            } {
+                return switch (opcode) {
+                    .PC => .{
+                        .metadata = self.schedule[0].pc,
+                        .next = Schedule{ .schedule = self.schedule + 2 },
+                    },
+                    .PUSH1 => .{
+                        .metadata = self.schedule[0].push_inline,
+                        .next = Schedule{ .schedule = self.schedule + 2 },
+                    },
+                    .JUMPDEST => .{
+                        .metadata = self.schedule[0].jump_dest,
+                        .next = Schedule{ .schedule = self.schedule + 2 },
+                    },
+                    else => .{
+                        .next = Schedule{ .schedule = self.schedule + 1 },
+                    },
+                };
+            }
+        };
+
         pub const Success = enum {
             Stop,
             Return,
@@ -78,26 +130,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             GasOverflow,
             InvalidAmount,
             WriteProtection,
-        };
-
-        const Schedule = struct {
-            pub const JumpDestMetadata = packed struct(u64) {
-                gas: u32 = 0,
-                min_stack: i16 = 0,
-                max_stack: i16 = 0,
-            };
-            pub const PushInlineMetadata = packed struct(u64) { value: u64 };
-            pub const PushPointerMetadata = packed struct(u64) { value: *u256 };
-            pub const PcMetadata = packed struct { value: PcType };
-            const OpcodeHandler = *const fn (frame: Self, next_handler: Schedule) Error!Success;
-            schedule: [*:null]const ScheduleItem,
-            pub const ScheduleItem = union {
-                jump_dest: JumpDestMetadata,
-                push_inline: PushInlineMetadata,
-                push_pointer: PushPointerMetadata,
-                pc: PcMetadata,
-                opcode_handler: OpcodeHandler,
-            };
         };
 
         pub const opcode_handlers = blk: {
