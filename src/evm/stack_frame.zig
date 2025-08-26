@@ -45,6 +45,7 @@ const hardfork_mod = @import("hardfork.zig");
 /// optimal code generation and platform-specific optimizations.
 pub fn StackFrame(comptime config: FrameConfig) type {
     comptime config.validate();
+
     return struct {
         pub const WordType = config.WordType;
         pub const GasType = config.GasType();
@@ -79,11 +80,29 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             WriteProtection,
         };
 
-        const OpcodeHandler = *const fn (frame: Self, next_handler: [*:null]const *const OpcodeHandler) Error!Success;
+        const Schedule = struct {
+            pub const JumpDestMetadata = packed struct(u64) {
+                gas: u32 = 0,
+                min_stack: i16 = 0,
+                max_stack: i16 = 0,
+            };
+            pub const PushInlineMetadata = packed struct(u64) { value: u64 };
+            pub const PushPointerMetadata = packed struct(u64) { value: *u256 };
+            pub const PcMetadata = packed struct { value: PcType };
+            const OpcodeHandler = *const fn (frame: Self, next_handler: Schedule) Error!Success;
+            schedule: [*:null]const ScheduleItem,
+            pub const ScheduleItem = union {
+                jump_dest: JumpDestMetadata,
+                push_inline: PushInlineMetadata,
+                push_pointer: PushPointerMetadata,
+                pc: PcMetadata,
+                opcode_handler: OpcodeHandler,
+            };
+        };
 
         pub const opcode_handlers = blk: {
             @setEvalBranchQuota(10000);
-            var h: [256]*const OpcodeHandler = undefined;
+            var h: [256]*const Schedule.OpcodeHandler = undefined;
             for (&h) |*handler| handler.* = &invalid;
             h[@intFromEnum(Opcode.STOP)] = &stop;
             h[@intFromEnum(Opcode.ADD)] = &add;
@@ -2421,7 +2440,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 }
 
 /// Test helper to create a simple handler chain that ends with stop
-/// This allows testing individual opcodes in isolation  
+/// This allows testing individual opcodes in isolation
 fn createTestHandlerChain(comptime FrameType: type) [1:null]*const FrameType.OpcodeHandler {
     return [1:null]*const FrameType.OpcodeHandler{
         &FrameType.stop,
