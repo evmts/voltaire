@@ -41,6 +41,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// StackFrame type for the evm
         pub const Frame = @import("frame.zig").Frame(config.frame_config);
+        /// Interpreter type
+        const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
         /// Planner/preanalysis processes the bytecode for the intepreter
         pub const Planner: type = @import("planner.zig").Planner(.{
             .WordType = config.frame_config.WordType,
@@ -84,7 +86,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             InvalidOpcode,
             RevertExecution,
             OutOfMemory,
-            // TODO remove this because we put it on Stop
+            // TODO: remove this because we put it on Stop
             Stop,
         };
 
@@ -121,7 +123,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         gas_price: u256,
         /// Origin address (sender of the transaction)
         origin: primitives.Address,
-        // TODO remove this in favor of eips
+        // TODO: remove this in favor of eips
         /// Hardfork configuration
         hardfork_config: Hardfork,
 
@@ -184,47 +186,29 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.internal_arena.deinit();
         }
 
-        // TODO this is a shortcut we want to only preallocate
+        // TODO: this is a shortcut we want to only preallocate
         /// Get the arena allocator for temporary allocations during the current call.
         /// This allocator is reset after each root call completes.
         pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
             return self.internal_arena.allocator();
         }
 
-        // TODO rename transferValue and make withSnapshot a comptime boolean param
+        // TODO: rename transfer_value and remove the old one.
+        // TODO: move this down the file
         /// Transfer value between accounts with proper balance checks and error handling
-        fn transferValueWithSnapshot(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
-            if (value == 0) return;
-            var from_account = self.database.get_account(from.bytes) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return err;
-            } orelse {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return error.InsufficientBalance;
-            };
-            var to_account = self.database.get_account(to.bytes) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return err;
-            } orelse Account.zero();
-            if (from_account.balance < value) {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return error.InsufficientBalance;
-            }
+        fn transferValue(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
+            var from_account = try self.database.get_account(from.bytes) orelse Account.zero();
+            if (from_account.balance < value) return error.InsufficientBalance;
+            var to_account = try self.database.get_account(to.bytes) orelse Account.zero();
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
             from_account.balance -= value;
             to_account.balance += value;
-            self.database.set_account(from.bytes, from_account) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return err;
-            };
-            self.database.set_account(to.bytes, to_account) catch |err| {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return err;
-            };
+            try self.database.set_account(from.bytes, from_account);
+            try self.database.set_account(to.bytes, to_account);
         }
 
-        // TODO this should only return a CallResult never an error since a CallResult includes errors
+        // TODO: this should only return a CallResult never an error since a CallResult includes errors
         /// Execute an EVM operation.
         ///
         /// This is the main entry point that routes to specific handlers based
@@ -235,6 +219,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer self.depth = 0;
             defer self.internal_arena.reset(.retain_capacity);
             defer self.logs.clearRetainingCapacity();
+            // TODO we should add an option to disable gas checking in evm
+            const gas = switch (params) {
+                inline else => |p| p.gas,
+            };
+            if (gas == 0) return CallResult.failure(0);
+            if (self.depth >= config.max_call_depth) return CallResult.failure(0);
             var result = switch (params) {
                 .call => |p| try self.call_handler(p),
                 .callcode => |p| try self.callcode_handler(p),
@@ -244,46 +234,28 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create2 => |p| try self.create2_handler(p),
             };
             result.logs = self.takeLogs();
-            // TODO add trace selfdestruct and access list too
+            // TODO: add trace selfdestruct and access list too
             return result;
         }
 
+        // TODO: this shouldn't be pub
+        // TODO: params should be CallParams.call
         /// CALL operation
         ///
         /// Transfers value from caller to target and executes target contract code.
         /// Creates a new execution context with the target's storage. Supports
         /// precompiled contracts and handles state reverts on failure.
         pub fn call_handler(self: *Self, params: anytype) Error!CallResult {
-            if (params.gas == 0) {
-                @branchHint(.cold);
-                return CallResult.failure(0);
-            }
-            if (self.depth >= config.max_call_depth) {
-                @branchHint(.cold);
-                return CallResult.failure(0);
-            }
-
+            // TODO we can move the snapshot_id value check and trasnfer to call
             const snapshot_id = self.journal.create_snapshot();
-
             if (params.value > 0) {
-                const caller_account = self.database.get_account(params.caller.bytes) catch |err| {
+                self.transferValue(params.caller, params.to, params.value, snapshot_id) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
-
-                if (caller_account == null or caller_account.?.balance < params.value) {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                }
             }
 
             if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
-                @branchHint(.unlikely);
-                // Perform value transfer if any before executing precompile
-                if (params.value > 0) {
-                    self.transferValueWithSnapshot(params.caller, params.to, params.value, snapshot_id) catch |err| {
-                        return self.revert_and_fail(snapshot_id, err);
-                    };
-                }
+                if (params.value > 0) {}
                 const result = self.execute_precompile_call(params.to, params.input, params.gas, false) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
@@ -294,13 +266,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return result;
             }
             const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
-            if (code.len == 0) {
-                self.transferValueWithSnapshot(params.caller, params.to, params.value, snapshot_id) catch {
-                    return CallResult.failure(0);
-                };
-                return CallResult.success_empty(params.gas);
-            }
-
+            // TODO: CallResult should have an enum success case for this so we can tell and we should debug log
+            if (code.len == 0) return CallResult.success_empty(params.gas);
             const result = self.execute_frame(
                 code,
                 params.input,
@@ -324,17 +291,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Unlike DELEGATECALL, msg.sender remains the direct caller.
         /// Deprecated in favor of DELEGATECALL but maintained for compatibility.
         pub fn callcode_handler(self: *Self, params: anytype) Error!CallResult {
-            if (params.gas == 0) {
-                @branchHint(.unlikely);
-                return CallResult.failure(0);
-            }
-            if (self.depth >= config.max_call_depth) {
-                @branchHint(.cold);
-                return CallResult.failure(0);
-            }
-
+            // TODO we can move the snapshot_id value check and trasnfer to call
             const snapshot_id = self.journal.create_snapshot();
-
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller.bytes) catch |err| {
                     @branchHint(.cold);
@@ -380,18 +338,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             return result;
         }
 
+        // TODO every one of these handlers can just be inlined in call
         /// DELEGATECALL operation
         pub fn delegatecall_handler(self: *Self, params: anytype) Error!CallResult {
-            // Validate gas
-            if (params.gas == 0) {
-                return CallResult.failure(0);
-            }
-
-            // Check depth
-            if (self.depth >= config.max_call_depth) {
-                return CallResult.failure(0);
-            }
-
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
 
@@ -444,15 +393,6 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// STATICCALL operation
         pub fn staticcall_handler(self: *Self, params: anytype) Error!CallResult {
-            // Validate gas
-            if (params.gas == 0) {
-                return CallResult.failure(0);
-            }
-
-            // Check depth
-            if (self.depth >= config.max_call_depth) {
-                return CallResult.failure(0);
-            }
 
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
@@ -503,11 +443,6 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// CREATE operation
         pub fn create_handler(self: *Self, params: anytype) Error!CallResult {
-            // Check depth
-            if (self.depth >= config.max_call_depth) {
-                return CallResult.failure(0);
-            }
-
             // Create snapshot for state reversion
             const snapshot_id = self.journal.create_snapshot();
 
@@ -558,7 +493,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Transfer value to the new contract before executing init code (per spec)
             if (params.value > 0) {
-                self.transferValueWithSnapshot(params.caller, contract_address, params.value, snapshot_id) catch |err| {
+                self.transferValue(params.caller, contract_address, params.value, snapshot_id) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
             }
@@ -668,7 +603,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Transfer value to the new contract before executing init code
             if (params.value > 0) {
-                self.transferValueWithSnapshot(params.caller, contract_address, params.value, snapshot_id) catch |err| {
+                self.transferValue(params.caller, contract_address, params.value, snapshot_id) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
             }
@@ -790,7 +725,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const host = self.to_host();
 
             // Create frame interpreter
-            var interpreter = try @import("frame_interpreter.zig").FrameInterpreter(config.frame_config).init(
+            var interpreter = try FrameInterpreter(config.frame_config).init(
                 self.allocator,
                 code,
                 gas_i32,
@@ -801,6 +736,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             interpreter.frame.contract_address = address;
             defer interpreter.deinit(self.allocator);
 
+            // TODO this should return on success catch on error
             // Execute the frame
             interpreter.interpret() catch |err| {
                 const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
@@ -910,6 +846,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             return result;
         }
 
+        // TODO just inline into call/inner_call
         /// Execute a precompile call using the full legacy precompile system
         /// This implementation supports all standard Ethereum precompiles (0x01-0x0A)
         fn execute_precompile_call(self: *Self, address: primitives.Address, input: []const u8, gas: u64, is_static: bool) !CallResult {
@@ -1231,6 +1168,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             return self.context.blob_base_fee;
         }
 
+        // TODO: remove this this is a duplciate and this version is unused
         /// Transfer value between accounts with proper journaling
         /// This method ensures balance changes are recorded in the journal for potential reverts
         pub fn transfer_value(self: *Self, from: primitives.Address, to: primitives.Address, value: u256) !void {
@@ -1262,11 +1200,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             try self.database.set_account(to.bytes, to_account);
         }
 
+        // TODO: remove useless helper function and just inline this
         /// Convert to Host interface
         pub fn to_host(self: *Self) @import("host.zig").Host {
             return @import("host.zig").Host.init(self);
         }
 
+        // TODO: remove useless helper function and just inline this
         /// Helper function to handle database errors by reverting snapshot and returning failure
         fn revert_and_fail(self: *Self, snapshot_id: Journal.SnapshotIdType, err: anyerror) CallResult {
             _ = err catch {};
@@ -1274,6 +1214,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             return CallResult.failure(0);
         }
 
+        // TODO: remove useless helper function and just inline this
         /// Take all logs and clear the log list
         fn takeLogs(self: *Self) []const @import("call_result.zig").Log {
             const logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
@@ -1283,6 +1224,7 @@ pub fn Evm(comptime config: EvmConfig) type {
     };
 }
 
+// TODO: remove DefaultEvm
 pub const DefaultEvm = Evm(.{});
 
 test "CallParams and CallResult structures" {
