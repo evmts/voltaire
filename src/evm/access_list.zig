@@ -118,7 +118,7 @@ test "AccessList - address access tracking" {
     var access_list = AccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const test_address = [_]u8{1} ** 20;
+    const test_address = Address{ .bytes = [_]u8{1} ** 20 };
 
     // First access should be cold
     const cost1 = try access_list.access_address(test_address);
@@ -131,7 +131,7 @@ test "AccessList - address access tracking" {
     // Check warmth
     try testing.expect(access_list.is_address_warm(test_address));
 
-    const cold_address = [_]u8{2} ** 20;
+    const cold_address = Address{ .bytes = [_]u8{2} ** 20 };
     try testing.expect(!access_list.is_address_warm(cold_address));
 }
 
@@ -139,7 +139,7 @@ test "AccessList - storage slot access tracking" {
     var access_list = AccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const test_address = [_]u8{1} ** 20;
+    const test_address = Address{ .bytes = [_]u8{1} ** 20 };
     const slot1: u256 = 42;
     const slot2: u256 = 100;
 
@@ -167,8 +167,8 @@ test "AccessList - pre-warming addresses" {
 
     const addresses = [_]Address{
         primitives.ZERO_ADDRESS,
-        [_]u8{1} ** 20,
-        [_]u8{2} ** 20,
+        Address{ .bytes = [_]u8{1} ** 20 },
+        Address{ .bytes = [_]u8{2} ** 20 },
     };
 
     try access_list.pre_warm_addresses(&addresses);
@@ -184,7 +184,7 @@ test "AccessList - clear functionality" {
     var access_list = AccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const test_address = [_]u8{1} ** 20;
+    const test_address = Address{ .bytes = [_]u8{1} ** 20 };
     const slot: u256 = 42;
 
     // Access address and storage slot
@@ -214,7 +214,7 @@ test "AccessList - custom configuration" {
     var access_list = CustomAccessList.init(testing.allocator);
     defer access_list.deinit();
 
-    const test_address = [_]u8{1} ** 20;
+    const test_address = Address{ .bytes = [_]u8{1} ** 20 };
     const slot: u128 = 42;
 
     // Test custom gas costs
@@ -226,10 +226,10 @@ test "AccessList - custom configuration" {
 }
 
 // Tests from access_list_test.zig
-const ZERO_ADDRESS = [_]u8{0} ** 20;
-const TEST_ADDRESS_1 = [_]u8{1} ** 20;
-const TEST_ADDRESS_2 = [_]u8{2} ** 20;
-const TEST_ADDRESS_3 = [_]u8{3} ** 20;
+const ZERO_ADDRESS = Address{ .bytes = [_]u8{0} ** 20 };
+const TEST_ADDRESS_1 = Address{ .bytes = [_]u8{1} ** 20 };
+const TEST_ADDRESS_2 = Address{ .bytes = [_]u8{2} ** 20 };
+const TEST_ADDRESS_3 = Address{ .bytes = [_]u8{3} ** 20 };
 
 test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
     const allocator = testing.allocator;
@@ -266,7 +266,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try memory_db.set_account(TEST_ADDRESS_2, account1);
+    try memory_db.set_account(TEST_ADDRESS_2.bytes, account1);
 
     // Test first access (cold) to an address
     const cold_cost = try evm.access_address(TEST_ADDRESS_2);
@@ -401,7 +401,7 @@ test "EIP-2929: SELFBALANCE always warm" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     };
-    try memory_db.set_account(contract_address, acct);
+    try memory_db.set_account(contract_address.bytes, acct);
 
     // Pre-warm the contract address (as would happen during CALL)
     try evm.access_list.pre_warm_addresses(&[_]Address{contract_address});
@@ -486,7 +486,7 @@ test "EIP-2929 - SLOAD multiple slots warm/cold pattern" {
     var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.BERLIN);
     defer evm.deinit();
 
-    const contract_address = [_]u8{0x12} ** 20;
+    const contract_address = Address{ .bytes = [_]u8{0x12} ** 20 };
 
     // Test multiple slots
     const slots = [_]u256{ 0, 1, 100, 0xFFFF, std.math.maxInt(u256) };
@@ -572,7 +572,7 @@ test "EIP-2929 - Cross-opcode warm address sharing" {
     var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.BERLIN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0xAB} ** 20;
+    const test_address = Address{ .bytes = [_]u8{0xAB} ** 20 };
 
     // BALANCE accesses the address - should be cold
     const balance_cost = try evm.access_address(test_address);
@@ -598,18 +598,18 @@ test "EIP-2929 - CALL warm/cold recipient costs" {
     defer memory_db.deinit();
 
     // Set up accounts with balance for calls
-    const caller_address = [_]u8{0x01} ** 20;
-    const recipient1 = [_]u8{0x02} ** 20;
-    const recipient2 = [_]u8{0x03} ** 20;
+    const caller_address = Address{ .bytes = [_]u8{0x01} ** 20 };
+    const recipient1 = Address{ .bytes = [_]u8{0x02} ** 20 };
+    const recipient2 = Address{ .bytes = [_]u8{0x03} ** 20 };
 
-    try memory_db.set_account(caller_address, .{
+    try memory_db.set_account(caller_address.bytes, .{
         .nonce = 0,
         .balance = 1_000_000_000_000_000_000, // 1 ETH
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     });
 
-    try memory_db.set_account(recipient1, .{
+    try memory_db.set_account(recipient1.bytes, .{
         .nonce = 0,
         .balance = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -648,7 +648,7 @@ test "EIP-2929 - Self-referential operations (BALANCE on self)" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    const contract_address = [_]u8{0x42} ** 20;
+    const contract_address = Address{ .bytes = [_]u8{0x42} ** 20 };
     const block_info = BlockInfo.init();
     const context = TransactionContext{
         .gas_limit = 1_000_000,
@@ -687,15 +687,15 @@ test "EIP-2929 - Precompiled contract access costs" {
 
     // Precompiled contracts are at addresses 0x01 through 0x09
     const precompile_addresses = [_]Address{
-        [_]u8{0} ** 19 ++ [_]u8{0x01}, // ecrecover
-        [_]u8{0} ** 19 ++ [_]u8{0x02}, // sha256
-        [_]u8{0} ** 19 ++ [_]u8{0x03}, // ripemd160
-        [_]u8{0} ** 19 ++ [_]u8{0x04}, // identity
-        [_]u8{0} ** 19 ++ [_]u8{0x05}, // modexp
-        [_]u8{0} ** 19 ++ [_]u8{0x06}, // ecadd
-        [_]u8{0} ** 19 ++ [_]u8{0x07}, // ecmul
-        [_]u8{0} ** 19 ++ [_]u8{0x08}, // ecpairing
-        [_]u8{0} ** 19 ++ [_]u8{0x09}, // blake2f
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x01} }, // ecrecover
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x02} }, // sha256
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x03} }, // ripemd160
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x04} }, // identity
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x05} }, // modexp
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x06} }, // ecadd
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x07} }, // ecmul
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x08} }, // ecpairing
+        Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x09} }, // blake2f
     };
 
     // Precompiles should follow same warm/cold rules
@@ -725,7 +725,7 @@ test "EIP-2929 - Storage slots with maximum values" {
     var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.BERLIN);
     defer evm.deinit();
 
-    const contract_address = [_]u8{0xEE} ** 20;
+    const contract_address = Address{ .bytes = [_]u8{0xEE} ** 20 };
 
     // Test with maximum u256 slot
     const max_slot = std.math.maxInt(u256);
