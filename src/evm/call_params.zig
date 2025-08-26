@@ -1,5 +1,5 @@
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 
 // TODO: Currently used in host which is unused
 /// Call operation parameters for different call types
