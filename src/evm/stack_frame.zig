@@ -15,6 +15,7 @@ const memory_mod = @import("memory.zig");
 const stack_mod = @import("stack.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
+const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const Account = @import("database_interface.zig").Account;
@@ -132,6 +133,45 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             WriteProtection,
         };
 
+        /// Generate a push handler for PUSH0-PUSH32
+        fn generatePushHandler(comptime push_n: u8) *const Schedule.OpcodeHandler {
+            return struct {
+                pub fn pushHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+                    if (push_n == 0) {
+                        // PUSH0 - push zero
+                        try self.stack.push(0);
+                    } else {
+                        // PUSH1-PUSH32 - get value from schedule metadata
+                        // For now, just push 0 as placeholder
+                        // TODO: Extract value from schedule metadata
+                        try self.stack.push(0);
+                    }
+                    return @call(.always_tail, next[0], .{ self, next + 1 });
+                }
+            }.pushHandler;
+        }
+        
+        /// Generate a dup handler for DUP1-DUP16
+        fn generateDupHandler(comptime dup_n: u8) *const Schedule.OpcodeHandler {
+            return struct {
+                pub fn dupHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+                    const value = try self.stack.peek_n(dup_n);
+                    try self.stack.push(value);
+                    return @call(.always_tail, next[0], .{ self, next + 1 });
+                }
+            }.dupHandler;
+        }
+        
+        /// Generate a swap handler for SWAP1-SWAP16  
+        fn generateSwapHandler(comptime swap_n: u8) *const Schedule.OpcodeHandler {
+            return struct {
+                pub fn swapHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+                    try self.stack.swap_n(swap_n);
+                    return @call(.always_tail, next[0], .{ self, next + 1 });
+                }
+            }.swapHandler;
+        }
+        
         pub const opcode_handlers = blk: {
             @setEvalBranchQuota(10000);
             var h: [256]*const Schedule.OpcodeHandler = undefined;
@@ -345,21 +385,21 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             self.output_data.deinit(allocator);
         }
         /// Helper function to call tracer beforeOp if tracer is configured
-        pub inline fn traceBeforeOp(self: *Self, pc: u32, opcode: u8) void {
+        pub inline fn traceBeforeOp(self: *Self, pc_val: u32, opcode: u8) void {
             if (comptime config.TracerType != null) {
-                self.tracer.beforeOp(pc, opcode, Self, self);
+                self.tracer.beforeOp(pc_val, opcode, Self, self);
             }
         }
         /// Helper function to call tracer afterOp if tracer is configured
-        pub inline fn traceAfterOp(self: *Self, pc: u32, opcode: u8) void {
+        pub inline fn traceAfterOp(self: *Self, pc_val: u32, opcode: u8) void {
             if (comptime config.TracerType != null) {
-                self.tracer.afterOp(pc, opcode, Self, self);
+                self.tracer.afterOp(pc_val, opcode, Self, self);
             }
         }
         /// Helper function to call tracer onError if tracer is configured
-        pub inline fn traceOnError(self: *Self, pc: u32, err: anyerror) void {
+        pub inline fn traceOnError(self: *Self, pc_val: u32, err: anyerror) void {
             if (comptime config.TracerType != null) {
-                self.tracer.onError(pc, err, Self, self);
+                self.tracer.onError(pc_val, err, Self, self);
             }
         }
         /// Create a deep copy of the frame.
@@ -441,7 +481,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             };
         }
 
-        pub fn pop(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn pop(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             // TODO assert in this and all methods that next is not null using std.debug.assert
             _ = try self.stack.pop();
             return @call(.always_tail, next[0], .{ self, next + 1 });
@@ -464,30 +504,30 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return Error.STOP;
         }
 
-        pub fn @"and"(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn @"and"(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top & top_minus_1);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn @"or"(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn @"or"(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top | top_minus_1);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn xor(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn xor(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn not(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn not(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const top = try self.stack.peek();
             try self.stack.set_top(~top);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn byte(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn byte(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const byte_index = try self.stack.pop();
             const value = try self.stack.peek();
             const result = if (byte_index >= 32) 0 else blk: {
@@ -499,7 +539,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn shl(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn shl(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const ShiftType = std.math.Log2Int(WordType);
@@ -507,7 +547,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn shr(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn shr(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const ShiftType = std.math.Log2Int(WordType);
@@ -515,7 +555,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn sar(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn sar(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const word_bits = @bitSizeOf(WordType);
@@ -536,7 +576,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
         // Arithmetic operations
         /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn add(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn add(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             // Charge gas for simple arithmetic (fastest step)
             const gas_cost: u64 = GasConstants.GasFastestStep;
             try self.consumeGasChecked(gas_cost);
@@ -546,27 +586,27 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
-        pub fn mul(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn mul(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn sub(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn sub(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
-        pub fn div(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn div(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn sdiv(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn sdiv(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -587,14 +627,14 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn mod(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn mod(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator % denominator;
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn smod(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn smod(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -609,7 +649,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn addmod(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn addmod(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const modulus = try self.stack.pop();
             const addend2 = try self.stack.pop();
             const addend1 = try self.stack.peek();
@@ -630,7 +670,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn mulmod(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn mulmod(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const modulus = try self.stack.pop();
             const factor2 = try self.stack.pop();
             const factor1 = try self.stack.peek();
@@ -646,7 +686,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn exp(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn exp(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const exponent = try self.stack.pop();
             const base = try self.stack.peek();
             var result: WordType = 1;
@@ -661,7 +701,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             try self.stack.set_top(result);
             return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        pub fn signextend(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
+        pub fn signextend(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const ext = try self.stack.pop();
             const value = try self.stack.peek();
             var result: WordType = undefined;
@@ -765,10 +805,41 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const opcode = self.bytecode[pc_value];
             return opcode == @intFromEnum(Opcode.JUMPDEST);
         }
-        pub fn jumpdest(self: *Self) Error!void {
-            _ = self;
+        pub fn jumpdest(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             // JUMPDEST does nothing - it's just a marker for valid jump destinations
+            return @call(.always_tail, next[0], .{ self, next + 1 });
         }
+        
+        pub fn jump(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+            _ = next; // JUMP changes control flow, doesn't continue to next
+            const dest = try self.stack.pop();
+            // TODO: Implement proper jump logic with schedule lookup
+            // For now, just return stop
+            _ = dest;
+            return Success.Stop;
+        }
+        
+        pub fn jumpi(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+            const dest = try self.stack.pop();
+            const condition = try self.stack.pop();
+            
+            if (condition != 0) {
+                // TODO: Implement conditional jump logic with schedule lookup
+                _ = dest;
+                return Success.Stop;
+            } else {
+                // Continue to next instruction
+                return @call(.always_tail, next[0], .{ self, next + 1 });
+            }
+        }
+        
+        pub fn pc(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+            // TODO: Get actual program counter from schedule/context
+            // For now, push 0
+            try self.stack.push(0);
+            return @call(.always_tail, next[0], .{ self, next + 1 });
+        }
+        
         pub fn invalid(self: *Self) Error!void {
             _ = self;
             return Error.InvalidOpcode;
@@ -2468,13 +2539,192 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 return self.stack.swap_n(n);
             }
         }
+        
+        // Synthetic opcode handlers for optimized operations (placeholder implementations)
+        pub fn push_add_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const result = a +% 0; // TODO: Get actual inline value from schedule
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_add_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const result = a +% 0; // TODO: Get actual pointer value from schedule
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mul_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const result = a *% 1; // TODO: Get actual inline value
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mul_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const result = a *% 1; // TODO: Get actual pointer value
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_div_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const divisor = 1; // TODO: Get actual inline value
+        const result = if (divisor == 0) 0 else a / divisor;
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_div_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const divisor = 1; // TODO: Get actual pointer value
+        const result = if (divisor == 0) 0 else a / divisor;
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_sub_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const result = a -% 0; // TODO: Get actual inline value
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_sub_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const result = a -% 0; // TODO: Get actual pointer value
+        try self.stack.push_unsafe(result);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_jump_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const target = 0; // TODO: Get actual inline jump target
+        try self.stack.push_unsafe(target);
+        // TODO: Implement actual jump logic
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_jump_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const target = 0; // TODO: Get actual pointer jump target
+        try self.stack.push_unsafe(target);
+        // TODO: Implement actual jump logic
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_jumpi_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const condition = try self.stack.pop_unsafe();
+        const target = 0; // TODO: Get actual inline jump target
+        if (condition != 0) {
+            try self.stack.push_unsafe(target);
+            // TODO: Implement actual conditional jump logic
+        }
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_jumpi_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const condition = try self.stack.pop_unsafe();
+        const target = 0; // TODO: Get actual pointer jump target
+        if (condition != 0) {
+            try self.stack.push_unsafe(target);
+            // TODO: Implement actual conditional jump logic
+        }
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    // Memory operation synthetic handlers
+    pub fn push_mload_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const offset = 0; // TODO: Get actual inline offset
+        const value = try self.memory.get_u256_evm(@intCast(offset));
+        try self.stack.push_unsafe(value);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mload_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const offset = 0; // TODO: Get actual pointer offset
+        const value = try self.memory.get_u256_evm(@intCast(offset));
+        try self.stack.push_unsafe(value);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mstore_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const value = try self.stack.pop_unsafe();
+        const offset = 0; // TODO: Get actual inline offset
+        try self.memory.set_u256_evm(@intCast(offset), value);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mstore_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const value = try self.stack.pop_unsafe();
+        const offset = 0; // TODO: Get actual pointer offset
+        try self.memory.set_u256_evm(@intCast(offset), value);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    // Bitwise operation synthetic handlers
+    pub fn push_and_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const b = 0; // TODO: Get actual inline value
+        try self.stack.push_unsafe(a & b);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_and_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const b = 0; // TODO: Get actual pointer value
+        try self.stack.push_unsafe(a & b);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_or_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const b = 0; // TODO: Get actual inline value
+        try self.stack.push_unsafe(a | b);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_or_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const b = 0; // TODO: Get actual pointer value
+        try self.stack.push_unsafe(a | b);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_xor_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const b = 0; // TODO: Get actual inline value
+        try self.stack.push_unsafe(a ^ b);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_xor_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const a = try self.stack.pop_unsafe();
+        const b = 0; // TODO: Get actual pointer value
+        try self.stack.push_unsafe(a ^ b);
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mstore8_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const value = try self.stack.pop_unsafe();
+        const offset = 0; // TODO: Get actual inline offset
+        try self.memory.set_byte_evm(@intCast(offset), @intCast(value & 0xFF));
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+    }
+    
+    pub fn push_mstore8_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        const value = try self.stack.pop_unsafe();
+        const offset = 0; // TODO: Get actual pointer offset
+        try self.memory.set_byte_evm(@intCast(offset), @intCast(value & 0xFF));
+        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        }
     };
 }
 
 /// Test helper to create a simple handler chain that ends with stop
 /// This allows testing individual opcodes in isolation
-fn createTestHandlerChain(comptime FrameType: type) [1:null]*const FrameType.OpcodeHandler {
-    return [1:null]*const FrameType.OpcodeHandler{
+fn createTestHandlerChain(comptime FrameType: type) [1:null]*const FrameType.Schedule.OpcodeHandler {
+    return [1:null]*const FrameType.Schedule.OpcodeHandler{
         &FrameType.stop,
     };
 }
