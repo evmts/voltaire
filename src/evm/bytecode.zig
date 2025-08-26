@@ -108,7 +108,24 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Handle fusion opcodes first
                 if (packed_bits.is_fusion_candidate) {
-                    return iterator.bytecode.getFusionData(iterator.pc);
+                    const fusion_data = iterator.bytecode.getFusionData(iterator.pc);
+                    // Advance PC properly for fusion opcodes
+                    switch (fusion_data) {
+                        .push_add_fusion, .push_mul_fusion => {
+                            // Skip PUSH + operation (PUSH takes 1 + size bytes, operation takes 1 byte)
+                            const push_size = opcode - 0x5F;
+                            iterator.pc += 1 + push_size + 1; // PUSH + data + operation
+                        },
+                        .push => |push_data| {
+                            // Regular PUSH fallback
+                            iterator.pc += 1 + push_data.size;
+                        },
+                        else => {
+                            // Regular opcode fallback
+                            iterator.pc += 1;
+                        }
+                    }
+                    return fusion_data;
                 }
 
                 // Handle regular opcodes
@@ -277,15 +294,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             switch (second_op) {
                 0x01 => return OpcodeData{ .push_add_fusion = .{ .value = value } }, // ADD
                 0x02 => return OpcodeData{ .push_mul_fusion = .{ .value = value } }, // MUL
-                0x03 => return OpcodeData{ .push_sub_fusion = .{ .value = value } }, // SUB
-                0x04 => return OpcodeData{ .push_div_fusion = .{ .value = value } }, // DIV
-                0x16 => return OpcodeData{ .push_and_fusion = .{ .value = value } }, // AND
-                0x17 => return OpcodeData{ .push_or_fusion = .{ .value = value } }, // OR
-                0x18 => return OpcodeData{ .push_xor_fusion = .{ .value = value } }, // XOR
-                0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
-                0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
                 else => {
                     // Fallback to regular PUSH if fusion pattern not recognized
+                    // TODO: Add more fusion types to OpcodeData union as needed
                     return OpcodeData{ .push = .{ .value = value, .size = push_size } };
                 }
             }
