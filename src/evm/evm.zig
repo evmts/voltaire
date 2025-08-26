@@ -145,11 +145,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
         pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
-            var planner = try Planner.init(allocator, 32); // 32 plans cache
-            errdefer planner.deinit();
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
-
+            var planner = try Planner.init(allocator, 32); // 32 plans cache
+            errdefer planner.deinit();
             return Self{
                 .depth = 0,
                 .static_stack = [_]bool{false} ** config.max_call_depth,
@@ -185,17 +184,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.internal_arena.deinit();
         }
 
+        // TODO this is a shortcut we want to only preallocate
         /// Get the arena allocator for temporary allocations during the current call.
         /// This allocator is reset after each root call completes.
         pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
             return self.internal_arena.allocator();
         }
 
+        // TODO rename transferValue and make withSnapshot a comptime boolean param
         /// Transfer value between accounts with proper balance checks and error handling
         fn transferValueWithSnapshot(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
             if (value == 0) return;
-
-            // Get accounts
             var from_account = self.database.get_account(from.bytes) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
@@ -203,27 +202,18 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return error.InsufficientBalance;
             };
-
             var to_account = self.database.get_account(to.bytes) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             } orelse Account.zero();
-
-            // Check sufficient balance
             if (from_account.balance < value) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return error.InsufficientBalance;
             }
-
-            // Record original balances in journal before modification
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
-
-            // Update balances
             from_account.balance -= value;
             to_account.balance += value;
-
-            // Write to database
             self.database.set_account(from.bytes, from_account) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
@@ -234,15 +224,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
         }
 
+        // TODO this should only return a CallResult never an error since a CallResult includes errors
         /// Execute an EVM operation.
         ///
         /// This is the main entry point that routes to specific handlers based
         /// on the operation type (CALL, CREATE, etc). Manages transaction-level
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) Error!CallResult {
-            self.depth = 0;
-            _ = self.internal_arena.reset(.retain_capacity);
-            self.logs.clearRetainingCapacity();
+            params.validate() catch return CallResult.failure(0);
+            defer self.depth = 0;
+            defer self.internal_arena.reset(.retain_capacity);
+            defer self.logs.clearRetainingCapacity();
             var result = switch (params) {
                 .call => |p| try self.call_handler(p),
                 .callcode => |p| try self.callcode_handler(p),
@@ -252,6 +244,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create2 => |p| try self.create2_handler(p),
             };
             result.logs = self.takeLogs();
+            // TODO add trace selfdestruct and access list too
             return result;
         }
 
