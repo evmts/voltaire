@@ -252,6 +252,45 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             };
         }
 
+        /// Get fusion data for a bytecode position marked as fusion candidate
+        /// This method uses the pre-computed packed bitmap instead of re-analyzing
+        pub fn getFusionData(self: *const Self, pc: PcType) OpcodeData {
+            if (pc >= self.len()) return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
+            
+            const first_op = self.get_unsafe(pc);
+            const second_op = if (pc + 1 < self.len()) self.get_unsafe(pc + 1) else 0x00;
+            
+            // Read PUSH value first (since all fusions start with PUSH)
+            if (first_op < 0x60 or first_op > 0x7F) {
+                // Not a PUSH opcode, shouldn't be marked as fusion candidate
+                return OpcodeData{ .regular = .{ .opcode = first_op } };
+            }
+            
+            const push_size = first_op - 0x5F;
+            var value: u256 = 0;
+            const end_pc = @min(pc + 1 + push_size, self.len());
+            for (pc + 1..end_pc) |i| {
+                value = (value << 8) | self.get_unsafe(@intCast(i));
+            }
+            
+            // Return appropriate fusion type based on second opcode
+            switch (second_op) {
+                0x01 => return OpcodeData{ .push_add_fusion = .{ .value = value } }, // ADD
+                0x02 => return OpcodeData{ .push_mul_fusion = .{ .value = value } }, // MUL
+                0x03 => return OpcodeData{ .push_sub_fusion = .{ .value = value } }, // SUB
+                0x04 => return OpcodeData{ .push_div_fusion = .{ .value = value } }, // DIV
+                0x16 => return OpcodeData{ .push_and_fusion = .{ .value = value } }, // AND
+                0x17 => return OpcodeData{ .push_or_fusion = .{ .value = value } }, // OR
+                0x18 => return OpcodeData{ .push_xor_fusion = .{ .value = value } }, // XOR
+                0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
+                0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
+                else => {
+                    // Fallback to regular PUSH if fusion pattern not recognized
+                    return OpcodeData{ .push = .{ .value = value, .size = push_size } };
+                }
+            }
+        }
+
         /// Get the length of the bytecode
         pub inline fn len(self: Self) PcType {
             // Guaranteed by config that runtime_code.len fits in PcType
