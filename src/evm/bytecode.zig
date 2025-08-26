@@ -15,21 +15,6 @@ const Opcode = @import("opcode.zig").Opcode;
 const bytecode_config = @import("bytecode_config.zig");
 const BytecodeConfig = bytecode_config.BytecodeConfig;
 
-// Optional SIMD opcode validation placeholder. Some build targets may still
-// reference a SIMD pre-pass; provide a safe scalar fallback.
-fn validateOpcodeScalar(code: []const u8) bool {
-    for (code) |op| {
-        _ = std.meta.intToEnum(Opcode, op) catch return false;
-    }
-    return true;
-}
-
-fn validateOpcodeSimd(code: []const u8, comptime L: comptime_int) bool {
-    _ = L;
-    // Fallback to scalar validation; SIMD specialization can be added later.
-    return validateOpcodeScalar(code);
-}
-
 // SECURITY MODEL: Untrusted Bytecode Validation
 // ==============================================
 // This module implements a two-phase security model for handling untrusted EVM bytecode:
