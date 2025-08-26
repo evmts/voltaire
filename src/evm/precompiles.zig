@@ -1,18 +1,18 @@
 /// Ethereum precompiled contracts implementation
-/// 
+///
 /// Precompiles are special contracts with addresses 0x01-0x0A (and beyond) that provide
 /// cryptographic functions and other utilities natively implemented for efficiency:
 /// - 0x01: ecRecover - ECDSA signature recovery
-/// - 0x02: sha256 - SHA-256 hash function  
+/// - 0x02: sha256 - SHA-256 hash function
 /// - 0x03: ripemd160 - RIPEMD-160 hash function
 /// - 0x04: identity - data copy function
 /// - 0x05: modexp - modular exponentiation
 /// - 0x06: ecAdd - BN254 elliptic curve addition
-/// - 0x07: ecMul - BN254 elliptic curve multiplication  
+/// - 0x07: ecMul - BN254 elliptic curve multiplication
 /// - 0x08: ecPairing - BN254 pairing check
 /// - 0x09: blake2f - BLAKE2F compression function
 /// - 0x0A: pointEvaluation - KZG point evaluation (EIP-4844)
-/// 
+///
 /// These contracts have deterministic gas costs and behavior across all EVM implementations.
 const std = @import("std");
 const primitives = @import("primitives");
@@ -20,7 +20,6 @@ const Address = primitives.Address;
 // Use the real crypto and build_options modules
 const crypto = @import("crypto");
 const build_options = @import("build_options");
-
 
 /// Precompile addresses (Ethereum mainnet)
 pub const ECRECOVER_ADDRESS = primitives.Address.from_u256(1);
@@ -72,21 +71,21 @@ pub fn is_precompile(address: Address) bool {
 }
 
 /// Execute a precompile based on its address
+/// Not safe to call without checking is_precompile first
 pub fn execute_precompile(
     allocator: std.mem.Allocator,
     address: Address,
     input: []const u8,
     gas_limit: u64,
 ) PrecompileError!PrecompileOutput {
-    if (!is_precompile(address)) {
-        return PrecompileOutput{
-            .output = &.{},
-            .gas_used = 0,
-            .success = false,
-        };
-    }
-
-    const precompile_id = address.bytes[19]; // Last byte is the precompile ID
+    // TODO this should be removed and this method considered unsafe in ReleaseFast
+    if (!is_precompile(address)) return PrecompileOutput{
+        .output = &.{},
+        .gas_used = 0,
+        .success = false,
+    };
+    std.debug.assert(is_precompile(address));
+    const precompile_id = address.bytes[19];
     return switch (precompile_id) {
         1 => execute_ecrecover(allocator, input, gas_limit),
         2 => execute_sha256(allocator, input, gas_limit),
@@ -138,7 +137,6 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
         };
     }
 
-    // Pad input to exactly 128 bytes if needed
     var padded_input: [128]u8 = [_]u8{0} ** 128;
     const copy_len = @min(input.len, 128);
     @memcpy(padded_input[0..copy_len], input[0..copy_len]);
@@ -166,7 +164,7 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
             v = byte;
         }
     }
-    
+
     if (v != 27 and v != 28) {
         const empty_output = try allocator.alloc(u8, 32);
         @memset(empty_output, 0);
@@ -214,7 +212,7 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
 pub fn execute_sha256(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
     const word_count = (input.len + 31) / 32;
     const required_gas = GasCosts.SHA256_BASE + word_count * GasCosts.SHA256_PER_WORD;
-    
+
     if (gas_limit < required_gas) {
         return PrecompileOutput{
             .output = &.{},
@@ -236,13 +234,13 @@ pub fn execute_sha256(allocator: std.mem.Allocator, input: []const u8, gas_limit
     };
 }
 
-/// 0x03: ripemd160 - RIPEMD-160 hash function  
+/// 0x03: ripemd160 - RIPEMD-160 hash function
 /// Input: arbitrary bytes
 /// Output: 32-byte result (20-byte RIPEMD-160 hash + 12 zero bytes padding)
 pub fn execute_ripemd160(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
     const word_count = (input.len + 31) / 32;
     const required_gas = GasCosts.RIPEMD160_BASE + word_count * GasCosts.RIPEMD160_PER_WORD;
-    
+
     if (gas_limit < required_gas) {
         return PrecompileOutput{
             .output = &.{},
@@ -258,7 +256,7 @@ pub fn execute_ripemd160(allocator: std.mem.Allocator, input: []const u8, gas_li
     var hasher = crypto.Ripemd160.RIPEMD160.init();
     hasher.update(input);
     const hash = hasher.final();
-    
+
     // Copy the 20-byte hash to the output with 12 bytes of padding at the front
     @memcpy(output[12..32], &hash);
 
@@ -275,7 +273,7 @@ pub fn execute_ripemd160(allocator: std.mem.Allocator, input: []const u8, gas_li
 pub fn execute_identity(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
     const word_count = (input.len + 31) / 32;
     const required_gas = GasCosts.IDENTITY_BASE + word_count * GasCosts.IDENTITY_PER_WORD;
-    
+
     if (gas_limit < required_gas) {
         return PrecompileOutput{
             .output = &.{},
@@ -323,11 +321,11 @@ pub fn execute_modexp(allocator: std.mem.Allocator, input: []const u8, gas_limit
 
     // Extract base, exp, mod
     var offset: usize = 96;
-    const base = input[offset..offset + base_len];
+    const base = input[offset .. offset + base_len];
     offset += base_len;
-    const exp = input[offset..offset + exp_len];
+    const exp = input[offset .. offset + exp_len];
     offset += exp_len;
-    const mod = input[offset..offset + mod_len];
+    const mod = input[offset .. offset + mod_len];
 
     // Handle special cases
     if (mod_len == 0) {
@@ -354,7 +352,7 @@ pub fn execute_modexp(allocator: std.mem.Allocator, input: []const u8, gas_limit
 
     // Perform modular exponentiation
     const output = try allocator.alloc(u8, mod_len);
-    
+
     // Use the actual modexp implementation from crypto module
     crypto.ModExp.unaudited_modexp(allocator, base, exp, mod, output) catch {
         // On error, return zeros (following EVM spec)
@@ -409,7 +407,7 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const y2 = bytesToU256(padded_input[96..128]);
 
     const output = try allocator.alloc(u8, 64);
-    
+
     // Handle identity shortcuts per EVM spec behavior expectations in tests:
     // If one operand is the point at infinity (encoded as all zeros), return the other point.
     if (x2 == 0 and y2 == 0) {
@@ -428,11 +426,11 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const g1_y1 = crypto.bn254.FpMont.init(y1);
     const g1_x2 = crypto.bn254.FpMont.init(x2);
     const g1_y2 = crypto.bn254.FpMont.init(y2);
-    
+
     // Create G1 points
     const point1 = crypto.bn254.G1{ .x = g1_x1, .y = g1_y1, .z = crypto.bn254.FpMont.ONE };
     const point2 = crypto.bn254.G1{ .x = g1_x2, .y = g1_y2, .z = crypto.bn254.FpMont.ONE };
-    
+
     // Check if points are on curve
     if (!point1.isOnCurve() or !point2.isOnCurve()) {
         @memset(output, 0);
@@ -442,15 +440,15 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
             .success = true,
         };
     }
-    
+
     // Perform addition
     const result = point1.add(&point2);
-    
+
     // Convert back to affine coordinates and bytes
     const result_affine = result.toAffine();
     const result_x = result_affine.x.toStandardRepresentation();
     const result_y = result_affine.y.toStandardRepresentation();
-    
+
     u256ToBytes(result_x, output[0..32]);
     u256ToBytes(result_y, output[32..64]);
 
@@ -496,7 +494,7 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const scalar = bytesToU256(padded_input[64..96]);
 
     const output = try allocator.alloc(u8, 64);
-    
+
     // Handle scalar or point identity edge cases explicitly
     if (scalar == 0 or (x == 0 and y == 0)) {
         @memset(output, 0);
@@ -506,10 +504,10 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     // Use the actual BN254 implementation from crypto module
     const g1_x = crypto.bn254.FpMont.init(x);
     const g1_y = crypto.bn254.FpMont.init(y);
-    
+
     // Create G1 point
     const point = crypto.bn254.G1{ .x = g1_x, .y = g1_y, .z = crypto.bn254.FpMont.ONE };
-    
+
     // Check if point is on curve
     if (!point.isOnCurve()) {
         @memset(output, 0);
@@ -519,15 +517,15 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
             .success = true,
         };
     }
-    
+
     // Perform scalar multiplication
     const result = point.mul_by_int(scalar);
-    
+
     // Convert back to affine coordinates and bytes
     const result_affine = result.toAffine();
     const result_x = result_affine.x.toStandardRepresentation();
     const result_y = result_affine.y.toStandardRepresentation();
-    
+
     u256ToBytes(result_x, output[0..32]);
     u256ToBytes(result_y, output[32..64]);
 
@@ -554,7 +552,7 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
 
     const pair_count = input.len / 192;
     const required_gas = GasCosts.ECPAIRING_BASE + pair_count * GasCosts.ECPAIRING_PER_PAIR;
-    
+
     if (gas_limit < required_gas) {
         return PrecompileOutput{
             .output = &.{},
@@ -595,13 +593,13 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
             output: [*]u8,
             output_len: c_uint,
         ) callconv(.c) c_int;
-        
+
         const BN254_SUCCESS = 0;
     };
-    
+
     // Call the Rust BN254 implementation
     const result = c.bn254_ecpairing(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-    
+
     if (result != c.BN254_SUCCESS) {
         // Invalid input or computation failed
         @memset(output, 0);
@@ -611,7 +609,7 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
             .success = false,
         };
     }
-    
+
     return PrecompileOutput{
         .output = output,
         .gas_used = required_gas,
@@ -632,11 +630,11 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
     }
 
     // Parse rounds from first 4 bytes (big-endian)
-    const rounds = (@as(u32, input[0]) << 24) | 
-                   (@as(u32, input[1]) << 16) | 
-                   (@as(u32, input[2]) << 8) | 
-                   @as(u32, input[3]);
-    
+    const rounds = (@as(u32, input[0]) << 24) |
+        (@as(u32, input[1]) << 16) |
+        (@as(u32, input[2]) << 8) |
+        @as(u32, input[3]);
+
     const required_gas = rounds * GasCosts.BLAKE2F_PER_ROUND;
     if (gas_limit < required_gas) {
         return PrecompileOutput{
@@ -657,32 +655,32 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
     }
 
     const output = try allocator.alloc(u8, 64);
-    
+
     // Parse input components
-    const h_bytes = input[4..68];   // 64 bytes state (8 x u64)
+    const h_bytes = input[4..68]; // 64 bytes state (8 x u64)
     const m_bytes = input[68..196]; // 128 bytes message (16 x u64)
     const t_bytes = input[196..212]; // 16 bytes counter (2 x u64)
-    
+
     // Convert bytes to u64 arrays (little-endian as per spec)
     var h: [8]u64 = undefined;
     var m: [16]u64 = undefined;
     var t: [2]u64 = undefined;
-    
+
     for (0..8) |i| {
-        h[i] = std.mem.readInt(u64, h_bytes[i * 8..][0..8], .little);
+        h[i] = std.mem.readInt(u64, h_bytes[i * 8 ..][0..8], .little);
     }
     for (0..16) |i| {
-        m[i] = std.mem.readInt(u64, m_bytes[i * 8..][0..8], .little);
+        m[i] = std.mem.readInt(u64, m_bytes[i * 8 ..][0..8], .little);
     }
     t[0] = std.mem.readInt(u64, t_bytes[0..8], .little);
     t[1] = std.mem.readInt(u64, t_bytes[8..16], .little);
-    
+
     // Use the actual blake2f implementation from crypto module
     crypto.Blake2.unaudited_blake2f_compress(&h, &m, t, f != 0, rounds);
-    
+
     // Convert result back to bytes (little-endian)
     for (0..8) |i| {
-        std.mem.writeInt(u64, output[i * 8..][0..8], h[i], .little);
+        std.mem.writeInt(u64, output[i * 8 ..][0..8], h[i], .little);
     }
 
     return PrecompileOutput{
@@ -772,7 +770,7 @@ fn u256ToBytes(value: u256, output: []u8) void {
 
 test "is_precompile detects valid precompile addresses" {
     const testing = std.testing;
-    
+
     // Test valid precompile addresses
     try testing.expect(is_precompile(ECRECOVER_ADDRESS));
     try testing.expect(is_precompile(SHA256_ADDRESS));
@@ -784,7 +782,7 @@ test "is_precompile detects valid precompile addresses" {
     try testing.expect(is_precompile(ECPAIRING_ADDRESS));
     try testing.expect(is_precompile(BLAKE2F_ADDRESS));
     try testing.expect(is_precompile(POINT_EVALUATION_ADDRESS));
-    
+
     // Test invalid addresses
     try testing.expect(!is_precompile(primitives.Address.from_u256(0)));
     try testing.expect(!is_precompile(primitives.Address.from_u256(11)));
@@ -793,11 +791,11 @@ test "is_precompile detects valid precompile addresses" {
 
 test "execute_identity precompile" {
     const testing = std.testing;
-    
+
     const input = "Hello, World!";
     const result = try execute_identity(testing.allocator, input, 1000);
     defer testing.allocator.free(result.output);
-    
+
     try testing.expect(result.success);
     try testing.expectEqualSlices(u8, input, result.output);
     try testing.expect(result.gas_used == GasCosts.IDENTITY_BASE + GasCosts.IDENTITY_PER_WORD);
@@ -805,14 +803,14 @@ test "execute_identity precompile" {
 
 test "execute_sha256 precompile" {
     const testing = std.testing;
-    
+
     const input = "abc";
     const result = try execute_sha256(testing.allocator, input, 1000);
     defer testing.allocator.free(result.output);
-    
+
     try testing.expect(result.success);
     try testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // Expected SHA-256 hash of "abc"
     const expected = [_]u8{
         0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
@@ -823,12 +821,12 @@ test "execute_sha256 precompile" {
 
 test "execute_ecrecover invalid signature" {
     const testing = std.testing;
-    
+
     // Invalid input (all zeros)
     const input = [_]u8{0} ** 128;
     const result = try execute_ecrecover(testing.allocator, &input, GasCosts.ECRECOVER + 100);
     defer testing.allocator.free(result.output);
-    
+
     try testing.expect(result.success);
     try testing.expectEqual(@as(usize, 32), result.output.len);
     // Should return all zeros for invalid signature
@@ -839,26 +837,26 @@ test "execute_ecrecover invalid signature" {
 
 test "execute_modexp simple case" {
     const testing = std.testing;
-    
+
     // 3^4 mod 5 = 81 mod 5 = 1
     var input: [128]u8 = [_]u8{0} ** 128;
-    
+
     // base_len = 1 (32 bytes, big-endian)
     input[31] = 1;
-    // exp_len = 1 (32 bytes, big-endian)  
+    // exp_len = 1 (32 bytes, big-endian)
     input[63] = 1;
     // mod_len = 1 (32 bytes, big-endian)
     input[95] = 1;
     // base = 3
     input[96] = 3;
-    // exp = 4  
+    // exp = 4
     input[97] = 4;
     // mod = 5
     input[98] = 5;
-    
+
     const result = try execute_modexp(testing.allocator, input[0..99], 1000);
     defer testing.allocator.free(result.output);
-    
+
     try testing.expect(result.success);
     try testing.expectEqual(@as(usize, 1), result.output.len);
     try testing.expectEqual(@as(u8, 1), result.output[0]);
@@ -866,39 +864,39 @@ test "execute_modexp simple case" {
 
 test "execute_blake2f invalid input length" {
     const testing = std.testing;
-    
+
     const input = [_]u8{0} ** 100; // Wrong length
     const result = try execute_blake2f(testing.allocator, &input, 1000);
-    
+
     try testing.expect(!result.success);
     try testing.expectEqual(@as(usize, 0), result.output.len);
 }
 
 test "precompile gas cost calculations" {
     const testing = std.testing;
-    
+
     // Test SHA256 gas cost scaling
     const small_input = "a";
     const large_input = "a" ** 100;
-    
+
     const small_result = try execute_sha256(testing.allocator, small_input, 10000);
     defer testing.allocator.free(small_result.output);
-    
-    const large_result = try execute_sha256(testing.allocator, large_input, 10000);  
+
+    const large_result = try execute_sha256(testing.allocator, large_input, 10000);
     defer testing.allocator.free(large_result.output);
-    
+
     // Large input should cost more gas
     try testing.expect(large_result.gas_used > small_result.gas_used);
 }
 
 test "precompile insufficient gas" {
     const testing = std.testing;
-    
+
     const input = "test";
-    
+
     // Test with insufficient gas
     const result = try execute_identity(testing.allocator, input, 5); // Too little gas
-    
+
     try testing.expect(!result.success);
     try testing.expectEqual(@as(usize, 0), result.output.len);
 }
