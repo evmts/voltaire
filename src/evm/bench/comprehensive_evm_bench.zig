@@ -80,7 +80,7 @@ fn benchmark_evm_erc20_transfer(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller = Address{ .bytes = [_]u8{0x10} ** 20 };
-    const deploy_result = vm.call(evm_mod.Evm(.{}).CallParams{
+    const deploy_result = vm.call(evm_mod.CallParams{
         .create = .{
             .caller = caller,
             .value = 0,
@@ -91,10 +91,10 @@ fn benchmark_evm_erc20_transfer(allocator: std.mem.Allocator) void {
 
     if (!deploy_result.success) return;
 
-    const call_params = evm_mod.Evm(.{}).CallParams{
+    const call_params = evm_mod.CallParams{
         .call = .{
             .caller = caller,
-            .to = [_]u8{0x12} ** 20, // Mock contract address
+            .to = Address{ .bytes = [_]u8{0x12} ** 20 }, // Mock contract address
             .value = 0,
             .input = calldata,
             .gas = BENCHMARK_GAS_LIMIT,
@@ -138,10 +138,10 @@ fn benchmark_evm_snailtracer(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller = Address{ .bytes = [_]u8{0x10} ** 20 };
-    const call_params = evm_mod.Evm(.{}).CallParams{
+    const call_params = evm_mod.CallParams{
         .call = .{
             .caller = caller,
-            .to = [_]u8{0x12} ** 20,
+            .to = Address{ .bytes = [_]u8{0x12} ** 20 },
             .value = 0,
             .input = calldata,
             .gas = BENCHMARK_GAS_LIMIT,
@@ -185,10 +185,10 @@ fn benchmark_evm_thousand_hashes(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller = Address{ .bytes = [_]u8{0x10} ** 20 };
-    const call_params = evm_mod.Evm(.{}).CallParams{
+    const call_params = evm_mod.CallParams{
         .call = .{
             .caller = caller,
-            .to = [_]u8{0x12} ** 20,
+            .to = Address{ .bytes = [_]u8{0x12} ** 20 },
             .value = 0,
             .input = calldata,
             .gas = BENCHMARK_GAS_LIMIT,
@@ -258,7 +258,7 @@ fn benchmark_legacy_evm_erc20_transfer(allocator: std.mem.Allocator) void {
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
-        .to = [_]u8{0x20} ** 20,  // Use predetermined contract address
+        .to = Address{ .bytes = [_]u8{0x20} ** 20 },  // Use predetermined contract address
         .value = 0,
         .input = calldata,
         .gas = BENCHMARK_GAS_LIMIT,
@@ -323,7 +323,7 @@ fn benchmark_legacy_evm_snailtracer(allocator: std.mem.Allocator) void {
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
-        .to = [_]u8{0x20} ** 20,  // Use predetermined contract address
+        .to = Address{ .bytes = [_]u8{0x20} ** 20 },  // Use predetermined contract address
         .value = 0,
         .input = calldata,
         .gas = BENCHMARK_GAS_LIMIT,
@@ -388,7 +388,7 @@ fn benchmark_legacy_evm_thousand_hashes(allocator: std.mem.Allocator) void {
 
     const params = evm_legacy.CallParams{ .call = .{
         .caller = caller,
-        .to = [_]u8{0x20} ** 20,  // Use predetermined contract address
+        .to = Address{ .bytes = [_]u8{0x20} ** 20 },  // Use predetermined contract address
         .value = 0,
         .input = calldata,
         .gas = BENCHMARK_GAS_LIMIT,
@@ -524,10 +524,10 @@ fn benchmark_evm_stack_push_pop(allocator: std.mem.Allocator) void {
     defer vm.deinit();
 
     const caller = Address{ .bytes = [_]u8{0x10} ** 20 };
-    const call_params = evm_mod.Evm(.{}).CallParams{
+    const call_params = evm_mod.CallParams{
         .call = .{
             .caller = caller,
-            .to = [_]u8{0x12} ** 20,
+            .to = Address{ .bytes = [_]u8{0x12} ** 20 },
             .value = 0,
             .input = &.{},
             .gas = BENCHMARK_GAS_LIMIT,
@@ -681,7 +681,7 @@ fn benchmark_evm_arithmetic_sequence(allocator: std.mem.Allocator) void {
     account.code_hash = code_hash;
     memory_db_copy.set_account(contract_address, account) catch return;
 
-    const call_params = evm_mod.Evm(.{}).CallParams{
+    const call_params = evm_mod.CallParams{
         .call = .{
             .caller = caller,
             .to = contract_address,
@@ -846,7 +846,7 @@ fn benchmark_evm_memory_operations(allocator: std.mem.Allocator) void {
     account.code_hash = code_hash;
     memory_db_copy.set_account(contract_address, account) catch return;
 
-    const call_params = evm_mod.Evm(.{}).CallParams{
+    const call_params = evm_mod.CallParams{
         .call = .{
             .caller = caller,
             .to = contract_address,
