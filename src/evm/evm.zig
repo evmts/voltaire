@@ -39,12 +39,15 @@ pub fn Evm(comptime config: EvmConfig) type {
     return struct {
         const Self = @This();
 
-        const Frame = @import("frame.zig").Frame(config.frame_config);
+        /// StackFrame type for the evm
+        pub const Frame = @import("frame.zig").Frame(config.frame_config);
+        /// Planner/preanalysis processes the bytecode for the intepreter
         pub const Planner: type = @import("planner.zig").Planner(.{
             .WordType = config.frame_config.WordType,
             .maxBytecodeSize = config.frame_config.max_bytecode_size,
             .stack_size = config.frame_config.stack_size,
         });
+        /// Journal handles reverting state when state needs to be reverted
         pub const Journal: type = @import("journal.zig").Journal(.{
             .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,
             .WordType = config.frame_config.WordType,
@@ -52,17 +55,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             .initial_capacity = 128,
         });
 
-        const DEFAULT_ACCOUNT = Account{
-            .balance = 0,
-            .nonce = 0,
-            .code_hash = [_]u8{0} ** 32,
-            .storage_root = [_]u8{0} ** 32,
-        };
-
         /// Call stack entry to track caller and value for DELEGATECALL
         const CallStackEntry = struct {
             caller: primitives.Address,
             value: config.frame_config.WordType,
+        };
+
+        pub const Success = enum {
+            Stop,
+            Return,
+            SelfDestruct,
         };
 
         pub const Error = error{
@@ -81,8 +83,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             StaticCallViolation,
             InvalidOpcode,
             RevertExecution,
-            Stop,
             OutOfMemory,
+            // TODO remove this because we put it on Stop
+            Stop,
         };
 
         // CACHE LINE 1 - HOT PATH (frequently accessed during execution)
@@ -118,6 +121,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         gas_price: u256,
         /// Origin address (sender of the transaction)
         origin: primitives.Address,
+        // TODO remove this in favor of eips
         /// Hardfork configuration
         hardfork_config: Hardfork,
 
@@ -143,21 +147,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
             var planner = try Planner.init(allocator, 32); // 32 plans cache
             errdefer planner.deinit();
-
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
-
-            // EIP-3651: Warm COINBASE address at the start of transaction
-            // Shanghai hardfork introduced this optimization
-            if (hardfork_config.isAtLeast(.SHANGHAI)) {
-                const addresses_to_warm = [_]primitives.Address{context.coinbase};
-                try access_list.pre_warm_addresses(&addresses_to_warm);
-            }
 
             return Self{
                 .depth = 0,
                 .static_stack = [_]bool{false} ** config.max_call_depth,
-                .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = [_]u8{0} ** 20, .value = 0 }} ** config.max_call_depth,
+                .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0 }} ** config.max_call_depth,
                 .allocator = allocator,
                 .database = database,
                 .journal = Journal.init(allocator),
@@ -200,7 +196,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (value == 0) return;
 
             // Get accounts
-            var from_account = self.database.get_account(from) catch |err| {
+            var from_account = self.database.get_account(from.bytes) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             } orelse {
@@ -208,10 +204,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return error.InsufficientBalance;
             };
 
-            var to_account = self.database.get_account(to) catch |err| {
+            var to_account = self.database.get_account(to.bytes) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
-            } orelse DEFAULT_ACCOUNT;
+            } orelse Account.zero();
 
             // Check sufficient balance
             if (from_account.balance < value) {
@@ -228,11 +224,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             to_account.balance += value;
 
             // Write to database
-            self.database.set_account(from, from_account) catch |err| {
+            self.database.set_account(from.bytes, from_account) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             };
-            self.database.set_account(to, to_account) catch |err| {
+            self.database.set_account(to.bytes, to_account) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return err;
             };
@@ -277,7 +273,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const snapshot_id = self.journal.create_snapshot();
 
             if (params.value > 0) {
-                const caller_account = self.database.get_account(params.caller) catch |err| {
+                const caller_account = self.database.get_account(params.caller.bytes) catch |err| {
                     return self.revert_and_fail(snapshot_id, err);
                 };
 
@@ -304,7 +300,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }
                 return result;
             }
-            const code = self.database.get_code_by_address(params.to) catch &.{};
+            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
             if (code.len == 0) {
                 self.transferValueWithSnapshot(params.caller, params.to, params.value, snapshot_id) catch {
                     return CallResult.failure(0);
@@ -347,7 +343,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const snapshot_id = self.journal.create_snapshot();
 
             if (params.value > 0) {
-                const caller_account = self.database.get_account(params.caller) catch |err| {
+                const caller_account = self.database.get_account(params.caller.bytes) catch |err| {
                     @branchHint(.cold);
                     return self.revert_and_fail(snapshot_id, err);
                 };
@@ -359,7 +355,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }
             }
 
-            const code = self.database.get_code_by_address(params.to) catch &.{};
+            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
 
             // If no code, it's a simple value transfer to self
             if (code.len == 0) {
@@ -421,7 +417,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Get contract code
-            const code = self.database.get_code_by_address(params.to) catch &.{};
+            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
 
             // If no code, it's an empty call
             if (code.len == 0) {
@@ -482,7 +478,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Get contract code
-            const code = self.database.get_code_by_address(params.to) catch &.{};
+            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
 
             // If no code, it's an empty call (no value transfer in static)
             if (code.len == 0) {
@@ -523,9 +519,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             const snapshot_id = self.journal.create_snapshot();
 
             // Get caller account
-            var caller_account = self.database.get_account(params.caller) catch |err| {
+            var caller_account = self.database.get_account(params.caller.bytes) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
-            } orelse DEFAULT_ACCOUNT;
+            } orelse Account.zero();
 
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
@@ -537,9 +533,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
 
             // Check if address already has code (collision)
-            const existed_before = self.database.account_exists(contract_address);
+            const existed_before = self.database.account_exists(contract_address.bytes);
             if (existed_before) {
-                const existing = self.database.get_account(contract_address) catch null;
+                const existing = self.database.get_account(contract_address.bytes) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
@@ -549,7 +545,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Record and increment caller's nonce
             try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
             caller_account.nonce += 1;
-            self.database.set_account(params.caller, caller_account) catch |err| {
+            self.database.set_account(params.caller.bytes, caller_account) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
 
@@ -591,9 +587,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Ensure contract account exists and set nonce to 1
-            var contract_account = self.database.get_account(contract_address) catch |err| {
+            var contract_account = self.database.get_account(contract_address.bytes) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
-            } orelse DEFAULT_ACCOUNT;
+            } orelse Account.zero();
             // For a new account, record creation
             if (!existed_before) {
                 try self.journal.record_account_created(snapshot_id, contract_address);
@@ -612,14 +608,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 try self.journal.record_code_change(snapshot_id, contract_address, contract_account.code_hash);
                 contract_account.code_hash = code_hash_bytes;
             }
-            self.database.set_account(contract_address, contract_account) catch |err| {
+            self.database.set_account(contract_address.bytes, contract_account) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
 
             // Return the contract address as 32 bytes (12 zero padding + 20-byte address)
             const out32 = self.small_output_buf[0..32];
             @memset(out32[0..12], 0);
-            @memcpy(out32[12..32], &contract_address);
+            @memcpy(out32[12..32], &contract_address.bytes);
             return CallResult.success_with_output(result.gas_left, out32);
         }
 
@@ -634,9 +630,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             const snapshot_id = self.journal.create_snapshot();
 
             // Get caller account
-            const caller_account = self.database.get_account(params.caller) catch |err| {
+            const caller_account = self.database.get_account(params.caller.bytes) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
-            } orelse DEFAULT_ACCOUNT;
+            } orelse Account.zero();
 
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
@@ -652,9 +648,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
 
             // Check if address already has code (collision)
-            const existed_before2 = self.database.account_exists(contract_address);
+            const existed_before2 = self.database.account_exists(contract_address.bytes);
             if (existed_before2) {
-                const existing = self.database.get_account(contract_address) catch null;
+                const existing = self.database.get_account(contract_address.bytes) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
@@ -701,9 +697,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Ensure contract account exists and set nonce/code
-            var contract_account2 = self.database.get_account(contract_address) catch |err| {
+            var contract_account2 = self.database.get_account(contract_address.bytes) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
-            } orelse DEFAULT_ACCOUNT;
+            } orelse Account.zero();
             // Record creation for new accounts
             if (!existed_before2) {
                 try self.journal.record_account_created(snapshot_id, contract_address);
@@ -720,14 +716,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 try self.journal.record_code_change(snapshot_id, contract_address, contract_account2.code_hash);
                 contract_account2.code_hash = stored_hash;
             }
-            self.database.set_account(contract_address, contract_account2) catch |err| {
+            self.database.set_account(contract_address.bytes, contract_account2) catch |err| {
                 return self.revert_and_fail(snapshot_id, err);
             };
 
             // Return the contract address as 32 bytes (12 zero padding + 20-byte address)
             const out32 = self.small_output_buf[0..32];
             @memset(out32[0..12], 0);
-            @memcpy(out32[12..32], &contract_address);
+            @memcpy(out32[12..32], &contract_address.bytes);
             return CallResult.success_with_output(result.gas_left, out32);
         }
 
@@ -930,7 +926,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
             }
 
-            const precompile_id = address[19]; // Last byte is the precompile ID
+            const precompile_id = address.bytes[19]; // Last byte is the precompile ID
             if (precompile_id < 1 or precompile_id > 10) {
                 return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
             }
@@ -964,17 +960,17 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get account balance
         pub fn get_balance(self: *Self, address: primitives.Address) u256 {
-            return self.database.get_balance(address) catch 0;
+            return self.database.get_balance(address.bytes) catch 0;
         }
 
         /// Check if account exists
         pub fn account_exists(self: *Self, address: primitives.Address) bool {
-            return self.database.account_exists(address);
+            return self.database.account_exists(address.bytes);
         }
 
         /// Get account code
         pub fn get_code(self: *Self, address: primitives.Address) []const u8 {
-            return self.database.get_code_by_address(address) catch &.{};
+            return self.database.get_code_by_address(address.bytes) catch &.{};
         }
 
         /// Get block information
@@ -1052,11 +1048,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             switch (entry.data) {
                 .storage_change => |sc| {
                     // Revert storage to original value
-                    try self.database.set_storage(sc.address, sc.key, sc.original_value);
+                    try self.database.set_storage(sc.address.bytes, sc.key, sc.original_value);
                 },
                 .balance_change => |bc| {
                     // Revert balance to original value
-                    var account = (try self.database.get_account(bc.address)) orelse {
+                    var account = (try self.database.get_account(bc.address.bytes)) orelse {
                         // If account doesn't exist, create it with the original balance
                         const reverted_account = Account{
                             .balance = bc.original_balance,
@@ -1064,26 +1060,26 @@ pub fn Evm(comptime config: EvmConfig) type {
                             .code_hash = [_]u8{0} ** 32,
                             .storage_root = [_]u8{0} ** 32,
                         };
-                        return self.database.set_account(bc.address, reverted_account);
+                        return self.database.set_account(bc.address.bytes, reverted_account);
                     };
                     account.balance = bc.original_balance;
-                    try self.database.set_account(bc.address, account);
+                    try self.database.set_account(bc.address.bytes, account);
                 },
                 .nonce_change => |nc| {
                     // Revert nonce to original value
-                    var account = (try self.database.get_account(nc.address)) orelse return;
+                    var account = (try self.database.get_account(nc.address.bytes)) orelse return;
                     account.nonce = nc.original_nonce;
-                    try self.database.set_account(nc.address, account);
+                    try self.database.set_account(nc.address.bytes, account);
                 },
                 .code_change => |cc| {
                     // Revert code to original value
-                    var account = (try self.database.get_account(cc.address)) orelse return;
+                    var account = (try self.database.get_account(cc.address.bytes)) orelse return;
                     account.code_hash = cc.original_code_hash;
-                    try self.database.set_account(cc.address, account);
+                    try self.database.set_account(cc.address.bytes, account);
                 },
                 .account_created => |ac| {
                     // Remove created account
-                    try self.database.delete_account(ac.address);
+                    try self.database.delete_account(ac.address.bytes);
                 },
                 .account_destroyed => |ad| {
                     // Restore destroyed account
@@ -1094,7 +1090,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         .code_hash = [_]u8{0} ** 32,
                         .storage_root = [_]u8{0} ** 32,
                     };
-                    try self.database.set_account(ad.address, restored_account);
+                    try self.database.set_account(ad.address.bytes, restored_account);
                 },
             }
         }
@@ -1170,7 +1166,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get storage value
         pub fn get_storage(self: *Self, address: primitives.Address, slot: u256) u256 {
-            return self.database.get_storage(address, slot) catch 0;
+            return self.database.get_storage(address.bytes, slot) catch 0;
         }
 
         /// Set storage value
@@ -1178,7 +1174,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Record original value for journal
             const original_value = self.get_storage(address, slot);
             try self.record_storage_change(address, slot, original_value);
-            try self.database.set_storage(address, slot, value);
+            try self.database.set_storage(address.bytes, slot, value);
         }
 
         /// Get transaction gas price
@@ -1269,8 +1265,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             to_account.balance += value;
 
             // Write to database
-            try self.database.set_account(from, from_account);
-            try self.database.set_account(to, to_account);
+            try self.database.set_account(from.bytes, from_account);
+            try self.database.set_account(to.bytes, to_account);
         }
 
         /// Convert to Host interface
@@ -3981,7 +3977,7 @@ test "journal state application - storage change rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0x12} ++ [_]u8{0} ** 19;
+    const test_address = primitives.Address{ .bytes = [_]u8{0x12} ++ [_]u8{0} ** 19 };
     const storage_key: u256 = 0x123;
     const original_value: u256 = 0x456;
     const new_value: u256 = 0x789;
@@ -4040,14 +4036,14 @@ test "journal state application - balance change rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0x34} ++ [_]u8{0} ** 19;
+    const test_address = primitives.Address{ .bytes = [_]u8{0x34} ++ [_]u8{0} ** 19 };
     const original_balance: u256 = 1000;
     const new_balance: u256 = 2000;
 
     // Set initial account balance
     var original_account = Account.zero();
     original_account.balance = original_balance;
-    try evm.database.set_account(test_address, original_account);
+    try evm.database.set_account(test_address.bytes, original_account);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -4055,7 +4051,7 @@ test "journal state application - balance change rollback" {
     // Modify balance and record in journal
     var modified_account = original_account;
     modified_account.balance = new_balance;
-    try evm.database.set_account(test_address, modified_account);
+    try evm.database.set_account(test_address.bytes, modified_account);
     try evm.journal.entries.append(.{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{
@@ -4065,14 +4061,14 @@ test "journal state application - balance change rollback" {
     });
 
     // Verify new balance is set
-    const current_account = (try evm.database.get_account(test_address)).?;
+    const current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(new_balance, current_account.balance);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify balance was reverted
-    const reverted_account = (try evm.database.get_account(test_address)).?;
+    const reverted_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(original_balance, reverted_account.balance);
 }
 
@@ -4101,14 +4097,14 @@ test "journal state application - nonce change rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0x56} ++ [_]u8{0} ** 19;
+    const test_address = primitives.Address{ .bytes = [_]u8{0x56} ++ [_]u8{0} ** 19 };
     const original_nonce: u64 = 5;
     const new_nonce: u64 = 10;
 
     // Set initial account nonce
     var original_account = Account.zero();
     original_account.nonce = original_nonce;
-    try evm.database.set_account(test_address, original_account);
+    try evm.database.set_account(test_address.bytes, original_account);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -4116,7 +4112,7 @@ test "journal state application - nonce change rollback" {
     // Modify nonce and record in journal
     var modified_account = original_account;
     modified_account.nonce = new_nonce;
-    try evm.database.set_account(test_address, modified_account);
+    try evm.database.set_account(test_address.bytes, modified_account);
     try evm.journal.entries.append(.{
         .snapshot_id = snapshot_id,
         .data = .{ .nonce_change = .{
@@ -4126,14 +4122,14 @@ test "journal state application - nonce change rollback" {
     });
 
     // Verify new nonce is set
-    const current_account = (try evm.database.get_account(test_address)).?;
+    const current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(new_nonce, current_account.nonce);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify nonce was reverted
-    const reverted_account = (try evm.database.get_account(test_address)).?;
+    const reverted_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(original_nonce, reverted_account.nonce);
 }
 
@@ -4162,14 +4158,14 @@ test "journal state application - code change rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0x78} ++ [_]u8{0} ** 19;
+    const test_address = primitives.Address{ .bytes = [_]u8{0x78} ++ [_]u8{0} ** 19 };
     const original_code_hash = [_]u8{0xAA} ++ [_]u8{0} ** 31;
     const new_code_hash = [_]u8{0xBB} ++ [_]u8{0} ** 31;
 
     // Set initial account code hash
     var original_account = Account.zero();
     original_account.code_hash = original_code_hash;
-    try evm.database.set_account(test_address, original_account);
+    try evm.database.set_account(test_address.bytes, original_account);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -4177,7 +4173,7 @@ test "journal state application - code change rollback" {
     // Modify code hash and record in journal
     var modified_account = original_account;
     modified_account.code_hash = new_code_hash;
-    try evm.database.set_account(test_address, modified_account);
+    try evm.database.set_account(test_address.bytes, modified_account);
     try evm.journal.entries.append(.{
         .snapshot_id = snapshot_id,
         .data = .{ .code_change = .{
@@ -4187,14 +4183,14 @@ test "journal state application - code change rollback" {
     });
 
     // Verify new code hash is set
-    const current_account = (try evm.database.get_account(test_address)).?;
+    const current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify code hash was reverted
-    const reverted_account = (try evm.database.get_account(test_address)).?;
+    const reverted_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
 }
 
@@ -4243,7 +4239,7 @@ test "journal state application - multiple changes rollback" {
     original_account.balance = original_balance;
     original_account.nonce = original_nonce;
     original_account.code_hash = original_code_hash;
-    try evm.database.set_account(test_address, original_account);
+    try evm.database.set_account(test_address.bytes, original_account);
     try evm.database.set_storage(test_address, storage_key, original_storage);
 
     // Create snapshot
@@ -4254,7 +4250,7 @@ test "journal state application - multiple changes rollback" {
     modified_account.balance = new_balance;
     modified_account.nonce = new_nonce;
     modified_account.code_hash = new_code_hash;
-    try evm.database.set_account(test_address, modified_account);
+    try evm.database.set_account(test_address.bytes, modified_account);
     try evm.database.set_storage(test_address, storage_key, new_storage);
 
     // Add journal entries for all changes
@@ -4289,7 +4285,7 @@ test "journal state application - multiple changes rollback" {
     });
 
     // Verify all new values are set
-    const current_account = (try evm.database.get_account(test_address)).?;
+    const current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(new_balance, current_account.balance);
     try std.testing.expectEqual(new_nonce, current_account.nonce);
     try std.testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
@@ -4300,7 +4296,7 @@ test "journal state application - multiple changes rollback" {
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify all values were reverted
-    const reverted_account = (try evm.database.get_account(test_address)).?;
+    const reverted_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(original_balance, reverted_account.balance);
     try std.testing.expectEqual(original_nonce, reverted_account.nonce);
     try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
@@ -4341,14 +4337,14 @@ test "journal state application - nested snapshots rollback" {
     // Set initial state
     var account = Account.zero();
     account.balance = original_balance;
-    try evm.database.set_account(test_address, account);
+    try evm.database.set_account(test_address.bytes, account);
 
     // Create first snapshot
     const snapshot1 = evm.create_snapshot();
 
     // First change
     account.balance = middle_balance;
-    try evm.database.set_account(test_address, account);
+    try evm.database.set_account(test_address.bytes, account);
     try evm.journal.entries.append(.{
         .snapshot_id = snapshot1,
         .data = .{ .balance_change = .{
@@ -4362,7 +4358,7 @@ test "journal state application - nested snapshots rollback" {
 
     // Second change
     account.balance = final_balance;
-    try evm.database.set_account(test_address, account);
+    try evm.database.set_account(test_address.bytes, account);
     try evm.journal.entries.append(.{
         .snapshot_id = snapshot2,
         .data = .{ .balance_change = .{
@@ -4372,17 +4368,17 @@ test "journal state application - nested snapshots rollback" {
     });
 
     // Verify final state
-    var current_account = (try evm.database.get_account(test_address)).?;
+    var current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(final_balance, current_account.balance);
 
     // Revert to second snapshot (should restore middle state)
     evm.revert_to_snapshot(snapshot2);
-    current_account = (try evm.database.get_account(test_address)).?;
+    current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(middle_balance, current_account.balance);
 
     // Revert to first snapshot (should restore original state)
     evm.revert_to_snapshot(snapshot1);
-    current_account = (try evm.database.get_account(test_address)).?;
+    current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(original_balance, current_account.balance);
 }
 

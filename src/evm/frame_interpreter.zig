@@ -3081,9 +3081,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Push result to stack (new contract address or 0 on failure)
             if (result.success and result.output.len >= 20) {
                 // Convert returned address bytes to u256
-                var address_bytes: [20]u8 = undefined;
-                @memcpy(&address_bytes, result.output[0..20]);
-                const address = primitives.Address.to_u256(address_bytes);
+                var address_struct: primitives.Address = undefined;
+                @memcpy(&address_struct.bytes, result.output[0..20]);
+                const address = primitives.Address.to_u256(address_struct);
                 try self.stack.push(@as(WordType, @intCast(address)));
             } else {
                 // Push 0 on failure

@@ -57,15 +57,15 @@ test "Account.zero creates account with all zero values" {
 test "Account.is_empty detects empty accounts" {
     const empty_account = Account.zero();
     try testing.expect(empty_account.is_empty());
-    
+
     var non_empty_account = Account.zero();
     non_empty_account.balance = 100;
     try testing.expect(!non_empty_account.is_empty());
-    
+
     non_empty_account = Account.zero();
     non_empty_account.nonce = 1;
     try testing.expect(!non_empty_account.is_empty());
-    
+
     non_empty_account = Account.zero();
     non_empty_account.code_hash[0] = 1;
     try testing.expect(!non_empty_account.is_empty());

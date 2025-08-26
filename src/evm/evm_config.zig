@@ -2,8 +2,13 @@ const std = @import("std");
 const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 const frame_mod = @import("frame.zig");
 const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
+const Eips = @import("eips.zig").Eips;
 
 pub const EvmConfig = struct {
+    // TODO update enum to support latest hardfork
+    // Comptime known configuration of Eip and hardfork information
+    eips: Eips = Eips{ .hardfork = Eips.Hardfork.CANCUN },
+
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
     /// This prevents infinite recursion and stack overflow attacks
     max_call_depth: u11 = 1024,

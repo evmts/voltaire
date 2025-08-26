@@ -6,7 +6,7 @@
 
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const JournalConfig = @import("journal_config.zig").JournalConfig;
 const journal_entry = @import("journal_entry.zig");
 
@@ -111,7 +111,7 @@ pub fn Journal(comptime config: JournalConfig) type {
                 const entry = self.entries.items[i - 1];
                 switch (entry.data) {
                     .storage_change => |sc| {
-                        if (std.mem.eql(u8, &address, &sc.address) and sc.key == slot) {
+                        if (std.mem.eql(u8, &address.bytes, &sc.address.bytes) and sc.key == slot) {
                             return sc.original_value;
                         }
                     },

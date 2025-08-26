@@ -95,7 +95,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         memory: Memory,
         database: if (config.has_database) ?DatabaseInterface else void,
         // Contract execution context
-        contract_address: Address = [_]u8{0} ** 20,
+        contract_address: Address = Address.ZERO_ADDRESS,
         self_destruct: ?*SelfDestruct = null,
         host: Host,
         // Cold data - less frequently accessed during execution
@@ -972,7 +972,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Load value from transient storage
-            const value = db.get_transient_storage(addr, slot) catch |err| switch (err) {
+            const value = db.get_transient_storage(addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             try self.stack.push(value);
@@ -994,7 +994,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
             // Use the currently executing contract's address
             const addr = self.contract_address;
             // Store value to transient storage
-            db.set_transient_storage(addr, slot, value) catch |err| switch (err) {
+            db.set_transient_storage(addr.bytes, slot, value) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
         }
@@ -1694,7 +1694,7 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
                 if (config.has_database) {
                     if (self.database) |db| {
                         // Try to get the account from the database
-                        const account_result = db.get_account(target_address) catch {
+                        const account_result = db.get_account(target_address.bytes) catch {
                             // On database error, assume account doesn't exist (conservative approach)
                             break :blk true;
                         };
@@ -1756,11 +1756,11 @@ pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
         fn is_precompile_address(self: *Self, addr: Address) bool {
             _ = self; // Not used but kept for consistency with method signature
             // Check if all bytes except the last one are zero
-            for (addr[0..19]) |addr_byte| {
+            for (addr.bytes[0..19]) |addr_byte| {
                 if (addr_byte != 0) return false;
             }
             // Check if the last byte is between 1 and 10 (0x01 to 0x0A)
-            return addr[19] >= 1 and addr[19] <= 10;
+            return addr.bytes[19] >= 1 and addr.bytes[19] <= 10;
         }
         /// CALL opcode (0xF1) - Call another contract
         /// Calls the contract at the given address with the provided value, input data, and gas.

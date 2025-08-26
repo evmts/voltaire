@@ -16,7 +16,7 @@
 /// These contracts have deterministic gas costs and behavior across all EVM implementations.
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 // Use the real crypto and build_options modules
 const crypto = @import("crypto");
 const build_options = @import("build_options");
@@ -64,11 +64,11 @@ pub fn is_precompile(address: Address) bool {
     // Check if the address is one of the known precompile addresses
     // Precompiles are at addresses 0x01 through 0x0A
     // Check if all bytes except the last one are zero
-    for (address[0..19]) |byte| {
+    for (address.bytes[0..19]) |byte| {
         if (byte != 0) return false;
     }
     // Check if the last byte is between 1 and 10
-    return address[19] >= 1 and address[19] <= 10;
+    return address.bytes[19] >= 1 and address.bytes[19] <= 10;
 }
 
 /// Execute a precompile based on its address
@@ -86,7 +86,7 @@ pub fn execute_precompile(
         };
     }
 
-    const precompile_id = address[19]; // Last byte is the precompile ID
+    const precompile_id = address.bytes[19]; // Last byte is the precompile ID
     return switch (precompile_id) {
         1 => execute_ecrecover(allocator, input, gas_limit),
         2 => execute_sha256(allocator, input, gas_limit),

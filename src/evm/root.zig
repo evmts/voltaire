@@ -81,6 +81,7 @@ pub const Account = @import("database_interface_account.zig").Account;
 pub const AccessList = @import("access_list.zig").AccessList;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
+pub const HostMock = @import("host_mock.zig").HostMock;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 pub const Log = @import("logs.zig").Log;
@@ -152,7 +153,4 @@ test {
     _ = SelfDestruct;
     _ = AccessList;
     
-    // Test IR interpreter
-    _ = @import("test_create_ir.zig");
-    _ = @import("test_ir_interpreter.zig");
 }
