@@ -8,9 +8,24 @@ const bytes_to_hex = std.fmt.bytesToHex;
 const Case = std.fmt.Case;
 const Keccak256 = crypto.hash.sha3.Keccak256;
 
-pub const Address = [20]u8;
+pub const Address = @This();
 
-pub const ZERO_ADDRESS: Address = [20]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+bytes: [20]u8,
+
+/// Format address for std.fmt output
+pub fn format(
+    self: Address,
+    comptime fmt: []const u8,
+    options: std.fmt.FormatOptions,
+    writer: anytype,
+) !void {
+    _ = fmt;
+    _ = options;
+    const hex = address_to_hex(self);
+    try writer.writeAll(&hex);
+}
+
+pub const ZERO_ADDRESS: Address = .{ .bytes = [20]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 // Error types for Address operations
 pub const CalculateAddressError = std.mem.Allocator.Error || rlp.EncodeError;
@@ -24,7 +39,7 @@ pub const ZERO = ZERO_ADDRESS;
 
 pub fn to_u256(addr: Address) u256 {
     var result: u256 = 0;
-    for (addr) |byte| {
+    for (addr.bytes) |byte| {
         result = (result << 8) | byte;
     }
     return result;
@@ -34,7 +49,7 @@ pub fn from_u256(value: u256) Address {
     var addr: Address = undefined;
     var v = value;
     for (0..20) |i| {
-        addr[19 - i] = @truncate(v & 0xFF);
+        addr.bytes[19 - i] = @truncate(v & 0xFF);
         v >>= 8;
     }
     return addr;
@@ -46,7 +61,7 @@ pub fn from_hex(hex_str: []const u8) !Address {
     }
 
     var addr: Address = undefined;
-    _ = hex_to_bytes(&addr, hex_str[2..]) catch return error.InvalidHexString;
+    _ = hex_to_bytes(&addr.bytes, hex_str[2..]) catch return error.InvalidHexString;
     return addr;
 }
 
@@ -59,7 +74,7 @@ pub fn from_public_key(public_key_x: u256, public_key_y: u256) Address {
     Keccak256.hash(&pub_key_bytes, &hash, .{});
 
     var address: Address = undefined;
-    @memcpy(&address, hash[12..32]);
+    @memcpy(&address.bytes, hash[12..32]);
     return address;
 }
 
@@ -72,11 +87,11 @@ pub fn to_checksum_hex(address: Address) [42]u8 {
 }
 
 pub fn is_zero(address: Address) bool {
-    return std.mem.eql(u8, &address, &ZERO_ADDRESS);
+    return std.mem.eql(u8, &address.bytes, &ZERO_ADDRESS.bytes);
 }
 
 pub fn equals(a: Address, b: Address) bool {
-    return std.mem.eql(u8, &a, &b);
+    return std.mem.eql(u8, &a.bytes, &b.bytes);
 }
 
 pub fn is_valid(addr_str: []const u8) bool {
@@ -87,12 +102,12 @@ pub fn is_valid_checksum(addr_str: []const u8) bool {
     return is_valid_checksum_address(addr_str);
 }
 
-pub fn format(address: Address, uppercase: bool) [42]u8 {
+pub fn format_with_case(address: Address, uppercase: bool) [42]u8 {
     if (uppercase) {
         var result: [42]u8 = undefined;
         result[0] = '0';
         result[1] = 'x';
-        const hex = bytes_to_hex(&address, .upper);
+        const hex = bytes_to_hex(&address.bytes, .upper);
         @memcpy(result[2..], &hex);
         return result;
     } else {
@@ -105,7 +120,7 @@ pub fn address_from_hex(comptime hex: [42]u8) Address {
         @compileError("hex must start with '0x'");
 
     var out: Address = undefined;
-    hex_to_bytes(&out, hex[2..]) catch unreachable;
+    hex_to_bytes(&out.bytes, hex[2..]) catch unreachable;
     return out;
 }
 
@@ -117,7 +132,7 @@ pub fn address_to_hex(address: Address) [42]u8 {
     var result: [42]u8 = undefined;
     result[0] = '0';
     result[1] = 'x';
-    const hex = bytes_to_hex(&address, .lower);
+    const hex = bytes_to_hex(&address.bytes, .lower);
     @memcpy(result[2..], &hex);
     return result;
 }
@@ -132,7 +147,7 @@ pub fn address_to_checksum_hex(address: Address) [42]u8 {
     const lowercase = "0123456789abcdef";
     const uppercase = "0123456789ABCDEF";
 
-    for (address, 0..) |b, i| {
+    for (address.bytes, 0..) |b, i| {
         hex_without_prefix[i * 2] = lowercase[b >> 4];
         hex_without_prefix[i * 2 + 1] = lowercase[b & 15];
     }
@@ -140,7 +155,7 @@ pub fn address_to_checksum_hex(address: Address) [42]u8 {
     var hash: [32]u8 = undefined;
     Keccak256.hash(&hex_without_prefix, &hash, .{});
 
-    for (address, 0..) |b, i| {
+    for (address.bytes, 0..) |b, i| {
         const high_nibble = b >> 4;
         const low_nibble = b & 15;
         const high_hash = (hash[i] >> 4) & 0x0F;
@@ -217,7 +232,7 @@ pub const PublicKey = struct {
         Keccak256.hash(&pubkey_bytes, &hash, .{});
 
         var address: Address = undefined;
-        @memcpy(&address, hash[12..32]);
+        @memcpy(&address.bytes, hash[12..32]);
 
         return address;
     }
@@ -243,7 +258,7 @@ pub fn is_valid_checksum_address(addr_str: []const u8) bool {
         return false;
 
     var addr: Address = undefined;
-    _ = hex_to_bytes(&addr, addr_str[2..]) catch return false;
+    _ = hex_to_bytes(&addr.bytes, addr_str[2..]) catch return false;
 
     const checksummed = address_to_checksum_hex(addr);
     return std.mem.eql(u8, &checksummed, addr_str);
@@ -256,10 +271,10 @@ pub fn are_addresses_equal(a: []const u8, b: []const u8) !bool {
     var addr_a: Address = undefined;
     var addr_b: Address = undefined;
 
-    _ = try hex_to_bytes(&addr_a, a[2..]);
-    _ = try hex_to_bytes(&addr_b, b[2..]);
+    _ = try hex_to_bytes(&addr_a.bytes, a[2..]);
+    _ = try hex_to_bytes(&addr_b.bytes, b[2..]);
 
-    return std.mem.eql(u8, &addr_a, &addr_b);
+    return std.mem.eql(u8, &addr_a.bytes, &addr_b.bytes);
 }
 
 pub fn calculate_create_address(allocator: std.mem.Allocator, creator: Address, nonce: u64) CalculateAddressError!Address {
@@ -281,7 +296,7 @@ pub fn calculate_create_address(allocator: std.mem.Allocator, creator: Address, 
     var list = std.ArrayList([]const u8){};
     defer list.deinit(allocator);
 
-    try list.append(allocator, &creator);
+    try list.append(allocator, &creator.bytes);
     try list.append(allocator, nonce_slice);
 
     // RLP encode the list
@@ -294,7 +309,7 @@ pub fn calculate_create_address(allocator: std.mem.Allocator, creator: Address, 
 
     // Take last 20 bytes as address
     var address: Address = undefined;
-    @memcpy(&address, hash[12..32]);
+    @memcpy(&address.bytes, hash[12..32]);
 
     return address;
 }
@@ -312,7 +327,7 @@ pub fn calculate_create2_address(allocator: std.mem.Allocator, creator: Address,
     try data.append(0xff);
 
     // Add creator address (20 bytes)
-    try data.appendSlice(&creator);
+    try data.appendSlice(&creator.bytes);
 
     // Add salt (32 bytes, big-endian)
     var salt_bytes: [32]u8 = undefined;
@@ -332,7 +347,7 @@ pub fn calculate_create2_address(allocator: std.mem.Allocator, creator: Address,
 
     // Take last 20 bytes as address
     var address: Address = undefined;
-    @memcpy(&address, hash[12..32]);
+    @memcpy(&address.bytes, hash[12..32]);
 
     return address;
 }
@@ -350,7 +365,7 @@ pub fn get_create2_address(creator: Address, salt: [32]u8, init_code_hash: [32]u
     // Build the data to hash: 0xff ++ creator ++ salt ++ init_code_hash
     var data: [85]u8 = undefined;
     data[0] = 0xff;
-    @memcpy(data[1..21], &creator);
+    @memcpy(data[1..21], &creator.bytes);
     @memcpy(data[21..53], &salt);
     @memcpy(data[53..85], &init_code_hash);
 
@@ -360,7 +375,7 @@ pub fn get_create2_address(creator: Address, salt: [32]u8, init_code_hash: [32]u
 
     // Take last 20 bytes as address
     var address: Address = undefined;
-    @memcpy(&address, hash[12..32]);
+    @memcpy(&address.bytes, hash[12..32]);
 
     return address;
 }
@@ -399,7 +414,7 @@ test "Address - checksumAddress" {
 
     for (test_cases) |tc| {
         var addr: Address = undefined;
-        _ = hex_to_bytes(&addr, tc.input[2..]) catch unreachable;
+        _ = hex_to_bytes(&addr.bytes, tc.input[2..]) catch unreachable;
 
         const checksummed = address_to_checksum_hex(addr);
 
@@ -414,9 +429,9 @@ test "Address - fromPublicKey" {
     const addr = address_from_public_key(public_key);
 
     var expected_addr: Address = undefined;
-    _ = hex_to_bytes(&expected_addr, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266") catch unreachable;
+    _ = hex_to_bytes(&expected_addr.bytes, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266") catch unreachable;
 
-    try std.testing.expectEqualSlices(u8, &expected_addr, &addr);
+    try std.testing.expectEqualSlices(u8, &expected_addr.bytes, &addr.bytes);
 
     const addr_checksum = address_to_checksum_hex(addr);
     const expected_checksum = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
@@ -529,7 +544,7 @@ test "calculate_create_address with nonce 1" {
     const addr = try calculate_create_address(allocator, deployer, 1);
     // Verify it's a valid address length and different from nonce 0
     try std.testing.expect(addr.len == 20);
-    
+
     const addr_nonce_0 = try calculate_create_address(allocator, deployer, 0);
     try std.testing.expect(!std.mem.eql(u8, &addr, &addr_nonce_0));
 }
@@ -539,7 +554,7 @@ test "calculate_create_address with various nonces" {
     const deployer = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
 
     const nonces = [_]u64{ 0, 1, 2, 10, 255, 256, 65535, 65536, 16777215, 16777216 };
-    
+
     for (nonces) |nonce| {
         const addr = try calculate_create_address(allocator, deployer, nonce);
         try std.testing.expect(addr.len == 20);
@@ -615,18 +630,18 @@ test "calculate_create_address nonce encoding edge cases" {
 
     // Test boundary values for nonce encoding
     const boundary_nonces = [_]u64{
-        0,          // Empty bytes
-        1,          // Single byte
-        127,        // Max single byte without high bit
-        128,        // First two-byte value  
-        255,        // Max single byte
-        256,        // First true two-byte value
-        65535,      // Max two bytes
-        65536,      // First three-byte value
-        16777215,   // Max three bytes
-        16777216,   // First four-byte value
+        0, // Empty bytes
+        1, // Single byte
+        127, // Max single byte without high bit
+        128, // First two-byte value
+        255, // Max single byte
+        256, // First true two-byte value
+        65535, // Max two bytes
+        65536, // First three-byte value
+        16777215, // Max three bytes
+        16777216, // First four-byte value
     };
-    
+
     for (boundary_nonces) |nonce| {
         const addr = try calculate_create_address(allocator, deployer, nonce);
         try std.testing.expect(addr.len == 20);
@@ -636,17 +651,17 @@ test "calculate_create_address nonce encoding edge cases" {
 test "calculate_create_address sequential nonces produce different addresses" {
     const allocator = std.testing.allocator;
     const deployer = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
-    
+
     var prev_addr: ?Address = null;
     var nonce: u64 = 0;
-    
+
     while (nonce < 10) : (nonce += 1) {
         const addr = try calculate_create_address(allocator, deployer, nonce);
-        
+
         if (prev_addr) |prev| {
             try std.testing.expect(!std.mem.eql(u8, &prev, &addr));
         }
-        
+
         prev_addr = addr;
     }
 }
@@ -701,7 +716,7 @@ test "calculate_create2_address with init code" {
     const allocator = std.testing.allocator;
     const deployer = try from_hex("0x0000000000000000000000000000000000000000");
     const salt: u256 = 0;
-    const init_code = [_]u8{0x60, 0x80, 0x60, 0x40, 0x52}; // Simple bytecode
+    const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 }; // Simple bytecode
 
     const addr = try calculate_create2_address(allocator, deployer, salt, &init_code);
 
@@ -749,7 +764,7 @@ test "calculate_create2_address deterministic with same inputs" {
     const allocator = std.testing.allocator;
     const deployer = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
     const salt: u256 = 0x123456789abcdef0;
-    const init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0xf0};
+    const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0xf0 };
 
     const addr1 = try calculate_create2_address(allocator, deployer, salt, &init_code);
     const addr2 = try calculate_create2_address(allocator, deployer, salt, &init_code);
@@ -760,7 +775,7 @@ test "calculate_create2_address deterministic with same inputs" {
 test "calculate_create2_address different with different salt" {
     const allocator = std.testing.allocator;
     const deployer = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
-    const init_code = [_]u8{0x60, 0x00};
+    const init_code = [_]u8{ 0x60, 0x00 };
 
     const addr1 = try calculate_create2_address(allocator, deployer, 0x1, &init_code);
     const addr2 = try calculate_create2_address(allocator, deployer, 0x2, &init_code);
@@ -771,7 +786,7 @@ test "calculate_create2_address different with different salt" {
 test "calculate_create2_address different with different deployer" {
     const allocator = std.testing.allocator;
     const salt: u256 = 0x123456789abcdef0;
-    const init_code = [_]u8{0x60, 0x00};
+    const init_code = [_]u8{ 0x60, 0x00 };
 
     const deployer1 = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
     const deployer2 = try from_hex("0x8ba1f109551bD432803012645Hac136c69b95Ee4");
@@ -787,8 +802,8 @@ test "calculate_create2_address different with different init code" {
     const deployer = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
     const salt: u256 = 0x123456789abcdef0;
 
-    const init_code1 = [_]u8{0x60, 0x00};
-    const init_code2 = [_]u8{0x60, 0x01};
+    const init_code1 = [_]u8{ 0x60, 0x00 };
+    const init_code2 = [_]u8{ 0x60, 0x01 };
 
     const addr1 = try calculate_create2_address(allocator, deployer, salt, &init_code1);
     const addr2 = try calculate_create2_address(allocator, deployer, salt, &init_code2);
@@ -800,7 +815,7 @@ test "calculate_create2_address with large init code" {
     const allocator = std.testing.allocator;
     const deployer = try from_hex("0x742d35Cc6632C0532925a3b8D39c0E6cfC8C74E4");
     const salt: u256 = 0xdeadbeef;
-    
+
     var large_init_code: [1024]u8 = undefined;
     for (&large_init_code, 0..) |*byte, i| {
         byte.* = @intCast(i % 256);

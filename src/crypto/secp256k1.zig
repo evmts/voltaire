@@ -210,8 +210,8 @@ pub fn unaudited_recover_address(
     var hash_out: [32]u8 = undefined;
     keccak.final(&hash_out);
 
-    var address: primitives.Address.Address = undefined;
-    @memcpy(&address, hash_out[12..32]);
+    var address: primitives.Address = undefined;
+    @memcpy(&address.bytes, hash_out[12..32]);
 
     return address;
 }

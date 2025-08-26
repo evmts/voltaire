@@ -107,7 +107,7 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
 }
 const MemoryDatabase = evm_root.MemoryDatabase;
 const BlockInfo = evm_root.BlockInfo;
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 
 // Global allocator for WASM environment
@@ -157,7 +157,7 @@ export fn guillotine_init() c_int {
     };
     memory_db.* = MemoryDatabase.init(allocator);
     memory_db_instance = memory_db;
-    
+
     const db_interface = memory_db.to_database_interface();
 
     const vm = allocator.create(evm_root.DefaultEvm) catch {
@@ -175,19 +175,14 @@ export fn guillotine_init() c_int {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = evm_root.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
-    vm.* = evm_root.DefaultEvm.init(
-        allocator,
-        db_interface,
-        block_info,
-        tx_context,
-        0, // gas_price
+
+    vm.* = evm_root.DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, // gas_price
         ZERO_ADDRESS, // origin
         .CANCUN // hardfork
     ) catch |err| {
@@ -212,7 +207,7 @@ export fn guillotine_deinit() void {
     // Minimal cleanup - just clear references to avoid memory corruption
     vm_instance = null;
     memory_db_instance = null;
-    
+
     log(.info, .guillotine_c, "Guillotine EVM cleanup completed (minimal)", .{});
 }
 
@@ -248,7 +243,7 @@ export fn guillotine_execute(
     // Convert inputs
     const bytecode = bytecode_ptr[0..bytecode_len];
     const caller_bytes = caller_ptr[0..20];
-    const caller_address: primitives.Address.Address = caller_bytes.*;
+    const caller_address = primitives.Address{ .bytes = caller_bytes.* };
     _ = vm;
     _ = bytecode;
     _ = caller_address;
@@ -352,20 +347,15 @@ export fn guillotine_vm_create() ?*GuillotineVm {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = evm_root.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
-    state.vm.* = evm_root.DefaultEvm.init(
-        alloc,
-        db_interface,
-        block_info,
-        tx_context,
-        0, // gas_price
-        ZERO_ADDRESS, // origin
+
+    state.vm.* = evm_root.DefaultEvm.init(alloc, db_interface, block_info, tx_context, 0, // gas_price
+        primitives.ZERO_ADDRESS, // origin
         .CANCUN // hardfork
     ) catch {
         state.memory_db.deinit();
@@ -394,7 +384,7 @@ export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const Guillotine
     if (vm == null or address == null or balance == null) return false;
 
     const state: *VmState = @ptrCast(@alignCast(vm.?));
-    const addr: Address = address.?.bytes;
+    const addr = Address{ .bytes = address.?.bytes };
     const value = u256_from_bytes(&balance.?.bytes);
 
     // NOTE: set_balance disabled - requires integration with new database interface
@@ -408,7 +398,7 @@ export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAdd
     if (vm == null or address == null) return false;
 
     const state: *VmState = @ptrCast(@alignCast(vm.?));
-    const addr: Address = address.?.bytes;
+    const addr = Address{ .bytes = address.?.bytes };
 
     const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
     // NOTE: set_code disabled - requires integration with new database interface
@@ -439,8 +429,8 @@ export fn guillotine_vm_execute(
     if (vm == null or from == null) return result;
 
     const state: *VmState = @ptrCast(@alignCast(vm.?));
-    const from_addr: Address = from.?.bytes;
-    const to_addr = if (to) |t| t.bytes else primitives.Address.ZERO_ADDRESS;
+    const from_addr = Address{ .bytes = from.?.bytes };
+    const to_addr = if (to) |t| Address{ .bytes = t.bytes } else primitives.Address.ZERO_ADDRESS;
     const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
     const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
     _ = from_addr;
@@ -490,7 +480,7 @@ test "C interface compilation" {
     std.testing.refAllDecls(@This());
 }
 
-// Re-export modules  
+// Re-export modules
 pub const Evm = evm_root.Evm;
 pub const DefaultEvm = evm_root.DefaultEvm;
 pub const Primitives = primitives;

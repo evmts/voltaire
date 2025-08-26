@@ -1,6 +1,6 @@
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const c = @cImport({
     @cInclude("revm_wrapper.h");
 });
@@ -69,7 +69,7 @@ pub const Revm = struct {
             .blockGasLimit = settings.block_gas_limit,
             .blockDifficulty = settings.block_difficulty,
             .blockBasefee = settings.block_basefee,
-            .coinbase = settings.coinbase,
+            .coinbase = settings.coinbase.bytes,
         };
 
         var error_ptr: ?*c.RevmError = null;
@@ -153,10 +153,9 @@ pub const Revm = struct {
         defer self.allocator.free(balance_hex);
 
         var error_ptr: ?*c.RevmError = null;
-        const addr_bytes = address;
         const success = c.revm_set_balance(
             self.ptr,
-            &addr_bytes,
+            &address.bytes,
             balance_hex.ptr,
             &error_ptr,
         );

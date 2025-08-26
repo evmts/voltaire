@@ -49,8 +49,8 @@ fn cu256_to_u256(x: CU256) u256 {
         (@as(u256, x.words_le[3]) << 192);
 }
 
-fn caddr_to_addr(a: CAddress) Address.Address {
-    return a.bytes;
+fn caddr_to_addr(a: CAddress) Address {
+    return Address{ .bytes = a.bytes };
 }
 
 fn cbytes_to_slice(b: CBytes) []const u8 {
