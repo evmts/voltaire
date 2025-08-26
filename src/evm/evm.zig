@@ -217,7 +217,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn call(self: *Self, params: CallParams) Error!CallResult {
             params.validate() catch return CallResult.failure(0);
             defer self.depth = 0;
-            defer self.internal_arena.reset(.retain_capacity);
+            defer _ = self.internal_arena.reset(.retain_capacity);
             defer self.logs.clearRetainingCapacity();
             // TODO we should add an option to disable gas checking in evm
             const gas = switch (params) {
@@ -1176,8 +1176,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (value == 0) return;
 
             // Get accounts
-            var from_account = (try self.database.get_account(from)) orelse return error.AccountNotFound;
-            var to_account = (try self.database.get_account(to)) orelse Account{
+            var from_account = (try self.database.get_account(from.bytes)) orelse return error.AccountNotFound;
+            var to_account = (try self.database.get_account(to.bytes)) orelse Account{
                 .balance = 0,
                 .nonce = 0,
                 .code_hash = [_]u8{0} ** 32,

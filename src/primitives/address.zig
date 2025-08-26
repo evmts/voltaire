@@ -25,6 +25,17 @@ pub fn format(
     try writer.writeAll(&hex);
 }
 
+/// Format address as number for std.fmt hex output
+pub fn formatNumber(
+    self: Address,
+    writer: anytype,
+    options: std.fmt.Number,
+) !void {
+    _ = options;
+    const hex = address_to_hex(self);
+    try writer.writeAll(&hex);
+}
+
 pub const ZERO_ADDRESS: Address = .{ .bytes = [20]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 // Error types for Address operations

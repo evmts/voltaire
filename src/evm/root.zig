@@ -2,7 +2,7 @@
 //!
 //! This module provides a complete EVM with configurable components:
 //! - Frame-based execution contexts with stack, memory, and gas tracking
-//! - Bytecode analysis and optimization through the Planner system  
+//! - Bytecode analysis and optimization through the Planner system
 //! - Pluggable database interfaces for state management
 //! - Comprehensive tracing and debugging capabilities
 //! - Support for all Ethereum hard forks and EIPs
@@ -94,14 +94,14 @@ test {
     _ = Frame;
     _ = FrameInterpreter;
     _ = createFrameInterpreter;
-    
+
     // Test stack and memory
     _ = StackConfig;
     _ = Stack;
     _ = MemoryConfig;
     _ = Memory;
     _ = MemoryError;
-    
+
     // Test planner and bytecode
     _ = Planner;
     _ = createPlanner;
@@ -112,12 +112,12 @@ test {
     _ = PlanMinimal;
     _ = PlanAdvanced; // Testing compilation
     _ = PlanDebug; // Testing compilation
-    
+
     // Test EVM
     _ = Evm;
     _ = EvmConfig;
     _ = PlannerStrategy;
-    
+
     // Test tracer modules
     _ = Tracer;
     _ = DetailedStructLog;
@@ -127,19 +127,19 @@ test {
     _ = FileTracer;
     _ = NoOpTracer;
     _ = DebuggingTracer;
-    
+
     // Test bytecode modules
     _ = BytecodeConfig;
     _ = Bytecode;
     _ = createBytecode;
     _ = BytecodeStats;
-    
+
     // Test opcodes
     _ = Opcode;
     _ = OpcodeData;
     _ = OpcodeSynthetic;
     _ = opcode_synthetic;
-    
+
     // Test additional modules
     _ = BlockInfo;
     _ = CallParams;
@@ -152,5 +152,4 @@ test {
     _ = MemoryDatabase;
     _ = SelfDestruct;
     _ = AccessList;
-    
 }

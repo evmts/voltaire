@@ -197,7 +197,7 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
     // Format output: 20-byte address + 12 zero bytes padding
     const output = try allocator.alloc(u8, 32);
     @memset(output, 0);
-    @memcpy(output[12..32], &address);
+    @memcpy(output[12..32], &address.bytes);
 
     return PrecompileOutput{
         .output = output,

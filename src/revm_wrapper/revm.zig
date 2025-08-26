@@ -172,7 +172,7 @@ pub const Revm = struct {
         defer self.allocator.free(code_hex);
 
         var error_ptr: ?*c.RevmError = null;
-        const addr_bytes = address;
+        const addr_bytes = address.bytes;
         const success = c.revm_set_code(
             self.ptr,
             &addr_bytes,
@@ -195,7 +195,7 @@ pub const Revm = struct {
         defer self.allocator.free(value_hex);
 
         var error_ptr: ?*c.RevmError = null;
-        const addr_bytes = address;
+        const addr_bytes = address.bytes;
         const success = c.revm_set_storage(
             self.ptr,
             &addr_bytes,
@@ -217,7 +217,7 @@ pub const Revm = struct {
 
         var out_value: [67]u8 = undefined; // 0x + 64 hex chars + null
         var error_ptr: ?*c.RevmError = null;
-        const addr_bytes = address;
+        const addr_bytes = address.bytes;
 
         const success = c.revm_get_storage(
             self.ptr,
@@ -242,7 +242,7 @@ pub const Revm = struct {
     pub fn getBalance(self: *Revm, address: Address) !u256 {
         var out_balance: [67]u8 = undefined; // 0x + 64 hex chars + null
         var error_ptr: ?*c.RevmError = null;
-        const addr_bytes = address;
+        const addr_bytes = address.bytes;
 
         const success = c.revm_get_balance(
             self.ptr,
@@ -277,8 +277,8 @@ pub const Revm = struct {
         var result_ptr: ?*c.ExecutionResult = null;
         var error_ptr: ?*c.RevmError = null;
 
-        const from_bytes = from;
-        const to_ptr: [*c]const u8 = if (to) |t| &t else null;
+        const from_bytes = from.bytes;
+        const to_ptr: [*c]const u8 = if (to) |t| &t.bytes else null;
 
         const input_ptr = if (input.len > 0) input.ptr else null;
 
@@ -378,8 +378,8 @@ pub const Revm = struct {
         var result_ptr: ?*c.ExecutionResult = null;
         var error_ptr: ?*c.RevmError = null;
 
-        const from_bytes = from;
-        const to_ptr: [*c]const u8 = if (to) |t| &t else null;
+        const from_bytes = from.bytes;
+        const to_ptr: [*c]const u8 = if (to) |t| &t.bytes else null;
 
         const input_ptr = if (input.len > 0) input.ptr else null;
 
