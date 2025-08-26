@@ -41,7 +41,6 @@ pub fn Stack(comptime config: StackConfig) type {
         // Push: *stack_ptr = value; stack_ptr -= 1;
         // Pop: stack_ptr += 1; return *stack_ptr;
         stack_ptr: [*]WordType,
-        stack_base: [*]WordType,
         stack_limit: [*]WordType,
 
         /// Initialize a new stack with allocated memory.
@@ -58,13 +57,16 @@ pub fn Stack(comptime config: StackConfig) type {
             return Self{
                 .buf = memory,
                 .stack_ptr = base_ptr + memory.len,
-                .stack_base = base_ptr + memory.len,
                 .stack_limit = base_ptr,
             };
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             allocator.free(self.buf);
+        }
+
+        inline fn stack_base(self: *const Self) [*]WordType {
+            return self.buf.ptr + self.buf.len;
         }
 
         pub inline fn push_unsafe(self: *Self, value: WordType) void {
@@ -84,14 +86,14 @@ pub fn Stack(comptime config: StackConfig) type {
 
         pub inline fn pop_unsafe(self: *Self) WordType {
             @branchHint(.likely);
-            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base));
+            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base()));
             const value = self.stack_ptr[0];
             self.stack_ptr += 1;
             return value;
         }
 
         pub inline fn pop(self: *Self) Error!WordType {
-            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base)) {
+            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base())) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
@@ -100,12 +102,12 @@ pub fn Stack(comptime config: StackConfig) type {
 
         pub inline fn set_top_unsafe(self: *Self, value: WordType) void {
             @branchHint(.likely);
-            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base));
+            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base()));
             self.stack_ptr[0] = value;
         }
 
         pub inline fn set_top(self: *Self, value: WordType) Error!void {
-            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base)) {
+            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base())) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
@@ -114,12 +116,12 @@ pub fn Stack(comptime config: StackConfig) type {
 
         pub inline fn peek_unsafe(self: *const Self) WordType {
             @branchHint(.likely);
-            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base));
+            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base()));
             return self.stack_ptr[0];
         }
 
         pub inline fn peek(self: *const Self) Error!WordType {
-            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base)) {
+            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base())) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
@@ -129,7 +131,7 @@ pub fn Stack(comptime config: StackConfig) type {
         // Generic dup function for DUP1-DUP16
         pub fn dup_n(self: *Self, n: u8) Error!void {
             // Check if we have n items on stack
-            const current_size = @intFromPtr(self.stack_base) - @intFromPtr(self.stack_ptr);
+            const current_size = @intFromPtr(self.stack_base()) - @intFromPtr(self.stack_ptr);
             const required_bytes = @as(usize, n) * @sizeOf(WordType);
             if (current_size < required_bytes) {
                 @branchHint(.cold);
@@ -172,7 +174,7 @@ pub fn Stack(comptime config: StackConfig) type {
         // Generic swap function for SWAP1-SWAP16
         pub fn swap_n(self: *Self, n: u8) Error!void {
             // Check if we have n+1 items on stack
-            const current_size = @intFromPtr(self.stack_base) - @intFromPtr(self.stack_ptr);
+            const current_size = @intFromPtr(self.stack_base()) - @intFromPtr(self.stack_ptr);
             const required_bytes = @as(usize, n + 1) * @sizeOf(WordType);
             if (current_size < required_bytes) {
                 @branchHint(.cold);
@@ -209,7 +211,7 @@ pub fn Stack(comptime config: StackConfig) type {
         
         // Accessors for tracer
         pub fn size(self: *const Self) usize {
-            const bytes_used = @intFromPtr(self.stack_base) - @intFromPtr(self.stack_ptr);
+            const bytes_used = @intFromPtr(self.stack_base()) - @intFromPtr(self.stack_ptr);
             return bytes_used / @sizeOf(WordType);
         }
         
