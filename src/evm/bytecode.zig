@@ -108,9 +108,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Handle fusion opcodes first
                 if (packed_bits.is_fusion_candidate) {
-                    if (iterator.detectFusion()) |fusion| {
-                        return fusion;
-                    }
+                    return iterator.bytecode.getFusionData(iterator.pc);
                 }
 
                 // Handle regular opcodes
@@ -147,28 +145,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
             }
 
-            fn detectFusion(iterator: *Iterator) ?OpcodeData {
-                if (iterator.pc + 1 >= iterator.bytecode.len()) return null;
-
-                const first_op = iterator.bytecode.get_unsafe(iterator.pc);
-                const second_op = iterator.bytecode.get_unsafe(iterator.pc + 1);
-
-                // Detect PUSH+ADD fusion
-                if (first_op >= 0x60 and first_op <= 0x67 and second_op == 0x01) { // PUSH1-PUSH8 + ADD
-                    const push_size = first_op - 0x5F;
-                    var value: u256 = 0;
-
-                    const end_pc = @min(iterator.pc + 1 + push_size, @as(PcType, @intCast(iterator.bytecode.len())));
-                    for (iterator.pc + 1..end_pc) |i| {
-                        value = (value << 8) | iterator.bytecode.get_unsafe(@intCast(i));
-                    }
-
-                    iterator.pc = end_pc + 1; // Skip PUSH + ADD
-                    return OpcodeData{ .push_add_fusion = .{ .value = value } };
-                }
-
-                return null;
-            }
         };
 
         // Tagged union for opcode data returned by iterator
