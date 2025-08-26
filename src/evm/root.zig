@@ -16,6 +16,7 @@ pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 pub const Frame = @import("frame.zig").Frame;
 pub const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
 pub const createFrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter;
+pub const StackFrame = @import("stack_frame.zig").StackFrame;
 
 // Stack and memory modules
 pub const StackConfig = @import("stack_config.zig").StackConfig;
@@ -37,11 +38,13 @@ pub const PlanDebug = @import("plan_debug.zig").PlanDebug;
 
 // EVM main module and configuration
 pub const Evm = @import("evm.zig").Evm;
+pub const Evm2 = @import("evm2.zig").Evm2;
 pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 pub const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 
-// Default EVM type for backward compatibility
+// Default EVM types for backward compatibility
 pub const DefaultEvm = Evm(.{});
+pub const DefaultEvm2 = Evm2(.{});
 
 // Tracer modules
 pub const Tracer = @import("tracer.zig").Tracer;
@@ -94,6 +97,7 @@ test {
     _ = Frame;
     _ = FrameInterpreter;
     _ = createFrameInterpreter;
+    _ = StackFrame;
 
     // Test stack and memory
     _ = StackConfig;
@@ -115,6 +119,7 @@ test {
 
     // Test EVM
     _ = Evm;
+    _ = Evm2;
     _ = EvmConfig;
     _ = PlannerStrategy;
 
