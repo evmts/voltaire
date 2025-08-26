@@ -5,6 +5,9 @@ const builtin = @import("builtin");
 pub const BytecodeConfig = struct {
     // https://ziglang.org/documentation/master/#toc-This
     const Self = @This();
+    // whether to fuze multiple opcodes into a single instruction for performance
+    // defaults to true
+    fusions_enabled: bool = true,
     /// The maximum amount of bytes allowed in contract code
     max_bytecode_size: u32 = 24576,
     /// The maximum amount of bytes allowed in initcode (EIP-3860)

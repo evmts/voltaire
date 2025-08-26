@@ -58,6 +58,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
 
     return struct {
+        pub const fusions_enabled = cfg.fusions_enabled;
         pub const ValidationError = error{
             InvalidOpcode,
             TruncatedPush,
@@ -112,6 +113,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     }
                     return fusion_data;
                 }
+                
+                // push
 
                 // Handle regular opcodes
                 switch (opcode) {
@@ -530,15 +533,12 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     i += 1;
                 }
             }
-
             if (comptime cfg.vector_length > 0) {
                 self.markJumpdestSimd(cfg.vector_length);
             } else {
                 self.markJumpdestScalar();
             }
-
-            // Phase C: Detect fusion candidates (PUSH+ADD, PUSH+MUL patterns)
-            self.markFusionCandidates();
+            if (comptime fusions_enabled) self.markFusionCandidates();
         }
 
         /// Validate immediate JUMP/JUMPI targets encoded via preceding PUSH
