@@ -1,320 +1,244 @@
-# Alternative EVM Implementation Plan
-**Migration from Plan-based to Schedule-based Architecture**
+# Simplified EVM Architecture Migration Plan
+**From Complex Plans to Simple Schedules**
 
 ## Overview
 
-This document outlines the strategy for implementing an alternative EVM execution model using the continuation-passing style architecture with Schedule objects, alongside the existing Plan-based system. The goal is to enable both implementations to coexist during development and testing phases.
+This document outlines the migration to a dramatically simplified EVM execution model that eliminates the complex Plan/Planner system in favor of simple Schedule objects with continuation-passing style execution.
 
-## Current Architecture Analysis
+## Key Architectural Insight
 
-### Existing Plan-Based System
+The new architecture eliminates all Plan complexity in favor of just two simple data structures:
+- `constants: [*]const u256` - Simple constant array
+- `schedule: [*]const Item` - Simple schedule array
 
-**Core Components:**
-- **Frame (frame.zig)**: ~2000 lines, handles all opcode execution with `*Self` receivers
-- **Planner (planner.zig)**: Analyzes bytecode, creates execution plans with InstructionElement arrays
-- **Plan Objects**: Contain `instructionStream: []InstructionElement` and `u256_constants: []WordType`
-- **HandlerFn Signature**: `fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn`
+**Advanced planning** = passing sophisticated constants and schedule items
+**Debug planning** = passing debug instructions into the schedule
+**Simple planning** = passing basic schedule items
 
-**Execution Model:**
-- Frame modifies its own state via pointer (`self: *Self`)
-- Plan objects provide instruction streams with handler pointers
-- Traditional function call dispatch without tail optimization
-- PC tracking and jumps managed by Plan objects
+## Current vs New Architecture
 
-### New Schedule-Based System
+### Current Plan-Based System (Being Eliminated)
 
-**Core Components:**
-- **StackFrame (stack_frame.zig)**: Implements continuation-passing style with `Self` value receivers
-- **Schedule Objects**: Unbounded arrays with null termination instead of InstructionElement slices
-- **OpcodeHandler Signature**: `*const fn (frame: Self, next_handler: Schedule) Error!Success`
+**Complex Components:**
+- **Planner (planner.zig)**: ~2000 lines of complex bytecode analysis
+- **Plan Objects**: Complex `instructionStream: []InstructionElement` with unions
+- **PlanAdvanced/PlanDebug/PlanMinimal**: Multiple specialized plan types
+- **HandlerFn**: Complex `fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn`
+- **frame_interpreter.zig**: Will be removed entirely
+
+### New Simplified System
+
+**Simple Components:**
+- **stack_frame.zig**: Continuation-passing execution with `Self` values
+- **Simple Schedule**: Just `constants: [*]const u256, schedule: [*]const Item`
+- **OpcodeHandler**: `*const fn (frame: Self, next_handler: Schedule) Error!Success`
 - **Tail Call Optimization**: `@call(.always_tail, next[0], .{ self, next + 1 })`
 
-**Key Architectural Differences:**
+**Key Simplifications:**
 
-| Aspect | Plan-Based (Current) | Schedule-Based (New) |
-|--------|---------------------|----------------------|
-| Parameter Style | `self: *Self` (pointer) | `self: Self` (value) |
-| Dispatch Method | Function calls | Tail call recursion |
-| Handler Signature | `HandlerFn` with anyopaque | `OpcodeHandler` with strong types |
-| Instruction Storage | `[]InstructionElement` slices | `[*:null]const *const OpcodeHandler` arrays |
-| Memory Layout | Complex union structures | Simple unbounded arrays |
-| State Modification | In-place via pointer | Copy-on-modify pattern |
-
-**Schedule Structure:**
-```zig
-const Schedule = struct {
-    schedule: [*]const Item,
-    pub const Item = union {
-        jump_dest: JumpDestMetadata,
-        push_inline: PushInlineMetadata,
-        push_pointer: PushPointerMetadata,
-        pc: PcMetadata,
-        opcode_handler: OpcodeHandler,
-    };
-};
-```
+| Aspect | Old (Complex) | New (Simple) |
+|--------|---------------|--------------|
+| Plan Types | PlanAdvanced, PlanDebug, PlanMinimal | Just Schedule |
+| Instruction Storage | `[]InstructionElement` unions | `[*]const Item` arrays |
+| Constants Management | Complex constant inlining | Simple `[*]const u256` |
+| Bytecode Analysis | Complex planner.zig | Simple bytecode.zig |
+| Execution | frame_interpreter.zig | stack_frame.zig |
+| Caching | Complex LRU with hash maps | Simple as needed |
 
 ## Implementation Strategy
 
-### Phase 1: Foundation Setup
+### Clean Separation of Concerns
 
-**1.1 Create Parallel Module Structure**
-- Keep existing `src/evm/` modules untouched
-- Add new modules for Schedule-based system:
-  - `schedule.zig` - Core Schedule data structure
-  - `schedule_config.zig` - Configuration options  
-  - `planner2.zig` - Schedule generation from bytecode
-  - `stack_frame_interpreter.zig` - Integration with EVM
+**Module Responsibilities:**
+- **`bytecode.zig`** - All bytecode analysis and understanding
+- **`evm.zig`** - Schedule generation decisions and orchestration  
+- **`stack_frame.zig`** - Pure schedule execution
 
-**1.2 Schedule Data Structure Implementation**
+### Phase 1: Bytecode Analysis (bytecode.zig)
+
+**1.1 Enhanced Bytecode Analysis**
 ```zig
-// schedule.zig
-pub fn Schedule(comptime config: ScheduleConfig) type {
-    return struct {
-        items: [*:null]const *const Item,
-        
-        pub const Item = union(enum) {
-            opcode_handler: OpcodeHandler,
-            jump_dest: JumpDestMetadata,
-            push_inline: PushInlineMetadata,
-            push_pointer: PushPointerMetadata,
-            pc: PcMetadata,
-        };
-        
-        pub const OpcodeHandler = *const fn (
-            frame: StackFrame(config.frame_config), 
-            next: Schedule(@This())
-        ) Error!Success;
-        
-        pub fn getOpData(self: @This(), comptime opcode: Opcode) OpDataType {
-            // Implementation for extracting opcode-specific metadata
-        }
-    };
-}
-```
-
-**1.3 Configuration System**
-```zig
-// schedule_config.zig
-pub const ScheduleConfig = struct {
-    frame_config: FrameConfig,
-    max_schedule_size: usize = 65536,
-    enable_tail_calls: bool = true,
-    optimize_for_size: bool = false,
+// bytecode.zig
+pub const Bytecode = struct {
+    code: []const u8,
+    jump_destinations: std.AutoHashMap(u16, JumpDestInfo),
+    push_data: std.ArrayList(PushInfo),
     
-    pub fn validate(self: @This()) void {
-        // Validation logic
+    pub fn analyze(allocator: std.mem.Allocator, code: []const u8) !Bytecode {
+        // Move complex analysis logic from planner.zig here
+        // Identify jump destinations, push data, gas costs
+        // This replaces the complex planner analysis
+    }
+    
+    pub fn getJumpDests(self: *const Bytecode) []const JumpDestInfo {
+        // Simple access to analyzed jump destinations
+    }
+    
+    pub fn getPushData(self: *const Bytecode, pc: u16) ?PushInfo {
+        // Get push data for specific PC
     }
 };
 ```
 
-### Phase 2: Planner2 Implementation
+**1.2 Simple Analysis Results**
+- No complex Plan objects - just analysis data
+- Jump destination metadata
+- Push value extraction
+- Gas cost pre-calculation where beneficial
 
-**2.1 Bytecode Analysis Engine**
-- Adapt existing planner logic for Schedule generation
-- Maintain compatibility with existing bytecode analysis
-- Convert Plan-style instruction streams to Schedule arrays
+### Phase 2: EVM Schedule Generation (evm.zig)
 
-```zig
-// planner2.zig  
-pub fn Planner2(comptime config: ScheduleConfig) type {
-    return struct {
-        const Self = @This();
-        const ScheduleType = Schedule(config);
-        
-        pub fn generateSchedule(
-            self: *Self, 
-            allocator: std.mem.Allocator,
-            bytecode: []const u8,
-            handlers: [256]*const ScheduleType.OpcodeHandler
-        ) !*const ScheduleType {
-            // Convert bytecode to null-terminated handler array
-            // Handle jump destination analysis
-            // Inline metadata for PUSH operations
-        }
-        
-        // Cache management for compiled schedules
-        cache: std.AutoHashMap(u64, *ScheduleType),
-    };
-}
-```
-
-**2.2 Handler Function Generation**
-- Create handler functions compatible with StackFrame
-- Implement tail call optimization patterns
-- Maintain existing opcode semantics
-
-```zig
-// In planner2.zig - handler generation
-fn generateHandlers(comptime FrameType: type) [256]*const FrameType.OpcodeHandler {
-    return [256]*const FrameType.OpcodeHandler{
-        &FrameType.stop,     // 0x00
-        &FrameType.add,      // 0x01
-        &FrameType.mul,      // 0x02
-        // ... all 256 opcodes
-    };
-}
-```
-
-### Phase 3: Integration Layer
-
-**3.1 Dual EVM Support**
-- Extend existing EVM to support both execution models
-- Add runtime selection between Plan and Schedule execution
-- Maintain identical external interfaces
-
+**2.1 Simple Schedule Generation**
 ```zig
 // In evm.zig
-pub const ExecutionMode = enum {
-    plan_based,    // Original frame.zig execution
-    schedule_based // New stack_frame.zig execution  
-};
-
-pub fn Evm(comptime config: EvmConfig) type {
-    return struct {
-        execution_mode: ExecutionMode,
-        
-        // Existing Plan-based components
-        planner: if (config.execution_mode == .plan_based) 
-            Planner(config.planner_config) else void,
-        frame: if (config.execution_mode == .plan_based)
-            Frame(config.frame_config) else void,
-            
-        // New Schedule-based components  
-        planner2: if (config.execution_mode == .schedule_based)
-            Planner2(config.schedule_config) else void,
-        stack_frame: if (config.execution_mode == .schedule_based)
-            StackFrame(config.frame_config) else void,
-    };
+pub fn generateSchedule(
+    self: *Self,
+    allocator: std.mem.Allocator, 
+    bytecode: *const Bytecode
+) !struct {
+    constants: [*]const u256,
+    schedule: [*]const StackFrame.Schedule.Item,
+} {
+    // Simple logic - no complex planner
+    // Use bytecode.zig analysis results
+    // Generate simple constants array
+    // Generate simple schedule array
+    // Decision making about simple vs advanced schedules (future)
 }
 ```
 
-**3.2 Shared Components**
-- Database interface remains unchanged
-- Host interface compatible with both models
-- Memory and stack components work with both systems
+**2.2 EVM Method Integration**
+```zig
+// In evm.zig - replaces complex planner usage
+pub fn analyze(self: *Self, code: []const u8) !ScheduleResult {
+    const bytecode_info = try Bytecode.analyze(self.allocator, code);
+    return self.generateSchedule(self.allocator, &bytecode_info);
+}
+```
 
-### Phase 4: Testing and Validation
+### Phase 3: Pure Schedule Execution (stack_frame.zig)
 
-**4.1 Parallel Test Suite**
-- Run identical test cases against both implementations
-- Validate execution results are identical
-- Performance benchmarking between approaches
+**3.1 Schedule Interface**
+- StackFrame just takes constants + schedule arrays
+- No knowledge of bytecode analysis
+- Pure execution engine with tail calls
+- Already implemented - just needs integration
 
-**4.2 Migration Testing**
-- Test bytecode that works with both systems
-- Verify state consistency between models
-- Ensure no regressions in existing functionality
+```zig
+// stack_frame.zig - already mostly done
+pub fn execute(
+    self: Self,
+    constants: [*]const u256,
+    schedule: [*]const Schedule.Item,
+) Error!Success {
+    // Pure execution - no analysis logic
+    // Just follow the schedule with tail calls
+}
+```
 
-## Implementation Details
+### Phase 4: Integration and Cleanup
 
-### Memory Management
+**4.1 Replace Complex Components**
+- Remove `planner.zig` entirely (move logic to bytecode.zig and evm.zig)
+- Remove `frame_interpreter.zig` entirely (replaced by stack_frame.zig)
+- Remove all Plan* modules (PlanAdvanced, PlanDebug, etc.)
+- Simplify EVM to just use the new analysis + execution flow
 
-**Plan-Based (Current)**
-- Frame modifies state in-place via pointers
-- Plan objects allocated separately from execution context
-- Complex memory layout with unions and slices
+**4.2 Update EVM Integration**
+```zig
+// evm.zig - simplified from current complex version
+pub fn execute_frame(self: *Self, code: []const u8, ...) !CallResult {
+    // Replace complex planner usage:
+    // OLD: const plan = try self.planner.getOrAnalyze(code, handlers, hardfork);
+    
+    // NEW: Simple analysis + execution
+    const schedule_result = try self.analyze(code);
+    const result = try self.stack_frame.execute(schedule_result.constants, schedule_result.schedule);
+    return result;
+}
+```
 
-**Schedule-Based (New)**  
-- Frame passed by value, modifications create new state
-- Schedule arrays allocated once, reused across executions
-- Simple linear memory layout for cache efficiency
+**4.3 Clean Architecture Benefits**
+- **bytecode.zig**: Pure analysis, no execution logic
+- **evm.zig**: Orchestration and decision making, simple schedule generation
+- **stack_frame.zig**: Pure execution, no analysis logic
+- **No complex caching** unless specifically needed for performance
+- **No complex Plan objects** - just simple arrays
 
-### Performance Considerations
+### Phase 5: Testing and Validation
 
-**Tail Call Optimization Benefits:**
-- Eliminates function call overhead
-- Improves branch prediction
-- Reduces stack depth for long execution sequences
+**5.1 Simplified Testing**
+- Test bytecode analysis in bytecode.zig
+- Test schedule generation in evm.zig  
+- Test schedule execution in stack_frame.zig
+- Integration tests for the full flow
 
-**Value vs Pointer Trade-offs:**
-- `Self` values: Better cache locality, enable optimizations
-- `*Self` pointers: Less copying, traditional imperative style
+**5.2 Performance Validation**
+- Compare new simplified architecture against current system
+- Validate tail call optimization benefits
+- Ensure no regressions from simplification
 
-**Memory Layout:**
-- Schedule arrays: Linear, cache-friendly access patterns
-- Plan instruction streams: Complex but flexible metadata
+## Key Implementation Benefits
 
-### Compatibility Matrix
+### Massive Simplification
+- **Eliminate thousands of lines** of complex Plan/Planner code
+- **Two simple arrays** replace complex union structures
+- **Clean separation** of analysis vs execution vs orchestration
 
-| Component | Plan-Based | Schedule-Based | Shared |
-|-----------|------------|----------------|--------|
-| Database Interface | ✓ | ✓ | ✓ |
-| Host Interface | ✓ | ✓ | ✓ |  
-| Memory System | ✓ | ✓ | ✓ |
-| Stack Implementation | ✓ | ✓ | ✓ |
-| Tracer System | ✓ | ✓ | ✓ |
-| Gas Tracking | ✓ | ✓ | ✓ |
-| Frame Execution | ✓ | - | - |
-| StackFrame Execution | - | ✓ | - |
-| Plan Generation | ✓ | - | - |
-| Schedule Generation | - | ✓ | - |
+### Performance Improvements
+- **Tail call optimization** eliminates dispatch overhead
+- **Linear memory layout** improves cache efficiency  
+- **Value semantics** enable better compiler optimizations
+- **Simpler code paths** reduce complexity overhead
 
-## Migration Path
+### Development Benefits  
+- **Easier to understand** - clear module responsibilities
+- **Easier to test** - pure functions with simple inputs/outputs
+- **Easier to debug** - less indirection and complex state
+- **Easier to extend** - just modify the relevant module
 
-### Development Phases
+## Migration Checklist
 
-**Phase 1 (Foundation)**
-- [ ] Implement Schedule data structures
-- [ ] Create basic planner2.zig skeleton
-- [ ] Add configuration systems
-- [ ] Setup parallel build targets
+### Phase 1: Enhanced Bytecode Analysis
+- [ ] Move complex analysis from planner.zig to bytecode.zig
+- [ ] Implement `Bytecode.analyze()` method
+- [ ] Extract jump destinations and push data
+- [ ] Test bytecode analysis in isolation
 
-**Phase 2 (Core Logic)**  
-- [ ] Port bytecode analysis from planner.zig
-- [ ] Implement Schedule generation algorithms
-- [ ] Create handler function templates
-- [ ] Add caching mechanisms
+### Phase 2: EVM Schedule Generation  
+- [ ] Add `evm.analyze()` method
+- [ ] Implement simple schedule generation in evm.zig
+- [ ] Generate constants and schedule arrays
+- [ ] Test schedule generation
 
-**Phase 3 (Integration)**
-- [ ] Extend EVM to support both modes
-- [ ] Create execution mode selection
-- [ ] Implement shared component interfaces
-- [ ] Add runtime switching capabilities
+### Phase 3: Integration
+- [ ] Update `evm.execute_frame()` to use new flow
+- [ ] Remove planner.zig usage from EVM
+- [ ] Remove frame_interpreter.zig usage
+- [ ] Test full integration
 
-**Phase 4 (Validation)**
-- [ ] Port existing test suite to Schedule system
-- [ ] Add performance benchmarks
-- [ ] Validate functional correctness
-- [ ] Document performance characteristics
-
-### Risk Mitigation
-
-**Technical Risks:**
-- Tail call optimization not working as expected
-- Performance regression from value semantics
-- Memory usage increase from Schedule arrays
-
-**Mitigation Strategies:**
-- Comprehensive benchmarking during development
-- Fallback mechanisms to Plan-based execution
-- Gradual rollout with feature flags
-
-**Compatibility Risks:**
-- Breaking changes to existing interfaces
-- Test failures from behavioral differences
-
-**Mitigation Strategies:**  
-- Maintain identical external APIs
-- Extensive cross-validation testing
-- Feature flags for gradual migration
-
-## Success Metrics
-
-### Performance Goals
-- Execution speed: Equal or better than Plan-based system
-- Memory usage: Similar or reduced compared to current system  
-- Cache efficiency: Improved due to linear memory layout
-
-### Quality Goals
-- Test coverage: 100% compatibility with existing tests
-- Correctness: Identical execution results between both systems
-- Maintainability: Clear separation of concerns between systems
+### Phase 4: Cleanup
+- [ ] Delete planner.zig and all Plan* modules  
+- [ ] Delete frame_interpreter.zig
+- [ ] Update build.zig to remove deleted modules
+- [ ] Update tests to use new architecture
 
 ## Conclusion
 
-The Schedule-based architecture represents a significant evolution in EVM execution strategy, leveraging continuation-passing style and tail call optimization for improved performance. By maintaining parallel implementations during development, we can ensure a smooth transition while preserving the stability of the existing Plan-based system.
+The new simplified architecture eliminates thousands of lines of complex code in favor of two simple arrays:
+- `constants: [*]const u256` 
+- `schedule: [*]const Item`
 
-The key insight from the telegram conversation is that the Schedule system using unbounded arrays with null termination provides better cache locality and enables powerful optimizations through tail calls, while maintaining the flexibility to handle complex opcode metadata requirements.
+This dramatic simplification provides multiple benefits:
 
-This migration plan allows for gradual adoption, comprehensive testing, and the ability to fall back to the proven Plan-based system if issues arise during development.
+**Architectural Clarity:** Clean separation between bytecode analysis (bytecode.zig), orchestration (evm.zig), and execution (stack_frame.zig)
+
+**Performance Gains:** Tail call optimization, better cache locality, and elimination of complex dispatch overhead
+
+**Development Velocity:** Easier to understand, test, debug, and extend than the current complex Plan system
+
+**Maintainability:** Pure functions with simple inputs/outputs replace complex stateful objects
+
+The migration path is straightforward: move analysis logic to bytecode.zig, add simple schedule generation to evm.zig, integrate with existing stack_frame.zig execution, then delete the complex Plan system entirely.
+
+This represents a fundamental simplification that maintains all the power of the original system while dramatically reducing complexity.
