@@ -66,6 +66,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
+            STOP,
             REVERT,
             BytecodeTooLarge,
             AllocationError,
@@ -409,7 +410,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             //     self.gas_remaining = @as(GasType, @intCast(@min(new_remaining, @as(u128, @intCast(std.math.maxInt(GasType))))));
             //   self.gas_refund = 0;
             //             }
-            return Success.STOP;
+            return Error.STOP;
         }
 
         pub fn @"and"(self: Self, next: [*:null]const *const OpcodeHandler) Error!Success {
@@ -2418,6 +2419,15 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
     };
 }
+
+/// Test helper to create a simple handler chain that ends with stop
+/// This allows testing individual opcodes in isolation  
+fn createTestHandlerChain(comptime FrameType: type) [1:null]*const FrameType.OpcodeHandler {
+    return [1:null]*const FrameType.OpcodeHandler{
+        &FrameType.stop,
+    };
+}
+
 test "StackFrame stack operations" {
     const allocator = std.testing.allocator;
     const F = StackFrame(.{});
@@ -3150,19 +3160,19 @@ test "Frame xor bitwise XOR operation" {
     // Test 0xFF ^ 0xFF = 0
     try frame.stack.push(0xFF);
     try frame.stack.push(0xFF);
-    try frame.xor();
+    _ = try frame.xor(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result1);
     // Test 0xFF ^ 0x00 = 0xFF
     try frame.stack.push(0xFF);
     try frame.stack.push(0x00);
-    try frame.xor();
+    _ = try frame.xor(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result2);
     // Test 0xAA ^ 0x55 = 0xFF (alternating bits)
     try frame.stack.push(0xAA);
     try frame.stack.push(0x55);
-    try frame.xor();
+    _ = try frame.xor(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result3);
 }
@@ -3205,26 +3215,26 @@ test "Frame op_byte extracts single byte from word" {
     // Test extracting byte 31 (rightmost) from 0x...FF
     try frame.stack.push(0xFF);
     try frame.stack.push(31);
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result1);
     // Test extracting byte 30 from 0x...FF00
     try frame.stack.push(0xFF00);
     try frame.stack.push(30);
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result2);
     // Test extracting byte 0 (leftmost) from a value
     const value: u256 = @as(u256, 0xAB) << 248; // Put 0xAB in the leftmost byte
     try frame.stack.push(value);
     try frame.stack.push(0);
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xAB), result3);
     // Test out of bounds (index >= 32) returns 0
     try frame.stack.push(0xFFFFFFFF);
     try frame.stack.push(32);
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3238,19 +3248,19 @@ test "Frame op_shl shift left operation" {
     // Test 1 << 4 = 16
     try frame.stack.push(1);
     try frame.stack.push(4);
-    try frame.shl();
+    _ = try frame.shl(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 16), result1);
     // Test 0xFF << 8 = 0xFF00
     try frame.stack.push(0xFF);
     try frame.stack.push(8);
-    try frame.shl();
+    _ = try frame.shl(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF00), result2);
     // Test shift >= 256 returns 0
     try frame.stack.push(1);
     try frame.stack.push(256);
-    try frame.shl();
+    _ = try frame.shl(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -3264,19 +3274,19 @@ test "Frame op_shr logical shift right operation" {
     // Test 16 >> 4 = 1
     try frame.stack.push(16);
     try frame.stack.push(4);
-    try frame.shr();
+    _ = try frame.shr(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test 0xFF00 >> 8 = 0xFF
     try frame.stack.push(0xFF00);
     try frame.stack.push(8);
-    try frame.shr();
+    _ = try frame.shr(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), result2);
     // Test shift >= 256 returns 0
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(256);
-    try frame.shr();
+    _ = try frame.shr(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -3290,14 +3300,14 @@ test "Frame op_sar arithmetic shift right operation" {
     // Test positive number: 16 >> 4 = 1
     try frame.stack.push(16);
     try frame.stack.push(4);
-    try frame.sar();
+    _ = try frame.sar(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test negative number (sign bit = 1)
     const negative = @as(u256, 1) << 255 | 0xFF00; // Set sign bit and some data
     try frame.stack.push(negative);
     try frame.stack.push(8);
-    try frame.sar();
+    _ = try frame.sar(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     // Should fill with 1s from the left
     const expected2 = (@as(u256, std.math.maxInt(u256)) << 247) | 0xFF;
@@ -3305,13 +3315,13 @@ test "Frame op_sar arithmetic shift right operation" {
     // Test shift >= 256 with positive number returns 0
     try frame.stack.push(0x7FFFFFFF); // Positive (sign bit = 0)
     try frame.stack.push(256);
-    try frame.sar();
+    _ = try frame.sar(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test shift >= 256 with negative number returns max value
     try frame.stack.push(@as(u256, 1) << 255); // Negative (sign bit = 1)
     try frame.stack.push(256);
-    try frame.sar();
+    _ = try frame.sar(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), result4);
 }
@@ -3325,19 +3335,19 @@ test "Frame op_add addition with wrapping overflow" {
     // Test 10 + 20 = 30
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.add();
+    _ = try frame.add(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 30), result1);
     // Test overflow: max + 1 = 0
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(1);
-    try frame.add();
+    _ = try frame.add(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test max + max = max - 1 (wrapping)
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.add();
+    _ = try frame.add(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256) - 1, result3);
 }
@@ -3351,20 +3361,20 @@ test "Frame op_mul multiplication with wrapping overflow" {
     // Test 5 * 6 = 30
     try frame.stack.push(5);
     try frame.stack.push(6);
-    try frame.mul();
+    _ = try frame.mul(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 30), result1);
     // Test 0 * anything = 0
     try frame.stack.push(0);
     try frame.stack.push(12345);
-    try frame.mul();
+    _ = try frame.mul(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test overflow with large numbers
     const large = @as(u256, 1) << 128;
     try frame.stack.push(large);
     try frame.stack.push(large);
-    try frame.mul();
+    _ = try frame.mul(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3); // 2^256 wraps to 0
 }
@@ -3378,19 +3388,19 @@ test "Frame op_sub subtraction with wrapping underflow" {
     // Test 30 - 10 = 20
     try frame.stack.push(30);
     try frame.stack.push(10);
-    try frame.sub();
+    _ = try frame.sub(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 20), result1);
     // Test underflow: 0 - 1 = max
     try frame.stack.push(0);
     try frame.stack.push(1);
-    try frame.sub();
+    _ = try frame.sub(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), result2);
     // Test 10 - 20 = max - 9 (wrapping)
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.sub();
+    _ = try frame.sub(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256) - 9, result3);
 }
@@ -3404,19 +3414,19 @@ test "Frame op_div unsigned integer division" {
     // Test 20 / 5 = 4
     try frame.stack.push(20);
     try frame.stack.push(5);
-    try frame.div();
+    _ = try frame.div(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result1);
     // Test division by zero returns 0
     try frame.stack.push(100);
     try frame.stack.push(0);
-    try frame.div();
+    _ = try frame.div(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test integer division: 7 / 3 = 2
     try frame.stack.push(7);
     try frame.stack.push(3);
-    try frame.div();
+    _ = try frame.div(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result3);
 }
@@ -3430,14 +3440,14 @@ test "Frame op_sdiv signed integer division" {
     // Test 20 / 5 = 4 (positive / positive)
     try frame.stack.push(20);
     try frame.stack.push(5);
-    try frame.sdiv();
+    _ = try frame.sdiv(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result1);
     // Test -20 / 5 = -4 (negative / positive)
     const neg_20 = @as(u256, @bitCast(@as(i256, -20)));
     try frame.stack.push(neg_20);
     try frame.stack.push(5);
-    try frame.sdiv();
+    _ = try frame.sdiv(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     const expected2 = @as(u256, @bitCast(@as(i256, -4)));
     try std.testing.expectEqual(expected2, result2);
@@ -3446,13 +3456,13 @@ test "Frame op_sdiv signed integer division" {
     const neg_1 = @as(u256, @bitCast(@as(i256, -1)));
     try frame.stack.push(min_i256);
     try frame.stack.push(neg_1);
-    try frame.sdiv();
+    _ = try frame.sdiv(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(min_i256, result3);
     // Test division by zero returns 0
     try frame.stack.push(100);
     try frame.stack.push(0);
-    try frame.sdiv();
+    _ = try frame.sdiv(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3466,19 +3476,19 @@ test "Frame op_mod modulo remainder operation" {
     // Test 17 % 5 = 2
     try frame.stack.push(17);
     try frame.stack.push(5);
-    try frame.mod();
+    _ = try frame.mod(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result1);
     // Test 100 % 10 = 0
     try frame.stack.push(100);
     try frame.stack.push(10);
-    try frame.mod();
+    _ = try frame.mod(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test modulo by zero returns 0
     try frame.stack.push(7);
     try frame.stack.push(0);
-    try frame.mod();
+    _ = try frame.mod(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -3492,14 +3502,14 @@ test "Frame op_smod signed modulo remainder operation" {
     // Test 17 % 5 = 2 (positive % positive)
     try frame.stack.push(17);
     try frame.stack.push(5);
-    try frame.smod();
+    _ = try frame.smod(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result1);
     // Test -17 % 5 = -2 (negative % positive)
     const neg_17 = @as(u256, @bitCast(@as(i256, -17)));
     try frame.stack.push(neg_17);
     try frame.stack.push(5);
-    try frame.smod();
+    _ = try frame.smod(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     const expected2 = @as(u256, @bitCast(@as(i256, -2)));
     try std.testing.expectEqual(expected2, result2);
@@ -3507,13 +3517,13 @@ test "Frame op_smod signed modulo remainder operation" {
     const neg_5 = @as(u256, @bitCast(@as(i256, -5)));
     try frame.stack.push(17);
     try frame.stack.push(neg_5);
-    try frame.smod();
+    _ = try frame.smod(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result3);
     // Test modulo by zero returns 0
     try frame.stack.push(neg_17);
     try frame.stack.push(0);
-    try frame.smod();
+    _ = try frame.smod(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3528,7 +3538,7 @@ test "Frame op_addmod addition modulo n" {
     try frame.stack.push(10);
     try frame.stack.push(20);
     try frame.stack.push(7);
-    try frame.addmod();
+    _ = try frame.addmod(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 2), result1);
     // Test overflow handling: (MAX + 5) % 10 = 4
@@ -3538,14 +3548,14 @@ test "Frame op_addmod addition modulo n" {
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(5);
     try frame.stack.push(10);
-    try frame.addmod();
+    _ = try frame.addmod(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result2);
     // Test modulo by zero returns 0
     try frame.stack.push(50);
     try frame.stack.push(50);
     try frame.stack.push(0);
-    try frame.addmod();
+    _ = try frame.addmod(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
@@ -3555,7 +3565,7 @@ test "Frame op_addmod addition modulo n" {
     try frame.stack.push(std.math.maxInt(u256) - 1);
     try frame.stack.push(5);
     try frame.stack.push(3);
-    try frame.addmod();
+    _ = try frame.addmod(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -3570,14 +3580,14 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(10);
     try frame.stack.push(20);
     try frame.stack.push(7);
-    try frame.mulmod();
+    _ = try frame.mulmod(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 4), result1);
     // First test a simple case to make sure basic logic works
     try frame.stack.push(36);
     try frame.stack.push(36);
     try frame.stack.push(100);
-    try frame.mulmod();
+    _ = try frame.mulmod(createTestHandlerChain(@TypeOf(frame)));
     const simple_result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 96), simple_result);
     // Test that large % 100 = 56
@@ -3588,7 +3598,7 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(large);
     try frame.stack.push(large);
     try frame.stack.push(100);
-    try frame.mulmod();
+    _ = try frame.mulmod(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     // Since the algorithm reduces first: 2^128 % 100 = 56
     // Then we're computing (56 * 56) % 100 = 3136 % 100 = 36
@@ -3597,7 +3607,7 @@ test "Frame op_mulmod multiplication modulo n" {
     try frame.stack.push(50);
     try frame.stack.push(50);
     try frame.stack.push(0);
-    try frame.mulmod();
+    _ = try frame.mulmod(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 }
@@ -3611,31 +3621,31 @@ test "Frame op_exp exponentiation" {
     // Test 2^10 = 1024
     try frame.stack.push(2);
     try frame.stack.push(10);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1024), result1);
     // Test 3^4 = 81
     try frame.stack.push(3);
     try frame.stack.push(4);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 81), result2);
     // Test 10^0 = 1 (anything^0 = 1)
     try frame.stack.push(10);
     try frame.stack.push(0);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result3);
     // Test 0^10 = 0 (0^anything = 0, except 0^0)
     try frame.stack.push(0);
     try frame.stack.push(10);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
     // Test 0^0 = 1 (special case in EVM)
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const result5 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result5);
 }
@@ -3649,33 +3659,33 @@ test "Frame op_signextend sign extension" {
     // Test extending positive 8-bit value (0x7F)
     try frame.stack.push(0x7F);
     try frame.stack.push(0); // Extend from byte 0
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x7F), result1);
     // Test extending negative 8-bit value (0x80)
     try frame.stack.push(0x80);
     try frame.stack.push(0); // Extend from byte 0
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     const expected2 = std.math.maxInt(u256) - 0x7F; // 0xFFFF...FF80
     try std.testing.expectEqual(expected2, result2);
     // Test extending positive 16-bit value (0x7FFF)
     try frame.stack.push(0x7FFF);
     try frame.stack.push(1); // Extend from byte 1
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x7FFF), result3);
     // Test extending negative 16-bit value (0x8000)
     try frame.stack.push(0x8000);
     try frame.stack.push(1); // Extend from byte 1
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     const expected4 = std.math.maxInt(u256) - 0x7FFF; // 0xFFFF...F8000
     try std.testing.expectEqual(expected4, result4);
     // Test byte_num >= 31 returns value unchanged
     try frame.stack.push(0x12345678);
     try frame.stack.push(31); // Extend from byte 31 (full width)
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const result5 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x12345678), result5);
 }
@@ -3687,22 +3697,22 @@ test "Frame op_gas returns gas remaining" {
     var frame = try F.init(allocator, &bytecode, 1000000, void{}, host);
     defer frame.deinit(allocator);
     // Test op_gas pushes gas_remaining to stack
-    try frame.gas();
+    _ = try frame.gas(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1000000), result1);
     // Test op_gas with modified gas_remaining
     frame.gas_remaining = 12345;
-    try frame.gas();
+    _ = try frame.gas(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 12345), result2);
     // Test op_gas with zero gas
     frame.gas_remaining = 0;
-    try frame.gas();
+    _ = try frame.gas(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test op_gas with negative gas (should push 0)
     frame.gas_remaining = 0; // Can't have negative gas
-    try frame.gas();
+    _ = try frame.gas(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3716,25 +3726,25 @@ test "Frame op_lt less than comparison" {
     // Test 10 < 20 = 1
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.lt();
+    _ = try frame.lt(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test 20 < 10 = 0
     try frame.stack.push(20);
     try frame.stack.push(10);
-    try frame.lt();
+    _ = try frame.lt(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test 10 < 10 = 0
     try frame.stack.push(10);
     try frame.stack.push(10);
-    try frame.lt();
+    _ = try frame.lt(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test with max value
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(0);
-    try frame.lt();
+    _ = try frame.lt(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3748,25 +3758,25 @@ test "Frame op_gt greater than comparison" {
     // Test 20 > 10 = 1
     try frame.stack.push(20);
     try frame.stack.push(10);
-    try frame.gt();
+    _ = try frame.gt(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test 10 > 20 = 0
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.gt();
+    _ = try frame.gt(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test 10 > 10 = 0
     try frame.stack.push(10);
     try frame.stack.push(10);
-    try frame.gt();
+    _ = try frame.gt(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test with max value
     try frame.stack.push(0);
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.gt();
+    _ = try frame.gt(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3780,20 +3790,20 @@ test "Frame op_slt signed less than comparison" {
     // Test 10 < 20 = 1 (positive comparison)
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.slt();
+    _ = try frame.slt(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test -10 < 10 = 1 (negative < positive)
     const neg_10 = @as(u256, @bitCast(@as(i256, -10)));
     try frame.stack.push(neg_10);
     try frame.stack.push(10);
-    try frame.slt();
+    _ = try frame.slt(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result2);
     // Test 10 < -10 = 0 (positive < negative)
     try frame.stack.push(10);
     try frame.stack.push(neg_10);
-    try frame.slt();
+    _ = try frame.slt(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test MIN_INT < MAX_INT = 1
@@ -3801,7 +3811,7 @@ test "Frame op_slt signed less than comparison" {
     const max_int = (@as(u256, 1) << 255) - 1; // All bits except sign bit
     try frame.stack.push(min_int);
     try frame.stack.push(max_int);
-    try frame.slt();
+    _ = try frame.slt(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -3815,20 +3825,20 @@ test "Frame op_sgt signed greater than comparison" {
     // Test 20 > 10 = 1 (positive comparison)
     try frame.stack.push(20);
     try frame.stack.push(10);
-    try frame.sgt();
+    _ = try frame.sgt(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test 10 > -10 = 1 (positive > negative)
     const neg_10 = @as(u256, @bitCast(@as(i256, -10)));
     try frame.stack.push(10);
     try frame.stack.push(neg_10);
-    try frame.sgt();
+    _ = try frame.sgt(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result2);
     // Test -10 > 10 = 0 (negative > positive)
     try frame.stack.push(neg_10);
     try frame.stack.push(10);
-    try frame.sgt();
+    _ = try frame.sgt(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test MAX_INT > MIN_INT = 1
@@ -3836,7 +3846,7 @@ test "Frame op_sgt signed greater than comparison" {
     const max_int = (@as(u256, 1) << 255) - 1; // All bits except sign bit
     try frame.stack.push(max_int);
     try frame.stack.push(min_int);
-    try frame.sgt();
+    _ = try frame.sgt(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -3850,25 +3860,25 @@ test "Frame op_eq equality comparison" {
     // Test 10 == 10 = 1
     try frame.stack.push(10);
     try frame.stack.push(10);
-    try frame.eq();
+    _ = try frame.eq(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test 10 == 20 = 0
     try frame.stack.push(10);
     try frame.stack.push(20);
-    try frame.eq();
+    _ = try frame.eq(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test 0 == 0 = 1
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try frame.eq();
+    _ = try frame.eq(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result3);
     // Test max == max = 1
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.eq();
+    _ = try frame.eq(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result4);
 }
@@ -3881,22 +3891,22 @@ test "Frame op_iszero zero check" {
     defer frame.deinit(allocator);
     // Test iszero(0) = 1
     try frame.stack.push(0);
-    try frame.iszero();
+    _ = try frame.iszero(createTestHandlerChain(@TypeOf(frame)));
     const result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result1);
     // Test iszero(1) = 0
     try frame.stack.push(1);
-    try frame.iszero();
+    _ = try frame.iszero(createTestHandlerChain(@TypeOf(frame)));
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result2);
     // Test iszero(100) = 0
     try frame.stack.push(100);
-    try frame.iszero();
+    _ = try frame.iszero(createTestHandlerChain(@TypeOf(frame)));
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
     // Test iszero(max) = 0
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.iszero();
+    _ = try frame.iszero(createTestHandlerChain(@TypeOf(frame)));
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
 }
@@ -3937,7 +3947,7 @@ test "Frame op_jumpdest no-op" {
     defer frame.deinit(allocator);
     // JUMPDEST should do nothing
     // PC is now managed by plan, not frame directly
-    try frame.jumpdest();
+    _ = try frame.jumpdest(createTestHandlerChain(@TypeOf(frame)));
 }
 test "Frame op_invalid causes error" {
     const allocator = std.testing.allocator;
@@ -3981,7 +3991,7 @@ test "Frame with NoOpTracer executes correctly" {
     // Execute by pushing values and calling add
     try frame.stack.push(5);
     try frame.stack.push(3);
-    try frame.add();
+    _ = try frame.add(createTestHandlerChain(@TypeOf(frame)));
     // Check that we have the expected result (5 + 3 = 8)
     try std.testing.expectEqual(@as(u256, 8), frame.stack.peek_unsafe());
 }
@@ -4034,23 +4044,23 @@ test "Frame op_msize memory size tracking" {
     var frame = try F.init(allocator, &bytecode, 1000000, void{}, host);
     defer frame.deinit(allocator);
     // Initially memory size should be 0
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const initial_size = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), initial_size);
     // Store something to expand memory
     try frame.stack.push(0x42); // value
     try frame.stack.push(0); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Memory should now be 32 bytes
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size_after_store = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 32), size_after_store);
     // Store at offset 32
     try frame.stack.push(0x55); // value
     try frame.stack.push(32); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Memory should now be 64 bytes
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size_after_second_store = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 64), size_after_second_store);
 }
@@ -4065,20 +4075,20 @@ test "Frame op_mload memory load operations" {
     const test_value: u256 = 0x123456789ABCDEF0;
     try frame.stack.push(test_value);
     try frame.stack.push(0); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Load it back
     try frame.stack.push(0); // offset
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const loaded_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, loaded_value);
     // Load from uninitialized memory (should be zero)
     // First store at offset 64 to ensure memory is expanded
     try frame.stack.push(0); // value 0
     try frame.stack.push(64); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Now load from offset 64 (should be zero)
     try frame.stack.push(64); // offset
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const zero_value = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), zero_value);
 }
@@ -4094,17 +4104,17 @@ test "Frame op_mstore memory store operations" {
     const value2: u256 = 0xCAFEBABE;
     try frame.stack.push(value1);
     try frame.stack.push(0); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     try frame.stack.push(value2);
     try frame.stack.push(32); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Read them back
     try frame.stack.push(0);
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const read1 = try frame.stack.pop();
     try std.testing.expectEqual(value1, read1);
     try frame.stack.push(32);
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const read2 = try frame.stack.pop();
     try std.testing.expectEqual(value2, read2);
 }
@@ -4121,7 +4131,7 @@ test "Frame op_mstore8 byte store operations" {
     try frame.mstore8();
     // Load the 32-byte word containing our byte
     try frame.stack.push(0); // offset 0
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const word = try frame.stack.pop();
     // The byte at offset 5 should be 0xFF
     // In a 32-byte word, byte 5 is at bit position 216-223 (from the right)
@@ -4132,7 +4142,7 @@ test "Frame op_mstore8 byte store operations" {
     try frame.stack.push(10); // offset
     try frame.mstore8();
     try frame.stack.push(0);
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const word2 = try frame.stack.pop();
     const byte_10 = @as(u8, @truncate((word2 >> (21 * 8)) & 0xFF));
     try std.testing.expectEqual(@as(u8, 0xCD), byte_10);
@@ -4200,35 +4210,35 @@ test "Frame memory expansion edge cases" {
     try frame.stack.push(0xFF); // value
     try frame.stack.push(0); // offset
     try frame.mstore8();
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 32), size1);
     // Store at offset 31 - should still be 32 bytes
     try frame.stack.push(0xAA); // value
     try frame.stack.push(31); // offset
     try frame.mstore8();
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 32), size2);
     // Store at offset 32 - should expand to 64 bytes
     try frame.stack.push(0xBB); // value
     try frame.stack.push(32); // offset
     try frame.mstore8();
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 64), size3);
     // Store at offset 63 - should still be 64 bytes
     try frame.stack.push(0xCC); // value
     try frame.stack.push(63); // offset
     try frame.mstore8();
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 64), size4);
     // Store at offset 64 - should expand to 96 bytes
     try frame.stack.push(0xDD); // value
     try frame.stack.push(64); // offset
     try frame.mstore8();
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size5 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 96), size5);
 }
@@ -4243,57 +4253,57 @@ test "Frame op_mcopy memory copy operations" {
     const test_data: u256 = 0xDEADBEEFCAFEBABE;
     try frame.stack.push(test_data);
     try frame.stack.push(0); // offset
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Test 1: Copy memory to a different location
     try frame.stack.push(32); // length
     try frame.stack.push(0); // src
     try frame.stack.push(32); // dest
-    try frame.mcopy();
+    _ = try frame.mcopy(createTestHandlerChain(@TypeOf(frame)));
     // Verify the copy
     try frame.stack.push(32); // offset
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const copied_value = try frame.stack.pop();
     try std.testing.expectEqual(test_data, copied_value);
     // Test 2: Zero-length copy (should do nothing)
     try frame.stack.push(0); // length
     try frame.stack.push(0); // src
     try frame.stack.push(64); // dest
-    try frame.mcopy();
+    _ = try frame.mcopy(createTestHandlerChain(@TypeOf(frame)));
     // No error should occur
     // Test 3: Overlapping copy (forward overlap)
     // Store a pattern at offset 0
     try frame.stack.push(0x1111111111111111);
     try frame.stack.push(0);
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     try frame.stack.push(0x2222222222222222);
     try frame.stack.push(32);
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Copy 48 bytes from offset 0 to offset 16 (forward overlap)
     try frame.stack.push(48); // length
     try frame.stack.push(0); // src
     try frame.stack.push(16); // dest
-    try frame.mcopy();
+    _ = try frame.mcopy(createTestHandlerChain(@TypeOf(frame)));
     // Read and verify
     try frame.stack.push(16);
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const overlap_result1 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x1111111111111111), overlap_result1);
     // Test 4: Overlapping copy (backward overlap)
     // Store new pattern
     try frame.stack.push(0x3333333333333333);
     try frame.stack.push(64);
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     try frame.stack.push(0x4444444444444444);
     try frame.stack.push(96);
-    try frame.mstore();
+    _ = try frame.mstore(createTestHandlerChain(@TypeOf(frame)));
     // Copy 48 bytes from offset 64 to offset 48 (backward overlap)
     try frame.stack.push(48); // length
     try frame.stack.push(64); // src
     try frame.stack.push(48); // dest
-    try frame.mcopy();
+    _ = try frame.mcopy(createTestHandlerChain(@TypeOf(frame)));
     // Read and verify
     try frame.stack.push(48);
-    try frame.mload();
+    _ = try frame.mload(createTestHandlerChain(@TypeOf(frame)));
     const overlap_result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0x3333333333333333), overlap_result2);
 }
@@ -4346,25 +4356,25 @@ test "Frame storage operations with database" {
     // Store a value
     try frame.stack.push(test_value);
     try frame.stack.push(test_key);
-    try frame.sstore();
+    _ = try frame.sstore(createTestHandlerChain(@TypeOf(frame)));
     // Load it back
     try frame.stack.push(test_key);
-    try frame.sload();
+    _ = try frame.sload(createTestHandlerChain(@TypeOf(frame)));
     const loaded_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, loaded_value);
     // Test overwriting a value
     const new_value: u256 = 0xCAFEBABE;
     try frame.stack.push(new_value);
     try frame.stack.push(test_key);
-    try frame.sstore();
+    _ = try frame.sstore(createTestHandlerChain(@TypeOf(frame)));
     try frame.stack.push(test_key);
-    try frame.sload();
+    _ = try frame.sload(createTestHandlerChain(@TypeOf(frame)));
     const overwritten_value = try frame.stack.pop();
     try std.testing.expectEqual(new_value, overwritten_value);
     // Test loading non-existent key (should return 0)
     const non_existent_key: u256 = 0x999;
     try frame.stack.push(non_existent_key);
-    try frame.sload();
+    _ = try frame.sload(createTestHandlerChain(@TypeOf(frame)));
     const zero_value = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), zero_value);
 }
@@ -4385,10 +4395,10 @@ test "Frame transient storage operations with database" {
     // Store a value in transient storage
     try frame.stack.push(test_value);
     try frame.stack.push(test_key);
-    try frame.tstore();
+    _ = try frame.tstore(createTestHandlerChain(@TypeOf(frame)));
     // Load it back
     try frame.stack.push(test_key);
-    try frame.tload();
+    _ = try frame.tload(createTestHandlerChain(@TypeOf(frame)));
     const loaded_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, loaded_value);
     // Test that transient storage is separate from regular storage
@@ -4396,15 +4406,15 @@ test "Frame transient storage operations with database" {
     const regular_value: u256 = 0x111111;
     try frame.stack.push(regular_value);
     try frame.stack.push(test_key); // Same key
-    try frame.sstore();
+    _ = try frame.sstore(createTestHandlerChain(@TypeOf(frame)));
     // Load from transient storage should still return the transient value
     try frame.stack.push(test_key);
-    try frame.tload();
+    _ = try frame.tload(createTestHandlerChain(@TypeOf(frame)));
     const transient_value = try frame.stack.pop();
     try std.testing.expectEqual(test_value, transient_value);
     // Load from regular storage should return the regular value
     try frame.stack.push(test_key);
-    try frame.sload();
+    _ = try frame.sload(createTestHandlerChain(@TypeOf(frame)));
     const regular_loaded = try frame.stack.pop();
     try std.testing.expectEqual(regular_value, regular_loaded);
 }
@@ -4730,26 +4740,26 @@ test "Frame arithmetic edge cases - overflow and underflow boundaries" {
     // Test ADD at maximum values - should wrap to 0
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(1);
-    try frame.add();
+    _ = try frame.add(createTestHandlerChain(@TypeOf(frame)));
     const add_overflow = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), add_overflow);
     // Test SUB underflow - should wrap around
     try frame.stack.push(0);
     try frame.stack.push(1);
-    try frame.sub();
+    _ = try frame.sub(createTestHandlerChain(@TypeOf(frame)));
     const sub_underflow = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), sub_underflow);
     // Test MUL overflow - large values should wrap
     const large_val = @as(u256, 1) << 128; // 2^128
     try frame.stack.push(large_val);
     try frame.stack.push(large_val);
-    try frame.mul();
+    _ = try frame.mul(createTestHandlerChain(@TypeOf(frame)));
     const mul_overflow = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), mul_overflow); // 2^256 wraps to 0
     // Test edge case: multiply by zero
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(0);
-    try frame.mul();
+    _ = try frame.mul(createTestHandlerChain(@TypeOf(frame)));
     const mul_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), mul_zero);
 }
@@ -4763,7 +4773,7 @@ test "Frame division edge cases - division by zero and signed boundaries" {
     // Test division by zero returns zero
     try frame.stack.push(100);
     try frame.stack.push(0);
-    try frame.div();
+    _ = try frame.div(createTestHandlerChain(@TypeOf(frame)));
     const div_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), div_zero);
     // Test signed division overflow case: -2^255 / -1 = -2^255 (stays same due to overflow)
@@ -4771,13 +4781,13 @@ test "Frame division edge cases - division by zero and signed boundaries" {
     const neg_one = std.math.maxInt(u256); // -1 in two's complement
     try frame.stack.push(min_i256);
     try frame.stack.push(neg_one);
-    try frame.sdiv();
+    _ = try frame.sdiv(createTestHandlerChain(@TypeOf(frame)));
     const sdiv_overflow = try frame.stack.pop();
     try std.testing.expectEqual(min_i256, sdiv_overflow);
     // Test signed division by zero
     try frame.stack.push(neg_one); // -1
     try frame.stack.push(0);
-    try frame.sdiv();
+    _ = try frame.sdiv(createTestHandlerChain(@TypeOf(frame)));
     const sdiv_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), sdiv_zero);
 }
@@ -4791,7 +4801,7 @@ test "Frame modulo edge cases - zero modulus and signed boundaries" {
     // Test modulo by zero returns zero
     try frame.stack.push(57);
     try frame.stack.push(0);
-    try frame.mod();
+    _ = try frame.mod(createTestHandlerChain(@TypeOf(frame)));
     const mod_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), mod_zero);
     // Test signed modulo edge cases
@@ -4800,13 +4810,13 @@ test "Frame modulo edge cases - zero modulus and signed boundaries" {
     // Test -2^255 % -1 = 0 (special case)
     try frame.stack.push(min_i256);
     try frame.stack.push(neg_one);
-    try frame.smod();
+    _ = try frame.smod(createTestHandlerChain(@TypeOf(frame)));
     const smod_overflow = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), smod_overflow);
     // Test signed modulo by zero
     try frame.stack.push(neg_one); // -1
     try frame.stack.push(0);
-    try frame.smod();
+    _ = try frame.smod(createTestHandlerChain(@TypeOf(frame)));
     const smod_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), smod_zero);
 }
@@ -4821,21 +4831,21 @@ test "Frame addmod and mulmod edge cases - zero modulus" {
     try frame.stack.push(10);
     try frame.stack.push(20);
     try frame.stack.push(0); // modulus = 0
-    try frame.addmod();
+    _ = try frame.addmod(createTestHandlerChain(@TypeOf(frame)));
     const addmod_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), addmod_zero);
     // Test MULMOD with zero modulus - should return 0
     try frame.stack.push(5);
     try frame.stack.push(7);
     try frame.stack.push(0); // modulus = 0
-    try frame.mulmod();
+    _ = try frame.mulmod(createTestHandlerChain(@TypeOf(frame)));
     const mulmod_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), mulmod_zero);
     // Test ADDMOD with overflow - should prevent overflow through modulus
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(1000); // modulus = 1000
-    try frame.addmod();
+    _ = try frame.addmod(createTestHandlerChain(@TypeOf(frame)));
     const addmod_overflow = try frame.stack.pop();
     // (2^256-1 + 2^256-1) % 1000 = (2^257-2) % 1000 = 998
     try std.testing.expectEqual(@as(u256, 998), addmod_overflow);
@@ -4850,25 +4860,25 @@ test "Frame exponentiation edge cases - zero base and exponent" {
     // Test 0^0 = 1 (mathematical convention in EVM)
     try frame.stack.push(0);
     try frame.stack.push(0);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const zero_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), zero_zero);
     // Test 0^n = 0 for n > 0
     try frame.stack.push(0);
     try frame.stack.push(5);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const zero_exp = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), zero_exp);
     // Test n^0 = 1 for any n
     try frame.stack.push(123456);
     try frame.stack.push(0);
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const any_zero = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), any_zero);
     // Test large exponentiation that should overflow and wrap
     try frame.stack.push(2);
     try frame.stack.push(256); // 2^256 should wrap to 0
-    try frame.exp();
+    _ = try frame.exp(createTestHandlerChain(@TypeOf(frame)));
     const large_exp = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), large_exp);
 }
@@ -4882,26 +4892,26 @@ test "Frame shift operations edge cases - large shift amounts" {
     // Test SHL with shift amount >= 256 - should result in 0
     try frame.stack.push(0xFF);
     try frame.stack.push(256);
-    try frame.shl();
+    _ = try frame.shl(createTestHandlerChain(@TypeOf(frame)));
     const shl_overflow = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), shl_overflow);
     // Test SHR with shift amount >= 256 - should result in 0
     try frame.stack.push(std.math.maxInt(u256));
     try frame.stack.push(300);
-    try frame.shr();
+    _ = try frame.shr(createTestHandlerChain(@TypeOf(frame)));
     const shr_overflow = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), shr_overflow);
     // Test SAR with large shift on negative number - should result in all 1s
     const neg_one = std.math.maxInt(u256); // -1 in two's complement
     try frame.stack.push(neg_one);
     try frame.stack.push(300);
-    try frame.sar();
+    _ = try frame.sar(createTestHandlerChain(@TypeOf(frame)));
     const sar_neg = try frame.stack.pop();
     try std.testing.expectEqual(std.math.maxInt(u256), sar_neg);
     // Test SAR with large shift on positive number - should result in 0
     try frame.stack.push(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
     try frame.stack.push(300);
-    try frame.sar();
+    _ = try frame.sar(createTestHandlerChain(@TypeOf(frame)));
     const sar_pos = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), sar_pos);
 }
@@ -4916,19 +4926,19 @@ test "Frame sign extension edge cases - boundary byte indices" {
     const test_val: u256 = 0x123456789ABCDEF0;
     try frame.stack.push(test_val);
     try frame.stack.push(32); // index >= 32
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const unchanged = try frame.stack.pop();
     try std.testing.expectEqual(test_val, unchanged);
     // Test SIGNEXTEND with very large index
     try frame.stack.push(test_val);
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const unchanged_large = try frame.stack.pop();
     try std.testing.expectEqual(test_val, unchanged_large);
     // Test SIGNEXTEND at boundary - byte index 31 (should be no-op)
     try frame.stack.push(test_val);
     try frame.stack.push(31);
-    try frame.signextend();
+    _ = try frame.signextend(createTestHandlerChain(@TypeOf(frame)));
     const boundary = try frame.stack.pop();
     try std.testing.expectEqual(test_val, boundary);
 }
@@ -4956,7 +4966,7 @@ test "Frame memory operations edge cases - extreme offsets and sizes" {
     }
     // Test MSIZE after memory operations
     frame.memory.set_byte_evm(100, 0xFF) catch {};
-    try frame.msize();
+    _ = try frame.msize(createTestHandlerChain(@TypeOf(frame)));
     const size = frame.stack.pop_unsafe();
     try std.testing.expect(size >= 128); // Memory expands in 32-byte chunks
 }
@@ -5042,7 +5052,7 @@ test "Frame gas edge cases - out of gas conditions" {
     var frame = try F.init(allocator, &bytecode, 1, void{}, createTestHost()); // Only 1 gas
     defer frame.deinit(allocator);
     // Gas should be 1
-    try frame.gas();
+    _ = try frame.gas(createTestHandlerChain(@TypeOf(frame)));
     const initial_gas = frame.stack.pop_unsafe();
     try std.testing.expectEqual(@as(u256, 1), initial_gas);
     // Test with zero gas
@@ -5070,20 +5080,20 @@ test "Frame comparison operations edge cases - signed number boundaries" {
     // Test SLT: min_i256 < max_i256 should be true
     try frame.stack.push(max_i256);
     try frame.stack.push(min_i256);
-    try frame.slt();
+    _ = try frame.slt(createTestHandlerChain(@TypeOf(frame)));
     const slt_boundary = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), slt_boundary);
     // Test SGT: max_i256 > min_i256 should be true
     try frame.stack.push(min_i256);
     try frame.stack.push(max_i256);
-    try frame.sgt();
+    _ = try frame.sgt(createTestHandlerChain(@TypeOf(frame)));
     const sgt_boundary = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), sgt_boundary);
     // Test edge case: -1 vs 0 in signed comparison
     const neg_one = std.math.maxInt(u256); // -1 in two's complement
     try frame.stack.push(0);
     try frame.stack.push(neg_one);
-    try frame.slt(); // -1 < 0 should be true
+    _ = try frame.slt(createTestHandlerChain(@TypeOf(frame))); // -1 < 0 should be true
     const neg_one_slt = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), neg_one_slt);
 }
@@ -5098,19 +5108,19 @@ test "Frame byte extraction edge cases - out of bounds indices" {
     // Test BYTE with index >= 32 - should return 0
     try frame.stack.push(test_value);
     try frame.stack.push(32);
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const out_of_bounds = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), out_of_bounds);
     // Test BYTE with very large index
     try frame.stack.push(test_value);
     try frame.stack.push(std.math.maxInt(u256));
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const large_index = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), large_index);
     // Test BYTE at boundary - index 31 should extract the last byte
     try frame.stack.push(0xFF); // Only the last byte is set
     try frame.stack.push(31);
-    try frame.byte();
+    _ = try frame.byte(createTestHandlerChain(@TypeOf(frame)));
     const boundary_byte = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0xFF), boundary_byte);
 }

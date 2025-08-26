@@ -57,6 +57,21 @@ pub fn Frame(comptime config: FrameConfig) type {
             .stack_size = config.stack_size,
             .WordType = config.WordType,
         });
+        pub const Error = error{
+            StackOverflow,
+            StackUnderflow,
+            STOP,
+            REVERT,
+            BytecodeTooLarge,
+            AllocationError,
+            InvalidJump,
+            InvalidOpcode,
+            OutOfBounds,
+            OutOfGas,
+            GasOverflow,
+            InvalidAmount,
+            WriteProtection,
+        };
         pub const max_bytecode_size = config.max_bytecode_size;
         // Local constants for calculations
         const LOCAL_EMPTY_CODE_HASH = [32]u8{
