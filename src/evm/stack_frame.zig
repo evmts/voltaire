@@ -151,15 +151,11 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// Generate a push handler for PUSH0-PUSH32
         fn generatePushHandler(comptime push_n: u8) *const Schedule.OpcodeHandler {
             if (push_n > 32) @compileError("Only PUSH0 to PUSH32 is supported");
+            if (push_n == 0) @compileError("Push0 is handled as it's own opcode not via generatePushHandler");
             return struct {
-                pub fn pushHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-                    if (push_n == 0) {
-                        // PUSH0 - push zero
-                        try self.stack.push(0);
-                    } else {
-                        // PUSH1-PUSH32 - get value from schedule metadata
-                        try self.stack.push(0);
-                    }
+                pub fn pushHandler(self: Self, schedule: Schedule) Error!Success {
+                    const value  = schedule.getOpData(@enumFromInt(push_n + 0x5F));
+                    try self.stack.push(0);
                     return @call(.always_tail, next[0], .{ self, next + 1 });
                 }
             }.pushHandler;
