@@ -2,6 +2,8 @@
 
 Secure, high-performance EVM bytecode representation and analysis.
 
+Note: This module is currently marked deprecated in favor of `bytecode4.zig`. The API here remains supported and used throughout the codebase, but new work may target the successor. This document reflects the current behavior of `src/evm/bytecode.zig`.
+
 ## Synopsis
 
 ```zig
@@ -20,10 +22,10 @@ Two-phase security model with rigorous validation followed by optimized executio
 ### Core Design Principles
 
 1. **Security-First Design**: Two-phase model treating all bytecode as untrusted during validation
-2. **Performance Optimization**: SIMD-accelerated operations and cache-aligned data structures
+2. **Performance Optimization**: Cache-aligned bitmaps, prefetching, and optional SIMD in hot paths
 3. **Memory Safety**: Bounds-checked operations with bitmap-based validation
 4. **EVM Compliance**: Full support for EIP-170, EIP-3860, and Ethereum specification
-5. **Optimization Analysis**: Pattern detection for fusion opportunities and statistics gathering
+5. **Optimization Analysis**: Iterator with fusion hints and statistics gathering
 
 ### Two-Phase Security Model
 
@@ -32,11 +34,11 @@ Two-phase security model with rigorous validation followed by optimized executio
 // - Treat ALL bytecode as untrusted and potentially malicious
 // - Use safe std library functions with runtime checks
 // - Validate assumptions about bytecode structure
-// - Check for invalid opcodes, truncated PUSH instructions
+// - Check for invalid opcodes, truncated PUSH instructions, invalid jump destinations
 // - Build validated bitmaps marking safe regions
 
 // Phase 2 - Execution (after successful validation):
-// - Use unsafe builtins for performance (@enumFromInt)
+// - Use unsafe builtins when appropriate for performance (@enumFromInt)
 // - Bitmap lookups ensure only valid positions accessed
 // - Zero runtime safety overhead in release builds
 ```
@@ -50,15 +52,22 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         full_code: []const u8,              // Complete bytecode with metadata
         runtime_code: []const u8,           // Executable code without metadata
         metadata: ?SolidityMetadata,        // Parsed Solidity metadata
-        
+
         // Memory Management
         allocator: std.mem.Allocator,       // Resource allocator
-        
-        // Precomputed Bitmaps (cache-aligned for performance)
+
+        // Legacy bitmaps (byte-granularity)
         is_push_data: []u8,                 // Marks PUSH instruction data bytes
         is_op_start: []u8,                  // Marks valid opcode start positions
         is_jumpdest: []u8,                  // Marks valid JUMPDEST locations
-        
+
+        // Packed per-byte flags (4 bits/byte), enables fast iteration and fusion hints
+        //   - is_push_data, is_op_start, is_jumpdest, is_fusion_candidate
+        packed_bitmap: []PackedBits,
+
+        // Iterator over instructions and fusions
+        pub const Iterator = struct { /* ... see Iterator API below ... */ };
+
         // Configuration Types
         pub const PcType = cfg.PcType();    // Smart PC type (u8/u12/u16/u32)
         pub const Stats = BytecodeStats;    // Analysis statistics
@@ -231,19 +240,17 @@ var bytecode = BytecodeDefault.initFromInitcode(allocator, large_initcode) catch
 ```zig
 // Solidity metadata structure
 pub const SolidityMetadata = struct {
-    metadata_length: usize,     // Length of metadata section
-    ipfs_hash: ?[34]u8,        // IPFS hash if present
-    swarm_hash: ?[32]u8,       // Swarm hash if present
-    experimental: bool,         // Experimental flag
+    ipfs_hash: [34]u8,         // 0x12 0x20 + 32-byte digest
+    solc_version: [3]u8,       // major, minor, patch
+    metadata_length: usize,    // Length including trailing 2-byte length field
 };
 
-// Metadata parsing (automatic during init)
+// Metadata parsing (automatic during init). If present, runtime_code excludes metadata
 var bytecode = try BytecodeDefault.init(allocator, solidity_contract);
 if (bytecode.metadata) |meta| {
     log.info("Contract has metadata: {} bytes", .{meta.metadata_length});
-    if (meta.ipfs_hash) |hash| {
-        log.info("IPFS hash: {}", .{std.fmt.fmtSliceHexLower(hash[2..])});
-    }
+    log.info("IPFS multihash prefix: 0x12 0x20, digest: {s}", .{std.fmt.fmtSliceHexLower(meta.ipfs_hash[2..])});
+    log.info("solc version: {}.{}.{}", .{ meta.solc_version[0], meta.solc_version[1], meta.solc_version[2] });
 }
 
 // Get runtime code without metadata
@@ -252,36 +259,29 @@ const runtime_code = bytecode.rawWithoutMetadata();
 
 ## Performance Characteristics
 
-### SIMD-Accelerated Operations
+### Iterator and Packed Bits
 
-The Bytecode module leverages SIMD instructions for high-performance analysis:
+Packed per-byte flags drive fast iteration and fusion detection. The Iterator yields decoded instruction data without re-analyzing each time:
 
 ```zig
-// Auto-detected vector width based on CPU capabilities
-vector_length: comptime_int = std.simd.suggestVectorLengthForCpu(u8, builtin.cpu) orelse 0,
+pub const OpcodeData = union(enum) {
+    regular: struct { opcode: u8 },
+    push:    struct { value: u256, size: u8 },
+    jumpdest: struct { gas_cost: u16 },
+    push_add_fusion: struct { value: u256 },
+    push_mul_fusion: struct { value: u256 },
+    stop: void,
+    invalid: void,
+};
 
-// SIMD opcode validation (validates L opcodes simultaneously)
-fn validateOpcodesSimd(code: []const u8, comptime L: comptime_int) bool {
-    const max_valid_opcode: u8 = 0xfe;
-    const splat_max: @Vector(L, u8) = @splat(max_valid_opcode);
-    
-    var i: usize = 0;
-    while (i + L <= code.len) : (i += L) {
-        // Load L bytes into vector
-        var arr: [L]u8 = undefined;
-        inline for (0..L) |k| arr[k] = code[i + k];
-        const v: @Vector(L, u8) = arr;
-        
-        // Single vector comparison replaces L scalar comparisons
-        const gt_max: @Vector(L, bool) = v > splat_max;
-        
-        // Early termination on invalid opcode
-        const gt_max_arr: [L]bool = gt_max;
-        inline for (gt_max_arr) |exceeds| {
-            if (exceeds) return false;
-        }
+var it = bytecode.createIterator();
+while (it.next()) |item| {
+    switch (item) {
+        .regular => |r| { /* ... */ },
+        .push => |p| { /* ... */ },
+        .push_add_fusion => |f| { /* ... */ },
+        else => {},
     }
-    return true;
 }
 ```
 
