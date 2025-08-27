@@ -509,6 +509,13 @@ pub fn build(b: *std.Build) void {
     });
     evm_runner_exe.root_module.addImport("evm", evm_mod);
     evm_runner_exe.root_module.addImport("primitives", primitives_mod);
+    evm_runner_exe.linkLibrary(c_kzg_lib);
+    evm_runner_exe.linkLibrary(blst_lib);
+    evm_runner_exe.linkLibC();
+    if (bn254_lib) |bn254| {
+        evm_runner_exe.linkLibrary(bn254);
+        evm_runner_exe.addIncludePath(b.path("src/bn254_wrapper"));
+    }
 
     b.installArtifact(evm_runner_exe);
 
@@ -533,6 +540,13 @@ pub fn build(b: *std.Build) void {
     });
     evm_runner_small_exe.root_module.addImport("evm", evm_mod);
     evm_runner_small_exe.root_module.addImport("primitives", primitives_mod);
+    evm_runner_small_exe.linkLibrary(c_kzg_lib);
+    evm_runner_small_exe.linkLibrary(blst_lib);
+    evm_runner_small_exe.linkLibC();
+    if (bn254_lib) |bn254| {
+        evm_runner_small_exe.linkLibrary(bn254);
+        evm_runner_small_exe.addIncludePath(b.path("src/bn254_wrapper"));
+    }
 
     b.installArtifact(evm_runner_small_exe);
 
@@ -1086,6 +1100,9 @@ pub fn build(b: *std.Build) void {
     bytecode_bench_exe.root_module.addImport("evm", evm_mod);
     bytecode_bench_exe.root_module.addImport("crypto", crypto_mod);
     bytecode_bench_exe.root_module.addImport("build_options", build_options_mod);
+    bytecode_bench_exe.linkLibrary(c_kzg_lib);
+    bytecode_bench_exe.linkLibrary(blst_lib);
+    bytecode_bench_exe.linkLibC();
 
     b.installArtifact(bytecode_bench_exe);
 
