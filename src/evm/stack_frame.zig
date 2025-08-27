@@ -2750,17 +2750,42 @@ pub fn StackFrame(comptime config: FrameConfig) type {
     
     // Memory operation synthetic handlers
     pub fn push_mload_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const offset = 0; // TODO: Get actual inline offset
-        const value = try self.memory.get_u256_evm(@intCast(offset));
-        try self.stack.push_unsafe(value);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline offset from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const offset = metadata_ptr.value;
+        
+        // Calculate memory expansion cost
+        const memory_expansion_cost = try self.memory.expansion_cost(@intCast(offset), 32);
+        if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            return Error.OutOfGas;
+        }
+        self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+        
+        // Load value from memory and push to stack
+        const value = self.memory.get_u256_evm(@intCast(offset));
+        try self.stack.push(value);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mload_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const offset = 0; // TODO: Get actual pointer offset
-        const value = try self.memory.get_u256_evm(@intCast(offset));
-        try self.stack.push_unsafe(value);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to offset value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const offset_value = metadata_ptr.value.*;
+        const offset: u32 = @intCast(offset_value);
+        
+        // Calculate memory expansion cost
+        const memory_expansion_cost = try self.memory.expansion_cost(offset, 32);
+        if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            return Error.OutOfGas;
+        }
+        self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+        
+        // Load value from memory and push to stack
+        const value = self.memory.get_u256_evm(offset);
+        try self.stack.push(value);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mstore_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
@@ -2808,59 +2833,124 @@ pub fn StackFrame(comptime config: FrameConfig) type {
     
     // Bitwise operation synthetic handlers
     pub fn push_and_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const b = 0; // TODO: Get actual inline value
-        try self.stack.push_unsafe(a & b);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline value from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value;
+        
+        // Pop top value and perform bitwise AND
+        const a = try self.stack.pop();
+        const result = a & push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_and_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const b = 0; // TODO: Get actual pointer value
-        try self.stack.push_unsafe(a & b);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value.*;
+        
+        // Pop top value and perform bitwise AND
+        const a = try self.stack.pop();
+        const result = a & push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_or_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const b = 0; // TODO: Get actual inline value
-        try self.stack.push_unsafe(a | b);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline value from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value;
+        
+        // Pop top value and perform bitwise OR
+        const a = try self.stack.pop();
+        const result = a | push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_or_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const b = 0; // TODO: Get actual pointer value
-        try self.stack.push_unsafe(a | b);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value.*;
+        
+        // Pop top value and perform bitwise OR
+        const a = try self.stack.pop();
+        const result = a | push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_xor_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const b = 0; // TODO: Get actual inline value
-        try self.stack.push_unsafe(a ^ b);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline value from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value;
+        
+        // Pop top value and perform bitwise XOR
+        const a = try self.stack.pop();
+        const result = a ^ push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_xor_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const b = 0; // TODO: Get actual pointer value
-        try self.stack.push_unsafe(a ^ b);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value.*;
+        
+        // Pop top value and perform bitwise XOR
+        const a = try self.stack.pop();
+        const result = a ^ push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mstore8_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const value = try self.stack.pop_unsafe();
-        const offset = 0; // TODO: Get actual inline offset
+        // Extract inline offset from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const offset = metadata_ptr.value;
+        
+        // Pop value from stack
+        const value = try self.stack.pop();
+        
+        // Calculate memory expansion cost if needed
+        const memory_expansion_cost = try self.memory.expansion_cost(@intCast(offset), 1);
+        if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            return Error.OutOfGas;
+        }
+        self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+        
+        // Store byte to memory
         try self.memory.set_byte_evm(@intCast(offset), @intCast(value & 0xFF));
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mstore8_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const value = try self.stack.pop_unsafe();
-        const offset = 0; // TODO: Get actual pointer offset
-        try self.memory.set_byte_evm(@intCast(offset), @intCast(value & 0xFF));
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to offset value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const offset_value = metadata_ptr.value.*;
+        const offset: u32 = @intCast(offset_value);
+        
+        // Pop value from stack
+        const value = try self.stack.pop();
+        
+        // Calculate memory expansion cost if needed
+        const memory_expansion_cost = try self.memory.expansion_cost(offset, 1);
+        if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            return Error.OutOfGas;
+        }
+        self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+        
+        // Store byte to memory
+        try self.memory.set_byte_evm(offset, @intCast(value & 0xFF));
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
         }
         
         /// Generate optimized Schedule from Bytecode using Iterator
