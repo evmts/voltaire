@@ -14,7 +14,11 @@ const primitives = @import("primitives");
 const U256 = primitives.U256.U256;
 
 test "fuzz bytecode5 analysis with random bytecode" {
-    const input = std.testing.fuzzInput(.{});
+    try std.testing.fuzz({}, fuzzBytecodeAnalysis, .{ .corpus = &.{} });
+}
+
+fn fuzzBytecodeAnalysis(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len == 0) return;
     
     const allocator = std.testing.allocator;
@@ -35,7 +39,11 @@ test "fuzz bytecode5 analysis with random bytecode" {
 }
 
 test "fuzz bytecode5 jump destination analysis" {
-    const input = std.testing.fuzzInput(.{});
+    try std.testing.fuzz({}, fuzzJumpDestAnalysis, .{ .corpus = &.{} });
+}
+
+fn fuzzJumpDestAnalysis(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 10) return; // Need some minimum bytecode
     
     const allocator = std.testing.allocator;
@@ -76,7 +84,11 @@ test "fuzz bytecode5 jump destination analysis" {
 }
 
 test "fuzz bytecode5 PUSH instruction handling" {
-    const input = std.testing.fuzzInput(.{});
+    try std.testing.fuzz({}, fuzzPushInstructions, .{ .corpus = &.{} });
+}
+
+fn fuzzPushInstructions(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 33) return; // Need space for PUSH32
     
     const allocator = std.testing.allocator;
@@ -111,7 +123,11 @@ test "fuzz bytecode5 PUSH instruction handling" {
 }
 
 test "fuzz bytecode5 fusion pattern detection" {
-    const input = std.testing.fuzzInput(.{});
+    try std.testing.fuzz({}, fuzzFusionPatterns, .{ .corpus = &.{} });
+}
+
+fn fuzzFusionPatterns(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 10) return;
     
     const allocator = std.testing.allocator;
@@ -185,7 +201,11 @@ test "fuzz bytecode5 fusion pattern detection" {
 }
 
 test "fuzz bytecode5 malformed bytecode handling" {
-    const input = std.testing.fuzzInput(.{});
+    try std.testing.fuzz({}, fuzzMalformedBytecode, .{ .corpus = &.{} });
+}
+
+fn fuzzMalformedBytecode(context: void, input: []const u8) !void {
+    _ = context;
     
     const allocator = std.testing.allocator;
     
@@ -199,8 +219,12 @@ test "fuzz bytecode5 malformed bytecode handling" {
     };
 }
 
-test "fuzz bytecode5 empty and edge case handling" {
-    const input = std.testing.fuzzInput(.{});
+test "fuzz bytecode5 edge cases" {
+    try std.testing.fuzz({}, fuzzEdgeCases, .{ .corpus = &.{} });
+}
+
+fn fuzzEdgeCases(context: void, input: []const u8) !void {
+    _ = context;
     
     const allocator = std.testing.allocator;
     var analyzer = Bytecode5.init(allocator);
