@@ -15,7 +15,7 @@ const Opcode = opcode_data.Opcode;
 const plan_mod = @import("plan.zig");
 const plan_minimal_mod = @import("plan_minimal.zig");
 pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
-const createBytecode = @import("bytecode.zig").createBytecode;
+const BytecodeFactory = @import("bytecode.zig").Bytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const Hardfork = @import("hardfork.zig").Hardfork;
 
@@ -56,7 +56,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             prev: ?*@This(),
         };
         const PlanType = plan_mod.Plan(PlanCfg);
-        const BytecodeType = createBytecode(.{ 
+        const BytecodeType = BytecodeFactory(.{
             .max_bytecode_size = Cfg.maxBytecodeSize,
             .max_initcode_size = @max(Cfg.maxBytecodeSize, 49152), // EIP-3860 limit, but must be >= max_bytecode_size
         });
@@ -269,7 +269,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         /// Pass 2: build instruction stream with handlers and metadata.
         /// All temporaries are freed before returning.
         pub fn create_instruction_stream(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !PlanType {
-            const N = self.bytecode.len();
+            const code = self.bytecode.runtime_code;
+            const N = code.len;
             // Ephemeral bitmaps (bit-per-byte)
             const bitmap_bytes = (N + 7) >> 3;
             const is_push_data = try allocator.alloc(u8, bitmap_bytes);
@@ -287,7 +288,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             while (i < N) : (i += 1) {
                 // setBit(is_op_start, i)
                 is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
-                const op = self.bytecode.get(@intCast(i)) orelse break;
+                const op = code[i];
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
                     var j: usize = 0;
@@ -302,9 +303,9 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
 
             // Mark JUMPDEST positions (0x5B) excluding push-data bytes
             if (comptime VectorLength) |L| {
-                markJumpdestSimd(self.bytecode.raw(), is_push_data, is_jumpdest, L);
+                markJumpdestSimd(code, is_push_data, is_jumpdest, L);
             } else {
-                markJumpdestScalar(self.bytecode.raw(), is_push_data, is_jumpdest);
+                markJumpdestScalar(code, is_push_data, is_jumpdest);
             }
 
             // Counts
@@ -344,7 +345,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
 
             i = 0;
             while (i < N) {
-                const op = self.bytecode.get(@intCast(i)) orelse break;
+                const op = code[i];
                 // If this is a block start (JUMPDEST opcode start), finalize previous block and start new one
                 const is_start = (is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) != 0;
                 const is_dest = (is_jumpdest[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) != 0;
@@ -418,7 +419,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             // Initialize all to null (non-start PCs or out-of-range)
             for (dense_pc_to_idx) |*slot| slot.* = null;
             while (i < N) {
-                const op = self.bytecode.get(@intCast(i)) orelse break;
+                const op = code[i];
                 
                 // Record PC to instruction index mapping
                 const current_instruction_idx = @as(InstructionIndexType, @intCast(stream.items.len));
@@ -435,7 +436,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                     var handler_op = op;
                     
                     if (next_pc < N) {
-                        const next_op = self.bytecode.get(@intCast(next_pc)) orelse 0;
+                        const next_op = code[next_pc];
                         
                         // Check for PUSH+ADD fusion
                         if (next_op == @intFromEnum(Opcode.ADD)) {
@@ -515,7 +516,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                         var value: usize = 0;
                         var j: usize = 0;
                         while (j < n and j < @sizeOf(usize)) : (j += 1) {
-                            value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
+                            value = (value << 8) | code[i + 1 + j];
                         }
                         try stream.append(allocator, .{ .inline_value = value });
                     } else {
@@ -523,7 +524,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                         var value: Cfg.WordType = 0;
                         var j: usize = 0;
                         while (j < n) : (j += 1) {
-                            value = (value << 8) | (self.bytecode.get(@intCast(i + 1 + j)) orelse 0);
+                            value = (value << 8) | code[i + 1 + j];
                         }
                         const const_idx = constants.items.len;
                         try constants.append(allocator, value);
@@ -612,7 +613,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         /// This is used for lightweight execution without optimization.
         pub fn create_minimal_plan(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !void {
             _ = handlers; // Handlers not used in minimal planning strategy
-            const N = self.bytecode.len();
+            const code = self.bytecode.runtime_code;
+            const N = code.len;
             // Allocate bitmaps (bit-per-byte)
             const bitmap_bytes = (N + 7) >> 3;
             const is_push_data = try allocator.alloc(u8, bitmap_bytes);
@@ -630,7 +632,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             while (i < N) : (i += 1) {
                 // setBit(is_op_start, i)
                 is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
-                const op = self.bytecode.get(@intCast(i)) orelse break;
+                const op = code[i];
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
                     var j: usize = 0;
@@ -645,15 +647,15 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
 
             // Mark JUMPDEST positions (0x5B) excluding push-data bytes
             if (comptime VectorLength) |L| {
-                markJumpdestSimd(self.bytecode.raw(), is_push_data, is_jumpdest, L);
+                markJumpdestSimd(code, is_push_data, is_jumpdest, L);
             } else {
-                markJumpdestScalar(self.bytecode.raw(), is_push_data, is_jumpdest);
+                markJumpdestScalar(code, is_push_data, is_jumpdest);
             }
 
             // Note: This function creates minimal plans in-place and doesn't return a plan object
             // Full minimal plan implementation would create a PlanMinimal struct
             // const PlanMinimal = plan_minimal_mod.createPlanMinimal(.{});
-            // return try PlanMinimal.init(allocator, self.bytecode.raw(), handlers);
+            // return try PlanMinimal.init(allocator, code, handlers);
             
             // For now, just clean up allocated memory
             allocator.free(is_push_data);
