@@ -38,10 +38,6 @@ pub fn freeTrustedSetup() KZGError!void {
     try ckzg.freeTrustedSetup();
 }
 
-/// Get the global settings
-pub fn getSettings() KZGError!*const KZGSettings {
-    return try ckzg.getSettings();
-}
 
 /// Blob to KZG commitment
 pub fn blobToKzgCommitment(blob: *const Blob) KZGError!KZGCommitment {
@@ -52,6 +48,9 @@ pub fn blobToKzgCommitment(blob: *const Blob) KZGError!KZGCommitment {
 pub fn computeKZGProof(blob: *const Blob, z: *const Bytes32) KZGError!struct { proof: KZGProof, y: Bytes32 } {
     return try ckzg.computeKZGProof(blob, z);
 }
+
+/// Re-export the verifyKZGProof function from ckzg
+pub const verifyKZGProof = ckzg.verifyKZGProof;
 
 test "c_kzg basic functionality" {
     const testing = std.testing;
@@ -66,6 +65,5 @@ test "c_kzg basic functionality" {
     try loadTrustedSetupFile(trusted_setup_path, 0);
     defer freeTrustedSetup() catch {};
     
-    const settings = try getSettings();
-    try testing.expect(settings != null);
+    // If we get here without error, the trusted setup loaded successfully
 }
