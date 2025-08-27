@@ -5,6 +5,8 @@
 const std = @import("std");
 const evm = @import("evm");
 const Opcode = evm.Opcode;
+const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
+const BytecodeType = @import("bytecode.zig").Bytecode(BytecodeConfig{});
 
 const allocator = std.heap.c_allocator;
 
@@ -26,7 +28,8 @@ pub const EVM_BYTECODE_ERROR_OUT_OF_BOUNDS: c_int = -6;
 
 const BytecodeHandle = struct {
     allocator: std.mem.Allocator,
-    raw_data: []const u8, // Keep reference to raw bytecode
+    raw_data: []u8, // Owned input bytes (may include metadata)
+    bytecode: BytecodeType, // Validated runtime bytecode wrapper
 };
 
 // ============================================================================
@@ -38,25 +41,27 @@ const BytecodeHandle = struct {
 /// @param data_len Length of bytecode data
 /// @return Opaque bytecode handle, or NULL on failure
 pub export fn evm_bytecode_create(data: [*]const u8, data_len: usize) ?*BytecodeHandle {
-    if (data_len == 0 or data_len > 24576) {
-        return null;
-    }
-
     const handle = allocator.create(BytecodeHandle) catch return null;
     errdefer allocator.destroy(handle);
 
-    // Copy bytecode data
-    const data_slice = data[0..data_len];
-    const owned_data = allocator.dupe(u8, data_slice) catch {
+    // Copy input (may include Solidity metadata suffix)
+    const owned_data = allocator.dupe(u8, data[0..data_len]) catch {
         allocator.destroy(handle);
         return null;
     };
+    errdefer allocator.free(owned_data);
 
-    handle.* = BytecodeHandle{
+    // Validate and build bitmaps against runtime portion
+    var bytecode = BytecodeType.init(allocator, owned_data) catch {
+        return null;
+    };
+    errdefer bytecode.deinit();
+
+    handle.* = .{
         .allocator = allocator,
         .raw_data = owned_data,
+        .bytecode = bytecode,
     };
-
     return handle;
 }
 
@@ -64,6 +69,7 @@ pub export fn evm_bytecode_create(data: [*]const u8, data_len: usize) ?*Bytecode
 /// @param handle Bytecode handle
 pub export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
     if (handle) |h| {
+        h.bytecode.deinit();
         h.allocator.free(h.raw_data);
         h.allocator.destroy(h);
     }
@@ -78,7 +84,8 @@ pub export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
 /// @return Bytecode length in bytes, or 0 on error
 pub export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
     const h = handle orelse return 0;
-    return h.raw_data.len;
+    // Runtime length (excludes metadata)
+    return @intCast(h.bytecode.len());
 }
 
 /// Get raw bytecode data (copy to buffer)
@@ -100,9 +107,10 @@ pub export fn evm_bytecode_get_data(handle: ?*const BytecodeHandle, buffer: [*]u
 /// @return Opcode value (0-255), or 0xFF if out of bounds
 pub export fn evm_bytecode_get_opcode_at(handle: ?*const BytecodeHandle, position: usize) u8 {
     const h = handle orelse return 0xFF;
-    
-    if (position >= h.raw_data.len) return 0xFF;
-    return h.raw_data[position];
+    const len: usize = @intCast(h.bytecode.len());
+    if (position >= len) return 0xFF;
+    const pc: BytecodeType.PcType = @intCast(position);
+    return h.bytecode.get(pc) orelse 0xFF;
 }
 
 /// Check if position is a valid jump destination (JUMPDEST)
@@ -111,29 +119,69 @@ pub export fn evm_bytecode_get_opcode_at(handle: ?*const BytecodeHandle, positio
 /// @return 1 if valid jump destination, 0 otherwise
 pub export fn evm_bytecode_is_jump_dest(handle: ?*const BytecodeHandle, position: usize) c_int {
     const h = handle orelse return 0;
-    if (position >= h.raw_data.len) return 0;
+    const len: usize = @intCast(h.bytecode.len());
+    if (position >= len) return 0;
+    const pc: BytecodeType.PcType = @intCast(position);
+    return if (h.bytecode.isValidJumpDest(pc)) 1 else 0;
+}
 
-    // Walk the bytecode, skipping PUSH data, and check if `position` is a JUMPDEST
-    var pc: usize = 0;
-    while (pc < h.raw_data.len) {
-        const byte = h.raw_data[pc];
-        // Try to interpret as an opcode; invalid bytes treated as 1-byte instruction
-        const op = std.meta.intToEnum(Opcode, byte) catch {
-            if (pc == position) return 0; // not JUMPDEST
-            pc += 1;
-            continue;
-        };
+// ============================================================================
+// RUNTIME VS FULL BYTES
+// ============================================================================
 
-        if (@intFromEnum(op) >= 0x60 and @intFromEnum(op) <= 0x7f) {
-            const push_size: usize = @intFromEnum(op) - 0x5f; // 1..32
-            // If target lies within push data, it's not a jumpdest
-            if (position > pc and position <= pc + push_size) return 0;
-            pc += 1 + push_size;
-            continue;
-        }
+/// Get the full input length (may include Solidity metadata)
+pub export fn evm_bytecode_get_full_length(handle: ?*const BytecodeHandle) usize {
+    const h = handle orelse return 0;
+    return h.raw_data.len;
+}
 
-        if (pc == position and op == .JUMPDEST) return 1;
-        pc += 1;
+/// Copy validated runtime code (excludes metadata) to buffer
+/// Returns number of bytes copied
+pub export fn evm_bytecode_get_runtime_data(handle: ?*const BytecodeHandle, buffer: [*]u8, buffer_len: usize) usize {
+    const h = handle orelse return 0;
+    const runtime = h.bytecode.raw();
+    const copy_len = @min(runtime.len, buffer_len);
+    @memcpy(buffer[0..copy_len], runtime[0..copy_len]);
+    return copy_len;
+}
+
+// ============================================================================
+// METADATA ACCESSORS
+// ============================================================================
+
+/// Return 1 if Solidity metadata is present, 0 otherwise
+pub export fn evm_bytecode_has_metadata(handle: ?*const BytecodeHandle) c_int {
+    const h = handle orelse return 0;
+    return if (h.bytecode.metadata != null) 1 else 0;
+}
+
+/// Get metadata length in bytes (including trailing 2-byte length field). 0 if none.
+pub export fn evm_bytecode_get_metadata_length(handle: ?*const BytecodeHandle) usize {
+    const h = handle orelse return 0;
+    if (h.bytecode.metadata) |m| return m.metadata_length;
+    return 0;
+}
+
+/// Copy 34-byte IPFS multihash (0x12 0x20 prefix + 32-byte digest). Returns bytes copied (34 or 0).
+pub export fn evm_bytecode_get_metadata_ipfs(handle: ?*const BytecodeHandle, out: [*]u8, max_len: usize) usize {
+    const h = handle orelse return 0;
+    if (h.bytecode.metadata) |m| {
+        const need: usize = 34;
+        if (max_len < need) return 0;
+        @memcpy(out[0..need], m.ipfs_hash[0..]);
+        return need;
+    }
+    return 0;
+}
+
+/// Get solc version components; returns 1 if present, 0 otherwise
+pub export fn evm_bytecode_get_metadata_solc_version(handle: ?*const BytecodeHandle, out_major: *u8, out_minor: *u8, out_patch: *u8) c_int {
+    const h = handle orelse return 0;
+    if (h.bytecode.metadata) |m| {
+        out_major.* = m.solc_version[0];
+        out_minor.* = m.solc_version[1];
+        out_patch.* = m.solc_version[2];
+        return 1;
     }
     return 0;
 }
@@ -147,28 +195,10 @@ pub export fn evm_bytecode_is_jump_dest(handle: ?*const BytecodeHandle, position
 /// @return Count of invalid opcodes, or 0 on error
 pub export fn evm_bytecode_count_invalid_opcodes(handle: ?*const BytecodeHandle) u32 {
     const h = handle orelse return 0;
-    
-    var count: u32 = 0;
-    var pos: usize = 0;
-    
-    while (pos < h.raw_data.len) {
-        const opcode_byte = h.raw_data[pos];
-        const opcode = std.meta.intToEnum(Opcode, opcode_byte) catch {
-            count += 1;
-            pos += 1;
-            continue;
-        };
-        
-        // Skip data bytes for PUSH opcodes
-        if (@intFromEnum(opcode) >= 0x60 and @intFromEnum(opcode) <= 0x7F) { // PUSH1-PUSH32
-            const push_size = @intFromEnum(opcode) - 0x5F; // PUSH1 = 1 byte, PUSH2 = 2 bytes, etc.
-            pos += 1 + push_size;
-        } else {
-            pos += 1;
-        }
-    }
-    
-    return count;
+    // Runtime code validated => invalid count should be zero; compute via stats for completeness
+    var stats = h.bytecode.getStats() catch return 0;
+    defer stats.deinit(allocator);
+    return stats.opcode_counts[@intFromEnum(Opcode.INVALID)];
 }
 
 /// Find all jump destinations in bytecode
@@ -184,18 +214,15 @@ pub export fn evm_bytecode_find_jump_dests(
     count_out: *u32
 ) c_int {
     const h = handle orelse return EVM_BYTECODE_ERROR_NULL_POINTER;
-    
     var count: u32 = 0;
     var pos: usize = 0;
-    
-    while (pos < h.raw_data.len and count < max_dests) {
-        if (h.raw_data[pos] == 0x5B) { // JUMPDEST
+    const len: usize = @intCast(h.bytecode.len());
+    while (pos < len and count < max_dests) : (pos += 1) {
+        if (h.bytecode.isValidJumpDest(@intCast(pos))) {
             jump_dests[count] = @intCast(pos);
             count += 1;
         }
-        pos += 1;
     }
-    
     count_out.* = count;
     return EVM_BYTECODE_SUCCESS;
 }
@@ -223,9 +250,8 @@ pub const CBytecodeStats = extern struct {
 /// @return Error code
 pub export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: *CBytecodeStats) c_int {
     const h = handle orelse return EVM_BYTECODE_ERROR_NULL_POINTER;
-    
-    // Initialize stats
-    stats_out.total_bytes = h.raw_data.len;
+    // Initialize
+    stats_out.total_bytes = @intCast(h.bytecode.len());
     stats_out.instruction_count = 0;
     stats_out.jump_dest_count = 0;
     stats_out.invalid_opcode_count = 0;
@@ -234,43 +260,37 @@ pub export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: 
     stats_out.call_instruction_count = 0;
     stats_out.create_instruction_count = 0;
     stats_out.complexity_score = 0;
-    
-    var pos: usize = 0;
-    while (pos < h.raw_data.len) {
-        const opcode_byte = h.raw_data[pos];
-        const opcode = std.meta.intToEnum(Opcode, opcode_byte) catch {
-            stats_out.invalid_opcode_count += 1;
-            pos += 1;
-            continue;
-        };
-        
-        stats_out.instruction_count += 1;
-        
-        // Categorize opcodes
+
+    var zstats = h.bytecode.getStats() catch return EVM_BYTECODE_ERROR_INVALID_BYTECODE;
+    defer zstats.deinit(allocator);
+
+    var total_instr: u32 = 0;
+    for (zstats.opcode_counts, 0..) |count, op| {
+        total_instr +%= count;
+        const maybe = std.meta.intToEnum(Opcode, @intCast(op)) catch continue;
+        const opcode = maybe;
         switch (opcode) {
-            .JUMPDEST => stats_out.jump_dest_count += 1,
-            .JUMP, .JUMPI => stats_out.jump_instruction_count += 1,
-            .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => stats_out.call_instruction_count += 1,
-            .CREATE, .CREATE2 => stats_out.create_instruction_count += 1,
+            .JUMPDEST => stats_out.jump_dest_count +%= count,
+            .JUMP, .JUMPI => stats_out.jump_instruction_count +%= count,
+            .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => stats_out.call_instruction_count +%= count,
+            .CREATE, .CREATE2 => stats_out.create_instruction_count +%= count,
+            .PUSH0, .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
+            .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
+            .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
+            .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 =>
+                stats_out.push_instruction_count +%= count,
             else => {},
         }
-        
-        // Check for PUSH opcodes
-        if (@intFromEnum(opcode) >= 0x60 and @intFromEnum(opcode) <= 0x7F) { // PUSH1-PUSH32
-            stats_out.push_instruction_count += 1;
-            const push_size = @intFromEnum(opcode) - 0x5F;
-            pos += 1 + push_size; // Skip push data
-        } else {
-            pos += 1;
-        }
     }
-    
-    // Calculate complexity score (simple heuristic)
-    stats_out.complexity_score = @as(u64, stats_out.instruction_count) +
-                                 (@as(u64, stats_out.jump_instruction_count) * 2) +
-                                 (@as(u64, stats_out.call_instruction_count) * 3) +
-                                 (@as(u64, stats_out.create_instruction_count) * 5);
-    
+    stats_out.instruction_count = total_instr;
+    stats_out.invalid_opcode_count = zstats.opcode_counts[@intFromEnum(Opcode.INVALID)];
+
+    // Simple heuristic complexity score retained
+    stats_out.complexity_score = @as(u64, stats_out.instruction_count)
+        + (@as(u64, stats_out.jump_instruction_count) * 2)
+        + (@as(u64, stats_out.call_instruction_count) * 3)
+        + (@as(u64, stats_out.create_instruction_count) * 5);
+
     return EVM_BYTECODE_SUCCESS;
 }
 
@@ -509,4 +529,73 @@ pub export fn evm_bytecode_test_opcodes() c_int {
 
 test "Bytecode C API compilation" {
     std.testing.refAllDecls(@This());
+}
+
+test "Bytecode C API basic getters and data copy" {
+    // PUSH1 0x2A PUSH1 0x0A ADD STOP
+    const code = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
+    const h_opt = evm_bytecode_create(&code, code.len);
+    try std.testing.expect(h_opt != null);
+    const h = h_opt.?;
+    defer evm_bytecode_destroy(h);
+
+    // Lengths
+    try std.testing.expectEqual(code.len, evm_bytecode_get_length(h));
+    try std.testing.expectEqual(code.len, evm_bytecode_get_full_length(h));
+
+    // Full data copy
+    var buf_full: [64]u8 = undefined;
+    const copied_full = evm_bytecode_get_data(h, &buf_full, buf_full.len);
+    try std.testing.expectEqual(code.len, copied_full);
+    try std.testing.expect(std.mem.eql(u8, buf_full[0..copied_full], code[0..]));
+
+    // Runtime data copy
+    var buf_runtime: [64]u8 = undefined;
+    const copied_runtime = evm_bytecode_get_runtime_data(h, &buf_runtime, buf_runtime.len);
+    try std.testing.expectEqual(code.len, copied_runtime);
+    try std.testing.expect(std.mem.eql(u8, buf_runtime[0..copied_runtime], code[0..]));
+
+    // Metadata absent
+    try std.testing.expectEqual(@as(c_int, 0), evm_bytecode_has_metadata(h));
+    try std.testing.expectEqual(@as(usize, 0), evm_bytecode_get_metadata_length(h));
+    var ipfs: [34]u8 = undefined;
+    try std.testing.expectEqual(@as(usize, 0), evm_bytecode_get_metadata_ipfs(h, &ipfs, ipfs.len));
+    var maj: u8 = 0; var min: u8 = 0; var pat: u8 = 0;
+    try std.testing.expectEqual(@as(c_int, 0), evm_bytecode_get_metadata_solc_version(h, &maj, &min, &pat));
+}
+
+test "Bytecode C API opcode/jumpdest/bounds and stats" {
+    // JUMPDEST STOP JUMPDEST
+    const code = [_]u8{ 0x5b, 0x00, 0x5b };
+    const h_opt = evm_bytecode_create(&code, code.len);
+    try std.testing.expect(h_opt != null);
+    const h = h_opt.?;
+    defer evm_bytecode_destroy(h);
+
+    // Opcode at bounds
+    try std.testing.expectEqual(@as(u8, 0x5b), evm_bytecode_get_opcode_at(h, 0));
+    try std.testing.expectEqual(@as(u8, 0x00), evm_bytecode_get_opcode_at(h, 1));
+    try std.testing.expectEqual(@as(u8, 0x5b), evm_bytecode_get_opcode_at(h, 2));
+    try std.testing.expectEqual(@as(u8, 0xFF), evm_bytecode_get_opcode_at(h, 3)); // out of bounds
+    try std.testing.expectEqual(@as(u8, 0xFF), evm_bytecode_get_opcode_at(h, std.math.maxInt(usize)));
+
+    // Jumpdest queries
+    try std.testing.expectEqual(@as(c_int, 1), evm_bytecode_is_jump_dest(h, 0));
+    try std.testing.expectEqual(@as(c_int, 0), evm_bytecode_is_jump_dest(h, 1));
+    try std.testing.expectEqual(@as(c_int, 1), evm_bytecode_is_jump_dest(h, 2));
+    try std.testing.expectEqual(@as(c_int, 0), evm_bytecode_is_jump_dest(h, 3));
+
+    // Find jumpdests
+    var out: [8]u32 = undefined; var found: u32 = 0;
+    const rc = evm_bytecode_find_jump_dests(h, &out, out.len, &found);
+    try std.testing.expectEqual(@as(c_int, EVM_BYTECODE_SUCCESS), rc);
+    try std.testing.expectEqual(@as(u32, 2), found);
+    try std.testing.expectEqual(@as(u32, 0), out[0]);
+    try std.testing.expectEqual(@as(u32, 2), out[1]);
+
+    // Stats basics
+    var stats: CBytecodeStats = undefined;
+    try std.testing.expectEqual(@as(c_int, EVM_BYTECODE_SUCCESS), evm_bytecode_get_stats(h, &stats));
+    try std.testing.expectEqual(@as(usize, code.len), stats.total_bytes);
+    try std.testing.expect(stats.jump_dest_count >= 2);
 }
