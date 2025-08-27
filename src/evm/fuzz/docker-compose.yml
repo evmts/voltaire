@@ -1,53 +1,64 @@
 version: '3.8'
 
 services:
-  # Main fuzz testing service
+  # Main x86 Linux fuzz testing service
   fuzz:
     build:
       context: ../../..
       dockerfile: src/evm/fuzz/Dockerfile
-    image: guillotine-evm-fuzz
-    container_name: evm-fuzzer
+    image: guillotine-evm-fuzz:latest
+    container_name: evm-fuzzer-x86
+    platform: linux/amd64
     volumes:
-      # Mount source code for live updates
-      - ../../../:/app:ro
-    working_dir: /app/src
-    command: zig test evm/fuzz/evm_fuzz.zig --fuzz
+      # Mount source code for live updates (read-write for cache)
+      - ../../../:/app
+    working_dir: /app
+    command: zig build fuzz-evm-bytecode --fuzz
     environment:
       # Set fuzz testing duration (in seconds)
       - FUZZ_DURATION=${FUZZ_DURATION:-300}
     networks:
       - fuzz-network
 
-  # Run all fuzz tests with customizable duration
-  fuzz-all:
+  # Run fuzz tests without fuzzing (regular tests)
+  fuzz-test-only:
     extends: fuzz
-    command: zig build test -- --fuzz=${FUZZ_DURATION:-300}s
+    container_name: evm-test-only-x86
+    command: zig build fuzz-evm-bytecode
 
-  # Run specific fuzz test
-  fuzz-single:
+  # Run with specific duration
+  fuzz-timed:
     extends: fuzz
-    command: zig test ${FUZZ_TEST:-evm/fuzz/evm_fuzz.zig} --fuzz
+    container_name: evm-fuzzer-timed-x86
+    command: sh -c "timeout ${FUZZ_DURATION:-300} zig build fuzz-evm-bytecode --fuzz || echo 'Fuzz testing completed or timed out'"
 
   # Continuous fuzzing with restart on failure
   fuzz-continuous:
     extends: fuzz
+    container_name: evm-fuzzer-continuous-x86
     restart: unless-stopped
     command: >
       sh -c "while true; do
         echo 'Starting fuzz run at' $$(date);
-        zig test evm/fuzz/evm_fuzz.zig --fuzz=3600s || true;
-        echo 'Fuzz run completed at' $$(date);
-        sleep 10;
+        zig build fuzz-evm-bytecode --fuzz || echo 'Fuzz run failed at' $$(date);
+        echo 'Sleeping before restart...';
+        sleep 30;
       done"
 
   # Interactive shell for debugging
   fuzz-shell:
     extends: fuzz
-    entrypoint: /bin/sh
+    container_name: evm-shell-x86
+    entrypoint: /bin/bash
     stdin_open: true
     tty: true
     command: []
+
+  # Build test only (to verify everything compiles)
+  build-test:
+    extends: fuzz
+    container_name: evm-build-test-x86
+    command: zig build test
 
 networks:
   fuzz-network:

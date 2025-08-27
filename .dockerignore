@@ -1,33 +1,62 @@
-# Git
-.git
-.gitignore
-
-# Zig cache and build artifacts
-.zig-cache
-zig-cache
-zig-out
-
-# Docker files themselves
-.dockerignore
-Dockerfile*
-
-# IDE
-.vscode
-.idea
-
-# OS
-.DS_Store
-
-# Rust build artifacts (but keep source)
+# Large directories that should never be in Docker context
+worktrees/
 target/
-# Don't exclude Cargo.lock as it's needed for reproducible builds
+zig-out/
+zig-cache/
+.zig-cache/
+bench/*/data
+bench/*/results
 
-# Node modules (if any)
-node_modules/
+# Git artifacts (but keep .gitmodules for submodule info)
+**/.git
+.git/**
+.gitignore
+.gitattributes
+!.gitmodules
 
-# Temporary files
-*.tmp
+# Build outputs and cache
+**/zig-cache/**
+**/zig-out/**
+**/target/**
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation (keep essential build docs)
+docs/
+README*
+LICENSE*
+CHANGELOG*
+*.md
+!CLAUDE.md
+!build.md
+
+# Test data and large files
 *.log
+*.tmp
+*.temp
+*.dump
+temp/
+tmp/
 
-# Benchmarks and other large test data
-bench/official/cases/*/
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Docker files (except the ones we need)
+.docker
+docker-compose.override.yml
