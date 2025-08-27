@@ -1449,7 +1449,8 @@ pub fn build(b: *std.Build) void {
             std.mem.indexOf(u8, test_info.name, "crypto") != null or
             std.mem.indexOf(u8, test_info.name, "environment") != null or
             std.mem.indexOf(u8, test_info.name, "storage") != null or
-            std.mem.indexOf(u8, test_info.name, "state") != null)
+            std.mem.indexOf(u8, test_info.name, "state") != null or
+            std.mem.indexOf(u8, test_info.name, "evm-bytecode") != null)
         {
             fuzz_test.root_module.addImport("primitives", primitives_mod);
         }

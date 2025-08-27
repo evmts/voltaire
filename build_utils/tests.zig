@@ -70,4 +70,10 @@ pub const fuzz_tests = [_]TestInfo{
         .step_name = "fuzz-state",
         .step_desc = "Run state fuzz tests",
     },
+    .{
+        .name = "fuzz-evm-bytecode-test",
+        .source_file = "src/evm/fuzz/root.zig",
+        .step_name = "fuzz-evm-bytecode",
+        .step_desc = "Run EVM bytecode analysis fuzz tests",
+    },
 };
