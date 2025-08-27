@@ -1216,8 +1216,8 @@ test "Bytecode.analyzeJumpDests" {
             self.jumpdests.append(pc) catch unreachable;
         }
     };
-    var jumpdests_list = std.ArrayList(BytecodeDefault.PcType){};
-    defer jumpdests_list.deinit(std.testing.allocator);
+    var jumpdests_list = std.ArrayList(BytecodeDefault.PcType).init(std.testing.allocator);
+    defer jumpdests_list.deinit();
     var context = Context{ .jumpdests = jumpdests_list };
     bytecode.analyzeJumpDests(&context, Context.callback);
     try std.testing.expectEqual(@as(usize, 2), context.jumpdests.items.len);
