@@ -833,6 +833,126 @@ test "bytecode4 ERC20 real world bytecode" {
     try testing.expect(bytecode.isValidJumpDest(10));  // JUMPDEST at 10
 }
 
+test "bytecode4 JUMPDEST to JUMP fusion - simple case" {
+    const allocator = testing.allocator;
+    
+    // Create bytecode with JUMPDEST immediately followed by JUMP
+    const bytecode_data = [_]u8{
+        // Setup: PUSH target and JUMP to JUMPDEST
+        @intFromEnum(Opcode.PUSH1), 0x03,  // Push jump target (PC 3)
+        @intFromEnum(Opcode.JUMP),         // Jump to PC 3
+        
+        // JUMPDEST followed by unconditional JUMP
+        @intFromEnum(Opcode.JUMPDEST),     // PC 3: JUMPDEST
+        @intFromEnum(Opcode.PUSH1), 0x08,  // PC 4: Push final target
+        @intFromEnum(Opcode.JUMP),         // PC 6: Jump to final target
+        @intFromEnum(Opcode.INVALID),      // PC 7: Unreachable
+        
+        // Final target
+        @intFromEnum(Opcode.JUMPDEST),     // PC 8: Final JUMPDEST
+        @intFromEnum(Opcode.STOP),         // PC 9: Stop
+    };
+    
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bytecode = try BytecodeType.init(allocator, &bytecode_data);
+    defer bytecode.deinit();
+    
+    // Verify jumpdests are found
+    try testing.expectEqual(@as(usize, 2), bytecode.jumpdests.len);
+    try testing.expect(bytecode.isValidJumpDest(3));
+    try testing.expect(bytecode.isValidJumpDest(8));
+    
+    // TODO: Once fusion is implemented, verify fusion mapping
+    // try testing.expectEqual(@as(?BytecodeType.PcType, 8), bytecode.getFusedTarget(3));
+}
+
+test "bytecode4 JUMPDEST to JUMPI fusion" {
+    const allocator = testing.allocator;
+    
+    // Create bytecode with JUMPDEST followed by conditional JUMP
+    const bytecode_data = [_]u8{
+        // JUMPDEST followed by JUMPI
+        @intFromEnum(Opcode.JUMPDEST),     // PC 0: JUMPDEST
+        @intFromEnum(Opcode.PUSH1), 0x01,  // PC 1: Push condition
+        @intFromEnum(Opcode.PUSH1), 0x07,  // PC 3: Push target
+        @intFromEnum(Opcode.JUMPI),        // PC 5: Conditional jump
+        @intFromEnum(Opcode.INVALID),      // PC 6: Fall through if not taken
+        
+        // Jump target
+        @intFromEnum(Opcode.JUMPDEST),     // PC 7: Target JUMPDEST
+        @intFromEnum(Opcode.STOP),         // PC 8: Stop
+    };
+    
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bytecode = try BytecodeType.init(allocator, &bytecode_data);
+    defer bytecode.deinit();
+    
+    // Verify jumpdests
+    try testing.expectEqual(@as(usize, 2), bytecode.jumpdests.len);
+    
+    // TODO: Verify JUMPI fusion behavior
+    // For JUMPI fusion, we might want different behavior since it's conditional
+}
+
+test "bytecode4 complex jump fusion chain" {
+    const allocator = testing.allocator;
+    
+    // Create a chain: JUMPDEST → JUMP → JUMPDEST → JUMP → final JUMPDEST
+    const bytecode_data = [_]u8{
+        // First JUMPDEST in chain
+        @intFromEnum(Opcode.JUMPDEST),     // PC 0
+        @intFromEnum(Opcode.PUSH1), 0x04,  // PC 1
+        @intFromEnum(Opcode.JUMP),         // PC 3
+        
+        // Second JUMPDEST in chain
+        @intFromEnum(Opcode.JUMPDEST),     // PC 4
+        @intFromEnum(Opcode.PUSH1), 0x08,  // PC 5
+        @intFromEnum(Opcode.JUMP),         // PC 7
+        
+        // Final JUMPDEST (not a jump)
+        @intFromEnum(Opcode.JUMPDEST),     // PC 8
+        @intFromEnum(Opcode.PUSH1), 0x42,  // PC 9: Some other operation
+        @intFromEnum(Opcode.STOP),         // PC 11
+    };
+    
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bytecode = try BytecodeType.init(allocator, &bytecode_data);
+    defer bytecode.deinit();
+    
+    // TODO: Verify chain fusion
+    // PC 0 should fuse to PC 8 (skipping intermediate)
+    // PC 4 should fuse to PC 8
+    // PC 8 should not be fused (no immediate jump after)
+}
+
+test "bytecode4 jump fusion with push data edge case" {
+    const allocator = testing.allocator;
+    
+    // Test case where JUMPDEST appears in PUSH data (should not be fused)
+    const bytecode_data = [_]u8{
+        @intFromEnum(Opcode.PUSH2),         // PC 0
+        @intFromEnum(Opcode.JUMPDEST),     // PC 1: In PUSH data (invalid)
+        @intFromEnum(Opcode.JUMP),         // PC 2: In PUSH data (invalid)
+        
+        @intFromEnum(Opcode.JUMPDEST),     // PC 3: Valid JUMPDEST
+        @intFromEnum(Opcode.PUSH1), 0x08,  // PC 4
+        @intFromEnum(Opcode.JUMP),         // PC 6
+        @intFromEnum(Opcode.INVALID),      // PC 7
+        
+        @intFromEnum(Opcode.JUMPDEST),     // PC 8: Target
+        @intFromEnum(Opcode.STOP),         // PC 9
+    };
+    
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bytecode = try BytecodeType.init(allocator, &bytecode_data);
+    defer bytecode.deinit();
+    
+    // Only PC 3 and PC 8 should be valid jumpdests
+    try testing.expectEqual(@as(usize, 2), bytecode.jumpdests.len);
+    try testing.expect(bytecode.isValidJumpDest(3));
+    try testing.expect(bytecode.isValidJumpDest(8));
+}
+
 test "bytecode4 complex iterator trace" {
     const allocator = testing.allocator;
     const crypto = @import("crypto");

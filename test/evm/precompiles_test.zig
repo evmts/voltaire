@@ -22,7 +22,8 @@ test "Point Evaluation precompile - valid proof roundtrip" {
     defer kzg_setup.deinit(allocator);
 
     // Build a simple blob (all zero)
-    var blob: crypto.c_kzg.Blob = [_]u8{0} ** crypto.c_kzg.BYTES_PER_BLOB;
+    var blob: crypto.c_kzg.Blob = undefined;
+    @memset(&blob, 0);
 
     // Compute commitment
     const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
@@ -41,10 +42,10 @@ test "Point Evaluation precompile - valid proof roundtrip" {
     // Assemble precompile input: vh(32) | z(32) | y(32) | commitment(48) | proof(48)
     var input: [192]u8 = undefined;
     @memcpy(input[0..32], versioned_hash.bytes[0..]);
-    @memcpy(input[32..64], z[0..]);
-    @memcpy(input[64..96], y[0..]);
-    @memcpy(input[96..144], commitment[0..]);
-    @memcpy(input[144..192], proof[0..]);
+    @memcpy(input[32..64], &z);
+    @memcpy(input[64..96], &y);
+    @memcpy(input[96..144], &commitment);
+    @memcpy(input[144..192], &proof);
 
     const gas = precompiles.GasCosts.POINT_EVALUATION + 1000;
     const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
@@ -62,7 +63,8 @@ test "Point Evaluation precompile - invalid proof fails" {
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
-    var blob: crypto.c_kzg.Blob = [_]u8{1} ** crypto.c_kzg.BYTES_PER_BLOB;
+    var blob: crypto.c_kzg.Blob = undefined;
+    @memset(&blob, 1);
     const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
 
     var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
@@ -79,10 +81,10 @@ test "Point Evaluation precompile - invalid proof fails" {
 
     var input: [192]u8 = undefined;
     @memcpy(input[0..32], versioned_hash.bytes[0..]);
-    @memcpy(input[32..64], z[0..]);
-    @memcpy(input[64..96], y[0..]);
-    @memcpy(input[96..144], commitment[0..]);
-    @memcpy(input[144..192], proof[0..]);
+    @memcpy(input[32..64], &z);
+    @memcpy(input[64..96], &y);
+    @memcpy(input[96..144], &commitment);
+    @memcpy(input[144..192], &proof);
 
     const gas = precompiles.GasCosts.POINT_EVALUATION + 1000;
     const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
@@ -98,7 +100,8 @@ test "Point Evaluation precompile - mismatched versioned hash fails" {
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
-    var blob: crypto.c_kzg.Blob = [_]u8{2} ** crypto.c_kzg.BYTES_PER_BLOB;
+    var blob: crypto.c_kzg.Blob = undefined;
+    @memset(&blob, 2);
     const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
 
     var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
@@ -114,10 +117,10 @@ test "Point Evaluation precompile - mismatched versioned hash fails" {
 
     var input: [192]u8 = undefined;
     @memcpy(input[0..32], versioned_hash.bytes[0..]);
-    @memcpy(input[32..64], z[0..]);
-    @memcpy(input[64..96], y[0..]);
-    @memcpy(input[96..144], commitment[0..]);
-    @memcpy(input[144..192], proof[0..]);
+    @memcpy(input[32..64], &z);
+    @memcpy(input[64..96], &y);
+    @memcpy(input[96..144], &commitment);
+    @memcpy(input[144..192], &proof);
 
     const gas = precompiles.GasCosts.POINT_EVALUATION + 1000;
     const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
@@ -132,7 +135,8 @@ test "Point Evaluation precompile - insufficient gas" {
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
-    var blob: crypto.c_kzg.Blob = [_]u8{3} ** crypto.c_kzg.BYTES_PER_BLOB;
+    var blob: crypto.c_kzg.Blob = undefined;
+    @memset(&blob, 3);
     const commitment = try crypto.c_kzg.blobToKZGCommitment(&blob);
     var z: crypto.c_kzg.Bytes32 = [_]u8{0} ** 32;
     const proof_y = try crypto.c_kzg.computeKZGProof(&blob, &z);
@@ -140,10 +144,10 @@ test "Point Evaluation precompile - insufficient gas" {
     var input: [192]u8 = undefined;
     const versioned_hash = primitives.Blob.commitment_to_versioned_hash(commitment);
     @memcpy(input[0..32], versioned_hash.bytes[0..]);
-    @memcpy(input[32..64], z[0..]);
-    @memcpy(input[64..96], proof_y.y[0..]);
-    @memcpy(input[96..144], commitment[0..]);
-    @memcpy(input[144..192], proof_y.proof[0..]);
+    @memcpy(input[32..64], &z);
+    @memcpy(input[64..96], &proof_y.y);
+    @memcpy(input[96..144], &commitment);
+    @memcpy(input[144..192], &proof_y.proof);
 
     const gas = precompiles.GasCosts.POINT_EVALUATION - 1; // insufficient
     const result = try precompiles.execute_point_evaluation(allocator, &input, gas);
