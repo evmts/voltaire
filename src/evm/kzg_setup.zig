@@ -20,12 +20,6 @@ pub fn init(_allocator: std.mem.Allocator, trusted_setup_path: []const u8) !void
     initialized = true;
 }
 
-/// Get the global KZG settings
-/// Returns null if not initialized
-pub fn getSettings() ?*const crypto.c_kzg.KZGSettings {
-    if (!initialized) return null;
-    return crypto.c_kzg.getSettings() catch null;
-}
 
 /// Deinitialize the KZG trusted setup
 pub fn deinit(allocator: std.mem.Allocator) void {
@@ -58,6 +52,4 @@ test "KZG setup initialization" {
     defer deinit(testing.allocator);
     
     try testing.expect(isInitialized());
-    const settings = getSettings();
-    try testing.expect(settings != null);
 }
