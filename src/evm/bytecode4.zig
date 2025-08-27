@@ -62,8 +62,16 @@ fn findPushInstructionsScalar(comptime PcType: type, allocator: std.mem.Allocato
 
 // SIMD implementation for finding PUSH instructions
 fn findPushInstructionsSimd(comptime L: comptime_int, comptime PcType: type, allocator: std.mem.Allocator, push_list: *std.ArrayList(PcType), code: []const u8) !void {
+    // SIMD doesn't handle skipping PUSH data well, so we'll use a hybrid approach:
+    // 1. Use SIMD to find candidate PUSH positions
+    // 2. Post-process to validate and skip PUSH data
+    
     const push1_vec: @Vector(L, u8) = @splat(@intFromEnum(Opcode.PUSH1));
     const push32_vec: @Vector(L, u8) = @splat(@intFromEnum(Opcode.PUSH32));
+    
+    // First pass: collect all potential PUSH positions using SIMD
+    var candidates = std.ArrayList(PcType){};
+    defer candidates.deinit(allocator);
     
     var i: usize = 0;
     
@@ -78,35 +86,33 @@ fn findPushInstructionsSimd(comptime L: comptime_int, comptime PcType: type, all
         
         for (is_push_array, 0..) |is_push_op, j| {
             if (is_push_op) {
-                try push_list.append(allocator, @intCast(i + j));
+                try candidates.append(allocator, @intCast(i + j));
             }
         }
         
         i += L;
     }
     
-    // Handle remaining bytes with SIMD by processing the last L bytes
-    if (i < code.len and code.len >= L) {
-        // Back up to process the last L bytes
-        const backup_i = i;
-        i = code.len - L;
-        
-        var bytes: [L]u8 = undefined;
-        @memcpy(&bytes, code[i..i + L]);
-        const v: @Vector(L, u8) = bytes;
-        
-        const is_push = (v >= push1_vec) & (v <= push32_vec);
-        const is_push_array: [L]bool = is_push;
-        
-        for (is_push_array, 0..) |is_push_op, j| {
-            if (is_push_op) {
-                const pc = i + j;
-                // Only add if we haven't processed this position yet
-                if (pc >= backup_i) {
-                    try push_list.append(allocator, @intCast(pc));
-                }
-            }
+    // Handle remaining bytes
+    while (i < code.len) : (i += 1) {
+        const op = code[i];
+        if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+            try candidates.append(allocator, @intCast(i));
         }
+    }
+    
+    // Second pass: filter out PUSH instructions that are actually in PUSH data
+    i = 0;
+    for (candidates.items) |candidate_pc| {
+        // Skip candidates that are before our current position (they're in PUSH data)
+        if (candidate_pc < i) continue;
+        
+        // This is a real PUSH instruction
+        try push_list.append(allocator, candidate_pc);
+        
+        // Skip over the PUSH data
+        const push_size = code[candidate_pc] - @intFromEnum(Opcode.PUSH1) + 1;
+        i = candidate_pc + 1 + push_size;
     }
 }
 
@@ -199,6 +205,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         jumpdests: []const PcType,
         /// Basic blocks for control flow
         basic_blocks: []const BasicBlock,
+        /// Jump fusion mapping: JUMPDEST PC -> final target PC
+        jump_fusions: std.AutoHashMap(PcType, PcType),
         /// Allocator for cleanup
         allocator: std.mem.Allocator,
         
@@ -279,11 +287,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             const basic_blocks = try blocks.toOwnedSlice(allocator);
             errdefer allocator.free(basic_blocks);
             
+            const jump_fusions = std.AutoHashMap(PcType, PcType).init(allocator);
+            
             return Self{
                 .runtime_code = runtime_code,
                 .push_pcs = push_pcs,
                 .jumpdests = jumpdests,
                 .basic_blocks = basic_blocks,
+                .jump_fusions = jump_fusions,
                 .allocator = allocator,
             };
         }
@@ -292,6 +303,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             self.allocator.free(self.push_pcs);
             self.allocator.free(self.jumpdests);
             self.allocator.free(self.basic_blocks);
+            self.jump_fusions.deinit();
             // Note: runtime_code is a slice of the input, not allocated
         }
         
@@ -354,6 +366,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 if (jd > pc) return false;
             }
             return false;
+        }
+        
+        /// Get the fused jump target if this JUMPDEST has a fusion
+        pub fn getFusedTarget(self: Self, pc: PcType) ?PcType {
+            return self.jump_fusions.get(pc);
         }
         
         /// Check if a PC is a PUSH instruction (fusion candidate)
@@ -471,11 +488,15 @@ test "bytecode4 helper methods - isValidJumpDest" {
     const BytecodeType = Bytecode(BytecodeConfig{});
     
     // Mock bytecode with sorted jumpdests
+    var jump_fusions = std.AutoHashMap(BytecodeType.PcType, BytecodeType.PcType).init(testing.allocator);
+    defer jump_fusions.deinit();
+    
     var bytecode = BytecodeType{
         .runtime_code = &.{},
         .push_pcs = &.{},
         .jumpdests = &[_]BytecodeType.PcType{ 5, 10, 20, 50 },
         .basic_blocks = &.{},
+        .jump_fusions = jump_fusions,
         .allocator = undefined,
     };
     
@@ -497,11 +518,15 @@ test "bytecode4 helper methods - isPushInstruction" {
     const BytecodeType = Bytecode(BytecodeConfig{});
     
     // Mock bytecode with sorted push_pcs
+    var jump_fusions = std.AutoHashMap(BytecodeType.PcType, BytecodeType.PcType).init(testing.allocator);
+    defer jump_fusions.deinit();
+    
     var bytecode = BytecodeType{
         .runtime_code = &.{},
         .push_pcs = &[_]BytecodeType.PcType{ 0, 3, 8, 15 },
         .jumpdests = &.{},
         .basic_blocks = &.{},
+        .jump_fusions = jump_fusions,
         .allocator = undefined,
     };
     
@@ -1073,5 +1098,51 @@ test "bytecode4 complex iterator trace" {
         } else {
             return err;
         }
+    }
+}
+
+test "SIMD correctly skips PUSH data (bug fix)" {
+    
+    // Create bytecode where PUSH data contains bytes that look like PUSH opcodes
+    const code = [_]u8{
+        @intFromEnum(Opcode.PUSH2),       // PC 0: PUSH2
+        @intFromEnum(Opcode.PUSH1),       // PC 1: This is PUSH data (value 0x60), not an opcode!
+        0x42,                             // PC 2: More PUSH data (value 0x42)
+        @intFromEnum(Opcode.ADD),         // PC 3: ADD opcode
+        @intFromEnum(Opcode.PUSH1),       // PC 4: Real PUSH1
+        0x10,                             // PC 5: PUSH data (value 0x10)
+        @intFromEnum(Opcode.PUSH3),       // PC 6: PUSH3
+        @intFromEnum(Opcode.PUSH1),       // PC 7: This is PUSH data for PUSH3!
+        @intFromEnum(Opcode.PUSH2),       // PC 8: More PUSH data for PUSH3!
+        0xFF,                             // PC 9: Last byte of PUSH3 data
+        @intFromEnum(Opcode.STOP),        // PC 10: STOP
+        0x00, 0x00, 0x00, 0x00, 0x00,    // PC 11-15: Padding to enable SIMD testing
+    };
+    
+    // Test with scalar implementation (known correct)
+    {
+        const scalar_config = BytecodeConfig{ .vector_length = 1 };
+        var bytecode = try Bytecode(scalar_config).init(testing.allocator, &code);
+        defer bytecode.deinit();
+        
+        // Should find only real PUSH instructions at PC 0, 4, and 6
+        try testing.expectEqual(3, bytecode.push_pcs.len);
+        try testing.expectEqual(0, bytecode.push_pcs[0]); // PUSH2 at PC 0
+        try testing.expectEqual(4, bytecode.push_pcs[1]); // PUSH1 at PC 4  
+        try testing.expectEqual(6, bytecode.push_pcs[2]); // PUSH3 at PC 6
+    }
+    
+    // Test with SIMD implementation (must match scalar)
+    if (code.len >= 16) { // Only test SIMD if bytecode is long enough
+        const simd_config = BytecodeConfig{ .vector_length = 16 };
+        var bytecode = try Bytecode(simd_config).init(testing.allocator, &code);
+        defer bytecode.deinit();
+        
+        
+        // Should find the same PUSH instructions as scalar
+        try testing.expectEqual(3, bytecode.push_pcs.len);
+        try testing.expectEqual(0, bytecode.push_pcs[0]); // PUSH2 at PC 0
+        try testing.expectEqual(4, bytecode.push_pcs[1]); // PUSH1 at PC 4
+        try testing.expectEqual(6, bytecode.push_pcs[2]); // PUSH3 at PC 6
     }
 }
