@@ -290,11 +290,8 @@ fn benchmarkStackFrameERC20(allocator: std.mem.Allocator) void {
     defer db.deinit();
     const db_interface = db.to_database_interface();
     
-    // Create the bytecode object
-    const bytecode = F.Bytecode.init(erc20_bytecode, allocator) catch unreachable;
-    defer bytecode.deinit();
-    
-    var frame = F.init(allocator, &bytecode, 1000000, db_interface, host) catch unreachable;
+    // Initialize frame directly from raw bytecode
+    var frame = F.init(allocator, erc20_bytecode, 1000000, db_interface, host) catch unreachable;
     defer frame.deinit(allocator);
     
     // Just initialization for now - actual execution would require planner/interpreter
