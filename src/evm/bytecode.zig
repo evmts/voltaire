@@ -97,25 +97,22 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 // Handle fusion opcodes first
                 if (packed_bits.is_fusion_candidate) {
                     const fusion_data = iterator.bytecode.getFusionData(iterator.pc);
-                    // Advance PC properly for fusion opcodes
+                    // Advance PC properly for fusion opcodes (PUSH + data + op)
                     switch (fusion_data) {
-                        .push_add_fusion, .push_mul_fusion => {
-                            // Skip PUSH + operation (PUSH takes 1 + size bytes, operation takes 1 byte)
+                        .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
                             const push_size = opcode - 0x5F;
-                            iterator.pc += 1 + push_size + 1; // PUSH + data + operation
+                            iterator.pc += 1 + push_size + 1;
                         },
                         .push => |push_data| {
-                            // Regular PUSH fallback
                             iterator.pc += 1 + push_data.size;
                         },
                         else => {
-                            // Regular opcode fallback
                             iterator.pc += 1;
-                        }
+                        },
                     }
                     return fusion_data;
                 }
-                
+
                 // push
 
                 // Handle regular opcodes
@@ -151,7 +148,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     },
                 }
             }
-
         };
 
         // Tagged union for opcode data returned by iterator
@@ -161,6 +157,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             jumpdest: struct { gas_cost: u16 },
             push_add_fusion: struct { value: u256 },
             push_mul_fusion: struct { value: u256 },
+            push_sub_fusion: struct { value: u256 },
+            push_div_fusion: struct { value: u256 },
+            push_and_fusion: struct { value: u256 },
+            push_or_fusion: struct { value: u256 },
+            push_xor_fusion: struct { value: u256 },
+            push_jump_fusion: struct { value: u256 },
+            push_jumpi_fusion: struct { value: u256 },
             stop: void,
             invalid: void,
         };
@@ -269,32 +272,39 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// @deprecated Use bytecode4.zig instead
         pub fn getFusionData(self: *const Self, pc: PcType) OpcodeData {
             if (pc >= self.len()) return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
-            
+
             const first_op = self.get_unsafe(pc);
             const second_op = if (pc + 1 < self.len()) self.get_unsafe(pc + 1) else 0x00;
-            
+
             // Read PUSH value first (since all fusions start with PUSH)
             if (first_op < 0x60 or first_op > 0x7F) {
                 // Not a PUSH opcode, shouldn't be marked as fusion candidate
                 return OpcodeData{ .regular = .{ .opcode = first_op } };
             }
-            
+
             const push_size = first_op - 0x5F;
             var value: u256 = 0;
             const end_pc = @min(pc + 1 + push_size, self.len());
             for (pc + 1..end_pc) |i| {
                 value = (value << 8) | self.get_unsafe(@intCast(i));
             }
-            
+
             // Return appropriate fusion type based on second opcode
             switch (second_op) {
                 0x01 => return OpcodeData{ .push_add_fusion = .{ .value = value } }, // ADD
                 0x02 => return OpcodeData{ .push_mul_fusion = .{ .value = value } }, // MUL
+                0x03 => return OpcodeData{ .push_sub_fusion = .{ .value = value } }, // SUB
+                0x04 => return OpcodeData{ .push_div_fusion = .{ .value = value } }, // DIV
+                0x16 => return OpcodeData{ .push_and_fusion = .{ .value = value } }, // AND
+                0x17 => return OpcodeData{ .push_or_fusion = .{ .value = value } }, // OR
+                0x18 => return OpcodeData{ .push_xor_fusion = .{ .value = value } }, // XOR
+                0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
+                0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
                 else => {
                     // Fallback to regular PUSH if fusion pattern not recognized
                     // TODO: Add more fusion types to OpcodeData union as needed
                     return OpcodeData{ .push = .{ .value = value, .size = push_size } };
-                }
+                },
             }
         }
 
@@ -3135,33 +3145,33 @@ test "Iterator using PackedBits for fusion detection" {
 
 test "Bytecode bitmap generation - simple opcodes" {
     const allocator = std.testing.allocator;
-    
+
     // Test basic opcodes: ADD, MUL, PUSH1, STOP
     const code = [_]u8{
-        @intFromEnum(Opcode.ADD),    // 0: operation start
-        @intFromEnum(Opcode.MUL),    // 1: operation start
-        @intFromEnum(Opcode.PUSH1),  // 2: operation start
-        0x42,                        // 3: push data
-        @intFromEnum(Opcode.STOP),  // 4: operation start
+        @intFromEnum(Opcode.ADD), // 0: operation start
+        @intFromEnum(Opcode.MUL), // 1: operation start
+        @intFromEnum(Opcode.PUSH1), // 2: operation start
+        0x42, // 3: push data
+        @intFromEnum(Opcode.STOP), // 4: operation start
     };
-    
+
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // Verify is_op_start bitmap
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 0)) != 0); // ADD
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 1)) != 0); // MUL
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 2)) != 0); // PUSH1
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 3)) == 0); // push data
     try std.testing.expect((bytecode.is_op_start[0] & (1 << 4)) != 0); // STOP
-    
+
     // Verify is_push_data bitmap
     try std.testing.expect((bytecode.is_push_data[0] & (1 << 0)) == 0); // ADD
     try std.testing.expect((bytecode.is_push_data[0] & (1 << 1)) == 0); // MUL
     try std.testing.expect((bytecode.is_push_data[0] & (1 << 2)) == 0); // PUSH1
     try std.testing.expect((bytecode.is_push_data[0] & (1 << 3)) != 0); // push data
     try std.testing.expect((bytecode.is_push_data[0] & (1 << 4)) == 0); // STOP
-    
+
     // Verify packed bitmap consistency
     try std.testing.expect(bytecode.packed_bitmap[0].is_op_start == true);
     try std.testing.expect(bytecode.packed_bitmap[0].is_push_data == false);
@@ -3171,27 +3181,27 @@ test "Bytecode bitmap generation - simple opcodes" {
 
 test "Bytecode bitmap generation - multiple PUSH opcodes" {
     const allocator = std.testing.allocator;
-    
+
     // Test various PUSH opcodes
     const code = [_]u8{
-        @intFromEnum(Opcode.PUSH1), 0xAA,           // 0-1
-        @intFromEnum(Opcode.PUSH2), 0xBB, 0xCC,     // 2-4
+        @intFromEnum(Opcode.PUSH1), 0xAA, // 0-1
+        @intFromEnum(Opcode.PUSH2), 0xBB, 0xCC, // 2-4
         @intFromEnum(Opcode.PUSH4), 0x11, 0x22, 0x33, 0x44, // 5-9
-        @intFromEnum(Opcode.ADD),                    // 10
+        @intFromEnum(Opcode.ADD), // 10
     };
-    
+
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // Check operation starts
-    try std.testing.expect(bytecode.packed_bitmap[0].is_op_start == true);   // PUSH1
-    try std.testing.expect(bytecode.packed_bitmap[1].is_op_start == false);  // data
-    try std.testing.expect(bytecode.packed_bitmap[2].is_op_start == true);   // PUSH2
-    try std.testing.expect(bytecode.packed_bitmap[3].is_op_start == false);  // data
-    try std.testing.expect(bytecode.packed_bitmap[4].is_op_start == false);  // data
-    try std.testing.expect(bytecode.packed_bitmap[5].is_op_start == true);   // PUSH4
-    try std.testing.expect(bytecode.packed_bitmap[10].is_op_start == true);  // ADD
-    
+    try std.testing.expect(bytecode.packed_bitmap[0].is_op_start == true); // PUSH1
+    try std.testing.expect(bytecode.packed_bitmap[1].is_op_start == false); // data
+    try std.testing.expect(bytecode.packed_bitmap[2].is_op_start == true); // PUSH2
+    try std.testing.expect(bytecode.packed_bitmap[3].is_op_start == false); // data
+    try std.testing.expect(bytecode.packed_bitmap[4].is_op_start == false); // data
+    try std.testing.expect(bytecode.packed_bitmap[5].is_op_start == true); // PUSH4
+    try std.testing.expect(bytecode.packed_bitmap[10].is_op_start == true); // ADD
+
     // Check push data
     try std.testing.expect(bytecode.packed_bitmap[0].is_push_data == false);
     try std.testing.expect(bytecode.packed_bitmap[1].is_push_data == true);
@@ -3206,36 +3216,36 @@ test "Bytecode bitmap generation - multiple PUSH opcodes" {
 
 test "Bytecode bitmap generation - JUMPDEST validation" {
     const allocator = std.testing.allocator;
-    
+
     // Test JUMPDEST in various positions
     const code = [_]u8{
-        @intFromEnum(Opcode.JUMPDEST),              // 0: valid JUMPDEST
-        @intFromEnum(Opcode.PUSH2),                 // 1: PUSH2
-        0x00,                                       // 2: push data
-        @intFromEnum(Opcode.JUMPDEST),              // 3: JUMPDEST inside push data (invalid)
-        @intFromEnum(Opcode.JUMPDEST),              // 4: valid JUMPDEST
-        @intFromEnum(Opcode.PUSH1),                 // 5: PUSH1
-        @intFromEnum(Opcode.JUMPDEST),              // 6: push data that happens to be JUMPDEST value
-        @intFromEnum(Opcode.JUMPDEST),              // 7: valid JUMPDEST
+        @intFromEnum(Opcode.JUMPDEST), // 0: valid JUMPDEST
+        @intFromEnum(Opcode.PUSH2), // 1: PUSH2
+        0x00, // 2: push data
+        @intFromEnum(Opcode.JUMPDEST), // 3: JUMPDEST inside push data (invalid)
+        @intFromEnum(Opcode.JUMPDEST), // 4: valid JUMPDEST
+        @intFromEnum(Opcode.PUSH1), // 5: PUSH1
+        @intFromEnum(Opcode.JUMPDEST), // 6: push data that happens to be JUMPDEST value
+        @intFromEnum(Opcode.JUMPDEST), // 7: valid JUMPDEST
     };
-    
+
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // Check JUMPDEST bitmap
     try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 0)) != 0); // Valid
     try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 3)) == 0); // Invalid (in push data)
     try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 4)) != 0); // Valid
     try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 6)) == 0); // Invalid (in push data)
     try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 7)) != 0); // Valid
-    
+
     // Check packed bitmap
     try std.testing.expect(bytecode.packed_bitmap[0].is_jumpdest == true);
     try std.testing.expect(bytecode.packed_bitmap[3].is_jumpdest == false);
     try std.testing.expect(bytecode.packed_bitmap[4].is_jumpdest == true);
     try std.testing.expect(bytecode.packed_bitmap[6].is_jumpdest == false);
     try std.testing.expect(bytecode.packed_bitmap[7].is_jumpdest == true);
-    
+
     // Verify isValidJumpDest method
     try std.testing.expect(bytecode.isValidJumpDest(0) == true);
     try std.testing.expect(bytecode.isValidJumpDest(3) == false);
@@ -3246,71 +3256,71 @@ test "Bytecode bitmap generation - JUMPDEST validation" {
 
 test "Bytecode bitmap generation - fusion candidates with fusions enabled" {
     const allocator = std.testing.allocator;
-    
+
     // Create bytecode with fusions enabled (default)
     const config = BytecodeConfig{ .fusions_enabled = true };
     const BytecodeType = Bytecode(config);
-    
+
     // Test fusion patterns: PUSH + ADD, PUSH + MUL
     const code = [_]u8{
-        @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD),   // 0-2: PUSH1+ADD fusion
+        @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD), // 0-2: PUSH1+ADD fusion
         @intFromEnum(Opcode.PUSH2), 0x00, 0x10, @intFromEnum(Opcode.MUL), // 3-6: PUSH2+MUL fusion
-        @intFromEnum(Opcode.PUSH1), 0x20,                              // 7-8: PUSH1 without fusion
-        @intFromEnum(Opcode.STOP),                                     // 9: STOP
+        @intFromEnum(Opcode.PUSH1), 0x20, // 7-8: PUSH1 without fusion
+        @intFromEnum(Opcode.STOP), // 9: STOP
     };
-    
+
     var bytecode = try BytecodeType.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // Check fusion candidates
-    try std.testing.expect(bytecode.packed_bitmap[0].is_fusion_candidate == true);  // PUSH1 before ADD
-    try std.testing.expect(bytecode.packed_bitmap[3].is_fusion_candidate == true);  // PUSH2 before MUL
+    try std.testing.expect(bytecode.packed_bitmap[0].is_fusion_candidate == true); // PUSH1 before ADD
+    try std.testing.expect(bytecode.packed_bitmap[3].is_fusion_candidate == true); // PUSH2 before MUL
     try std.testing.expect(bytecode.packed_bitmap[7].is_fusion_candidate == false); // PUSH1 before STOP (not fusable)
-    
+
     // Verify the fusion_enabled constant
     try std.testing.expect(BytecodeType.fusions_enabled == true);
 }
 
 test "Bytecode bitmap generation - fusion candidates with fusions disabled" {
     const allocator = std.testing.allocator;
-    
+
     // Create bytecode with fusions disabled
     const config = BytecodeConfig{ .fusions_enabled = false };
     const BytecodeType = Bytecode(config);
-    
+
     // Same test pattern as above
     const code = [_]u8{
-        @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD),   // 0-2: Would be fusion if enabled
+        @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD), // 0-2: Would be fusion if enabled
         @intFromEnum(Opcode.PUSH2), 0x00, 0x10, @intFromEnum(Opcode.MUL), // 3-6: Would be fusion if enabled
     };
-    
+
     var bytecode = try BytecodeType.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // With fusions disabled, fusion candidates should not be marked
     try std.testing.expect(bytecode.packed_bitmap[0].is_fusion_candidate == false);
     try std.testing.expect(bytecode.packed_bitmap[3].is_fusion_candidate == false);
-    
+
     // Verify the fusion_enabled constant
     try std.testing.expect(BytecodeType.fusions_enabled == false);
 }
 
 test "Bytecode bitmap generation - cross-byte boundaries" {
     const allocator = std.testing.allocator;
-    
+
     // Create bytecode that crosses bitmap byte boundaries (8 bits per byte)
     var code: [10]u8 = undefined;
     for (0..10) |i| {
         code[i] = if (i == 7 or i == 8) @intFromEnum(Opcode.JUMPDEST) else @intFromEnum(Opcode.ADD);
     }
-    
+
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // Check that JUMPDESTs at byte boundary are correctly marked
     try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 7)) != 0); // bit 7 of first byte
     try std.testing.expect((bytecode.is_jumpdest[1] & (1 << 0)) != 0); // bit 0 of second byte
-    
+
     // All should be operation starts
     for (0..10) |i| {
         try std.testing.expect(bytecode.packed_bitmap[i].is_op_start == true);
@@ -3319,7 +3329,7 @@ test "Bytecode bitmap generation - cross-byte boundaries" {
 
 test "Bytecode bitmap generation - PUSH32 edge case" {
     const allocator = std.testing.allocator;
-    
+
     // PUSH32 with 32 bytes of data
     var code: [34]u8 = undefined;
     code[0] = @intFromEnum(Opcode.PUSH32);
@@ -3327,39 +3337,39 @@ test "Bytecode bitmap generation - PUSH32 edge case" {
         code[i] = @intCast(i); // Push data bytes
     }
     code[33] = @intFromEnum(Opcode.JUMPDEST); // Valid JUMPDEST after PUSH32
-    
+
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     // Check operation starts
-    try std.testing.expect(bytecode.packed_bitmap[0].is_op_start == true);   // PUSH32
-    try std.testing.expect(bytecode.packed_bitmap[33].is_op_start == true);  // JUMPDEST
-    
+    try std.testing.expect(bytecode.packed_bitmap[0].is_op_start == true); // PUSH32
+    try std.testing.expect(bytecode.packed_bitmap[33].is_op_start == true); // JUMPDEST
+
     // Check push data - all 32 bytes should be marked
     for (1..33) |i| {
         try std.testing.expect(bytecode.packed_bitmap[i].is_push_data == true);
         try std.testing.expect(bytecode.packed_bitmap[i].is_op_start == false);
     }
-    
+
     // JUMPDEST should be valid
     try std.testing.expect(bytecode.packed_bitmap[33].is_jumpdest == true);
 }
 
 test "Bytecode bitmap generation - empty and single byte" {
     const allocator = std.testing.allocator;
-    
+
     // Test empty bytecode
     const empty_code = [_]u8{};
     var empty_bytecode = try BytecodeDefault.init(allocator, &empty_code);
     defer empty_bytecode.deinit();
-    
+
     try std.testing.expectEqual(@as(BytecodeDefault.PcType, 0), empty_bytecode.len());
-    
+
     // Test single byte
     const single_code = [_]u8{@intFromEnum(Opcode.STOP)};
     var single_bytecode = try BytecodeDefault.init(allocator, &single_code);
     defer single_bytecode.deinit();
-    
+
     try std.testing.expect(single_bytecode.packed_bitmap[0].is_op_start == true);
     try std.testing.expect(single_bytecode.packed_bitmap[0].is_push_data == false);
 }

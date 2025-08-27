@@ -92,7 +92,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             pub const PushInlineMetadata = packed struct(u64) { value: u64 };
             pub const PushPointerMetadata = packed struct(u64) { value: *u256 };
             pub const PcMetadata = packed struct { value: PcType };
-            const OpcodeHandler = *const fn (frame: Self, next_handler: Schedule) Error!Success;
+            const OpcodeHandler = *const fn (frame: Self, schedule: Schedule) Error!Success;
             pub const Item = union {
                 jump_dest: JumpDestMetadata,
                 push_inline: PushInlineMetadata,
@@ -102,7 +102,8 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             };
             pub fn getOpData(self: Schedule, comptime opcode: Opcode) switch (opcode) {
                 .PC => struct { metadata: PcMetadata, next: Schedule },
-                .PUSH1 => struct { metadata: PushInlineMetadata, next: Schedule },
+                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => struct { metadata: PushInlineMetadata, next: Schedule },
+                .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => struct { metadata: PushPointerMetadata, next: Schedule },
                 .JUMPDEST => struct { metadata: JumpDestMetadata, next: Schedule },
                 else => struct { next: Schedule },
             } {
@@ -111,8 +112,12 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                         .metadata = self.schedule[0].pc,
                         .next = Schedule{ .schedule = self.schedule + 2 },
                     },
-                    .PUSH1 => .{
+                    .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => .{
                         .metadata = self.schedule[0].push_inline,
+                        .next = Schedule{ .schedule = self.schedule + 2 },
+                    },
+                    .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => .{
+                        .metadata = self.schedule[0].push_pointer,
                         .next = Schedule{ .schedule = self.schedule + 2 },
                     },
                     .JUMPDEST => .{
@@ -154,9 +159,15 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             if (push_n == 0) @compileError("Push0 is handled as it's own opcode not via generatePushHandler");
             return struct {
                 pub fn pushHandler(self: Self, schedule: Schedule) Error!Success {
-                    const value  = schedule.getOpData(@enumFromInt(push_n + 0x5F));
-                    try self.stack.push(0);
-                    return @call(.always_tail, next[0], .{ self, next + 1 });
+                    if (push_n <= 8) {
+                        const meta: *const Schedule.PushInlineMetadata = @ptrCast(&schedule.schedule[1]);
+                        try self.stack.push(meta.value);
+                    } else {
+                        const meta: *const Schedule.PushPointerMetadata = @ptrCast(&schedule.schedule[1]);
+                        try self.stack.push(meta.value.*);
+                    }
+                    const next = Schedule{ .schedule = schedule.schedule + 2 };
+                    return @call(.always_tail, next.schedule[0], .{ self, next });
                 }
             }.pushHandler;
         }
@@ -164,10 +175,11 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// Generate a dup handler for DUP1-DUP16
         fn generateDupHandler(comptime dup_n: u8) *const Schedule.OpcodeHandler {
             return struct {
-                pub fn dupHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+                pub fn dupHandler(self: Self, schedule: Schedule) Error!Success {
                     const value = try self.stack.peek_n(dup_n);
                     try self.stack.push(value);
-                    return @call(.always_tail, next[0], .{ self, next + 1 });
+                    const next = Schedule{ .schedule = schedule.schedule + 1 };
+                    return @call(.always_tail, next.schedule[0], .{ self, next });
                 }
             }.dupHandler;
         }
@@ -175,9 +187,10 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// Generate a swap handler for SWAP1-SWAP16
         fn generateSwapHandler(comptime swap_n: u8) *const Schedule.OpcodeHandler {
             return struct {
-                pub fn swapHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+                pub fn swapHandler(self: Self, schedule: Schedule) Error!Success {
                     try self.stack.swap_n(swap_n);
-                    return @call(.always_tail, next[0], .{ self, next + 1 });
+                    const next = Schedule{ .schedule = schedule.schedule + 1 };
+                    return @call(.always_tail, next.schedule[0], .{ self, next });
                 }
             }.swapHandler;
         }
@@ -505,10 +518,10 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             };
         }
 
-        pub fn pop(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-            // TODO assert in this and all methods that next is not null using std.debug.assert
+        pub fn pop(self: Self, schedule: Schedule) Error!Success {
             _ = try self.stack.pop();
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
 
         pub fn stop(self: *Self) Error!Success {
@@ -528,30 +541,34 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return Error.STOP;
         }
 
-        pub fn @"and"(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn @"and"(self: Self, schedule: Schedule) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top & top_minus_1);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn @"or"(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn @"or"(self: Self, schedule: Schedule) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top | top_minus_1);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn xor(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn xor(self: Self, schedule: Schedule) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn not(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn not(self: Self, schedule: Schedule) Error!Success {
             const top = try self.stack.peek();
             try self.stack.set_top(~top);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn byte(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn byte(self: Self, schedule: Schedule) Error!Success {
             const byte_index = try self.stack.pop();
             const value = try self.stack.peek();
             const result = if (byte_index >= 32) 0 else blk: {
@@ -561,25 +578,28 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 break :blk (value >> @as(ShiftType, @intCast(shift_amount))) & 0xFF;
             };
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn shl(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn shl(self: Self, schedule: Schedule) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const ShiftType = std.math.Log2Int(WordType);
             const result = if (shift >= @bitSizeOf(WordType)) 0 else value << @as(ShiftType, @intCast(shift));
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn shr(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn shr(self: Self, schedule: Schedule) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const ShiftType = std.math.Log2Int(WordType);
             const result = if (shift >= @bitSizeOf(WordType)) 0 else value >> @as(ShiftType, @intCast(shift));
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn sar(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn sar(self: Self, schedule: Schedule) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const word_bits = @bitSizeOf(WordType);
@@ -596,41 +616,46 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 break :blk @as(WordType, @bitCast(result_signed));
             };
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
         // Arithmetic operations
         /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn add(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn add(self: Self, schedule: Schedule) Error!Success {
             // Charge gas for simple arithmetic (fastest step)
             const gas_cost: u64 = GasConstants.GasFastestStep;
             try self.consumeGasChecked(gas_cost);
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
-        pub fn mul(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn mul(self: Self, schedule: Schedule) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn sub(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn sub(self: Self, schedule: Schedule) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
-        pub fn div(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn div(self: Self, schedule: Schedule) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn sdiv(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn sdiv(self: Self, schedule: Schedule) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -649,14 +674,16 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 }
             }
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
-        pub fn mod(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
+        pub fn mod(self: Self, schedule: Schedule) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator % denominator;
             try self.stack.set_top(result);
-            return @call(.always_tail, next[0], .{ self, next + 1 });
+            const next = Schedule{ .schedule = schedule.schedule + 1 };
+            return @call(.always_tail, next.schedule[0], .{ self, next });
         }
         pub fn smod(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             const denominator = try self.stack.pop();
@@ -2963,15 +2990,24 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
 
-            while (iter.next()) |op_data| {
+            while (true) {
+                const instr_pc = iter.pc;
+                const maybe = iter.next();
+                if (maybe == null) break;
+                const op_data = maybe.?;
                 switch (op_data) {
                     .regular => |data| {
-                        // Regular opcode - add handler
+                        // Regular opcode - add handler first, then metadata for PC
                         const handler = opcode_handlers[data.opcode];
                         try schedule_items.append(.{ .opcode_handler = handler });
+                        if (data.opcode == @intFromEnum(Opcode.PC)) {
+                            try schedule_items.append(.{ .pc = .{ .value = @intCast(instr_pc) } });
+                        }
                     },
                     .push => |data| {
-                        // PUSH operation - add metadata then handler
+                        // PUSH operation - add handler first, then metadata
+                        const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
+                        try schedule_items.append(.{ .opcode_handler = opcode_handlers[push_opcode] });
                         if (data.size <= 8) {
                             // Inline value for small pushes
                             const inline_value: u64 = @intCast(data.value);
@@ -2982,39 +3018,121 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                             value_ptr.* = data.value;
                             try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
                         }
-                        // Add the appropriate push handler based on size
-                        const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
-                        try schedule_items.append(.{ .opcode_handler = opcode_handlers[push_opcode] });
                     },
                     .jumpdest => |data| {
-                        // JUMPDEST - add metadata then handler
-                        try schedule_items.append(.{ .jump_dest = .{ .gas = data.gas_cost } });
+                        // JUMPDEST - add handler first, then metadata
                         try schedule_items.append(.{ .opcode_handler = &jumpdest });
+                        try schedule_items.append(.{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
                     .push_add_fusion => |data| {
-                        // Fused PUSH+ADD operation
+                        // Fused PUSH+ADD operation - handler first, then metadata
                         if (data.value <= std.math.maxInt(u64)) {
                             const inline_val: u64 = @intCast(data.value);
-                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
                             try schedule_items.append(.{ .opcode_handler = &push_add_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
                         } else {
                             const value_ptr = try allocator.create(u256);
                             value_ptr.* = data.value;
-                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
                             try schedule_items.append(.{ .opcode_handler = &push_add_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
                         }
                     },
                     .push_mul_fusion => |data| {
-                        // Fused PUSH+MUL operation
+                        // Fused PUSH+MUL operation - handler first, then metadata
                         if (data.value <= std.math.maxInt(u64)) {
                             const inline_val: u64 = @intCast(data.value);
-                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
                             try schedule_items.append(.{ .opcode_handler = &push_mul_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
                         } else {
                             const value_ptr = try allocator.create(u256);
                             value_ptr.* = data.value;
-                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
                             try schedule_items.append(.{ .opcode_handler = &push_mul_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    // Additional fusions (SUB/DIV/AND/OR/XOR/JUMP/JUMPI) - handler first, then metadata
+                    .push_sub_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_sub_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_sub_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .push_div_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_div_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_div_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .push_and_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_and_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_and_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .push_or_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_or_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_or_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .push_xor_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_xor_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_xor_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .push_jump_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_jump_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_jump_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .push_jumpi_fusion => |data| {
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .opcode_handler = &push_jumpi_inline });
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .opcode_handler = &push_jumpi_pointer });
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
                         }
                     },
                     .stop => {
@@ -3026,8 +3144,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 }
             }
 
-            // Add null terminator for handler chain
-            try schedule_items.append(.{ .opcode_handler = null });
+            // Add two STOP handlers instead of null terminator
+            try schedule_items.append(.{ .opcode_handler = &stop });
+            try schedule_items.append(.{ .opcode_handler = &stop });
 
             return schedule_items.toOwnedSlice();
         }
