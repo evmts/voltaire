@@ -228,13 +228,12 @@ pub fn main() !void {
     try bench.add("bytecode5/no_jumps_1000", benchmarkNoJumps5, .{});
     try bench.add("bytecode4/fusions_1000", benchmarkFusions4, .{});
     try bench.add("bytecode5/fusions_1000", benchmarkFusions5, .{});
-    // Comment out file-based tests for now
-    // try bench.add("bytecode4/erc20", benchmarkERC204, .{});
-    // try bench.add("bytecode5/erc20", benchmarkERC205, .{});
-    // try bench.add("bytecode4/snailtracer", benchmarkSnailTracer4, .{});
-    // try bench.add("bytecode5/snailtracer", benchmarkSnailTracer5, .{});
-    // try bench.add("bytecode4/10k_hashes", benchmarkTenThousandHashes4, .{});
-    // try bench.add("bytecode5/10k_hashes", benchmarkTenThousandHashes5, .{});
+    try bench.add("bytecode4/erc20", benchmarkERC204, .{});
+    try bench.add("bytecode5/erc20", benchmarkERC205, .{});
+    try bench.add("bytecode4/snailtracer", benchmarkSnailTracer4, .{});
+    try bench.add("bytecode5/snailtracer", benchmarkSnailTracer5, .{});
+    try bench.add("bytecode4/10k_hashes", benchmarkTenThousandHashes4, .{});
+    try bench.add("bytecode5/10k_hashes", benchmarkTenThousandHashes5, .{});
 
     try stdout.print("Running benchmarks...\\n\\n", .{});
     try stdout.flush();

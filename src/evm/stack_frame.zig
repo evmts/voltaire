@@ -6210,3 +6210,247 @@ test "StackFrame fusion detection in ERC20" {
     // ERC20 likely has some fusion opportunities
     std.testing.log.info("ERC20 fusion opportunities: {}", .{fusion_count});
 }
+
+test "Frame environment opcodes - addresses and values" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // Set a non-zero contract address and test ADDRESS
+    const custom_addr: Address = .{ .bytes = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x12, 0x34, 0x56, 0x78 } };
+    frame.contract_address = custom_addr;
+    try frame.address();
+    var pushed = try frame.stack.pop();
+    try std.testing.expectEqual(to_u256(custom_addr), pushed);
+
+    // ORIGIN (ZERO_ADDRESS in TestHost)
+    try frame.origin();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // CALLER (ZERO_ADDRESS in TestHost)
+    try frame.caller();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // CALLVALUE (0 in TestHost)
+    try frame.callvalue();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+}
+
+test "Frame environment opcodes - chain and balance" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // CHAINID (TestHost returns 1)
+    try frame.chainid();
+    var pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), pushed);
+
+    // SELFBALANCE (0 in TestHost)
+    try frame.selfbalance();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // BALANCE (pop address then push 0)
+    try frame.stack.push(0);
+    try frame.balance();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+}
+
+test "Frame block info opcodes - numbers" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // GASLIMIT (DefaultBlockInfo.init() = 30_000_000)
+    try frame.gaslimit();
+    var pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 30_000_000), pushed);
+
+    // BASEFEE (0)
+    try frame.basefee();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // TIMESTAMP (0)
+    try frame.timestamp();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // NUMBER (0)
+    try frame.number();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // DIFFICULTY/PREVRANDAO (0)
+    try frame.difficulty();
+    const diff = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), diff);
+    try frame.prevrandao();
+    const randao = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), randao);
+
+    // COINBASE (ZERO_ADDRESS → 0)
+    try frame.coinbase();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // BLOCKHASH with any number returns 0 for default block info
+    try frame.stack.push(0);
+    try frame.blockhash();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+}
+
+test "Frame blob opcodes - fees and hash" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // BLOBBASEFEE (0)
+    try frame.blobbasefee();
+    var pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+
+    // BLOBHASH (index 0 → 0)
+    try frame.stack.push(0);
+    try frame.blobhash();
+    pushed = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), pushed);
+}
+
+test "Frame code ops - codesize and codecopy" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const code = [_]u8{ @intFromEnum(Opcode.PUSH1), 0xAA, @intFromEnum(Opcode.STOP) };
+    var frame = try F.init(allocator, &code, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // CODESIZE should equal runtime bytecode length
+    try frame.codesize();
+    const size_val = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, code.len), size_val);
+
+    // CODECOPY: copy 4 bytes starting at offset 0 to dest 0
+    try frame.stack.push(4); // length
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // dest
+    try frame.codecopy();
+    const mem = try frame.memory.get_slice(0, 4);
+    try std.testing.expectEqual(@as(u8, @intFromEnum(Opcode.PUSH1)), mem[0]);
+    try std.testing.expectEqual(@as(u8, 0xAA), mem[1]);
+    try std.testing.expectEqual(@as(u8, 0x00), mem[2]); // zero-filled
+    try std.testing.expectEqual(@as(u8, 0x00), mem[3]); // zero-filled
+
+    // CODECOPY with offset beyond code should just zero-fill
+    try frame.stack.push(2); // length
+    try frame.stack.push(@as(u256, code.len)); // offset at end
+    try frame.stack.push(10); // dest
+    try frame.codecopy();
+    const mem2 = try frame.memory.get_slice(10, 2);
+    try std.testing.expectEqual(@as(u8, 0x00), mem2[0]);
+    try std.testing.expectEqual(@as(u8, 0x00), mem2[1]);
+}
+
+test "Frame calldata ops - size, load, copy" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // CALLDATASIZE (0)
+    try frame.calldatasize();
+    var val = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), val);
+
+    // CALLDATALOAD at offset 0 returns 0 for empty input
+    try frame.stack.push(0);
+    try frame.calldataload();
+    val = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), val);
+
+    // CALLDATACOPY: copy 4 bytes should zero-fill
+    try frame.stack.push(4); // length
+    try frame.stack.push(0); // offset
+    try frame.stack.push(20); // dest
+    try frame.calldatacopy();
+    const mem = try frame.memory.get_slice(20, 4);
+    try std.testing.expectEqual(@as(u8, 0), mem[0]);
+    try std.testing.expectEqual(@as(u8, 0), mem[1]);
+    try std.testing.expectEqual(@as(u8, 0), mem[2]);
+    try std.testing.expectEqual(@as(u8, 0), mem[3]);
+}
+
+test "Frame extcode and returndata ops - sizes, copy, hash" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // EXTCODESIZE (0 for empty)
+    try frame.stack.push(0); // address
+    try frame.extcodesize();
+    var v = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), v);
+
+    // EXTCODECOPY: zero-fill when no code
+    try frame.stack.push(4); // length
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // dest
+    try frame.stack.push(0); // address
+    try frame.extcodecopy();
+    const mem = try frame.memory.get_slice(0, 4);
+    try std.testing.expectEqual(@as(u8, 0), mem[0]);
+    try std.testing.expectEqual(@as(u8, 0), mem[1]);
+    try std.testing.expectEqual(@as(u8, 0), mem[2]);
+    try std.testing.expectEqual(@as(u8, 0), mem[3]);
+
+    // EXTCODEHASH: non-existent account → 0
+    try frame.stack.push(0);
+    try frame.extcodehash();
+    v = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), v);
+
+    // RETURNDATASIZE (0)
+    try frame.returndatasize();
+    v = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), v);
+
+    // RETURNDATACOPY with non-zero length on empty data should error
+    try frame.stack.push(1); // length
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // dest
+    try std.testing.expectError(error.OutOfBounds, frame.returndatacopy());
+}
+
+test "Frame gasprice and pc opcodes" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, createTestHost());
+    defer frame.deinit(allocator);
+
+    // GASPRICE (0)
+    try frame.gasprice();
+    var v = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), v);
+
+    // PC (stubbed to push 0)
+    _ = try frame.pc(createTestHandlerChain(@TypeOf(frame)));
+    v = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), v);
+}
