@@ -1,7 +1,8 @@
 /// Benchmarks for bytecode analysis performance
 const std = @import("std");
 const zbench = @import("zbench");
-const Bytecode = @import("bytecode4.zig").Bytecode;
+const Bytecode4 = @import("bytecode4.zig").Bytecode;
+const Bytecode5 = @import("bytecode5.zig").Bytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const Opcode = @import("opcode.zig").Opcode;
 
@@ -94,57 +95,112 @@ fn loadBytecodeFromFile(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
 }
 
 // Benchmark functions
-fn benchmarkNoJumps(allocator: std.mem.Allocator) void {
+fn benchmarkNoJumps4(allocator: std.mem.Allocator) void {
     const code = generateNoJumpsBytecode(allocator, 1000) catch |err| {
         std.debug.print("Failed to generate no jumps bytecode: {}\n", .{err});
         return;
     };
     defer allocator.free(code);
     
-    var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch |err| {
+    var bytecode = Bytecode4(BytecodeConfig{}).init(allocator, code) catch |err| {
         std.debug.print("Failed to init no jumps bytecode: {}\n", .{err});
         return;
     };
     defer bytecode.deinit();
 }
 
-fn benchmarkFusions(allocator: std.mem.Allocator) void {
+fn benchmarkNoJumps5(allocator: std.mem.Allocator) void {
+    const code = generateNoJumpsBytecode(allocator, 1000) catch |err| {
+        std.debug.print("Failed to generate no jumps bytecode: {}\n", .{err});
+        return;
+    };
+    defer allocator.free(code);
+    
+    var bytecode = Bytecode5(BytecodeConfig{}).init(allocator, code) catch |err| {
+        std.debug.print("Failed to init no jumps bytecode: {}\n", .{err});
+        return;
+    };
+    defer bytecode.deinit();
+}
+
+fn benchmarkFusions4(allocator: std.mem.Allocator) void {
     const code = generateFusionBytecode(allocator, 1000) catch |err| {
         std.debug.print("Failed to generate fusion bytecode: {}\n", .{err});
         return;
     };
     defer allocator.free(code);
     
-    var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch |err| {
+    var bytecode = Bytecode4(BytecodeConfig{}).init(allocator, code) catch |err| {
         std.debug.print("Failed to init fusion bytecode: {}\n", .{err});
         return;
     };
     defer bytecode.deinit();
 }
 
-fn benchmarkERC20(allocator: std.mem.Allocator) void {
+fn benchmarkFusions5(allocator: std.mem.Allocator) void {
+    const code = generateFusionBytecode(allocator, 1000) catch |err| {
+        std.debug.print("Failed to generate fusion bytecode: {}\n", .{err});
+        return;
+    };
+    defer allocator.free(code);
+    
+    var bytecode = Bytecode5(BytecodeConfig{}).init(allocator, code) catch |err| {
+        std.debug.print("Failed to init fusion bytecode: {}\n", .{err});
+        return;
+    };
+    defer bytecode.deinit();
+}
+
+fn benchmarkERC204(allocator: std.mem.Allocator) void {
     const code = loadBytecodeFromFile(allocator, "bench/cases/erc20-transfer/bytecode.txt") catch unreachable;
     defer allocator.free(code);
     
-    var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch unreachable;
+    var bytecode = Bytecode4(BytecodeConfig{}).init(allocator, code) catch unreachable;
     defer bytecode.deinit();
     
 }
 
-fn benchmarkSnailTracer(allocator: std.mem.Allocator) void {
+fn benchmarkERC205(allocator: std.mem.Allocator) void {
+    const code = loadBytecodeFromFile(allocator, "bench/cases/erc20-transfer/bytecode.txt") catch unreachable;
+    defer allocator.free(code);
+    
+    var bytecode = Bytecode5(BytecodeConfig{}).init(allocator, code) catch unreachable;
+    defer bytecode.deinit();
+    
+}
+
+fn benchmarkSnailTracer4(allocator: std.mem.Allocator) void {
     const code = loadBytecodeFromFile(allocator, "bench/cases/snailtracer/bytecode.txt") catch unreachable;
     defer allocator.free(code);
     
-    var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch unreachable;
+    var bytecode = Bytecode4(BytecodeConfig{}).init(allocator, code) catch unreachable;
     defer bytecode.deinit();
     
 }
 
-fn benchmarkTenThousandHashes(allocator: std.mem.Allocator) void {
+fn benchmarkSnailTracer5(allocator: std.mem.Allocator) void {
+    const code = loadBytecodeFromFile(allocator, "bench/cases/snailtracer/bytecode.txt") catch unreachable;
+    defer allocator.free(code);
+    
+    var bytecode = Bytecode5(BytecodeConfig{}).init(allocator, code) catch unreachable;
+    defer bytecode.deinit();
+    
+}
+
+fn benchmarkTenThousandHashes4(allocator: std.mem.Allocator) void {
     const code = loadBytecodeFromFile(allocator, "bench/cases/ten-thousand-hashes/bytecode.txt") catch unreachable;
     defer allocator.free(code);
     
-    var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch unreachable;
+    var bytecode = Bytecode4(BytecodeConfig{}).init(allocator, code) catch unreachable;
+    defer bytecode.deinit();
+    
+}
+
+fn benchmarkTenThousandHashes5(allocator: std.mem.Allocator) void {
+    const code = loadBytecodeFromFile(allocator, "bench/cases/ten-thousand-hashes/bytecode.txt") catch unreachable;
+    defer allocator.free(code);
+    
+    var bytecode = Bytecode5(BytecodeConfig{}).init(allocator, code) catch unreachable;
     defer bytecode.deinit();
     
 }
@@ -169,12 +225,17 @@ pub fn main() !void {
     try stdout.print("Adding benchmarks...\\n", .{});
     try stdout.flush();
     
-    try bench.add("bytecode/no_jumps_1000", benchmarkNoJumps, .{});
-    try bench.add("bytecode/fusions_1000", benchmarkFusions, .{});
-    // Comment out file-based benchmarks for now to test basic functionality
-    // try bench.add("bytecode/erc20", benchmarkERC20, .{});
-    // try bench.add("bytecode/snailtracer", benchmarkSnailTracer, .{});
-    // try bench.add("bytecode/10k_hashes", benchmarkTenThousandHashes, .{});
+    try bench.add("bytecode4/no_jumps_1000", benchmarkNoJumps4, .{});
+    try bench.add("bytecode5/no_jumps_1000", benchmarkNoJumps5, .{});
+    try bench.add("bytecode4/fusions_1000", benchmarkFusions4, .{});
+    try bench.add("bytecode5/fusions_1000", benchmarkFusions5, .{});
+    // Comment out file-based tests for now
+    // try bench.add("bytecode4/erc20", benchmarkERC204, .{});
+    // try bench.add("bytecode5/erc20", benchmarkERC205, .{});
+    // try bench.add("bytecode4/snailtracer", benchmarkSnailTracer4, .{});
+    // try bench.add("bytecode5/snailtracer", benchmarkSnailTracer5, .{});
+    // try bench.add("bytecode4/10k_hashes", benchmarkTenThousandHashes4, .{});
+    // try bench.add("bytecode5/10k_hashes", benchmarkTenThousandHashes5, .{});
 
     try stdout.print("Running benchmarks...\\n\\n", .{});
     try stdout.flush();
@@ -207,7 +268,7 @@ test "bytecode analysis on generated code" {
     const no_jumps = try generateNoJumpsBytecode(allocator, 50);
     defer allocator.free(no_jumps);
     
-    var bytecode1 = try Bytecode(BytecodeConfig{}).init(allocator, no_jumps);
+    var bytecode1 = try Bytecode4(BytecodeConfig{}).init(allocator, no_jumps);
     defer bytecode1.deinit();
     
     // Check that no JUMPDESTs were found
@@ -221,7 +282,7 @@ test "bytecode analysis on generated code" {
     const fusion = try generateFusionBytecode(allocator, 30);
     defer allocator.free(fusion);
     
-    var bytecode2 = try Bytecode(BytecodeConfig{}).init(allocator, fusion);
+    var bytecode2 = try Bytecode4(BytecodeConfig{}).init(allocator, fusion);
     defer bytecode2.deinit();
     
     // Just verify it initializes without error
