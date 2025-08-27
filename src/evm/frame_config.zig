@@ -21,6 +21,8 @@ pub const FrameConfig = struct {
     WordType: type = u256,
     /// The maximum amount of bytes allowed in contract code
     max_bytecode_size: u32 = 24576,
+    /// The maximum amount of bytes allowed in contract deployment
+    max_initcode_size: u32 = 49152,
     /// The maximum gas limit for a block
     block_gas_limit: u64 = 30_000_000,
     /// Optional tracer type for execution tracing. When null, tracing is disabled with zero overhead
@@ -34,7 +36,9 @@ pub const FrameConfig = struct {
     /// Set to 0 to disable SIMD and use scalar implementations. When > 0, enables vectorized
     /// operations for bulk stack operations (DUP/SWAP) and other suitable operations.
     /// Common values: 4, 8, 16, 32 depending on CPU (AVX, AVX2, AVX-512 support).
+    // @see https://ziglang.org/documentation/master/std/#std.simd.suggestVectorLengthForCpu
     vector_length: comptime_int = std.simd.suggestVectorLengthForCpu(u8, builtin.cpu) orelse 0,
+
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
         return if (self.max_bytecode_size <= std.math.maxInt(u8))
