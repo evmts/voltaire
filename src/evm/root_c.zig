@@ -59,6 +59,19 @@ pub export fn evm_cleanup() void {
     // Future: global cleanup if needed
 }
 
+// Ensure all C API modules are compiled and their tests are included when
+// root_c.zig is the test root, mirroring root.zig style.
+test "C API modules compile" {
+    std.testing.refAllDecls(frame_c);
+    std.testing.refAllDecls(bytecode_c);
+    std.testing.refAllDecls(memory_c);
+    std.testing.refAllDecls(stack_c);
+    std.testing.refAllDecls(plan_c);
+    std.testing.refAllDecls(planner_c);
+    std.testing.refAllDecls(precompiles_c);
+    std.testing.refAllDecls(hardfork_c);
+}
+
 // ============================================================================
 // TESTING FUNCTIONS (DEBUG BUILDS ONLY)
 // ============================================================================

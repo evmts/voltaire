@@ -157,3 +157,31 @@ test {
     _ = SelfDestruct;
     _ = AccessList;
 }
+
+// Include C API tests via import to ensure they run under `zig build test`
+// without modifying the top-level build script. These imports are scoped to
+// test-only context and do not affect normal builds.
+test "Include C API tests" {
+    const frame_c = @import("frame_c.zig");
+    const bytecode_c = @import("bytecode_c.zig");
+    const memory_c = @import("memory_c.zig");
+    const stack_c = @import("stack_c.zig");
+    const plan_c = @import("plan_c.zig");
+    const planner_c = @import("planner_c.zig");
+    const precompiles_c = @import("precompiles_c.zig");
+    const hardfork_c = @import("hardfork_c.zig");
+
+    std.testing.refAllDecls(frame_c);
+    std.testing.refAllDecls(bytecode_c);
+    std.testing.refAllDecls(memory_c);
+    std.testing.refAllDecls(stack_c);
+    std.testing.refAllDecls(plan_c);
+    std.testing.refAllDecls(planner_c);
+    std.testing.refAllDecls(precompiles_c);
+    std.testing.refAllDecls(hardfork_c);
+}
+
+test "Include fusion tests" {
+    _ = @import("test_planner_fusion.zig");
+    _ = @import("test_fusion_e2e.zig");
+}
