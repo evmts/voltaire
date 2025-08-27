@@ -33,6 +33,10 @@ pub const EvmConfig = struct {
     /// Controls the types used for difficulty and base_fee fields
     block_info_config: BlockInfoConfig = .{},
 
+    /// Enable bytecode fusion optimizations (default: true)
+    /// When enabled, common opcode patterns like PUSH+ADD are fused into single operations
+    enable_fusion: bool = true,
+
     /// Gets the appropriate type for depth based on max_call_depth
     pub fn get_depth_type(self: EvmConfig) type {
         return if (self.max_call_depth <= std.math.maxInt(u8))
