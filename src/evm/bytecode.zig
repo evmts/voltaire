@@ -872,19 +872,19 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 .is_create_code = false,
             };
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
-            var push_values = std.ArrayList(Stats.PushValue).init(self.allocator);
-            defer push_values.deinit();
+            var push_values = std.ArrayList(Stats.PushValue){};
+            defer push_values.deinit(self.allocator);
             // Fusion detection: use scalar approach (simple and robust)
 
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
-            var fusions = std.ArrayList(Stats.Fusion).init(self.allocator);
-            defer fusions.deinit();
+            var fusions = std.ArrayList(Stats.Fusion){};
+            defer fusions.deinit(self.allocator);
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
-            var jumpdests = std.ArrayList(PcType).init(self.allocator);
-            defer jumpdests.deinit();
+            var jumpdests = std.ArrayList(PcType){};
+            defer jumpdests.deinit(self.allocator);
             // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
-            var jumps = std.ArrayList(Stats.Jump).init(self.allocator);
-            defer jumps.deinit();
+            var jumps = std.ArrayList(Stats.Jump){};
+            defer jumps.deinit(self.allocator);
             var i: PcType = 0;
             while (i < self.runtime_code.len) {
                 // Prefetch ahead for stats collection
@@ -902,11 +902,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
                 const op = self.runtime_code[i];
                 stats.opcode_counts[op] += 1;
-                if (op == @intFromEnum(Opcode.JUMPDEST)) try jumpdests.append(i);
+                if (op == @intFromEnum(Opcode.JUMPDEST)) try jumpdests.append(self.allocator, i);
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n = op - (@intFromEnum(Opcode.PUSH1) - 1);
                     if (self.readPushValueN(i, @intCast(n))) |value| {
-                        try push_values.append(.{ .pc = i, .value = value });
+                        try push_values.append(self.allocator, .{ .pc = i, .value = value });
                         const next_pc = i + 1 + n;
 
                         // Detect simple PUSH+OP fusion opportunities
@@ -919,14 +919,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                                 next_op == @intFromEnum(Opcode.SUB) or
                                 next_op == @intFromEnum(Opcode.DIV))
                             {
-                                try fusions.append(.{ .pc = i, .second_opcode = @as(Opcode, @enumFromInt(next_op)) });
+                                try fusions.append(self.allocator, .{ .pc = i, .second_opcode = @as(Opcode, @enumFromInt(next_op)) });
                             }
                         }
                         if (next_pc < self.runtime_code.len and
                             (self.runtime_code[next_pc] == @intFromEnum(Opcode.JUMP) or
                                 self.runtime_code[next_pc] == @intFromEnum(Opcode.JUMPI)))
                         {
-                            try jumps.append(.{ .pc = next_pc, .target = value });
+                            try jumps.append(self.allocator, .{ .pc = next_pc, .target = value });
                             if (value < i) {
                                 stats.backwards_jumps += 1;
                             }
@@ -1216,8 +1216,9 @@ test "Bytecode.analyzeJumpDests" {
             self.jumpdests.append(pc) catch unreachable;
         }
     };
-    var context = Context{ .jumpdests = std.ArrayList(BytecodeDefault.PcType).init(std.testing.allocator) };
-    defer context.jumpdests.deinit();
+    var jumpdests_list = std.ArrayList(BytecodeDefault.PcType){};
+    defer jumpdests_list.deinit(std.testing.allocator);
+    var context = Context{ .jumpdests = jumpdests_list };
     bytecode.analyzeJumpDests(&context, Context.callback);
     try std.testing.expectEqual(@as(usize, 2), context.jumpdests.items.len);
     try std.testing.expectEqual(@as(BytecodeDefault.PcType, 3), context.jumpdests.items[0]);
@@ -2845,30 +2846,30 @@ test "Bytecode edge cases - metadata parsing" {
 
     // Bytecode with Solidity metadata at the end
     // Format: <bytecode> 0xa2 0x64 "ipfs" <34 bytes hash> 0x64 "solc" <3 bytes version> 0x00 0x33
-    var code_with_metadata = std.ArrayList(u8).init(allocator);
-    defer code_with_metadata.deinit();
+    var code_with_metadata = std.ArrayList(u8){};
+    defer code_with_metadata.deinit(allocator);
 
     // Add some regular bytecode
-    try code_with_metadata.appendSlice(&[_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }); // PUSH1 1 PUSH1 2 ADD STOP
+    try code_with_metadata.appendSlice(allocator, &[_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }); // PUSH1 1 PUSH1 2 ADD STOP
 
     // Add metadata marker and key "ipfs"
-    try code_with_metadata.appendSlice(&[_]u8{ 0xa2, 0x64 });
-    try code_with_metadata.appendSlice("ipfs");
+    try code_with_metadata.appendSlice(allocator, &[_]u8{ 0xa2, 0x64 });
+    try code_with_metadata.appendSlice(allocator, "ipfs");
 
     // Add 34-byte multihash length marker then 34 bytes of hash
-    try code_with_metadata.appendSlice(&[_]u8{ 0x58, 0x22 });
+    try code_with_metadata.appendSlice(allocator, &[_]u8{ 0x58, 0x22 });
     for (0..34) |i| {
-        try code_with_metadata.append(@intCast(i & 0xFF));
+        try code_with_metadata.append(allocator, @intCast(i & 0xFF));
     }
 
-    try code_with_metadata.append(0x64);
-    try code_with_metadata.appendSlice("solc");
+    try code_with_metadata.append(allocator, 0x64);
+    try code_with_metadata.appendSlice(allocator, "solc");
 
     // Add version bytes
-    try code_with_metadata.appendSlice(&[_]u8{ 0x00, 0x08, 0x13 }); // version 0.8.19
+    try code_with_metadata.appendSlice(allocator, &[_]u8{ 0x00, 0x08, 0x13 }); // version 0.8.19
 
     // Add length (50 bytes of metadata)
-    try code_with_metadata.appendSlice(&[_]u8{ 0x00, 0x32 });
+    try code_with_metadata.appendSlice(allocator, &[_]u8{ 0x00, 0x32 });
 
     var bytecode = try BytecodeDefault.init(allocator, code_with_metadata.items);
     defer bytecode.deinit();

@@ -154,7 +154,7 @@ pub const BytecodeStats = struct {
     pub fn formatStats(self: BytecodeStats, allocator: std.mem.Allocator) ![]const u8 {
         // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
         var list = std.ArrayList(u8).init(allocator);
-        errdefer list.deinit();
+        defer list.deinit();
         const writer = list.writer();
         
         try writer.writeAll("\n=== Bytecode Statistics ===\n");
