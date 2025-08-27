@@ -66,7 +66,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         });
         pub const Bytecode = bytecode_mod.Bytecode(.{
             .max_bytecode_size = config.max_bytecode_size,
-            .fusions_enabled = config.fusions_enabled,
+
             .vector_length = config.vector_length,
             .max_initcode_size = config.max_initcode_size,
         });
@@ -139,8 +139,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
-            // TODO remove this this is on success enum
-            STOP,
             REVERT,
             BytecodeTooLarge,
             AllocationError,
@@ -153,7 +151,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             WriteProtection,
         };
 
-        /// Generate a push handler for PUSH0-PUSH32
         fn generatePushHandler(comptime push_n: u8) *const Schedule.OpcodeHandler {
             if (push_n > 32) @compileError("Only PUSH0 to PUSH32 is supported");
             if (push_n == 0) @compileError("Push0 is handled as it's own opcode not via generatePushHandler");
@@ -538,7 +535,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             //     self.gas_remaining = @as(GasType, @intCast(@min(new_remaining, @as(u128, @intCast(std.math.maxInt(GasType))))));
             //   self.gas_refund = 0;
             //             }
-            return Error.STOP;
+            return Success.Stop;
         }
 
         pub fn @"and"(self: Self, schedule: Schedule) Error!Success {
@@ -2335,7 +2332,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// RETURN opcode (0xF3) - Halt execution returning data
         /// Halts execution and returns data from memory.
         /// Stack: [offset, size] → []
-        pub fn @"return"(self: *Self) Error!void {
+        pub fn @"return"(self: *Self) Error!Success {
             const size = try self.stack.pop();
             const offset = try self.stack.pop();
             // Bounds checking for memory offset and size
@@ -2373,7 +2370,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 self.gas_remaining = @as(GasType, @intCast(@min(new_remaining, @as(u128, @intCast(std.math.maxInt(GasType))))));
                 self.gas_refund = 0;
             }
-            return Error.STOP;
+            return Success.Return;
         }
         /// REVERT opcode (0xFD) - Halt execution reverting state changes
         /// Halts execution, reverts state changes, and returns data from memory.
@@ -2410,7 +2407,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// SELFDESTRUCT opcode (0xFF) - Mark contract for destruction
         /// Marks the current contract for destruction and transfers its balance to the recipient.
         /// Stack: [recipient] → []
-        pub fn selfdestruct(self: *Self) Error!void {
+        pub fn selfdestruct(self: *Self) Error!Success {
             const recipient_u256 = try self.stack.pop();
             const recipient = from_u256(recipient_u256);
 
@@ -2431,7 +2428,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             // According to EIP-6780 (Cancun hardfork), SELFDESTRUCT only actually destroys
             // the contract if it was created in the same transaction. This is handled by the host.
             // SELFDESTRUCT always stops execution
-            return Error.STOP;
+            return Success.SelfDestruct;
         }
 
         fn dup_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
@@ -3439,8 +3436,8 @@ test "Frame op_stop returns stop error" {
     const host = createTestHost();
     var frame = try F.init(allocator, &bytecode, 0, {}, host);
     defer frame.deinit(allocator);
-    // Execute op_stop - should return STOP error
-    try std.testing.expectError(error.STOP, frame.stop());
+    // Execute op_stop - should return Success.Stop
+    try std.testing.expectEqual(F.Success.Stop, try frame.stop());
 }
 test "Frame op_pop removes top stack item" {
     const allocator = std.testing.allocator;
