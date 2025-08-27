@@ -732,14 +732,20 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             // If it's a JUMP or JUMPI, validate the target
                             if (next_opcode == @intFromEnum(Opcode.JUMP) or 
                                 next_opcode == @intFromEnum(Opcode.JUMPI)) {
-                                // Extract the push value as jump target
-                                var target: PcType = 0;
+                                // Extract the full PUSH value, then cast if in range of PcType
+                                var target_u256: u256 = 0;
                                 var i: usize = 0;
-                                while (i < push_size and i < @bitSizeOf(PcType) / 8) : (i += 1) {
-                                    target = (target << 8) | self.runtime_code[value_start + i];
+                                while (i < push_size) : (i += 1) {
+                                    const b = self.runtime_code[value_start + i];
+                                    target_u256 = (target_u256 << 8) | @as(u256, b);
                                 }
-                                
-                                // Validate the jump target
+
+                                // If the target doesn't fit PcType, it's invalid
+                                if (target_u256 > @as(u256, std.math.maxInt(PcType))) {
+                                    return error.InvalidJumpDestination;
+                                }
+
+                                const target: PcType = @intCast(target_u256);
                                 if (!self.isValidJumpDest(target)) {
                                     return error.InvalidJumpDestination;
                                 }
@@ -2417,6 +2423,74 @@ test "bytecode5 iteratorWithData all opcode types" {
     try testing.expect(op6.?.data == .push);
     const expected_value = (@as(u256, 1) << 256) - 1;
     try testing.expectEqual(expected_value, op6.?.data.push.value);
+}
+
+test "bytecode5 validate_immediate_jumps with u8 PcType and PUSH2 target" {
+    const allocator = testing.allocator;
+    // Configure PcType = u8
+    const cfg = BytecodeConfig{ .max_bytecode_size = 255 };
+    const Small = Bytecode(cfg);
+
+    // Create code with PUSH2 0x00 0x80 then JUMP to JUMPDEST at 0x80
+    var code: [129]u8 = undefined; // indices 0..128
+    @memset(&code, @intFromEnum(Opcode.STOP));
+    code[0] = @intFromEnum(Opcode.PUSH2);
+    code[1] = 0x00;
+    code[2] = 0x80; // 128
+    code[3] = @intFromEnum(Opcode.JUMP);
+    code[128] = @intFromEnum(Opcode.JUMPDEST);
+
+    var bc = try Small.init(allocator, &code);
+    defer bc.deinit();
+    // Should be valid after init; explicit revalidation must not error
+    try bc.validate_immediate_jumps();
+}
+
+test "bytecode5 iteratorWithData truncated PUSH yields zero value" {
+    const allocator = testing.allocator;
+    const code = [_]u8{ @intFromEnum(Opcode.PUSH2), 0xAB, @intFromEnum(Opcode.STOP) }; // missing one data byte
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bc = try BytecodeType.init(allocator, &code);
+    defer bc.deinit();
+
+    var it = bc.iteratorWithData();
+    const first = it.next();
+    try testing.expect(first != null);
+    try testing.expect(first.? == .push);
+    // Not enough bytes to read full PUSH2 → value defaults to 0
+    try testing.expectEqual(@as(u256, 0), first.?.push.value);
+}
+
+test "bytecode5 stats fusion_count combines jump and advanced fusions" {
+    const allocator = testing.allocator;
+    const code = [_]u8{
+        // Jump fusion: JUMPDEST, PUSH1 0x06, JUMP → target JUMPDEST at 0x06
+        @intFromEnum(Opcode.JUMPDEST),     // pc 0
+        @intFromEnum(Opcode.PUSH1), 0x06,  // pc 1-2
+        @intFromEnum(Opcode.JUMP),         // pc 3
+        @intFromEnum(Opcode.INVALID),      // pc 4
+        @intFromEnum(Opcode.INVALID),      // pc 5
+        @intFromEnum(Opcode.JUMPDEST),     // pc 6 target
+        // Advanced fusion: two POPs
+        @intFromEnum(Opcode.POP),
+        @intFromEnum(Opcode.POP),
+        @intFromEnum(Opcode.STOP),
+    };
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bc = try BytecodeType.init(allocator, &code);
+    defer bc.deinit();
+
+    const stats = bc.getStats();
+    // Expect one jump fusion and one advanced fusion
+    try testing.expectEqual(@as(usize, 2), stats.fusion_count);
+}
+
+test "bytecode5 calculateInitcodeGas additional boundaries" {
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    // 31 bytes → 1 word
+    try testing.expectEqual(@as(u64, 2), BytecodeType.calculateInitcodeGas(31));
+    // 65 bytes → 3 words
+    try testing.expectEqual(@as(u64, 6), BytecodeType.calculateInitcodeGas(65));
 }
 
 test "bytecode5 extractMetadata prefers last occurrence" {

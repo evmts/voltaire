@@ -8,7 +8,7 @@
 
 const std = @import("std");
 const evm = @import("evm");
-const Bytecode5 = evm.Bytecode5;
+const Bytecode5 = evm.Bytecode5(.{});
 const Opcode = evm.Opcode;
 const primitives = @import("primitives");
 const U256 = primitives.U256.U256;
@@ -27,15 +27,12 @@ fn fuzzBytecodeAnalysis(context: void, input: []const u8) !void {
     const max_bytecode_size = 64 * 1024; // 64KB max
     const bytecode = input[0..@min(input.len, max_bytecode_size)];
     
-    // Create bytecode analyzer
-    var analyzer = Bytecode5.init(allocator);
-    defer analyzer.deinit();
-    
     // Analyze bytecode - all errors are acceptable outcomes
-    _ = analyzer.analyzeBytecode(bytecode) catch {
+    var analyzer = Bytecode5.init(allocator, bytecode) catch {
         // Expected errors from malformed bytecode
         return;
     };
+    defer analyzer.deinit();
 }
 
 test "fuzz bytecode5 jump destination analysis" {
@@ -48,35 +45,35 @@ fn fuzzJumpDestAnalysis(context: void, input: []const u8) !void {
     
     const allocator = std.testing.allocator;
     
-    // Create bytecode with forced JUMPDEST opcodes
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
+    // Create bytecode with forced JUMPDEST opcodes (up to 1024 bytes)
+    var bytecode_buf: [1024]u8 = undefined;
+    var bytecode_len: usize = 0;
     
     // Add some JUMPDEST instructions at random positions
     var i: usize = 0;
-    while (i < input.len and i < 1024) : (i += 1) {
+    while (i < input.len and bytecode_len < bytecode_buf.len - 1) : (i += 1) {
         if (input[i] % 4 == 0) {
-            try bytecode.append(@intFromEnum(Opcode.JUMPDEST));
+            bytecode_buf[bytecode_len] = @intFromEnum(Opcode.JUMPDEST);
         } else {
-            try bytecode.append(input[i]);
+            bytecode_buf[bytecode_len] = input[i];
         }
+        bytecode_len += 1;
     }
     
-    // Analyze bytecode
-    var analyzer = Bytecode5.init(allocator);
-    defer analyzer.deinit();
+    const bytecode = bytecode_buf[0..bytecode_len];
     
-    const result = analyzer.analyzeBytecode(bytecode.items) catch {
+    // Analyze bytecode
+    var analyzer = Bytecode5.init(allocator, bytecode) catch {
         // All errors acceptable
         return;
     };
-    defer result.deinit();
+    defer analyzer.deinit();
     
-    // Verify jump destinations are valid
-    var iter = result.valid_jump_destinations.iterator();
+    // Verify jump destinations are valid (they're built during init)
+    var iter = analyzer.valid_jump_destinations.iterator();
     while (iter.next()) |entry| {
         const pc = entry.key_ptr.*;
-        if (pc >= bytecode.items.len) {
+        if (pc >= bytecode.len) {
             // This shouldn't happen - would indicate a bug
             std.debug.panic("Invalid jump destination PC: {}", .{pc});
         }
@@ -93,30 +90,31 @@ fn fuzzPushInstructions(context: void, input: []const u8) !void {
     
     const allocator = std.testing.allocator;
     
-    // Create bytecode with various PUSH instructions
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
+    // Create bytecode with various PUSH instructions (up to 1024 bytes)
+    var bytecode_buf: [1024]u8 = undefined;
+    var bytecode_len: usize = 0;
     
     var i: usize = 0;
-    while (i < input.len - 33 and bytecode.items.len < 1024) {
+    while (i < input.len - 33 and bytecode_len < bytecode_buf.len - 33) {
         const push_size = (input[i] % 32) + 1; // PUSH1 to PUSH32
         const opcode = @intFromEnum(Opcode.PUSH1) + push_size - 1;
         
-        try bytecode.append(@intCast(opcode));
+        bytecode_buf[bytecode_len] = @intCast(opcode);
+        bytecode_len += 1;
         
         // Add push data (may be truncated)
         const data_available = input.len - i - 1;
-        const data_to_add = @min(push_size, data_available);
-        try bytecode.appendSlice(input[i + 1..i + 1 + data_to_add]);
+        const data_to_add = @min(push_size, @min(data_available, bytecode_buf.len - bytecode_len));
+        @memcpy(bytecode_buf[bytecode_len..bytecode_len + data_to_add], input[i + 1..i + 1 + data_to_add]);
+        bytecode_len += data_to_add;
         
         i += 1 + data_to_add;
     }
     
-    // Analyze bytecode
-    var analyzer = Bytecode5.init(allocator);
-    defer analyzer.deinit();
+    const bytecode = bytecode_buf[0..bytecode_len];
     
-    _ = analyzer.analyzeBytecode(bytecode.items) catch {
+    // Analyze bytecode
+    _ = Bytecode5.init(allocator, bytecode) catch {
         // Expected for truncated PUSH instructions
         return;
     };
@@ -132,68 +130,80 @@ fn fuzzFusionPatterns(context: void, input: []const u8) !void {
     
     const allocator = std.testing.allocator;
     
-    // Create bytecode that might contain fusion patterns
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
+    // Create bytecode that might contain fusion patterns (up to 1024 bytes)
+    var bytecode_buf: [1024]u8 = undefined;
+    var bytecode_len: usize = 0;
     
     var i: usize = 0;
-    while (i < input.len and bytecode.items.len < 1024) : (i += 1) {
+    while (i < input.len and bytecode_len < bytecode_buf.len - 10) : (i += 1) {
         const choice = input[i] % 10;
         
         switch (choice) {
             // PUSH-ADD pattern
             0 => {
-                try bytecode.append(@intFromEnum(Opcode.PUSH1));
-                try bytecode.append(if (i + 1 < input.len) input[i + 1] else 1);
-                try bytecode.append(@intFromEnum(Opcode.ADD));
-                i += 1;
+                if (bytecode_len + 3 <= bytecode_buf.len) {
+                    bytecode_buf[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                    bytecode_buf[bytecode_len + 1] = if (i + 1 < input.len) input[i + 1] else 1;
+                    bytecode_buf[bytecode_len + 2] = @intFromEnum(Opcode.ADD);
+                    bytecode_len += 3;
+                    i += 1;
+                }
             },
             // ISZERO-JUMPI pattern
             1 => {
-                try bytecode.append(@intFromEnum(Opcode.ISZERO));
-                try bytecode.append(@intFromEnum(Opcode.JUMPI));
+                if (bytecode_len + 2 <= bytecode_buf.len) {
+                    bytecode_buf[bytecode_len] = @intFromEnum(Opcode.ISZERO);
+                    bytecode_buf[bytecode_len + 1] = @intFromEnum(Opcode.JUMPI);
+                    bytecode_len += 2;
+                }
             },
             // Multi-PUSH pattern
             2 => {
-                try bytecode.append(@intFromEnum(Opcode.PUSH1));
-                try bytecode.append(if (i + 1 < input.len) input[i + 1] else 1);
-                try bytecode.append(@intFromEnum(Opcode.PUSH1));
-                try bytecode.append(if (i + 2 < input.len) input[i + 2] else 2);
-                i += 2;
+                if (bytecode_len + 4 <= bytecode_buf.len) {
+                    bytecode_buf[bytecode_len] = @intFromEnum(Opcode.PUSH1);
+                    bytecode_buf[bytecode_len + 1] = if (i + 1 < input.len) input[i + 1] else 1;
+                    bytecode_buf[bytecode_len + 2] = @intFromEnum(Opcode.PUSH1);
+                    bytecode_buf[bytecode_len + 3] = if (i + 2 < input.len) input[i + 2] else 2;
+                    bytecode_len += 4;
+                    i += 2;
+                }
             },
             // DUP2-MSTORE-PUSH pattern
             3 => {
-                try bytecode.append(@intFromEnum(Opcode.DUP2));
-                try bytecode.append(@intFromEnum(Opcode.MSTORE));
-                try bytecode.append(@intFromEnum(Opcode.PUSH1));
-                try bytecode.append(32);
+                if (bytecode_len + 4 <= bytecode_buf.len) {
+                    bytecode_buf[bytecode_len] = @intFromEnum(Opcode.DUP2);
+                    bytecode_buf[bytecode_len + 1] = @intFromEnum(Opcode.MSTORE);
+                    bytecode_buf[bytecode_len + 2] = @intFromEnum(Opcode.PUSH1);
+                    bytecode_buf[bytecode_len + 3] = 32;
+                    bytecode_len += 4;
+                }
             },
             // Random opcode
             else => {
-                try bytecode.append(input[i]);
+                bytecode_buf[bytecode_len] = input[i];
+                bytecode_len += 1;
             },
         }
     }
     
-    // Analyze bytecode
-    var analyzer = Bytecode5.init(allocator);
-    defer analyzer.deinit();
+    const bytecode = bytecode_buf[0..bytecode_len];
     
-    const result = analyzer.analyzeBytecode(bytecode.items) catch {
+    // Analyze bytecode
+    var analyzer = Bytecode5.init(allocator, bytecode) catch {
         // All errors acceptable
         return;
     };
-    defer result.deinit();
+    defer analyzer.deinit();
     
     // Check that fusion detection didn't cause crashes
-    if (result.advanced_fusions.count() > 0) {
-        var iter = result.advanced_fusions.iterator();
+    if (analyzer.advanced_fusions.count() > 0) {
+        var iter = analyzer.advanced_fusions.iterator();
         while (iter.next()) |entry| {
             const pc = entry.key_ptr.*;
             const fusion = entry.value_ptr.*;
             
             // Verify fusion PC is within bounds
-            if (pc + fusion.original_length > bytecode.items.len) {
+            if (pc + fusion.original_length > bytecode.len) {
                 std.debug.panic("Fusion extends beyond bytecode bounds", .{});
             }
         }
@@ -210,10 +220,7 @@ fn fuzzMalformedBytecode(context: void, input: []const u8) !void {
     const allocator = std.testing.allocator;
     
     // Test with completely random bytecode
-    var analyzer = Bytecode5.init(allocator);
-    defer analyzer.deinit();
-    
-    _ = analyzer.analyzeBytecode(input) catch {
+    _ = Bytecode5.init(allocator, input) catch {
         // All errors are acceptable
         return;
     };
@@ -227,17 +234,14 @@ fn fuzzEdgeCases(context: void, input: []const u8) !void {
     _ = context;
     
     const allocator = std.testing.allocator;
-    var analyzer = Bytecode5.init(allocator);
-    defer analyzer.deinit();
-    
     // Test empty bytecode
-    _ = analyzer.analyzeBytecode(&[_]u8{}) catch {
+    _ = Bytecode5.init(allocator, &[_]u8{}) catch {
         return;
     };
     
     // Test single byte
     if (input.len > 0) {
-        _ = analyzer.analyzeBytecode(input[0..1]) catch {
+        _ = Bytecode5.init(allocator, input[0..1]) catch {
             return;
         };
     }
@@ -245,7 +249,7 @@ fn fuzzEdgeCases(context: void, input: []const u8) !void {
     // Test bytecode ending with incomplete PUSH
     if (input.len > 2) {
         var bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32), input[0] };
-        _ = analyzer.analyzeBytecode(&bytecode) catch {
+        _ = Bytecode5.init(allocator, &bytecode) catch {
             // Expected error for truncated PUSH32
             return;
         };
