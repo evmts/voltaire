@@ -1,3 +1,4 @@
+/// DEPRECATED: Use bytecode4.zig instead
 /// EVM bytecode representation and validation
 ///
 /// Provides safe bytecode handling with:
@@ -54,6 +55,7 @@ const CACHE_LINE_SIZE = 64; // Common cache line size for x86-64 and ARM64
 const PREFETCH_DISTANCE = 256; // How far ahead to prefetch in bytes
 
 /// Factory function to create a Bytecode type with the given configuration
+/// @deprecated Use bytecode4.zig instead
 pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
 
@@ -177,6 +179,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         // NEW: SIMD-optimized packed bitmap (4 bits per byte position)
         packed_bitmap: []PackedBits,
 
+        /// @deprecated Use bytecode4.zig instead
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
             // First, try to parse metadata to separate runtime code
             const metadata = parseSolidityMetadataFromBytes(code);
@@ -212,6 +215,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Initialize bytecode from initcode (EIP-3860)
         /// Validates that initcode size doesn't exceed the maximum allowed
+        /// @deprecated Use bytecode4.zig instead
         pub fn initFromInitcode(allocator: std.mem.Allocator, initcode: []const u8) ValidationError!Self {
             if (initcode.len > cfg.max_initcode_size) {
                 return error.InitcodeTooLarge;
@@ -242,6 +246,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             return words * INITCODE_GAS_PER_WORD;
         }
 
+        /// @deprecated Use bytecode4.zig instead
         pub fn deinit(self: *Self) void {
             self.allocator.free(self.is_push_data);
             self.allocator.free(self.is_op_start);
@@ -251,6 +256,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         }
 
         /// Create an iterator for efficient bytecode traversal
+        /// @deprecated Use bytecode4.zig instead
         pub fn createIterator(self: *const Self) Iterator {
             return Iterator{
                 .bytecode = self,
@@ -260,6 +266,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Get fusion data for a bytecode position marked as fusion candidate
         /// This method uses the pre-computed packed bitmap instead of re-analyzing
+        /// @deprecated Use bytecode4.zig instead
         pub fn getFusionData(self: *const Self, pc: PcType) OpcodeData {
             if (pc >= self.len()) return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
             
@@ -331,6 +338,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Check if a position is a valid jump destination
         /// Uses precomputed bitmap for O(1) lookup
+        /// @deprecated Use bytecode4.zig instead
         pub fn isValidJumpDest(self: Self, pc: PcType) bool {
             if (pc >= self.len()) return false;
             // https://ziglang.org/documentation/master/#as

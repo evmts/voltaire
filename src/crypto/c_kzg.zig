@@ -3,6 +3,10 @@
 pub const Bytes32 = [32]u8;
 pub const Bytes48 = [48]u8;
 
+// EIP-4844 constants
+pub const BYTES_PER_BLOB = 131072; // 4096 * 32
+pub const Blob = [BYTES_PER_BLOB]u8;
+
 pub const KZGSettings = struct {};
 
 pub fn loadTrustedSetupFile(path: []const u8, precompute: u64) !void {

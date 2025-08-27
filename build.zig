@@ -727,6 +727,7 @@ pub fn build(b: *std.Build) void {
     });
     precompiles_test.root_module.addImport("evm", evm_mod);
     precompiles_test.root_module.addImport("primitives", primitives_mod);
+    precompiles_test.root_module.addImport("crypto", crypto_mod);
     if (bn254_lib) |bn254_library| {
         precompiles_test.linkLibrary(bn254_library);
         precompiles_test.addIncludePath(b.path("src/bn254_wrapper"));
@@ -1008,6 +1009,48 @@ pub fn build(b: *std.Build) void {
 
     const build_comprehensive_bench_step = b.step("build-comprehensive-evm-bench", "Build comprehensive EVM benchmarks");
     build_comprehensive_bench_step.dependOn(&b.addInstallArtifact(comprehensive_bench_exe, .{}).step);
+
+    // Bytecode benchmarks
+    const bytecode_bench_exe = b.addExecutable(.{
+        .name = "bytecode-bench",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/evm/bytecode_bench.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        }),
+    });
+    bytecode_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    bytecode_bench_exe.root_module.addImport("primitives", primitives_mod);
+    bytecode_bench_exe.root_module.addImport("evm", evm_mod);
+    bytecode_bench_exe.root_module.addImport("crypto", crypto_mod);
+    bytecode_bench_exe.root_module.addImport("build_options", build_options_mod);
+
+    b.installArtifact(bytecode_bench_exe);
+
+    const run_bytecode_bench_cmd = b.addRunArtifact(bytecode_bench_exe);
+    const bytecode_bench_step = b.step("bytecode-bench", "Run bytecode analysis benchmarks");
+    bytecode_bench_step.dependOn(&run_bytecode_bench_cmd.step);
+
+    const build_bytecode_bench_step = b.step("build-bytecode-bench", "Build bytecode analysis benchmarks");
+    build_bytecode_bench_step.dependOn(&b.addInstallArtifact(bytecode_bench_exe, .{}).step);
+
+    // Simple bytecode benchmark
+    const bytecode_bench_simple_exe = b.addExecutable(.{
+        .name = "bytecode-bench-simple",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/evm/bytecode_bench_simple.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        }),
+    });
+    bytecode_bench_simple_exe.root_module.addImport("primitives", primitives_mod);
+    bytecode_bench_simple_exe.root_module.addImport("evm", evm_mod);
+    bytecode_bench_simple_exe.root_module.addImport("crypto", crypto_mod);
+    bytecode_bench_simple_exe.root_module.addImport("build_options", build_options_mod);
+
+    const run_bytecode_bench_simple_cmd = b.addRunArtifact(bytecode_bench_simple_exe);
+    const bytecode_bench_simple_step = b.step("bytecode-bench-simple", "Run simple bytecode benchmarks");
+    bytecode_bench_simple_step.dependOn(&run_bytecode_bench_simple_cmd.step);
 
     const cli_cmd = blk: {
         const exe_name = if (target.result.os.tag == .windows) "evm-debugger.exe" else "evm-debugger";

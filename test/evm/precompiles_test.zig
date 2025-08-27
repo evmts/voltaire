@@ -8,15 +8,16 @@ const primitives = @import("primitives");
 
 const precompiles = evm.precompiles;
 const Address = primitives.Address.Address;
-const crypto = @import("../../src/crypto/root.zig");
+const crypto = @import("crypto");
 
+// KZG tests disabled until c_kzg dependency is updated for Zig 0.15.1
 test "Point Evaluation precompile - valid proof roundtrip" {
     const allocator = std.testing.allocator;
     // Skip if trusted setup is not present
     std.fs.cwd().access("data/kzg/trusted_setup.txt", .{}) catch return;
 
     // Initialize trusted setup
-    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    const kzg_setup = evm.kzg_setup;
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
@@ -57,7 +58,7 @@ test "Point Evaluation precompile - invalid proof fails" {
     const allocator = std.testing.allocator;
     std.fs.cwd().access("data/kzg/trusted_setup.txt", .{}) catch return;
 
-    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    const kzg_setup = evm.kzg_setup;
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
@@ -93,7 +94,7 @@ test "Point Evaluation precompile - mismatched versioned hash fails" {
     const allocator = std.testing.allocator;
     std.fs.cwd().access("data/kzg/trusted_setup.txt", .{}) catch return;
 
-    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    const kzg_setup = evm.kzg_setup;
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
@@ -127,7 +128,7 @@ test "Point Evaluation precompile - insufficient gas" {
     const allocator = std.testing.allocator;
     std.fs.cwd().access("data/kzg/trusted_setup.txt", .{}) catch return;
 
-    const kzg_setup = @import("../../src/evm/kzg_setup.zig");
+    const kzg_setup = evm.kzg_setup;
     try kzg_setup.init(allocator, "data/kzg/trusted_setup.txt");
     defer kzg_setup.deinit(allocator);
 
@@ -310,26 +311,26 @@ test "modexp precompile with test vectors" {
     
     for (test_cases) |tc| {
         // Build input: base_len(32) + exp_len(32) + mod_len(32) + base + exp + mod
-        var input = std.ArrayList(u8).init(allocator);
-        defer input.deinit();
+        var input = std.ArrayList(u8){};
+        defer input.deinit(allocator);
         
         // Write lengths as 32-byte big-endian
         var base_len_bytes = [_]u8{0} ** 32;
         base_len_bytes[31] = @intCast(tc.base.len);
-        try input.appendSlice(&base_len_bytes);
+        try input.appendSlice(allocator, &base_len_bytes);
         
         var exp_len_bytes = [_]u8{0} ** 32;
         exp_len_bytes[31] = @intCast(tc.exp.len);
-        try input.appendSlice(&exp_len_bytes);
+        try input.appendSlice(allocator, &exp_len_bytes);
         
         var mod_len_bytes = [_]u8{0} ** 32;
         mod_len_bytes[31] = @intCast(tc.mod.len);
-        try input.appendSlice(&mod_len_bytes);
+        try input.appendSlice(allocator, &mod_len_bytes);
         
         // Append the actual values
-        try input.appendSlice(tc.base);
-        try input.appendSlice(tc.exp);
-        try input.appendSlice(tc.mod);
+        try input.appendSlice(allocator, tc.base);
+        try input.appendSlice(allocator, tc.exp);
+        try input.appendSlice(allocator, tc.mod);
         
         const result = try precompiles.execute_modexp(allocator, input.items, 1_000_000);
         defer allocator.free(result.output);
