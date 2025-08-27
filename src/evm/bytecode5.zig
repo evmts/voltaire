@@ -39,58 +39,59 @@ fn analyzeBytecode(comptime PcType: type, comptime BasicBlock: type, comptime Fu
     // Create local pattern checking functions that can access FusionInfo type
     const checkConstantFoldingPatternWithFusion = struct {
         fn check(bytecode: []const u8, position: PcType) ?FusionInfo {
-            // Simple pattern: PUSH1 value1, PUSH1 value2, arithmetic_op
+            // Pattern A: PUSH1 a, PUSH1 b, <arith-op>
+            // Pattern B: PUSH1 a, PUSH1 b, PUSH1 shift, SHL, SUB
             if (position + 4 >= bytecode.len) return null;
-            
-            // Check first PUSH1
+
+            // First PUSH1
             if (bytecode[position] != @intFromEnum(Opcode.PUSH1)) return null;
             const value1 = bytecode[position + 1];
-            
-            // Check second PUSH1
+
+            // Second PUSH1
             if (bytecode[position + 2] != @intFromEnum(Opcode.PUSH1)) return null;
             const value2 = bytecode[position + 3];
-            
-            // Check arithmetic operation
-            const arith_op = bytecode[position + 4];
-            var folded_value: u256 = undefined;
-            var sequence_length: PcType = 5;
-            
-            switch (arith_op) {
-                @intFromEnum(Opcode.ADD) => {
-                    // Use normal u256 arithmetic as requested
-                    folded_value = @as(u256, value1) +% @as(u256, value2);
-                },
-                @intFromEnum(Opcode.SUB) => {
-                    folded_value = @as(u256, value1) -% @as(u256, value2);
-                },
-                @intFromEnum(Opcode.MUL) => {
-                    folded_value = @as(u256, value1) *% @as(u256, value2);
-                },
-                @intFromEnum(Opcode.SHL) => {
-                    // Special case: PUSH1 a, PUSH1 b, PUSH1 shift, SHL, SUB pattern
-                    if (position + 7 < bytecode.len and 
-                        bytecode[position + 4] == @intFromEnum(Opcode.PUSH1) and
-                        bytecode[position + 6] == @intFromEnum(Opcode.SHL) and
-                        bytecode[position + 7] == @intFromEnum(Opcode.SUB)) {
-                        const shift_amount = bytecode[position + 5];
-                        const shifted: u256 = if (shift_amount < 256) 
-                            @as(u256, value2) << @as(u8, @intCast(shift_amount))
-                        else 
-                            0;
-                        folded_value = @as(u256, value1) -% shifted;
-                        sequence_length = 8;
-                    } else {
-                        return null;
-                    }
-                },
-                else => return null,
+
+            // Next byte decides between pattern A and B
+            const next = bytecode[position + 4];
+
+            // Pattern A: arithmetic op directly after two PUSH1
+            if (next == @intFromEnum(Opcode.ADD) or
+                next == @intFromEnum(Opcode.SUB) or
+                next == @intFromEnum(Opcode.MUL))
+            {
+                const folded_value: u256 = switch (next) {
+                    @intFromEnum(Opcode.ADD) => @as(u256, value1) +% @as(u256, value2),
+                    @intFromEnum(Opcode.SUB) => @as(u256, value1) -% @as(u256, value2),
+                    @intFromEnum(Opcode.MUL) => @as(u256, value1) *% @as(u256, value2),
+                    else => unreachable,
+                };
+                return FusionInfo{
+                    .fusion_type = .constant_fold,
+                    .original_length = 5,
+                    .folded_value = folded_value,
+                };
             }
-            
-            return FusionInfo{
-                .fusion_type = .constant_fold,
-                .original_length = sequence_length,
-                .folded_value = folded_value,
-            };
+
+            // Pattern B: PUSH1 shift, SHL, SUB
+            if (position + 7 < bytecode.len and
+                next == @intFromEnum(Opcode.PUSH1) and
+                bytecode[position + 6] == @intFromEnum(Opcode.SHL) and
+                bytecode[position + 7] == @intFromEnum(Opcode.SUB))
+            {
+                const shift_amount = bytecode[position + 5];
+                const shifted: u256 = if (shift_amount < 256)
+                    (@as(u256, value2) << @as(u8, @intCast(shift_amount)))
+                else
+                    0;
+                const folded_value: u256 = @as(u256, value1) -% shifted;
+                return FusionInfo{
+                    .fusion_type = .constant_fold,
+                    .original_length = 8,
+                    .folded_value = folded_value,
+                };
+            }
+
+            return null;
         }
     }.check;
     
