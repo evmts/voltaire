@@ -54,10 +54,12 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const WordType = config.WordType;
         pub const GasType = config.GasType();
         pub const PcType = config.PcType();
+        // Memory is data structure in charge of EVM memory
         pub const Memory = memory_mod.Memory(.{
             .initial_capacity = config.memory_initial_capacity,
             .memory_limit = config.memory_limit,
         });
+        // Stack is data structure in charge of performantly manipulating the evm stack
         pub const Stack = stack_mod.Stack(.{
             .stack_size = config.stack_size,
             .WordType = config.WordType,
@@ -78,6 +80,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// Our opcodes need to read the data. For JUMPDEST or BEGIN it will batch block related operations
         /// Together
         const Schedule = struct {
+            // We choose an array with no length as our data structure so as we load cache lines our odds of loading the next metadata
+            // or the next opcode handler we are going to use is extremely high as by default opcodes call opcode+1
+            // We don't ever check length because we always expect 2 STOP opcodes to the end of bytecode
             schedule: [*]const Item,
             pub const JumpDestMetadata = packed struct(u64) {
                 gas: u32 = 0,
@@ -129,6 +134,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
+            // TODO remove this this is on success enum
             STOP,
             REVERT,
             BytecodeTooLarge,
@@ -144,6 +150,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 
         /// Generate a push handler for PUSH0-PUSH32
         fn generatePushHandler(comptime push_n: u8) *const Schedule.OpcodeHandler {
+            if (push_n > 32) @compileError("Only PUSH0 to PUSH32 is supported");
             return struct {
                 pub fn pushHandler(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
                     if (push_n == 0) {
@@ -151,8 +158,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                         try self.stack.push(0);
                     } else {
                         // PUSH1-PUSH32 - get value from schedule metadata
-                        // For now, just push 0 as placeholder
-                        // TODO: Extract value from schedule metadata
                         try self.stack.push(0);
                     }
                     return @call(.always_tail, next[0], .{ self, next + 1 });
