@@ -18,6 +18,7 @@ If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) 
 - ❌ Invalid benchmarks (must measure successful executions only)
 - ❌ Using `std.debug.print` in modules — always use `log.zig` instead
 - ❌ Skipping tests or commenting out problematic code - STOP and ask for help instead!
+- ❌ Fallback/stub implementations of ANY kind - NO stub functions, NO placeholder types, NO `error.NotAvailable` returns - STOP and ask for help!
 
 ## Coding Standards
 

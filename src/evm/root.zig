@@ -60,6 +60,7 @@ pub const DebuggingTracer = @import("tracer.zig").DebuggingTracer;
 pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 pub const Bytecode = @import("bytecode.zig").Bytecode;
 pub const createBytecode = @import("bytecode.zig").createBytecode;
+pub const Bytecode4 = @import("bytecode4.zig").Bytecode;
 pub const BytecodeStats = @import("bytecode_stats.zig").BytecodeStats;
 
 // Opcode and instruction data
@@ -138,6 +139,7 @@ test {
     _ = BytecodeConfig;
     _ = Bytecode;
     _ = createBytecode;
+    _ = Bytecode4;
     _ = BytecodeStats;
 
     // Test opcodes

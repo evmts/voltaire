@@ -46,7 +46,7 @@ pub const SHA256_Accel = @import("sha256_accel.zig");
 pub const Keccak256_Accel = @import("keccak256_accel.zig");
 
 // KZG commitments for EIP-4844
-pub const c_kzg = @import("c_kzg.zig");
+pub const c_kzg = @import("c_kzg");
 
 // BN254 for precompiles
 pub const bn254 = @import("bn254.zig");

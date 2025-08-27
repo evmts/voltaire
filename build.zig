@@ -35,6 +35,68 @@ pub fn build(b: *std.Build) void {
     lib_mod.addIncludePath(b.path("src/bn254_wrapper"));
     lib_mod.addImport("build_options", build_options_mod);
 
+    const zbench_dep = b.dependency("zbench", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // Build blst assembly first
+    const blst_build_cmd = b.addSystemCommand(&.{
+        "sh", "-c", "cd lib/c-kzg-4844/blst && ./build.sh",
+    });
+    
+    // Build blst library
+    const blst_lib = b.addLibrary(.{
+        .name = "blst",
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    blst_lib.linkLibC();
+    blst_lib.step.dependOn(&blst_build_cmd.step);
+    
+    // Add blst source files
+    blst_lib.addCSourceFiles(.{
+        .files = &.{
+            "lib/c-kzg-4844/blst/src/server.c",
+        },
+        .flags = &.{"-std=c99", "-D__BLST_PORTABLE__"},
+    });
+    blst_lib.addAssemblyFile(b.path("lib/c-kzg-4844/blst/build/assembly.S"));
+    blst_lib.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+    
+    // Build c-kzg-4844 from source
+    const c_kzg_lib = b.addLibrary(.{
+        .name = "c-kzg-4844",
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    c_kzg_lib.linkLibC();
+    c_kzg_lib.linkLibrary(blst_lib);
+    c_kzg_lib.addCSourceFiles(.{
+        .files = &.{
+            "lib/c-kzg-4844/src/ckzg.c",
+        },
+        .flags = &.{"-std=c99"},
+    });
+    c_kzg_lib.addIncludePath(b.path("lib/c-kzg-4844/src"));
+    c_kzg_lib.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+    
+    const c_kzg_mod = b.createModule(.{
+        .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    c_kzg_mod.linkLibrary(c_kzg_lib);
+    c_kzg_mod.linkLibrary(blst_lib);
+    c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
+    c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+
     const primitives_mod = b.createModule(.{
         .root_source_file = b.path("src/primitives/root.zig"),
         .target = target,
@@ -47,6 +109,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("primitives", primitives_mod);
+    crypto_mod.addImport("c_kzg", c_kzg_mod);
 
     const utils_mod = b.createModule(.{
         .root_source_file = b.path("src/utils.zig"),
@@ -119,11 +182,6 @@ pub fn build(b: *std.Build) void {
 
         break :blk lib;
     } else null;
-
-    const zbench_dep = b.dependency("zbench", .{
-        .target = target,
-        .optimize = optimize,
-    });
 
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -728,6 +786,10 @@ pub fn build(b: *std.Build) void {
     precompiles_test.root_module.addImport("evm", evm_mod);
     precompiles_test.root_module.addImport("primitives", primitives_mod);
     precompiles_test.root_module.addImport("crypto", crypto_mod);
+    precompiles_test.linkLibrary(c_kzg_lib);
+    precompiles_test.linkLibrary(blst_lib);
+    precompiles_test.addIncludePath(b.path("lib/c-kzg-4844/src"));
+    precompiles_test.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
     if (bn254_lib) |bn254_library| {
         precompiles_test.linkLibrary(bn254_library);
         precompiles_test.addIncludePath(b.path("src/bn254_wrapper"));

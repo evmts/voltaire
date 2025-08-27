@@ -820,10 +820,9 @@ test "bytecode4 ERC20 real world bytecode" {
     defer bytecode.deinit();
     
     // Verify the analysis results
-    // TODO: These are placeholder values - update after running the test
-    try testing.expectEqual(@as(usize, 999), bytecode.push_pcs.len); // Placeholder
-    try testing.expectEqual(@as(usize, 999), bytecode.jumpdests.len); // Placeholder
-    try testing.expectEqual(@as(usize, 999), bytecode.basic_blocks.len); // Placeholder
+    try testing.expectEqual(@as(usize, 3), bytecode.push_pcs.len); 
+    try testing.expectEqual(@as(usize, 1), bytecode.jumpdests.len); 
+    try testing.expectEqual(@as(usize, 2), bytecode.basic_blocks.len); 
     
     // Verify specific PUSH instructions were found
     try testing.expect(bytecode.isPushInstruction(0));  // PUSH1 at 0
@@ -832,4 +831,127 @@ test "bytecode4 ERC20 real world bytecode" {
     
     // Verify JUMPDEST was found
     try testing.expect(bytecode.isValidJumpDest(10));  // JUMPDEST at 10
+}
+
+test "bytecode4 complex iterator trace" {
+    const allocator = testing.allocator;
+    const crypto = @import("crypto");
+    
+    // Create a complex bytecode sample that exercises all features
+    const complex_bytecode = [_]u8{
+        // Start with some PUSH instructions
+        @intFromEnum(Opcode.PUSH1), 0x80,
+        @intFromEnum(Opcode.PUSH2), 0x01, 0x00,
+        @intFromEnum(Opcode.ADD),
+        
+        // Multiple JUMPDESTs  
+        @intFromEnum(Opcode.JUMPDEST),  // at 6
+        @intFromEnum(Opcode.PUSH1), 0x10,
+        @intFromEnum(Opcode.JUMPDEST),  // at 9
+        
+        // PUSH with JUMPDEST in data (should be ignored)
+        @intFromEnum(Opcode.PUSH2), @intFromEnum(Opcode.JUMPDEST), 0xFF,
+        
+        // More complex PUSH sizes
+        @intFromEnum(Opcode.PUSH4), 0x12, 0x34, 0x56, 0x78,
+        @intFromEnum(Opcode.JUMPDEST),  // at 17
+        
+        // PUSH32 (max size)
+        @intFromEnum(Opcode.PUSH32),
+    } ++ [_]u8{0xAB} ** 32 ++ [_]u8{
+        @intFromEnum(Opcode.JUMPDEST),  // at 50
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    // Initialize bytecode
+    const BytecodeType = Bytecode(BytecodeConfig{});
+    var bytecode = try BytecodeType.init(allocator, &complex_bytecode);
+    defer bytecode.deinit();
+    
+    // Create trace in temp file
+    const temp_dir = testing.tmpDir(.{});
+    defer temp_dir.cleanup();
+    
+    {
+        const temp_file = try temp_dir.dir.createFile("complex_iterator_trace.txt", .{});
+        defer temp_file.close();
+        
+        var writer = temp_file.writer();
+        
+        // Write header
+        try writer.print("Complex Bytecode Iterator Trace\n", .{});
+        try writer.print("===============================\n", .{});
+        try writer.print("Bytecode size: {} bytes\n\n", .{complex_bytecode.len});
+        
+        // Iterate and trace
+        var iter = bytecode.iterator();
+        var count: usize = 0;
+        while (iter.next()) |entry| : (count += 1) {
+            try writer.print("PC: 0x{X:0>4} | Opcode: 0x{X:0>2} | ", .{ entry.pc, entry.opcode });
+            
+            // Add opcode name if known
+            if (std.meta.intToEnum(Opcode, entry.opcode)) |op| {
+                try writer.print("{s}\n", .{@tagName(op)});
+            } else |_| {
+                try writer.print("UNKNOWN\n", .{});
+            }
+        }
+        
+        try writer.print("\nTotal instructions: {}\n", .{count});
+        try writer.print("Push instructions: {}\n", .{bytecode.push_pcs.len});
+        try writer.print("Jump destinations: {}\n", .{bytecode.jumpdests.len});
+        try writer.print("Basic blocks: {}\n", .{bytecode.basic_blocks.len});
+        
+        // List push instructions
+        try writer.print("\nPush instruction PCs: ", .{});
+        for (bytecode.push_pcs, 0..) |pc, i| {
+            if (i > 0) try writer.print(", ", .{});
+            try writer.print("{}", .{pc});
+        }
+        try writer.print("\n", .{});
+        
+        // List valid jumpdests
+        try writer.print("Valid JUMPDEST PCs: ", .{});
+        for (bytecode.jumpdests, 0..) |pc, i| {
+            if (i > 0) try writer.print(", ", .{});
+            try writer.print("{}", .{pc});
+        }
+        try writer.print("\n", .{});
+    }
+    
+    // Read temp file and compute hash
+    const temp_trace = try temp_dir.dir.readFileAlloc(allocator, "complex_iterator_trace.txt", 1024 * 1024);
+    defer allocator.free(temp_trace);
+    
+    const temp_hash = crypto.Hash.keccak256(temp_trace);
+    
+    // Check if fixture exists
+    const fixture_path = "fixtures/complex_iterator_trace.txt";
+    if (std.fs.cwd().openFile(fixture_path, .{})) |fixture_file| {
+        defer fixture_file.close();
+        
+        // Read fixture and compute hash
+        const fixture_trace = try fixture_file.readToEndAlloc(allocator, 1024 * 1024);
+        defer allocator.free(fixture_trace);
+        
+        const fixture_hash = crypto.Hash.keccak256(fixture_trace);
+        
+        // Compare hashes
+        try testing.expectEqualSlices(u8, &fixture_hash, &temp_hash);
+    } else |err| {
+        // First run - create fixture
+        if (err == error.FileNotFound) {
+            std.debug.print("\nCreating fixture: {s}\n", .{fixture_path});
+            const fixture_file = try std.fs.cwd().createFile(fixture_path, .{});
+            defer fixture_file.close();
+            try fixture_file.writeAll(temp_trace);
+            std.debug.print("Fixture created with hash: ", .{});
+            for (temp_hash) |b| {
+                std.debug.print("{x:0>2}", .{b});
+            }
+            std.debug.print("\n", .{});
+        } else {
+            return err;
+        }
+    }
 }
