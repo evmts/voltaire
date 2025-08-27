@@ -62,7 +62,7 @@ pub fn build(b: *std.Build) void {
         .files = &.{
             "lib/c-kzg-4844/blst/src/server.c",
         },
-        .flags = &.{"-std=c99", "-D__BLST_PORTABLE__"},
+        .flags = &.{"-std=c99", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined"},
     });
     blst_lib.addAssemblyFile(b.path("lib/c-kzg-4844/blst/build/assembly.S"));
     blst_lib.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
@@ -82,7 +82,7 @@ pub fn build(b: *std.Build) void {
         .files = &.{
             "lib/c-kzg-4844/src/ckzg.c",
         },
-        .flags = &.{"-std=c99"},
+        .flags = &.{"-std=c99", "-fno-sanitize=undefined"},
     });
     c_kzg_lib.addIncludePath(b.path("lib/c-kzg-4844/src"));
     c_kzg_lib.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
@@ -976,115 +976,145 @@ pub fn build(b: *std.Build) void {
     const test_evm_create_step = b.step("test-evm-new-create", "Run EVM CREATE/CREATE2 tests");
     test_evm_create_step.dependOn(&run_test_evm_create.step);
 
-    const evm_bench_exe = b.addExecutable(.{
-        .name = "evm-bench",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/bench/evm_zbench_simple.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    evm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    evm_bench_exe.root_module.addImport("primitives", primitives_mod);
-    evm_bench_exe.root_module.addImport("crypto", crypto_mod);
+    const have_evm_zbench_simple = blk: {
+        std.fs.cwd().access("src/evm/bench/evm_zbench_simple.zig", .{}) catch break :blk false;
+        break :blk true;
+    };
+    if (have_evm_zbench_simple) {
+        const evm_bench_exe = b.addExecutable(.{
+            .name = "evm-bench",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/evm/bench/evm_zbench_simple.zig"),
+                .target = target,
+                .optimize = .ReleaseFast,
+            }),
+        });
+        evm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+        evm_bench_exe.root_module.addImport("primitives", primitives_mod);
+        evm_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(evm_bench_exe);
+        b.installArtifact(evm_bench_exe);
 
-    const run_evm_bench_cmd = b.addRunArtifact(evm_bench_exe);
-    const evm_bench_step = b.step("evm-bench", "Run EVM zbench benchmarks");
-    evm_bench_step.dependOn(&run_evm_bench_cmd.step);
+        const run_evm_bench_cmd = b.addRunArtifact(evm_bench_exe);
+        const evm_bench_step = b.step("evm-bench", "Run EVM zbench benchmarks");
+        evm_bench_step.dependOn(&run_evm_bench_cmd.step);
 
-    const build_evm_bench_step = b.step("build-evm-bench", "Build EVM zbench benchmarks");
-    build_evm_bench_step.dependOn(&b.addInstallArtifact(evm_bench_exe, .{}).step);
+        const build_evm_bench_step = b.step("build-evm-bench", "Build EVM zbench benchmarks");
+        build_evm_bench_step.dependOn(&b.addInstallArtifact(evm_bench_exe, .{}).step);
+    }
 
-    const evm_comprehensive_bench_exe = b.addExecutable(.{
-        .name = "evm-comprehensive-bench",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/bench/evm_zbench_comprehensive.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    evm_comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    evm_comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
-    evm_comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
+    const have_evm_zbench_comprehensive = blk: {
+        std.fs.cwd().access("src/evm/bench/evm_zbench_comprehensive.zig", .{}) catch break :blk false;
+        break :blk true;
+    };
+    if (have_evm_zbench_comprehensive) {
+        const evm_comprehensive_bench_exe = b.addExecutable(.{
+            .name = "evm-comprehensive-bench",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/evm/bench/evm_zbench_comprehensive.zig"),
+                .target = target,
+                .optimize = .ReleaseFast,
+            }),
+        });
+        evm_comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+        evm_comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
+        evm_comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    b.installArtifact(evm_comprehensive_bench_exe);
+        b.installArtifact(evm_comprehensive_bench_exe);
 
-    const run_evm_comprehensive_bench_cmd = b.addRunArtifact(evm_comprehensive_bench_exe);
-    const evm_comprehensive_bench_step = b.step("evm-comprehensive-bench", "Run EVM comprehensive performance benchmarks");
-    evm_comprehensive_bench_step.dependOn(&run_evm_comprehensive_bench_cmd.step);
+        const run_evm_comprehensive_bench_cmd = b.addRunArtifact(evm_comprehensive_bench_exe);
+        const evm_comprehensive_bench_step = b.step("evm-comprehensive-bench", "Run EVM comprehensive performance benchmarks");
+        evm_comprehensive_bench_step.dependOn(&run_evm_comprehensive_bench_cmd.step);
 
-    const build_evm_comprehensive_bench_step = b.step("build-evm-comprehensive-bench", "Build EVM comprehensive benchmarks");
-    build_evm_comprehensive_bench_step.dependOn(&b.addInstallArtifact(evm_comprehensive_bench_exe, .{}).step);
+        const build_evm_comprehensive_bench_step = b.step("build-evm-comprehensive-bench", "Build EVM comprehensive benchmarks");
+        build_evm_comprehensive_bench_step.dependOn(&b.addInstallArtifact(evm_comprehensive_bench_exe, .{}).step);
+    }
 
-    const evm_revm_comparison_bench_exe = b.addExecutable(.{
-        .name = "evm-revm-comparison-bench",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/bench/evm_revm_zbench_comparison.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    evm_revm_comparison_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    evm_revm_comparison_bench_exe.root_module.addImport("primitives", primitives_mod);
-    evm_revm_comparison_bench_exe.root_module.addImport("evm", evm_mod);
-    evm_revm_comparison_bench_exe.root_module.addImport("evm", evm_mod);
-    evm_revm_comparison_bench_exe.root_module.addImport("revm", revm_mod);
-    evm_revm_comparison_bench_exe.root_module.addImport("crypto", crypto_mod);
+    const have_evm_revm_zbench_comparison = blk: {
+        std.fs.cwd().access("src/evm/bench/evm_revm_zbench_comparison.zig", .{}) catch break :blk false;
+        break :blk true;
+    };
+    if (have_evm_revm_zbench_comparison) {
+        const evm_revm_comparison_bench_exe = b.addExecutable(.{
+            .name = "evm-revm-comparison-bench",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/evm/bench/evm_revm_zbench_comparison.zig"),
+                .target = target,
+                .optimize = .ReleaseFast,
+            }),
+        });
+        evm_revm_comparison_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+        evm_revm_comparison_bench_exe.root_module.addImport("primitives", primitives_mod);
+        evm_revm_comparison_bench_exe.root_module.addImport("evm", evm_mod);
+        evm_revm_comparison_bench_exe.root_module.addImport("evm", evm_mod);
+        evm_revm_comparison_bench_exe.root_module.addImport("revm", revm_mod);
+        evm_revm_comparison_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    const run_evm_revm_comparison_bench_cmd = b.addRunArtifact(evm_revm_comparison_bench_exe);
-    const evm_revm_comparison_bench_step = b.step("evm-revm-comparison-bench", "Run EVM vs REVM comparison benchmarks");
-    evm_revm_comparison_bench_step.dependOn(&run_evm_revm_comparison_bench_cmd.step);
+        const run_evm_revm_comparison_bench_cmd = b.addRunArtifact(evm_revm_comparison_bench_exe);
+        const evm_revm_comparison_bench_step = b.step("evm-revm-comparison-bench", "Run EVM vs REVM comparison benchmarks");
+        evm_revm_comparison_bench_step.dependOn(&run_evm_revm_comparison_bench_cmd.step);
 
-    const build_evm_revm_comparison_bench_step = b.step("build-evm-revm-comparison-bench", "Build EVM vs REVM comparison benchmarks");
-    build_evm_revm_comparison_bench_step.dependOn(&b.addInstallArtifact(evm_revm_comparison_bench_exe, .{}).step);
+        const build_evm_revm_comparison_bench_step = b.step("build-evm-revm-comparison-bench", "Build EVM vs REVM comparison benchmarks");
+        build_evm_revm_comparison_bench_step.dependOn(&b.addInstallArtifact(evm_revm_comparison_bench_exe, .{}).step);
+    }
 
-    const simple_evm_revm_bench_exe = b.addExecutable(.{
-        .name = "simple-evm-revm-bench",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/bench/simple_evm_revm_comparison.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    simple_evm_revm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    simple_evm_revm_bench_exe.root_module.addImport("primitives", primitives_mod);
-    simple_evm_revm_bench_exe.root_module.addImport("evm", evm_mod);
-    simple_evm_revm_bench_exe.root_module.addImport("revm", revm_mod);
-    simple_evm_revm_bench_exe.root_module.addImport("crypto", crypto_mod);
+    const have_simple_evm_revm = blk: {
+        std.fs.cwd().access("src/evm/bench/simple_evm_revm_comparison.zig", .{}) catch break :blk false;
+        break :blk true;
+    };
+    if (have_simple_evm_revm) {
+        const simple_evm_revm_bench_exe = b.addExecutable(.{
+            .name = "simple-evm-revm-bench",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/evm/bench/simple_evm_revm_comparison.zig"),
+                .target = target,
+                .optimize = .ReleaseFast,
+            }),
+        });
+        simple_evm_revm_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+        simple_evm_revm_bench_exe.root_module.addImport("primitives", primitives_mod);
+        simple_evm_revm_bench_exe.root_module.addImport("evm", evm_mod);
+        simple_evm_revm_bench_exe.root_module.addImport("revm", revm_mod);
+        simple_evm_revm_bench_exe.root_module.addImport("crypto", crypto_mod);
 
-    const run_simple_evm_revm_bench_cmd = b.addRunArtifact(simple_evm_revm_bench_exe);
-    const simple_evm_revm_bench_step = b.step("simple-evm-revm-bench", "Run simple EVM vs REVM comparison benchmarks");
-    simple_evm_revm_bench_step.dependOn(&run_simple_evm_revm_bench_cmd.step);
+        const run_simple_evm_revm_bench_cmd = b.addRunArtifact(simple_evm_revm_bench_exe);
+        const simple_evm_revm_bench_step = b.step("simple-evm-revm-bench", "Run simple EVM vs REVM comparison benchmarks");
+        simple_evm_revm_bench_step.dependOn(&run_simple_evm_revm_bench_cmd.step);
 
-    const build_simple_evm_revm_bench_step = b.step("build-simple-evm-revm-bench", "Build simple EVM vs REVM comparison benchmarks");
-    build_simple_evm_revm_bench_step.dependOn(&b.addInstallArtifact(simple_evm_revm_bench_exe, .{}).step);
+        const build_simple_evm_revm_bench_step = b.step("build-simple-evm-revm-bench", "Build simple EVM vs REVM comparison benchmarks");
+        build_simple_evm_revm_bench_step.dependOn(&b.addInstallArtifact(simple_evm_revm_bench_exe, .{}).step);
+    }
 
-    const comprehensive_bench_exe = b.addExecutable(.{
-        .name = "comprehensive-evm-bench",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/bench/comprehensive_evm_bench.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
-    comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
-    comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
-    comprehensive_bench_exe.root_module.addImport("revm", revm_mod);
-    comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
-    comprehensive_bench_exe.root_module.addImport("build_options", build_options_mod);
+    const have_comprehensive_bench = blk: {
+        std.fs.cwd().access("src/evm/bench/comprehensive_evm_bench.zig", .{}) catch break :blk false;
+        break :blk true;
+    };
+    if (have_comprehensive_bench) {
+        const comprehensive_bench_exe = b.addExecutable(.{
+            .name = "comprehensive-evm-bench",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/evm/bench/comprehensive_evm_bench.zig"),
+                .target = target,
+                .optimize = .ReleaseFast,
+            }),
+        });
+        comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+        comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
+        comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
+        comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
+        comprehensive_bench_exe.root_module.addImport("revm", revm_mod);
+        comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
+        comprehensive_bench_exe.root_module.addImport("build_options", build_options_mod);
 
-    b.installArtifact(comprehensive_bench_exe);
+        b.installArtifact(comprehensive_bench_exe);
 
-    const run_comprehensive_bench_cmd = b.addRunArtifact(comprehensive_bench_exe);
-    const comprehensive_bench_step = b.step("comprehensive-evm-bench", "Run comprehensive EVM comparison benchmarks");
-    comprehensive_bench_step.dependOn(&run_comprehensive_bench_cmd.step);
+        const run_comprehensive_bench_cmd = b.addRunArtifact(comprehensive_bench_exe);
+        const comprehensive_bench_step = b.step("comprehensive-evm-bench", "Run comprehensive EVM comparison benchmarks");
+        comprehensive_bench_step.dependOn(&run_comprehensive_bench_cmd.step);
 
-    const build_comprehensive_bench_step = b.step("build-comprehensive-evm-bench", "Build comprehensive EVM benchmarks");
-    build_comprehensive_bench_step.dependOn(&b.addInstallArtifact(comprehensive_bench_exe, .{}).step);
+        const build_comprehensive_bench_step = b.step("build-comprehensive-evm-bench", "Build comprehensive EVM benchmarks");
+        build_comprehensive_bench_step.dependOn(&b.addInstallArtifact(comprehensive_bench_exe, .{}).step);
+    }
 
     // Bytecode benchmarks
     const bytecode_bench_exe = b.addExecutable(.{
