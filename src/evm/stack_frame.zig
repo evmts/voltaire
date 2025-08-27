@@ -20,6 +20,8 @@ pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const Account = @import("database_interface.zig").Account;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const bytecode_mod = @import("bytecode.zig");
+const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
@@ -59,6 +61,13 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             .stack_size = config.stack_size,
             .WordType = config.WordType,
         });
+        
+        // Create Bytecode type with matching configuration
+        const bytecode_config = BytecodeConfig{
+            .max_bytecode_size = config.max_bytecode_size,
+            .fusions_enabled = true, // Enable fusion detection
+        };
+        pub const Bytecode = bytecode_mod.Bytecode(bytecode_config);
 
         /// The schedule is the internal data structure on StackFrame that controls
         /// dispatching new opcodes and providing bytecode data such as push values to those
@@ -320,7 +329,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 
         // Cacheline 1
         stack: Stack,
-        bytecode: []const u8, // 16 bytes (slice)
+        bytecode: Bytecode, // Use Bytecode type for optimized access
         gas_remaining: GasType, // Direct gas tracking
         /// Initial gas at frame start for refund cap calculation
         initial_gas: GasType = 0,
@@ -339,11 +348,24 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         ///
         /// Creates stack, memory, and other execution components. Validates
         /// bytecode size and allocates resources with proper cleanup on failure.
-        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: Host) Error!Self {
-            if (bytecode.len > max_bytecode_size) {
+        pub fn init(allocator: std.mem.Allocator, bytecode_raw: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: Host) Error!Self {
+            if (bytecode_raw.len > max_bytecode_size) {
                 @branchHint(.unlikely);
                 return Error.BytecodeTooLarge;
             }
+            
+            // Create Bytecode instance with validation and optimization
+            var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
+                @branchHint(.unlikely);
+                return switch (e) {
+                    error.BytecodeTooLarge => Error.BytecodeTooLarge,
+                    error.InvalidOpcode => Error.InvalidOpcode,
+                    error.OutOfMemory => Error.AllocationError,
+                    else => Error.AllocationError,
+                };
+            };
+            errdefer bytecode.deinit();
+            
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
                 return Error.AllocationError;
@@ -376,6 +398,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.stack.deinit(allocator);
             self.memory.deinit();
+            self.bytecode.deinit();
             // Free log data
             for (self.logs.items) |log_entry| {
                 allocator.free(log_entry.topics);
@@ -466,7 +489,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 
             return Self{
                 .stack = new_stack,
-                .bytecode = self.bytecode,
+                .bytecode = self.bytecode, // Note: Bytecode is shared, not copied
                 .gas_remaining = self.gas_remaining,
                 .initial_gas = self.initial_gas,
                 .tracer = if (config.TracerType) |_| self.tracer else {},
@@ -801,9 +824,8 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
         // Helper function to validate if a PC position contains a valid JUMPDEST
         pub fn is_valid_jump_dest(self: *Self, pc_value: usize) bool {
-            if (pc_value >= self.bytecode.len) return false;
-            const opcode = self.bytecode[pc_value];
-            return opcode == @intFromEnum(Opcode.JUMPDEST);
+            // Use the optimized bitmap lookup from Bytecode
+            return self.bytecode.isValidJumpDest(@intCast(pc_value));
         }
         pub fn jumpdest(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
             // JUMPDEST does nothing - it's just a marker for valid jump destinations
@@ -1228,7 +1250,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// Pushes the size of the currently executing contract's code.
         /// Stack: [] → [size]
         pub fn codesize(self: *Self) Error!void {
-            const bytecode_len = @as(WordType, @truncate(@as(u256, @intCast(self.bytecode.len))));
+            const bytecode_len = @as(WordType, @truncate(@as(u256, @intCast(self.bytecode.len()))));
             try self.stack.push(bytecode_len);
         }
         /// CODECOPY opcode (0x39) - Copy executing contract code to memory
@@ -1257,11 +1279,12 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             };
             // Copy contract code to memory with bounds checking
             var copied: usize = 0;
-            if (offset_usize < self.bytecode.len) {
-                const available = self.bytecode.len - offset_usize;
+            const bytecode_len = self.bytecode.len();
+            if (offset_usize < bytecode_len) {
+                const available = bytecode_len - offset_usize;
                 const copy_len = @min(length_usize, available);
                 if (copy_len > 0) {
-                    const src_slice = self.bytecode[offset_usize .. offset_usize + copy_len];
+                    const src_slice = self.bytecode.raw()[offset_usize .. offset_usize + copy_len];
                     self.memory.set_data(dest_offset_usize, src_slice) catch return Error.OutOfBounds;
                     copied = copy_len;
                 }
@@ -2542,95 +2565,187 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         
         // Synthetic opcode handlers for optimized operations (placeholder implementations)
         pub fn push_add_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const result = a +% 0; // TODO: Get actual inline value from schedule
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline value from schedule metadata (next[-1] is the metadata)
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value;
+        
+        // Pop top value and add the pushed value
+        const a = try self.stack.pop();
+        const result = a +% push_value;
+        try self.stack.push(result);
+        
+        // Continue to next operation (skip metadata)
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_add_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const result = a +% 0; // TODO: Get actual pointer value from schedule
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to u256 value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value.*;
+        
+        // Pop top value and add the pushed value
+        const a = try self.stack.pop();
+        const result = a +% push_value;
+        try self.stack.push(result);
+        
+        // Continue to next operation (skip metadata)
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mul_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const result = a *% 1; // TODO: Get actual inline value
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline value from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value;
+        
+        // Pop top value and multiply with the pushed value
+        const a = try self.stack.pop();
+        const result = a *% push_value;
+        try self.stack.push(result);
+        
+        // Continue to next operation (skip metadata)
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mul_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const result = a *% 1; // TODO: Get actual pointer value
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to u256 value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value.*;
+        
+        // Pop top value and multiply with the pushed value
+        const a = try self.stack.pop();
+        const result = a *% push_value;
+        try self.stack.push(result);
+        
+        // Continue to next operation (skip metadata)
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_div_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const divisor = 1; // TODO: Get actual inline value
+        // Extract inline divisor from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const divisor = metadata_ptr.value;
+        
+        // Pop dividend and perform division
+        const a = try self.stack.pop();
         const result = if (divisor == 0) 0 else a / divisor;
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_div_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const divisor = 1; // TODO: Get actual pointer value
+        // Extract pointer to divisor value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const divisor = metadata_ptr.value.*;
+        
+        // Pop dividend and perform division
+        const a = try self.stack.pop();
         const result = if (divisor == 0) 0 else a / divisor;
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_sub_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const result = a -% 0; // TODO: Get actual inline value
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline value from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value;
+        
+        // Pop top value and subtract the pushed value
+        const a = try self.stack.pop();
+        const result = a -% push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_sub_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const a = try self.stack.pop_unsafe();
-        const result = a -% 0; // TODO: Get actual pointer value
-        try self.stack.push_unsafe(result);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const push_value = metadata_ptr.value.*;
+        
+        // Pop top value and subtract the pushed value
+        const a = try self.stack.pop();
+        const result = a -% push_value;
+        try self.stack.push(result);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_jump_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const target = 0; // TODO: Get actual inline jump target
-        try self.stack.push_unsafe(target);
-        // TODO: Implement actual jump logic
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract inline jump target from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const target = metadata_ptr.value;
+        
+        // Validate jump destination
+        if (!self.is_valid_jump_dest(@intCast(target))) {
+            return Error.InvalidJump;
+        }
+        
+        // Push target to stack for upper layer to handle
+        try self.stack.push(@intCast(target));
+        return Success.Jump;
     }
     
     pub fn push_jump_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const target = 0; // TODO: Get actual pointer jump target
-        try self.stack.push_unsafe(target);
-        // TODO: Implement actual jump logic
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to jump target from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const target_value = metadata_ptr.value.*;
+        const target: usize = @intCast(target_value);
+        
+        // Validate jump destination
+        if (!self.is_valid_jump_dest(target)) {
+            return Error.InvalidJump;
+        }
+        
+        // Push target to stack for upper layer to handle
+        try self.stack.push(target_value);
+        return Success.Jump;
     }
     
     pub fn push_jumpi_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const condition = try self.stack.pop_unsafe();
-        const target = 0; // TODO: Get actual inline jump target
+        // Extract inline jump target from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const target = metadata_ptr.value;
+        
+        // Pop condition
+        const condition = try self.stack.pop();
+        
         if (condition != 0) {
-            try self.stack.push_unsafe(target);
-            // TODO: Implement actual conditional jump logic
+            // Validate jump destination
+            if (!self.is_valid_jump_dest(@intCast(target))) {
+                return Error.InvalidJump;
+            }
+            // Push target for upper layer to handle
+            try self.stack.push(@intCast(target));
+            return Success.Jump;
+        } else {
+            // No jump - continue to next instruction
+            return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
     }
     
     pub fn push_jumpi_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const condition = try self.stack.pop_unsafe();
-        const target = 0; // TODO: Get actual pointer jump target
+        // Extract pointer to jump target from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const target_value = metadata_ptr.value.*;
+        const target: usize = @intCast(target_value);
+        
+        // Pop condition
+        const condition = try self.stack.pop();
+        
         if (condition != 0) {
-            try self.stack.push_unsafe(target);
-            // TODO: Implement actual conditional jump logic
+            // Validate jump destination
+            if (!self.is_valid_jump_dest(target)) {
+                return Error.InvalidJump;
+            }
+            // Push target for upper layer to handle
+            try self.stack.push(target_value);
+            return Success.Jump;
+        } else {
+            // No jump - continue to next instruction
+            return @call(.always_tail, next[0], .{ self, next + 1 });
         }
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
     }
     
     // Memory operation synthetic handlers
@@ -2649,17 +2764,46 @@ pub fn StackFrame(comptime config: FrameConfig) type {
     }
     
     pub fn push_mstore_inline(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const value = try self.stack.pop_unsafe();
-        const offset = 0; // TODO: Get actual inline offset
+        // Extract inline offset from schedule metadata
+        const metadata_ptr: *const Schedule.PushInlineMetadata = @ptrCast(&next[-1]);
+        const offset = metadata_ptr.value;
+        
+        // Pop value from stack and store at the pushed offset
+        const value = try self.stack.pop();
+        
+        // Calculate memory expansion cost if needed
+        const memory_expansion_cost = try self.memory.expansion_cost(@intCast(offset), 32);
+        if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            return Error.OutOfGas;
+        }
+        self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+        
+        // Perform memory write
         try self.memory.set_u256_evm(@intCast(offset), value);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     pub fn push_mstore_pointer(self: Self, next: [*:null]const *const Schedule.OpcodeHandler) Error!Success {
-        const value = try self.stack.pop_unsafe();
-        const offset = 0; // TODO: Get actual pointer offset
-        try self.memory.set_u256_evm(@intCast(offset), value);
-        return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        // Extract pointer to offset value from schedule metadata
+        const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&next[-1]);
+        const offset_value = metadata_ptr.value.*;
+        const offset: u32 = @intCast(offset_value); // Truncate to reasonable memory offset
+        
+        // Pop value from stack and store at the pushed offset
+        const value = try self.stack.pop();
+        
+        // Calculate memory expansion cost if needed
+        const memory_expansion_cost = try self.memory.expansion_cost(offset, 32);
+        if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            return Error.OutOfGas;
+        }
+        self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+        
+        // Perform memory write
+        try self.memory.set_u256_evm(offset, value);
+        
+        return @call(.always_tail, next[0], .{ self, next + 1 });
     }
     
     // Bitwise operation synthetic handlers
@@ -2717,6 +2861,84 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         const offset = 0; // TODO: Get actual pointer offset
         try self.memory.set_byte_evm(@intCast(offset), @intCast(value & 0xFF));
         return @call(.always_tail, next[0] orelse return Success.Stop, .{ self, next + 1 });
+        }
+        
+        /// Generate optimized Schedule from Bytecode using Iterator
+        /// This leverages fusion detection and pre-computed push values
+        pub fn generateScheduleFromBytecode(allocator: std.mem.Allocator, bytecode: *const Bytecode) ![]Schedule.Item {
+            var schedule_items = std.ArrayList(Schedule.Item).init(allocator);
+            errdefer schedule_items.deinit();
+            
+            // Create iterator to traverse bytecode
+            var iter = bytecode.createIterator();
+            
+            while (iter.next()) |op_data| {
+                switch (op_data) {
+                    .regular => |data| {
+                        // Regular opcode - add handler
+                        const handler = opcode_handlers[data.opcode];
+                        try schedule_items.append(.{ .opcode_handler = handler });
+                    },
+                    .push => |data| {
+                        // PUSH operation - add metadata then handler
+                        if (data.size <= 8) {
+                            // Inline value for small pushes
+                            const inline_value: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_value } });
+                        } else {
+                            // Pointer to value for large pushes
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                        // Add the appropriate push handler based on size
+                        const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
+                        try schedule_items.append(.{ .opcode_handler = opcode_handlers[push_opcode] });
+                    },
+                    .jumpdest => |data| {
+                        // JUMPDEST - add metadata then handler
+                        try schedule_items.append(.{ .jump_dest = .{ .gas = data.gas_cost } });
+                        try schedule_items.append(.{ .opcode_handler = &jumpdest });
+                    },
+                    .push_add_fusion => |data| {
+                        // Fused PUSH+ADD operation
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                            try schedule_items.append(.{ .opcode_handler = &push_add_inline });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                            try schedule_items.append(.{ .opcode_handler = &push_add_pointer });
+                        }
+                    },
+                    .push_mul_fusion => |data| {
+                        // Fused PUSH+MUL operation
+                        if (data.value <= std.math.maxInt(u64)) {
+                            const inline_val: u64 = @intCast(data.value);
+                            try schedule_items.append(.{ .push_inline = .{ .value = inline_val } });
+                            try schedule_items.append(.{ .opcode_handler = &push_mul_inline });
+                        } else {
+                            const value_ptr = try allocator.create(u256);
+                            value_ptr.* = data.value;
+                            try schedule_items.append(.{ .push_pointer = .{ .value = value_ptr } });
+                            try schedule_items.append(.{ .opcode_handler = &push_mul_pointer });
+                        }
+                    },
+                    .stop => {
+                        try schedule_items.append(.{ .opcode_handler = &stop });
+                    },
+                    .invalid => {
+                        try schedule_items.append(.{ .opcode_handler = &invalid });
+                    },
+                }
+            }
+            
+            // Add null terminator for handler chain
+            try schedule_items.append(.{ .opcode_handler = null });
+            
+            return schedule_items.toOwnedSlice();
         }
     };
 }
@@ -2992,13 +3214,13 @@ test "Frame with bytecode" {
     const host = createTestHost();
     var small_frame = try SmallFrame.init(allocator, &small_bytecode, 1000000, {}, host);
     defer small_frame.deinit(allocator);
-    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), small_frame.bytecode[0]);
+    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), small_frame.bytecode.get(0).?);
     // Test with medium bytecode (fits in u16)
     const MediumFrame = StackFrame(.{ .max_bytecode_size = 65535 });
     const medium_bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0xFF, @intFromEnum(Opcode.STOP) };
     var medium_frame = try MediumFrame.init(allocator, &medium_bytecode, 1000000, {}, host);
     defer medium_frame.deinit(allocator);
-    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), medium_frame.bytecode[0]);
+    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), medium_frame.bytecode.get(0).?);
 }
 test "Frame op_stop returns stop error" {
     const allocator = std.testing.allocator;
@@ -4221,9 +4443,9 @@ test "Frame JUMP through interpreter" {
     defer frame.deinit(allocator);
     // The interpreter would handle JUMP opcodes using op_jump_handler
     // For now we test that the frame was properly initialized
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMP), frame.bytecode[0]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.STOP), frame.bytecode[1]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode[2]);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMP), frame.bytecode.get(0).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.STOP), frame.bytecode.get(1).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode.get(2).?);
 }
 test "Frame JUMPI through interpreter" {
     const allocator = std.testing.allocator;
@@ -4235,9 +4457,9 @@ test "Frame JUMPI through interpreter" {
     defer frame.deinit(allocator);
     // The interpreter would handle JUMPI opcodes using op_jumpi_handler
     // For now we test that the frame was properly initialized
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPI), frame.bytecode[0]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.STOP), frame.bytecode[1]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode[2]);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPI), frame.bytecode.get(0).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.STOP), frame.bytecode.get(1).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode.get(2).?);
 }
 test "Frame op_jumpdest no-op" {
     const allocator = std.testing.allocator;
@@ -4633,12 +4855,12 @@ test "Frame JUMPDEST validation comprehensive" {
     defer frame.deinit(allocator);
     // The interpreter would handle JUMP/JUMPI opcodes with proper JUMPDEST validation
     // For now we test that the frame was properly initialized and bytecode is correct
-    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), frame.bytecode[0]);
-    try std.testing.expectEqual(@as(u8, 8), frame.bytecode[1]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPI), frame.bytecode[2]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.INVALID), frame.bytecode[3]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode[8]);
-    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode[13]);
+    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), frame.bytecode.get(0).?);
+    try std.testing.expectEqual(@as(u8, 8), frame.bytecode.get(1).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPI), frame.bytecode.get(2).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.INVALID), frame.bytecode.get(3).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode.get(8).?);
+    try std.testing.expectEqual(@intFromEnum(Opcode.JUMPDEST), frame.bytecode.get(13).?);
 }
 test "Frame storage operations with database" {
     const allocator = std.testing.allocator;
@@ -5620,8 +5842,8 @@ test "Frame bytecode edge cases - single byte bytecode" {
         var frame = try F.init(allocator, &bytecode, 10000, void{}, createTestHost());
         defer frame.deinit(allocator);
 
-        try std.testing.expectEqual(@as(usize, 1), frame.bytecode.len);
-        try std.testing.expectEqual(@intFromEnum(opcode), frame.bytecode[0]);
+        try std.testing.expectEqual(@as(usize, 1), frame.bytecode.len());
+        try std.testing.expectEqual(@intFromEnum(opcode), frame.bytecode.get(0).?);
     }
 }
 test "Frame bytecode edge cases - all invalid opcodes" {
@@ -5712,5 +5934,189 @@ test "Frame bytecode edge cases - bytecode with only PUSH data" {
     var frame = try F.init(allocator, &bytecode, 10000, void{}, createTestHost());
     defer frame.deinit(allocator);
 
-    try std.testing.expectEqual(@as(usize, 33), frame.bytecode.len);
+    try std.testing.expectEqual(@as(usize, 33), frame.bytecode.len());
+}
+
+/// Load bytecode from a fixture file
+fn loadFixtureBytecode(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+    
+    const content = try file.readToEndAlloc(allocator, 10 * 1024 * 1024); // Max 10MB
+    defer allocator.free(content);
+    
+    // Parse hex string (remove 0x prefix if present)
+    const hex_start: usize = if (std.mem.startsWith(u8, content, "0x")) 2 else 0;
+    const hex_content = std.mem.trim(u8, content[hex_start..], " \n\r\t");
+    
+    var bytecode = try allocator.alloc(u8, hex_content.len / 2);
+    var i: usize = 0;
+    while (i < hex_content.len) : (i += 2) {
+        const byte = try std.fmt.parseInt(u8, hex_content[i..i + 2], 16);
+        bytecode[i / 2] = byte;
+    }
+    
+    return bytecode;
+}
+
+/// Load calldata from a fixture file
+fn loadFixtureCalldata(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    return loadFixtureBytecode(allocator, path); // Same format as bytecode
+}
+
+// Test all fixture contracts
+test "StackFrame with ERC20 transfer bytecode" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{ .has_database = true });
+    
+    const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/erc20-transfer/bytecode.txt");
+    defer allocator.free(bytecode);
+    
+    const host = createTestHost();
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    const db_interface = db.to_database_interface();
+    
+    var frame = try F.init(allocator, bytecode, 1000000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Verify bytecode was loaded correctly
+    try std.testing.expect(frame.bytecode.len() > 0);
+    
+    // Check that the bytecode has valid structure (should have JUMPDESTs)
+    var has_jumpdest = false;
+    var i: usize = 0;
+    while (i < frame.bytecode.len()) : (i += 1) {
+        if (frame.bytecode.isValidJumpDest(@intCast(i))) {
+            has_jumpdest = true;
+            break;
+        }
+    }
+    try std.testing.expect(has_jumpdest);
+}
+
+test "StackFrame with snailtracer bytecode" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{ .has_database = true });
+    
+    const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/snailtracer/bytecode.txt");
+    defer allocator.free(bytecode);
+    
+    const host = createTestHost();
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    const db_interface = db.to_database_interface();
+    
+    var frame = try F.init(allocator, bytecode, 10000000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Snailtracer is complex, verify it loaded
+    try std.testing.expect(frame.bytecode.len() > 1000); // Should be large
+}
+
+test "StackFrame with opcodes arithmetic bytecode" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    
+    const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/opcodes-arithmetic/bytecode.txt");
+    defer allocator.free(bytecode);
+    
+    const host = createTestHost();
+    var frame = try F.init(allocator, bytecode, 100000, {}, host);
+    defer frame.deinit(allocator);
+    
+    // This should contain arithmetic operations
+    try std.testing.expect(frame.bytecode.len() > 0);
+}
+
+test "StackFrame with opcodes jump basic bytecode" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    
+    const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/opcodes-jump-basic/bytecode.txt");
+    defer allocator.free(bytecode);
+    
+    const host = createTestHost();
+    var frame = try F.init(allocator, bytecode, 100000, {}, host);
+    defer frame.deinit(allocator);
+    
+    // Should contain jumps
+    var has_jump = false;
+    const raw = frame.bytecode.raw();
+    for (raw) |byte| {
+        if (byte == @intFromEnum(Opcode.JUMP) or byte == @intFromEnum(Opcode.JUMPI)) {
+            has_jump = true;
+            break;
+        }
+    }
+    try std.testing.expect(has_jump);
+}
+
+test "StackFrame Schedule generation from bytecode" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    
+    // Create simple test bytecode with fusion candidates
+    const test_bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x10, // PUSH1 16
+        @intFromEnum(Opcode.ADD),         // ADD (fusion candidate)
+        @intFromEnum(Opcode.PUSH2), 0x01, 0x00, // PUSH2 256
+        @intFromEnum(Opcode.MUL),         // MUL (fusion candidate)
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    const host = createTestHost();
+    var frame = try F.init(allocator, &test_bytecode, 100000, {}, host);
+    defer frame.deinit(allocator);
+    
+    // Generate schedule
+    const schedule = try F.generateScheduleFromBytecode(allocator, &frame.bytecode);
+    defer allocator.free(schedule);
+    
+    // Verify schedule was generated
+    try std.testing.expect(schedule.len > 0);
+    
+    // Last item should be null handler
+    try std.testing.expect(schedule[schedule.len - 1].opcode_handler == null);
+}
+
+test "StackFrame with ten thousand hashes bytecode" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    
+    const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/ten-thousand-hashes/bytecode.txt");
+    defer allocator.free(bytecode);
+    
+    const host = createTestHost();
+    var frame = try F.init(allocator, bytecode, 100000000, {}, host);
+    defer frame.deinit(allocator);
+    
+    // Should be a large contract with many operations
+    try std.testing.expect(frame.bytecode.len() > 100);
+}
+
+test "StackFrame fusion detection in ERC20" {
+    const allocator = std.testing.allocator;
+    const F = StackFrame(.{});
+    
+    const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/erc20-transfer/bytecode.txt");
+    defer allocator.free(bytecode);
+    
+    const host = createTestHost();
+    var frame = try F.init(allocator, bytecode, 1000000, {}, host);
+    defer frame.deinit(allocator);
+    
+    // Create iterator and check for fusion opportunities
+    var iter = frame.bytecode.createIterator();
+    var fusion_count: usize = 0;
+    
+    while (iter.next()) |op_data| {
+        switch (op_data) {
+            .push_add_fusion, .push_mul_fusion => fusion_count += 1,
+            else => {},
+        }
+    }
+    
+    // ERC20 likely has some fusion opportunities
+    std.testing.log.info("ERC20 fusion opportunities: {}", .{fusion_count});
 }
