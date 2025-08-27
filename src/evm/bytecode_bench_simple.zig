@@ -1,5 +1,5 @@
 const std = @import("std");
-const Bytecode = @import("bytecode4.zig").Bytecode;
+const Bytecode = @import("bytecode.zig").Bytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const Opcode = @import("opcode.zig").Opcode;
 
