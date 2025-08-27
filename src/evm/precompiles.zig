@@ -732,10 +732,6 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
     }
 
     // Perform KZG verification
-    const crypto = @import("crypto");
-    const settings = kzg_setup.getSettings() orelse {
-        return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
-    };
     
     // Convert inputs to c_kzg types
     var z: crypto.c_kzg.Bytes32 = undefined;
@@ -749,7 +745,7 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
     @memcpy(&proof, proof_bytes);
     
     // Verify the KZG proof
-    const valid = crypto.c_kzg.ckzg.verifyKZGProof(&commitment, &z, &y, &proof, settings) catch {
+    const valid = crypto.c_kzg.verifyKZGProof(&commitment, &z, &y, &proof) catch {
         return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
     };
     
@@ -925,4 +921,316 @@ test "precompile insufficient gas" {
 
     try testing.expect(!result.success);
     try testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "execute_ripemd160 precompile" {
+    const testing = std.testing;
+
+    const input = "abc";
+    const result = try execute_ripemd160(testing.allocator, input, 1000);
+    defer testing.allocator.free(result.output);
+
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // Expected RIPEMD-160 hash of "abc" (20 bytes hash + 12 zero padding)
+    const expected = [_]u8{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x8e, 0xb2, 0x08, 0xf7, 0xe0, 0x5d, 0x98, 0x7a, 0x9b, 0x04,
+        0x4a, 0x8e, 0x98, 0xc6, 0xb0, 0x87, 0xf1, 0x5a, 0x0b, 0xfc,
+    };
+    try testing.expectEqualSlices(u8, &expected, result.output);
+}
+
+test "execute_ecadd precompile" {
+    const testing = std.testing;
+    
+    // Test: identity + identity = identity
+    var input = [_]u8{0} ** 128;
+    // Both points are identity (all zeros)
+    
+    const result = try execute_ecadd(testing.allocator, &input, GasCosts.ECADD + 100);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+    // Result should be identity (all zeros)
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "execute_ecmul precompile" {
+    const testing = std.testing;
+    
+    // Test: identity * 5 = identity
+    var input = [_]u8{0} ** 96;
+    // Point is identity (first 64 bytes all zeros)
+    // Scalar is 5 (last 32 bytes)
+    input[95] = 5;
+    
+    const result = try execute_ecmul(testing.allocator, &input, GasCosts.ECMUL + 100);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+    // Result should be identity (all zeros)
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "execute_ecpairing precompile - empty input" {
+    const testing = std.testing;
+    
+    // Empty input should return success with 1 (true)
+    const input = &[_]u8{};
+    const result = try execute_ecpairing(testing.allocator, input, GasCosts.ECPAIRING_BASE);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    // Should return 1 (true) for empty pairing
+    try testing.expectEqual(@as(u8, 1), result.output[31]);
+    for (result.output[0..31]) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "execute_blake2f precompile" {
+    const testing = std.testing;
+    
+    // Valid blake2f input (213 bytes)
+    var input = [_]u8{0} ** 213;
+    // rounds (4 bytes)
+    input[3] = 12; // 12 rounds
+    // h (64 bytes) - initial hash values
+    // m (128 bytes) - message block
+    // t (16 bytes) - offset counters
+    // f (1 byte) - final block flag
+    input[212] = 1; // final block
+    
+    const result = try execute_blake2f(testing.allocator, &input, 1000);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+    try testing.expectEqual(@as(u64, 12), result.gas_used); // 12 rounds * 1 gas per round
+}
+
+test "execute_modexp edge cases" {
+    const testing = std.testing;
+    
+    // Test: 0^0 mod 5 = 1 (by convention)
+    var input: [128]u8 = [_]u8{0} ** 128;
+    
+    // base_len = 1
+    input[31] = 1;
+    // exp_len = 1
+    input[63] = 1;
+    // mod_len = 1
+    input[95] = 1;
+    // base = 0 (already zero)
+    // exp = 0 (already zero)
+    // mod = 5
+    input[98] = 5;
+    
+    const result = try execute_modexp(testing.allocator, &input, 10000);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+    // 0^0 mod 5 = 1
+    try testing.expectEqual(@as(u8, 1), result.output[0]);
+}
+
+test "execute_ecrecover valid signature" {
+    const testing = std.testing;
+    
+    // This is a real signature from Ethereum mainnet
+    // Message hash, v, r, s values from a known transaction
+    var input = [_]u8{0} ** 128;
+    
+    // Message hash (32 bytes)
+    const hash = [_]u8{
+        0x7c, 0x80, 0xc6, 0x8e, 0x60, 0x3b, 0xf0, 0x9a,
+        0xca, 0x17, 0xa5, 0x73, 0xe2, 0xb2, 0x11, 0x42,
+        0xed, 0xfb, 0x8e, 0x8d, 0xed, 0x9b, 0xea, 0xb6,
+        0x6e, 0x0a, 0x23, 0xbe, 0xbd, 0x02, 0x3c, 0x23,
+    };
+    @memcpy(input[0..32], &hash);
+    
+    // v = 27 (recovery id)
+    input[63] = 27;
+    
+    // r (32 bytes) 
+    const r = [_]u8{
+        0xa8, 0x89, 0xc0, 0xea, 0x64, 0xd6, 0xb8, 0xef,
+        0x9a, 0x8a, 0x01, 0x96, 0x4f, 0x2f, 0x20, 0x18,
+        0x44, 0xfb, 0x60, 0x7f, 0xf0, 0x83, 0xb8, 0xc9,
+        0x42, 0x50, 0x5f, 0xd1, 0xa8, 0xee, 0xa6, 0x60,
+    };
+    @memcpy(input[64..96], &r);
+    
+    // s (32 bytes)
+    const s = [_]u8{
+        0x2a, 0x55, 0x0e, 0x6f, 0x48, 0xfb, 0x9d, 0x95,
+        0x92, 0xab, 0x48, 0xca, 0x80, 0xf6, 0x77, 0x64,
+        0x6c, 0x7f, 0xe7, 0x5e, 0x86, 0x2a, 0xfa, 0xb8,
+        0xd2, 0xbc, 0x2e, 0xc8, 0x07, 0x1f, 0xfb, 0x10,
+    };
+    @memcpy(input[96..128], &s);
+    
+    const result = try execute_ecrecover(testing.allocator, &input, GasCosts.ECRECOVER + 100);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    // Should return a valid address (20 bytes) with 12 bytes of zero padding
+    // We just check that it's not all zeros
+    var all_zero = true;
+    for (result.output[12..32]) |byte| {
+        if (byte != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    try testing.expect(!all_zero);
+}
+
+test "execute_ecadd invalid point" {
+    const testing = std.testing;
+    
+    // Test with invalid point (not on curve)
+    var input = [_]u8{0} ** 128;
+    // Set x coordinate to 1, y coordinate to 1 (not on curve)
+    input[31] = 1;
+    input[63] = 1;
+    
+    const result = try execute_ecadd(testing.allocator, &input, GasCosts.ECADD + 100);
+    
+    // Should fail with invalid point
+    try testing.expect(!result.success);
+}
+
+test "execute_ecmul invalid scalar" {
+    const testing = std.testing;
+    
+    // Test with scalar larger than curve order
+    var input = [_]u8{0} ** 96;
+    // Set all scalar bytes to 0xFF (larger than curve order)
+    @memset(input[64..96], 0xFF);
+    
+    const result = try execute_ecmul(testing.allocator, &input, GasCosts.ECMUL + 100);
+    defer testing.allocator.free(result.output);
+    
+    // Should still work (scalar is reduced modulo curve order)
+    try testing.expect(result.success);
+}
+
+test "execute_ecpairing wrong input length" {
+    const testing = std.testing;
+    
+    // Input length must be multiple of 192 bytes
+    var input = [_]u8{0} ** 100; // Invalid length
+    
+    const result = try execute_ecpairing(testing.allocator, &input, 100000);
+    
+    try testing.expect(!result.success);
+}
+
+test "execute_blake2f invalid final flag" {
+    const testing = std.testing;
+    
+    // Valid length but invalid final flag
+    var input = [_]u8{0} ** 213;
+    input[212] = 2; // Invalid flag (must be 0 or 1)
+    
+    const result = try execute_blake2f(testing.allocator, &input, 1000);
+    
+    try testing.expect(!result.success);
+}
+
+test "execute_modexp with zero modulus" {
+    const testing = std.testing;
+    
+    // Test: 5^3 mod 0 should fail
+    var input: [128]u8 = [_]u8{0} ** 128;
+    
+    // base_len = 1
+    input[31] = 1;
+    // exp_len = 1
+    input[63] = 1;
+    // mod_len = 1
+    input[95] = 1;
+    // base = 5
+    input[96] = 5;
+    // exp = 3
+    input[97] = 3;
+    // mod = 0 (already zero)
+    
+    const result = try execute_modexp(testing.allocator, &input, 10000);
+    defer testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    // Result should be 0 when modulus is 0
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+    try testing.expectEqual(@as(u8, 0), result.output[0]);
+}
+
+test "execute_point_evaluation without kzg setup" {
+    const testing = std.testing;
+    
+    // Try to use point evaluation without KZG setup
+    const kzg_setup = @import("kzg_setup.zig");
+    
+    // Skip if already initialized
+    if (kzg_setup.isInitialized()) {
+        return;
+    }
+    
+    var input = [_]u8{0} ** 192;
+    const result = try execute_point_evaluation(testing.allocator, &input, GasCosts.POINT_EVALUATION + 100);
+    
+    // Should fail without KZG setup
+    try testing.expect(!result.success);
+}
+
+test "precompile address boundary checks" {
+    const testing = std.testing;
+    
+    // Test addresses at boundaries
+    try testing.expect(is_precompile(ECRECOVER_ADDRESS)); // 0x01
+    try testing.expect(is_precompile(POINT_EVALUATION_ADDRESS)); // 0x0A
+    
+    // Test addresses outside range
+    try testing.expect(!is_precompile(primitives.Address.ZERO));
+    try testing.expect(!is_precompile([_]u8{0} ** 19 ++ [_]u8{0x0B})); // 0x0B
+    try testing.expect(!is_precompile([_]u8{0xFF} ** 20)); // Max address
+}
+
+test "execute_all_precompiles smoke test" {
+    const testing = std.testing;
+    
+    // Test that execute function correctly dispatches to all precompiles
+    const addresses = [_]primitives.Address.Address{
+        ECRECOVER_ADDRESS,
+        SHA256_ADDRESS,
+        RIPEMD160_ADDRESS,
+        IDENTITY_ADDRESS,
+        MODEXP_ADDRESS,
+        ECADD_ADDRESS,
+        ECMUL_ADDRESS,
+        ECPAIRING_ADDRESS,
+        BLAKE2F_ADDRESS,
+        POINT_EVALUATION_ADDRESS,
+    };
+    
+    for (addresses) |addr| {
+        const result = try execute_precompile(testing.allocator, addr, &[_]u8{}, 100000);
+        defer if (result.output.len > 0) testing.allocator.free(result.output);
+        
+        // All should at least not error (may fail due to invalid input)
+        try testing.expect(result.gas_used <= 100000);
+    }
 }
