@@ -8,12 +8,12 @@
 
 const std = @import("std");
 const evm = @import("evm");
-const Bytecode5 = evm.Bytecode5(.{});
+const Bytecode = evm.Bytecode(.{});
 const Opcode = evm.Opcode;
 const primitives = @import("primitives");
 const U256 = primitives.U256.U256;
 
-test "fuzz bytecode5 analysis with random bytecode" {
+test "fuzz bytecode analysis with random bytecode" {
     try std.testing.fuzz({}, fuzzBytecodeAnalysis, .{ .corpus = &.{} });
 }
 
@@ -28,7 +28,7 @@ fn fuzzBytecodeAnalysis(context: void, input: []const u8) !void {
     const bytecode = input[0..@min(input.len, max_bytecode_size)];
     
     // Analyze bytecode - all errors are acceptable outcomes
-    var analyzer = Bytecode5.init(allocator, bytecode) catch {
+    var analyzer = Bytecode.init(allocator, bytecode) catch {
         // Expected errors from malformed bytecode
         return;
     };
@@ -63,16 +63,14 @@ fn fuzzJumpDestAnalysis(context: void, input: []const u8) !void {
     const bytecode = bytecode_buf[0..bytecode_len];
     
     // Analyze bytecode
-    var analyzer = Bytecode5.init(allocator, bytecode) catch {
+    var analyzer = Bytecode.init(allocator, bytecode) catch {
         // All errors acceptable
         return;
     };
     defer analyzer.deinit();
     
     // Verify jump destinations are valid (they're built during init)
-    var iter = analyzer.valid_jump_destinations.iterator();
-    while (iter.next()) |entry| {
-        const pc = entry.key_ptr.*;
+    for (analyzer.jumpdests) |pc| {
         if (pc >= bytecode.len) {
             // This shouldn't happen - would indicate a bug
             std.debug.panic("Invalid jump destination PC: {}", .{pc});
@@ -114,7 +112,7 @@ fn fuzzPushInstructions(context: void, input: []const u8) !void {
     const bytecode = bytecode_buf[0..bytecode_len];
     
     // Analyze bytecode
-    _ = Bytecode5.init(allocator, bytecode) catch {
+    _ = Bytecode.init(allocator, bytecode) catch {
         // Expected for truncated PUSH instructions
         return;
     };
@@ -189,7 +187,7 @@ fn fuzzFusionPatterns(context: void, input: []const u8) !void {
     const bytecode = bytecode_buf[0..bytecode_len];
     
     // Analyze bytecode
-    var analyzer = Bytecode5.init(allocator, bytecode) catch {
+    var analyzer = Bytecode.init(allocator, bytecode) catch {
         // All errors acceptable
         return;
     };
@@ -220,7 +218,7 @@ fn fuzzMalformedBytecode(context: void, input: []const u8) !void {
     const allocator = std.testing.allocator;
     
     // Test with completely random bytecode
-    _ = Bytecode5.init(allocator, input) catch {
+    _ = Bytecode.init(allocator, input) catch {
         // All errors are acceptable
         return;
     };
@@ -235,13 +233,13 @@ fn fuzzEdgeCases(context: void, input: []const u8) !void {
     
     const allocator = std.testing.allocator;
     // Test empty bytecode
-    _ = Bytecode5.init(allocator, &[_]u8{}) catch {
+    _ = Bytecode.init(allocator, &[_]u8{}) catch {
         return;
     };
     
     // Test single byte
     if (input.len > 0) {
-        _ = Bytecode5.init(allocator, input[0..1]) catch {
+        _ = Bytecode.init(allocator, input[0..1]) catch {
             return;
         };
     }
@@ -249,7 +247,7 @@ fn fuzzEdgeCases(context: void, input: []const u8) !void {
     // Test bytecode ending with incomplete PUSH
     if (input.len > 2) {
         var bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32), input[0] };
-        _ = Bytecode5.init(allocator, &bytecode) catch {
+        _ = Bytecode.init(allocator, &bytecode) catch {
             // Expected error for truncated PUSH32
             return;
         };
