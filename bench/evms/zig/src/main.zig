@@ -162,10 +162,11 @@ pub fn main() !void {
             };
 
             const maybe_create_result: ?evm.CallResult = blk: {
-                const r = fresh_evm.call(create_params) catch |err| {
-                    if (verbose) std.debug.print("CREATE failed with error: {}. Falling back to direct install.\n", .{err});
+                const r = fresh_evm.call(create_params);
+                if (!r.success) {
+                    if (verbose) std.debug.print("CREATE failed. Falling back to direct install.\n", .{});
                     break :blk null;
-                };
+                }
                 break :blk r;
             };
 
@@ -233,10 +234,11 @@ pub fn main() !void {
         };
 
         const start_time = std.time.nanoTimestamp();
-        const result = fresh_evm.call(call_params) catch |err| {
-            std.debug.print("EVM execution error: {}\n", .{err});
+        const result = fresh_evm.call(call_params);
+        if (!result.success) {
+            std.debug.print("EVM execution failed\n", .{});
             std.process.exit(1);
-        };
+        }
         const end_time = std.time.nanoTimestamp();
         
         // Debug: Print gas usage info

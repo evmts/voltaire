@@ -134,10 +134,11 @@ export fn zigEvmCall(evm_ptr: ?*anyopaque, req: *const CCallRequest, res: *CCall
         .CREATE2 => .{ .create2 = .{ .caller = caller, .value = value, .init_code = input, .salt = salt, .gas = gas } },
     };
 
-    const result = wrapper.evm.call(params) catch {
-        res.* = .{ .success = false, .gas_left = 0, .output = .{ .ptr = undefined, .len = 0 } };
+    const result = wrapper.evm.call(params);
+    if (!result.success) {
+        res.* = .{ .success = false, .gas_left = result.gas_left, .output = .{ .ptr = undefined, .len = 0 } };
         return 0;
-    };
+    }
 
     var out_ptr: [*]u8 = undefined;
     var out_len: usize = 0;
