@@ -980,8 +980,6 @@ test "JumpTable - multiple entries sorted order" {
 }
 
 test "JumpTable - binary search edge cases" {
-    const allocator = testing.allocator;
-    
     // Create manual jump table with edge case PCs
     const entries = [_]TestDispatch.JumpTableEntry{
         .{ .pc = 0, .dispatch = TestDispatch{ .schedule = undefined } },
@@ -1011,7 +1009,7 @@ test "JumpTable - large jump table performance" {
     const allocator = testing.allocator;
     
     // Create large jump table (simulate many JUMPDESTs)
-    var entries = try allocator.alloc(TestDispatch.JumpTableEntry, 1000);
+    const entries = try allocator.alloc(TestDispatch.JumpTableEntry, 1000);
     defer allocator.free(entries);
     
     // Fill with sorted PCs (every 10th PC is a JUMPDEST)
