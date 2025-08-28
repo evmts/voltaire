@@ -182,6 +182,13 @@ test "Include C API tests" {
 }
 
 test "Include fusion tests" {
-    _ = @import("test_planner_fusion.zig");
-    _ = @import("test_fusion_e2e.zig");
+    // TODO: These fusion test files are currently missing
+    // _ = @import("test_planner_fusion.zig");
+    // _ = @import("test_fusion_e2e.zig");
+}
+
+test "Include dedicated test modules" {
+    _ = @import("evm_tests.zig");
+    _ = @import("bytecode_tests.zig");
+    _ = @import("stack_frame_tests.zig");
 }
