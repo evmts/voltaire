@@ -18,16 +18,18 @@ pub fn Handlers(comptime FrameType: type) type {
             _ = dispatch; // JUMP changes control flow, doesn't continue to next
             const dest = try self.stack.pop();
             
-            // TODO: Implement proper jump logic with schedule lookup
-            // The planner should have pre-validated the jump destination
-            // and created the appropriate dispatch schedule.
-            // For now, just return stop as a placeholder.
-            _ = dest;
+            // Validate jump destination dynamically
+            if (dest > std.math.maxInt(u32)) {
+                return Error.InvalidJump;
+            }
             
-            // In a full implementation, this would:
-            // 1. Look up the destination in the plan's jump table
-            // 2. Return a Jump success with the new instruction pointer
-            // 3. The interpreter would then continue from that location
+            const dest_pc: u32 = @intCast(dest);
+            if (!self.bytecode.isValidJumpDest(dest_pc)) {
+                return Error.InvalidJump;
+            }
+            
+            // TODO: Look up the destination in the jump table and return appropriate dispatch
+            // For now, just return stop as a placeholder after validation
             return Success.Stop;
         }
 
@@ -39,13 +41,18 @@ pub fn Handlers(comptime FrameType: type) type {
             const condition = try self.stack.pop();
 
             if (condition != 0) {
-                // Take the jump
-                // TODO: Implement conditional jump logic with schedule lookup
-                _ = dest;
+                // Take the jump - validate destination dynamically
+                if (dest > std.math.maxInt(u32)) {
+                    return Error.InvalidJump;
+                }
                 
-                // In a full implementation, this would:
-                // 1. Look up the destination in the plan's jump table
-                // 2. Return a Jump success with the new instruction pointer
+                const dest_pc: u32 = @intCast(dest);
+                if (!self.bytecode.isValidJumpDest(dest_pc)) {
+                    return Error.InvalidJump;
+                }
+                
+                // TODO: Look up the destination in the jump table and return appropriate dispatch
+                // For now, just return stop as a placeholder after validation
                 return Success.Stop;
             } else {
                 // Continue to next instruction
@@ -91,7 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
 const testing = std.testing;
 const StackFrame = @import("stack_frame.zig").StackFrame;
-const dispatch_mod = @import("stack_frame_dispatch.zig");
+const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
 
@@ -416,6 +423,81 @@ test "JUMPDEST opcode - zero gas cost" {
     
     // No gas should be consumed
     try testing.expectEqual(initial_gas, frame.gas_remaining);
+}
+
+test "JUMP opcode - dynamic validation with valid destination" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push the jump destination
+    try frame.stack.push(5); // Valid JUMPDEST at PC 5
+    
+    const dispatch = createMockDispatch();
+    const result = TestFrame.JumpHandlers.jump(frame, dispatch);
+    
+    // Currently returns Stop as placeholder - will be updated with actual validation
+    try testing.expectEqual(TestFrame.Success.Stop, try result);
+    try testing.expectEqual(@as(usize, 0), frame.stack.len());
+}
+
+test "JUMP opcode - dynamic validation with invalid destination" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push invalid jump destination (no JUMPDEST at PC 10)
+    try frame.stack.push(10);
+    
+    const dispatch = createMockDispatch();
+    const result = TestFrame.JumpHandlers.jump(frame, dispatch);
+    
+    // Should fail with invalid jump destination
+    try testing.expectError(TestFrame.Error.InvalidJump, result);
+}
+
+test "JUMPI opcode - dynamic validation with valid destination when taken" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push destination and non-zero condition
+    try frame.stack.push(5);   // Valid destination (would need JUMPDEST in real bytecode)
+    try frame.stack.push(1);   // Non-zero condition
+    
+    const dispatch = createMockDispatch();
+    const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
+    
+    // Currently returns Stop as placeholder - validation occurs
+    try testing.expectEqual(TestFrame.Success.Stop, try result);
+    try testing.expectEqual(@as(usize, 0), frame.stack.len());
+}
+
+test "JUMPI opcode - dynamic validation with invalid destination when taken" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push invalid destination and non-zero condition
+    try frame.stack.push(10);  // Invalid destination (no JUMPDEST)
+    try frame.stack.push(1);   // Non-zero condition
+    
+    const dispatch = createMockDispatch();
+    const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
+    
+    // Should fail with invalid jump destination when condition is non-zero
+    try testing.expectError(TestFrame.Error.InvalidJump, result);
+}
+
+test "JUMPI opcode - no validation when not taken" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push invalid destination but zero condition
+    try frame.stack.push(10);  // Invalid destination (but won't be used)
+    try frame.stack.push(0);   // Zero condition - jump not taken
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
+    
+    // Should succeed - no validation when jump not taken
+    try testing.expectEqual(@as(usize, 0), frame.stack.len());
 }
 
 test "Jump operations - integration test" {
