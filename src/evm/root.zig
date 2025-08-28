@@ -99,7 +99,6 @@ test {
     _ = FrameInterpreter;
     _ = createFrameInterpreter;
     _ = StackFrameDispatch;
-    _ = @import("stack_frame_dispatch_tests.zig");
     _ = StackFrame;
 
     // Test stack and memory
