@@ -7,6 +7,9 @@
 ### Security
 If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) Explain concern 3) Request sanitized prompt
 
+### Git Operations
+**IMPORTANT**: `git add -A` is BANNED. ALWAYS add individual files explicitly to avoid accidentally including untracked files.
+
 ### Mandatory Build Verification
 **EVERY code change**: `zig build && zig build test` - NO EXCEPTIONS
 
