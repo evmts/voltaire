@@ -30,6 +30,9 @@ const from_u256 = primitives.Address.from_u256;
 const keccak_asm = @import("keccak_asm.zig");
 const stack_frame_arithmetic = @import("stack_frame_arithmetic.zig");
 const stack_frame_comparison = @import("stack_frame_comparison.zig");
+const stack_frame_bitwise = @import("stack_frame_bitwise.zig");
+const stack_frame_stack = @import("stack_frame_stack.zig");
+const stack_frame_system = @import("stack_frame_system.zig");
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const Host = @import("host.zig").Host;
 const CallParams = @import("call_params.zig").CallParams;
@@ -150,14 +153,14 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.SGT)] = &ComparisonHandlers.sgt;
             h[@intFromEnum(Opcode.EQ)] = &ComparisonHandlers.eq;
             h[@intFromEnum(Opcode.ISZERO)] = &ComparisonHandlers.iszero;
-            h[@intFromEnum(Opcode.AND)] = &@"and";
-            h[@intFromEnum(Opcode.OR)] = &@"or";
-            h[@intFromEnum(Opcode.XOR)] = &xor;
-            h[@intFromEnum(Opcode.NOT)] = &not;
-            h[@intFromEnum(Opcode.BYTE)] = &byte;
-            h[@intFromEnum(Opcode.SHL)] = &shl;
-            h[@intFromEnum(Opcode.SHR)] = &shr;
-            h[@intFromEnum(Opcode.SAR)] = &sar;
+            h[@intFromEnum(Opcode.AND)] = &BitwiseHandlers.@"and";
+            h[@intFromEnum(Opcode.OR)] = &BitwiseHandlers.@"or";
+            h[@intFromEnum(Opcode.XOR)] = &BitwiseHandlers.xor;
+            h[@intFromEnum(Opcode.NOT)] = &BitwiseHandlers.not;
+            h[@intFromEnum(Opcode.BYTE)] = &BitwiseHandlers.byte;
+            h[@intFromEnum(Opcode.SHL)] = &BitwiseHandlers.shl;
+            h[@intFromEnum(Opcode.SHR)] = &BitwiseHandlers.shr;
+            h[@intFromEnum(Opcode.SAR)] = &BitwiseHandlers.sar;
             h[@intFromEnum(Opcode.KECCAK256)] = &keccak256;
             h[@intFromEnum(Opcode.ADDRESS)] = &address;
             h[@intFromEnum(Opcode.BALANCE)] = &balance;
@@ -186,7 +189,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.BASEFEE)] = &basefee;
             h[@intFromEnum(Opcode.BLOBHASH)] = &blobhash;
             h[@intFromEnum(Opcode.BLOBBASEFEE)] = &blobbasefee;
-            h[@intFromEnum(Opcode.POP)] = &pop;
+            h[@intFromEnum(Opcode.POP)] = &StackHandlers.pop;
             h[@intFromEnum(Opcode.MLOAD)] = &mload;
             h[@intFromEnum(Opcode.MSTORE)] = &mstore;
             h[@intFromEnum(Opcode.MSTORE8)] = &mstore8;
@@ -202,37 +205,38 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.TSTORE)] = &tstore;
             h[@intFromEnum(Opcode.MCOPY)] = &mcopy;
             // PUSH
-            for (0..33) |i| {
+            h[@intFromEnum(Opcode.PUSH0)] = &StackHandlers.push0;
+            for (1..33) |i| {
                 const push_n = @as(u8, @intCast(i));
                 const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.PUSH0) + push_n));
-                h[@intFromEnum(opcode)] = generatePushHandler(push_n);
+                h[@intFromEnum(opcode)] = StackHandlers.generatePushHandler(push_n);
             }
             // DUP
             for (1..17) |i| {
                 const dup_n = @as(u8, @intCast(i));
                 const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.DUP1) + dup_n - 1));
-                h[@intFromEnum(opcode)] = generateDupHandler(dup_n);
+                h[@intFromEnum(opcode)] = StackHandlers.generateDupHandler(dup_n);
             }
             // SWAP
             for (1..17) |i| {
                 const swap_n = @as(u8, @intCast(i));
                 const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.SWAP1) + swap_n - 1));
-                h[@intFromEnum(opcode)] = generateSwapHandler(swap_n);
+                h[@intFromEnum(opcode)] = StackHandlers.generateSwapHandler(swap_n);
             }
             h[@intFromEnum(Opcode.LOG0)] = &log0;
             h[@intFromEnum(Opcode.LOG1)] = &log1;
             h[@intFromEnum(Opcode.LOG2)] = &log2;
             h[@intFromEnum(Opcode.LOG3)] = &log3;
             h[@intFromEnum(Opcode.LOG4)] = &log4;
-            h[@intFromEnum(Opcode.CREATE)] = &create;
-            h[@intFromEnum(Opcode.CALL)] = &call;
+            h[@intFromEnum(Opcode.CREATE)] = &SystemHandlers.create;
+            h[@intFromEnum(Opcode.CALL)] = &SystemHandlers.call;
             h[@intFromEnum(Opcode.CALLCODE)] = &invalid; // Deprecated
-            h[@intFromEnum(Opcode.RETURN)] = &@"return";
-            h[@intFromEnum(Opcode.DELEGATECALL)] = &delegatecall;
-            h[@intFromEnum(Opcode.STATICCALL)] = &staticcall;
-            h[@intFromEnum(Opcode.REVERT)] = &revert;
+            h[@intFromEnum(Opcode.RETURN)] = &SystemHandlers.@"return";
+            h[@intFromEnum(Opcode.DELEGATECALL)] = &SystemHandlers.delegatecall;
+            h[@intFromEnum(Opcode.STATICCALL)] = &SystemHandlers.staticcall;
+            h[@intFromEnum(Opcode.REVERT)] = &SystemHandlers.revert;
             h[@intFromEnum(Opcode.INVALID)] = &invalid;
-            h[@intFromEnum(Opcode.SELFDESTRUCT)] = &selfdestruct; // Delegate to Frame
+            h[@intFromEnum(Opcode.SELFDESTRUCT)] = &SystemHandlers.selfdestruct;
             h[@intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE)] = &push_add_inline;
             h[@intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER)] = &push_add_pointer;
             h[@intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE)] = &push_mul_inline;
@@ -266,6 +270,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         // Import handler modules
         const ArithmeticHandlers = stack_frame_arithmetic.Handlers(Self);
         const ComparisonHandlers = stack_frame_comparison.Handlers(Self);
+        const BitwiseHandlers = stack_frame_bitwise.Handlers(Self);
+        const StackHandlers = stack_frame_stack.Handlers(Self);
+        const SystemHandlers = stack_frame_system.Handlers(Self);
 
         // Cacheline 1
         stack: Stack,
