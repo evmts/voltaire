@@ -47,7 +47,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             .WordType = config.frame_config.WordType,
             .maxBytecodeSize = config.frame_config.max_bytecode_size,
             .stack_size = config.frame_config.stack_size,
-            .fusion_enabled = config.enable_fusion, // Enable fusion optimizations
         });
         /// Journal handles reverting state when state needs to be reverted
         pub const Journal: type = @import("journal.zig").Journal(.{

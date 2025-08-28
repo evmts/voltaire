@@ -907,3 +907,741 @@ test "CREATE opcode - static context error" {
     
     try testing.expectError(TestFrame.Error.WriteProtection, result);
 }
+
+// ====== COMPREHENSIVE TESTS ======
+
+// RETURN opcode tests
+test "RETURN opcode - large data" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    // Write 1KB of data
+    const data_size = 1024;
+    const test_data = try testing.allocator.alloc(u8, data_size);
+    defer testing.allocator.free(test_data);
+    for (test_data, 0..) |*byte, i| {
+        byte.* = @truncate(i);
+    }
+    try frame.memory.set_data(0, test_data);
+
+    try frame.stack.push(0); // offset
+    try frame.stack.push(data_size); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.@"return"(frame, dispatch);
+    
+    try testing.expectEqual(TestFrame.Success.Return, result);
+    try testing.expectEqualSlices(u8, test_data, frame.output_data.items);
+}
+
+test "RETURN opcode - offset at memory boundary" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    // Write data at different offsets
+    const test_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD };
+    const offset = 100;
+    try frame.memory.set_data(offset, &test_data);
+
+    try frame.stack.push(offset); // offset
+    try frame.stack.push(test_data.len); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.@"return"(frame, dispatch);
+    
+    try testing.expectEqual(TestFrame.Success.Return, result);
+    try testing.expectEqualSlices(u8, &test_data, frame.output_data.items);
+}
+
+test "RETURN opcode - out of bounds offset" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    // Try to return from way out of bounds
+    try frame.stack.push(std.math.maxInt(u256)); // huge offset
+    try frame.stack.push(32); // size
+
+    const dispatch = createMockDispatch();
+    const result = TestFrame.SystemHandlers.@"return"(frame, dispatch);
+    
+    try testing.expectError(TestFrame.Error.OutOfBounds, result);
+}
+
+test "RETURN opcode - out of bounds size" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(0); // offset
+    try frame.stack.push(std.math.maxInt(u256)); // huge size
+
+    const dispatch = createMockDispatch();
+    const result = TestFrame.SystemHandlers.@"return"(frame, dispatch);
+    
+    try testing.expectError(TestFrame.Error.OutOfBounds, result);
+}
+
+test "RETURN opcode - memory expansion" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    // Return from uninitialized memory (should expand and return zeros)
+    const offset = 10000;
+    const size = 32;
+
+    try frame.stack.push(offset); // offset
+    try frame.stack.push(size); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.@"return"(frame, dispatch);
+    
+    try testing.expectEqual(TestFrame.Success.Return, result);
+    try testing.expectEqual(@as(usize, size), frame.output_data.items.len);
+    // Should be all zeros
+    for (frame.output_data.items) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+// REVERT opcode tests
+test "REVERT opcode - patterns" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    // Test common error patterns
+    const patterns = [_][]const u8{
+        "Error",
+        "Panic(uint256)",
+        "InsufficientBalance()",
+        &[_]u8{ 0x08, 0xc3, 0x79, 0xa0 }, // Solidity error selector
+    };
+
+    for (patterns) |pattern| {
+        frame.output_data.clearRetainingCapacity();
+        try frame.memory.set_data(0, pattern);
+
+        try frame.stack.push(0); // offset
+        try frame.stack.push(pattern.len); // size
+
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.revert(frame, dispatch);
+        
+        try testing.expectEqual(TestFrame.Success.Revert, result);
+        try testing.expectEqualSlices(u8, pattern, frame.output_data.items);
+    }
+}
+
+test "REVERT opcode - max size revert data" {
+    var frame = try createTestFrame(testing.allocator, null);
+    defer frame.deinit(testing.allocator);
+
+    // Create max reasonable revert data (e.g., 10KB)
+    const max_size = 10240;
+    const revert_data = try testing.allocator.alloc(u8, max_size);
+    defer testing.allocator.free(revert_data);
+    @memset(revert_data, 0xFF);
+    
+    try frame.memory.set_data(0, revert_data);
+
+    try frame.stack.push(0); // offset
+    try frame.stack.push(max_size); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.revert(frame, dispatch);
+    
+    try testing.expectEqual(TestFrame.Success.Revert, result);
+    try testing.expectEqualSlices(u8, revert_data, frame.output_data.items);
+}
+
+// SELFDESTRUCT opcode tests
+test "SELFDESTRUCT opcode - to self" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Self-destruct to self (edge case)
+    const self_addr = TestFrame.SystemHandlers.to_u256(frame.contract_address);
+    try frame.stack.push(self_addr);
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.selfdestruct(frame, dispatch);
+    
+    try testing.expectEqual(TestFrame.Success.SelfDestruct, result);
+}
+
+test "SELFDESTRUCT opcode - to max address" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Self-destruct to max address
+    const max_addr = std.math.maxInt(u160); // Max valid address
+    try frame.stack.push(max_addr);
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.selfdestruct(frame, dispatch);
+    
+    try testing.expectEqual(TestFrame.Success.SelfDestruct, result);
+}
+
+// Address conversion tests
+test "Address conversion - from_u256 edge cases" {
+    // Test zero
+    const zero = TestFrame.SystemHandlers.from_u256(0);
+    try testing.expectEqual(Address.zero(), zero);
+
+    // Test max u160 (max valid address)
+    const max_u160 = std.math.maxInt(u160);
+    const max_addr = TestFrame.SystemHandlers.from_u256(max_u160);
+    const expected_max = Address.fromBytes([_]u8{0xFF} ** 20) catch unreachable;
+    try testing.expectEqual(expected_max, max_addr);
+
+    // Test truncation from u256
+    const large_value: u256 = (1 << 200) | 0x1234567890ABCDEF1234567890ABCDEF12345678;
+    const truncated = TestFrame.SystemHandlers.from_u256(large_value);
+    // Should only keep lower 160 bits
+    const expected_bytes = [_]u8{ 
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF,
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF,
+        0x12, 0x34, 0x56, 0x78
+    };
+    const expected = Address.fromBytes(expected_bytes) catch unreachable;
+    try testing.expectEqual(expected, truncated);
+}
+
+test "Address conversion - to_u256 edge cases" {
+    // Test zero
+    const zero_addr = Address.zero();
+    const zero_u256 = TestFrame.SystemHandlers.to_u256(zero_addr);
+    try testing.expectEqual(@as(u256, 0), zero_u256);
+
+    // Test max address
+    const max_bytes = [_]u8{0xFF} ** 20;
+    const max_addr = Address.fromBytes(max_bytes) catch unreachable;
+    const max_u256 = TestFrame.SystemHandlers.to_u256(max_addr);
+    try testing.expectEqual(@as(u256, std.math.maxInt(u160)), max_u256);
+
+    // Test specific pattern
+    const pattern_bytes = [_]u8{
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF,
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF,
+        0x12, 0x34, 0x56, 0x78
+    };
+    const pattern_addr = Address.fromBytes(pattern_bytes) catch unreachable;
+    const pattern_u256 = TestFrame.SystemHandlers.to_u256(pattern_addr);
+    const expected: u256 = 0x1234567890ABCDEF1234567890ABCDEF12345678;
+    try testing.expectEqual(expected, pattern_u256);
+}
+
+// CALL opcode comprehensive tests
+test "CALL opcode - with value in static context" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.is_static = true;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Try CALL with value in static context (should fail)
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(1); // value > 0
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expectError(TestFrame.Error.WriteProtection, result);
+}
+
+test "CALL opcode - zero value in static context" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.is_static = true;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // CALL with zero value in static context should work
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value = 0
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop()); // success
+}
+
+test "CALL opcode - max gas" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test with max u64 gas
+    try frame.stack.push(std.math.maxInt(u64)); // max gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+}
+
+test "CALL opcode - gas overflow" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test with gas > max u64 (should fail gracefully)
+    const overflow_gas: u256 = std.math.maxInt(u64) + 1;
+    try frame.stack.push(overflow_gas); // gas > max u64
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop()); // failure
+}
+
+test "CALL opcode - with input and output data" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.call_result.output_data = "Hello World!";
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Prepare input data
+    const input_data = "test input";
+    try frame.memory.set_data(0, input_data);
+
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(input_data.len); // input_size
+    try frame.stack.push(100); // output_offset
+    try frame.stack.push(32); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+    
+    // Check return data was stored
+    try testing.expectEqualSlices(u8, "Hello World!", frame.return_data.items);
+    
+    // Check output was written to memory
+    const output = frame.memory.get_slice(100, "Hello World!".len) catch unreachable;
+    try testing.expectEqualSlices(u8, "Hello World!", output);
+}
+
+test "CALL opcode - output size limiting" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.call_result.output_data = "Very long output data that exceeds requested size";
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(10); // output_size (smaller than actual output)
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+    
+    // Full return data should be stored
+    try testing.expectEqualSlices(u8, mock_host.call_result.output_data, frame.return_data.items);
+    
+    // But only requested size written to memory
+    const output = frame.memory.get_slice(0, 10) catch unreachable;
+    try testing.expectEqualSlices(u8, "Very long ", output);
+}
+
+test "CALL opcode - failed call" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.call_result.success = false;
+    mock_host.call_result.output_data = "Revert reason";
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(32); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop()); // failure
+    
+    // Return data should still be stored
+    try testing.expectEqualSlices(u8, "Revert reason", frame.return_data.items);
+}
+
+// DELEGATECALL tests
+test "DELEGATECALL opcode - basic" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x5678); // address
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.delegatecall(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+}
+
+test "DELEGATECALL opcode - preserves context" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.call_result.output_data = "delegated output";
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    const input = "delegate input";
+    try frame.memory.set_data(0, input);
+
+    try frame.stack.push(50000); // gas
+    try frame.stack.push(0xDEADBEEF); // address
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(input.len); // input_size
+    try frame.stack.push(100); // output_offset
+    try frame.stack.push(32); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.delegatecall(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+    
+    // Verify output
+    const output = frame.memory.get_slice(100, "delegated output".len) catch unreachable;
+    try testing.expectEqualSlices(u8, "delegated output", output);
+}
+
+// STATICCALL tests
+test "STATICCALL opcode - basic" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x9999); // address
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.staticcall(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+}
+
+test "STATICCALL opcode - enforces no value" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.call_result.output_data = "static result";
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(75000); // gas
+    try frame.stack.push(0xABCD); // address
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(50); // output_offset
+    try frame.stack.push(20); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.staticcall(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+    
+    const output = frame.memory.get_slice(50, "static result".len) catch unreachable;
+    try testing.expectEqualSlices(u8, "static result", output);
+}
+
+// CREATE tests
+test "CREATE opcode - empty init code" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.create_result.created_address = Address.fromBytes([_]u8{0x42} ** 20) catch unreachable;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size (empty init code)
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.create(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    const created_addr = try frame.stack.pop();
+    try testing.expect(created_addr != 0); // Should have address
+}
+
+test "CREATE opcode - with init code" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.create_result.created_address = Address.fromBytes([_]u8{0x11} ** 20) catch unreachable;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Simple init code
+    const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // PUSH1 0 PUSH1 0 RETURN
+    try frame.memory.set_data(0, &init_code);
+
+    try frame.stack.push(1000); // value
+    try frame.stack.push(0); // offset
+    try frame.stack.push(init_code.len); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.create(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    const created_addr = try frame.stack.pop();
+    try testing.expect(created_addr != 0);
+}
+
+test "CREATE opcode - failed creation" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.create_result.success = false;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.create(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop()); // failure
+}
+
+test "CREATE opcode - out of bounds" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(0); // value
+    try frame.stack.push(std.math.maxInt(u256)); // huge offset
+    try frame.stack.push(32); // size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.create(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop()); // failure
+}
+
+// CREATE2 tests
+test "CREATE2 opcode - deterministic address" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.create_result.created_address = Address.fromBytes([_]u8{0x22} ** 20) catch unreachable;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size
+    try frame.stack.push(0xDEADBEEF); // salt
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.create2(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    const created_addr = try frame.stack.pop();
+    try testing.expect(created_addr != 0);
+}
+
+test "CREATE2 opcode - different salts" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test with multiple different salts
+    const salts = [_]u256{ 0, 1, std.math.maxInt(u256), 0x123456789ABCDEF };
+    
+    for (salts) |salt| {
+        mock_host.create_result.created_address = Address.fromBytes([_]u8{@truncate(salt)} ** 20) catch unreachable;
+        
+        try frame.stack.push(0); // value
+        try frame.stack.push(0); // offset
+        try frame.stack.push(0); // size
+        try frame.stack.push(salt); // salt
+
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.create2(frame, dispatch);
+        
+        try testing.expect(result == TestFrame.Success.stop);
+        _ = try frame.stack.pop(); // created address
+    }
+}
+
+test "CREATE2 opcode - static context" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.is_static = true;
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size
+    try frame.stack.push(0); // salt
+
+    const dispatch = createMockDispatch();
+    const result = TestFrame.SystemHandlers.create2(frame, dispatch);
+    
+    try testing.expectError(TestFrame.Error.WriteProtection, result);
+}
+
+// Edge case tests
+test "System opcodes - stack underflow" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test each opcode with insufficient stack items
+    const dispatch = createMockDispatch();
+    
+    // CALL needs 7 items
+    const call_result = TestFrame.SystemHandlers.call(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, call_result);
+    
+    // DELEGATECALL needs 6 items
+    const delegatecall_result = TestFrame.SystemHandlers.delegatecall(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, delegatecall_result);
+    
+    // CREATE needs 3 items
+    const create_result = TestFrame.SystemHandlers.create(frame, dispatch);
+    try testing.expectError(TestFrame.Error.WriteProtection, create_result); // Static context error comes first
+    
+    // RETURN needs 2 items
+    const return_result = TestFrame.SystemHandlers.@"return"(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, return_result);
+    
+    // SELFDESTRUCT needs 1 item
+    const selfdestruct_result = TestFrame.SystemHandlers.selfdestruct(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, selfdestruct_result);
+}
+
+test "System opcodes - gas consumption" {
+    var mock_host = MockHost.init(testing.allocator);
+    mock_host.call_result.gas_remaining = 50000; // Simulate gas consumption
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    const initial_gas = frame.gas_remaining;
+    
+    try frame.stack.push(100000); // gas
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(0); // value
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // output_size
+
+    const dispatch = createMockDispatch();
+    const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+    
+    try testing.expect(result == TestFrame.Success.stop);
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+    
+    // Gas should have been consumed
+    try testing.expect(frame.gas_remaining < initial_gas);
+    try testing.expectEqual(@as(i64, 50000), frame.gas_remaining);
+}
+
+test "System opcodes - memory boundary checks" {
+    var mock_host = MockHost.init(testing.allocator);
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test memory operations at various boundaries
+    const test_cases = [_]struct { offset: u256, size: u256 }{
+        .{ .offset = 0, .size = 0 },
+        .{ .offset = 0, .size = 32 },
+        .{ .offset = 32, .size = 32 },
+        .{ .offset = 0x1000, .size = 0x100 },
+        .{ .offset = std.math.maxInt(u32), .size = 1 },
+    };
+
+    for (test_cases) |tc| {
+        // Clear stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+
+        // Test with CALL
+        try frame.stack.push(100000); // gas
+        try frame.stack.push(0x1234); // address
+        try frame.stack.push(0); // value
+        try frame.stack.push(tc.offset); // input_offset
+        try frame.stack.push(tc.size); // input_size
+        try frame.stack.push(tc.offset); // output_offset
+        try frame.stack.push(tc.size); // output_size
+
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.call(frame, dispatch);
+        
+        try testing.expect(result == TestFrame.Success.stop);
+        _ = try frame.stack.pop();
+    }
+}

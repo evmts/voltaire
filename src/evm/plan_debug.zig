@@ -285,13 +285,14 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             }
             
             // Validate stack
-            if (typed_frame.stack.next_stack_index != trace_entry.stack_before.len) {
-                std.debug.panic("DebugPlan: REVM stack size mismatch at PC {}: expected {} got {}", .{ pc, trace_entry.stack_before.len, typed_frame.stack.next_stack_index });
+            const stack_len = typed_frame.stack.size();
+            if (stack_len != trace_entry.stack_before.len) {
+                std.debug.panic("DebugPlan: REVM stack size mismatch at PC {}: expected {} got {}", .{ pc, trace_entry.stack_before.len, stack_len });
             }
-            
-            for (0..typed_frame.stack.next_stack_index) |i| {
-                if (typed_frame.stack.stack[i] != trace_entry.stack_before[i]) {
-                    std.debug.panic("DebugPlan: REVM stack[{}] mismatch at PC {}: expected {} got {}", .{ i, pc, trace_entry.stack_before[i], typed_frame.stack.stack[i] });
+            const stack_slice = typed_frame.stack.get_slice();
+            for (0..stack_len) |i| {
+                if (stack_slice[i] != trace_entry.stack_before[i]) {
+                    std.debug.panic("DebugPlan: REVM stack[{}] mismatch at PC {}: expected {} got {}", .{ i, pc, trace_entry.stack_before[i], stack_slice[i] });
                 }
             }
             
@@ -749,7 +750,8 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             };
             
             // Allocate stack with error handling
-            state.stack = try self.allocator.dupe(u256, frame.stack.stack[0..frame.stack.next_stack_index]);
+            const stk_slice = frame.stack.get_slice();
+            state.stack = try self.allocator.dupe(u256, stk_slice);
             errdefer self.allocator.free(state.stack);
             
             // Allocate memory with error handling
@@ -761,7 +763,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             errdefer self.allocator.free(state.return_data);
             
             // Set remaining fields
-            state.stack_height = frame.stack.next_stack_index;
+            state.stack_height = frame.stack.size();
             state.memory_size = frame.memory.getCurrentSize();
             state.pc = frame.pc;
             state.gas_remaining = @max(frame.gas_remaining, 0);

@@ -462,3 +462,447 @@ test "SLOAD/SSTORE - multiple operations" {
         try testing.expectEqual(data.value, try frame.stack.pop());
     }
 }
+
+// ====== COMPREHENSIVE TESTS ======
+
+// SLOAD edge cases
+test "SLOAD opcode - boundary values" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    
+    // Test loading from various slot numbers
+    const test_slots = [_]u256{
+        0,                      // Zero slot
+        1,                      // Small slot
+        255,                    // Byte boundary
+        256,                    // Word boundary
+        0xFFFFFFFF,             // 32-bit max
+        std.math.maxInt(u256),  // Max slot
+        0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF,
+    };
+    
+    // Store unique values in each slot
+    for (test_slots, 0..) |slot, i| {
+        try host.set_storage(frame.contract_address, slot, @as(u256, i + 1000));
+    }
+    
+    // Load and verify each
+    for (test_slots, 0..) |slot, i| {
+        try frame.stack.push(slot);
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.StorageHandlers.sload(frame, dispatch);
+        
+        const loaded = try frame.stack.pop();
+        try testing.expectEqual(@as(u256, i + 1000), loaded);
+    }
+}
+
+test "SLOAD opcode - access tracking" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    
+    // Load from slot should mark it as accessed
+    try frame.stack.push(42);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sload(frame, dispatch);
+    
+    // Verify slot was marked as accessed
+    const key = MockHost.StorageKey{ 
+        .address = frame.contract_address, 
+        .slot = 42 
+    };
+    try testing.expect(host.accessed_slots.contains(key));
+    
+    _ = try frame.stack.pop(); // Clear result
+}
+
+// SSTORE comprehensive tests
+test "SSTORE opcode - overwrite patterns" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    // Test various overwrite scenarios
+    const slot: u256 = 100;
+    
+    // Store initial value
+    try frame.stack.push(slot);
+    try frame.stack.push(0xAAAA);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    // Overwrite with different value
+    try frame.stack.push(slot);
+    try frame.stack.push(0xBBBB);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    // Overwrite with zero (clearing)
+    try frame.stack.push(slot);
+    try frame.stack.push(0);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    // Verify final state
+    const final_value = host.get_storage(frame.contract_address, slot);
+    try testing.expectEqual(@as(u256, 0), final_value);
+}
+
+test "SSTORE opcode - gas edge cases" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    // Test different gas scenarios
+    
+    // 1. Store to new slot (most expensive)
+    frame.gas_remaining = 100_000;
+    var gas_before = frame.gas_remaining;
+    try frame.stack.push(1);
+    try frame.stack.push(100);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    const new_slot_gas = gas_before - frame.gas_remaining;
+    
+    // 2. Overwrite existing non-zero with non-zero
+    gas_before = frame.gas_remaining;
+    try frame.stack.push(1);
+    try frame.stack.push(200);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    _ = gas_before - frame.gas_remaining; // overwrite_gas (currently not used in comparisons)
+    
+    // 3. Clear storage (non-zero to zero)
+    gas_before = frame.gas_remaining;
+    try frame.stack.push(1);
+    try frame.stack.push(0);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    const clear_gas = gas_before - frame.gas_remaining;
+    
+    // 4. No-op (store same value)
+    try frame.stack.push(2);
+    try frame.stack.push(300);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    gas_before = frame.gas_remaining;
+    try frame.stack.push(2);
+    try frame.stack.push(300); // Same value
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    const noop_gas = gas_before - frame.gas_remaining;
+    
+    // Verify gas relationships
+    try testing.expect(new_slot_gas > 0);
+    try testing.expect(clear_gas > 0);
+    try testing.expect(noop_gas < new_slot_gas);
+}
+
+test "SSTORE opcode - out of gas" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    // Set very low gas
+    frame.gas_remaining = 1;
+    
+    try frame.stack.push(0);
+    try frame.stack.push(42);
+    
+    const dispatch = createMockDispatch();
+    const result = TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    try testing.expectError(TestFrame.Error.OutOfGas, result);
+}
+
+// TLOAD/TSTORE comprehensive tests
+test "TLOAD opcode - empty transient storage" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    
+    // Load from empty transient slot
+    try frame.stack.push(999);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.tload(frame, dispatch);
+    
+    // Should return 0
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+}
+
+test "TSTORE opcode - transient storage patterns" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    // Store various patterns in transient storage
+    const patterns = [_]struct { slot: u256, value: u256 }{
+        .{ .slot = 0, .value = 0 },
+        .{ .slot = 1, .value = std.math.maxInt(u256) },
+        .{ .slot = 100, .value = 0xDEADBEEF },
+        .{ .slot = std.math.maxInt(u128), .value = 12345 },
+        .{ .slot = std.math.maxInt(u256), .value = 1 },
+    };
+    
+    // Store all patterns
+    for (patterns) |p| {
+        try frame.stack.push(p.slot);
+        try frame.stack.push(p.value);
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.StorageHandlers.tstore(frame, dispatch);
+    }
+    
+    // Load and verify all
+    for (patterns) |p| {
+        try frame.stack.push(p.slot);
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.StorageHandlers.tload(frame, dispatch);
+        const loaded = try frame.stack.pop();
+        try testing.expectEqual(p.value, loaded);
+    }
+}
+
+test "TSTORE opcode - fixed gas cost" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    // TSTORE should always cost the same (100 gas)
+    const test_cases = [_]struct { slot: u256, value: u256 }{
+        .{ .slot = 0, .value = 0 },
+        .{ .slot = 0, .value = 1 },           // Overwrite
+        .{ .slot = 1000, .value = 999 },      // New slot
+        .{ .slot = 1000, .value = 0 },        // Clear
+        .{ .slot = 1000, .value = 0 },        // No-op
+    };
+    
+    for (test_cases) |tc| {
+        frame.gas_remaining = 1000;
+        const gas_before = frame.gas_remaining;
+        
+        try frame.stack.push(tc.slot);
+        try frame.stack.push(tc.value);
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.StorageHandlers.tstore(frame, dispatch);
+        
+        const gas_used = gas_before - frame.gas_remaining;
+        try testing.expectEqual(@as(i64, GasConstants.GasWarmStorageRead), gas_used);
+    }
+}
+
+// Cross-contract storage tests
+test "storage operations - different addresses" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    // Create two frames with different contract addresses
+    const addr1 = Address{ .bytes = [_]u8{1} ** 20 };
+    const addr2 = Address{ .bytes = [_]u8{2} ** 20 };
+    
+    var frame1 = try createTestFrame(testing.allocator, &host);
+    defer frame1.deinit(testing.allocator);
+    frame1.contract_address = addr1;
+    frame1.is_static = false;
+    
+    var frame2 = try createTestFrame(testing.allocator, &host);
+    defer frame2.deinit(testing.allocator);
+    frame2.contract_address = addr2;
+    frame2.is_static = false;
+    
+    // Store value in same slot for both contracts
+    const slot: u256 = 42;
+    
+    // Contract 1 stores 111
+    try frame1.stack.push(slot);
+    try frame1.stack.push(111);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame1, dispatch);
+    
+    // Contract 2 stores 222
+    try frame2.stack.push(slot);
+    try frame2.stack.push(222);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame2, dispatch);
+    
+    // Verify storage is isolated
+    try frame1.stack.push(slot);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sload(frame1, dispatch);
+    try testing.expectEqual(@as(u256, 111), try frame1.stack.pop());
+    
+    try frame2.stack.push(slot);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sload(frame2, dispatch);
+    try testing.expectEqual(@as(u256, 222), try frame2.stack.pop());
+}
+
+// Stack underflow tests
+test "storage operations - stack underflow" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    
+    const dispatch = createMockDispatch();
+    
+    // SLOAD needs 1 item
+    const sload_result = TestFrame.StorageHandlers.sload(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, sload_result);
+    
+    // SSTORE needs 2 items
+    const sstore_result = TestFrame.StorageHandlers.sstore(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, sstore_result);
+    
+    try frame.stack.push(42); // Add one item
+    const sstore_result2 = TestFrame.StorageHandlers.sstore(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, sstore_result2);
+    
+    // TLOAD needs 1 item
+    _ = try frame.stack.pop();
+    const tload_result = TestFrame.StorageHandlers.tload(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, tload_result);
+    
+    // TSTORE needs 2 items
+    const tstore_result = TestFrame.StorageHandlers.tstore(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, tstore_result);
+}
+
+// Transient vs persistent storage interaction
+test "transient vs persistent storage" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    const slot: u256 = 100;
+    
+    // Store in persistent storage
+    try frame.stack.push(slot);
+    try frame.stack.push(111);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    // Store different value in transient storage
+    try frame.stack.push(slot);
+    try frame.stack.push(222);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.tstore(frame, dispatch);
+    
+    // Load from persistent - should be 111
+    try frame.stack.push(slot);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sload(frame, dispatch);
+    try testing.expectEqual(@as(u256, 111), try frame.stack.pop());
+    
+    // Load from transient - should be 222
+    try frame.stack.push(slot);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.tload(frame, dispatch);
+    try testing.expectEqual(@as(u256, 222), try frame.stack.pop());
+}
+
+// Maximum value tests
+test "storage operations - max values" {
+    var host = MockHost.init(testing.allocator);
+    defer host.deinit();
+    
+    var frame = try createTestFrame(testing.allocator, &host);
+    defer frame.deinit(testing.allocator);
+    frame.is_static = false;
+    
+    const max_slot = std.math.maxInt(u256);
+    const max_value = std.math.maxInt(u256);
+    
+    // Store max value at max slot (persistent)
+    try frame.stack.push(max_slot);
+    try frame.stack.push(max_value);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sstore(frame, dispatch);
+    
+    // Load and verify
+    try frame.stack.push(max_slot);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.sload(frame, dispatch);
+    try testing.expectEqual(max_value, try frame.stack.pop());
+    
+    // Same for transient storage
+    try frame.stack.push(max_slot);
+    try frame.stack.push(max_value);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.tstore(frame, dispatch);
+    
+    try frame.stack.push(max_slot);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.StorageHandlers.tload(frame, dispatch);
+    try testing.expectEqual(max_value, try frame.stack.pop());
+}
+
+// Test configuration without database
+test "storage operations - no database config" {
+    const no_db_config = FrameConfig{
+        .stack_size = 1024,
+        .WordType = u256,
+        .max_bytecode_size = 1024,
+        .block_gas_limit = 30_000_000,
+        .has_database = false, // Database disabled
+        .TracerType = NoOpTracer,
+        .memory_initial_capacity = 4096,
+        .memory_limit = 0xFFFFFF,
+    };
+    
+    const NoDbFrame = StackFrame(no_db_config);
+    const NoDbBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = no_db_config.max_bytecode_size });
+    
+    const bytecode = NoDbBytecode.initEmpty();
+    var frame = try NoDbFrame.init(testing.allocator, bytecode, 1_000_000, null, null);
+    defer frame.deinit(testing.allocator);
+    
+    // All storage operations should return InvalidOpcode
+    try frame.stack.push(0);
+    const dispatch = createMockDispatch();
+    
+    const sload_result = NoDbFrame.StorageHandlers.sload(frame, dispatch);
+    try testing.expectError(NoDbFrame.Error.InvalidOpcode, sload_result);
+    
+    try frame.stack.push(42);
+    const sstore_result = NoDbFrame.StorageHandlers.sstore(frame, dispatch);
+    try testing.expectError(NoDbFrame.Error.InvalidOpcode, sstore_result);
+    
+    _ = try frame.stack.pop();
+    const tload_result = NoDbFrame.StorageHandlers.tload(frame, dispatch);
+    try testing.expectError(NoDbFrame.Error.InvalidOpcode, tload_result);
+    
+    try frame.stack.push(42);
+    const tstore_result = NoDbFrame.StorageHandlers.tstore(frame, dispatch);
+    try testing.expectError(NoDbFrame.Error.InvalidOpcode, tstore_result);
+}

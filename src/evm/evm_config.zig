@@ -1,6 +1,6 @@
 const std = @import("std");
 const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
-const frame_mod = @import("frame.zig");
+const FrameConfig = @import("frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
 const Eips = @import("eips.zig").Eips;
 
@@ -18,7 +18,7 @@ pub const EvmConfig = struct {
     max_input_size: u18 = 131072, // 128 KB
 
     /// Frame configuration parameters (enable database by default)
-    frame_config: frame_mod.FrameConfig = .{ .has_database = true },
+    frame_config: FrameConfig = .{ .has_database = true },
 
     /// Enable precompiled contracts support (default: true)
     /// When disabled, precompile calls will fail with an error
