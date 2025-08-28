@@ -382,3 +382,404 @@ test "SAR opcode - shift overflow positive" {
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
+
+// Additional comprehensive tests
+
+test "AND opcode - with zeros" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x & 0 = 0
+    try frame.stack.push(0xDEADBEEF);
+    try frame.stack.push(0);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.@"and"(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+}
+
+test "AND opcode - with max value" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x & MAX = x
+    const value = 0x123456789ABCDEF0;
+    try frame.stack.push(value);
+    try frame.stack.push(std.math.maxInt(u256));
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.@"and"(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, value), try frame.stack.pop());
+}
+
+test "OR opcode - with zeros" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x | 0 = x
+    const value = 0xCAFEBABE;
+    try frame.stack.push(value);
+    try frame.stack.push(0);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.@"or"(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, value), try frame.stack.pop());
+}
+
+test "OR opcode - with max value" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x | MAX = MAX
+    try frame.stack.push(42);
+    try frame.stack.push(std.math.maxInt(u256));
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.@"or"(frame, dispatch);
+    
+    try testing.expectEqual(std.math.maxInt(u256), try frame.stack.pop());
+}
+
+test "XOR opcode - same values" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x ^ x = 0
+    const value = 0x123456789ABCDEF0;
+    try frame.stack.push(value);
+    try frame.stack.push(value);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.xor(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+}
+
+test "XOR opcode - with zero" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x ^ 0 = x
+    const value = 0xDEADBEEF;
+    try frame.stack.push(value);
+    try frame.stack.push(0);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.xor(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, value), try frame.stack.pop());
+}
+
+test "XOR opcode - with max value" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x ^ MAX = ~x
+    const value = 0x123456789ABCDEF0;
+    try frame.stack.push(value);
+    try frame.stack.push(std.math.maxInt(u256));
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.xor(frame, dispatch);
+    
+    try testing.expectEqual(~value, try frame.stack.pop());
+}
+
+test "NOT opcode - max value" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: ~MAX = 0
+    try frame.stack.push(std.math.maxInt(u256));
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.not(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+}
+
+test "NOT opcode - double negation" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: ~~x = x
+    const value = 0x123456789ABCDEF0;
+    try frame.stack.push(value);
+    
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.not(frame, dispatch);
+    
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.not(frame, dispatch);
+    
+    try testing.expectEqual(value, try frame.stack.pop());
+}
+
+test "BYTE opcode - extract middle byte" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: extract byte 15 (middle of 32 bytes)
+    // Create value with 0xAB at byte position 15
+    const value = @as(u256, 0xAB) << ((31 - 15) * 8);
+    try frame.stack.push(value);
+    try frame.stack.push(15);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.byte(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 0xAB), try frame.stack.pop());
+}
+
+test "BYTE opcode - large index" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: byte 100 of any value = 0
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(100); // way out of bounds
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.byte(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+}
+
+test "BYTE opcode - extract from complex value" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: extract various bytes from 0x0123456789ABCDEF
+    const value = @as(u256, 0x0123456789ABCDEF);
+    
+    // Extract byte 31 (least significant) = 0xEF
+    try frame.stack.push(value);
+    try frame.stack.push(31);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.byte(frame, dispatch);
+    try testing.expectEqual(@as(u256, 0xEF), try frame.stack.pop());
+    
+    // Extract byte 30 = 0xCD
+    try frame.stack.push(value);
+    try frame.stack.push(30);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.byte(frame, dispatch);
+    try testing.expectEqual(@as(u256, 0xCD), try frame.stack.pop());
+    
+    // Extract byte 24 = 0x01
+    try frame.stack.push(value);
+    try frame.stack.push(24);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.byte(frame, dispatch);
+    try testing.expectEqual(@as(u256, 0x01), try frame.stack.pop());
+}
+
+test "SHL opcode - shift by 0" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x << 0 = x
+    const value = 0x123456789ABCDEF0;
+    try frame.stack.push(value);
+    try frame.stack.push(0);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shl(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, value), try frame.stack.pop());
+}
+
+test "SHL opcode - large shifts" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: 1 << 255 = 0x8000...000
+    try frame.stack.push(1);
+    try frame.stack.push(255);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shl(frame, dispatch);
+    
+    const expected = @as(u256, 1) << 255;
+    try testing.expectEqual(expected, try frame.stack.pop());
+}
+
+test "SHL opcode - partial overflow" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: 0xFF << 252 should overflow partially
+    try frame.stack.push(0xFF);
+    try frame.stack.push(252);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shl(frame, dispatch);
+    
+    const expected = @as(u256, 0xF) << 252;
+    try testing.expectEqual(expected, try frame.stack.pop());
+}
+
+test "SHR opcode - shift by 0" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x >> 0 = x
+    const value = 0x123456789ABCDEF0;
+    try frame.stack.push(value);
+    try frame.stack.push(0);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shr(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, value), try frame.stack.pop());
+}
+
+test "SHR opcode - exact division by power of 2" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: 256 >> 8 = 1
+    try frame.stack.push(256);
+    try frame.stack.push(8);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shr(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+}
+
+test "SAR opcode - shift by 0" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: x >> 0 = x (arithmetic)
+    const neg_value = std.math.maxInt(u256) - 41; // -42
+    try frame.stack.push(neg_value);
+    try frame.stack.push(0);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.sar(frame, dispatch);
+    
+    try testing.expectEqual(neg_value, try frame.stack.pop());
+}
+
+test "SAR opcode - sign bit preservation" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: Ensure sign bit is preserved for negative numbers
+    // -256 >> 4 = -16 (preserving sign)
+    const neg_256 = std.math.maxInt(u256) - 255;
+    try frame.stack.push(neg_256);
+    try frame.stack.push(4);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.sar(frame, dispatch);
+    
+    const neg_16 = std.math.maxInt(u256) - 15;
+    try testing.expectEqual(neg_16, try frame.stack.pop());
+}
+
+test "SAR opcode - positive large shift" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: large positive >> 255 = 0
+    const value = (@as(u256, 1) << 254) - 1; // 0x3FFF...FFF
+    try frame.stack.push(value);
+    try frame.stack.push(255);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.sar(frame, dispatch);
+    
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+}
+
+// Combination and edge case tests
+test "bitwise operations - De Morgan's laws" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: ~(A & B) = (~A | ~B)
+    const a = 0x123456789ABCDEF0;
+    const b = 0xFEDCBA9876543210;
+    
+    // Calculate ~(A & B)
+    try frame.stack.push(a);
+    try frame.stack.push(b);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.@"and"(frame, dispatch);
+    
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.not(frame, dispatch);
+    const left_side = try frame.stack.pop();
+    
+    // Calculate (~A | ~B)
+    try frame.stack.push(a);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.not(frame, dispatch);
+    const not_a = try frame.stack.pop();
+    
+    try frame.stack.push(b);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.not(frame, dispatch);
+    const not_b = try frame.stack.pop();
+    
+    try frame.stack.push(not_a);
+    try frame.stack.push(not_b);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.@"or"(frame, dispatch);
+    const right_side = try frame.stack.pop();
+    
+    try testing.expectEqual(left_side, right_side);
+}
+
+test "shift operations - round trip" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: (x << n) >> n = x (for small n)
+    const value = 0x123456789ABCDEF0;
+    const shift = 16;
+    
+    try frame.stack.push(value);
+    try frame.stack.push(shift);
+    
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shl(frame, dispatch);
+    
+    try frame.stack.push(shift);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.BitwiseHandlers.shr(frame, dispatch);
+    
+    // Due to overflow, only lower bits are preserved
+    const mask = (@as(u256, 1) << (256 - shift)) - 1;
+    try testing.expectEqual(value & mask, try frame.stack.pop());
+}
+
+test "BYTE opcode - all bytes of a pattern" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: Create a pattern and extract each byte
+    var value: u256 = 0;
+    var i: u8 = 0;
+    while (i < 32) : (i += 1) {
+        value |= @as(u256, i) << ((31 - i) * 8);
+    }
+    
+    // Verify each byte
+    i = 0;
+    while (i < 32) : (i += 1) {
+        try frame.stack.push(value);
+        try frame.stack.push(i);
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.BitwiseHandlers.byte(frame, dispatch);
+        
+        try testing.expectEqual(@as(u256, i), try frame.stack.pop());
+    }
+}
