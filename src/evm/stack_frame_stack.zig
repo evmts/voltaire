@@ -12,15 +12,17 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const WordType = FrameType.WordType;
 
         /// POP opcode (0x50) - Remove item from stack.
+        /// Uses unsafe variant as stack bounds are pre-validated by the planner.
         pub fn pop(self: FrameType, dispatch: Dispatch) Error!Success {
-            _ = try self.stack.pop();
+            _ = self.stack.pop_unsafe();
             const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// PUSH0 opcode (0x5f) - Push 0 onto stack.
+        /// Uses unsafe variant as stack bounds are pre-validated by the planner.
         pub fn push0(self: FrameType, dispatch: Dispatch) Error!Success {
-            try self.stack.push(0);
+            self.stack.push_unsafe(0);
             const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
@@ -33,10 +35,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 pub fn pushHandler(self: FrameType, schedule: Dispatch) Error!Success {
                     if (push_n <= 8) {
                         const meta = schedule.getInlineMetadata();
-                        try self.stack.push(meta.value);
+                        self.stack.push_unsafe(meta.value);
                     } else {
                         const meta = schedule.getPointerMetadata();
-                        try self.stack.push(meta.value.*);
+                        self.stack.push_unsafe(meta.value.*);
                     }
                     const next = schedule.skipMetadata();
                     return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
@@ -49,8 +51,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
             return struct {
                 pub fn dupHandler(self: FrameType, schedule: Dispatch) Error!Success {
-                    const value = try self.stack.peek_n(dup_n);
-                    try self.stack.push(value);
+                    const value = self.stack.peek_n_unsafe(dup_n);
+                    self.stack.push_unsafe(value);
                     const next = schedule.getNext();
                     return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
                 }
@@ -62,7 +64,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
             return struct {
                 pub fn swapHandler(self: FrameType, schedule: Dispatch) Error!Success {
-                    try self.stack.swap_n(swap_n);
+                    self.stack.swap_n_unsafe(swap_n);
                     const next = schedule.getNext();
                     return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
                 }
