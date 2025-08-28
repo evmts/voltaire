@@ -135,7 +135,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             @setEvalBranchQuota(10000);
             var h: [256]*const Dispatch.OpcodeHandler = undefined;
             for (&h) |*handler| handler.* = &invalid;
-            h[@intFromEnum(Opcode.STOP)] = &stop;
+            h[@intFromEnum(Opcode.STOP)] = &SystemHandlers.stop;
             h[@intFromEnum(Opcode.ADD)] = &ArithmeticHandlers.add;
             h[@intFromEnum(Opcode.MUL)] = &ArithmeticHandlers.mul;
             h[@intFromEnum(Opcode.SUB)] = &ArithmeticHandlers.sub;
@@ -230,6 +230,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.LOG4)] = &log4;
             h[@intFromEnum(Opcode.CREATE)] = &SystemHandlers.create;
             h[@intFromEnum(Opcode.CALL)] = &SystemHandlers.call;
+            h[@intFromEnum(Opcode.CREATE2)] = &SystemHandlers.create2;
             h[@intFromEnum(Opcode.CALLCODE)] = &invalid; // Deprecated
             h[@intFromEnum(Opcode.RETURN)] = &SystemHandlers.@"return";
             h[@intFromEnum(Opcode.DELEGATECALL)] = &SystemHandlers.delegatecall;

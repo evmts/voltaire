@@ -876,16 +876,16 @@ test "arithmetic operations - sequential operations" {
     // Test: ((10 + 20) * 3) - 15 = 75
     try frame.stack.push(10);
     try frame.stack.push(20);
-    var dispatch = createMockDispatch();
+    const dispatch = createMockDispatch();
     _ = try TestFrame.ArithmeticHandlers.add(frame, dispatch);
     
     try frame.stack.push(3);
-    dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mul(frame, dispatch);
+    const dispatch2 = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.mul(frame, dispatch2);
     
     try frame.stack.push(15);
-    dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sub(frame, dispatch);
+    const dispatch3 = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.sub(frame, dispatch3);
     
     try testing.expectEqual(@as(u256, 75), try frame.stack.pop());
 }
@@ -918,7 +918,7 @@ test "EXP opcode - special cases" {
     try frame.stack.push(0);
     try frame.stack.push(0);
     
-    var dispatch = createMockDispatch();
+    const dispatch = createMockDispatch();
     _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
@@ -928,8 +928,8 @@ test "EXP opcode - special cases" {
     try frame.stack.push(max);
     try frame.stack.push(2);
     
-    dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    const dispatch2 = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch2);
     
     // MAX * MAX = wraps to 1
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
@@ -949,7 +949,7 @@ test "ADDMOD/MULMOD consistency" {
     try frame.stack.push(b);
     try frame.stack.push(n);
     
-    var dispatch = createMockDispatch();
+    const dispatch = createMockDispatch();
     _ = try TestFrame.ArithmeticHandlers.addmod(frame, dispatch);
     const result1 = try frame.stack.pop();
     
