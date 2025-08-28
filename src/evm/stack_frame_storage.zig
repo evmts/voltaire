@@ -158,7 +158,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
 const testing = std.testing;
 const StackFrame = @import("stack_frame.zig").StackFrame;
-const dispatch_mod = @import("stack_frame_dispatch.zig");
+const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
 const Host = @import("host.zig").Host;

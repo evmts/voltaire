@@ -50,7 +50,7 @@ const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const logs = @import("logs.zig");
 const Log = logs.Log;
-const dispatch_mod = @import("stack_frame_dispatch.zig");
+const dispatch_mod = @import("dispatch.zig");
 
 /// Creates a configured StackFrame type for EVM execution.
 ///

@@ -15,7 +15,7 @@ const std = @import("std");
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 pub const Frame = @import("frame.zig").Frame;
 pub const StackFrame = @import("stack_frame.zig").StackFrame;
-pub const StackFrameDispatch = @import("stack_frame_dispatch.zig").Dispatch;
+pub const StackFrameDispatch = @import("dispatch.zig").Dispatch;
 
 // Stack and memory modules
 pub const StackConfig = @import("stack_config.zig").StackConfig;
