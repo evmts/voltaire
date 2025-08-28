@@ -42,7 +42,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         const Self = @This();
 
         /// StackFrame type for the evm
-        pub const Frame = @import("frame.zig").Frame(config.frame_config);
+        pub const StackFrame = @import("stack_frame.zig").StackFrame(config.frame_config);
         /// Bytecode type for bytecode analysis
         pub const BytecodeFactory = @import("bytecode.zig").Bytecode;
         pub const Bytecode = BytecodeFactory(.{
@@ -111,8 +111,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             pub fn fromHardfork(fork: Hardfork) EipsConfig {
                 return switch (fork) {
-                    .FRONTIER, .HOMESTEAD, .DAO, .TANGERINE_WHISTLE, .SPURIOUS_DRAGON,
-                    .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG, .ISTANBUL, .MUIR_GLACIER => .{
+                    .FRONTIER, .HOMESTEAD, .DAO, .TANGERINE_WHISTLE, .SPURIOUS_DRAGON, .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG, .ISTANBUL, .MUIR_GLACIER => .{
                         .eip_2929 = false,
                         .eip_3541 = false,
                         .eip_3855 = false,
@@ -285,14 +284,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer self.depth = 0;
             defer _ = self.call_arena.reset(.retain_capacity);
             defer self.logs.clearRetainingCapacity();
-            
+
             // Check gas unless disabled
             const gas = switch (params) {
                 inline else => |p| p.gas,
             };
             if (!self.disable_gas_checking and gas == 0) return CallResult.failure(0);
             if (self.depth >= config.max_call_depth) return CallResult.failure(0);
-            
+
             // Route to appropriate handler
             var result = switch (params) {
                 .call => |p| self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
@@ -302,14 +301,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = p.gas }) catch CallResult.failure(0),
                 .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = p.gas }) catch CallResult.failure(0),
             };
-            
+
             result.logs = self.takeLogs();
             result.selfdestructs = self.takeSelfDestructs() catch &.{};
             result.accessed_addresses = self.takeAccessedAddresses() catch &.{};
             result.accessed_storage = self.takeAccessedStorage() catch &.{};
             return result;
         }
-
 
         /// Execute CALL operation (inlined from call_handler)
         fn executeCall(self: *Self, params: struct {
@@ -320,7 +318,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // Transfer value if needed
             if (params.value > 0) {
                 self.doTransfer(params.caller, params.to, params.value, snapshot_id) catch |err| {
@@ -373,14 +371,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // Check balance for value transfer
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller.bytes) catch {
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 };
-                
+
                 if (caller_account == null or caller_account.?.balance < params.value) {
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
@@ -769,7 +767,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const host = self.to_host();
 
             // Create frame directly
-            var frame = try Frame.init(
+            var frame = try StackFrame.init(
                 self.allocator,
                 code,
                 gas_i32,
@@ -784,13 +782,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer bytecode.deinit();
 
             // Create simple handler lookup table
-            const handler_table = try self.allocator.alloc(?*const fn (*Frame) Frame.Error!void, 256);
+            const handler_table = try self.allocator.alloc(?*const fn (*StackFrame) StackFrame.Error!void, 256);
 
             defer self.allocator.free(handler_table);
 
             // Execute using bytecode iterator
             var iterator = bytecode.createIterator();
-            
+
             while (iterator.next()) |opcode_data| {
                 // Check gas
                 if (frame.gas_remaining <= 0) {
@@ -828,7 +826,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         const opcode_enum = std.meta.intToEnum(Opcode, regular_info.opcode) catch {
                             return CallResult.failure(0);
                         };
-                        
+
                         // Special handling for control flow opcodes
                         switch (opcode_enum) {
                             .JUMP => {
@@ -846,15 +844,15 @@ pub fn Evm(comptime config: EvmConfig) type {
                             .RETURN => {
                                 const offset = try frame.stack.pop();
                                 const length = try frame.stack.pop();
-                                
+
                                 // Get return data from memory
                                 const mem_offset = std.math.cast(usize, offset) orelse return CallResult.failure(0);
                                 const mem_length = std.math.cast(usize, length) orelse return CallResult.failure(0);
-                                
+
                                 const return_data = try frame.memory.get_slice(mem_offset, mem_length);
                                 const buf = try self.allocator.alloc(u8, return_data.len);
                                 @memcpy(buf, return_data);
-                                
+
                                 const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
                                 self.return_data = buf;
                                 return CallResult.success_with_output(gas_left, buf);
@@ -862,15 +860,15 @@ pub fn Evm(comptime config: EvmConfig) type {
                             .REVERT => {
                                 const offset = try frame.stack.pop();
                                 const length = try frame.stack.pop();
-                                
+
                                 // Get revert data from memory
                                 const mem_offset = std.math.cast(usize, offset) orelse return CallResult.failure(0);
                                 const mem_length = std.math.cast(usize, length) orelse return CallResult.failure(0);
-                                
+
                                 const revert_data = try frame.memory.get_slice(mem_offset, mem_length);
                                 const buf = try self.allocator.alloc(u8, revert_data.len);
                                 @memcpy(buf, revert_data);
-                                
+
                                 const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
                                 self.return_data = buf;
                                 return CallResult.revert_with_data(gas_left, buf);
@@ -879,18 +877,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                                 // For now, just fail on other opcodes
                                 // TODO: Implement proper opcode execution
                                 return CallResult.failure(0);
-                            }
+                            },
                         }
                     },
-                    .push_add_fusion,
-                    .push_mul_fusion,
-                    .push_sub_fusion,
-                    .push_div_fusion,
-                    .push_and_fusion,
-                    .push_or_fusion,
-                    .push_xor_fusion,
-                    .push_jump_fusion,
-                    .push_jumpi_fusion => {
+                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
                         // Handle fusion opcodes if enabled
                         // For now, just fail
                         return CallResult.failure(0);
@@ -1302,7 +1292,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             return @import("host.zig").Host.init(self);
         }
 
-
         // TODO: remove useless helper function and just inline this
         /// Take all logs and clear the log list
         fn takeLogs(self: *Self) []const @import("call_result.zig").Log {
@@ -1310,12 +1299,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.logs = std.ArrayList(@import("call_result.zig").Log){};
             return logs;
         }
-        
+
         /// Take all selfdestructs and clear the list
         fn takeSelfDestructs(self: *Self) ![]const @import("call_result.zig").SelfDestructRecord {
             var records = try std.ArrayList(@import("call_result.zig").SelfDestructRecord).initCapacity(self.allocator, 0);
             defer records.deinit(self.allocator);
-            
+
             var iter = self.self_destruct.iterator();
             while (iter.next()) |entry| {
                 try records.append(self.allocator, .{
@@ -1323,32 +1312,32 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .beneficiary = entry.value_ptr.*,
                 });
             }
-            
+
             // Clear selfdestruct list for next transaction
             self.self_destruct.clear();
-            
+
             return try records.toOwnedSlice(self.allocator);
         }
-        
+
         /// Take all accessed addresses
         fn takeAccessedAddresses(self: *Self) ![]const primitives.Address {
             var addresses = try std.ArrayList(primitives.Address).initCapacity(self.allocator, 0);
             defer addresses.deinit(self.allocator);
-            
+
             // Get addresses from access list
             var iter = self.access_list.addresses.iterator();
             while (iter.next()) |entry| {
                 try addresses.append(self.allocator, entry.key_ptr.*);
             }
-            
+
             return try addresses.toOwnedSlice(self.allocator);
         }
-        
+
         /// Take all accessed storage slots
         fn takeAccessedStorage(self: *Self) ![]const @import("call_result.zig").StorageAccess {
             var storage = try std.ArrayList(@import("call_result.zig").StorageAccess).initCapacity(self.allocator, 0);
             defer storage.deinit(self.allocator);
-            
+
             // Get storage slots from access list
             var iter = self.access_list.storage_slots.iterator();
             while (iter.next()) |entry| {
@@ -1357,7 +1346,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .slot = entry.key_ptr.*.slot,
                 });
             }
-            
+
             return try storage.toOwnedSlice(self.allocator);
         }
     };
@@ -6343,7 +6332,7 @@ test "EVM bytecode iterator execution - simple STOP" {
 
     // Test bytecode iterator execution with simple STOP
     const stop_bytecode = [_]u8{0x00}; // STOP opcode
-    
+
     // Add contract with STOP bytecode
     const contract_address: primitives.Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
     const code_hash = try memory_db.set_code(&stop_bytecode);
@@ -6400,12 +6389,12 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
     const return_bytecode = [_]u8{
         0x60, 0x42, // PUSH1 0x42
         0x60, 0x00, // PUSH1 0x00
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 0x20
         0x60, 0x00, // PUSH1 0x00
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Add contract
     const contract_address: primitives.Address = [_]u8{0x43} ++ [_]u8{0} ** 19;
     const code_hash = try memory_db.set_code(&return_bytecode);
@@ -6429,7 +6418,7 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
-    
+
     // Verify returned value is 0x42
     var returned_value: u256 = 0;
     for (result.output, 0..) |byte, i| {
@@ -6467,12 +6456,12 @@ test "EVM bytecode iterator execution - handles jumps" {
     // PUSH1 0x04, JUMP, 0x00 (invalid), JUMPDEST, STOP
     const jump_bytecode = [_]u8{
         0x60, 0x04, // PUSH1 0x04 (jump destination)
-        0x56,       // JUMP
-        0x00,       // Should be skipped
-        0x5B,       // JUMPDEST at PC=4
-        0x00,       // STOP
+        0x56, // JUMP
+        0x00, // Should be skipped
+        0x5B, // JUMPDEST at PC=4
+        0x00, // STOP
     };
-    
+
     // Add contract
     const contract_address: primitives.Address = [_]u8{0x44} ++ [_]u8{0} ** 19;
     const code_hash = try memory_db.set_code(&jump_bytecode);
