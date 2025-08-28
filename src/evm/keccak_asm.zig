@@ -35,6 +35,23 @@ pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
     std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
 }
 
+/// Keccak-224 hash function (28 bytes output)
+pub fn keccak224(data: []const u8, out_hash: *[28]u8) !void {
+    const Keccak224 = std.crypto.hash.sha3.Keccak(1600, 224, 0x01, 24);
+    Keccak224.hash(data, out_hash, .{});
+}
+
+/// Keccak-384 hash function (48 bytes output)
+pub fn keccak384(data: []const u8, out_hash: *[48]u8) !void {
+    const Keccak384 = std.crypto.hash.sha3.Keccak(1600, 384, 0x01, 24);
+    Keccak384.hash(data, out_hash, .{});
+}
+
+/// Keccak-512 hash function (64 bytes output)
+pub fn keccak512(data: []const u8, out_hash: *[64]u8) !void {
+    std.crypto.hash.sha3.Keccak512.hash(data, out_hash, .{});
+}
+
 /// Batch hash multiple inputs using assembly optimization
 /// 
 /// This function is more efficient than calling keccak256 multiple times
