@@ -34,8 +34,10 @@ const stack_frame_bitwise = @import("stack_frame_bitwise.zig");
 const stack_frame_stack = @import("stack_frame_stack.zig");
 const stack_frame_memory = @import("stack_frame_memory.zig");
 const stack_frame_storage = @import("stack_frame_storage.zig");
+const stack_frame_jump = @import("stack_frame_jump.zig");
 const stack_frame_system = @import("stack_frame_system.zig");
 const stack_frame_context = @import("stack_frame_context.zig");
+const stack_frame_keccak = @import("stack_frame_keccak.zig");
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const Host = @import("host.zig").Host;
 const CallParams = @import("call_params.zig").CallParams;
@@ -164,7 +166,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.SHL)] = &BitwiseHandlers.shl;
             h[@intFromEnum(Opcode.SHR)] = &BitwiseHandlers.shr;
             h[@intFromEnum(Opcode.SAR)] = &BitwiseHandlers.sar;
-            h[@intFromEnum(Opcode.KECCAK256)] = &keccak256;
+            h[@intFromEnum(Opcode.KECCAK256)] = &KeccakHandlers.keccak256;
             h[@intFromEnum(Opcode.ADDRESS)] = &ContextHandlers.address;
             h[@intFromEnum(Opcode.BALANCE)] = &ContextHandlers.balance;
             h[@intFromEnum(Opcode.ORIGIN)] = &ContextHandlers.origin;
@@ -180,7 +182,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.EXTCODECOPY)] = &ContextHandlers.extcodecopy;
             h[@intFromEnum(Opcode.RETURNDATASIZE)] = &ContextHandlers.returndatasize;
             h[@intFromEnum(Opcode.RETURNDATACOPY)] = &ContextHandlers.returndatacopy;
-            h[@intFromEnum(Opcode.EXTCODEHASH)] = &extcodehash;
+            h[@intFromEnum(Opcode.EXTCODEHASH)] = &ContextHandlers.extcodehash;
             h[@intFromEnum(Opcode.BLOCKHASH)] = &ContextHandlers.blockhash;
             h[@intFromEnum(Opcode.COINBASE)] = &ContextHandlers.coinbase;
             h[@intFromEnum(Opcode.TIMESTAMP)] = &ContextHandlers.timestamp;
@@ -198,12 +200,12 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             h[@intFromEnum(Opcode.MSTORE8)] = &MemoryHandlers.mstore8;
             h[@intFromEnum(Opcode.SLOAD)] = &StorageHandlers.sload;
             h[@intFromEnum(Opcode.SSTORE)] = &StorageHandlers.sstore;
-            h[@intFromEnum(Opcode.JUMP)] = &jump;
-            h[@intFromEnum(Opcode.JUMPI)] = &jumpi;
-            h[@intFromEnum(Opcode.PC)] = &ContextHandlers.pc;
+            h[@intFromEnum(Opcode.JUMP)] = &JumpHandlers.jump;
+            h[@intFromEnum(Opcode.JUMPI)] = &JumpHandlers.jumpi;
+            h[@intFromEnum(Opcode.PC)] = &JumpHandlers.pc;
             h[@intFromEnum(Opcode.MSIZE)] = &MemoryHandlers.msize;
             h[@intFromEnum(Opcode.GAS)] = &ContextHandlers.gas;
-            h[@intFromEnum(Opcode.JUMPDEST)] = &jumpdest;
+            h[@intFromEnum(Opcode.JUMPDEST)] = &JumpHandlers.jumpdest;
             h[@intFromEnum(Opcode.TLOAD)] = &StorageHandlers.tload;
             h[@intFromEnum(Opcode.TSTORE)] = &StorageHandlers.tstore;
             h[@intFromEnum(Opcode.MCOPY)] = &MemoryHandlers.mcopy;
@@ -278,8 +280,10 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         const StackHandlers = stack_frame_stack.Handlers(Self);
         const MemoryHandlers = stack_frame_memory.Handlers(Self);
         const StorageHandlers = stack_frame_storage.Handlers(Self);
+        const JumpHandlers = stack_frame_jump.Handlers(Self);
         const SystemHandlers = stack_frame_system.Handlers(Self);
         const ContextHandlers = stack_frame_context.Handlers(Self);
+        const KeccakHandlers = stack_frame_keccak.Handlers(Self);
 
         // Cacheline 1
         stack: Stack,
@@ -849,60 +853,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub fn invalid(self: *Self) Error!void {
             _ = self;
             return Error.InvalidOpcode;
-        }
-        // Cryptographic operations
-        /// KECCAK256 opcode (0x20) - Compute keccak256 hash
-        /// Pops offset and size from stack, reads data from memory, and pushes hash.
-        /// Stack: [offset, size] → [hash]
-        pub fn keccak256(self: *Self) Error!void {
-            const size = try self.stack.pop();
-            const offset = try self.stack.pop();
-            // Check bounds
-            if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
-                @branchHint(.unlikely);
-                return Error.OutOfBounds;
-            }
-            // Handle empty data case
-            if (size == 0) {
-                @branchHint(.unlikely);
-                // Hash of empty data = keccak256("")
-                if (WordType == u256) {
-                    const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
-                    try self.stack.push(empty_hash);
-                } else {
-                    // For smaller word types, we can't represent the full hash
-                    // This is a limitation when using non-u256 word types
-                    try self.stack.push(0);
-                }
-                return;
-            }
-            const offset_usize = @as(usize, @intCast(offset));
-            const size_usize = @as(usize, @intCast(size));
-            // Check for overflow
-            const end = std.math.add(usize, offset_usize, size_usize) catch {
-                @branchHint(.unlikely);
-                return Error.OutOfBounds;
-            };
-            // Ensure memory is available
-            self.memory.ensure_capacity(end) catch |err| switch (err) {
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
-            };
-            // Get data from memory
-            const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
-            // Compute keccak256 hash and convert to big-endian u256
-            var hash_bytes: [32]u8 = undefined;
-            keccak_asm.keccak256(data, &hash_bytes) catch |err| switch (err) {
-                keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
-                keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
-                else => return Error.AllocationError,
-            };
-            var hash_u256: u256 = 0;
-            for (hash_bytes) |b| {
-                hash_u256 = (hash_u256 << 8) | @as(u256, b);
-            }
-            const result_word = @as(WordType, @truncate(hash_u256));
-            try self.stack.push(result_word);
         }
         // Memory operations
         pub fn msize(self: *Self) Error!void {
