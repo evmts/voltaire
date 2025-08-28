@@ -26,12 +26,10 @@ pub const MemoryError = @import("memory.zig").MemoryError;
 
 // EVM main module and configuration
 pub const Evm = @import("evm.zig").Evm;
-pub const Evm2 = @import("evm2.zig").Evm2;
 pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 
 // Default EVM types for backward compatibility
 pub const DefaultEvm = Evm(.{});
-pub const DefaultEvm2 = Evm2(.{});
 
 // Tracer modules
 pub const Tracer = @import("tracer.zig").Tracer;
@@ -96,7 +94,6 @@ test {
 
     // Test EVM
     _ = Evm;
-    _ = Evm2;
     _ = EvmConfig;
 
     // Test tracer modules

@@ -22,6 +22,10 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// Safety: Always terminated with 2 STOP handlers so accessing schedule[n+1] 
         /// or schedule[n+2] is safe without bounds checking.
         schedule: [*]const Item,
+        
+        /// Jump table for efficient JUMP/JUMPI lookups
+        /// Contains sorted JUMPDEST locations for binary search
+        jump_table: ?*const JumpTable,
 
         // ========================
         // Metadata Types
@@ -106,22 +110,22 @@ pub fn Dispatch(comptime FrameType: type) type {
             return switch (opcode) {
                 .PC => .{
                     .metadata = self.schedule[0].pc,
-                    .next = Self{ .schedule = self.schedule + 2 },
+                    .next = Self{ .schedule = self.schedule + 2, .jump_table = self.jump_table },
                 },
                 .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => .{
                     .metadata = self.schedule[0].push_inline,
-                    .next = Self{ .schedule = self.schedule + 2 },
+                    .next = Self{ .schedule = self.schedule + 2, .jump_table = self.jump_table },
                 },
                 .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => .{
                     .metadata = self.schedule[0].push_pointer,
-                    .next = Self{ .schedule = self.schedule + 2 },
+                    .next = Self{ .schedule = self.schedule + 2, .jump_table = self.jump_table },
                 },
                 .JUMPDEST => .{
                     .metadata = self.schedule[0].jump_dest,
-                    .next = Self{ .schedule = self.schedule + 2 },
+                    .next = Self{ .schedule = self.schedule + 2, .jump_table = self.jump_table },
                 },
                 else => .{
-                    .next = Self{ .schedule = self.schedule + 1 },
+                    .next = Self{ .schedule = self.schedule + 1, .jump_table = self.jump_table },
                 },
             };
         }
@@ -129,13 +133,28 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// Advance to the next handler in the dispatch array.
         /// Used for opcodes without metadata.
         pub fn getNext(self: Self) Self {
-            return Self{ .schedule = self.schedule + 1 };
+            return Self{ 
+                .schedule = self.schedule + 1,
+                .jump_table = self.jump_table,
+            };
         }
 
         /// Skip the current handler's metadata and advance to the next handler.
         /// Used for opcodes that have associated metadata.
         pub fn skipMetadata(self: Self) Self {
-            return Self{ .schedule = self.schedule + 2 };
+            return Self{ 
+                .schedule = self.schedule + 2,
+                .jump_table = self.jump_table,
+            };
+        }
+        
+        /// Find a jump target dispatch for the given PC
+        /// Returns null if the PC is not a valid JUMPDEST
+        pub fn findJumpTarget(self: Self, target_pc: FrameType.PcType) ?Self {
+            if (self.jump_table) |table| {
+                return table.findJumpTarget(target_pc);
+            }
+            return null;
         }
 
         /// Get inline push metadata from the next position.
@@ -220,17 +239,32 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try schedule_items.append(.{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
                         try schedule_items.append(.{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
-                    .push_add_fusion,
-                    .push_mul_fusion,
-                    .push_sub_fusion,
-                    .push_div_fusion,
-                    .push_and_fusion,
-                    .push_or_fusion,
-                    .push_xor_fusion,
-                    .push_jump_fusion,
+                    .push_add_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_add);
+                    },
+                    .push_mul_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_mul);
+                    },
+                    .push_sub_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_sub);
+                    },
+                    .push_div_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_div);
+                    },
+                    .push_and_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_and);
+                    },
+                    .push_or_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_or);
+                    },
+                    .push_xor_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_xor);
+                    },
+                    .push_jump_fusion => |data| {
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_jump);
+                    },
                     .push_jumpi_fusion => |data| {
-                        // All fusion operations use the same pattern
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value);
+                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_jumpi);
                     },
                     .stop => {
                         try schedule_items.append(.{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -558,7 +592,7 @@ test "Dispatch - getNext advances by 1" {
         .{ .opcode_handler = mockStop },
         .{ .opcode_handler = mockStop },
     };
-    const dispatch = TestDispatch{ .schedule = &dummy_items };
+    const dispatch = TestDispatch{ .schedule = &dummy_items, .jump_table = null };
     const next = dispatch.getNext();
     
     // Verify pointer arithmetic
@@ -572,7 +606,7 @@ test "Dispatch - skipMetadata advances by 2" {
         .{ .opcode_handler = mockStop },
         .{ .opcode_handler = mockStop },
     };
-    const dispatch = TestDispatch{ .schedule = &dummy_items };
+    const dispatch = TestDispatch{ .schedule = &dummy_items, .jump_table = null };
     const next = dispatch.skipMetadata();
     
     // Verify pointer arithmetic
@@ -636,13 +670,13 @@ test "Dispatch - getJumpDestMetadata accesses correct position" {
 }
 
 test "Dispatch - getOpData for PC returns correct metadata and next" {
-    var items = [_]TestDispatch.Item{
+    const items = [_]TestDispatch.Item{
         .{ .pc = .{ .value = 42 } },
         .{ .opcode_handler = mockAdd },
         .{ .opcode_handler = mockStop },
     };
     
-    const dispatch = TestDispatch{ .schedule = items.ptr };
+    const dispatch = TestDispatch{ .schedule = @ptrCast(&items[0]), .jump_table = null };
     const op_data = dispatch.getOpData(.PC);
     
     try testing.expect(op_data.metadata.value == 42);
@@ -650,12 +684,12 @@ test "Dispatch - getOpData for PC returns correct metadata and next" {
 }
 
 test "Dispatch - getOpData for regular opcode returns only next" {
-    var items = [_]TestDispatch.Item{
+    const items = [_]TestDispatch.Item{
         .{ .opcode_handler = mockAdd },
         .{ .opcode_handler = mockStop },
     };
     
-    const dispatch = TestDispatch{ .schedule = items.ptr };
+    const dispatch = TestDispatch{ .schedule = @ptrCast(&items[0]), .jump_table = null };
     const op_data = dispatch.getOpData(.ADD);
     
     try testing.expect(op_data.next.schedule == dispatch.schedule + 1);
@@ -1061,19 +1095,21 @@ fn createTestHandlersWithSynthetic() [256]*const TestDispatch.OpcodeHandler {
     return handlers;
 }
 
-test "Dispatch - fusion operations expose handler assignment issue" {
-    // NOTE: This test documents the current broken state of fusion operations
-    // They currently all use PUSH1 handler instead of proper synthetic handlers
+test "Dispatch - fusion operations now use correct synthetic handlers" {
+    // Test that fusion operations correctly map to synthetic opcode handlers
+    const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
     
-    // We cannot create real fusion bytecode from raw bytes since these are
-    // generated by the bytecode planner/optimizer, not from raw EVM bytecode.
-    // This test serves to document the issue that needs to be fixed.
+    // Test getSyntheticOpcode function returns correct values
+    try testing.expect(TestDispatch.getSyntheticOpcode(.push_add, true) == @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
+    try testing.expect(TestDispatch.getSyntheticOpcode(.push_add, false) == @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER));
+    try testing.expect(TestDispatch.getSyntheticOpcode(.push_mul, true) == @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE));
+    try testing.expect(TestDispatch.getSyntheticOpcode(.push_mul, false) == @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER));
+    try testing.expect(TestDispatch.getSyntheticOpcode(.push_jump, true) == @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE));
+    try testing.expect(TestDispatch.getSyntheticOpcode(.push_jump, false) == @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER));
     
-    // The problem is in lines 226, 231, 239, 244, 252, 257, 264, 269, 276, 281, 288, 293, 300, 305, 312, 317, 324, 329
-    // All use: opcode_handlers.*[@intFromEnum(Opcode.PUSH1)]
-    // But should use proper synthetic opcode handlers or a different approach
-    
-    try testing.expect(true); // Placeholder - this documents the issue
+    // Verify synthetic opcodes are in expected range (0xB0-0xC7)
+    try testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) == 0xB0);
+    try testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER) == 0xC5);
 }
 
 test "Dispatch - memory cleanup for pointer metadata" {
@@ -1163,7 +1199,7 @@ test "Dispatch - getOpData compilation and type safety" {
     // This test ensures getOpData compiles correctly for all opcode types
     // and returns the right types
     
-    var items = [_]TestDispatch.Item{
+    const items = [_]TestDispatch.Item{
         .{ .pc = .{ .value = 42 } },
         .{ .opcode_handler = mockAdd },
         .{ .push_inline = .{ .value = 123 } },
@@ -1175,30 +1211,30 @@ test "Dispatch - getOpData compilation and type safety" {
     };
     
     // Test PC opcode
-    const pc_dispatch = TestDispatch{ .schedule = items.ptr };
+    const pc_dispatch = TestDispatch{ .schedule = @ptrCast(&items[0]) };
     const pc_data = pc_dispatch.getOpData(.PC);
     try testing.expect(@TypeOf(pc_data.metadata) == TestDispatch.PcMetadata);
     try testing.expect(pc_data.metadata.value == 42);
     
     // Test PUSH1 (inline)
-    const push1_dispatch = TestDispatch{ .schedule = items.ptr + 2 };
+    const push1_dispatch = TestDispatch{ .schedule = @ptrCast(&items[2]) };
     const push1_data = push1_dispatch.getOpData(.PUSH1);
     try testing.expect(@TypeOf(push1_data.metadata) == TestDispatch.PushInlineMetadata);
     try testing.expect(push1_data.metadata.value == 123);
     
     // Test PUSH32 (pointer)
-    const push32_dispatch = TestDispatch{ .schedule = items.ptr + 4 };
+    const push32_dispatch = TestDispatch{ .schedule = @ptrCast(&items[4]) };
     const push32_data = push32_dispatch.getOpData(.PUSH32);
     try testing.expect(@TypeOf(push32_data.metadata) == TestDispatch.PushPointerMetadata);
     
     // Test JUMPDEST
-    const jd_dispatch = TestDispatch{ .schedule = items.ptr + 6 };
+    const jd_dispatch = TestDispatch{ .schedule = @ptrCast(&items[6]) };
     const jd_data = jd_dispatch.getOpData(.JUMPDEST);
     try testing.expect(@TypeOf(jd_data.metadata) == TestDispatch.JumpDestMetadata);
     try testing.expect(jd_data.metadata.gas == 100);
     
     // Test regular opcode (no metadata)
-    const add_dispatch = TestDispatch{ .schedule = items.ptr + 1 };
+    const add_dispatch = TestDispatch{ .schedule = @ptrCast(&items[1]) };
     const add_data = add_dispatch.getOpData(.ADD);
     try testing.expect(!@hasField(@TypeOf(add_data), "metadata"));
 }

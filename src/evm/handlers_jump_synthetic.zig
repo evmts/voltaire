@@ -13,73 +13,112 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_JUMP_INLINE - Fused PUSH+JUMP with inline destination (≤8 bytes).
         /// Pushes a destination and immediately jumps to it.
-        pub fn push_jump_inline(self: FrameType, schedule: Dispatch) Error!Success {
-            _ = self; // Not used in current implementation
-            
-            const metadata = schedule.getInlineMetadata();
+        pub fn push_jump_inline(self: FrameType, schedule: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(schedule)));
+            const metadata = disp.getInlineMetadata();
             const dest = metadata.value;
             
-            // TODO: Implement proper jump logic with schedule lookup
-            // The planner should have pre-validated the jump destination
-            // and created the appropriate dispatch schedule.
-            _ = dest;
+            // Validate jump destination range
+            if (dest > std.math.maxInt(u32)) {
+                return Error.InvalidJump;
+            }
             
-            // In a full implementation, this would:
-            // 1. Look up the destination in the plan's jump table
-            // 2. Return a Jump success with the new instruction pointer
-            return Success.Stop;
+            const dest_pc: u32 = @intCast(dest);
+            
+            // Look up the destination in the jump table
+            if (disp.findJumpTarget(dest_pc)) |jump_dispatch| {
+                // Found valid JUMPDEST - tail call to the jump destination
+                return @call(.always_tail, jump_dispatch.schedule[0].opcode_handler, .{ self, jump_dispatch });
+            } else {
+                // Not a valid JUMPDEST
+                return Error.InvalidJump;
+            }
         }
 
         /// PUSH_JUMP_POINTER - Fused PUSH+JUMP with pointer destination (>8 bytes).
-        pub fn push_jump_pointer(self: FrameType, schedule: Dispatch) Error!Success {
-            _ = self; // Not used in current implementation
-            
-            const metadata = schedule.getPointerMetadata();
+        pub fn push_jump_pointer(self: FrameType, schedule: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(schedule)));
+            const metadata = disp.getPointerMetadata();
             const dest = metadata.value.*;
             
-            // TODO: Implement proper jump logic with schedule lookup
-            _ = dest;
+            // Validate jump destination range
+            if (dest > std.math.maxInt(u32)) {
+                return Error.InvalidJump;
+            }
             
-            return Success.Stop;
+            const dest_pc: u32 = @intCast(dest);
+            
+            // Look up the destination in the jump table
+            if (disp.findJumpTarget(dest_pc)) |jump_dispatch| {
+                // Found valid JUMPDEST - tail call to the jump destination
+                return @call(.always_tail, jump_dispatch.schedule[0].opcode_handler, .{ self, jump_dispatch });
+            } else {
+                // Not a valid JUMPDEST
+                return Error.InvalidJump;
+            }
         }
 
         /// PUSH_JUMPI_INLINE - Fused PUSH+JUMPI with inline destination (≤8 bytes).
         /// Pushes a destination, pops condition, and conditionally jumps.
-        pub fn push_jumpi_inline(self: FrameType, schedule: Dispatch) Error!Success {
-            const metadata = schedule.getInlineMetadata();
+        pub fn push_jumpi_inline(self: FrameType, schedule: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(schedule)));
+            const metadata = disp.getInlineMetadata();
             const dest = metadata.value;
             
             // Pop the condition
             const condition = try self.stack.pop();
             
             if (condition != 0) {
-                // Take the jump
-                // TODO: Implement conditional jump logic with schedule lookup
-                _ = dest;
-                return Success.Stop;
+                // Take the jump - validate destination range
+                if (dest > std.math.maxInt(u32)) {
+                    return Error.InvalidJump;
+                }
+                
+                const dest_pc: u32 = @intCast(dest);
+                
+                // Look up the destination in the jump table
+                if (disp.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    // Found valid JUMPDEST - tail call to the jump destination
+                    return @call(.always_tail, jump_dispatch.schedule[0].opcode_handler, .{ self, jump_dispatch });
+                } else {
+                    // Not a valid JUMPDEST
+                    return Error.InvalidJump;
+                }
             } else {
                 // Continue to next instruction
-                const next = schedule.skipMetadata();
+                const next = disp.skipMetadata();
                 return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
             }
         }
 
         /// PUSH_JUMPI_POINTER - Fused PUSH+JUMPI with pointer destination (>8 bytes).
-        pub fn push_jumpi_pointer(self: FrameType, schedule: Dispatch) Error!Success {
-            const metadata = schedule.getPointerMetadata();
+        pub fn push_jumpi_pointer(self: FrameType, schedule: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(schedule)));
+            const metadata = disp.getPointerMetadata();
             const dest = metadata.value.*;
             
             // Pop the condition
             const condition = try self.stack.pop();
             
             if (condition != 0) {
-                // Take the jump
-                // TODO: Implement conditional jump logic with schedule lookup
-                _ = dest;
-                return Success.Stop;
+                // Take the jump - validate destination range
+                if (dest > std.math.maxInt(u32)) {
+                    return Error.InvalidJump;
+                }
+                
+                const dest_pc: u32 = @intCast(dest);
+                
+                // Look up the destination in the jump table
+                if (disp.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    // Found valid JUMPDEST - tail call to the jump destination
+                    return @call(.always_tail, jump_dispatch.schedule[0].opcode_handler, .{ self, jump_dispatch });
+                } else {
+                    // Not a valid JUMPDEST
+                    return Error.InvalidJump;
+                }
             } else {
                 // Continue to next instruction
-                const next = schedule.skipMetadata();
+                const next = disp.skipMetadata();
                 return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
             }
         }

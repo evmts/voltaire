@@ -60,6 +60,8 @@ pub fn StackFrame(comptime config: FrameConfig) type {
     comptime config.validate();
 
     return struct {
+        const Dispatch = dispatch_mod.Dispatch(Self);
+
         pub const WordType = config.WordType;
         pub const GasType = config.GasType();
         pub const PcType = config.PcType();
@@ -78,9 +80,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             .max_initcode_size = config.max_initcode_size,
         });
 
-        /// The dispatch mechanism that controls opcode execution flow.
-        /// This is now implemented in a separate module for better modularity.
-        const Dispatch = dispatch_mod.Dispatch(Self);
         pub const Success = enum {
             Stop,
             Return,
@@ -100,9 +99,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             InvalidAmount,
             WriteProtection,
         };
-
-
-
 
         pub const opcode_handlers = blk: {
             @setEvalBranchQuota(10000);
@@ -286,7 +282,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 return Error.BytecodeTooLarge;
             }
 
-            // Create Bytecode instance with validation and optimization
             var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
                 return switch (e) {

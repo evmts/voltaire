@@ -14,49 +14,54 @@ pub fn Handlers(comptime FrameType: type) type {
         /// JUMP opcode (0x56) - Unconditional jump.
         /// Pops destination from stack and transfers control to that location.
         /// The destination must be a valid JUMPDEST.
-        pub fn jump(self: FrameType, dispatch: Dispatch) Error!Success {
-            _ = dispatch; // JUMP changes control flow, doesn't continue to next
+        pub fn jump(self: FrameType, dispatch: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(dispatch)));
             const dest = try self.stack.pop();
             
-            // Validate jump destination dynamically
+            // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
                 return Error.InvalidJump;
             }
             
             const dest_pc: u32 = @intCast(dest);
-            if (!self.bytecode.isValidJumpDest(dest_pc)) {
+            
+            // Look up the destination in the jump table
+            if (disp.findJumpTarget(dest_pc)) |jump_dispatch| {
+                // Found valid JUMPDEST - tail call to the jump destination
+                return @call(.always_tail, jump_dispatch.schedule[0].opcode_handler, .{ self, jump_dispatch });
+            } else {
+                // Not a valid JUMPDEST
                 return Error.InvalidJump;
             }
-            
-            // TODO: Look up the destination in the jump table and return appropriate dispatch
-            // For now, just return stop as a placeholder after validation
-            return Success.Stop;
         }
 
         /// JUMPI opcode (0x57) - Conditional jump.
         /// Pops destination and condition from stack.
         /// Jumps to destination if condition is non-zero, otherwise continues to next instruction.
-        pub fn jumpi(self: FrameType, dispatch: Dispatch) Error!Success {
+        pub fn jumpi(self: FrameType, dispatch: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(dispatch)));
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
 
             if (condition != 0) {
-                // Take the jump - validate destination dynamically
+                // Take the jump - validate destination range
                 if (dest > std.math.maxInt(u32)) {
                     return Error.InvalidJump;
                 }
                 
                 const dest_pc: u32 = @intCast(dest);
-                if (!self.bytecode.isValidJumpDest(dest_pc)) {
+                
+                // Look up the destination in the jump table
+                if (disp.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    // Found valid JUMPDEST - tail call to the jump destination
+                    return @call(.always_tail, jump_dispatch.schedule[0].opcode_handler, .{ self, jump_dispatch });
+                } else {
+                    // Not a valid JUMPDEST
                     return Error.InvalidJump;
                 }
-                
-                // TODO: Look up the destination in the jump table and return appropriate dispatch
-                // For now, just return stop as a placeholder after validation
-                return Success.Stop;
             } else {
                 // Continue to next instruction
-                const next = dispatch.getNext();
+                const next = disp.getNext();
                 return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
             }
         }
@@ -64,9 +69,10 @@ pub fn Handlers(comptime FrameType: type) type {
         /// JUMPDEST opcode (0x5b) - Mark valid jump destination.
         /// This opcode marks a valid destination for JUMP and JUMPI operations.
         /// It also serves as a gas consumption point for the entire basic block.
-        pub fn jumpdest(self: FrameType, dispatch: Dispatch) Error!Success {
+        pub fn jumpdest(self: FrameType, dispatch: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(dispatch)));
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
-            const metadata = dispatch.getJumpDestMetadata();
+            const metadata = disp.getJumpDestMetadata();
             const gas_cost = metadata.gas;
             
             // Check and consume gas for the entire basic block
@@ -76,19 +82,20 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= gas_cost;
             
             // Continue to next operation
-            const next = dispatch.skipMetadata();
+            const next = disp.skipMetadata();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// PC opcode (0x58) - Get program counter.
         /// Pushes the current program counter onto the stack.
         /// The actual PC value is provided by the planner through metadata.
-        pub fn pc(self: FrameType, dispatch: Dispatch) Error!Success {
+        pub fn pc(self: FrameType, dispatch: *const anyopaque) Error!Success {
+            const disp = @as(Dispatch, @ptrCast(@alignCast(dispatch)));
             // Get PC value from metadata
-            const metadata = dispatch.getPcMetadata();
+            const metadata = disp.getPcMetadata();
             try self.stack.push(metadata.value);
             
-            const next = dispatch.skipMetadata();
+            const next = disp.skipMetadata();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
     };
