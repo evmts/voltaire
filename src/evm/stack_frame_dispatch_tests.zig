@@ -1,6 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
-const Dispatch = @import("dispatch.zig").Dispatch;
+const Dispatch = @import("stack_frame_dispatch.zig").Dispatch;
 const Opcode = @import("opcode_data.zig").Opcode;
 const bytecode_mod = @import("bytecode.zig");
 

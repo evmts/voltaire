@@ -17,7 +17,7 @@ pub const Frame = @import("frame.zig").Frame;
 pub const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
 pub const createFrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter;
 pub const StackFrame = @import("stack_frame.zig").StackFrame;
-pub const Dispatch = @import("dispatch.zig").Dispatch;
+pub const StackFrameDispatch = @import("stack_frame_dispatch.zig").Dispatch;
 
 // Stack and memory modules
 pub const StackConfig = @import("stack_config.zig").StackConfig;
@@ -98,8 +98,8 @@ test {
     _ = Frame;
     _ = FrameInterpreter;
     _ = createFrameInterpreter;
-    _ = Dispatch;
-    _ = @import("dispatch_tests.zig");
+    _ = StackFrameDispatch;
+    _ = @import("stack_frame_dispatch_tests.zig");
     _ = StackFrame;
 
     // Test stack and memory

@@ -28,13 +28,15 @@ const Address = primitives.Address.Address;
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
 const keccak_asm = @import("keccak_asm.zig");
+const stack_frame_arithmetic = @import("stack_frame_arithmetic.zig");
+const stack_frame_comparison = @import("stack_frame_comparison.zig");
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const Host = @import("host.zig").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const logs = @import("logs.zig");
 const Log = logs.Log;
-const dispatch_mod = @import("dispatch.zig");
+const dispatch_mod = @import("stack_frame_dispatch.zig");
 
 /// Creates a configured StackFrame type for EVM execution.
 ///
