@@ -4,6 +4,7 @@ const log = @import("log.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const U256 = primitives.U256;
+const keccak_asm = @import("keccak_asm.zig");
 
 /// Context opcode handlers for the EVM stack frame.
 /// These handle execution context queries (caller, value, gas, etc).
@@ -297,6 +298,45 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.memory.set_byte(dest_offset_usize + i, byte_val) catch return Error.OutOfBounds;
             }
 
+            const next = dispatch.getNext();
+            return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
+        }
+
+        /// EXTCODEHASH opcode (0x3F) - Get hash of account's code.
+        /// Stack: [address] → [hash]
+        pub fn extcodehash(self: FrameType, dispatch: Dispatch) Error!Success {
+            const address_u256 = try self.stack.pop();
+            const addr = from_u256(address_u256);
+            
+            if (!self.host.account_exists(addr)) {
+                // Non-existent account returns 0 per EIP-1052
+                try self.stack.push(0);
+                const next = dispatch.getNext();
+                return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
+            }
+            
+            const code = self.host.get_code(addr);
+            if (code.len == 0) {
+                // Existing account with empty code returns keccak256("") constant
+                const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+                const empty_hash_word = @as(WordType, @truncate(empty_hash_u256));
+                try self.stack.push(empty_hash_word);
+                const next = dispatch.getNext();
+                return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
+            }
+            
+            // Compute keccak256 hash of the code
+            var hash: [32]u8 = undefined;
+            keccak_asm.keccak256(code, &hash) catch return Error.OutOfBounds;
+            
+            // Convert hash to u256 (big-endian)
+            var hash_u256: u256 = 0;
+            for (hash) |b| {
+                hash_u256 = (hash_u256 << 8) | @as(u256, b);
+            }
+            const hash_word = @as(WordType, @truncate(hash_u256));
+            try self.stack.push(hash_word);
+            
             const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
@@ -629,6 +669,13 @@ const MockHost = struct {
         return self.code_map.get(address) orelse &.{};
     }
 
+    pub fn account_exists(self: *const MockHost, address: Address) bool {
+        _ = self;
+        // Mock: all addresses exist except 0xFFFF...
+        const all_f = Address.fromBytes([_]u8{0xFF} ** 20) catch unreachable;
+        return !address.eql(all_f);
+    }
+
     pub fn get_return_data(self: *const MockHost) []const u8 {
         return self.return_data;
     }
@@ -681,6 +728,7 @@ const MockHost = struct {
                 .get_balance = @ptrCast(&get_balance),
                 .access_address = @ptrCast(&access_address),
                 .get_code = @ptrCast(&get_code),
+                .account_exists = @ptrCast(&account_exists),
                 .get_return_data = @ptrCast(&get_return_data),
                 .get_block_hash = @ptrCast(&get_block_hash),
                 .get_block_info = @ptrCast(&get_block_info),
@@ -997,6 +1045,76 @@ test "EXTCODECOPY opcode" {
     // Check memory contents
     const mem_slice = try frame.memory.get_slice(0, 4);
     try testing.expectEqualSlices(u8, &[_]u8{0xAD, 0xBE, 0xEF, 0xCA}, mem_slice);
+}
+
+test "EXTCODEHASH opcode - existing account with code" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const test_code = [_]u8{0x60, 0x00}; // PUSH1 0x00
+    const test_address = Address.fromBytes([_]u8{0x77} ++ [_]u8{0} ** 19) catch unreachable;
+    try mock_host.code_map.put(test_address, &test_code);
+    
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Get code hash of test address
+    try frame.stack.push(0x77);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.extcodehash(frame, dispatch);
+    
+    // Calculate expected hash of test_code
+    var expected_hash: [32]u8 = undefined;
+    keccak_asm.keccak256(&test_code, &expected_hash) catch unreachable;
+    var expected_u256: u256 = 0;
+    for (expected_hash) |b| {
+        expected_u256 = (expected_u256 << 8) | @as(u256, b);
+    }
+    
+    const result = try frame.stack.pop();
+    try testing.expectEqual(expected_u256, result);
+}
+
+test "EXTCODEHASH opcode - existing account without code" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Get code hash of account without code (EOA)
+    try frame.stack.push(0x66);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.extcodehash(frame, dispatch);
+    
+    // Expected hash is keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+    const expected = @as(u256, 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
+    const result = try frame.stack.pop();
+    try testing.expectEqual(expected, result);
+}
+
+test "EXTCODEHASH opcode - non-existent account" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Get code hash of non-existent account (mocked as 0xFFFF...)
+    const non_existent = std.math.maxInt(u256);
+    try frame.stack.push(non_existent);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.extcodehash(frame, dispatch);
+    
+    // Non-existent account should return 0
+    const result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
 }
 
 test "RETURNDATASIZE opcode" {
