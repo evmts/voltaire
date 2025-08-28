@@ -1374,3 +1374,706 @@ test "PC opcode" {
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), result);
 }
+
+// ====== COMPREHENSIVE TESTS ======
+
+test "Address conversion helpers - boundary values" {
+    // Test to_u256 and from_u256 roundtrip
+    const test_addresses = [_]Address{
+        Address.zero(),
+        Address.fromBytes([_]u8{0xFF} ** 20) catch unreachable,
+        Address.fromBytes([_]u8{0x12, 0x34} ++ [_]u8{0} ** 18) catch unreachable,
+        Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{0xFF}) catch unreachable,
+        Address.fromBytes([_]u8{0x80} ++ [_]u8{0} ** 19) catch unreachable,
+    };
+    
+    for (test_addresses) |addr| {
+        const u256_val = TestFrame.ContextHandlers.to_u256(addr);
+        const addr_back = TestFrame.ContextHandlers.from_u256(u256_val);
+        try testing.expect(addr.eql(addr_back));
+    }
+}
+
+test "ADDRESS opcode - various contract addresses" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const test_cases = [_]Address{
+        Address.zero(),
+        Address.fromBytes([_]u8{0xFF} ** 20) catch unreachable,
+        Address.fromBytes([_]u8{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}) catch unreachable,
+        Address.fromBytes([_]u8{0xDE, 0xAD, 0xBE, 0xEF} ++ [_]u8{0} ** 16) catch unreachable,
+    };
+    
+    const host = mock_host.to_host();
+    
+    for (test_cases) |test_addr| {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        frame.contract_address = test_addr;
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.address(frame, dispatch);
+        
+        const result = try frame.stack.pop();
+        const expected = TestFrame.ContextHandlers.to_u256(test_addr);
+        try testing.expectEqual(expected, result);
+    }
+}
+
+test "BALANCE opcode - address overflow handling" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test with maximum u256 value (should truncate to valid address)
+    try frame.stack.push(std.math.maxInt(u256));
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.balance(frame, dispatch);
+    
+    const result = try frame.stack.pop();
+    // Should return the mock balance
+    try testing.expectEqual(@as(u256, 1_000_000_000_000_000_000), result);
+}
+
+test "CALLDATALOAD opcode - edge cases" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const calldata = [_]u8{0x01, 0x02, 0x03, 0x04, 0x05};
+    mock_host.input_data = &calldata;
+    
+    const host = mock_host.to_host();
+    
+    // Test cases: offset, expected result description
+    const test_cases = [_]struct { offset: u256, check: fn(u256) anyerror!void }{
+        // Offset 0: should load first 32 bytes with zero padding
+        .{ .offset = 0, .check = struct {
+            fn check(result: u256) !void {
+                const expected = (@as(u256, 0x0102030405) << 216); // 27 bytes of zeros
+                try testing.expectEqual(expected, result);
+            }
+        }.check },
+        // Offset at end: should load all zeros
+        .{ .offset = 5, .check = struct {
+            fn check(result: u256) !void {
+                try testing.expectEqual(@as(u256, 0), result);
+            }
+        }.check },
+        // Offset past end: should load all zeros
+        .{ .offset = 100, .check = struct {
+            fn check(result: u256) !void {
+                try testing.expectEqual(@as(u256, 0), result);
+            }
+        }.check },
+        // Offset at max u256: should load all zeros (overflow check)
+        .{ .offset = std.math.maxInt(u256), .check = struct {
+            fn check(result: u256) !void {
+                try testing.expectEqual(@as(u256, 0), result);
+            }
+        }.check },
+        // Offset 3: partial load
+        .{ .offset = 3, .check = struct {
+            fn check(result: u256) !void {
+                const expected = (@as(u256, 0x0405) << 240); // 30 bytes of zeros
+                try testing.expectEqual(expected, result);
+            }
+        }.check },
+    };
+    
+    for (test_cases) |tc| {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(tc.offset);
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.calldataload(frame, dispatch);
+        
+        const result = try frame.stack.pop();
+        try tc.check(result);
+    }
+}
+
+test "CALLDATACOPY opcode - boundary conditions" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const calldata = [_]u8{0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+    mock_host.input_data = &calldata;
+    
+    const host = mock_host.to_host();
+    
+    // Test zero length copy
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);    // destOffset
+        try frame.stack.push(0);    // offset
+        try frame.stack.push(0);    // length
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+        
+        // Should succeed without modifying memory
+        try testing.expectEqual(@as(usize, 0), frame.memory.size());
+    }
+    
+    // Test copy beyond calldata length (should zero-pad)
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);    // destOffset
+        try frame.stack.push(3);    // offset (start at 0xDD)
+        try frame.stack.push(5);    // length (need 3 bytes of padding)
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+        
+        const result = try frame.memory.get_slice(0, 5);
+        try testing.expectEqualSlices(u8, &[_]u8{0xDD, 0xEE, 0x00, 0x00, 0x00}, result);
+    }
+    
+    // Test overflow protection
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(std.math.maxInt(u256));  // destOffset (overflow)
+        try frame.stack.push(0);                      // offset
+        try frame.stack.push(1);                      // length
+        
+        const dispatch = createMockDispatch();
+        const result = TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+        
+        try testing.expectError(TestFrame.Error.OutOfBounds, result);
+    }
+}
+
+test "CODECOPY opcode - edge cases" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    
+    // Create bytecode
+    var bytecode = TestBytecode.initEmpty();
+    const code_data = [_]u8{0x60, 0x40, 0x60, 0x80, 0x50};
+    try bytecode.appendSlice(&code_data);
+    
+    // Test copy beyond code length (should zero-pad)
+    {
+        var frame = try TestFrame.init(testing.allocator, bytecode, 1_000_000, null, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);    // destOffset
+        try frame.stack.push(3);    // offset
+        try frame.stack.push(5);    // length (need 3 bytes of padding)
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.codecopy(frame, dispatch);
+        
+        const result = try frame.memory.get_slice(0, 5);
+        try testing.expectEqualSlices(u8, &[_]u8{0x80, 0x50, 0x00, 0x00, 0x00}, result);
+    }
+    
+    // Test large offset (past code end)
+    {
+        var frame = try TestFrame.init(testing.allocator, bytecode, 1_000_000, null, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);     // destOffset
+        try frame.stack.push(1000);  // offset (way past code end)
+        try frame.stack.push(32);    // length
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.codecopy(frame, dispatch);
+        
+        const result = try frame.memory.get_slice(0, 32);
+        // Should be all zeros
+        for (result) |byte| {
+            try testing.expectEqual(@as(u8, 0), byte);
+        }
+    }
+}
+
+test "EXTCODECOPY opcode - boundary conditions" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const test_code = [_]u8{0x11, 0x22, 0x33};
+    const test_address = Address.fromBytes([_]u8{0x99} ++ [_]u8{0} ** 19) catch unreachable;
+    try mock_host.code_map.put(test_address, &test_code);
+    
+    const host = mock_host.to_host();
+    
+    // Test copy with zero-padding
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0x99);  // address
+        try frame.stack.push(0);     // destOffset
+        try frame.stack.push(1);     // offset
+        try frame.stack.push(5);     // length (need padding)
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.extcodecopy(frame, dispatch);
+        
+        const result = try frame.memory.get_slice(0, 5);
+        try testing.expectEqualSlices(u8, &[_]u8{0x22, 0x33, 0x00, 0x00, 0x00}, result);
+    }
+    
+    // Test non-existent contract (empty code)
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0x77);  // address with no code
+        try frame.stack.push(0);     // destOffset
+        try frame.stack.push(0);     // offset
+        try frame.stack.push(4);     // length
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.extcodecopy(frame, dispatch);
+        
+        const result = try frame.memory.get_slice(0, 4);
+        // Should be all zeros
+        try testing.expectEqualSlices(u8, &[_]u8{0x00, 0x00, 0x00, 0x00}, result);
+    }
+}
+
+test "RETURNDATACOPY opcode - strict bounds checking" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const return_data = [_]u8{0xAA, 0xBB, 0xCC, 0xDD};
+    mock_host.return_data = &return_data;
+    
+    const host = mock_host.to_host();
+    
+    // Test exact boundary read
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);  // destOffset
+        try frame.stack.push(0);  // offset
+        try frame.stack.push(4);  // length (exact size)
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.returndatacopy(frame, dispatch);
+        
+        const result = try frame.memory.get_slice(0, 4);
+        try testing.expectEqualSlices(u8, &return_data, result);
+    }
+    
+    // Test read past end (should fail, unlike CALLDATACOPY)
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);  // destOffset
+        try frame.stack.push(2);  // offset
+        try frame.stack.push(3);  // length (would need 1 byte past end)
+        
+        const dispatch = createMockDispatch();
+        const result = TestFrame.ContextHandlers.returndatacopy(frame, dispatch);
+        
+        try testing.expectError(TestFrame.Error.OutOfBounds, result);
+    }
+    
+    // Test offset past end
+    {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        try frame.stack.push(0);  // destOffset
+        try frame.stack.push(5);  // offset (past end)
+        try frame.stack.push(1);  // length
+        
+        const dispatch = createMockDispatch();
+        const result = TestFrame.ContextHandlers.returndatacopy(frame, dispatch);
+        
+        try testing.expectError(TestFrame.Error.OutOfBounds, result);
+    }
+}
+
+test "BLOCKHASH opcode - edge cases" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Current block number is 12345678 in mock
+    
+    // Test: block too old (more than 256 blocks ago)
+    try frame.stack.push(12345678 - 257);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.blockhash(frame, dispatch);
+    var result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+    
+    // Test: future block
+    try frame.stack.push(12345678 + 1);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.blockhash(frame, dispatch);
+    result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+    
+    // Test: current block (should return 0)
+    try frame.stack.push(12345678);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.blockhash(frame, dispatch);
+    result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+    
+    // Test: valid recent block (256 blocks ago exactly)
+    try frame.stack.push(12345678 - 256);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.blockhash(frame, dispatch);
+    result = try frame.stack.pop();
+    // Should get a valid hash
+    const expected_byte = @as(u8, @intCast((12345678 - 256) & 0xFF));
+    var expected: u256 = 0;
+    var i: u32 = 0;
+    while (i < 32) : (i += 1) {
+        expected = (expected << 8) | expected_byte;
+    }
+    try testing.expectEqual(expected, result);
+}
+
+test "Block info opcodes - various values" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    // Set extreme values
+    mock_host.block_info = .{
+        .coinbase = Address.fromBytes([_]u8{0xFF} ** 20) catch unreachable,
+        .timestamp = std.math.maxInt(u64),
+        .number = std.math.maxInt(u64),
+        .difficulty = std.math.maxInt(u256),
+        .gas_limit = std.math.maxInt(u64),
+        .base_fee = std.math.maxInt(u256),
+    };
+    
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test COINBASE with max address
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.coinbase(frame, dispatch);
+    const coinbase = try frame.stack.pop();
+    const expected_coinbase = (@as(u256, 1) << 160) - 1; // Max 160-bit value
+    try testing.expectEqual(expected_coinbase, coinbase);
+    
+    // Test TIMESTAMP with max value
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.timestamp(frame, dispatch);
+    const timestamp = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, std.math.maxInt(u64)), timestamp);
+    
+    // Test DIFFICULTY with max value
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.difficulty(frame, dispatch);
+    const difficulty = try frame.stack.pop();
+    try testing.expectEqual(std.math.maxInt(u256), difficulty);
+    
+    // Test PREVRANDAO (alias for DIFFICULTY)
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.prevrandao(frame, dispatch);
+    const prevrandao = try frame.stack.pop();
+    try testing.expectEqual(std.math.maxInt(u256), prevrandao);
+}
+
+test "BLOBHASH opcode - index boundaries" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test valid indices (0, 1, 2)
+    const valid_indices = [_]u256{0, 1, 2};
+    for (valid_indices) |idx| {
+        try frame.stack.push(idx);
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.blobhash(frame, dispatch);
+        const result = try frame.stack.pop();
+        
+        // Mock returns hash filled with (0xAA + index)
+        const expected_byte = @as(u8, @intCast(0xAA + idx));
+        var expected: u256 = 0;
+        var i: u32 = 0;
+        while (i < 32) : (i += 1) {
+            expected = (expected << 8) | expected_byte;
+        }
+        try testing.expectEqual(expected, result);
+    }
+    
+    // Test invalid index
+    try frame.stack.push(3); // Beyond valid range
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.blobhash(frame, dispatch);
+    const result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+    
+    // Test max u256 index
+    try frame.stack.push(std.math.maxInt(u256));
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.blobhash(frame, dispatch);
+    const result_max = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result_max);
+}
+
+test "GAS opcode - negative gas handling" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+    
+    // Test with positive gas
+    frame.gas_remaining = 123456;
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.gas(frame, dispatch);
+    var result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 123456), result);
+    
+    // Test with zero gas
+    frame.gas_remaining = 0;
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.gas(frame, dispatch);
+    result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+    
+    // Test with negative gas (should return 0)
+    frame.gas_remaining = -100;
+    dispatch = createMockDispatch();
+    _ = try TestFrame.ContextHandlers.gas(frame, dispatch);
+    result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+}
+
+test "PC opcode - various program counter values" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    
+    const pc_values = [_]u256{
+        0,                      // Start of code
+        1,                      // First instruction
+        255,                    // End of typical basic block
+        256,                    // Start of next page
+        65535,                  // Max 16-bit
+        65536,                  // Beyond 16-bit
+        16777215,               // Max 24-bit (typical max contract size)
+        std.math.maxInt(u32),   // Max 32-bit
+        std.math.maxInt(u256),  // Max possible
+    };
+    
+    for (pc_values) |pc_val| {
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        const dispatch = createMockDispatchWithPc(pc_val);
+        _ = try TestFrame.ContextHandlers.pc(frame, dispatch);
+        
+        const result = try frame.stack.pop();
+        try testing.expectEqual(pc_val, result);
+    }
+}
+
+test "Context opcodes - stack underflow" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Opcodes that require stack items
+    const dispatch = createMockDispatch();
+    
+    // BALANCE requires 1 stack item
+    var result = TestFrame.ContextHandlers.balance(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, result);
+    
+    // CALLDATALOAD requires 1 stack item
+    result = TestFrame.ContextHandlers.calldataload(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, result);
+    
+    // CALLDATACOPY requires 3 stack items
+    result = TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, result);
+    
+    try frame.stack.push(0);
+    result = TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, result);
+    
+    try frame.stack.push(0);
+    result = TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackUnderflow, result);
+}
+
+test "Context opcodes - stack overflow" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Fill stack to maximum
+    const max_stack = 1024;
+    for (0..max_stack) |_| {
+        try frame.stack.push(0);
+    }
+    
+    // Any opcode that pushes should fail
+    const dispatch = createMockDispatch();
+    
+    // ADDRESS pushes 1 value
+    const result = TestFrame.ContextHandlers.address(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackOverflow, result);
+}
+
+test "Memory copy operations - large offsets" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    const test_data = [_]u8{0x11, 0x22, 0x33, 0x44};
+    mock_host.input_data = &test_data;
+    
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Test memory limit with CALLDATACOPY
+    const large_offset = @as(u256, test_config.memory_limit - 10);
+    try frame.stack.push(large_offset);  // destOffset (near memory limit)
+    try frame.stack.push(0);             // offset
+    try frame.stack.push(32);            // length (would exceed limit)
+    
+    const dispatch = createMockDispatch();
+    const result = TestFrame.ContextHandlers.calldatacopy(frame, dispatch);
+    
+    try testing.expectError(TestFrame.Error.AllocationError, result);
+}
+
+test "EXTCODEHASH opcode - empty code hash constant" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
+    var frame = try createTestFrame(testing.allocator, host);
+    defer frame.deinit(testing.allocator);
+
+    // Verify the empty code hash constant is correct
+    const empty_code: []const u8 = &.{};
+    var expected_hash_bytes: [32]u8 = undefined;
+    keccak_asm.keccak256(empty_code, &expected_hash_bytes) catch unreachable;
+    
+    var expected_hash_computed: u256 = 0;
+    for (expected_hash_bytes) |b| {
+        expected_hash_computed = (expected_hash_computed << 8) | @as(u256, b);
+    }
+    
+    // The hardcoded constant in the code
+    const hardcoded_empty_hash = @as(u256, 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
+    
+    // Verify they match
+    try testing.expectEqual(expected_hash_computed, hardcoded_empty_hash);
+}
+
+test "Chain ID values" {
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    // Test various chain IDs
+    const chain_ids = [_]u64{
+        1,      // Ethereum mainnet
+        56,     // BSC
+        137,    // Polygon
+        42161,  // Arbitrum One
+        std.math.maxInt(u64),  // Maximum chain ID
+    };
+    
+    const host = mock_host.to_host();
+    
+    for (chain_ids) |chain_id| {
+        mock_host.chain_id = chain_id;
+        
+        var frame = try createTestFrame(testing.allocator, host);
+        defer frame.deinit(testing.allocator);
+        
+        const dispatch = createMockDispatch();
+        _ = try TestFrame.ContextHandlers.chainid(frame, dispatch);
+        
+        const result = try frame.stack.pop();
+        try testing.expectEqual(@as(u256, chain_id), result);
+    }
+}
+
+test "WordType truncation behavior" {
+    // Test when WordType is smaller than u256
+    const SmallWordConfig = FrameConfig{
+        .stack_size = 1024,
+        .WordType = u64,  // Smaller than u256
+        .max_bytecode_size = 1024,
+        .block_gas_limit = 30_000_000,
+        .has_database = false,
+        .TracerType = NoOpTracer,
+        .memory_initial_capacity = 4096,
+        .memory_limit = 0xFFFFFF,
+    };
+    
+    const SmallFrame = StackFrame(SmallWordConfig);
+    const SmallBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = SmallWordConfig.max_bytecode_size });
+    
+    var mock_host = MockHost.init(testing.allocator);
+    defer mock_host.deinit();
+    
+    // Set values that exceed u64
+    mock_host.block_info.difficulty = std.math.maxInt(u256);
+    mock_host.block_info.base_fee = std.math.maxInt(u256);
+    
+    const host = mock_host.to_host();
+    const bytecode = SmallBytecode.initEmpty();
+    var frame = try SmallFrame.init(testing.allocator, bytecode, 1_000_000, null, host);
+    defer frame.deinit(testing.allocator);
+    
+    // Mock dispatch for SmallFrame
+    const mock_handler = struct {
+        fn handler(f: SmallFrame, d: SmallFrame.Dispatch) SmallFrame.Error!SmallFrame.Success {
+            _ = f;
+            _ = d;
+            return SmallFrame.Success.stop;
+        }
+    }.handler;
+    
+    var schedule: [1]dispatch_mod.ScheduleElement(SmallFrame) = undefined;
+    schedule[0] = .{ .opcode_handler = &mock_handler };
+    
+    const dispatch = SmallFrame.Dispatch{
+        .schedule = &schedule,
+        .bytecode_length = 0,
+    };
+    
+    // Test DIFFICULTY with value larger than u64
+    _ = try SmallFrame.ContextHandlers.difficulty(frame, dispatch);
+    const difficulty = try frame.stack.pop();
+    // Should be truncated to u64 max
+    try testing.expectEqual(@as(u64, std.math.maxInt(u64)), difficulty);
+    
+    // Test BASEFEE with value larger than u64
+    _ = try SmallFrame.ContextHandlers.basefee(frame, dispatch);
+    const base_fee = try frame.stack.pop();
+    // Should be truncated to u64 max
+    try testing.expectEqual(@as(u64, std.math.maxInt(u64)), base_fee);
+}
