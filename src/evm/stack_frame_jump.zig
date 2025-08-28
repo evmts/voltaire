@@ -468,3 +468,449 @@ test "Jump operations - integration test" {
     try testing.expectEqual(TestFrame.Success.Stop, try result);
     try testing.expectEqual(@as(usize, 0), frame.stack.len());
 }
+
+// ====== COMPREHENSIVE TESTS ======
+
+test "JUMP opcode - boundary destinations" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test various jump destinations
+    const destinations = [_]u256{
+        0,                      // Beginning of code
+        1,                      // First byte
+        0x5B,                   // JUMPDEST opcode value
+        0xFF,                   // Byte boundary
+        0xFFFF,                 // Word boundary
+        0xFFFFFF,               // 3-byte boundary
+        std.math.maxInt(u32),   // Max 32-bit value
+        std.math.maxInt(u256),  // Max destination
+    };
+    
+    for (destinations) |dest| {
+        // Clear stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        try frame.stack.push(dest);
+        
+        const dispatch = createMockDispatch();
+        const result = TestFrame.JumpHandlers.jump(frame, dispatch);
+        
+        // Should handle all destinations (placeholder returns Stop)
+        try testing.expectEqual(TestFrame.Success.Stop, try result);
+        try testing.expectEqual(@as(usize, 0), frame.stack.len());
+    }
+}
+
+test "JUMPI opcode - edge case conditions" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test edge case condition values
+    const edge_cases = [_]struct { 
+        condition: u256, 
+        destination: u256,
+        should_jump: bool,
+        description: []const u8,
+    }{
+        .{ .condition = 0, .destination = 100, .should_jump = false, .description = "zero" },
+        .{ .condition = 1, .destination = 200, .should_jump = true, .description = "one" },
+        .{ .condition = 2, .destination = 300, .should_jump = true, .description = "two" },
+        .{ .condition = 0x80, .destination = 400, .should_jump = true, .description = "0x80" },
+        .{ .condition = 0xFF, .destination = 500, .should_jump = true, .description = "0xFF" },
+        .{ .condition = 0x100, .destination = 600, .should_jump = true, .description = "0x100" },
+        .{ .condition = 0x8000000000000000, .destination = 700, .should_jump = true, .description = "high bit" },
+        .{ .condition = std.math.maxInt(u128), .destination = 800, .should_jump = true, .description = "max u128" },
+        .{ .condition = std.math.maxInt(u256) - 1, .destination = 900, .should_jump = true, .description = "max-1" },
+        .{ .condition = std.math.maxInt(u256), .destination = 1000, .should_jump = true, .description = "max u256" },
+    };
+    
+    for (edge_cases) |tc| {
+        // Clear stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        try frame.stack.push(tc.destination);
+        try frame.stack.push(tc.condition);
+        
+        const dispatch = createMockDispatch();
+        const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
+        
+        if (tc.should_jump) {
+            try testing.expectEqual(TestFrame.Success.Stop, try result);
+        } else {
+            try testing.expectEqual(TestFrame.Success.stop, try result);
+        }
+        
+        try testing.expectEqual(@as(usize, 0), frame.stack.len());
+    }
+}
+
+test "JUMPDEST opcode - various gas costs" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test different gas costs for basic blocks
+    const gas_costs = [_]i64{
+        0,      // Empty block
+        1,      // Single gas
+        3,      // Base cost
+        10,     // Small block
+        100,    // Medium block
+        1000,   // Large block
+        10000,  // Very large block
+        100000, // Huge block
+    };
+    
+    for (gas_costs) |gas_cost| {
+        // Set sufficient gas
+        frame.gas_remaining = 1_000_000;
+        const initial_gas = frame.gas_remaining;
+        
+        var schedule: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
+        const mock_handler = struct {
+            fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
+                _ = f;
+                _ = d;
+                return TestFrame.Success.stop;
+            }
+        }.handler;
+        
+        schedule[0] = .{ .opcode_handler = &mock_handler };
+        schedule[1] = .{ .opcode_handler = &mock_handler };
+        
+        schedule[0].metadata = .{ .jump_dest = .{ .gas = gas_cost } };
+        
+        const dispatch = TestFrame.Dispatch{
+            .schedule = &schedule,
+            .bytecode_length = 0,
+        };
+        
+        _ = try TestFrame.JumpHandlers.jumpdest(frame, dispatch);
+        
+        // Verify exact gas consumption
+        try testing.expectEqual(initial_gas - gas_cost, frame.gas_remaining);
+    }
+}
+
+test "JUMPDEST opcode - exact gas boundary" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test exact gas boundary conditions
+    const test_cases = [_]struct { 
+        available_gas: i64, 
+        required_gas: i64,
+        should_succeed: bool,
+    }{
+        .{ .available_gas = 100, .required_gas = 99, .should_succeed = true },
+        .{ .available_gas = 100, .required_gas = 100, .should_succeed = true },
+        .{ .available_gas = 100, .required_gas = 101, .should_succeed = false },
+        .{ .available_gas = 1, .required_gas = 1, .should_succeed = true },
+        .{ .available_gas = 0, .required_gas = 0, .should_succeed = true },
+        .{ .available_gas = 0, .required_gas = 1, .should_succeed = false },
+    };
+    
+    for (test_cases) |tc| {
+        frame.gas_remaining = tc.available_gas;
+        
+        var schedule: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
+        const mock_handler = struct {
+            fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
+                _ = f;
+                _ = d;
+                return TestFrame.Success.stop;
+            }
+        }.handler;
+        
+        schedule[0] = .{ .opcode_handler = &mock_handler };
+        schedule[1] = .{ .opcode_handler = &mock_handler };
+        
+        schedule[0].metadata = .{ .jump_dest = .{ .gas = tc.required_gas } };
+        
+        const dispatch = TestFrame.Dispatch{
+            .schedule = &schedule,
+            .bytecode_length = 0,
+        };
+        
+        const result = TestFrame.JumpHandlers.jumpdest(frame, dispatch);
+        
+        if (tc.should_succeed) {
+            _ = try result;
+            try testing.expectEqual(tc.available_gas - tc.required_gas, frame.gas_remaining);
+        } else {
+            try testing.expectError(TestFrame.Error.OutOfGas, result);
+        }
+    }
+}
+
+test "PC opcode - boundary values" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test PC at various boundaries
+    const pc_boundaries = [_]u256{
+        0,                          // Start of code
+        1,                          // First instruction
+        0x5B,                       // JUMPDEST value
+        0xFF,                       // Max single byte
+        0x100,                      // First two-byte value
+        0xFFFF,                     // Max two bytes
+        0x10000,                    // First three-byte value
+        0xFFFFFF,                   // Max three bytes (typical max contract size)
+        0x1000000,                  // Beyond typical contract size
+        std.math.maxInt(u32),       // Max 32-bit PC
+        std.math.maxInt(u64),       // Max 64-bit PC
+        (1 << 128) - 1,             // Max 128-bit PC
+        std.math.maxInt(u256) - 1,  // Near max
+        std.math.maxInt(u256),      // Max possible PC
+    };
+    
+    for (pc_boundaries) |pc_val| {
+        // Clear stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        var schedule: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
+        const mock_handler = struct {
+            fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
+                _ = f;
+                _ = d;
+                return TestFrame.Success.stop;
+            }
+        }.handler;
+        
+        schedule[0] = .{ .opcode_handler = &mock_handler };
+        schedule[1] = .{ .opcode_handler = &mock_handler };
+        
+        schedule[0].metadata = .{ .pc = .{ .value = pc_val } };
+        
+        const dispatch = TestFrame.Dispatch{
+            .schedule = &schedule,
+            .bytecode_length = 0,
+        };
+        
+        _ = try TestFrame.JumpHandlers.pc(frame, dispatch);
+        
+        const stack_val = try frame.stack.pop();
+        try testing.expectEqual(pc_val, stack_val);
+        try testing.expectEqual(@as(usize, 0), frame.stack.len());
+    }
+}
+
+test "Jump operations - gas consumption patterns" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // JUMP and JUMPI should not consume gas directly (gas is consumed by JUMPDEST)
+    frame.gas_remaining = 100;
+    const initial_gas = frame.gas_remaining;
+    
+    // Test JUMP
+    try frame.stack.push(50);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.JumpHandlers.jump(frame, dispatch);
+    
+    // Gas should not change
+    try testing.expectEqual(initial_gas, frame.gas_remaining);
+    
+    // Test JUMPI (taken)
+    try frame.stack.push(100);
+    try frame.stack.push(1);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
+    
+    // Gas should not change
+    try testing.expectEqual(initial_gas, frame.gas_remaining);
+    
+    // Test JUMPI (not taken)
+    try frame.stack.push(100);
+    try frame.stack.push(0);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
+    
+    // Gas should not change
+    try testing.expectEqual(initial_gas, frame.gas_remaining);
+    
+    // Test PC
+    var schedule: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
+    const mock_handler = struct {
+        fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
+            _ = f;
+            _ = d;
+            return TestFrame.Success.stop;
+        }
+    }.handler;
+    
+    schedule[0] = .{ .opcode_handler = &mock_handler };
+    schedule[1] = .{ .opcode_handler = &mock_handler };
+    
+    schedule[0].metadata = .{ .pc = .{ .value = 42 } };
+    
+    dispatch = TestFrame.Dispatch{
+        .schedule = &schedule,
+        .bytecode_length = 0,
+    };
+    
+    _ = try TestFrame.JumpHandlers.pc(frame, dispatch);
+    
+    // Gas should not change (PC is a simple push operation, gas handled elsewhere)
+    try testing.expectEqual(initial_gas, frame.gas_remaining);
+}
+
+test "Jump operations - maximum stack depth" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Fill stack to near maximum
+    const max_items = 1022; // Leave room for 2 items
+    for (0..max_items) |i| {
+        try frame.stack.push(@as(u256, i));
+    }
+    
+    // JUMP should work with full stack (pops 1)
+    try frame.stack.push(100);
+    var dispatch = createMockDispatch();
+    _ = try TestFrame.JumpHandlers.jump(frame, dispatch);
+    try testing.expectEqual(@as(usize, max_items), frame.stack.len());
+    
+    // JUMPI should work with full stack (pops 2)
+    try frame.stack.push(200);
+    try frame.stack.push(1);
+    dispatch = createMockDispatch();
+    _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
+    try testing.expectEqual(@as(usize, max_items), frame.stack.len());
+    
+    // PC with full stack should fail
+    // Fill to maximum
+    try frame.stack.push(0);
+    try frame.stack.push(0);
+    
+    var schedule: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
+    const mock_handler = struct {
+        fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
+            _ = f;
+            _ = d;
+            return TestFrame.Success.stop;
+        }
+    }.handler;
+    
+    schedule[0] = .{ .opcode_handler = &mock_handler };
+    schedule[1] = .{ .opcode_handler = &mock_handler };
+    
+    schedule[0].metadata = .{ .pc = .{ .value = 42 } };
+    
+    dispatch = TestFrame.Dispatch{
+        .schedule = &schedule,
+        .bytecode_length = 0,
+    };
+    
+    const result = TestFrame.JumpHandlers.pc(frame, dispatch);
+    try testing.expectError(TestFrame.Error.StackOverflow, result);
+}
+
+test "JUMPI opcode - pattern analysis" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Common JUMPI patterns
+    const patterns = [_]struct {
+        name: []const u8,
+        setup: fn(*TestFrame) anyerror!void,
+        destination: u256,
+        should_jump: bool,
+    }{
+        .{
+            .name = "after equality check",
+            .setup = struct {
+                fn setup(f: *TestFrame) !void {
+                    // Simulate: PUSH 5, PUSH 5, EQ, JUMPI
+                    const eq_result: u256 = 1; // 5 == 5
+                    try f.stack.push(eq_result);
+                }
+            }.setup,
+            .destination = 100,
+            .should_jump = true,
+        },
+        .{
+            .name = "after inequality check",
+            .setup = struct {
+                fn setup(f: *TestFrame) !void {
+                    // Simulate: PUSH 5, PUSH 6, EQ, JUMPI
+                    const eq_result: u256 = 0; // 5 != 6
+                    try f.stack.push(eq_result);
+                }
+            }.setup,
+            .destination = 200,
+            .should_jump = false,
+        },
+        .{
+            .name = "after ISZERO true",
+            .setup = struct {
+                fn setup(f: *TestFrame) !void {
+                    // Simulate: PUSH 0, ISZERO, JUMPI
+                    const iszero_result: u256 = 1; // 0 == 0
+                    try f.stack.push(iszero_result);
+                }
+            }.setup,
+            .destination = 300,
+            .should_jump = true,
+        },
+        .{
+            .name = "after ISZERO false",
+            .setup = struct {
+                fn setup(f: *TestFrame) !void {
+                    // Simulate: PUSH 5, ISZERO, JUMPI
+                    const iszero_result: u256 = 0; // 5 != 0
+                    try f.stack.push(iszero_result);
+                }
+            }.setup,
+            .destination = 400,
+            .should_jump = false,
+        },
+        .{
+            .name = "after LT true",
+            .setup = struct {
+                fn setup(f: *TestFrame) !void {
+                    // Simulate: PUSH 10, PUSH 5, LT, JUMPI
+                    const lt_result: u256 = 1; // 5 < 10
+                    try f.stack.push(lt_result);
+                }
+            }.setup,
+            .destination = 500,
+            .should_jump = true,
+        },
+    };
+    
+    for (patterns) |pattern| {
+        // Clear stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        // Setup condition
+        try pattern.setup(&frame);
+        
+        // Push destination
+        try frame.stack.push(pattern.destination);
+        
+        // Swap to get [destination, condition]
+        const condition = try frame.stack.pop();
+        const dest = try frame.stack.pop();
+        try frame.stack.push(dest);
+        try frame.stack.push(condition);
+        
+        const dispatch = createMockDispatch();
+        const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
+        
+        if (pattern.should_jump) {
+            try testing.expectEqual(TestFrame.Success.Stop, try result);
+        } else {
+            try testing.expectEqual(TestFrame.Success.stop, try result);
+        }
+    }
+}
