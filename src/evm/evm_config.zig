@@ -1,5 +1,5 @@
 const std = @import("std");
-const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
+// const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
 const Eips = @import("eips.zig").Eips;
@@ -27,7 +27,7 @@ pub const EvmConfig = struct {
     /// Planner strategy for bytecode analysis and optimization (default: minimal)
     /// Note: When compiling with -Doptimize=ReleaseSmall, this is always forced to .minimal
     /// regardless of the configured value to minimize binary size.
-    planner_strategy: PlannerStrategy = .minimal,
+    // planner_strategy: PlannerStrategy = .minimal,
 
     /// Block information configuration
     /// Controls the types used for difficulty and base_fee fields
