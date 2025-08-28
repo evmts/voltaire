@@ -196,11 +196,11 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.SWAP1) + swap_n - 1));
                 h[@intFromEnum(opcode)] = StackHandlers.generateSwapHandler(swap_n);
             }
-            h[@intFromEnum(Opcode.LOG0)] = LogHandlers.log0;
-            h[@intFromEnum(Opcode.LOG1)] = LogHandlers.log1;
-            h[@intFromEnum(Opcode.LOG2)] = LogHandlers.log2;
-            h[@intFromEnum(Opcode.LOG3)] = LogHandlers.log3;
-            h[@intFromEnum(Opcode.LOG4)] = LogHandlers.log4;
+            h[@intFromEnum(Opcode.LOG0)] = &LogHandlers.log0;
+            h[@intFromEnum(Opcode.LOG1)] = &LogHandlers.log1;
+            h[@intFromEnum(Opcode.LOG2)] = &LogHandlers.log2;
+            h[@intFromEnum(Opcode.LOG3)] = &LogHandlers.log3;
+            h[@intFromEnum(Opcode.LOG4)] = &LogHandlers.log4;
             h[@intFromEnum(Opcode.CREATE)] = &SystemHandlers.create;
             h[@intFromEnum(Opcode.CALL)] = &SystemHandlers.call;
             h[@intFromEnum(Opcode.CREATE2)] = &SystemHandlers.create2;

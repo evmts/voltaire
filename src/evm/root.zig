@@ -2,7 +2,7 @@
 //!
 //! This module provides a complete EVM with configurable components:
 //! - Frame-based execution contexts with stack, memory, and gas tracking
-//! - Bytecode analysis and optimization through the Planner system
+//! - Bytecode analysis and optimization
 //! - Pluggable database interfaces for state management
 //! - Comprehensive tracing and debugging capabilities
 //! - Support for all Ethereum hard forks and EIPs
@@ -14,8 +14,6 @@ const std = @import("std");
 // Core frame and execution modules
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 pub const Frame = @import("frame.zig").Frame;
-pub const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
-pub const createFrameInterpreter = @import("frame_interpreter.zig").createFrameInterpreter;
 pub const StackFrame = @import("stack_frame.zig").StackFrame;
 pub const StackFrameDispatch = @import("stack_frame_dispatch.zig").Dispatch;
 
@@ -26,22 +24,10 @@ pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
 pub const Memory = @import("memory.zig").Memory;
 pub const MemoryError = @import("memory.zig").MemoryError;
 
-// Planner and bytecode analysis
-pub const Planner = @import("planner.zig").Planner;
-pub const createPlanner = @import("planner.zig").createPlanner;
-pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
-pub const Plan = @import("plan.zig").Plan;
-pub const createPlan = @import("plan.zig").createPlan;
-pub const PlanConfig = @import("plan_config.zig").PlanConfig;
-pub const PlanMinimal = @import("plan_minimal.zig").PlanMinimal;
-pub const PlanAdvanced = @import("plan_advanced.zig").PlanAdvanced;
-pub const PlanDebug = @import("plan_debug.zig").PlanDebug;
-
 // EVM main module and configuration
 pub const Evm = @import("evm.zig").Evm;
 pub const Evm2 = @import("evm2.zig").Evm2;
 pub const EvmConfig = @import("evm_config.zig").EvmConfig;
-pub const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 
 // Default EVM types for backward compatibility
 pub const DefaultEvm = Evm(.{});
@@ -96,8 +82,6 @@ test {
     // Test core modules
     _ = FrameConfig;
     _ = Frame;
-    _ = FrameInterpreter;
-    _ = createFrameInterpreter;
     _ = StackFrameDispatch;
     _ = StackFrame;
 
@@ -108,22 +92,12 @@ test {
     _ = Memory;
     _ = MemoryError;
 
-    // Test planner and bytecode
-    _ = Planner;
-    _ = createPlanner;
-    _ = PlannerConfig;
-    _ = Plan;
-    _ = createPlan;
-    _ = PlanConfig;
-    _ = PlanMinimal;
-    _ = PlanAdvanced; // Testing compilation
-    _ = PlanDebug; // Testing compilation
+    // Test bytecode
 
     // Test EVM
     _ = Evm;
     _ = Evm2;
     _ = EvmConfig;
-    _ = PlannerStrategy;
 
     // Test tracer modules
     _ = Tracer;
@@ -168,8 +142,6 @@ test "Include C API tests" {
     const bytecode_c = @import("bytecode_c.zig");
     const memory_c = @import("memory_c.zig");
     const stack_c = @import("stack_c.zig");
-    const plan_c = @import("plan_c.zig");
-    const planner_c = @import("planner_c.zig");
     const precompiles_c = @import("precompiles_c.zig");
     const hardfork_c = @import("hardfork_c.zig");
 
@@ -177,15 +149,12 @@ test "Include C API tests" {
     std.testing.refAllDecls(bytecode_c);
     std.testing.refAllDecls(memory_c);
     std.testing.refAllDecls(stack_c);
-    std.testing.refAllDecls(plan_c);
-    std.testing.refAllDecls(planner_c);
     std.testing.refAllDecls(precompiles_c);
     std.testing.refAllDecls(hardfork_c);
 }
 
 test "Include fusion tests" {
     // TODO: These fusion test files are currently missing
-    // _ = @import("test_planner_fusion.zig");
     // _ = @import("test_fusion_e2e.zig");
 }
 
