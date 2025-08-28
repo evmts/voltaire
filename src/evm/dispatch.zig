@@ -889,8 +889,6 @@ test "Dispatch - large value truncation issue" {
 }
 
 test "JumpTable - empty jump table" {
-    const allocator = testing.allocator;
-    
     // Create empty jump table
     const jump_table = TestDispatch.JumpTable{ .entries = &[_]TestDispatch.JumpTableEntry{} };
     
