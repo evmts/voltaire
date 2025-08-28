@@ -100,14 +100,9 @@ pub fn main() !void {
         const runtime_code: []const u8 = init_code;
         
         // Step 2: Execute contract call using Frame with debugging tracer
-        const Interpreter = evm.createFrameInterpreter(.{
-            .TracerType = evm.DebuggingTracer,
-        });
-        // Create a default host for debugging
-        var default_host = @import("evm").HostMock{};
-        const host = @import("evm").Host.init(&default_host);
-        var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {}, host);
-        defer interpreter.deinit(allocator);
+        // TODO: Update to use new architecture without FrameInterpreter
+        std.debug.print("FrameInterpreter has been deprecated. Please update to use the new architecture.\n", .{});
+        return;
 
         const start_time = std.time.nanoTimestamp();
         interpreter.interpret() catch |err| switch (err) {
