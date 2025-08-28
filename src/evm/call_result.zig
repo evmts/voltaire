@@ -4,6 +4,12 @@ pub const CallResult = struct {
     gas_left: u64,
     output: []const u8,
     logs: []const Log = &.{},
+    /// Accounts that self-destructed during execution (address -> beneficiary)
+    selfdestructs: []const SelfDestructRecord = &.{},
+    /// Addresses accessed during execution (for access list)
+    accessed_addresses: []const Address = &.{},
+    /// Storage slots accessed during execution
+    accessed_storage: []const StorageAccess = &.{},
 
     /// Create a successful call result
     pub fn success_with_output(gas_left: u64, output: []const u8) CallResult {
@@ -12,6 +18,9 @@ pub const CallResult = struct {
             .gas_left = gas_left,
             .output = output,
             .logs = &.{},
+            .selfdestructs = &.{},
+            .accessed_addresses = &.{},
+            .accessed_storage = &.{},
         };
     }
 
@@ -22,6 +31,9 @@ pub const CallResult = struct {
             .gas_left = gas_left,
             .output = &[_]u8{},
             .logs = &.{},
+            .selfdestructs = &.{},
+            .accessed_addresses = &.{},
+            .accessed_storage = &.{},
         };
     }
 
@@ -32,6 +44,9 @@ pub const CallResult = struct {
             .gas_left = gas_left,
             .output = &[_]u8{},
             .logs = &.{},
+            .selfdestructs = &.{},
+            .accessed_addresses = &.{},
+            .accessed_storage = &.{},
         };
     }
 
@@ -42,6 +57,9 @@ pub const CallResult = struct {
             .gas_left = gas_left,
             .output = revert_data,
             .logs = &.{},
+            .selfdestructs = &.{},
+            .accessed_addresses = &.{},
+            .accessed_storage = &.{},
         };
     }
 
@@ -52,6 +70,9 @@ pub const CallResult = struct {
             .gas_left = gas_left,
             .output = output,
             .logs = logs,
+            .selfdestructs = &.{},
+            .accessed_addresses = &.{},
+            .accessed_storage = &.{},
         };
     }
 
@@ -108,6 +129,22 @@ pub const Log = struct {
     address: Address,
     topics: []const u256,
     data: []const u8,
+};
+
+/// Record of a self-destruct operation
+pub const SelfDestructRecord = struct {
+    /// Address of the contract being destroyed
+    contract: Address,
+    /// Address receiving the remaining balance
+    beneficiary: Address,
+};
+
+/// Record of a storage slot access
+pub const StorageAccess = struct {
+    /// Contract address
+    address: Address,
+    /// Storage slot key
+    slot: u256,
 };
 
 test "call result success creation" {
