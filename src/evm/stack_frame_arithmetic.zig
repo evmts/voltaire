@@ -1,6 +1,6 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("../log.zig");
+const log = @import("log.zig");
 
 /// Arithmetic opcode handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.
@@ -8,49 +8,49 @@ pub fn Handlers(comptime FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Success = FrameType.Success;
-        pub const Schedule = FrameType.Schedule;
+        pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
 
         /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn add(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn add(self: FrameType, dispatch: Dispatch) Error!Success {
             // Static gas consumption handled at upper layer
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
-        pub fn mul(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn mul(self: FrameType, dispatch: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
-        pub fn sub(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn sub(self: FrameType, dispatch: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
-        pub fn div(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn div(self: FrameType, dispatch: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// SDIV opcode (0x05) - Signed integer division.
-        pub fn sdiv(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn sdiv(self: FrameType, dispatch: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -69,22 +69,22 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             }
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
-        pub fn mod(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn mod(self: FrameType, dispatch: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator % denominator;
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// SMOD opcode (0x07) - Signed modulo operation.
-        pub fn smod(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn smod(self: FrameType, dispatch: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -97,12 +97,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 result = @as(WordType, @bitCast(result_signed));
             }
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// ADDMOD opcode (0x08) - (a + b) % N. All intermediate calculations are performed with arbitrary precision.
-        pub fn addmod(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn addmod(self: FrameType, dispatch: Dispatch) Error!Success {
             const modulus = try self.stack.pop();
             const addend2 = try self.stack.pop();
             const addend1 = try self.stack.peek();
@@ -121,12 +121,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 result = r;
             }
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// MULMOD opcode (0x09) - (a * b) % N. All intermediate calculations are performed with arbitrary precision.
-        pub fn mulmod(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn mulmod(self: FrameType, dispatch: Dispatch) Error!Success {
             const modulus = try self.stack.pop();
             const factor2 = try self.stack.pop();
             const factor1 = try self.stack.peek();
@@ -140,12 +140,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 result = product % modulus;
             }
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// EXP opcode (0x0a) - Exponential operation.
-        pub fn exp(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn exp(self: FrameType, dispatch: Dispatch) Error!Success {
             const exponent = try self.stack.pop();
             const base = try self.stack.peek();
             var result: WordType = 1;
@@ -158,12 +158,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 b *%= b;
             }
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
-        pub fn signextend(self: FrameType, schedule: Schedule) Error!Success {
+        pub fn signextend(self: FrameType, dispatch: Dispatch) Error!Success {
             const ext = try self.stack.pop();
             const value = try self.stack.peek();
             var result: WordType = undefined;
@@ -181,7 +181,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             }
             try self.stack.set_top(result);
-            const next = schedule.getNext();
+            const next = dispatch.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
     };

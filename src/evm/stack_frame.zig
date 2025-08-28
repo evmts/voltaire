@@ -67,7 +67,6 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// The dispatch mechanism that controls opcode execution flow.
         /// This is now implemented in a separate module for better modularity.
         const Dispatch = dispatch_mod.Dispatch(Self);
-        const Schedule = Dispatch; // Alias for backward compatibility
         pub const Success = enum {
             Stop,
             Return,
@@ -88,11 +87,11 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             WriteProtection,
         };
 
-        fn generatePushHandler(comptime push_n: u8) *const Schedule.OpcodeHandler {
+        fn generatePushHandler(comptime push_n: u8) *const Dispatch.OpcodeHandler {
             if (push_n > 32) @compileError("Only PUSH0 to PUSH32 is supported");
             if (push_n == 0) @compileError("Push0 is handled as it's own opcode not via generatePushHandler");
             return struct {
-                pub fn pushHandler(self: Self, schedule: Schedule) Error!Success {
+                pub fn pushHandler(self: Self, schedule: Dispatch) Error!Success {
                     if (push_n <= 8) {
                         const meta = schedule.getInlineMetadata();
                         try self.stack.push(meta.value);
@@ -107,9 +106,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
 
         /// Generate a dup handler for DUP1-DUP16
-        fn generateDupHandler(comptime dup_n: u8) *const Schedule.OpcodeHandler {
+        fn generateDupHandler(comptime dup_n: u8) *const Dispatch.OpcodeHandler {
             return struct {
-                pub fn dupHandler(self: Self, schedule: Schedule) Error!Success {
+                pub fn dupHandler(self: Self, schedule: Dispatch) Error!Success {
                     const value = try self.stack.peek_n(dup_n);
                     try self.stack.push(value);
                     const next = schedule.getNext();
@@ -119,9 +118,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
 
         /// Generate a swap handler for SWAP1-SWAP16
-        fn generateSwapHandler(comptime swap_n: u8) *const Schedule.OpcodeHandler {
+        fn generateSwapHandler(comptime swap_n: u8) *const Dispatch.OpcodeHandler {
             return struct {
-                pub fn swapHandler(self: Self, schedule: Schedule) Error!Success {
+                pub fn swapHandler(self: Self, schedule: Dispatch) Error!Success {
                     try self.stack.swap_n(swap_n);
                     const next = schedule.getNext();
                     return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
@@ -131,26 +130,26 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 
         pub const opcode_handlers = blk: {
             @setEvalBranchQuota(10000);
-            var h: [256]*const Schedule.OpcodeHandler = undefined;
+            var h: [256]*const Dispatch.OpcodeHandler = undefined;
             for (&h) |*handler| handler.* = &invalid;
             h[@intFromEnum(Opcode.STOP)] = &stop;
-            h[@intFromEnum(Opcode.ADD)] = &add;
-            h[@intFromEnum(Opcode.MUL)] = &mul;
-            h[@intFromEnum(Opcode.SUB)] = &sub;
-            h[@intFromEnum(Opcode.DIV)] = &div;
-            h[@intFromEnum(Opcode.SDIV)] = &sdiv;
-            h[@intFromEnum(Opcode.MOD)] = &mod;
-            h[@intFromEnum(Opcode.SMOD)] = &smod;
-            h[@intFromEnum(Opcode.ADDMOD)] = &addmod;
-            h[@intFromEnum(Opcode.MULMOD)] = &mulmod;
-            h[@intFromEnum(Opcode.EXP)] = &exp;
-            h[@intFromEnum(Opcode.SIGNEXTEND)] = &signextend;
-            h[@intFromEnum(Opcode.LT)] = &lt;
-            h[@intFromEnum(Opcode.GT)] = &gt;
-            h[@intFromEnum(Opcode.SLT)] = &slt;
-            h[@intFromEnum(Opcode.SGT)] = &sgt;
-            h[@intFromEnum(Opcode.EQ)] = &eq;
-            h[@intFromEnum(Opcode.ISZERO)] = &iszero;
+            h[@intFromEnum(Opcode.ADD)] = &ArithmeticHandlers.add;
+            h[@intFromEnum(Opcode.MUL)] = &ArithmeticHandlers.mul;
+            h[@intFromEnum(Opcode.SUB)] = &ArithmeticHandlers.sub;
+            h[@intFromEnum(Opcode.DIV)] = &ArithmeticHandlers.div;
+            h[@intFromEnum(Opcode.SDIV)] = &ArithmeticHandlers.sdiv;
+            h[@intFromEnum(Opcode.MOD)] = &ArithmeticHandlers.mod;
+            h[@intFromEnum(Opcode.SMOD)] = &ArithmeticHandlers.smod;
+            h[@intFromEnum(Opcode.ADDMOD)] = &ArithmeticHandlers.addmod;
+            h[@intFromEnum(Opcode.MULMOD)] = &ArithmeticHandlers.mulmod;
+            h[@intFromEnum(Opcode.EXP)] = &ArithmeticHandlers.exp;
+            h[@intFromEnum(Opcode.SIGNEXTEND)] = &ArithmeticHandlers.signextend;
+            h[@intFromEnum(Opcode.LT)] = &ComparisonHandlers.lt;
+            h[@intFromEnum(Opcode.GT)] = &ComparisonHandlers.gt;
+            h[@intFromEnum(Opcode.SLT)] = &ComparisonHandlers.slt;
+            h[@intFromEnum(Opcode.SGT)] = &ComparisonHandlers.sgt;
+            h[@intFromEnum(Opcode.EQ)] = &ComparisonHandlers.eq;
+            h[@intFromEnum(Opcode.ISZERO)] = &ComparisonHandlers.iszero;
             h[@intFromEnum(Opcode.AND)] = &@"and";
             h[@intFromEnum(Opcode.OR)] = &@"or";
             h[@intFromEnum(Opcode.XOR)] = &xor;
@@ -263,6 +262,10 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const max_bytecode_size = config.max_bytecode_size;
 
         const Self = @This();
+        
+        // Import handler modules
+        const ArithmeticHandlers = stack_frame_arithmetic.Handlers(Self);
+        const ComparisonHandlers = stack_frame_comparison.Handlers(Self);
 
         // Cacheline 1
         stack: Stack,
@@ -441,7 +444,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             };
         }
 
-        pub fn pop(self: Self, schedule: Schedule) Error!Success {
+        pub fn pop(self: Self, schedule: Dispatch) Error!Success {
             _ = try self.stack.pop();
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
@@ -464,34 +467,34 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return Success.Stop;
         }
 
-        pub fn @"and"(self: Self, schedule: Schedule) Error!Success {
+        pub fn @"and"(self: Self, schedule: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top & top_minus_1);
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn @"or"(self: Self, schedule: Schedule) Error!Success {
+        pub fn @"or"(self: Self, schedule: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top | top_minus_1);
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn xor(self: Self, schedule: Schedule) Error!Success {
+        pub fn xor(self: Self, schedule: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn not(self: Self, schedule: Schedule) Error!Success {
+        pub fn not(self: Self, schedule: Dispatch) Error!Success {
             const top = try self.stack.peek();
             try self.stack.set_top(~top);
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn byte(self: Self, schedule: Schedule) Error!Success {
+        pub fn byte(self: Self, schedule: Dispatch) Error!Success {
             const byte_index = try self.stack.pop();
             const value = try self.stack.peek();
             const result = if (byte_index >= 32) 0 else blk: {
@@ -504,7 +507,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn shl(self: Self, schedule: Schedule) Error!Success {
+        pub fn shl(self: Self, schedule: Dispatch) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const ShiftType = std.math.Log2Int(WordType);
@@ -513,7 +516,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn shr(self: Self, schedule: Schedule) Error!Success {
+        pub fn shr(self: Self, schedule: Dispatch) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const ShiftType = std.math.Log2Int(WordType);
@@ -522,7 +525,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn sar(self: Self, schedule: Schedule) Error!Success {
+        pub fn sar(self: Self, schedule: Dispatch) Error!Success {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
             const word_bits = @bitSizeOf(WordType);
@@ -544,7 +547,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
         // Arithmetic operations
         /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn add(self: Self, schedule: Schedule) Error!Success {
+        pub fn add(self: Self, schedule: Dispatch) Error!Success {
             // Static gas consumption handled at upper layer
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
@@ -553,14 +556,14 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
-        pub fn mul(self: Self, schedule: Schedule) Error!Success {
+        pub fn mul(self: Self, schedule: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn sub(self: Self, schedule: Schedule) Error!Success {
+        pub fn sub(self: Self, schedule: Dispatch) Error!Success {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
@@ -568,7 +571,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
-        pub fn div(self: Self, schedule: Schedule) Error!Success {
+        pub fn div(self: Self, schedule: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
@@ -576,7 +579,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn sdiv(self: Self, schedule: Schedule) Error!Success {
+        pub fn sdiv(self: Self, schedule: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -598,7 +601,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn mod(self: Self, schedule: Schedule) Error!Success {
+        pub fn mod(self: Self, schedule: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator % denominator;
@@ -606,7 +609,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn smod(self: Self, schedule: Schedule) Error!Success {
+        pub fn smod(self: Self, schedule: Dispatch) Error!Success {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             var result: WordType = undefined;
@@ -622,7 +625,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn addmod(self: Self, schedule: Schedule) Error!Success {
+        pub fn addmod(self: Self, schedule: Dispatch) Error!Success {
             const modulus = try self.stack.pop();
             const addend2 = try self.stack.pop();
             const addend1 = try self.stack.peek();
@@ -644,7 +647,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn mulmod(self: Self, schedule: Schedule) Error!Success {
+        pub fn mulmod(self: Self, schedule: Dispatch) Error!Success {
             const modulus = try self.stack.pop();
             const factor2 = try self.stack.pop();
             const factor1 = try self.stack.peek();
@@ -661,7 +664,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn exp(self: Self, schedule: Schedule) Error!Success {
+        pub fn exp(self: Self, schedule: Dispatch) Error!Success {
             const exponent = try self.stack.pop();
             const base = try self.stack.peek();
             var result: WordType = 1;
@@ -677,7 +680,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const next = schedule.getNext();
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
-        pub fn signextend(self: Self, schedule: Schedule) Error!Success {
+        pub fn signextend(self: Self, schedule: Dispatch) Error!Success {
             const ext = try self.stack.pop();
             const value = try self.stack.peek();
             var result: WordType = undefined;
@@ -781,7 +784,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             // Use the optimized bitmap lookup from Bytecode
             return self.bytecode.isValidJumpDest(@intCast(pc_value));
         }
-        pub fn jumpdest(self: Self, schedule: Schedule) Error!Success {
+        pub fn jumpdest(self: Self, schedule: Dispatch) Error!Success {
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
             const metadata = schedule.getJumpDestMetadata();
             const gas_cost = metadata.gas;
@@ -797,7 +800,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn jump(self: Self, schedule: Schedule) Error!Success {
+        pub fn jump(self: Self, schedule: Dispatch) Error!Success {
             _ = schedule; // JUMP changes control flow, doesn't continue to next
             const dest = try self.stack.pop();
             // TODO: Implement proper jump logic with schedule lookup
@@ -806,7 +809,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return Success.Stop;
         }
 
-        pub fn jumpi(self: Self, schedule: Schedule) Error!Success {
+        pub fn jumpi(self: Self, schedule: Dispatch) Error!Success {
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
 
@@ -821,7 +824,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             }
         }
 
-        pub fn pc(self: Self, schedule: Schedule) Error!Success {
+        pub fn pc(self: Self, schedule: Dispatch) Error!Success {
             // Get PC value from metadata
             const metadata = schedule.getPcMetadata();
             try self.stack.push(metadata.value);
@@ -2531,7 +2534,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
 
         // Synthetic opcode handlers for optimized operations (placeholder implementations)
-        pub fn push_add_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_add_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline value from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const push_value = metadata.value;
@@ -2546,7 +2549,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_add_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_add_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to u256 value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const push_value = metadata.value.*;
@@ -2561,7 +2564,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mul_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mul_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline value from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const push_value = metadata.value;
@@ -2576,7 +2579,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mul_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mul_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to u256 value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const push_value = metadata.value.*;
@@ -2591,7 +2594,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_div_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_div_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline divisor from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const divisor = metadata.value;
@@ -2605,7 +2608,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_div_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_div_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to divisor value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const divisor = metadata.value.*;
@@ -2619,7 +2622,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_sub_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_sub_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline value from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const push_value = metadata.value;
@@ -2633,7 +2636,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_sub_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_sub_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const push_value = metadata.value.*;
@@ -2647,7 +2650,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_jump_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_jump_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline jump target from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const target = metadata.value;
@@ -2662,9 +2665,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return Success.Jump;
         }
 
-        pub fn push_jump_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_jump_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to jump target from schedule metadata
-            const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&schedule.schedule[1]);
+            const metadata_ptr: *const Dispatch.PushPointerMetadata = @ptrCast(&schedule.schedule[1]);
             const target_value = metadata_ptr.value.*;
             const target: usize = @intCast(target_value);
 
@@ -2678,7 +2681,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return Success.Jump;
         }
 
-        pub fn push_jumpi_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_jumpi_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline jump target from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const target = metadata.value;
@@ -2701,9 +2704,9 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             }
         }
 
-        pub fn push_jumpi_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_jumpi_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to jump target from schedule metadata
-            const metadata_ptr: *const Schedule.PushPointerMetadata = @ptrCast(&schedule.schedule[1]);
+            const metadata_ptr: *const Dispatch.PushPointerMetadata = @ptrCast(&schedule.schedule[1]);
             const target_value = metadata_ptr.value.*;
             const target: usize = @intCast(target_value);
 
@@ -2726,7 +2729,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
 
         // Memory operation synthetic handlers
-        pub fn push_mload_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mload_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline offset from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const offset = metadata.value;
@@ -2747,7 +2750,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mload_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mload_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to offset value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const offset_value = metadata.value.*;
@@ -2769,7 +2772,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mstore_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mstore_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline offset from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const offset = metadata.value;
@@ -2792,7 +2795,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mstore_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mstore_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to offset value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const offset_value = metadata.value.*;
@@ -2817,7 +2820,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         }
 
         // Bitwise operation synthetic handlers
-        pub fn push_and_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_and_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline value from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const push_value = metadata.value;
@@ -2831,7 +2834,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_and_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_and_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const push_value = metadata.value.*;
@@ -2845,7 +2848,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_or_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_or_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline value from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const push_value = metadata.value;
@@ -2859,7 +2862,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_or_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_or_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const push_value = metadata.value.*;
@@ -2873,7 +2876,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_xor_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_xor_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline value from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const push_value = metadata.value;
@@ -2887,7 +2890,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_xor_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_xor_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const push_value = metadata.value.*;
@@ -2901,7 +2904,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mstore8_inline(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mstore8_inline(self: Self, schedule: Dispatch) Error!Success {
             // Extract inline offset from schedule metadata
             const metadata = schedule.getInlineMetadata();
             const offset = metadata.value;
@@ -2924,7 +2927,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
         }
 
-        pub fn push_mstore8_pointer(self: Self, schedule: Schedule) Error!Success {
+        pub fn push_mstore8_pointer(self: Self, schedule: Dispatch) Error!Success {
             // Extract pointer to offset value from schedule metadata
             const metadata = schedule.getPointerMetadata();
             const offset_value = metadata.value.*;
