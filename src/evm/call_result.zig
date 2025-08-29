@@ -10,6 +10,10 @@ pub const CallResult = struct {
     accessed_addresses: []const Address = &.{},
     /// Storage slots accessed during execution
     accessed_storage: []const StorageAccess = &.{},
+    /// Execution trace (for debugging and differential testing)
+    trace: ?ExecutionTrace = null,
+    /// Error information (for debugging and differential testing)
+    error_info: ?[]const u8 = null,
 
     /// Create a successful call result
     pub fn success_with_output(gas_left: u64, output: []const u8) CallResult {
@@ -47,6 +51,20 @@ pub const CallResult = struct {
             .selfdestructs = &.{},
             .accessed_addresses = &.{},
             .accessed_storage = &.{},
+        };
+    }
+    
+    /// Create a failed call result with error info
+    pub fn failure_with_error(gas_left: u64, error_info: []const u8) CallResult {
+        return CallResult{
+            .success = false,
+            .gas_left = gas_left,
+            .output = &[_]u8{},
+            .logs = &.{},
+            .selfdestructs = &.{},
+            .accessed_addresses = &.{},
+            .accessed_storage = &.{},
+            .error_info = error_info,
         };
     }
 
@@ -145,6 +163,67 @@ pub const StorageAccess = struct {
     address: Address,
     /// Storage slot key
     slot: u256,
+};
+
+/// Represents a single execution step in the trace
+pub const TraceStep = struct {
+    pc: u32,
+    opcode: u8,
+    opcode_name: []const u8,
+    gas: u64,
+    stack: []const u256,
+    memory: []const u8,
+    storage_reads: []const StorageRead,
+    storage_writes: []const StorageWrite,
+    
+    pub const StorageRead = struct {
+        address: Address,
+        slot: u256,
+        value: u256,
+    };
+    
+    pub const StorageWrite = struct {
+        address: Address,
+        slot: u256,
+        old_value: u256,
+        new_value: u256,
+    };
+    
+    pub fn deinit(self: *TraceStep, allocator: std.mem.Allocator) void {
+        allocator.free(self.opcode_name);
+        allocator.free(self.stack);
+        allocator.free(self.memory);
+        allocator.free(self.storage_reads);
+        allocator.free(self.storage_writes);
+    }
+};
+
+/// Complete execution trace
+pub const ExecutionTrace = struct {
+    steps: []TraceStep,
+    allocator: std.mem.Allocator,
+    
+    pub fn init(allocator: std.mem.Allocator) ExecutionTrace {
+        return ExecutionTrace{
+            .steps = &.{},
+            .allocator = allocator,
+        };
+    }
+    
+    pub fn deinit(self: *ExecutionTrace) void {
+        for (self.steps) |*step| {
+            step.deinit(self.allocator);
+        }
+        self.allocator.free(self.steps);
+    }
+    
+    /// Create empty trace for now (placeholder implementation)
+    pub fn empty(allocator: std.mem.Allocator) ExecutionTrace {
+        return ExecutionTrace{
+            .steps = &.{},
+            .allocator = allocator,
+        };
+    }
 };
 
 test "call result success creation" {

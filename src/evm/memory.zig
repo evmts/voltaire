@@ -32,63 +32,64 @@ pub fn Memory(comptime config: MemoryConfig) type {
         
         pub const INITIAL_CAPACITY = config.initial_capacity;
         pub const MEMORY_LIMIT = config.memory_limit;
+        pub const is_owned = config.owned;
         
-        checkpoint: usize,
+        checkpoint: u24,
         buffer_ptr: *std.ArrayList(u8),
-        allocator: std.mem.Allocator,
-        owns_buffer: bool,
-        cached_expansion: packed struct {
-            last_size: u32,  // Reduced from u64 - EVM memory limit is 2^24 bytes
-            last_words: u32, // Reduced from u64 - matches last_size / 32
-            last_cost: u64,
-        } = .{ .last_size = 0, .last_words = 0, .last_cost = 0 },
         
-        /// Initialize a new memory instance.
-        ///
-        /// Pre-allocates initial capacity to reduce early reallocations.
-        /// The memory buffer is owned and will be freed on deinit.
         pub fn init(allocator: std.mem.Allocator) !Self {
-            const buffer_ptr = try allocator.create(std.ArrayList(u8));
-            errdefer allocator.destroy(buffer_ptr);
-            buffer_ptr.* = std.ArrayList(u8){};
-            errdefer buffer_ptr.deinit(allocator);
-            try buffer_ptr.ensureTotalCapacity(allocator, INITIAL_CAPACITY);
-            return Self{
-                .checkpoint = 0,
-                .buffer_ptr = buffer_ptr,
-                .allocator = allocator,
-                .owns_buffer = true,
-            };
-        }
-        
-        pub fn init_borrowed(allocator: std.mem.Allocator, buffer_ptr: *std.ArrayList(u8), checkpoint: usize) !Self {
-            return Self{
-                .checkpoint = checkpoint,
-                .buffer_ptr = buffer_ptr,
-                .allocator = allocator,
-                .owns_buffer = false,
-            };
-        }
-        
-        pub fn deinit(self: *Self) void {
-            if (self.owns_buffer) {
-                self.buffer_ptr.deinit(self.allocator);
-                self.allocator.destroy(self.buffer_ptr);
+            if (is_owned) {
+                const buffer_ptr = try allocator.create(std.ArrayList(u8));
+                errdefer allocator.destroy(buffer_ptr);
+                buffer_ptr.* = std.ArrayList(u8){};
+                errdefer buffer_ptr.deinit(allocator);
+                try buffer_ptr.ensureTotalCapacity(allocator, INITIAL_CAPACITY);
+                return Self{
+                    .checkpoint = 0,
+                    .buffer_ptr = buffer_ptr,
+                };
+            } else {
+                @compileError("Cannot call init() on borrowed memory type. Use init_borrowed() instead.");
             }
         }
         
-        pub fn init_child(self: *Self) !Self {
-            return try Self.init_borrowed(self.allocator, self.buffer_ptr, self.buffer_ptr.items.len);
+        pub fn init_borrowed(buffer_ptr: *std.ArrayList(u8), checkpoint: u24) !Self {
+            // For backward compatibility on owned memory types, we just ignore ownership and return borrowed-like behavior
+            return Self{
+                .checkpoint = checkpoint,
+                .buffer_ptr = buffer_ptr,
+            };
         }
         
+        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+            if (is_owned) {
+                self.buffer_ptr.deinit(allocator);
+                allocator.destroy(self.buffer_ptr);
+            }
+            // No-op for borrowed memory
+        }
+        
+        pub fn init_child(self: *Self) !Memory(.{ .initial_capacity = config.initial_capacity, .memory_limit = config.memory_limit, .owned = false }) {
+            // Children are always borrowed memory types
+            const BorrowedMemType = Memory(.{ .initial_capacity = config.initial_capacity, .memory_limit = config.memory_limit, .owned = false });
+            return BorrowedMemType{
+                .checkpoint = @as(u24, @intCast(self.buffer_ptr.items.len)),
+                .buffer_ptr = self.buffer_ptr,
+            };
+        }
+        
+        // Common methods that work on the inner Self type
         pub fn size(self: *const Self) usize {
             const total = self.buffer_ptr.items.len;
-            if (total <= self.checkpoint) return 0;
-            return total - self.checkpoint;
+            const checkpoint_usize = @as(usize, self.checkpoint);
+            if (total <= checkpoint_usize) return 0;
+            return total - checkpoint_usize;
         }
         
-        pub inline fn ensure_capacity(self: *Self, new_size: usize) !void {
-            const required_total = self.checkpoint + new_size;
+        pub inline fn ensure_capacity(self: *Self, allocator: std.mem.Allocator, new_size: u24) !void {
+            const checkpoint_usize = @as(usize, self.checkpoint);
+            const new_size_usize = @as(usize, new_size);
+            const required_total = checkpoint_usize + new_size_usize;
             if (required_total > MEMORY_LIMIT) return MemoryError.MemoryOverflow;
             
             const current_len = self.buffer_ptr.items.len;
@@ -110,25 +111,27 @@ pub fn Memory(comptime config: MemoryConfig) type {
             // Standard path for larger growth
             const old_len = current_len;
             // Use ensureTotalCapacity + manual growth to control zeroing
-            try self.buffer_ptr.ensureTotalCapacity(self.allocator, required_total);
+            try self.buffer_ptr.ensureTotalCapacity(allocator, required_total);
             self.buffer_ptr.items.len = required_total;
             // Zero only the new portion
             @memset(self.buffer_ptr.items[old_len..required_total], 0);
         }
         
         // EVM-compliant memory operations that expand to word boundaries
-        pub fn set_data_evm(self: *Self, offset: usize, data: []const u8) !void {
-            const end = offset + data.len;
+        pub fn set_data_evm(self: *Self, allocator: std.mem.Allocator, offset: u24, data: []const u8) !void {
+            const offset_usize = @as(usize, offset);
+            const end = offset_usize + data.len;
             // Round up to next 32-byte word boundary for EVM compliance
             const word_aligned_end = ((end + 31) >> 5) << 5;
-            try self.ensure_capacity(word_aligned_end);
-            const start_idx = self.checkpoint + offset;
+            try self.ensure_capacity(allocator, @as(u24, @intCast(word_aligned_end)));
+            const checkpoint_usize = @as(usize, self.checkpoint);
+            const start_idx = checkpoint_usize + offset_usize;
             @memcpy(self.buffer_ptr.items[start_idx..start_idx + data.len], data);
         }
         
-        pub fn set_byte_evm(self: *Self, offset: usize, value: u8) !void {
+        pub fn set_byte_evm(self: *Self, allocator: std.mem.Allocator, offset: u24, value: u8) !void {
             const bytes = [_]u8{value};
-            try self.set_data_evm(offset, &bytes);
+            try self.set_data_evm(allocator, offset, &bytes);
         }
         
         fn u256_to_bytes(value: u256) [32]u8 {
@@ -143,33 +146,37 @@ pub fn Memory(comptime config: MemoryConfig) type {
             return bytes;
         }
 
-        pub fn set_u256_evm(self: *Self, offset: usize, value: u256) !void {
+        pub fn set_u256_evm(self: *Self, allocator: std.mem.Allocator, offset: u24, value: u256) !void {
             const bytes = u256_to_bytes(value);
-            try self.set_data_evm(offset, &bytes);
+            try self.set_data_evm(allocator, offset, &bytes);
         }
         
-        pub fn get_slice(self: *const Self, offset: usize, len: usize) MemoryError![]const u8 {
-            const end = offset + len;
+        pub fn get_slice(self: *const Self, offset: u24, len: u24) MemoryError![]const u8 {
+            const offset_usize = @as(usize, offset);
+            const len_usize = @as(usize, len);
+            const end = offset_usize + len_usize;
             if (end > self.size()) return MemoryError.OutOfBounds;
-            const start_idx = self.checkpoint + offset;
-            return self.buffer_ptr.items[start_idx..start_idx + len];
+            const checkpoint_usize = @as(usize, self.checkpoint);
+            const start_idx = checkpoint_usize + offset_usize;
+            return self.buffer_ptr.items[start_idx..start_idx + len_usize];
         }
         
-        pub fn set_data(self: *Self, offset: usize, data: []const u8) !void {
-            const end = offset + data.len;
-            try self.ensure_capacity(end);
-            const start_idx = self.checkpoint + offset;
+        pub fn set_data(self: *Self, allocator: std.mem.Allocator, offset: u24, data: []const u8) !void {
+            const offset_usize = @as(usize, offset);
+            const end = offset_usize + data.len;
+            try self.ensure_capacity(allocator, @as(u24, @intCast(end)));
+            const checkpoint_usize = @as(usize, self.checkpoint);
+            const start_idx = checkpoint_usize + offset_usize;
             @memcpy(self.buffer_ptr.items[start_idx..start_idx + data.len], data);
         }
         
         pub fn clear(self: *Self) void {
-            if (self.owns_buffer) {
+            if (is_owned) {
                 self.buffer_ptr.items.len = 0;
                 self.checkpoint = 0;
             } else {
-                self.checkpoint = self.buffer_ptr.items.len;
+                self.checkpoint = @as(u24, @intCast(self.buffer_ptr.items.len));
             }
-            self.cached_expansion = .{ .last_size = 0, .last_words = 0, .last_cost = 0 };
         }
         
         fn bytes_to_u256(bytes: []const u8) u256 {
@@ -178,50 +185,47 @@ pub fn Memory(comptime config: MemoryConfig) type {
             return result;
         }
 
-        pub fn get_u256(self: *const Self, offset: usize) !u256 {
+        pub fn get_u256(self: *const Self, offset: u24) !u256 {
             const slice = try self.get_slice(offset, 32);
             return bytes_to_u256(slice);
         }
         
         // EVM-compliant read that expands memory if needed
-        pub fn get_u256_evm(self: *Self, offset: usize) !u256 {
-            const word_aligned_end = ((offset + 32 + 31) >> 5) << 5;
-            try self.ensure_capacity(word_aligned_end);
+        pub fn get_u256_evm(self: *Self, allocator: std.mem.Allocator, offset: u24) !u256 {
+            const offset_usize = @as(usize, offset);
+            const word_aligned_end = ((offset_usize + 32 + 31) >> 5) << 5;
+            try self.ensure_capacity(allocator, @as(u24, @intCast(word_aligned_end)));
             const slice = try self.get_slice(offset, 32);
             return bytes_to_u256(slice);
         }
         
-        pub fn set_u256(self: *Self, offset: usize, value: u256) !void {
+        pub fn set_u256(self: *Self, allocator: std.mem.Allocator, offset: u24, value: u256) !void {
             const bytes = u256_to_bytes(value);
-            try self.set_data(offset, &bytes);
+            try self.set_data(allocator, offset, &bytes);
         }
         
-        pub fn get_byte(self: *const Self, offset: usize) !u8 {
+        pub fn get_byte(self: *const Self, offset: u24) !u8 {
             const slice = try self.get_slice(offset, 1);
             return slice[0];
         }
         
-        pub fn set_byte(self: *Self, offset: usize, value: u8) !void {
+        pub fn set_byte(self: *Self, allocator: std.mem.Allocator, offset: u24, value: u8) !void {
             const bytes = [_]u8{value};
-            try self.set_data(offset, &bytes);
+            try self.set_data(allocator, offset, &bytes);
         }
         
         fn calculate_memory_cost(words: u64) u64 {
             return 3 * words + ((words * words) >> 9);  // Bit shift instead of / 512
         }
-        pub fn get_expansion_cost(self: *Self, new_size: u64) u64 {
+        pub fn get_expansion_cost(self: *const Self, new_size: u24) u64 {
+            const new_size_u64 = @as(u64, new_size);
             const current_size = @as(u64, @intCast(self.size()));
-            if (new_size <= current_size) return 0;
-            const new_words = (new_size + 31) >> 5;  // Bit shift instead of / 32
+            if (new_size_u64 <= current_size) return 0;
+            const new_words = (new_size_u64 + 31) >> 5;  // Bit shift instead of / 32
             const current_words = (current_size + 31) >> 5;  // Bit shift instead of / 32
-            if (new_size <= self.cached_expansion.last_size) return 0;
             const new_cost = calculate_memory_cost(new_words);
             const current_cost = calculate_memory_cost(current_words);
-            const expansion_cost = new_cost - current_cost;
-            self.cached_expansion.last_size = @intCast(new_size);
-            self.cached_expansion.last_words = @intCast(new_words);
-            self.cached_expansion.last_cost = new_cost;
-            return expansion_cost;
+            return new_cost - current_cost;
         }
         
         pub fn get_buffer_ref(self: *Self) *std.ArrayList(u8) {
@@ -232,12 +236,12 @@ pub fn Memory(comptime config: MemoryConfig) type {
 
 test "Memory owner basic operations" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     try std.testing.expectEqual(@as(usize, 0), memory.size());
     const data = [_]u8{0x01, 0x02, 0x03, 0x04};
-    try memory.set_data(0, &data);
+    try memory.set_data(allocator, 0, &data);
     try std.testing.expectEqual(@as(usize, 4), memory.size());
     const slice = try memory.get_slice(0, 4);
     try std.testing.expectEqualSlices(u8, &data, slice);
@@ -247,16 +251,17 @@ test "Memory owner basic operations" {
 
 test "Memory borrowed operations" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
-    var owner = try Mem.init(allocator);
-    defer owner.deinit();
+    const OwnerMem = Memory(.{ .owned = true });
+    var owner = try OwnerMem.init(allocator);
+    defer owner.deinit(allocator);
     const data1 = [_]u8{0xAA, 0xBB, 0xCC};
-    try owner.set_data(0, &data1);
-    var borrowed = try Mem.init_borrowed(allocator, owner.buffer_ptr, owner.buffer_ptr.items.len);
-    defer borrowed.deinit();
+    try owner.set_data(allocator, 0, &data1);
+    const BorrowedMem = Memory(.{ .owned = false });
+    var borrowed = try BorrowedMem.init_borrowed(owner.buffer_ptr, owner.buffer_ptr.items.len);
+    defer borrowed.deinit(allocator);
     try std.testing.expectEqual(@as(usize, 0), borrowed.size());
     const data2 = [_]u8{0xDD, 0xEE, 0xFF};
-    try borrowed.set_data(0, &data2);
+    try borrowed.set_data(allocator, 0, &data2);
     try std.testing.expectEqual(@as(usize, 3), borrowed.size());
     try std.testing.expectEqual(@as(usize, 6), owner.buffer_ptr.items.len);
     try std.testing.expectEqualSlices(u8, &data1, owner.buffer_ptr.items[0..3]);
@@ -265,29 +270,29 @@ test "Memory borrowed operations" {
 
 test "Memory capacity limits" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{ .initial_capacity = 50, .memory_limit = 100 });
+    const Mem = Memory(.{ .initial_capacity = 50, .memory_limit = 100, .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
-    try memory.ensure_capacity(50);
+    defer memory.deinit(allocator);
+    try memory.ensure_capacity(allocator, 50);
     try std.testing.expectEqual(@as(usize, 50), memory.buffer_ptr.items.len);
-    try memory.ensure_capacity(100);
+    try memory.ensure_capacity(allocator, 100);
     try std.testing.expectEqual(@as(usize, 100), memory.buffer_ptr.items.len);
-    try std.testing.expectError(MemoryError.MemoryOverflow, memory.ensure_capacity(101));
+    try std.testing.expectError(MemoryError.MemoryOverflow, memory.ensure_capacity(allocator, 101));
 }
 
 test "Memory child creation" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var parent = try Mem.init(allocator);
-    defer parent.deinit();
+    defer parent.deinit(allocator);
     const data1 = [_]u8{0x11, 0x22, 0x33};
-    try parent.set_data(0, &data1);
+    try parent.set_data(allocator, 0, &data1);
     try std.testing.expectEqual(@as(usize, 3), parent.size());
     var child = try parent.init_child();
-    defer child.deinit();
+    defer child.deinit(allocator);
     try std.testing.expectEqual(@as(usize, 0), child.size());
     const data2 = [_]u8{0x44, 0x55};
-    try child.set_data(0, &data2);
+    try child.set_data(allocator, 0, &data2);
     try std.testing.expectEqual(@as(usize, 0), parent.checkpoint);
     try std.testing.expectEqual(@as(usize, 3), child.checkpoint);
     try std.testing.expectEqual(@as(usize, 5), parent.buffer_ptr.items.len);
@@ -298,10 +303,10 @@ test "Memory child creation" {
 
 test "Memory zero initialization on expansion" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
-    try memory.ensure_capacity(10);
+    defer memory.deinit(allocator);
+    try memory.ensure_capacity(allocator, 10);
     const slice = try memory.get_slice(0, 10);
     for (slice) |byte| {
         try std.testing.expectEqual(@as(u8, 0), byte);
@@ -310,48 +315,48 @@ test "Memory zero initialization on expansion" {
 
 test "Memory out of bounds access" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     const data = [_]u8{0x01, 0x02, 0x03};
-    try memory.set_data(0, &data);
+    try memory.set_data(allocator, 0, &data);
     _ = try memory.get_slice(0, 3);
     try std.testing.expectError(MemoryError.OutOfBounds, memory.get_slice(0, 4));
     try std.testing.expectError(MemoryError.OutOfBounds, memory.get_slice(2, 2));
 }
 
 test "Memory configuration validation" {
-    _ = Memory(.{});
-    _ = Memory(.{ .initial_capacity = 1024, .memory_limit = 2048 });
+    _ = Memory(.{ .owned = true });
+    _ = Memory(.{ .initial_capacity = 1024, .memory_limit = 2048, .owned = true });
 }
 
 test "Memory u256 operations" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     const value1: u256 = 0x123456789ABCDEF0;
-    try memory.set_u256(0, value1);
+    try memory.set_u256(allocator, 0, value1);
     const read1 = try memory.get_u256(0);
     try std.testing.expectEqual(value1, read1);
     const max_value = std.math.maxInt(u256);
-    try memory.set_u256(32, max_value);
+    try memory.set_u256(allocator, 32, max_value);
     const read2 = try memory.get_u256(32);
     try std.testing.expectEqual(max_value, read2);
-    try memory.set_u256(64, 0);
+    try memory.set_u256(allocator, 64, 0);
     const read3 = try memory.get_u256(64);
     try std.testing.expectEqual(@as(u256, 0), read3);
 }
 
 test "Memory byte operations" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
-    try memory.set_byte(0, 0xFF);
+    defer memory.deinit(allocator);
+    try memory.set_byte(allocator, 0, 0xFF);
     const byte1 = try memory.get_byte(0);
     try std.testing.expectEqual(@as(u8, 0xFF), byte1);
-    try memory.set_byte(10, 0x42);
+    try memory.set_byte(allocator, 10, 0x42);
     const byte2 = try memory.get_byte(10);
     try std.testing.expectEqual(@as(u8, 0x42), byte2);
     const byte3 = try memory.get_byte(5);
@@ -360,14 +365,14 @@ test "Memory byte operations" {
 
 test "Memory gas expansion cost" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     var cost = memory.get_expansion_cost(0);
     try std.testing.expectEqual(@as(u64, 0), cost);
     cost = memory.get_expansion_cost(32);
     try std.testing.expectEqual(@as(u64, 3), cost); 
-    try memory.ensure_capacity(32);
+    try memory.ensure_capacity(allocator, 32);
     cost = memory.get_expansion_cost(64);
     const expected = (3 * 2 + (2 * 2) / 512) - (3 * 1 + (1 * 1) / 512);
     try std.testing.expectEqual(expected, cost);
@@ -377,9 +382,9 @@ test "Memory gas expansion cost" {
 
 test "Memory gas expansion cost caching" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     const cost1 = memory.get_expansion_cost(256);
     const expected_cost = 3 * 8 + (8 * 8) / 512;
     try std.testing.expectEqual(expected_cost, cost1);
@@ -389,9 +394,9 @@ test "Memory gas expansion cost caching" {
 
 test "Memory clear resets cache" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     const cost1 = memory.get_expansion_cost(256);
     try std.testing.expect(cost1 > 0);
     memory.clear();
@@ -401,14 +406,14 @@ test "Memory clear resets cache" {
 
 test "Memory large data operations" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     var large_data: [1024]u8 = undefined;
     for (&large_data, 0..) |*byte, i| {
         byte.* = @truncate(i);
     }
-    try memory.set_data(0, &large_data);
+    try memory.set_data(allocator, 0, &large_data);
     try std.testing.expectEqual(@as(usize, 1024), memory.size());
     const chunk1 = try memory.get_slice(0, 256);
     const chunk2 = try memory.get_slice(256, 256);
@@ -422,36 +427,36 @@ test "Memory large data operations" {
 
 test "Memory sequential child memories" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var parent = try Mem.init(allocator);
-    defer parent.deinit();
+    defer parent.deinit(allocator);
     
     // Add data to parent
     const parent_data = [_]u8{0x01, 0x02, 0x03};
-    try parent.set_data(0, &parent_data);
+    try parent.set_data(allocator, 0, &parent_data);
     try std.testing.expectEqual(@as(usize, 3), parent.size());
     
     // Create first child memory and add data
     var child1 = try parent.init_child();
-    defer child1.deinit();
+    defer child1.deinit(allocator);
     
     try std.testing.expectEqual(@as(usize, 0), child1.size());
     try std.testing.expectEqual(@as(usize, 3), child1.checkpoint);
     
     const child1_data = [_]u8{0x11, 0x22};
-    try child1.set_data(0, &child1_data);
+    try child1.set_data(allocator, 0, &child1_data);
     try std.testing.expectEqual(@as(usize, 2), child1.size());
     
     // Create second child from updated parent (checkpoint now at 5)
     var child2 = try parent.init_child();
-    defer child2.deinit();
+    defer child2.deinit(allocator);
     
     try std.testing.expectEqual(@as(usize, 0), child2.size());
     try std.testing.expectEqual(@as(usize, 5), child2.checkpoint);
     
     // Add data to second child
     const child2_data = [_]u8{0x33, 0x44, 0x55, 0x66};
-    try child2.set_data(0, &child2_data);
+    try child2.set_data(allocator, 0, &child2_data);
     
     // After child2 writes, both children see the full buffer size from their checkpoint
     // child1: total(9) - checkpoint(3) = 6
@@ -476,22 +481,22 @@ test "Memory sequential child memories" {
 
 test "Memory fast-path optimization for small growth" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     
     // Pre-allocate some capacity
-    try memory.buffer_ptr.ensureTotalCapacity(128);
+    try memory.buffer_ptr.ensureTotalCapacity(allocator, 128);
     const initial_capacity = memory.buffer_ptr.capacity;
     try std.testing.expect(initial_capacity >= 128);
     
     // Small growth (32 bytes) should use existing capacity without reallocation
-    try memory.ensure_capacity(32);
+    try memory.ensure_capacity(allocator, 32);
     try std.testing.expectEqual(@as(usize, 32), memory.buffer_ptr.items.len);
     try std.testing.expectEqual(initial_capacity, memory.buffer_ptr.capacity);
     
     // Another small growth should still use existing capacity
-    try memory.ensure_capacity(64);
+    try memory.ensure_capacity(allocator, 64);
     try std.testing.expectEqual(@as(usize, 64), memory.buffer_ptr.items.len);
     try std.testing.expectEqual(initial_capacity, memory.buffer_ptr.capacity);
     
@@ -504,16 +509,16 @@ test "Memory fast-path optimization for small growth" {
 
 test "Memory growth beyond fast-path threshold" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     
     // Start with small size
-    try memory.ensure_capacity(16);
+    try memory.ensure_capacity(allocator, 16);
     try std.testing.expectEqual(@as(usize, 16), memory.buffer_ptr.items.len);
     
     // Growth larger than 32 bytes should use standard path
-    try memory.ensure_capacity(100);
+    try memory.ensure_capacity(allocator, 100);
     try std.testing.expectEqual(@as(usize, 100), memory.buffer_ptr.items.len);
     
     // Verify zero initialization
@@ -525,16 +530,16 @@ test "Memory growth beyond fast-path threshold" {
 
 test "Memory fast-path with insufficient capacity" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     
     // Force small initial capacity
-    memory.buffer_ptr.shrinkAndFree(0);
+    memory.buffer_ptr.shrinkAndFree(allocator, 0);
     try std.testing.expectEqual(@as(usize, 0), memory.buffer_ptr.capacity);
     
     // Small growth should still work but will need allocation
-    try memory.ensure_capacity(20);
+    try memory.ensure_capacity(allocator, 20);
     try std.testing.expectEqual(@as(usize, 20), memory.buffer_ptr.items.len);
     try std.testing.expect(memory.buffer_ptr.capacity >= 20);
     
@@ -547,22 +552,22 @@ test "Memory fast-path with insufficient capacity" {
 
 test "Memory fast-path edge case at 32 bytes" {
     const allocator = std.testing.allocator;
-    const Mem = Memory(.{});
+    const Mem = Memory(.{ .owned = true });
     var memory = try Mem.init(allocator);
-    defer memory.deinit();
+    defer memory.deinit(allocator);
     
     // Pre-allocate exact capacity for test
-    try memory.buffer_ptr.ensureTotalCapacity(64);
+    try memory.buffer_ptr.ensureTotalCapacity(allocator, 64);
     const initial_capacity = memory.buffer_ptr.capacity;
     
     // Growth of exactly 32 bytes should use fast path
-    try memory.ensure_capacity(32);
+    try memory.ensure_capacity(allocator, 32);
     try std.testing.expectEqual(@as(usize, 32), memory.buffer_ptr.items.len);
     try std.testing.expectEqual(initial_capacity, memory.buffer_ptr.capacity);
     
     // Growth of 33 bytes from empty should use standard path
     memory.clear();
-    try memory.ensure_capacity(33);
+    try memory.ensure_capacity(allocator, 33);
     try std.testing.expectEqual(@as(usize, 33), memory.buffer_ptr.items.len);
     
     // Verify zero initialization
@@ -570,4 +575,20 @@ test "Memory fast-path edge case at 32 bytes" {
     for (slice) |byte| {
         try std.testing.expectEqual(@as(u8, 0), byte);
     }
+}
+
+test "Memory struct size verification" {
+    const OwnedMem = Memory(.{ .owned = true });
+    const BorrowedMem = Memory(.{ .owned = false });
+    
+    // Both owned and borrowed should have the same size
+    try std.testing.expectEqual(@sizeOf(OwnedMem), @sizeOf(BorrowedMem));
+    
+    // Check the actual size - 16 bytes on 64-bit systems
+    // checkpoint (3) + padding (5) + buffer_ptr (8) = 16 bytes
+    try std.testing.expectEqual(@as(usize, 16), @sizeOf(OwnedMem));
+    
+    // Verify field offsets
+    try std.testing.expectEqual(@as(usize, 0), @offsetOf(OwnedMem, "checkpoint"));
+    try std.testing.expectEqual(@as(usize, 8), @offsetOf(OwnedMem, "buffer_ptr"));
 }

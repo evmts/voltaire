@@ -3,11 +3,12 @@ const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
 const Eips = @import("eips.zig").Eips;
+const Hardfork = @import("hardfork.zig").Hardfork;
 
 pub const EvmConfig = struct {
     // TODO update enum to support latest hardfork
     // Comptime known configuration of Eip and hardfork information
-    eips: Eips = Eips{ .hardfork = Eips.Hardfork.CANCUN },
+    eips: Eips = Eips{ .hardfork = Hardfork.CANCUN },
 
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
     /// This prevents infinite recursion and stack overflow attacks
@@ -17,8 +18,8 @@ pub const EvmConfig = struct {
     /// This prevents excessive memory usage in single operations
     max_input_size: u18 = 131072, // 128 KB
 
-    /// Frame configuration parameters (enable database by default)
-    frame_config: FrameConfig = .{ .has_database = true },
+    /// Frame configuration parameters (database now always enabled)
+    frame_config: FrameConfig = .{ .DatabaseType = @import("database.zig").Database },
 
     /// Enable precompiled contracts support (default: true)
     /// When disabled, precompile calls will fail with an error
@@ -51,7 +52,7 @@ pub const EvmConfig = struct {
     /// Uses advanced planner strategy for maximum optimization
     pub fn optimizeFast() EvmConfig {
         return EvmConfig{
-            .planner_strategy = .advanced,
+            // .planner_strategy = .advanced,
         };
     }
 
@@ -59,7 +60,7 @@ pub const EvmConfig = struct {
     /// Uses minimal planner strategy to reduce executable size
     pub fn optimizeSmall() EvmConfig {
         return EvmConfig{
-            .planner_strategy = .minimal,
+            // .planner_strategy = .minimal,
         };
     }
 };

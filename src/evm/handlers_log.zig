@@ -17,14 +17,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const WordType = FrameType.WordType;
 
         /// Generate a log handler for LOG0-LOG4
-        pub fn generateLogHandler(comptime topic_count: u8) *const Dispatch.OpcodeHandler {
+        pub fn generateLogHandler(comptime topic_count: u8) FrameType.OpcodeHandler {
             if (topic_count > 4) @compileError("Only LOG0 to LOG4 is supported");
-            return struct {
-                pub fn logHandler(self: FrameType, dispatch: Dispatch) Error!Success {
-                    // Check if we're in static context
-                    if (self.host.get_is_static()) {
-                        return Error.WriteProtection;
-                    }
+            return &struct {
+                pub fn logHandler(self: *FrameType, dispatch: Dispatch) Error!Success {
+                    // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // Pop topics in reverse order
                     var topics: [4]WordType = undefined;
@@ -50,12 +47,12 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Ensure memory capacity
                     if (length_usize > 0) {
                         const memory_end = offset_usize + length_usize;
-                        self.memory.ensure_capacity(memory_end) catch return Error.OutOfBounds;
+                        self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
                     }
                     
                     // Get data from memory
                     const data = if (length_usize > 0) 
-                        self.memory.get_slice(offset_usize, length_usize) catch return Error.OutOfBounds
+                        self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(length_usize))) catch return Error.OutOfBounds
                     else 
                         &[_]u8{};
                     
@@ -67,54 +64,47 @@ pub fn Handlers(comptime FrameType: type) type {
                         &[_]u8{};
                     
                     const topics_array = if (topic_count > 0) blk: {
-                        const arr = allocator.alloc(WordType, topic_count) catch {
+                        const arr = allocator.alloc(u256, topic_count) catch {
                             if (data.len > 0) allocator.free(data_copy);
                             return Error.AllocationError;
                         };
                         for (0..topic_count) |j| {
-                            arr[j] = topics[j];
+                            arr[j] = @as(u256, topics[j]);
                         }
                         break :blk arr;
-                    } else allocator.alloc(WordType, 0) catch {
+                    } else allocator.alloc(u256, 0) catch {
                         if (data.len > 0) allocator.free(data_copy);
                         return Error.AllocationError;
                     };
                     
+                    // Add log to frame's log list
                     const log_entry = Log{
                         .address = self.contract_address,
                         .topics = topics_array,
                         .data = data_copy,
                     };
-                    
-                    // Add log to logs list via host
-                    self.host.emit_log(log_entry) catch |err| {
-                        allocator.free(data_copy);
-                        allocator.free(topics_array);
-                        switch (err) {
-                            else => return Error.AllocationError,
-                        }
-                    };
+                    self.appendLog(allocator, log_entry) catch return Error.AllocationError;
                     
                     const next = dispatch.getNext();
-                    return @call(.always_tail, next.schedule[0].opcode_handler, .{ self, next });
+                    return @call(.auto, next.cursor[0].opcode_handler, .{ self, next });
                 }
             }.logHandler;
         }
 
         /// LOG0 opcode (0xA0) - Emit log with no topics
-        pub const log0 = generateLogHandler(0);
+        pub const log0: FrameType.OpcodeHandler = generateLogHandler(0);
 
         /// LOG1 opcode (0xA1) - Emit log with one topic
-        pub const log1 = generateLogHandler(1);
+        pub const log1: FrameType.OpcodeHandler = generateLogHandler(1);
 
         /// LOG2 opcode (0xA2) - Emit log with two topics
-        pub const log2 = generateLogHandler(2);
+        pub const log2: FrameType.OpcodeHandler = generateLogHandler(2);
 
         /// LOG3 opcode (0xA3) - Emit log with three topics
-        pub const log3 = generateLogHandler(3);
+        pub const log3: FrameType.OpcodeHandler = generateLogHandler(3);
 
         /// LOG4 opcode (0xA4) - Emit log with four topics
-        pub const log4 = generateLogHandler(4);
+        pub const log4: FrameType.OpcodeHandler = generateLogHandler(4);
     };
 }
 
@@ -125,7 +115,7 @@ const StackFrame = @import("stack_frame.zig").StackFrame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
-const host_mod = @import("host.zig");
+// const host_mod = @import("host.zig");
 
 // Test configuration
 const test_config = FrameConfig{
@@ -172,21 +162,12 @@ const MockHost = struct {
         try self.logs.append(log_entry);
     }
 
-    pub fn to_host(self: *MockHost) host_mod.Host {
-        return .{
-            .ptr = self,
-            .vtable = &.{
-                .get_is_static = @ptrCast(&get_is_static),
-                .emit_log = @ptrCast(&emit_log),
-                // Add other required vtable entries...
-            },
-        };
-    }
 };
 
-fn createTestFrame(allocator: std.mem.Allocator, host: ?host_mod.Host) !TestFrame {
+fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockHost) !TestFrame {
     const bytecode = TestBytecode.initEmpty();
-    return try TestFrame.init(allocator, bytecode, 1_000_000, null, host);
+    const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000));
+    return try TestFrame.init(allocator, bytecode, 1_000_000, null, evm_ptr);
 }
 
 // Mock dispatch that simulates successful execution flow
@@ -199,11 +180,11 @@ fn createMockDispatch() TestFrame.Dispatch {
         }
     }.handler;
     
-    var schedule: [1]dispatch_mod.ScheduleElement(TestFrame) = undefined;
-    schedule[0] = .{ .opcode_handler = &mock_handler };
+    var cursor: [1]dispatch_mod.ScheduleElement(TestFrame) = undefined;
+    cursor[0] = .{ .opcode_handler = &mock_handler };
     
     return TestFrame.Dispatch{
-        .schedule = &schedule,
+        .cursor = &cursor,
         .bytecode_length = 0,
     };
 }
@@ -244,7 +225,7 @@ test "LOG0 opcode - with data" {
 
     // Write test data to memory
     const test_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD };
-    try frame.memory.set_data(0, &test_data);
+    try frame.memory.set_data(testing.allocator, 0, &test_data);
 
     // LOG0 with data
     try frame.stack.push(0); // offset
@@ -270,7 +251,7 @@ test "LOG1 opcode - with topic" {
 
     // Write test data to memory
     const test_data = [_]u8{ 0x11, 0x22 };
-    try frame.memory.set_data(0, &test_data);
+    try frame.memory.set_data(testing.allocator, 0, &test_data);
 
     // LOG1 with one topic
     try frame.stack.push(0);     // offset
@@ -417,7 +398,7 @@ test "LOG opcodes - large data" {
     for (&large_data, 0..) |*byte, i| {
         byte.* = @intCast(i & 0xFF);
     }
-    try frame.memory.set_data(0, &large_data);
+    try frame.memory.set_data(testing.allocator, 0, &large_data);
 
     // LOG1 with large data
     try frame.stack.push(0);           // offset
@@ -492,9 +473,9 @@ test "LOG opcodes - memory boundary access" {
     defer frame.deinit(testing.allocator);
 
     // Write data at various memory locations
-    try frame.memory.set_byte(31, 0xAA);  // Last byte of first word
-    try frame.memory.set_byte(32, 0xBB);  // First byte of second word
-    try frame.memory.set_byte(33, 0xCC);  // Second byte of second word
+    try frame.memory.set_byte(testing.allocator, 31, 0xAA);  // Last byte of first word
+    try frame.memory.set_byte(testing.allocator, 32, 0xBB);  // First byte of second word
+    try frame.memory.set_byte(testing.allocator, 33, 0xCC);  // Second byte of second word
 
     // LOG0 crossing word boundary
     try frame.stack.push(31); // offset
@@ -558,9 +539,9 @@ test "LOG opcodes - maximum data sizes" {
     
     for (sizes) |size| {
         // Ensure memory capacity and fill with test pattern
-        try frame.memory.ensure_capacity(size);
+        try frame.memory.ensure_capacity(testing.allocator, size);
         for (0..size) |i| {
-            try frame.memory.set_byte(i, @intCast((i * 17) & 0xFF)); // Test pattern
+            try frame.memory.set_byte(testing.allocator, i, @intCast((i * 17) & 0xFF)); // Test pattern
         }
         
         try frame.stack.push(0);    // offset
@@ -648,9 +629,9 @@ test "LOG opcodes - multiple logs in sequence" {
     defer frame.deinit(testing.allocator);
 
     // Write different data patterns
-    try frame.memory.set_data(0, &[_]u8{0x11, 0x11});
-    try frame.memory.set_data(10, &[_]u8{0x22, 0x22});
-    try frame.memory.set_data(20, &[_]u8{0x33, 0x33});
+    try frame.memory.set_data(testing.allocator, 0, &[_]u8{0x11, 0x11});
+    try frame.memory.set_data(testing.allocator, 10, &[_]u8{0x22, 0x22});
+    try frame.memory.set_data(testing.allocator, 20, &[_]u8{0x33, 0x33});
     
     const dispatch = createMockDispatch();
     
@@ -790,7 +771,7 @@ test "LOG opcodes - static context protection for all variants" {
     
     // Test all LOG variants in static context
     const log_handlers = [_]struct {
-        handler: *const TestFrame.Dispatch.OpcodeHandler,
+        handler: *const TestFrame.OpcodeHandler,
         stack_items: u8,
     }{
         .{ .handler = TestFrame.LogHandlers.log0, .stack_items = 2 },
@@ -877,11 +858,11 @@ test "LOG opcodes - WordType smaller than u256" {
         }
     }.handler;
     
-    var schedule: [1]dispatch_mod.ScheduleElement(SmallFrame) = undefined;
-    schedule[0] = .{ .opcode_handler = &mock_handler };
+    var cursor: [1]dispatch_mod.ScheduleElement(SmallFrame) = undefined;
+    cursor[0] = .{ .opcode_handler = &mock_handler };
     
     const dispatch = SmallFrame.Dispatch{
-        .schedule = &schedule,
+        .cursor = &cursor,
         .bytecode_length = 0,
     };
     

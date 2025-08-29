@@ -6,18 +6,18 @@
 //! - Gas accounting and metering
 //! - Contract creation (CREATE/CREATE2)
 //! - Cross-contract calls (CALL/DELEGATECALL/STATICCALL)
-//! - Integration with Host interface for environment queries
+//! - Integration with external operations for environment queries
 //!
 //! This module provides the entry point for all EVM operations,
 //! coordinating between Frames, the Planner, and state storage.
 //!
 //! The EVM utilizes Planners to analyze bytecode and produce optimized execution data structures
 //! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
-//! EVM passes itself as a host to the Frame so Frame can get data from EVM that is not on frame and execute inner calls
+//! EVM passes itself as an *anyopaque pointer to Frame for accessing external data and executing inner calls
 const std = @import("std");
 const primitives = @import("primitives");
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo; // Default for backward compatibility
-const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
+const Database = @import("database.zig").Database;
 const Account = @import("database_interface_account.zig").Account;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
@@ -41,8 +41,11 @@ pub fn Evm(comptime config: EvmConfig) type {
     return struct {
         const Self = @This();
 
-        /// StackFrame type for the evm
-        pub const StackFrame = @import("stack_frame.zig").StackFrame(config.frame_config);
+        /// Frame type for the evm
+        pub const Frame = @import("stack_frame.zig").StackFrame(config.frame_config);
+        /// Static wrappers for EIP-214 (STATICCALL) constraint enforcement
+        const static_wrappers = @import("static_wrappers.zig");
+        const StaticDatabase = static_wrappers.StaticDatabase;
         /// Bytecode type for bytecode analysis
         pub const BytecodeFactory = @import("bytecode.zig").Bytecode;
         pub const Bytecode = BytecodeFactory(.{
@@ -166,7 +169,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Current snapshot ID for the active call frame
         current_snapshot_id: Journal.SnapshotIdType,
         /// Database interface for state storage
-        database: DatabaseInterface,
+        database: Database,
         /// Journal for tracking state changes and snapshots
         journal: Journal,
         /// Allocator for dynamic memory
@@ -183,6 +186,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         current_input: []const u8,
         /// Current return data
         return_data: []const u8,
+        /// Gas refund counter for SSTORE operations
+        gas_refund_counter: u64,
 
         // CACHE LINE 3 - TRANSACTION CONTEXT
         /// Block information
@@ -203,8 +208,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         // CACHE LINE 4+ - COLD PATH (less frequently accessed)
         /// Logs emitted during the current call
         logs: std.ArrayList(@import("call_result.zig").Log),
-        /// Static context stack - tracks if each call depth is static
-        static_stack: [config.max_call_depth]bool,
         /// Call stack - tracks caller and value for each call depth
         call_stack: [config.max_call_depth]CallStackEntry,
         /// Arena allocator for per-call temporary allocations
@@ -217,12 +220,11 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Sets up the execution environment with state storage, block context,
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
-        pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
+        pub fn init(allocator: std.mem.Allocator, database: Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
             return Self{
                 .depth = 0,
-                .static_stack = [_]bool{false} ** config.max_call_depth,
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0 }} ** config.max_call_depth,
                 .allocator = allocator,
                 .database = database,
@@ -234,6 +236,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .context = context,
                 .current_input = &.{},
                 .return_data = &.{},
+                .gas_refund_counter = 0,
                 .gas_price = gas_price,
                 .origin = origin,
                 .hardfork_config = hardfork_config,
@@ -291,7 +294,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             if (!self.disable_gas_checking and gas == 0) return CallResult.failure(0);
             if (self.depth >= config.max_call_depth) return CallResult.failure(0);
-
+            
+            // Store initial gas for EIP-3529 calculations
+            const initial_gas = gas;
             // Route to appropriate handler
             var result = switch (params) {
                 .call => |p| self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
@@ -301,7 +306,19 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = p.gas }) catch CallResult.failure(0),
                 .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = p.gas }) catch CallResult.failure(0),
             };
-
+            
+            // Apply EIP-3529 gas refund cap if transaction succeeded
+            if (result.success and self.depth == 0) {
+                const gas_used = initial_gas - result.gas_left;
+                const eips_instance = @import("eips.zig").Eips{ .hardfork = self.hardfork_config };
+                const capped_refund = eips_instance.eip_3529_gas_refund_cap(gas_used, self.gas_refund_counter);
+                
+                // Apply the refund, ensuring we don't exceed the gas used
+                result.gas_left = @min(initial_gas, result.gas_left + capped_refund);
+                
+                // Reset refund counter for next transaction
+                self.gas_refund_counter = 0;
+            }
             result.logs = self.takeLogs();
             result.selfdestructs = self.takeSelfDestructs() catch &.{};
             result.accessed_addresses = self.takeAccessedAddresses() catch &.{};
@@ -338,12 +355,33 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Get contract code
-            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
+            log.debug("EXECUTE_CALL: Getting code for address {any}", .{params.to});
+            const code = self.database.get_code_by_address(params.to.bytes) catch |err| {
+                log.err("EXECUTE_CALL ERROR: Failed to get code: {}", .{err});
+                log.err("EXECUTE_CALL ERROR: Address bytes: {x}", .{params.to.bytes});
+                const error_str = switch (err) {
+                    Database.Error.CodeNotFound => "CodeNotFound",
+                    Database.Error.AccountNotFound => "AccountNotFound",
+                    Database.Error.StorageNotFound => "StorageNotFound",
+                    Database.Error.InvalidAddress => "InvalidAddress",
+                    Database.Error.DatabaseCorrupted => "DatabaseCorrupted",
+                    Database.Error.NetworkError => "NetworkError",
+                    Database.Error.PermissionDenied => "PermissionDenied",
+                    Database.Error.OutOfMemory => "OutOfMemory",
+                    Database.Error.InvalidSnapshot => "InvalidSnapshot",
+                    Database.Error.NoBatchInProgress => "NoBatchInProgress",
+                    Database.Error.SnapshotNotFound => "SnapshotNotFound",
+                    Database.Error.WriteProtection => "WriteProtection",
+                };
+                return CallResult.failure_with_error(0, error_str);
+            };
+            log.debug("EXECUTE_CALL: Got code for address {any}: code_len={}", .{params.to, code.len});
             if (code.len == 0) {
-                log.debug("Call to empty account: {any}", .{params.to});
+                log.debug("EXECUTE_CALL: Call to empty account: {any}", .{params.to});
                 return CallResult.success_empty(params.gas);
             }
             // Execute frame
+            log.debug("About to execute_frame with code_len={}, gas={}", .{code.len, params.gas});
             const result = self.execute_frame(
                 code,
                 params.input,
@@ -353,7 +391,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 params.value,
                 false, // is_static
                 snapshot_id,
-            ) catch {
+            ) catch |err| {
+                log.err("execute_frame failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -723,13 +762,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             return CallResult.success_with_output(result.gas_left, out32);
         }
 
-        /// Execute frame using bytecode iterator-based execution
-        ///
-        /// This function orchestrates the execution of EVM bytecode within a frame context,
-        /// managing the flow of host operations, static mode enforcement, and state journaling.
-        ///
-        /// The new implementation uses a bytecode iterator to traverse and execute opcodes
-        /// directly, building handler arrays and constants on demand instead of pre-planning.
+        /// Execute a frame by delegating to Frame.interpret (dispatch-based execution)
         fn execute_frame(
             self: *Self,
             code: []const u8,
@@ -741,7 +774,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            // Bind snapshot and call input for this frame duration
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;
@@ -750,154 +782,88 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.current_input = input;
             defer self.current_input = prev_input;
 
-            // Increment depth and track static context
             self.depth += 1;
             defer self.depth -= 1;
 
-            // Store caller and value in call stack for this depth
             self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value };
 
-            // Track static context for this frame
-            self.static_stack[self.depth - 1] = is_static;
+            const gas_cast = @as(Frame.GasType, @intCast(@min(gas, @as(u64, @intCast(std.math.maxInt(Frame.GasType))))));
 
-            // Convert gas to appropriate type
-            const gas_i32 = @as(i32, @intCast(@min(gas, std.math.maxInt(i32))));
+            // EIP-214: encode static constraints in dependencies
+            // Static calls use null self_destruct to prevent SELFDESTRUCT operations
+            const self_destruct_param = if (is_static) null else &self.self_destruct;
 
-            // Create host interface for the frame
-            const host = self.to_host();
+            // For static calls, wrap database and host to enforce EIP-214 constraints
+            if (is_static) {
+                // Allocate static wrappers that live for the frame duration
+                const static_db_ptr = try self.allocator.create(StaticDatabase);
+                defer self.allocator.destroy(static_db_ptr);
+                static_db_ptr.* = StaticDatabase.init(self.database);
+                _ = static_db_ptr.to_database_interface(); // TODO: Use static database wrapper
+                
+                // Static calls - we'll need to enforce constraints in the EVM methods themselves
+                // Pass call context data directly to frame
+                var frame = try Frame.init(self.allocator, gas_cast, self.database, caller, value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
+                frame.contract_address = address;
+                defer frame.deinit(self.allocator);
 
-            // Create frame directly
-            var frame = try StackFrame.init(
-                self.allocator,
-                code,
-                gas_i32,
-                self.database,
-                host,
-            );
-            frame.contract_address = address;
-            defer frame.deinit(self.allocator);
-
-            // Create bytecode instance for iteration
-            var bytecode = try Bytecode.init(self.allocator, code);
-            defer bytecode.deinit();
-
-            // Create simple handler lookup table
-            const handler_table = try self.allocator.alloc(?*const fn (*StackFrame) StackFrame.Error!void, 256);
-
-            defer self.allocator.free(handler_table);
-
-            // Execute using bytecode iterator
-            var iterator = bytecode.createIterator();
-
-            while (iterator.next()) |opcode_data| {
-                // Check gas
-                if (frame.gas_remaining <= 0) {
+                log.debug("Executing frame: code_len={}, gas={}, address={any}, is_static={}", .{code.len, gas_cast, address, is_static});
+                const outcome = frame.interpret(code) catch |err| {
+                    log.debug("Frame.interpret() failed (static): {}", .{err});
                     return CallResult.failure(0);
+                };
+
+                // Map frame outcome to CallResult
+                const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
+                const out_items = frame.output;
+                const out_buf = if (out_items.len > 0) blk: {
+                    const b = try self.allocator.alloc(u8, out_items.len);
+                    @memcpy(b, out_items);
+                    break :blk b;
+                } else &.{};
+                self.return_data = out_buf;
+
+                switch (outcome) {
+                    .Stop => return CallResult.success_with_output(gas_left, out_buf),
+                    .Return => return CallResult.success_with_output(gas_left, out_buf),
+                    .SelfDestruct => return CallResult.success_with_output(gas_left, out_buf),
                 }
+            } else {
+                // Non-static call - pass call context data directly to frame
+                var frame = try Frame.init(self.allocator, gas_cast, self.database, caller, value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
+                frame.contract_address = address;
+                defer frame.deinit(self.allocator);
 
-                switch (opcode_data) {
-                    .stop => {
-                        // STOP opcode - successful termination
-                        const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
-                        var out_slice: []const u8 = &.{};
-                        if (frame.output_data.items.len > 0) {
-                            const buf = try self.allocator.alloc(u8, frame.output_data.items.len);
-                            @memcpy(buf, frame.output_data.items);
-                            out_slice = buf;
-                        }
-                        self.return_data = out_slice;
-                        return CallResult.success_with_output(gas_left, out_slice);
-                    },
-                    .invalid => {
-                        // INVALID opcode
-                        return CallResult.failure(0);
-                    },
-                    .push => |push_info| {
-                        // PUSH opcodes
-                        frame.gas_remaining -= 3; // Base gas cost
-                        try frame.stack.push(push_info.value);
-                    },
-                    .jumpdest => {
-                        // JUMPDEST - just consume gas
-                        frame.gas_remaining -= 1;
-                    },
-                    .regular => |regular_info| {
-                        // Regular opcodes - execute through frame
-                        const opcode_enum = std.meta.intToEnum(Opcode, regular_info.opcode) catch {
-                            return CallResult.failure(0);
-                        };
+                log.debug("Executing frame (non-static): code_len={}, gas={}, address={any}", .{code.len, gas_cast, address});
+                
+                // Wrap in a more detailed error handler
+                const outcome = frame.interpret(code) catch |err| {
+                    log.err("Frame.interpret() failed (non-static): {}", .{err});
+                    log.err("  Code length: {}", .{code.len});
+                    log.err("  Gas: {}", .{gas_cast});
+                    log.err("  Address: {any}", .{address});
+                    if (code.len > 0) {
+                        log.err("  First few bytes of code: {x}", .{code[0..@min(code.len, 16)]});
+                    }
+                    return CallResult.failure(0);
+                };
 
-                        // Special handling for control flow opcodes
-                        switch (opcode_enum) {
-                            .JUMP => {
-                                _ = try frame.stack.pop(); // jump_dest
-                                // Jump handling would go here
-                                // For now, just continue
-                                frame.gas_remaining -= 8;
-                            },
-                            .JUMPI => {
-                                _ = try frame.stack.pop(); // jump_dest
-                                _ = try frame.stack.pop(); // condition
-                                // Conditional jump handling would go here
-                                frame.gas_remaining -= 10;
-                            },
-                            .RETURN => {
-                                const offset = try frame.stack.pop();
-                                const length = try frame.stack.pop();
+                // Map frame outcome to CallResult
+                const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
+                const out_items = frame.output;
+                const out_buf = if (out_items.len > 0) blk: {
+                    const b = try self.allocator.alloc(u8, out_items.len);
+                    @memcpy(b, out_items);
+                    break :blk b;
+                } else &.{};
+                self.return_data = out_buf;
 
-                                // Get return data from memory
-                                const mem_offset = std.math.cast(usize, offset) orelse return CallResult.failure(0);
-                                const mem_length = std.math.cast(usize, length) orelse return CallResult.failure(0);
-
-                                const return_data = try frame.memory.get_slice(mem_offset, mem_length);
-                                const buf = try self.allocator.alloc(u8, return_data.len);
-                                @memcpy(buf, return_data);
-
-                                const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
-                                self.return_data = buf;
-                                return CallResult.success_with_output(gas_left, buf);
-                            },
-                            .REVERT => {
-                                const offset = try frame.stack.pop();
-                                const length = try frame.stack.pop();
-
-                                // Get revert data from memory
-                                const mem_offset = std.math.cast(usize, offset) orelse return CallResult.failure(0);
-                                const mem_length = std.math.cast(usize, length) orelse return CallResult.failure(0);
-
-                                const revert_data = try frame.memory.get_slice(mem_offset, mem_length);
-                                const buf = try self.allocator.alloc(u8, revert_data.len);
-                                @memcpy(buf, revert_data);
-
-                                const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
-                                self.return_data = buf;
-                                return CallResult.revert_with_data(gas_left, buf);
-                            },
-                            else => {
-                                // For now, just fail on other opcodes
-                                // TODO: Implement proper opcode execution
-                                return CallResult.failure(0);
-                            },
-                        }
-                    },
-                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
-                        // Handle fusion opcodes if enabled
-                        // For now, just fail
-                        return CallResult.failure(0);
-                    },
+                switch (outcome) {
+                    .Stop => return CallResult.success_with_output(gas_left, out_buf),
+                    .Return => return CallResult.success_with_output(gas_left, out_buf),
+                    .SelfDestruct => return CallResult.success_with_output(gas_left, out_buf),
                 }
             }
-
-            // If we get here, we ran out of code (implicit STOP)
-            const gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
-            var out_slice: []const u8 = &.{};
-            if (frame.output_data.items.len > 0) {
-                const buf = try self.allocator.alloc(u8, frame.output_data.items.len);
-                @memcpy(buf, frame.output_data.items);
-                out_slice = buf;
-            }
-            self.return_data = out_slice;
-            return CallResult.success_with_output(gas_left, out_slice);
         }
 
         fn execute_init_code(
@@ -1152,12 +1118,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             return .CANCUN; // Default to latest
         }
 
-        /// Get whether the current frame is static
-        pub fn get_is_static(self: *Self) bool {
-            if (self.depth == 0) return false;
-            return self.static_stack[self.depth - 1];
-        }
-
         /// Get the call depth for the current frame
         pub fn get_depth(self: *Self) u11 {
             return @intCast(self.depth);
@@ -1254,43 +1214,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             return self.context.blob_base_fee;
         }
 
-        // TODO: remove this this is a duplciate and this version is unused
-        /// Transfer value between accounts with proper journaling
-        /// This method ensures balance changes are recorded in the journal for potential reverts
-        pub fn transfer_value(self: *Self, from: primitives.Address, to: primitives.Address, value: u256) !void {
-            // Don't transfer if value is zero
-            if (value == 0) return;
-
-            // Get accounts
-            var from_account = (try self.database.get_account(from.bytes)) orelse return error.AccountNotFound;
-            var to_account = (try self.database.get_account(to.bytes)) orelse Account{
-                .balance = 0,
-                .nonce = 0,
-                .code_hash = [_]u8{0} ** 32,
-                .storage_root = [_]u8{0} ** 32,
-            };
-
-            // Check sufficient balance
-            if (from_account.balance < value) return error.InsufficientBalance;
-
-            // Record original balances in journal before modification
-            try self.journal.record_balance_change(self.current_snapshot_id, from, from_account.balance);
-            try self.journal.record_balance_change(self.current_snapshot_id, to, to_account.balance);
-
-            // Update balances
-            from_account.balance -= value;
-            to_account.balance += value;
-
-            // Write to database
-            try self.database.set_account(from.bytes, from_account);
-            try self.database.set_account(to.bytes, to_account);
+        /// Add gas refund amount for SSTORE operations
+        /// This is called by SSTORE when it needs to add refunds
+        pub fn add_gas_refund(self: *Self, amount: u64) void {
+            self.gas_refund_counter += amount;
         }
-
-        // TODO: remove useless helper function and just inline this
-        /// Convert to Host interface
-        pub fn to_host(self: *Self) @import("host.zig").Host {
-            return @import("host.zig").Host.init(self);
-        }
+        
 
         // TODO: remove useless helper function and just inline this
         /// Take all logs and clear the log list
@@ -1354,7 +1283,6 @@ pub fn Evm(comptime config: EvmConfig) type {
 
 // TODO: remove DefaultEvm
 pub const DefaultEvm = Evm(.{});
-
 test "CallParams and CallResult structures" {
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -1401,7 +1329,7 @@ test "EVM call() entry point method" {
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     // Create EVM instance
     const block_info = BlockInfo{
@@ -1453,7 +1381,7 @@ test "EVM call() method routes to different handlers" {
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     // Create EVM instance
     const block_info = BlockInfo{
@@ -1539,7 +1467,7 @@ test "EVM call_handler basic functionality" {
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     // Add a simple contract that just STOPs
     const stop_bytecode = [_]u8{0x00}; // STOP opcode
@@ -1602,7 +1530,7 @@ test "EVM staticcall handler prevents state changes" {
     // Create test database with initial state
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     // Add a contract that tries to modify storage (should fail in staticcall)
     const sstore_bytecode = [_]u8{
@@ -1666,7 +1594,7 @@ test "EVM delegatecall handler preserves caller context" {
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     // Add a contract that returns the caller address
     // CALLER opcode pushes msg.sender to stack
@@ -1740,7 +1668,7 @@ test "Evm creation with custom config" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -1768,7 +1696,7 @@ test "Evm call depth limit" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -1813,7 +1741,7 @@ test "call method basic functionality - simple STOP" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -1857,7 +1785,7 @@ test "call method loads contract code from state" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -1912,7 +1840,7 @@ test "call method handles CREATE operation" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -1955,7 +1883,7 @@ test "call method handles gas limit properly" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2165,7 +2093,7 @@ test "EvmConfig - custom configurations" {
     // Create test database and verify custom EVM compiles
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2204,7 +2132,7 @@ test "TransactionContext creation and fields" {
 test "Evm initialization with all parameters" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 12345678,
@@ -2246,7 +2174,7 @@ test "Evm initialization with all parameters" {
 test "Host interface - get_balance functionality" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2290,7 +2218,7 @@ test "Host interface - get_balance functionality" {
 test "Host interface - storage operations" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2334,7 +2262,7 @@ test "Host interface - storage operations" {
 test "Host interface - account_exists functionality" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2375,7 +2303,7 @@ test "Host interface - account_exists functionality" {
 test "Host interface - call type differentiation" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2439,7 +2367,7 @@ test "Host interface - call type differentiation" {
 test "EVM CREATE operation - basic contract creation" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2518,7 +2446,7 @@ test "EVM CREATE operation - basic contract creation" {
 test "EVM CREATE operation - with value transfer" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2582,7 +2510,7 @@ test "EVM CREATE operation - with value transfer" {
 test "EVM CREATE operation - insufficient balance fails" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2631,7 +2559,7 @@ test "EVM CREATE operation - insufficient balance fails" {
 test "EVM CREATE2 operation - deterministic address creation" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2709,7 +2637,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
 test "EVM CREATE2 operation - same parameters produce same address" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2772,7 +2700,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
 test "EVM CREATE operation - collision detection" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2837,7 +2765,7 @@ test "EVM CREATE operation - collision detection" {
 test "EVM CREATE operation - init code execution and storage" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -2918,7 +2846,7 @@ test "EVM CREATE operation - init code execution and storage" {
 test "EVM CREATE/CREATE2 - nested contract creation" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3004,7 +2932,7 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
 test "EVM logs - emit_log functionality" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3052,7 +2980,7 @@ test "EVM logs - emit_log functionality" {
 test "EVM logs - included in CallResult" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3118,7 +3046,7 @@ test "EVM logs - included in CallResult" {
 test "Host interface - hardfork compatibility checks" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3156,7 +3084,7 @@ test "Host interface - hardfork compatibility checks" {
 test "Host interface - access cost operations" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3192,7 +3120,7 @@ test "Host interface - access cost operations" {
 test "Host interface - input size validation" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3238,7 +3166,7 @@ test "Host interface - input size validation" {
 test "Call types - CREATE2 with salt" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3283,7 +3211,7 @@ test "Error handling - nested call depth tracking" {
 
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3332,7 +3260,7 @@ test "Error handling - nested call depth tracking" {
 test "Error handling - precompile execution" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3375,7 +3303,7 @@ test "Error handling - precompile execution" {
 test "Precompiles - IDENTITY precompile (0x04)" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3425,7 +3353,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
 test "Precompiles - SHA256 precompile (0x02)" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3474,7 +3402,7 @@ test "Precompiles - disabled configuration" {
 
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3520,7 +3448,7 @@ test "Precompiles - disabled configuration" {
 test "Precompiles - invalid precompile addresses" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3570,7 +3498,7 @@ test "Debug - Gas limit affects execution" {
 
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3666,7 +3594,7 @@ test "Debug - Contract deployment and execution" {
 
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3777,7 +3705,7 @@ test "Debug - Bytecode size affects execution time" {
 
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3853,7 +3781,7 @@ test "Debug - Bytecode size affects execution time" {
 test "Security - bounds checking and edge cases" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3915,7 +3843,7 @@ test "EVM with minimal planner strategy" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -3968,7 +3896,7 @@ test "EVM with advanced planner strategy" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4019,7 +3947,7 @@ test "journal state application - storage change rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4078,7 +4006,7 @@ test "journal state application - balance change rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4139,7 +4067,7 @@ test "journal state application - nonce change rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4200,7 +4128,7 @@ test "journal state application - code change rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4261,7 +4189,7 @@ test "journal state application - multiple changes rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4371,7 +4299,7 @@ test "journal state application - nested snapshots rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4449,7 +4377,7 @@ test "journal state application - empty journal rollback" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4484,7 +4412,7 @@ test "EVM contract execution - minimal benchmark reproduction" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4551,7 +4479,7 @@ test "Precompile - IDENTITY (0x04) basic functionality" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4599,7 +4527,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -4909,7 +4837,7 @@ test "EVM benchmark scenario - reproduces segfault" {
     // Create test database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     // Deploy contract first (ERC20 approval bytecode snippet)
     const stop_bytecode = [_]u8{0x00}; // Simple STOP for now
@@ -5585,7 +5513,7 @@ test "CREATE interaction - created contract modifies parent storage" {
 test "Arena allocator - resets between calls" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -5663,7 +5591,7 @@ test "Arena allocator - resets between calls" {
 test "Arena allocator - handles multiple logs efficiently" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -5731,7 +5659,7 @@ test "Arena allocator - handles multiple logs efficiently" {
 test "Arena allocator - precompile outputs use arena" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -5789,7 +5717,7 @@ test "Arena allocator - precompile outputs use arena" {
 test "Arena allocator - memory efficiency with nested calls" {
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -6309,7 +6237,7 @@ test "EVM bytecode iterator execution - simple STOP" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -6363,7 +6291,7 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
@@ -6431,7 +6359,7 @@ test "EVM bytecode iterator execution - handles jumps" {
     // Create test database
     var memory_db = MemoryDatabase.init(std.testing.allocator);
     defer memory_db.deinit();
-    const db_interface = DatabaseInterface.init(&memory_db);
+    const db_interface = memory_db.to_database_interface();
 
     const block_info = BlockInfo{
         .number = 1,
