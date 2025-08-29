@@ -55,9 +55,9 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub const CodesizeMetadata = packed struct { size: u32 };
         /// Metadata for CODECOPY opcode containing bytecode pointer and size.
         pub const CodecopyMetadata = packed struct {
-            bytecode_ptr: *const []const u8,
+            bytecode_ptr: [*]const u8,  // Direct pointer to bytecode data, not a slice
             size: u32,
-            _padding: u16 = 0,
+            _padding: u32 = 0,  // Increased padding to maintain 64-bit size
         };
         /// Metadata for trace_before_op containing PC and opcode for tracing
         pub const TraceBeforeMetadata = packed struct(u64) {
@@ -80,7 +80,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             codesize: CodesizeMetadata,
             codecopy: CodecopyMetadata,
             opcode_handler: OpcodeHandler,
-            first_block_gas: struct { gas: u32 },
+            first_block_gas: struct { gas: u64 },
             trace_before: TraceBeforeMetadata,
             trace_after: TraceAfterMetadata,
         };
@@ -235,20 +235,15 @@ pub fn Dispatch(comptime FrameType: type) type {
             const log = @import("log.zig");
             log.debug("Dispatch.init starting...", .{});
 
-            // TEMPORARY: Force output to see if this code is reached
-            if (bytecode.runtime_code.len > 0) {
-                std.debug.print("DISPATCH INIT: bytecode len={d}\n", .{bytecode.runtime_code.len});
-            }
-
             var schedule_items = ArrayList(Self.Item, null){};
             errdefer schedule_items.deinit(allocator);
 
             // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
-            log.debug("Created bytecode iterator", .{});
+
 
             // Calculate gas cost for first basic block
-            var first_block_gas: u32 = 0;
+            var first_block_gas: u64 = 0;
             var temp_iter = bytecode.createIterator();
             const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
 
@@ -261,7 +256,13 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                 switch (op_data) {
                     .regular => |data| {
-                        first_block_gas += opcode_info[data.opcode].gas_cost;
+                        const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
+                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            first_block_gas = new_gas;
+                            break;
+                        }
+                        first_block_gas = new_gas;
                         // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
                         switch (data.opcode) {
                             0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
@@ -273,20 +274,32 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     .push => |data| {
                         const push_opcode = 0x60 + data.size - 1;
-                        first_block_gas += opcode_info[push_opcode].gas_cost;
+                        const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
+                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            first_block_gas = new_gas;
+                            break;
+                        }
+                        first_block_gas = new_gas;
                     },
                     .jumpdest => {
                         found_terminator = true;
                         break;
                     },
                     .stop, .invalid => {
-                        first_block_gas += opcode_info[0x00].gas_cost; // STOP gas cost
+                        const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
+                        first_block_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
                         found_terminator = true;
                         break;
                     },
                     else => {
                         // For fusion operations, approximate gas cost
-                        first_block_gas += 6; // PUSH + operation
+                        const new_gas = std.math.add(u64, first_block_gas, 6) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            first_block_gas = new_gas;
+                            break;
+                        }
+                        first_block_gas = new_gas; // PUSH + operation
                     },
                 }
                 if (found_terminator) break;
@@ -307,12 +320,10 @@ pub fn Dispatch(comptime FrameType: type) type {
                 const instr_pc = iter.pc;
                 const maybe = iter.next();
                 if (maybe == null) {
-                    log.debug("Bytecode iteration complete, processed {} opcodes", .{opcode_count});
                     break;
                 }
                 const op_data = maybe.?;
                 opcode_count += 1;
-                // log.debug("Processing opcode at PC {}: {any}", .{instr_pc, op_data});
                 switch (op_data) {
                     .regular => |data| {
                         // Regular opcode - add handler first, then metadata for PC, CODESIZE, CODECOPY
@@ -323,8 +334,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                         } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
                             try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
                         } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                            const bytecode_ptr = &bytecode.runtime_code;
-                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_ptr, .size = @intCast(bytecode.runtime_code.len) } });
+                            // Store direct pointer to bytecode data for stable reference
+                            const bytecode_data = bytecode.runtime_code;
+                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr, .size = @intCast(bytecode_data.len) } });
                         }
                     },
                     .push => |data| {
@@ -394,25 +406,6 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
             log.debug("Dispatch.init complete, schedule length: {}", .{final_schedule.len});
-
-            // TEMPORARY: Force output
-            std.debug.print("DISPATCH INIT COMPLETE: schedule len={}, opcode_count={}\n", .{ final_schedule.len, opcode_count });
-            
-            // DEBUG: For PUSH32+PUSH1+SDIV test case
-            if (opcode_count <= 5 and bytecode.runtime_code.len >= 34 and bytecode.runtime_code[0] == 0x7f) {
-                std.debug.print("DEBUG: PUSH32 test bytecode detected. Schedule items:\n", .{});
-                for (final_schedule, 0..) |item, idx| {
-                    if (idx > 15) break; // Limit output
-                    switch (item) {
-                        .first_block_gas => |g| std.debug.print("  [{}] first_block_gas: {}\n", .{ idx, g.gas }),
-                        .opcode_handler => |h| std.debug.print("  [{}] handler: {*}\n", .{ idx, h }),
-                        .push_pointer => |_| std.debug.print("  [{}] push_pointer\n", .{idx}),
-                        .push_inline => |i| std.debug.print("  [{}] push_inline: {}\n", .{ idx, i.value }),
-                        else => std.debug.print("  [{}] {s}\n", .{ idx, @tagName(item) }),
-                    }
-                }
-            }
-
             return final_schedule;
         }
 
@@ -563,7 +556,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             const trace_after_handler = createTraceHandler(TracerType, tracer_instance, false);
 
             // Calculate gas cost for first basic block (same as non-tracing version)
-            var first_block_gas: u32 = 0;
+            var first_block_gas: u64 = 0;
             var temp_iter = bytecode.createIterator();
             const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
 
@@ -576,7 +569,13 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                 switch (op_data) {
                     .regular => |data| {
-                        first_block_gas += opcode_info[data.opcode].gas_cost;
+                        const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
+                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            first_block_gas = new_gas;
+                            break;
+                        }
+                        first_block_gas = new_gas;
                         // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
                         switch (data.opcode) {
                             0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
@@ -588,20 +587,32 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     .push => |data| {
                         const push_opcode = 0x60 + data.size - 1;
-                        first_block_gas += opcode_info[push_opcode].gas_cost;
+                        const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
+                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            first_block_gas = new_gas;
+                            break;
+                        }
+                        first_block_gas = new_gas;
                     },
                     .jumpdest => {
                         found_terminator = true;
                         break;
                     },
                     .stop, .invalid => {
-                        first_block_gas += opcode_info[0x00].gas_cost; // STOP gas cost
+                        const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
+                        first_block_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
                         found_terminator = true;
                         break;
                     },
                     else => {
                         // For fusion operations, approximate gas cost
-                        first_block_gas += 6; // PUSH + operation
+                        const new_gas = std.math.add(u64, first_block_gas, 6) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            first_block_gas = new_gas;
+                            break;
+                        }
+                        first_block_gas = new_gas; // PUSH + operation
                     },
                 }
                 if (found_terminator) break;
@@ -634,8 +645,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                         } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
                             try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
                         } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                            const bytecode_ptr = &bytecode.runtime_code;
-                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_ptr, .size = @intCast(bytecode.runtime_code.len) } });
+                            // Store direct pointer to bytecode data for stable reference
+                            const bytecode_data = bytecode.runtime_code;
+                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr, .size = @intCast(bytecode_data.len) } });
                         }
 
                         // Insert trace_after
@@ -981,7 +993,6 @@ const TestFrame = struct {
     pub const BytecodeConfig = bytecode_mod.BytecodeConfig{
         .max_bytecode_size = 1024,
         .max_initcode_size = 49152,
-        .vector_length = 16,
     };
 
     pub const Error = error{
