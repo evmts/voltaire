@@ -296,6 +296,10 @@ pub fn Dispatch(comptime FrameType: type) type {
             if (first_block_gas > 0) {
                 try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = first_block_gas } });
                 log.debug("Added first_block_gas: {d}", .{first_block_gas});
+                // TEMPORARY DEBUG: Log expected gas for our test bytecode
+                if (bytecode.runtime_code.len == 38) { // Our specific test case
+                    log.warn("DEBUG: This looks like PUSH32+PUSH1+SDIV bytecode, first_block_gas={}", .{first_block_gas});
+                }
             }
 
             var opcode_count: usize = 0;
@@ -326,15 +330,18 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .push => |data| {
                         // PUSH operation - add handler first, then metadata
                         const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
+                        log.debug("Dispatch: Adding PUSH{} handler, value={x}, schedule_items.len={}", .{ data.size, data.value, schedule_items.items.len });
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
                         if (data.size <= 8 and data.value <= std.math.maxInt(u64)) {
                             // Inline value for small pushes that fit in u64
                             const inline_value: u64 = @intCast(data.value);
+                            log.debug("Dispatch: Adding inline metadata for PUSH{}, value={}", .{ data.size, inline_value });
                             try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
                         } else {
                             // Pointer to value for large pushes
                             const value_ptr = try allocator.create(FrameType.WordType);
                             value_ptr.* = data.value;
+                            log.debug("Dispatch: Adding pointer metadata for PUSH{}, value={x}", .{ data.size, data.value });
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
                         }
                     },
@@ -390,6 +397,21 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // TEMPORARY: Force output
             std.debug.print("DISPATCH INIT COMPLETE: schedule len={}, opcode_count={}\n", .{ final_schedule.len, opcode_count });
+            
+            // DEBUG: For PUSH32+PUSH1+SDIV test case
+            if (opcode_count <= 5 and bytecode.runtime_code.len >= 34 and bytecode.runtime_code[0] == 0x7f) {
+                std.debug.print("DEBUG: PUSH32 test bytecode detected. Schedule items:\n", .{});
+                for (final_schedule, 0..) |item, idx| {
+                    if (idx > 15) break; // Limit output
+                    switch (item) {
+                        .first_block_gas => |g| std.debug.print("  [{}] first_block_gas: {}\n", .{ idx, g.gas }),
+                        .opcode_handler => |h| std.debug.print("  [{}] handler: {*}\n", .{ idx, h }),
+                        .push_pointer => |_| std.debug.print("  [{}] push_pointer\n", .{idx}),
+                        .push_inline => |i| std.debug.print("  [{}] push_inline: {}\n", .{ idx, i.value }),
+                        else => std.debug.print("  [{}] {s}\n", .{ idx, @tagName(item) }),
+                    }
+                }
+            }
 
             return final_schedule;
         }
