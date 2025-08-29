@@ -1,12 +1,12 @@
 //! Lightweight execution context for EVM operations.
 //!
-//! StackFrame handles direct opcode execution including stack manipulation,
+//! Frame handles direct opcode execution including stack manipulation,
 //! arithmetic, memory access, and storage operations. It does NOT handle:
 //! - PC tracking and jumps (managed by Plan)
 //! - CALL/CREATE operations (managed by Host/EVM)
 //! - Environment queries (provided by Host)
 //!
-//! The StackFrame is designed for efficient opcode dispatch with configurable
+//! The Frame is designed for efficient opcode dispatch with configurable
 //! components for stack size, memory limits, and gas tracking.
 const std = @import("std");
 const builtin = @import("builtin");
@@ -28,7 +28,7 @@ const Address = primitives.Address.Address;
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
 const keccak_asm = @import("keccak_asm.zig");
-const stack_frame_handlers = @import("stack_frame_handlers.zig");
+const frame_handlers = @import("frame_handlers.zig");
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const DefaultEvm = @import("evm.zig").DefaultEvm;
 const CallParams = @import("call_params.zig").CallParams;
@@ -37,24 +37,24 @@ const logs = @import("logs.zig");
 const Log = logs.Log;
 const block_info_mod = @import("block_info.zig");
 const block_info_config_mod = @import("block_info_config.zig");
-// LogList functionality is inlined into StackFrame for optimal packing
+// LogList functionality is inlined into Frame for optimal packing
 const dispatch_mod = @import("dispatch.zig");
 
-/// Creates a configured StackFrame type for EVM execution.
+/// Creates a configured Frame type for EVM execution.
 ///
-/// The StackFrame is parameterized by compile-time configuration to enable
+/// The Frame is parameterized by compile-time configuration to enable
 /// optimal code generation and platform-specific optimizations.
-pub fn StackFrame(comptime config: FrameConfig) type {
+pub fn Frame(comptime config: FrameConfig) type {
     comptime config.validate();
 
     return struct {
-        /// Status code type returned by StackFrame.interpret when stack frame executes successfully
+        /// Status code type returned by Frame.interpret when frame executes successfully
         pub const Success = enum {
             Stop,
             Return,
             SelfDestruct,
         };
-        /// Error code type returned by StackFrame.interpret when stack frame executes unsuccessfully
+        /// Error code type returned by Frame.interpret when frame executes unsuccessfully
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
@@ -74,7 +74,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const OpcodeHandler = *const fn (frame: *Self, dispatch: Dispatch) Error!Success;
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
         pub const Dispatch = dispatch_mod.Dispatch(Self);
-        /// The config passed into StackFrame(config)
+        /// The config passed into Frame(config)
         pub const frame_config = config;
         /// The "word" type used by the evm. Defaults to u256. "Word" is the type used by Stack and throughout the Evm
         /// If set to something else the EVM will update to that new word size. e.g. run kekkak128 instead of kekkak256
@@ -108,7 +108,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub const BlockInfo = block_info_mod.BlockInfo(config.block_info_config);
 
         /// A fixed size array of opcode handlers indexed by opcode number
-        pub const opcode_handlers: [256]OpcodeHandler = stack_frame_handlers.getOpcodeHandlers(Self);
+        pub const opcode_handlers: [256]OpcodeHandler = frame_handlers.getOpcodeHandlers(Self);
 
         const Self = @This();
   

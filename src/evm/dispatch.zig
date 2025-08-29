@@ -16,7 +16,7 @@ const ArrayList = std.ArrayListAligned;
 pub fn Dispatch(comptime FrameType: type) type {
     return struct {
         const Self = @This();
-        // We define opcodehandler locally rather than using StackFrame.OpcodeHandler to avoid circular dependency
+        // We define opcodehandler locally rather than using Frame.OpcodeHandler to avoid circular dependency
         const OpcodeHandler = *const fn (frame: *FrameType, dispatch: Self) FrameType.Error!FrameType.Success;
         /// The optimized instruction stream containing opcode handlers and their metadata.
         /// Each item is exactly 64 bits for optimal cache line usage.
