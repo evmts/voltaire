@@ -1,4 +1,3 @@
-/// DEPRECATED: Use bytecode4.zig instead
 /// EVM bytecode representation and validation
 ///
 /// Provides safe bytecode handling with:
@@ -55,7 +54,6 @@ const CACHE_LINE_SIZE = 64; // Common cache line size for x86-64 and ARM64
 const PREFETCH_DISTANCE = 256; // How far ahead to prefetch in bytes
 
 /// Factory function to create a Bytecode type with the given configuration
-/// @deprecated Use bytecode4.zig instead
 pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
 
@@ -96,7 +94,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 if (iterator.pc >= iterator.bytecode.packed_bitmap.len) {
                     // Log error and return null
                     const log = @import("log.zig");
-                    log.err("Iterator PC {} exceeds packed_bitmap len {}", .{iterator.pc, iterator.bytecode.packed_bitmap.len});
+                    log.err("Iterator PC {} exceeds packed_bitmap len {}", .{ iterator.pc, iterator.bytecode.packed_bitmap.len });
                     return null;
                 }
                 const packed_bits = iterator.bytecode.packed_bitmap[iterator.pc];
@@ -189,7 +187,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         // NEW: SIMD-optimized packed bitmap (4 bits per byte position)
         packed_bitmap: []PackedBits,
 
-        /// @deprecated Use bytecode4.zig instead
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
             // First, try to parse metadata to separate runtime code
             const metadata = parseSolidityMetadataFromBytes(code);
@@ -225,7 +222,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Initialize bytecode from initcode (EIP-3860)
         /// Validates that initcode size doesn't exceed the maximum allowed
-        /// @deprecated Use bytecode4.zig instead
         pub fn initFromInitcode(allocator: std.mem.Allocator, initcode: []const u8) ValidationError!Self {
             if (initcode.len > cfg.max_initcode_size) {
                 return error.InitcodeTooLarge;
@@ -256,7 +252,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             return words * INITCODE_GAS_PER_WORD;
         }
 
-        /// @deprecated Use bytecode4.zig instead
         pub fn deinit(self: *Self) void {
             self.allocator.free(self.is_push_data);
             self.allocator.free(self.is_op_start);
@@ -266,7 +261,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         }
 
         /// Create an iterator for efficient bytecode traversal
-        /// @deprecated Use bytecode4.zig instead
         pub fn createIterator(self: *const Self) Iterator {
             return Iterator{
                 .bytecode = self,
@@ -276,12 +270,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Get fusion data for a bytecode position marked as fusion candidate
         /// This method uses the pre-computed packed bitmap instead of re-analyzing
-        /// @deprecated Use bytecode4.zig instead
         pub fn getFusionData(self: *const Self, pc: PcType) OpcodeData {
             if (pc >= self.len()) return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
 
             const first_op = self.get_unsafe(pc);
-            
+
             // Read PUSH value first (since all fusions start with PUSH)
             if (first_op < 0x60 or first_op > 0x7F) {
                 // Not a PUSH opcode, shouldn't be marked as fusion candidate
@@ -294,7 +287,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             for (pc + 1..end_pc) |i| {
                 value = (value << 8) | self.get_unsafe(@intCast(i));
             }
-            
+
             // The second opcode comes AFTER the push data
             const second_op_pc = pc + 1 + push_size;
             const second_op = if (second_op_pc < self.len()) self.get_unsafe(second_op_pc) else 0x00;
@@ -311,9 +304,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
                 0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
                 else => {
-                    // Fallback to regular PUSH if fusion pattern not recognized
+                    // If we hit this branch we failed to implement an opcode or fusion
+                    const log = @import("log.zig");
+                    log.err("getFusionData: Unhandled fusion pattern - PUSH{} (value: {}) followed by opcode 0x{x:0>2}", .{ push_size, value, second_op });
                     // TODO: Add more fusion types to OpcodeData union as needed
-                    return OpcodeData{ .push = .{ .value = value, .size = push_size } };
+                    unreachable;
                 },
             }
         }
@@ -358,7 +353,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Check if a position is a valid jump destination
         /// Uses precomputed bitmap for O(1) lookup
-        /// @deprecated Use bytecode4.zig instead
         pub fn isValidJumpDest(self: Self, pc: PcType) bool {
             if (pc >= self.len()) return false;
             // https://ziglang.org/documentation/master/#as
@@ -459,7 +453,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         // (removed SIMD fusion detection; scalar detection in getStats)
 
-        /// Build bitmaps and validate bytecode
+        /// Build bitmaps and validate bytecode in a single pass
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
             const N = self.runtime_code.len;
             // Empty bytecode is valid, allocate minimal bitmaps
@@ -476,25 +470,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 return;
             }
 
-            // Phase A: validate opcodes and PUSH bounds without allocating
-            var i: PcType = 0;
-            while (i < N) {
-                const op = self.runtime_code[i];
-                // Validate opcode value
-                _ = std.meta.intToEnum(Opcode, op) catch return error.InvalidOpcode;
-                // If PUSH, ensure data fits
-                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
-                    const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
-                    if (i + n >= N) return error.TruncatedPush;
-                    i += n + 1;
-                } else {
-                    i += 1;
-                }
-            }
-
             const bitmap_bytes = (N + BITMAP_MASK) >> BITMAP_SHIFT;
 
-            // Phase B: allocate bitmaps and populate
+            // Allocate bitmaps upfront for single-pass population
             const use_aligned = comptime !builtin.is_test;
             if (use_aligned) {
                 const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
@@ -524,7 +502,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 packed_bits.* = PackedBits{ .is_push_data = false, .is_op_start = false, .is_jumpdest = false, .is_fusion_candidate = false };
             }
 
-            i = 0;
+            // Single pass: validate opcodes, mark bitmaps, detect JUMPDEST and fusions
+            var i: PcType = 0;
             while (i < N) {
                 @branchHint(.likely);
 
@@ -537,24 +516,56 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     });
                 }
 
+                // Mark operation start
                 self.is_op_start[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
-                // NEW: Also set packed bitmap
                 self.packed_bitmap[i].is_op_start = true;
+
                 const op = self.runtime_code[i];
 
-                // Opcodes are validated above; now mark bitmaps
-                const opcode_enum = @as(Opcode, @enumFromInt(op));
-                // Check if it's a PUSH opcode
+                // Validate opcode
+                const opcode_enum = std.meta.intToEnum(Opcode, op) catch return error.InvalidOpcode;
+
+                // Check if it's a JUMPDEST (and not push data)
+                if (op == @intFromEnum(Opcode.JUMPDEST)) {
+                    self.is_jumpdest[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
+                    self.packed_bitmap[i].is_jumpdest = true;
+                }
+
+                // Check for fusion candidates if enabled
+                if (comptime fusions_enabled) {
+                    // Check if this is a PUSH that could be part of a fusion
+                    if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                        const push_size: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                        const next_op_idx = i + 1 + push_size;
+
+                        // Ensure we can read the next opcode
+                        if (next_op_idx < N) {
+                            const next_op = self.runtime_code[next_op_idx];
+                            // Check for fusable patterns
+                            const is_fusable = switch (next_op) {
+                                @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.MUL), @intFromEnum(Opcode.SUB), @intFromEnum(Opcode.DIV), @intFromEnum(Opcode.AND), @intFromEnum(Opcode.OR), @intFromEnum(Opcode.XOR), @intFromEnum(Opcode.JUMP), @intFromEnum(Opcode.JUMPI) => true,
+                                else => false,
+                            };
+
+                            if (is_fusable) {
+                                self.packed_bitmap[i].is_fusion_candidate = true;
+                            }
+                        }
+                    }
+                }
+
+                // Handle PUSH instructions
                 if (@intFromEnum(opcode_enum) >= @intFromEnum(Opcode.PUSH1) and
                     @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32))
                 {
                     const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
                     if (i + n >= N) return error.TruncatedPush;
+
+                    // Mark push data bytes
                     var j: PcType = 0;
                     while (j < n) : (j += 1) {
                         const idx = i + 1 + j;
                         self.is_push_data[idx >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(idx & BITMAP_MASK);
-                        // NEW: Also set packed bitmap
                         self.packed_bitmap[idx].is_push_data = true;
                     }
                     i += n + 1;
@@ -562,12 +573,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     i += 1;
                 }
             }
-            if (comptime cfg.vector_length > 0) {
-                self.markJumpdestSimd(cfg.vector_length);
-            } else {
-                self.markJumpdestScalar();
-            }
-            if (comptime fusions_enabled) self.markFusionCandidates();
+            // Single pass complete - no need for separate JUMPDEST marking or fusion detection
         }
 
         /// Validate immediate JUMP/JUMPI targets encoded via preceding PUSH
@@ -972,108 +978,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             return stats;
         }
 
-        /// Linear scan: set jumpdest bit at i when bytecode[i]==0x5b and the push-data bit is not set.
-        fn markJumpdestScalar(self: Self) void {
-            var i: usize = 0;
-            while (i < self.len()) : (i += 1) {
-                // Prefetch for sequential access
-                if (@as(usize, i) + PREFETCH_DISTANCE < self.len()) {
-                    @prefetch(&self.runtime_code[@as(usize, i) + PREFETCH_DISTANCE], .{
-                        .rw = .read,
-                        .locality = 3,
-                        .cache = .data,
-                    });
-                }
-
-                const test_push = (self.is_push_data[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) != 0;
-                if (self.runtime_code[i] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
-                    self.is_jumpdest[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
-                    // NEW: Also set packed bitmap
-                    self.packed_bitmap[i].is_jumpdest = true;
-                }
-            }
-        }
-
-        /// SIMD-accelerated jump destination marking with prefetching optimization
-        ///
-        /// Combines vector processing with cache prefetching for optimal performance on large bytecode.
-        /// Prefetching hides memory latency by loading future data while processing current chunks.
-        fn markJumpdestSimd(self: Self, comptime L: comptime_int) void {
-            // Skip SIMD on WASM targets that don't support it
-            if (comptime (builtin.target.cpu.arch == .wasm32 and !builtin.target.cpu.features.isEnabled(.simd128))) {
-                // Fall back to scalar implementation for WASM without SIMD
-                return self.markJumpdestScalar();
-            }
-            var i: usize = 0;
-            const code_len = self.runtime_code.len;
-
-            // Vector containing L copies of JUMPDEST opcode for parallel comparison
-            const splat_5b: @Vector(L, u8) = @splat(@as(u8, @intFromEnum(Opcode.JUMPDEST)));
-
-            // Process bytecode in L-byte chunks with prefetching
-            while (i + L <= code_len) : (i += L) {
-                // Prefetch future data to hide memory latency
-                if (@as(usize, i + L) + PREFETCH_DISTANCE < code_len) {
-                    // Prefetch next bytecode chunk for future iterations
-                    @prefetch(&self.runtime_code[@as(usize, i + L) + PREFETCH_DISTANCE], .{
-                        .rw = .read,
-                        .locality = 3,
-                        .cache = .data,
-                    });
-
-                    // Prefetch corresponding push_data bitmap entries
-                    @prefetch(&self.is_push_data[(@as(usize, i + L) + PREFETCH_DISTANCE) >> BITMAP_SHIFT], .{
-                        .rw = .read,
-                        .locality = 3,
-                        .cache = .data,
-                    });
-                }
-
-                // Load L consecutive bytes into vector for parallel processing
-                var arr: [L]u8 = undefined;
-                inline for (0..L) |k| arr[k] = self.runtime_code[i + k];
-                const v: @Vector(L, u8) = arr;
-
-                // Compare all L bytes against JUMPDEST simultaneously
-                const eq: @Vector(L, bool) = v == splat_5b;
-                const eq_arr: [L]bool = eq;
-
-                // Process comparison results and update jump destination bitmap
-                inline for (0..L) |j| {
-                    const idx = i + j;
-                    const byte_idx = idx >> BITMAP_SHIFT;
-                    const bit_mask = @as(u8, 1) << @intCast(idx & BITMAP_MASK);
-
-                    // Check if it's a JUMPDEST and not push data
-                    if (eq_arr[j]) {
-                        const test_push = (self.is_push_data[byte_idx] & bit_mask) != 0;
-                        if (!test_push) {
-                            self.is_jumpdest[byte_idx] |= bit_mask;
-                            // NEW: Also set packed bitmap - idx is the actual byte position in bytecode
-                            self.packed_bitmap[idx].is_jumpdest = true;
-                        }
-                    }
-                }
-            }
-
-            // Handle remaining bytes
-            var t: usize = i;
-            while (t < code_len) : (t += 1) {
-                const byte_idx = t >> BITMAP_SHIFT;
-                const bit_mask = @as(u8, 1) << @intCast(t & BITMAP_MASK);
-                const test_push = (self.is_push_data[byte_idx] & bit_mask) != 0;
-                if (self.runtime_code[t] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
-                    self.is_jumpdest[byte_idx] |= bit_mask;
-                    // NEW: Also set packed bitmap
-                    self.packed_bitmap[t].is_jumpdest = true;
-                }
-            }
-        }
-
         /// Pretty print bytecode with human-readable formatting, colors, and metadata
         pub fn pretty_print(self: Self, allocator: std.mem.Allocator) ![]u8 {
             const opcode_data = @import("opcode_data.zig");
-            
+
             // ANSI color codes
             const Colors = struct {
                 const reset = "\x1b[0m";
@@ -1093,65 +1001,59 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 const bright_magenta = "\x1b[95m";
                 const bright_cyan = "\x1b[96m";
             };
-            
+
             var output = std.ArrayList(u8).init(allocator);
             defer output.deinit();
-            
+
             // Header
             try output.writer().print("{s}=== EVM Bytecode Disassembly ==={s}\n", .{ Colors.bold, Colors.reset });
             try output.writer().print("{s}Length: {} bytes{s}\n\n", .{ Colors.dim, self.runtime_code.len, Colors.reset });
-            
+
             var pc: PcType = 0;
             var line_num: u32 = 1;
-            
+
             while (pc < self.runtime_code.len) {
                 const opcode_byte = self.runtime_code[pc];
-                
+
                 // Line number and PC address
-                try output.writer().print("{s}{:3}:{s} {s}0x{:04x}{s} ", .{
-                    Colors.dim, line_num, Colors.reset,
-                    Colors.cyan, pc, Colors.reset
-                });
-                
+                try output.writer().print("{s}{:3}:{s} {s}0x{:04x}{s} ", .{ Colors.dim, line_num, Colors.reset, Colors.cyan, pc, Colors.reset });
+
                 // Check if this is a jump destination
                 if (self.isValidJumpDest(pc)) {
                     try output.writer().print("{s}►{s} ", .{ Colors.bright_yellow, Colors.reset });
                 } else {
                     try output.writer().print("  ");
                 }
-                
+
                 // Raw hex bytes (show opcode + data for PUSH instructions)
                 const instruction_size = self.getInstructionSize(pc);
                 var hex_output = std.ArrayList(u8).init(allocator);
                 defer hex_output.deinit();
-                
+
                 for (0..instruction_size) |i| {
                     if (pc + i < self.runtime_code.len) {
                         try hex_output.writer().print("{:02x}", .{self.runtime_code[pc + i]});
                         if (i + 1 < instruction_size) try hex_output.writer().print(" ");
                     }
                 }
-                
+
                 // Pad hex to fixed width for alignment
                 const hex_str = hex_output.items;
                 try output.writer().print("{s}{s:<24}{s} ", .{ Colors.dim, hex_str, Colors.reset });
-                
+
                 // Parse and format the instruction
                 if (std.meta.intToEnum(Opcode, opcode_byte)) |opcode| {
                     const opcode_info = opcode_data.OPCODE_INFO[opcode_byte];
-                    
+
                     switch (opcode) {
-                        .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8,
-                        .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
-                        .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                        .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
+                        .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
                             const push_size = @intFromEnum(opcode) - @intFromEnum(Opcode.PUSH1) + 1;
                             try output.writer().print("{s}{s:<12}{s}", .{ Colors.green, @tagName(opcode), Colors.reset });
-                            
+
                             // Extract and format push value
                             if (self.readPushValueN(pc, push_size)) |value| {
                                 try output.writer().print(" {s}0x{x}{s}", .{ Colors.bright_magenta, value, Colors.reset });
-                                
+
                                 // Show decimal if small value
                                 if (value <= 0xFFFF) {
                                     try output.writer().print(" {s}({}){s}", .{ Colors.dim, value, Colors.reset });
@@ -1159,9 +1061,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             }
                         },
                         .JUMPDEST => {
-                            try output.writer().print("{s}{s}{s:<12}{s}", .{ 
-                                Colors.bright_yellow, Colors.bold, @tagName(opcode), Colors.reset 
-                            });
+                            try output.writer().print("{s}{s}{s:<12}{s}", .{ Colors.bright_yellow, Colors.bold, @tagName(opcode), Colors.reset });
                         },
                         .JUMP, .JUMPI => {
                             try output.writer().print("{s}{s:<12}{s}", .{ Colors.yellow, @tagName(opcode), Colors.reset });
@@ -1180,33 +1080,30 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         },
                         else => {
                             try output.writer().print("{s}{s:<12}{s}", .{ Colors.white, @tagName(opcode), Colors.reset });
-                        }
+                        },
                     }
-                    
+
                     // Gas cost
                     try output.writer().print(" {s}[gas: {}]{s}", .{ Colors.dim, opcode_info.gas_cost, Colors.reset });
-                    
+
                     // Stack effects
                     if (opcode_info.stack_inputs > 0 or opcode_info.stack_outputs > 0) {
-                        try output.writer().print(" {s}[stack: -{}, +{}]{s}", .{ 
-                            Colors.dim, opcode_info.stack_inputs, opcode_info.stack_outputs, Colors.reset 
-                        });
+                        try output.writer().print(" {s}[stack: -{}, +{}]{s}", .{ Colors.dim, opcode_info.stack_inputs, opcode_info.stack_outputs, Colors.reset });
                     }
-                    
                 } else |_| {
                     // Invalid opcode
                     try output.writer().print("{s}INVALID(0x{:02x}){s}", .{ Colors.bright_red, opcode_byte, Colors.reset });
                 }
-                
+
                 try output.writer().print("\n");
-                
+
                 pc += instruction_size;
                 line_num += 1;
             }
-            
+
             // Footer with summary
             try output.writer().print("\n{s}=== Summary ==={s}\n", .{ Colors.bold, Colors.reset });
-            
+
             // Count jump destinations
             var jumpdest_count: u32 = 0;
             for (0..self.runtime_code.len) |i| {
@@ -1287,15 +1184,15 @@ pub const createBytecode = Bytecode;
 
 test "pretty_print: should format bytecode with colors and metadata" {
     const allocator = std.testing.allocator;
-    
+
     // Simple bytecode: PUSH1 0x42, PUSH1 0x24, ADD, JUMPDEST, STOP
     const code = [_]u8{ 0x60, 0x42, 0x60, 0x24, 0x01, 0x5B, 0x00 };
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     const formatted = try bytecode.pretty_print(allocator);
     defer allocator.free(formatted);
-    
+
     // Expected output should contain:
     // - PC addresses (0x00, 0x02, etc.)
     // - Opcode names (PUSH1, ADD, JUMPDEST, STOP)
@@ -1303,7 +1200,7 @@ test "pretty_print: should format bytecode with colors and metadata" {
     // - Gas costs
     // - Jump destinations highlighted
     // - ANSI colors
-    
+
     const expected_parts = [_][]const u8{
         "0x00", // PC address
         "PUSH1", // Opcode name
@@ -1316,15 +1213,14 @@ test "pretty_print: should format bytecode with colors and metadata" {
         "gas:", // Gas cost indicator
         "\x1b[", // ANSI escape sequence for colors
     };
-    
+
     for (expected_parts) |part| {
         std.testing.expect(std.mem.indexOf(u8, formatted, part) != null) catch |err| {
             std.debug.print("Expected to find '{s}' in:\n{s}\n", .{ part, formatted });
             return err;
         };
     }
-    
+
     // Verify it's a valid string
     try std.testing.expect(formatted.len > 0);
 }
-

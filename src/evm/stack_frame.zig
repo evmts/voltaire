@@ -69,7 +69,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             InvalidAmount,
             WriteProtection,
         };
-        /// The type all opcode handlers return. 
+        /// The type all opcode handlers return.
         /// Opcode handlers are expected to recursively dispatch the next opcode if they themselves don't error or return
         pub const OpcodeHandler = *const fn (frame: *Self, dispatch: Dispatch) Error!Success;
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
@@ -96,7 +96,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             .WordType = config.WordType,
         });
         /// The type used to validate and analyze bytecode
-        /// Bytecode in a single pass validates the bytecode and produces an iterator 
+        /// Bytecode in a single pass validates the bytecode and produces an iterator
         /// Dispatch can use to produce the Dispatch stream
         pub const Bytecode = bytecode_mod.Bytecode(.{
             .max_bytecode_size = config.max_bytecode_size,
@@ -116,7 +116,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         //
         //   Total Size: ~420 bytes (with default BlockInfo config)
         //   Alignment: 8 bytes (natural alignment for pointers)
-        //   
+        //
         //   SIZE OPTIMIZATIONS:
         //   - value: 32B → 8B (pointer instead of inline u256)
         //   - output: ArrayList(24B) → buffer[256] + len(4B) = 260B inline
@@ -129,20 +129,20 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         //   ├────────┼────────────────────┼───────┼───────────────────────┤
         //   │ 0      │ stack              │ 16B   │ Stack (2 pointers)    │
         //   │ 16     │ gas_remaining      │ 4/8B  │ i32/i64 (config)      │
-        //   │ 20/24  │ memory             │ 16B   │ Memory struct         │
+        //   │ 20/24  │ memory             │ 8B    │ *Memory struct         │
         //   │ 36/40  │ database           │ 8B    │ DatabaseType pointer  │
         //   │ 44/48  │ log_items          │ 8B    │ [*]Log                │
         //   │ 52/56  │ log_len            │ 2B    │ u16                   │
         //   │ 54/58  │ evm_ptr            │ 8B    │ *anyopaque            │
-        //   │ 62/66  │ [fits/exceeds]     │       │                       │
+        //   │ 54/58  │ [fits/exceeds]     │       │                       │
         //   └─────────────────────────────────────────────────────────────┘
         //
         //   CACHE LINE 2 (64-127 bytes) - CALL CONTEXT
         //   ┌─────────────────────────────────────────────────────────────┐
         //   │ Offset │ Field              │ Size  │ Type                  │
         //   ├────────┼────────────────────┼───────┼───────────────────────┤
-        //   │ 64     │ caller             │ 20B   │ Address               │
-        //   │ 84     │ value              │ 8B    │ *const u256           │
+        //   │ 58     │ value              │ 8B    │ *const u256           │
+        //   │ 66     │ caller             │ 20B   │ Address               │
         //   │ 92     │ contract_address   │ 20B   │ Address               │
         //   │ 112    │ calldata           │ 16B   │ []const u8 (slice)    │
         //   │ 128    │ [exceeds line 2]   │       │                       │
@@ -180,7 +180,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         //   │ ~392   │ output_buffer      │ 256B     │ [256]u8 (inline)    │
         //   │ ~648   │ [total]            │          │                     │
         //   └─────────────────────────────────────────────────────────────┘
-        // 
+        //
         //  Component-Level Alignment Details
         //
         //  Stack (stack.zig) - OPTIMIZED
@@ -219,7 +219,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         //  - Cache-friendly: Fits perfectly in hot path cache line
         //
         //   OPTIMIZED Memory Layout Visualization (64-byte cache lines)
-        // 
+        //
         //   With i64 gas_remaining (common case):
         //   Cache Line 1 (0-63):    Stack[0-15] Gas[16-23] Memory[24-39] Database[40-47] LogItems[48-55] LogLen[56-57] EVM*[58-65] EXCEEDS!
         //   Cache Line 2 (64-127):  Caller[64-83] Value*[84-91] Contract[92-111] Calldata[112-127] EXCEEDS!
@@ -252,7 +252,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         // - Better cache utilization for real-world smart contract patterns
         //
         // BlockInfo Size Variations (based on BlockInfoConfig):
-        // 
+        //
         // Default BlockInfo (use_compact_types = false):
         //   - Total: ~188 bytes
         //   - difficulty: u256 (32B), base_fee: u256 (32B), blob_base_fee: u256 (32B)
@@ -265,33 +265,32 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         // Custom BlockInfo (e.g., DifficultyType = u128, BaseFeeType = u96):
         //   - Total: Variable based on types
         //   - Allows fine-tuned memory/precision tradeoffs
-        
+
         // CACHE LINE 1 (0-63 bytes) - SUPER HOT PATH
-        stack: Stack,                      // 16B - Stack operations
-        gas_remaining: GasType,             // 8B - Gas tracking (i64)
-        memory: Memory,                     // 16B - Memory operations  
-        database: config.DatabaseType,      // 8B - Storage access
-        log_items: ?[*]Log,                 // 8B - Log array pointer (null = 0 logs)
-        evm_ptr: *anyopaque,                // 8B - EVM instance pointer
-        caller: Address,                    // 20B - Calling address
-        value: WordType,                    // 32B - Call value (inline)
+        stack: Stack, // 16B - Stack operations
+        gas_remaining: GasType, // 8B - Gas tracking (i64)
+        memory: Memory, // 16B - Memory operations
+        database: config.DatabaseType, // 8B - Storage access
+        log_items: ?[*]Log, // 8B - Log array pointer (null = 0 logs)
+        evm_ptr: *anyopaque, // 8B - EVM instance pointer
+        value: WordType, // 32B - Call value (inline)
+        caller: Address, // 20B - Calling address
         contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
-        output: []u8,                       // 16B - Output data slice (heap allocated)
-        calldata: []const u8,               // 16B - Input data slice
-        allocator: std.mem.Allocator,       // 16B - Memory allocator
-        block_info: BlockInfo,              // ~188B - Block context
+        calldata: []const u8, // 16B - Input data slice
+        output: []u8, // 16B - Output data slice (heap allocated)
+        allocator: std.mem.Allocator, // 16B - Memory allocator
+        block_info: BlockInfo, // ~188B - Block context
         self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
         //
         /// Initialize a new execution frame.
         ///
-        /// Creates stack, memory, and other execution components. Allocates 
+        /// Creates stack, memory, and other execution components. Allocates
         /// resources with proper cleanup on failure. Bytecode validation
         /// and analysis is now handled separately by dispatch initialization.
-        /// 
-        /// EIP-214: For static calls, self_destruct should be null to prevent 
+        ///
+        /// EIP-214: For static calls, self_destruct should be null to prevent
         /// SELFDESTRUCT operations which modify blockchain state.
         pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: WordType, calldata: []const u8, block_info: BlockInfo, evm_ptr: *anyopaque, self_destruct: ?*SelfDestruct) Error!Self {
-
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
                 return Error.AllocationError;
@@ -302,19 +301,18 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 return Error.AllocationError;
             };
             errdefer memory.deinit(allocator);
-            
-            
+
             return Self{
                 .stack = stack,
-                .gas_remaining = @as(GasType, @intCast(@max(gas_remaining, 0))),
+                .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
                 .memory = memory,
                 .database = database,
-                .log_items = null,  // No logs initially
+                .log_items = null, // No logs initially
                 .evm_ptr = evm_ptr,
                 .caller = caller,
                 .value = value,
                 .contract_address = Address.ZERO_ADDRESS,
-                .output = &[_]u8{},  // Start with empty output
+                .output = &[_]u8{}, // Start with empty output
                 .calldata = calldata,
                 .allocator = allocator,
                 .block_info = block_info,
@@ -337,10 +335,10 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!Success {
             return self.interpret_with_tracer(bytecode_raw, null, {});
         }
-        
+
         /// Execute this frame by building a dispatch schedule and jumping to the first handler.
         /// Performs a one-time static gas charge for the first basic block before execution.
-        /// 
+        ///
         /// @param bytecode_raw: Raw bytecode to execute
         /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
@@ -352,16 +350,26 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 
             var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
-                log.err("Bytecode init failed: {}", .{e});
+                log.err("Bytecode init failed: {any}", .{e});
+                if (bytecode_raw.len > 0) {
+                    log.err("  Bytecode length: {d}", .{bytecode_raw.len});
+                    log.err("  First 16 bytes: {x}", .{bytecode_raw[0..@min(bytecode_raw.len, 16)]});
+                    // Check for specific test bytecode
+                    if (bytecode_raw.len >= 10 and bytecode_raw[0] == 0x60 and bytecode_raw[1] == 0x42) {
+                        log.warn("  This appears to be the MSTORE/RETURN test bytecode!", .{});
+                    }
+                }
                 return switch (e) {
                     error.BytecodeTooLarge => Error.BytecodeTooLarge,
                     error.InvalidOpcode => Error.InvalidOpcode,
+                    error.InvalidJumpDestination => Error.InvalidJump,
+                    error.TruncatedPush => Error.InvalidOpcode,
                     error.OutOfMemory => Error.AllocationError,
                     else => Error.AllocationError,
                 };
             };
             defer bytecode.deinit();
-            
+
             const handlers = &Self.opcode_handlers;
 
             if (TracerType) |T| {
@@ -373,10 +381,10 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const result = if (TracerType) |T| blk: {
                 const traced_schedule = Dispatch.initWithTracing(self.allocator, &bytecode, handlers, T, tracer_instance) catch return Error.AllocationError;
                 defer Dispatch.deinitSchedule(self.allocator, traced_schedule);
-                
+
                 var traced_jump_table = Dispatch.createJumpTable(self.allocator, traced_schedule, &bytecode) catch return Error.AllocationError;
                 defer self.allocator.free(traced_jump_table.entries);
-                
+
                 var start_index: usize = 0;
                 switch (traced_schedule[0]) {
                     .first_block_gas => |meta| {
@@ -385,18 +393,21 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                     },
                     else => {},
                 }
-                
+
                 const cursor = Self.Dispatch{ .cursor = traced_schedule.ptr + start_index, .jump_table = &traced_jump_table };
                 break :blk cursor.cursor[0].opcode_handler(self, cursor);
             } else blk: {
+                log.debug("DISPATCH INIT: bytecode len={d}", .{bytecode.runtime_code.len});
                 const schedule = Dispatch.init(self.allocator, &bytecode, handlers) catch |e| {
-                    log.err("Failed to create dispatch schedule: {}", .{e});
+                    log.err("Failed to create dispatch schedule: {any}", .{e});
+                    log.err("  Bytecode runtime_code len: {d}", .{bytecode.runtime_code.len});
                     return Error.AllocationError;
                 };
+                log.debug("DISPATCH INIT COMPLETE: schedule len={d}, opcode_count={d}", .{ schedule.len, bytecode.runtime_code.len });
                 defer Dispatch.deinitSchedule(self.allocator, schedule);
                 if (schedule.len < 3) {
-                    log.err("Dispatch schedule is too short! len={}", .{schedule.len});
-                    log.err("  Bytecode len: {}", .{bytecode.runtime_code.len});
+                    log.err("Dispatch schedule is too short! len={d}", .{schedule.len});
+                    log.err("  Bytecode len: {d}", .{bytecode.runtime_code.len});
                     if (bytecode.runtime_code.len > 0) {
                         log.err("  First few bytes: {x}", .{bytecode.runtime_code[0..@min(bytecode.runtime_code.len, 16)]});
                     }
@@ -409,18 +420,20 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 var start_index: usize = 0;
                 switch (schedule[0]) {
                     .first_block_gas => |meta| {
+                        log.debug("First block gas charge: {d} (current gas: {d})", .{ meta.gas, self.gas_remaining });
                         if (meta.gas > 0) try self.consumeGasChecked(meta.gas);
+                        log.debug("Gas after first block charge: {d}", .{self.gas_remaining});
                         start_index = 1;
                     },
                     else => {},
                 }
-                
+
                 const cursor = Self.Dispatch{ .cursor = schedule.ptr + start_index, .jump_table = &jump_table };
                 break :blk cursor.cursor[0].opcode_handler(self, cursor);
             };
-            
+
             if (TracerType) |T| if (@hasDecl(T, "afterExecute")) tracer_instance.afterExecute(Self, self);
-            
+
             return result;
         }
 
@@ -449,35 +462,35 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const new_log_items: ?[*]Log = if (self.log_items) |items| blk: {
                 const header = @as(*const LogHeader, @ptrFromInt(@intFromPtr(items) - @sizeOf(LogHeader)));
                 if (header.count == 0) break :blk null;
-                
+
                 const full_size = @sizeOf(LogHeader) + header.capacity * @sizeOf(Log);
                 const new_log_memory = allocator.alloc(u8, full_size) catch return Error.AllocationError;
-                
+
                 const new_header = @as(*LogHeader, @ptrCast(@alignCast(new_log_memory.ptr)));
                 new_header.* = header.*;
-                
+
                 const new_items = @as([*]Log, @ptrCast(@alignCast(new_log_memory.ptr + @sizeOf(LogHeader))));
-                
+
                 for (items[0..header.count], 0..) |log_entry, i| {
                     const topics_copy = allocator.alloc(u256, log_entry.topics.len) catch return Error.AllocationError;
                     @memcpy(topics_copy, log_entry.topics);
-                    
+
                     const data_copy = allocator.alloc(u8, log_entry.data.len) catch {
                         allocator.free(topics_copy);
                         return Error.AllocationError;
                     };
                     @memcpy(data_copy, log_entry.data);
-                    
+
                     new_items[i] = Log{
                         .address = log_entry.address,
                         .topics = topics_copy,
                         .data = data_copy,
                     };
                 }
-                
+
                 break :blk new_items;
             } else null;
-            
+
             const new_output = if (self.output.len > 0) blk: {
                 const output_copy = allocator.alloc(u8, self.output.len) catch return Error.AllocationError;
                 @memcpy(output_copy, self.output);
@@ -504,7 +517,8 @@ pub fn StackFrame(comptime config: FrameConfig) type {
 
         /// Consume gas without checking (for use after static analysis)
         pub fn consumeGasUnchecked(self: *Self, amount: u64) void {
-            self.gas_remaining -= @as(GasType, @intCast(amount));
+            const clamped_amount = @min(amount, std.math.maxInt(GasType));
+            self.gas_remaining -= @as(GasType, @intCast(clamped_amount));
         }
 
         /// Consume gas with bounds checking and safe casting
@@ -518,7 +532,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         pub inline fn getEvm(self: *const Self) *DefaultEvm {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
         }
-        
+
         /// Set output data (allocates on heap)
         pub fn setOutput(self: *Self, data: []const u8) Error!void {
             if (self.output.len > 0) {
@@ -534,7 +548,7 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             @memcpy(new_output, data);
             self.output = new_output;
         }
-        
+
         /// Get current output data as slice
         pub fn getOutput(self: *const Self) []const u8 {
             return self.output;
@@ -552,15 +566,15 @@ pub fn StackFrame(comptime config: FrameConfig) type {
         /// Clean up log memory
         pub fn deinitLogs(self: *Self, allocator: std.mem.Allocator) void {
             const items = self.log_items orelse return;
-            
+
             const header = @as(*LogHeader, @ptrFromInt(@intFromPtr(items) - @sizeOf(LogHeader)));
-            
+
             for (items[0..header.count]) |log_entry| {
                 allocator.free(log_entry.topics);
                 allocator.free(log_entry.data);
             }
-            
-            const full_alloc = @as([*]u8, @ptrFromInt(@intFromPtr(header)))[0..@sizeOf(LogHeader) + header.capacity * @sizeOf(Log)];
+
+            const full_alloc = @as([*]u8, @ptrFromInt(@intFromPtr(header)))[0 .. @sizeOf(LogHeader) + header.capacity * @sizeOf(Log)];
             allocator.free(full_alloc);
         }
 
@@ -570,34 +584,34 @@ pub fn StackFrame(comptime config: FrameConfig) type {
                 const initial_capacity: u16 = 4;
                 const full_size = @sizeOf(LogHeader) + initial_capacity * @sizeOf(Log);
                 const memory = try allocator.alloc(u8, full_size);
-                
+
                 const header = @as(*LogHeader, @ptrCast(@alignCast(memory.ptr)));
                 header.* = .{ .capacity = initial_capacity, .count = 1 };
-                
+
                 const items = @as([*]Log, @ptrCast(@alignCast(memory.ptr + @sizeOf(LogHeader))));
                 items[0] = log_entry;
-                
+
                 self.log_items = items;
             } else {
                 const items = self.log_items.?;
                 const header = @as(*LogHeader, @ptrFromInt(@intFromPtr(items) - @sizeOf(LogHeader)));
-                
+
                 if (header.count >= header.capacity) {
                     const new_capacity = header.capacity * 2;
                     const new_size = @sizeOf(LogHeader) + new_capacity * @sizeOf(Log);
                     const new_memory = try allocator.alloc(u8, new_size);
-                    
+
                     const new_header = @as(*LogHeader, @ptrCast(@alignCast(new_memory.ptr)));
                     new_header.* = .{ .capacity = new_capacity, .count = header.count + 1 };
-                    
+
                     const new_items = @as([*]Log, @ptrCast(@alignCast(new_memory.ptr + @sizeOf(LogHeader))));
                     @memcpy(new_items[0..header.count], items[0..header.count]);
                     new_items[header.count] = log_entry;
-                    
+
                     const old_size = @sizeOf(LogHeader) + header.capacity * @sizeOf(Log);
                     const old_memory = @as([*]u8, @ptrFromInt(@intFromPtr(header)))[0..old_size];
                     allocator.free(old_memory);
-                    
+
                     self.log_items = new_items;
                 } else {
                     items[header.count] = log_entry;
@@ -619,6 +633,5 @@ pub fn StackFrame(comptime config: FrameConfig) type {
             const header = @as(*const LogHeader, @ptrFromInt(@intFromPtr(items) - @sizeOf(LogHeader)));
             return header.count;
         }
-
     };
 }
