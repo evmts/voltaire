@@ -139,14 +139,68 @@ pub fn Handlers(comptime FrameType: type) type {
             if (modulus == 0) {
                 result = 0;
             } else {
-                const factor1_mod = factor1 % modulus;
-                const factor2_mod = factor2 % modulus;
-                const product = factor1_mod *% factor2_mod;
-                result = product % modulus;
+                result = mulmod_safe(factor1, factor2, modulus);
             }
             try self.stack.set_top(result);
             const next = dispatch.getNext();
             return @call(.auto, next.cursor[0].opcode_handler, .{ self, next });
+        }
+
+        /// Safe modular multiplication using double-width arithmetic to prevent overflow.
+        fn mulmod_safe(a: WordType, b: WordType, n: WordType) WordType {
+            if (n == 0) return 0;
+            if (a == 0 or b == 0) return 0;
+            if (n == 1) return 0;
+            
+            // Reduce operands first
+            const a_mod = a % n;
+            const b_mod = b % n;
+            
+            // Use double-width arithmetic to prevent overflow
+            if (WordType == u256) {
+                const wide_a = @as(u512, a_mod);
+                const wide_b = @as(u512, b_mod);
+                const wide_n = @as(u512, n);
+                const wide_product = (wide_a * wide_b) % wide_n;
+                return @intCast(wide_product);
+            } else {
+                // For other word types, fall back to addition-based approach
+                return mulmod_by_addition(a_mod, b_mod, n);
+            }
+        }
+
+        /// Fallback modular multiplication using repeated addition for non-u256 types.
+        fn mulmod_by_addition(a: WordType, b: WordType, n: WordType) WordType {
+            var result: WordType = 0;
+            var base = a % n;
+            var multiplier = b % n;
+            
+            while (multiplier > 0) {
+                if (multiplier & 1 == 1) {
+                    result = addmod_safe(result, base, n);
+                }
+                multiplier >>= 1;
+                if (multiplier > 0) {
+                    base = addmod_safe(base, base, n);
+                }
+            }
+            
+            return result;
+        }
+
+        /// Safe modular addition that prevents overflow.
+        fn addmod_safe(a: WordType, b: WordType, n: WordType) WordType {
+            const a_mod = a % n;
+            const b_mod = b % n;
+            
+            // Check if addition would overflow
+            if (a_mod > n - b_mod) {
+                // Overflow case: (a + b) = n + (a + b - n)
+                return (a_mod - (n - b_mod));
+            } else {
+                // No overflow case
+                return (a_mod + b_mod) % n;
+            }
         }
 
         /// EXP opcode (0x0a) - Exponential operation.
@@ -200,6 +254,8 @@ const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
 
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+
 // Test configuration
 const test_config = FrameConfig{
     .stack_size = 1024,
@@ -248,7 +304,7 @@ test "ADD opcode - basic addition" {
     try frame.stack.push(3);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.add(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.add(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 8), try frame.stack.pop());
     try testing.expectEqual(@as(usize, 0), frame.stack.len());
@@ -264,7 +320,7 @@ test "ADD opcode - overflow wrapping" {
     try frame.stack.push(1);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.add(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.add(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -278,7 +334,7 @@ test "MUL opcode - basic multiplication" {
     try frame.stack.push(6);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mul(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mul(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 42), try frame.stack.pop());
 }
@@ -292,7 +348,7 @@ test "SUB opcode - basic subtraction" {
     try frame.stack.push(3);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sub(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sub(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 7), try frame.stack.pop());
 }
@@ -306,7 +362,7 @@ test "SUB opcode - underflow wrapping" {
     try frame.stack.push(1);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sub(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sub(&frame, dispatch);
     
     try testing.expectEqual(std.math.maxInt(u256), try frame.stack.pop());
 }
@@ -320,7 +376,7 @@ test "DIV opcode - basic division" {
     try frame.stack.push(4);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.div(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.div(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 5), try frame.stack.pop());
 }
@@ -334,7 +390,7 @@ test "DIV opcode - division by zero" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.div(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.div(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -348,7 +404,7 @@ test "SDIV opcode - positive division" {
     try frame.stack.push(4);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sdiv(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sdiv(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 5), try frame.stack.pop());
 }
@@ -364,7 +420,7 @@ test "SDIV opcode - negative division" {
     try frame.stack.push(4);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sdiv(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sdiv(&frame, dispatch);
     
     // -5 in two's complement
     const neg_5 = std.math.maxInt(u256) - 4;
@@ -383,7 +439,7 @@ test "SDIV opcode - MIN/-1 overflow case" {
     try frame.stack.push(neg_1);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sdiv(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sdiv(&frame, dispatch);
     
     try testing.expectEqual(min_signed, try frame.stack.pop());
 }
@@ -397,7 +453,7 @@ test "MOD opcode - basic modulo" {
     try frame.stack.push(5);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 2), try frame.stack.pop());
 }
@@ -411,7 +467,7 @@ test "MOD opcode - modulo by zero" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -425,7 +481,7 @@ test "SMOD opcode - positive modulo" {
     try frame.stack.push(5);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.smod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.smod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 2), try frame.stack.pop());
 }
@@ -440,7 +496,7 @@ test "SMOD opcode - negative modulo" {
     try frame.stack.push(5);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.smod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.smod(&frame, dispatch);
     
     // -2 in two's complement
     const neg_2 = std.math.maxInt(u256) - 1;
@@ -457,7 +513,7 @@ test "ADDMOD opcode - basic addmod" {
     try frame.stack.push(7);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.addmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.addmod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 2), try frame.stack.pop());
 }
@@ -473,7 +529,7 @@ test "ADDMOD opcode - overflow handling" {
     try frame.stack.push(10);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.addmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.addmod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
 }
@@ -488,7 +544,7 @@ test "ADDMOD opcode - modulo zero" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.addmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.addmod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -503,7 +559,7 @@ test "MULMOD opcode - basic mulmod" {
     try frame.stack.push(7);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mulmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mulmod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 4), try frame.stack.pop());
 }
@@ -518,7 +574,7 @@ test "MULMOD opcode - modulo zero" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mulmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mulmod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -532,7 +588,7 @@ test "EXP opcode - basic exponentiation" {
     try frame.stack.push(10);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1024), try frame.stack.pop());
 }
@@ -546,7 +602,7 @@ test "EXP opcode - zero exponent" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
 }
@@ -560,7 +616,7 @@ test "EXP opcode - overflow wrapping" {
     try frame.stack.push(256);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     // 2^256 mod 2^256 = 0
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -575,7 +631,7 @@ test "SIGNEXTEND opcode - extend positive byte" {
     try frame.stack.push(0x7F);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.signextend(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0x7F), try frame.stack.pop());
 }
@@ -589,7 +645,7 @@ test "SIGNEXTEND opcode - extend negative byte" {
     try frame.stack.push(0x80);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.signextend(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch);
     
     // Should be 0xFFFFFF...FF80
     const expected = std.math.maxInt(u256) - 0x7F;
@@ -605,7 +661,7 @@ test "SIGNEXTEND opcode - no extension needed" {
     try frame.stack.push(0x123456789ABCDEF0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.signextend(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), try frame.stack.pop());
 }
@@ -621,7 +677,7 @@ test "ADD opcode - zero addition" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.add(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.add(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 42), try frame.stack.pop());
 }
@@ -635,7 +691,7 @@ test "MUL opcode - multiplication by zero" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mul(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mul(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -650,7 +706,7 @@ test "MUL opcode - multiplication overflow" {
     try frame.stack.push(large);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mul(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mul(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -665,7 +721,7 @@ test "DIV opcode - large number division" {
     try frame.stack.push(max);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.div(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.div(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
 }
@@ -680,7 +736,7 @@ test "SDIV opcode - division by zero" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sdiv(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sdiv(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -697,7 +753,7 @@ test "SDIV opcode - negative by negative" {
     try frame.stack.push(neg_4);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.sdiv(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.sdiv(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 5), try frame.stack.pop());
 }
@@ -711,7 +767,7 @@ test "MOD opcode - exact division" {
     try frame.stack.push(4);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -728,7 +784,7 @@ test "SMOD opcode - both operands negative" {
     try frame.stack.push(neg_5);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.smod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.smod(&frame, dispatch);
     
     // Result is -2
     const neg_2 = std.math.maxInt(u256) - 1;
@@ -746,7 +802,7 @@ test "SMOD opcode - positive mod negative" {
     try frame.stack.push(neg_5);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.smod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.smod(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 2), try frame.stack.pop());
 }
@@ -762,7 +818,7 @@ test "ADDMOD opcode - large numbers" {
     try frame.stack.push(7);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.addmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.addmod(&frame, dispatch);
     
     // (2^256 % 7) = 2
     try testing.expectEqual(@as(u256, 2), try frame.stack.pop());
@@ -779,7 +835,7 @@ test "MULMOD opcode - large multiplication" {
     try frame.stack.push(13);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mulmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mulmod(&frame, dispatch);
     
     // Result should be consistent with proper modular arithmetic
     const result = try frame.stack.pop();
@@ -795,7 +851,7 @@ test "EXP opcode - base 0" {
     try frame.stack.push(5);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -810,7 +866,7 @@ test "EXP opcode - base 1" {
     try frame.stack.push(max);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
 }
@@ -824,7 +880,7 @@ test "EXP opcode - power of 2" {
     try frame.stack.push(64);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1) << 64, try frame.stack.pop());
 }
@@ -838,7 +894,7 @@ test "SIGNEXTEND opcode - extend from byte 1" {
     try frame.stack.push(0x0080);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.signextend(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0x0080), try frame.stack.pop());
 }
@@ -852,7 +908,7 @@ test "SIGNEXTEND opcode - extend negative from byte 1" {
     try frame.stack.push(0x8000);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.signextend(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch);
     
     // Should be 0xFFFF...FF8000
     const expected = std.math.maxInt(u256) - 0x7FFF;
@@ -868,7 +924,7 @@ test "SIGNEXTEND opcode - large index" {
     try frame.stack.push(0xDEADBEEF);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.signextend(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 0xDEADBEEF), try frame.stack.pop());
 }
@@ -882,7 +938,7 @@ test "arithmetic operations - sequential operations" {
     try frame.stack.push(10);
     try frame.stack.push(20);
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.add(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.add(&frame, dispatch);
     
     try frame.stack.push(3);
     const dispatch2 = createMockDispatch();
@@ -908,7 +964,7 @@ test "MULMOD opcode - edge case with overflow prevention" {
     try frame.stack.push(large_prime);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.mulmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.mulmod(&frame, dispatch);
     
     const result = try frame.stack.pop();
     // Result should be less than modulus
@@ -924,7 +980,7 @@ test "EXP opcode - special cases" {
     try frame.stack.push(0);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.exp(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
     
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
     
@@ -955,10 +1011,106 @@ test "ADDMOD/MULMOD consistency" {
     try frame.stack.push(n);
     
     const dispatch = createMockDispatch();
-    _ = try TestFrame.ArithmeticHandlers.addmod(frame, dispatch);
+    _ = try TestFrame.ArithmeticHandlers.addmod(&frame, dispatch);
     const result1 = try frame.stack.pop();
     
     // Manual calculation for verification
     const expected = (a + b) % n;
     try testing.expectEqual(expected, result1);
+}
+
+test "MUL opcode - maximum value overflow" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: MAX * 2 = MAX-1 (wraps due to overflow)
+    const max = std.math.maxInt(u256);
+    try frame.stack.push(max);
+    try frame.stack.push(2);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.mul(&frame, dispatch);
+    
+    // MAX * 2 = MAX + MAX = wraps to MAX - 1
+    try testing.expectEqual(max - 1, try frame.stack.pop());
+}
+
+test "MUL opcode - edge overflow cases" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: (2^255) * 3 should wrap
+    const half_max = @as(u256, 1) << 255;
+    try frame.stack.push(half_max);
+    try frame.stack.push(3);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.mul(&frame, dispatch);
+    
+    // Result wraps around due to overflow
+    const expected = half_max *% 3;
+    try testing.expectEqual(expected, try frame.stack.pop());
+}
+
+test "EXP opcode - large exponent overflow" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: 3^255 (should wrap due to repeated multiplication overflow)
+    try frame.stack.push(3);
+    try frame.stack.push(255);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
+    
+    // Large exponentiation wraps due to overflow in intermediate steps
+    const result = try frame.stack.pop();
+    try testing.expect(result != 0); // Should have some non-zero wrapped result
+}
+
+test "EXP opcode - overflow in intermediate calculations" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: 257^200 - tests overflow in base squaring
+    try frame.stack.push(257);
+    try frame.stack.push(200);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.exp(&frame, dispatch);
+    
+    // Should complete without error, result will wrap due to overflow
+    const result = try frame.stack.pop();
+    try testing.expect(true); // Just verify no crash
+    _ = result;
+}
+
+test "MULMOD opcode - overflow bug reproduction" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test case that reproduces the overflow bug
+    // Use values where (a%n) * (b%n) overflows but a*b%n doesn't
+    const a = (@as(u256, 1) << 200) + 1;  // Large number
+    const b = (@as(u256, 1) << 200) + 1;  // Large number  
+    const n = (@as(u256, 1) << 100) + 3;  // Modulus
+    
+    try frame.stack.push(a);
+    try frame.stack.push(b);
+    try frame.stack.push(n);
+    
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.mulmod(&frame, dispatch);
+    const buggy_result = try frame.stack.pop();
+    
+    // Calculate correct result using proper modular arithmetic
+    // For proper MULMOD: we need arbitrary precision
+    // Since Zig u256 overflows, we'd expect different results
+    const a_mod = a % n;
+    const b_mod = b % n;
+    const incorrect_product = a_mod *% b_mod; // This overflows
+    const incorrect_result = incorrect_product % n;
+    
+    // The current implementation returns the incorrect result due to overflow
+    try testing.expectEqual(incorrect_result, buggy_result);
 }

@@ -215,6 +215,70 @@ pub fn Dispatch(comptime FrameType: type) type {
         }
 
         // ========================
+        // Helper Functions
+        // ========================
+
+        /// Calculate gas cost for the first basic block of bytecode.
+        /// Returns the total gas cost from the start until the first JUMPDEST, terminator opcode, or end of bytecode.
+        pub fn calculateFirstBlockGas(bytecode: anytype) u64 {
+            var gas: u64 = 0;
+            var iter = bytecode.createIterator();
+            const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
+
+            while (true) {
+                const maybe = iter.next();
+                if (maybe == null) break;
+                const op_data = maybe.?;
+
+                switch (op_data) {
+                    .regular => |data| {
+                        const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
+                        const new_gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            return new_gas;
+                        }
+                        gas = new_gas;
+                        // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
+                        switch (data.opcode) {
+                            0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
+                                return gas;
+                            },
+                            else => {},
+                        }
+                    },
+                    .push => |data| {
+                        const push_opcode = 0x60 + data.size - 1;
+                        const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
+                        const new_gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            return new_gas;
+                        }
+                        gas = new_gas;
+                    },
+                    .jumpdest => {
+                        // JUMPDEST terminates the block but its gas is not included
+                        return gas;
+                    },
+                    .stop, .invalid => {
+                        const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
+                        gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
+                        return gas;
+                    },
+                    else => {
+                        // For fusion operations, approximate gas cost
+                        const new_gas = std.math.add(u64, gas, 6) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            return new_gas;
+                        }
+                        gas = new_gas;
+                    },
+                }
+            }
+
+            return gas;
+        }
+
+        // ========================
         // Initialization
         // ========================
 
@@ -241,69 +305,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
 
-
             // Calculate gas cost for first basic block
-            var first_block_gas: u64 = 0;
-            var temp_iter = bytecode.createIterator();
-            const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
-
-            // Scan until we hit a JUMPDEST or end of bytecode to calculate first block gas
-            var found_terminator = false;
-            while (true) {
-                const maybe = temp_iter.next();
-                if (maybe == null) break;
-                const op_data = maybe.?;
-
-                switch (op_data) {
-                    .regular => |data| {
-                        const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
-                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            first_block_gas = new_gas;
-                            break;
-                        }
-                        first_block_gas = new_gas;
-                        // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
-                        switch (data.opcode) {
-                            0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
-                                found_terminator = true;
-                                break;
-                            },
-                            else => {},
-                        }
-                    },
-                    .push => |data| {
-                        const push_opcode = 0x60 + data.size - 1;
-                        const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
-                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            first_block_gas = new_gas;
-                            break;
-                        }
-                        first_block_gas = new_gas;
-                    },
-                    .jumpdest => {
-                        found_terminator = true;
-                        break;
-                    },
-                    .stop, .invalid => {
-                        const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
-                        first_block_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
-                        found_terminator = true;
-                        break;
-                    },
-                    else => {
-                        // For fusion operations, approximate gas cost
-                        const new_gas = std.math.add(u64, first_block_gas, 6) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            first_block_gas = new_gas;
-                            break;
-                        }
-                        first_block_gas = new_gas; // PUSH + operation
-                    },
-                }
-                if (found_terminator) break;
-            }
+            const first_block_gas = calculateFirstBlockGas(bytecode);
 
             // Add first_block_gas entry if there's any gas to charge
             if (first_block_gas > 0) {
@@ -555,68 +558,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             const trace_before_handler = createTraceHandler(TracerType, tracer_instance, true);
             const trace_after_handler = createTraceHandler(TracerType, tracer_instance, false);
 
-            // Calculate gas cost for first basic block (same as non-tracing version)
-            var first_block_gas: u64 = 0;
-            var temp_iter = bytecode.createIterator();
-            const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
-
-            // Scan until we hit a JUMPDEST or end of bytecode to calculate first block gas
-            var found_terminator = false;
-            while (true) {
-                const maybe = temp_iter.next();
-                if (maybe == null) break;
-                const op_data = maybe.?;
-
-                switch (op_data) {
-                    .regular => |data| {
-                        const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
-                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            first_block_gas = new_gas;
-                            break;
-                        }
-                        first_block_gas = new_gas;
-                        // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
-                        switch (data.opcode) {
-                            0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
-                                found_terminator = true;
-                                break;
-                            },
-                            else => {},
-                        }
-                    },
-                    .push => |data| {
-                        const push_opcode = 0x60 + data.size - 1;
-                        const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
-                        const new_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            first_block_gas = new_gas;
-                            break;
-                        }
-                        first_block_gas = new_gas;
-                    },
-                    .jumpdest => {
-                        found_terminator = true;
-                        break;
-                    },
-                    .stop, .invalid => {
-                        const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
-                        first_block_gas = std.math.add(u64, first_block_gas, gas_to_add) catch std.math.maxInt(u64);
-                        found_terminator = true;
-                        break;
-                    },
-                    else => {
-                        // For fusion operations, approximate gas cost
-                        const new_gas = std.math.add(u64, first_block_gas, 6) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            first_block_gas = new_gas;
-                            break;
-                        }
-                        first_block_gas = new_gas; // PUSH + operation
-                    },
-                }
-                if (found_terminator) break;
-            }
+            // Calculate gas cost for first basic block
+            const first_block_gas = calculateFirstBlockGas(bytecode);
 
             // Add first_block_gas entry if there's any gas to charge
             if (first_block_gas > 0) {
@@ -881,90 +824,24 @@ pub fn Dispatch(comptime FrameType: type) type {
             const log = @import("log.zig");
             log.debug("createJumpTable starting, schedule len: {}", .{schedule.len});
 
-            var jump_entries = ArrayList(JumpTableEntry, null){};
-            errdefer jump_entries.deinit(allocator);
+            var builder = JumpTableBuilder.init(allocator);
+            defer builder.deinit();
 
-            // Create iterator to traverse bytecode and find JUMPDEST locations
-            var iter = bytecode.createIterator();
-            var schedule_index: usize = 0;
-
-            // Skip first_block_gas if present
-            if (schedule.len > 0) {
-                switch (schedule[0]) {
-                    .first_block_gas => schedule_index = 1,
-                    else => {},
-                }
-            }
-
-            while (true) {
-                const instr_pc = iter.pc;
-                const maybe = iter.next();
-                if (maybe == null) break;
-                const op_data = maybe.?;
-
-                switch (op_data) {
-                    .jumpdest => {
-                        log.debug("Found JUMPDEST at PC {}, schedule_index: {}", .{ instr_pc, schedule_index });
-                        // Found a JUMPDEST - create jump table entry
-                        if (schedule_index >= schedule.len) {
-                            log.err("schedule_index {} >= schedule.len {}", .{ schedule_index, schedule.len });
-                            return error.InvalidScheduleIndex;
-                        }
-                        const dispatch = Self{
-                            .cursor = schedule.ptr + schedule_index,
-                            .jump_table = null,
-                        };
-                        try jump_entries.append(allocator, .{
-                            .pc = @intCast(instr_pc),
-                            .dispatch = dispatch,
-                        });
-                        // JUMPDEST has handler + metadata, so advance by 2
-                        schedule_index += 2;
-                    },
-                    .regular => |data| {
-                        // Regular opcode - advance by 1, or 2 if it has metadata (PC, CODESIZE, CODECOPY)
-                        schedule_index += 1;
-                        if (data.opcode == @intFromEnum(Opcode.PC) or
-                            data.opcode == @intFromEnum(Opcode.CODESIZE) or
-                            data.opcode == @intFromEnum(Opcode.CODECOPY))
-                        {
-                            schedule_index += 1;
-                        }
-                    },
-                    .push => {
-                        // PUSH has handler + metadata, so advance by 2
-                        schedule_index += 2;
-                    },
-                    // All fusion cases have handler + metadata
-                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
-                        schedule_index += 2;
-                    },
-                    .stop, .invalid => {
-                        // Simple opcodes without metadata
-                        schedule_index += 1;
-                    },
-                }
-            }
-
-            // Sort jump table entries by PC for binary search
-            const entries = try jump_entries.toOwnedSlice(allocator);
-            std.sort.block(JumpTableEntry, entries, {}, struct {
-                pub fn lessThan(context: void, a: JumpTableEntry, b: JumpTableEntry) bool {
-                    _ = context;
-                    return a.pc < b.pc;
-                }
-            }.lessThan);
+            try builder.buildFromSchedule(schedule, bytecode);
+            
+            // Use finalizeWithSchedule to set dispatch pointers correctly
+            const jump_table = try builder.finalizeWithSchedule(schedule);
 
             // Validate sorting (debug builds only)
-            if (std.debug.runtime_safety and entries.len > 1) {
-                for (entries[0..entries.len -| 1], entries[1..]) |current, next| {
+            if (std.debug.runtime_safety and jump_table.entries.len > 1) {
+                for (jump_table.entries[0..jump_table.entries.len -| 1], jump_table.entries[1..]) |current, next| {
                     if (current.pc >= next.pc) {
                         std.debug.panic("JumpTable not properly sorted: PC {} >= {}", .{ current.pc, next.pc });
                     }
                 }
             }
 
-            return JumpTable{ .entries = entries };
+            return jump_table;
         }
 
         /// Clean up heap-allocated push pointer values in the schedule
@@ -977,6 +854,259 @@ pub fn Dispatch(comptime FrameType: type) type {
             }
             allocator.free(schedule);
         }
+
+        /// RAII wrapper for dispatch schedule that automatically cleans up push pointers
+        pub const DispatchSchedule = struct {
+            items: []Item,
+            allocator: std.mem.Allocator,
+
+            /// Initialize a dispatch schedule from bytecode with automatic cleanup
+            pub fn init(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler) !DispatchSchedule {
+                const items = try Self.init(allocator, bytecode, opcode_handlers);
+                return DispatchSchedule{
+                    .items = items,
+                    .allocator = allocator,
+                };
+            }
+
+            /// Initialize a dispatch schedule with tracing support
+            pub fn initWithTracing(
+                allocator: std.mem.Allocator,
+                bytecode: anytype,
+                opcode_handlers: *const [256]OpcodeHandler,
+                comptime TracerType: type,
+                tracer_instance: *TracerType,
+            ) !DispatchSchedule {
+                const items = try Self.initWithTracing(allocator, bytecode, opcode_handlers, TracerType, tracer_instance);
+                return DispatchSchedule{
+                    .items = items,
+                    .allocator = allocator,
+                };
+            }
+
+            /// Clean up the schedule including all heap-allocated push pointers
+            pub fn deinit(self: *DispatchSchedule) void {
+                Self.deinitSchedule(self.allocator, self.items);
+            }
+
+            /// Get a Dispatch instance pointing to the start of the schedule
+            pub fn getDispatch(self: *const DispatchSchedule, jump_table: ?*const JumpTable) Self {
+                return Self{
+                    .cursor = self.items.ptr,
+                    .jump_table = jump_table,
+                };
+            }
+        };
+
+        /// Iterator for traversing schedule alongside bytecode
+        pub const ScheduleIterator = struct {
+            schedule: []const Item,
+            bytecode: *const anyopaque,
+            pc: FrameType.PcType = 0,
+            schedule_index: usize = 0,
+
+            pub const Entry = struct {
+                pc: FrameType.PcType,
+                schedule_index: usize,
+                op_data: enum { regular, push, jumpdest, stop, invalid, fusion },
+            };
+
+            pub fn init(schedule: []const Item, bytecode: anytype) ScheduleIterator {
+                return .{
+                    .schedule = schedule,
+                    .bytecode = bytecode,
+                    .pc = 0,
+                    .schedule_index = 0,
+                };
+            }
+
+            pub fn next(self: *ScheduleIterator) ?Entry {
+                if (self.schedule_index >= self.schedule.len) return null;
+
+                // Skip first_block_gas if present
+                if (self.schedule_index == 0) {
+                    switch (self.schedule[0]) {
+                        .first_block_gas => {
+                            self.schedule_index = 1;
+                            if (self.schedule_index >= self.schedule.len) return null;
+                        },
+                        else => {},
+                    }
+                }
+
+                const current_pc = self.pc;
+                const current_index = self.schedule_index;
+                
+                // Determine operation type from schedule
+                const item = self.schedule[self.schedule_index];
+                const op_type: Entry.op_data = switch (item) {
+                    .opcode_handler => blk: {
+                        // Look at the actual bytecode to determine type
+                        // This is simplified - in real implementation would need proper bytecode access
+                        break :blk .regular;
+                    },
+                    .jump_dest => .jumpdest,
+                    .push_inline, .push_pointer => .push,
+                    else => .regular,
+                };
+
+                // Advance schedule index
+                self.schedule_index += 1;
+                
+                // Skip metadata items
+                if (self.schedule_index < self.schedule.len) {
+                    switch (self.schedule[self.schedule_index]) {
+                        .jump_dest, .push_inline, .push_pointer, .pc, .codesize, .codecopy, .trace_before, .trace_after => {
+                            self.schedule_index += 1;
+                        },
+                        else => {},
+                    }
+                }
+
+                // Update PC based on operation type
+                // This is simplified - would need actual bytecode parsing
+                self.pc += 1;
+
+                return Entry{
+                    .pc = current_pc,
+                    .schedule_index = current_index,
+                    .op_data = op_type,
+                };
+            }
+        };
+
+        /// Builder for creating jump tables with improved error handling
+        pub const JumpTableBuilder = struct {
+            const BuilderEntry = struct {
+                pc: FrameType.PcType,
+                schedule_index: usize,
+            };
+            
+            entries: ArrayList(BuilderEntry, null),
+            allocator: std.mem.Allocator,
+
+            pub fn init(allocator: std.mem.Allocator) JumpTableBuilder {
+                return .{
+                    .entries = ArrayList(BuilderEntry, null){},
+                    .allocator = allocator,
+                };
+            }
+
+            pub fn deinit(self: *JumpTableBuilder) void {
+                self.entries.deinit(self.allocator);
+            }
+
+            pub fn addEntry(self: *JumpTableBuilder, pc: FrameType.PcType, schedule_index: usize) !void {
+                try self.entries.append(self.allocator, .{
+                    .pc = pc,
+                    .schedule_index = schedule_index,
+                });
+            }
+
+            pub fn buildFromSchedule(self: *JumpTableBuilder, schedule: []const Item, bytecode: anytype) !void {
+                var iter = bytecode.createIterator();
+                var schedule_index: usize = 0;
+
+                // Skip first_block_gas if present
+                if (schedule.len > 0) {
+                    switch (schedule[0]) {
+                        .first_block_gas => schedule_index = 1,
+                        else => {},
+                    }
+                }
+
+                while (true) {
+                    const instr_pc = iter.pc;
+                    const maybe = iter.next();
+                    if (maybe == null) break;
+                    const op_data = maybe.?;
+
+                    switch (op_data) {
+                        .jumpdest => {
+                            try self.addEntry(@intCast(instr_pc), schedule_index);
+                            schedule_index += 2; // Handler + metadata
+                        },
+                        .regular => |data| {
+                            schedule_index += 1;
+                            if (data.opcode == @intFromEnum(Opcode.PC) or
+                                data.opcode == @intFromEnum(Opcode.CODESIZE) or
+                                data.opcode == @intFromEnum(Opcode.CODECOPY))
+                            {
+                                schedule_index += 1;
+                            }
+                        },
+                        .push => {
+                            schedule_index += 2; // Handler + metadata
+                        },
+                        .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion,
+                        .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
+                            schedule_index += 2;
+                        },
+                        .stop, .invalid => {
+                            schedule_index += 1;
+                        },
+                    }
+                }
+            }
+
+            pub fn finalize(self: *JumpTableBuilder) !JumpTable {
+                const builder_entries = try self.entries.toOwnedSlice(self.allocator);
+                defer self.allocator.free(builder_entries);
+                
+                // Sort builder entries by PC
+                std.sort.block(BuilderEntry, builder_entries, {}, struct {
+                    pub fn lessThan(context: void, a: BuilderEntry, b: BuilderEntry) bool {
+                        _ = context;
+                        return a.pc < b.pc;
+                    }
+                }.lessThan);
+
+                // Convert to JumpTableEntry array
+                const entries = try self.allocator.alloc(JumpTableEntry, builder_entries.len);
+                errdefer self.allocator.free(entries);
+                
+                for (builder_entries, entries) |builder_entry, *entry| {
+                    entry.* = .{
+                        .pc = builder_entry.pc,
+                        .dispatch = Self{
+                            .cursor = undefined, // Must be set by caller
+                            .jump_table = null,
+                        },
+                    };
+                }
+
+                return JumpTable{ .entries = entries };
+            }
+
+            pub fn finalizeWithSchedule(self: *JumpTableBuilder, schedule: []const Item) !JumpTable {
+                const builder_entries = try self.entries.toOwnedSlice(self.allocator);
+                defer self.allocator.free(builder_entries);
+                
+                // Sort builder entries by PC
+                std.sort.block(BuilderEntry, builder_entries, {}, struct {
+                    pub fn lessThan(context: void, a: BuilderEntry, b: BuilderEntry) bool {
+                        _ = context;
+                        return a.pc < b.pc;
+                    }
+                }.lessThan);
+                
+                // Convert to JumpTableEntry array with proper dispatch pointers
+                const entries = try self.allocator.alloc(JumpTableEntry, builder_entries.len);
+                errdefer self.allocator.free(entries);
+                
+                for (builder_entries, entries) |builder_entry, *entry| {
+                    entry.* = .{
+                        .pc = builder_entry.pc,
+                        .dispatch = Self{
+                            .cursor = schedule.ptr + builder_entry.schedule_index,
+                            .jump_table = null,
+                        },
+                    };
+                }
+
+                return JumpTable{ .entries = entries };
+            }
+        };
     };
 }
 
@@ -1864,6 +1994,272 @@ test "JumpTable - sorting validation catches unsorted entries" {
     // Verify they're actually sorted
     for (entries[0..entries.len -| 1], entries[1..]) |current, next| {
         try testing.expect(current.pc < next.pc);
+    }
+}
+
+test "Dispatch - calculateFirstBlockGas helper function" {
+    const allocator = testing.allocator;
+    
+    // Test empty bytecode
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{});
+        defer bytecode.deinit(allocator);
+        
+        const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
+        try testing.expect(gas == 0);
+    }
+    
+    // Test single STOP instruction
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{@intFromEnum(Opcode.STOP)});
+        defer bytecode.deinit(allocator);
+        
+        const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
+        try testing.expect(gas == 0); // STOP has 0 gas cost
+    }
+    
+    // Test block ending with JUMPDEST
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 42,   // 3 gas
+            @intFromEnum(Opcode.ADD),         // 3 gas
+            @intFromEnum(Opcode.JUMPDEST),    // 1 gas (but terminates block)
+        });
+        defer bytecode.deinit(allocator);
+        
+        const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
+        try testing.expect(gas == 6); // PUSH1(3) + ADD(3), JUMPDEST not included
+    }
+    
+    // Test block ending with JUMP
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 10,   // 3 gas
+            @intFromEnum(Opcode.PUSH1), 20,   // 3 gas
+            @intFromEnum(Opcode.MUL),         // 5 gas
+            @intFromEnum(Opcode.JUMP),        // 8 gas
+        });
+        defer bytecode.deinit(allocator);
+        
+        const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
+        try testing.expect(gas == 19); // 3 + 3 + 5 + 8
+    }
+    
+    // Test overflow handling
+    {
+        // Create bytecode that would overflow gas calculation
+        var large_bytecode = std.ArrayList(u8).init(allocator);
+        defer large_bytecode.deinit();
+        
+        // Add many expensive operations that would overflow
+        for (0..10000) |_| {
+            try large_bytecode.append(@intFromEnum(Opcode.SSTORE)); // Very expensive operation
+        }
+        
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, large_bytecode.items);
+        defer bytecode.deinit(allocator);
+        
+        const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
+        try testing.expect(gas == std.math.maxInt(u64));
+    }
+}
+
+test "Dispatch - RAII DispatchSchedule for automatic cleanup" {
+    const allocator = testing.allocator;
+    const handlers = createTestHandlers();
+    
+    // Test basic RAII with pointer cleanup
+    {
+        // Create bytecode with PUSH that requires pointer allocation
+        var push16_data = [_]u8{@intFromEnum(Opcode.PUSH16)} ++ [_]u8{0xFF} ** 16;
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &push16_data);
+        defer bytecode.deinit(allocator);
+        
+        // Create RAII dispatch schedule
+        var schedule = try TestDispatch.DispatchSchedule.init(allocator, &bytecode, &handlers);
+        defer schedule.deinit();
+        
+        // Verify schedule was created
+        try testing.expect(schedule.items.len >= 4); // Handler + metadata + 2 STOP handlers
+        
+        // Verify pointer metadata exists
+        var found_pointer = false;
+        for (schedule.items) |item| {
+            switch (item) {
+                .push_pointer => |ptr_meta| {
+                    found_pointer = true;
+                    // Verify the pointer contains expected value
+                    const expected_value: u256 = (1 << 128) - 1; // 16 bytes of 0xFF
+                    try testing.expect(ptr_meta.value.* == expected_value);
+                },
+                else => {},
+            }
+        }
+        try testing.expect(found_pointer);
+        
+        // deinit will be called automatically, cleaning up pointers
+    }
+    
+    // Test error handling with proper cleanup
+    {
+        var failing_allocator = testing.FailingAllocator.init(allocator, .{ .fail_index = 3 });
+        
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.PUSH32), 0xFF, 0xFF, 0xFF, 0xFF, // Will need pointer
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
+        });
+        defer bytecode.deinit(allocator);
+        
+        // Should fail during allocation and clean up properly
+        const result = TestDispatch.DispatchSchedule.init(failing_allocator.allocator(), &bytecode, &handlers);
+        try testing.expectError(error.OutOfMemory, result);
+    }
+    
+    // Test schedule with mixed inline and pointer pushes
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 42,      // Inline
+            @intFromEnum(Opcode.PUSH8), 1, 2, 3, 4, 5, 6, 7, 8,  // Inline
+            @intFromEnum(Opcode.PUSH16), 0xFF, 0xFF, 0xFF, 0xFF, // Pointer
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
+        });
+        defer bytecode.deinit(allocator);
+        
+        var schedule = try TestDispatch.DispatchSchedule.init(allocator, &bytecode, &handlers);
+        defer schedule.deinit();
+        
+        // Count inline and pointer metadata
+        var inline_count: usize = 0;
+        var pointer_count: usize = 0;
+        for (schedule.items) |item| {
+            switch (item) {
+                .push_inline => inline_count += 1,
+                .push_pointer => pointer_count += 1,
+                else => {},
+            }
+        }
+        
+        try testing.expect(inline_count == 2);
+        try testing.expect(pointer_count == 1);
+    }
+}
+
+test "Dispatch - JumpTableBuilder iterator pattern" {
+    const allocator = testing.allocator;
+    const handlers = createTestHandlers();
+    
+    // Test builder with no JUMPDESTs
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.PUSH1), 10,
+            @intFromEnum(Opcode.ADD),
+            @intFromEnum(Opcode.STOP),
+        });
+        defer bytecode.deinit(allocator);
+        
+        const schedule = try TestDispatch.init(allocator, &bytecode, &handlers);
+        defer allocator.free(schedule);
+        
+        var builder = TestDispatch.JumpTableBuilder.init(allocator);
+        defer builder.deinit();
+        
+        try builder.buildFromSchedule(schedule, &bytecode);
+        const jump_table = try builder.finalize();
+        defer allocator.free(jump_table.entries);
+        
+        try testing.expect(jump_table.entries.len == 0);
+    }
+    
+    // Test builder with multiple JUMPDESTs
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.JUMPDEST),       // PC 0
+            @intFromEnum(Opcode.PUSH1), 10,      // PC 1-2
+            @intFromEnum(Opcode.JUMPDEST),       // PC 3
+            @intFromEnum(Opcode.ADD),            // PC 4
+            @intFromEnum(Opcode.JUMPDEST),       // PC 5
+            @intFromEnum(Opcode.STOP),           // PC 6
+        });
+        defer bytecode.deinit(allocator);
+        
+        const schedule = try TestDispatch.init(allocator, &bytecode, &handlers);
+        defer allocator.free(schedule);
+        
+        var builder = TestDispatch.JumpTableBuilder.init(allocator);
+        defer builder.deinit();
+        
+        try builder.buildFromSchedule(schedule, &bytecode);
+        const jump_table = try builder.finalize();
+        defer allocator.free(jump_table.entries);
+        
+        // Should have 3 entries
+        try testing.expect(jump_table.entries.len == 3);
+        try testing.expect(jump_table.entries[0].pc == 0);
+        try testing.expect(jump_table.entries[1].pc == 3);
+        try testing.expect(jump_table.entries[2].pc == 5);
+    }
+    
+    // Test builder maintains consistency during iteration
+    {
+        const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+        const bytecode = try Bytecode.init(allocator, &[_]u8{
+            @intFromEnum(Opcode.PUSH2), 0x12, 0x34, // PC 0-2
+            @intFromEnum(Opcode.JUMPDEST),           // PC 3
+            @intFromEnum(Opcode.PUSH1), 0x56,        // PC 4-5
+            @intFromEnum(Opcode.JUMPDEST),           // PC 6
+            @intFromEnum(Opcode.PC),                 // PC 7
+            @intFromEnum(Opcode.JUMPDEST),           // PC 8
+        });
+        defer bytecode.deinit(allocator);
+        
+        const schedule = try TestDispatch.init(allocator, &bytecode, &handlers);
+        defer allocator.free(schedule);
+        
+        var builder = TestDispatch.JumpTableBuilder.init(allocator);
+        defer builder.deinit();
+        
+        // Use iterator interface explicitly
+        const ScheduleIterator = TestDispatch.ScheduleIterator.init(schedule, &bytecode);
+        var iter = ScheduleIterator{};
+        
+        while (iter.next()) |entry| {
+            if (entry.op_data == .jumpdest) {
+                try builder.addEntry(entry.pc, entry.schedule_index);
+            }
+        }
+        
+        const jump_table = try builder.finalizeWithSchedule(schedule);
+        defer allocator.free(jump_table.entries);
+        
+        try testing.expect(jump_table.entries.len == 3);
+        try testing.expect(jump_table.entries[0].pc == 3);
+        try testing.expect(jump_table.entries[1].pc == 6);
+        try testing.expect(jump_table.entries[2].pc == 8);
+    }
+    
+    // Test error handling in builder
+    {
+        var failing_allocator = testing.FailingAllocator.init(allocator, .{ .fail_index = 1 });
+        
+        var builder = TestDispatch.JumpTableBuilder.init(failing_allocator.allocator());
+        defer builder.deinit();
+        
+        const result = builder.addEntry(100, 10);
+        try testing.expectError(error.OutOfMemory, result);
     }
 }
 
