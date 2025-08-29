@@ -48,13 +48,7 @@ pub fn Frame(comptime config: FrameConfig) type {
     comptime config.validate();
 
     return struct {
-        /// Status code type returned by Frame.interpret when frame executes successfully
-        pub const Success = enum {
-            Stop,
-            Return,
-            SelfDestruct,
-        };
-        /// Error code type returned by Frame.interpret when frame executes unsuccessfully
+        /// Error code type returned by Frame.interpret - includes both error and success termination cases
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
@@ -68,15 +62,28 @@ pub fn Frame(comptime config: FrameConfig) type {
             GasOverflow,
             InvalidAmount,
             WriteProtection,
+            // Success termination cases (not actually errors)
+            Stop,
+            Return,
+            SelfDestruct,
         };
         const Self = @This();
         /// The type all opcode handlers return.
         /// Opcode handlers are expected to recursively dispatch the next opcode if they themselves don't error or return
-        pub const OpcodeHandler = *const fn (frame: *Self, dispatch: Dispatch) Error!Success;
+        pub const OpcodeHandler = *const fn (frame: *Self, dispatch: Dispatch) Error!noreturn;
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
         pub const Dispatch = dispatch_mod.Dispatch(Self);
         /// The config passed into Frame(config)
         pub const frame_config = config;
+
+        /// Returns the appropriate tail call modifier based on the target architecture.
+        /// WebAssembly doesn't support tail calls by default, so we use .auto for wasm targets.
+        pub inline fn getTailCallModifier() std.builtin.CallModifier {
+            return if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64)
+                .auto
+            else
+                .always_tail; // Can use always_tail with Error!noreturn handlers
+        }
         /// The "word" type used by the evm. Defaults to u256. "Word" is the type used by Stack and throughout the Evm
         /// If set to something else the EVM will update to that new word size. e.g. run kekkak128 instead of kekkak256
         /// Lowering the word size can improve perf and bundle size
@@ -190,7 +197,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Execute this frame without tracing (backward compatibility method).
         /// Simply delegates to interpret_with_tracer with no tracer.
         /// @param bytecode_raw: Raw bytecode to execute
-        pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!Success {
+        pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
             return self.interpret_with_tracer(bytecode_raw, null, {});
         }
 
@@ -200,7 +207,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param bytecode_raw: Raw bytecode to execute
         /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
-        pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!Success {
+        pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.unlikely);
                 return Error.BytecodeTooLarge;
@@ -236,7 +243,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            const result = if (TracerType) |T| blk: {
+            if (TracerType) |T| {
                 const traced_schedule = Dispatch.initWithTracing(self.allocator, &bytecode, handlers, T, tracer_instance) catch return Error.AllocationError;
                 defer Dispatch.deinitSchedule(self.allocator, traced_schedule);
 
@@ -253,8 +260,9 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
 
                 const cursor = Self.Dispatch{ .cursor = traced_schedule.ptr + start_index, .jump_table = &traced_jump_table };
-                break :blk cursor.cursor[0].opcode_handler(self, cursor);
-            } else blk: {
+                cursor.cursor[0].opcode_handler(self, cursor) catch |err| return err;
+                unreachable; // Handlers never return normally
+            } else {
                 log.debug("DISPATCH INIT: bytecode len={d}", .{bytecode.runtime_code.len});
                 const schedule = Dispatch.init(self.allocator, &bytecode, handlers) catch |e| {
                     log.err("Failed to create dispatch schedule: {any}", .{e});
@@ -288,12 +296,11 @@ pub fn Frame(comptime config: FrameConfig) type {
 
                 const cursor = Self.Dispatch{ .cursor = schedule.ptr + start_index, .jump_table = &jump_table };
                 log.debug("Starting execution at schedule index {}, first handler: {*}", .{ start_index, cursor.cursor[0].opcode_handler });
-                break :blk cursor.cursor[0].opcode_handler(self, cursor);
-            };
+                cursor.cursor[0].opcode_handler(self, cursor) catch |err| return err;
+                unreachable; // Handlers never return normally
+            }
 
             if (TracerType) |T| if (@hasDecl(T, "afterExecute")) tracer_instance.afterExecute(Self, self);
-
-            return result;
         }
 
         /// Create a deep copy of the frame.
@@ -322,41 +329,17 @@ pub fn Frame(comptime config: FrameConfig) type {
             errdefer new_logs.deinit(allocator);
             
             for (self.logs.items) |log_entry| {
-                const topics_copy = allocator.alloc(u256, log_entry.topics.len) catch {
-                    // Cleanup any previously allocated logs
-                    for (new_logs.items) |prev_log| {
-                        allocator.free(prev_log.topics);
-                        allocator.free(prev_log.data);
-                    }
-                    return Error.AllocationError;
-                };
-                @memcpy(topics_copy, log_entry.topics);
+                const topics_copy = allocator.dupe(u256, log_entry.topics) catch return Error.AllocationError;
+                errdefer allocator.free(topics_copy);
 
-                const data_copy = allocator.alloc(u8, log_entry.data.len) catch {
-                    allocator.free(topics_copy);
-                    // Cleanup any previously allocated logs
-                    for (new_logs.items) |prev_log| {
-                        allocator.free(prev_log.topics);
-                        allocator.free(prev_log.data);
-                    }
-                    return Error.AllocationError;
-                };
-                @memcpy(data_copy, log_entry.data);
+                const data_copy = allocator.dupe(u8, log_entry.data) catch return Error.AllocationError;
+                errdefer allocator.free(data_copy);
 
-                new_logs.append(allocator, Log{
+                try new_logs.append(allocator, Log{
                     .address = log_entry.address,
                     .topics = topics_copy,
                     .data = data_copy,
-                }) catch {
-                    allocator.free(topics_copy);
-                    allocator.free(data_copy);
-                    // Cleanup any previously allocated logs
-                    for (new_logs.items) |prev_log| {
-                        allocator.free(prev_log.topics);
-                        allocator.free(prev_log.data);
-                    }
-                    return Error.AllocationError;
-                };
+                });
             }
 
             const new_output = if (self.output.len > 0) blk: {
