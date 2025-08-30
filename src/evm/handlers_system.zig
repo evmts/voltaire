@@ -1,6 +1,6 @@
 const std = @import("std");
-const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
+const FrameConfig = @import("frame_config.zig").FrameConfig;
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const CallParams = @import("call_params.zig").CallParams;
@@ -401,9 +401,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
-            const size = try self.stack.pop();
-            const offset = try self.stack.pop();
             const value = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const size = try self.stack.pop();
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -555,8 +555,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
-            const size = try self.stack.pop();
             const offset = try self.stack.pop();
+            const size = try self.stack.pop();
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -602,8 +602,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn revert(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             _ = dispatch;
-            const size = try self.stack.pop();
             const offset = try self.stack.pop();
+            const size = try self.stack.pop();
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -685,6 +685,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn stop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             _ = self;
             _ = cursor;
+            
 
             // EIP-3529 gas refund is applied at the transaction level in evm.zig,
             // not within individual frames. The frame just stops execution.
