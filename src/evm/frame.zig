@@ -229,15 +229,6 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
-                log.err("Bytecode init failed: {any}", .{e});
-                if (bytecode_raw.len > 0) {
-                    log.err("  Bytecode length: {d}", .{bytecode_raw.len});
-                    log.err("  First 16 bytes: {x}", .{bytecode_raw[0..@min(bytecode_raw.len, 16)]});
-                    // Check for specific test bytecode
-                    if (bytecode_raw.len >= 10 and bytecode_raw[0] == 0x60 and bytecode_raw[1] == 0x42) {
-                        log.warn("  This appears to be the MSTORE/RETURN test bytecode!", .{});
-                    }
-                }
                 return switch (e) {
                     error.BytecodeTooLarge => Error.BytecodeTooLarge,
                     error.InvalidOpcode => Error.InvalidOpcode,
@@ -263,6 +254,8 @@ pub fn Frame(comptime config: FrameConfig) type {
 
                 var traced_jump_table = Dispatch.createJumpTable(self.allocator, traced_schedule, &bytecode) catch return Error.AllocationError;
                 defer self.allocator.free(traced_jump_table.entries);
+                // Update jump_table metadata in the schedule
+                Dispatch.updateJumpTableMetadata(traced_schedule, &traced_jump_table);
 
                 var start_index: usize = 0;
                 switch (traced_schedule[0]) {
@@ -297,6 +290,8 @@ pub fn Frame(comptime config: FrameConfig) type {
 
                 var jump_table = Dispatch.createJumpTable(self.allocator, schedule, &bytecode) catch return Error.AllocationError;
                 defer self.allocator.free(jump_table.entries);
+                // Update jump_table metadata in the schedule
+                Dispatch.updateJumpTableMetadata(schedule, &jump_table);
 
                 var start_index: usize = 0;
                 switch (schedule[0]) {

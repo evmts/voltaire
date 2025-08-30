@@ -1,6 +1,5 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const CallParams = @import("call_params.zig").CallParams;
@@ -160,6 +159,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DELEGATECALL opcode (0xf4) - Message-call with alternative account's code but current values.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.err("[EVM2] DELEGATECALL handler called! Stack size: {}", .{self.stack.size()});
+            
             const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
@@ -229,7 +230,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // DELEGATECALL preserves caller and value from current context
             const params = CallParams{
                 .delegatecall = .{
-                    .caller = self.contract_address,
+                    .caller = self.caller,  // Preserve original caller, not contract address!
                     .to = addr,
                     .input = input_data,
                     .gas = gas_u64,
@@ -277,6 +278,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// STATICCALL opcode (0xfa) - Static message-call (no state changes allowed).
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn staticcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.err("[EVM2] STATICCALL handler called! Stack size: {}", .{self.stack.size()});
+            
             const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
@@ -548,14 +551,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn @"return"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             _ = dispatch;
-            log.warn("[RETURN] Stack size before: {d}", .{self.stack.size()});
-            if (self.stack.size() < 2) {
-                log.err("[RETURN] Stack underflow - need 2 elements, have {d}", .{self.stack.size()});
-                return Error.StackUnderflow;
-            }
-            const offset = try self.stack.pop();
+            if (self.stack.size() < 2) return Error.StackUnderflow;
             const size = try self.stack.pop();
-            log.warn("[RETURN] offset={d}, size={d}, stack size after: {d}", .{ offset, size, self.stack.size() });
+            const offset = try self.stack.pop();
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -569,47 +567,27 @@ pub fn Handlers(comptime FrameType: type) type {
             const memory_end = offset_usize + size_usize;
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(memory_end)));
             if (self.gas_remaining < memory_expansion_cost) {
-                log.debug("RETURN: Out of gas for memory expansion. Required: {d}, Available: {d}", .{ memory_expansion_cost, self.gas_remaining });
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @intCast(memory_expansion_cost);
-            log.debug("RETURN: Charged {d} gas for memory expansion", .{memory_expansion_cost});
 
             // Ensure memory capacity
             self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
             // Extract return data from memory and store it
             if (size_usize > 0) {
-                log.warn("[RETURN] Getting memory slice at offset {d} size {d}", .{ offset_usize, size_usize });
-                log.warn("[RETURN] Memory size before get_slice: {d}", .{self.memory.size()});
-                
-                // Debug: Check what's at memory position 0 before getting slice
-                if (self.memory.size() >= 32) {
-                    const debug_word = self.memory.get_u256_evm(self.allocator, @as(u24, @intCast(offset_usize))) catch 0;
-                    log.warn("[RETURN] Value at offset {d}: 0x{x}", .{ offset_usize, debug_word });
-                } else {
-                    log.warn("[RETURN] Memory size {d} is smaller than 32 bytes", .{self.memory.size()});
-                }
-                
                 const return_data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
-                    log.err("[RETURN] Failed to get memory slice at offset {d} size {d}", .{ offset_usize, size_usize });
                     return Error.OutOfBounds;
                 };
-                log.warn("[RETURN] Got memory slice, length: {d}, data: {x}", .{ return_data.len, return_data });
                 // Use the setOutput method to properly allocate output
                 self.setOutput(return_data) catch {
-                    log.err("RETURN: Failed to set output data", .{});
                     return Error.AllocationError;
                 };
-                log.debug("RETURN: Stored {d} bytes to output", .{return_data.len});
-                log.debug("RETURN: self.output data: {x}", .{self.output});
             } else {
                 // Empty return data
                 self.setOutput(&[_]u8{}) catch {
-                    log.err("RETURN: Failed to set empty output data", .{});
                     return Error.AllocationError;
                 };
-                log.debug("RETURN: Empty return data", .{});
             }
 
             // Return indicates successful execution
@@ -872,43 +850,27 @@ test "RETURN opcode - with data" {
     try testing.expectEqualSlices(u8, &test_data, frame.output);
 }
 
-test "DEBUG: RETURN opcode - 32 bytes with 0x42" {
-    log.warn("=== DEBUG TEST START ===", .{});
+test "RETURN opcode - 32 bytes with 0x42" {
     var frame = try createTestFrame(testing.allocator, null);
     defer frame.deinit(testing.allocator);
-
-    log.warn("Initial memory size: {d}", .{frame.memory.size()});
 
     // Store 0x42 at offset 0 (as a u256)
     const value: u256 = 0x42;
     frame.memory.set_u256_evm(frame.allocator, 0, value) catch |err| {
-        log.err("Failed to set u256: {}", .{err});
         return err;
     };
-
-    log.warn("Memory size after MSTORE: {d}", .{frame.memory.size()});
 
     // Read back the value to verify it was stored
-    const stored = frame.memory.get_u256_evm(frame.allocator, 0) catch |err| {
-        log.err("Failed to get u256: {}", .{err});
+    _ = frame.memory.get_u256_evm(frame.allocator, 0) catch |err| {
         return err;
     };
-    log.warn("Stored value: 0x{x}", .{stored});
 
     // Test: return 32 bytes from offset 0
     try frame.stack.push(0); // offset
     try frame.stack.push(32); // size
 
-    log.warn("Stack prepared: offset=0, size=32", .{});
-
     const dispatch = createMockDispatch();
     const result = try TestFrame.SystemHandlers.@"return"(&frame, dispatch);
-
-    log.warn("RETURN result: {}", .{result});
-    log.warn("Output length: {d}", .{frame.output.len});
-    if (frame.output.len > 0) {
-        log.warn("Output data: {x}", .{frame.output});
-    }
 
     try testing.expectEqual(TestFrame.Success.Return, result);
     try testing.expectEqual(@as(usize, 32), frame.output.len);
@@ -917,8 +879,6 @@ test "DEBUG: RETURN opcode - 32 bytes with 0x42" {
     var expected = [_]u8{0} ** 32;
     expected[31] = 0x42;
     try testing.expectEqualSlices(u8, &expected, frame.output);
-
-    log.warn("=== DEBUG TEST END ===", .{});
 }
 
 test "REVERT opcode - empty revert" {
@@ -1642,6 +1602,136 @@ test "CREATE2 opcode - static context" {
     const result = TestFrame.SystemHandlers.create2(frame, dispatch);
 
     try testing.expectError(TestFrame.Error.WriteProtection, result);
+}
+
+test "DELEGATECALL - comprehensive tests" {
+    var evm = MockEvm.init(testing.allocator);
+    var frame = try createTestFrame(testing.allocator, &evm);
+    defer frame.deinit(testing.allocator);
+
+    // Test successful delegatecall
+    {
+        evm.call_result.success = true;
+        evm.call_result.gas_left = 50000;
+        evm.call_result.output = "delegated result";
+        
+        const input_data = "test input";
+        try frame.memory.set_data(frame.allocator, 0, input_data);
+        
+        try frame.stack.push(75000);  // gas
+        try frame.stack.push(0x5678); // address  
+        try frame.stack.push(0);      // input_offset
+        try frame.stack.push(input_data.len); // input_size
+        try frame.stack.push(100);    // output_offset
+        try frame.stack.push(32);     // output_size
+        
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.delegatecall(frame, dispatch);
+        
+        try testing.expect(result == TestFrame.Success.stop);
+        try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+        
+        // Check return data was stored
+        try testing.expectEqualSlices(u8, "delegated result", frame.output);
+        
+        // Check gas was updated
+        try testing.expectEqual(@as(i64, 50000), frame.gas_remaining);
+    }
+    
+    // Test failed delegatecall
+    {
+        evm.call_result.success = false;
+        evm.call_result.gas_left = 0;
+        evm.call_result.output = "failure reason";
+        
+        // Reset stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        try frame.stack.push(50000);  // gas
+        try frame.stack.push(0xDEAD); // address
+        try frame.stack.push(0);      // input_offset
+        try frame.stack.push(0);      // input_size
+        try frame.stack.push(0);      // output_offset
+        try frame.stack.push(0);      // output_size
+        
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.delegatecall(frame, dispatch);
+        
+        try testing.expect(result == TestFrame.Success.stop);
+        try testing.expectEqual(@as(u256, 0), try frame.stack.pop()); // failure
+        
+        // Return data should still be stored even on failure
+        try testing.expectEqualSlices(u8, "failure reason", frame.output);
+    }
+}
+
+test "STATICCALL - comprehensive tests" {
+    var evm = MockEvm.init(testing.allocator);
+    var frame = try createTestFrame(testing.allocator, &evm);
+    defer frame.deinit(testing.allocator);
+
+    // Test successful staticcall
+    {
+        evm.call_result.success = true;
+        evm.call_result.gas_left = 40000;
+        evm.call_result.output = "static result";
+        
+        const input_data = "query data";
+        try frame.memory.set_data(frame.allocator, 0, input_data);
+        
+        try frame.stack.push(60000);  // gas
+        try frame.stack.push(0xABCD); // address
+        try frame.stack.push(0);      // input_offset
+        try frame.stack.push(input_data.len); // input_size
+        try frame.stack.push(50);     // output_offset
+        try frame.stack.push(20);     // output_size
+        
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.staticcall(frame, dispatch);
+        
+        try testing.expect(result == TestFrame.Success.stop);
+        try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+        
+        // Check return data was stored
+        try testing.expectEqualSlices(u8, "static result", frame.output);
+        
+        // Check gas was updated
+        try testing.expectEqual(@as(i64, 40000), frame.gas_remaining);
+        
+        // Check output was written to memory (limited to output_size)
+        const mem_result = try frame.memory.get_slice(50, "static result".len);
+        try testing.expectEqualSlices(u8, "static result", mem_result);
+    }
+    
+    // Test staticcall with no input/output
+    {
+        evm.call_result.success = true;
+        evm.call_result.gas_left = 30000;
+        evm.call_result.output = &.{};
+        
+        // Reset stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        try frame.stack.push(50000);  // gas
+        try frame.stack.push(0x1234); // address
+        try frame.stack.push(0);      // input_offset
+        try frame.stack.push(0);      // input_size (no input)
+        try frame.stack.push(0);      // output_offset
+        try frame.stack.push(0);      // output_size (no output)
+        
+        const dispatch = createMockDispatch();
+        const result = try TestFrame.SystemHandlers.staticcall(frame, dispatch);
+        
+        try testing.expect(result == TestFrame.Success.stop);
+        try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+        
+        // Check empty return data
+        try testing.expectEqual(@as(usize, 0), frame.output.len);
+    }
 }
 
 // Edge case tests
