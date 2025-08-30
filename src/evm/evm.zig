@@ -319,11 +319,57 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Reset refund counter for next transaction
                 self.gas_refund_counter = 0;
             }
-            result.logs = self.takeLogs();
+            result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
+            self.logs = std.ArrayList(@import("call_result.zig").Log){};
             result.selfdestructs = self.takeSelfDestructs() catch &.{};
             result.accessed_addresses = self.takeAccessedAddresses() catch &.{};
             result.accessed_storage = self.takeAccessedStorage() catch &.{};
             return result;
+        }
+
+        /// Result of pre-flight checks for call operations
+        const PreflightResult = union(enum) {
+            precompile_result: CallResult,
+            execute_with_code: []const u8,
+            empty_account: u64, // gas remaining
+        };
+
+        /// Perform pre-flight checks common to all call operations
+        fn performCallPreflight(self: *Self, to: primitives.Address, input: []const u8, gas: u64, is_static: bool, snapshot_id: Journal.SnapshotIdType) !PreflightResult {
+            // Handle precompiles
+            if (config.enable_precompiles and precompiles.is_precompile(to)) {
+                const result = self.executePrecompileInline(to, input, gas, is_static, snapshot_id) catch {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return PreflightResult{ .precompile_result = CallResult.failure(0) };
+                };
+                return PreflightResult{ .precompile_result = result };
+            }
+
+            // Get contract code
+            const code = self.database.get_code_by_address(to.bytes) catch |err| {
+                log.err("Failed to get code for address {any}: {}", .{ to, err });
+                const error_str = switch (err) {
+                    Database.Error.CodeNotFound => "CodeNotFound",
+                    Database.Error.AccountNotFound => "AccountNotFound",
+                    Database.Error.StorageNotFound => "StorageNotFound",
+                    Database.Error.InvalidAddress => "InvalidAddress",
+                    Database.Error.DatabaseCorrupted => "DatabaseCorrupted",
+                    Database.Error.NetworkError => "NetworkError",
+                    Database.Error.PermissionDenied => "PermissionDenied",
+                    Database.Error.OutOfMemory => "OutOfMemory",
+                    Database.Error.InvalidSnapshot => "InvalidSnapshot",
+                    Database.Error.NoBatchInProgress => "NoBatchInProgress",
+                    Database.Error.SnapshotNotFound => "SnapshotNotFound",
+                    Database.Error.WriteProtection => "WriteProtection",
+                };
+                return PreflightResult{ .precompile_result = CallResult.failure_with_error(0, error_str) };
+            };
+
+            if (code.len == 0) {
+                return PreflightResult{ .empty_account = gas };
+            }
+
+            return PreflightResult{ .execute_with_code = code };
         }
 
         /// Execute CALL operation (inlined from call_handler)
@@ -345,60 +391,40 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             }
 
-            // Handle precompiles
-            if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
-                const result = self.executePrecompileInline(params.to, params.input, params.gas, false, snapshot_id) catch {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
-                return result;
-            }
-
-            // Get contract code
-            log.debug("EXECUTE_CALL: Getting code for address {any}", .{params.to});
-            const code = self.database.get_code_by_address(params.to.bytes) catch |err| {
-                log.err("EXECUTE_CALL ERROR: Failed to get code: {}", .{err});
-                log.err("EXECUTE_CALL ERROR: Address bytes: {x}", .{params.to.bytes});
-                const error_str = switch (err) {
-                    Database.Error.CodeNotFound => "CodeNotFound",
-                    Database.Error.AccountNotFound => "AccountNotFound",
-                    Database.Error.StorageNotFound => "StorageNotFound",
-                    Database.Error.InvalidAddress => "InvalidAddress",
-                    Database.Error.DatabaseCorrupted => "DatabaseCorrupted",
-                    Database.Error.NetworkError => "NetworkError",
-                    Database.Error.PermissionDenied => "PermissionDenied",
-                    Database.Error.OutOfMemory => "OutOfMemory",
-                    Database.Error.InvalidSnapshot => "InvalidSnapshot",
-                    Database.Error.NoBatchInProgress => "NoBatchInProgress",
-                    Database.Error.SnapshotNotFound => "SnapshotNotFound",
-                    Database.Error.WriteProtection => "WriteProtection",
-                };
-                return CallResult.failure_with_error(0, error_str);
-            };
-            log.debug("EXECUTE_CALL: Got code for address {any}: code_len={d}", .{params.to, code.len});
-            if (code.len == 0) {
-                log.debug("EXECUTE_CALL: Call to empty account: {any}", .{params.to});
-                return CallResult.success_empty(params.gas);
-            }
-            // Execute frame
-            log.debug("About to execute_frame with code_len={}, gas={}", .{code.len, params.gas});
-            const result = self.execute_frame(
-                code,
-                params.input,
-                params.gas,
-                params.to,
-                params.caller,
-                params.value,
-                false, // is_static
-                snapshot_id,
-            ) catch |err| {
-                log.err("execute_frame failed: {}", .{err});
+            // Perform pre-flight checks
+            const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
+                log.err("Call preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
 
-            if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
-            return result;
+            switch (preflight) {
+                .precompile_result => |result| return result,
+                .empty_account => |gas| {
+                    log.debug("EXECUTE_CALL: Call to empty account: {any}", .{params.to});
+                    return CallResult.success_empty(gas);
+                },
+                .execute_with_code => |code| {
+                    log.debug("About to execute_frame with code_len={}, gas={}", .{code.len, params.gas});
+                    const result = self.execute_frame(
+                        code,
+                        params.input,
+                        params.gas,
+                        params.to,
+                        params.caller,
+                        params.value,
+                        false, // is_static
+                        snapshot_id,
+                    ) catch |err| {
+                        log.err("execute_frame failed: {}", .{err});
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return CallResult.failure(0);
+                    };
+
+                    if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+                    return result;
+                },
+            }
         }
 
         /// Execute CALLCODE operation (inlined)
@@ -455,36 +481,37 @@ pub fn Evm(comptime config: EvmConfig) type {
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
 
-            // Handle precompiles
-            if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
-                const result = self.executePrecompileInline(params.to, params.input, params.gas, false, snapshot_id) catch {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
-                return result;
-            }
-
-            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
-            if (code.len == 0) return CallResult.success_empty(params.gas);
-
-            // DELEGATECALL preserves caller and value from parent context
-            const current_value = if (self.depth > 0) self.call_stack[self.depth - 1].value else 0;
-            const result = self.execute_frame(
-                code,
-                params.input,
-                params.gas,
-                params.to,
-                params.caller, // Preserve original caller
-                current_value, // Preserve value from parent context
-                false,
-                snapshot_id,
-            ) catch {
+            // Perform pre-flight checks
+            const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
+                log.err("Delegatecall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
 
-            if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
-            return result;
+            switch (preflight) {
+                .precompile_result => |result| return result,
+                .empty_account => |gas| return CallResult.success_empty(gas),
+                .execute_with_code => |code| {
+                    // DELEGATECALL preserves caller and value from parent context
+                    const current_value = if (self.depth > 0) self.call_stack[self.depth - 1].value else 0;
+                    const result = self.execute_frame(
+                        code,
+                        params.input,
+                        params.gas,
+                        params.to,
+                        params.caller, // Preserve original caller
+                        current_value, // Preserve value from parent context
+                        false,
+                        snapshot_id,
+                    ) catch {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return CallResult.failure(0);
+                    };
+
+                    if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+                    return result;
+                },
+            }
         }
 
         /// Execute STATICCALL operation (inlined)
@@ -496,35 +523,36 @@ pub fn Evm(comptime config: EvmConfig) type {
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
 
-            // Handle precompiles
-            if (config.enable_precompiles and precompiles.is_precompile(params.to)) {
-                const result = self.executePrecompileInline(params.to, params.input, params.gas, true, snapshot_id) catch {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
-                return result;
-            }
-
-            const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
-            if (code.len == 0) return CallResult.success_empty(params.gas);
-
-            // Execute in static mode
-            const result = self.execute_frame(
-                code,
-                params.input,
-                params.gas,
-                params.to,
-                params.caller,
-                0, // No value in static call
-                true, // is_static = true
-                snapshot_id,
-            ) catch {
+            // Perform pre-flight checks
+            const preflight = self.performCallPreflight(params.to, params.input, params.gas, true, snapshot_id) catch |err| {
+                log.err("Staticcall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
 
-            if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
-            return result;
+            switch (preflight) {
+                .precompile_result => |result| return result,
+                .empty_account => |gas| return CallResult.success_empty(gas),
+                .execute_with_code => |code| {
+                    // Execute in static mode
+                    const result = self.execute_frame(
+                        code,
+                        params.input,
+                        params.gas,
+                        params.to,
+                        params.caller,
+                        0, // No value in static call
+                        true, // is_static = true
+                        snapshot_id,
+                    ) catch {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return CallResult.failure(0);
+                    };
+
+                    if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+                    return result;
+                },
+            }
         }
 
         /// Execute CREATE operation (inlined)
@@ -717,6 +745,31 @@ pub fn Evm(comptime config: EvmConfig) type {
             return CallResult.success_with_output(result.gas_left, out32);
         }
 
+        /// Convert tracer data to ExecutionTrace format
+        fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("call_result.zig").ExecutionTrace {
+            const call_result = @import("call_result.zig");
+            const tracer_steps = tracer.steps.items;
+            var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
+            
+            for (tracer_steps, 0..) |tracer_step, i| {
+                trace_steps[i] = call_result.TraceStep{
+                    .pc = tracer_step.pc,
+                    .opcode = tracer_step.opcode,
+                    .opcode_name = try allocator.dupe(u8, tracer_step.opcode_name),
+                    .gas = @intCast(@max(tracer_step.gas_after, 0)),
+                    .stack = try allocator.dupe(u256, tracer_step.stack_after),
+                    .memory = &.{}, // Empty for now
+                    .storage_reads = &.{}, // Empty for now  
+                    .storage_writes = &.{}, // Empty for now
+                };
+            }
+            
+            return call_result.ExecutionTrace{
+                .steps = trace_steps,
+                .allocator = allocator,
+            };
+        }
+
         /// Execute a frame by delegating to Frame.interpret (dispatch-based execution)
         fn execute_frame(
             self: *Self,
@@ -742,7 +795,17 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value, .is_static = is_static };
 
-            const gas_cast = @as(Frame.GasType, @intCast(@min(gas, @as(u64, @intCast(std.math.maxInt(Frame.GasType))))));
+            // Base transaction gas cost (21,000 gas) - only charge for top-level transactions
+            const BASE_TX_GAS = 21000;
+            log.err("[EVM] execute_frame called: depth={d}, gas={d}", .{ self.depth, gas });
+            
+            const gas_after_base = if (self.depth <= 1 and gas >= BASE_TX_GAS) gas_after_base: {
+                const remaining = gas - BASE_TX_GAS;
+                log.err("[EVM] Charged {d} base gas, remaining: {d}", .{ BASE_TX_GAS, remaining });
+                break :gas_after_base remaining;
+            } else gas;
+            
+            const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, @as(u64, @intCast(std.math.maxInt(Frame.GasType))))));
 
             // EIP-214: encode static constraints; null to prevent SELFDESTRUCT in static context
             const self_destruct_param = if (is_static) null else &self.self_destruct;
@@ -754,8 +817,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             log.debug("Executing frame: code_len={d}, gas={d}, address={any}, is_static={any}", .{code.len, gas_cast, address, is_static});
             log.debug("Frame gas_remaining before interpret: {d}", .{frame.gas_remaining});
 
-            // Frame.interpret now returns Error!void and uses errors for success termination
-            frame.interpret(code) catch |err| switch (err) {
+            // Execute with tracing if tracer type is configured
+            var execution_trace: ?@import("call_result.zig").ExecutionTrace = null;
+            if (config.tracer_type) |TracerType| {
+                // Create tracer instance for this execution
+                var tracer = TracerType.init();
+                defer tracer.deinit();
+                
+                log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
+                
+                // Frame.interpret_with_tracer returns Error!void and uses errors for success termination
+                frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
                 error.Stop, error.Return, error.SelfDestruct => {
                     // These are success termination cases
                 },
@@ -771,6 +843,28 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.failure(0);
                 },
             };
+            
+            // Extract trace data before tracer is destroyed
+            execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+            } else {
+                // Execute without tracing (original path)
+                frame.interpret(code) catch |err| switch (err) {
+                error.Stop, error.Return, error.SelfDestruct => {
+                    // These are success termination cases
+                },
+                else => {
+                    // Actual errors
+                    log.err("Frame.interpret() failed (is_static={any}): {any}", .{ is_static, err });
+                    log.err("  Code length: {d}", .{code.len});
+                    log.err("  Gas: {}", .{gas_cast});
+                    log.err("  Address: {any}", .{address});
+                    if (code.len > 0) {
+                        log.err("  First few bytes of code: {x}", .{code[0..@min(code.len, 16)]});
+                    }
+                    return CallResult.failure(0);
+                },
+            };
+            }
 
             // Map frame outcome to CallResult
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
@@ -787,8 +881,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else &.{};
             self.return_data = out_buf;
 
-            // All success termination cases return the same result
-            return CallResult.success_with_output(gas_left, out_buf);
+            // All success termination cases return the same result with trace data
+            var result = CallResult.success_with_output(gas_left, out_buf);
+            result.trace = execution_trace;
+            return result;
         }
 
         fn execute_init_code(
@@ -843,15 +939,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             };
 
-            // Handle precompile result
-            // Copy output into owned buffer and free original to avoid leaks
-            var out_slice: []const u8 = &.{};
-            if (result.output.len > 0) {
-                const buf = try self.allocator.dupe(u8, result.output);
-                // Original was allocated with self.allocator in precompile
-                self.allocator.free(result.output);
-                out_slice = buf;
-            }
+            // Transfer ownership of precompile output directly (both use same allocator)
+            const out_slice = result.output;
             if (result.success) {
                 return CallResult{ .success = true, .gas_left = gas - result.gas_used, .output = out_slice };
             } else {
@@ -1154,13 +1243,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
         
 
-        // TODO: remove useless helper function and just inline this
-        /// Take all logs and clear the log list
-        fn takeLogs(self: *Self) []const @import("call_result.zig").Log {
-            const logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
-            self.logs = std.ArrayList(@import("call_result.zig").Log){};
-            return logs;
-        }
 
         /// Take all selfdestructs and clear the list
         fn takeSelfDestructs(self: *Self) ![]const @import("call_result.zig").SelfDestructRecord {

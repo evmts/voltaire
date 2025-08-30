@@ -14,7 +14,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MLOAD opcode (0x51) - Load word from memory.
         /// Pops memory offset from stack and pushes the 32-byte word at that offset.
-        pub fn mload(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn mload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             // MLOAD loads a 32-byte word from memory
             const offset = try self.stack.pop();
 
@@ -43,17 +44,22 @@ pub fn Handlers(comptime FrameType: type) type {
             try self.stack.push(value);
 
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// MSTORE opcode (0x52) - Store word to memory.
         /// Pops memory offset and value from stack, stores 32 bytes at that offset.
-        pub fn mstore(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn mstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             // MSTORE stores a 32-byte word to memory
-            log.debug("MSTORE handler called, stack size: {}", .{self.stack.size()});
+            log.warn("[MSTORE] Stack size before: {d}", .{self.stack.size()});
+            if (self.stack.size() < 2) {
+                log.err("[MSTORE] Stack underflow - need 2 elements, have {d}", .{self.stack.size()});
+                return Error.StackUnderflow;
+            }
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
-            log.debug("MSTORE: offset={}, value={}", .{ offset, value });
+            log.warn("[MSTORE] offset=0x{x}, value=0x{x}, stack size after: {d}", .{ offset, value, self.stack.size() });
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -70,6 +76,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Convert to u256 if necessary and store
             const value_u256 = @as(u256, value);
+            log.debug("MSTORE: Converting value {} (type: {s}) to u256: {}", .{ value, @typeName(@TypeOf(value)), value_u256 });
             self.memory.set_u256_evm(self.allocator, @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
@@ -80,12 +87,13 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug("MSTORE: Memory size after store: {}", .{self.memory.size()});
 
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// MSTORE8 opcode (0x53) - Store byte to memory.
         /// Pops memory offset and value from stack, stores the least significant byte at that offset.
-        pub fn mstore8(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn mstore8(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
 
@@ -111,22 +119,24 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// MSIZE opcode (0x59) - Get size of active memory.
         /// Pushes the size of active memory in bytes onto the stack.
-        pub fn msize(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn msize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             const size = self.memory.size();
             try self.stack.push(@as(WordType, @intCast(size)));
 
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// MCOPY opcode (0x5e) - Memory copy operation (EIP-5656).
         /// Copies memory from one location to another.
-        pub fn mcopy(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             const dest_offset = try self.stack.pop();
             const src_offset = try self.stack.pop();
             const size = try self.stack.pop();
@@ -146,7 +156,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (size_usize == 0) {
                 // No operation for zero size
                 const next = dispatch.getNext();
-                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
             // Calculate gas cost
@@ -178,7 +188,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
     };
 }

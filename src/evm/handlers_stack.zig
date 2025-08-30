@@ -12,18 +12,20 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// POP opcode (0x50) - Remove item from stack.
         /// Uses unsafe variant as stack bounds are pre-validated by the planner.
-        pub fn pop(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn pop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             _ = self.stack.pop_unsafe();
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// PUSH0 opcode (0x5f) - Push 0 onto stack.
         /// Uses unsafe variant as stack bounds are pre-validated by the planner.
-        pub fn push0(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+        pub fn push0(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             self.stack.push_unsafe(0);
             const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// Generate a push handler for PUSH1-PUSH32
@@ -31,16 +33,30 @@ pub fn Handlers(comptime FrameType: type) type {
             if (push_n > 32) @compileError("Only PUSH1 to PUSH32 is supported");
             if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
             return &struct {
-                pub fn pushHandler(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+                pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
+                    log.warn("[PUSH{d}] Stack size before: {d}", .{ push_n, self.stack.size() });
+                    
+                    // Check for potential stack overflow before pushing
+                    if (self.stack.size() >= 1024) {
+                        log.err("[PUSH{d}] Stack overflow - size already at: {d}", .{ push_n, self.stack.size() });
+                        return Error.StackOverflow;
+                    }
+                    
                     if (push_n <= 8) {
                         const meta = dispatch.getInlineMetadata();
-                        self.stack.push_unsafe(meta.value);
+                        log.warn("[PUSH{d}] Pushing inline value: 0x{x}", .{ push_n, meta.value });
+                        try self.stack.push(meta.value);
                     } else {
                         const meta = dispatch.getPointerMetadata();
-                        self.stack.push_unsafe(meta.value.*);
+                        log.warn("[PUSH{d}] Pushing pointer value: 0x{x}", .{ push_n, meta.value.* });
+                        try self.stack.push(meta.value.*);
                     }
+                    
+                    log.warn("[PUSH{d}] Stack size after: {d}", .{ push_n, self.stack.size() });
                     const next = dispatch.skipMetadata();
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+                    log.warn("[PUSH{d}] About to call next opcode handler at cursor+2", .{push_n});
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
             }.pushHandler;
         }
@@ -49,10 +65,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn generateDupHandler(comptime dup_n: u8) FrameType.OpcodeHandler {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
             return &struct {
-                pub fn dupHandler(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+                pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
                     self.stack.dup_n_unsafe(dup_n);
                     const next = dispatch.getNext();
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
             }.dupHandler;
         }
@@ -61,10 +78,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn generateSwapHandler(comptime swap_n: u8) FrameType.OpcodeHandler {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
             return &struct {
-                pub fn swapHandler(self: *FrameType, dispatch: Dispatch) Error!noreturn {
+                pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
                     self.stack.swap_n_unsafe(swap_n);
                     const next = dispatch.getNext();
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next });
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
             }.swapHandler;
         }
@@ -246,13 +264,13 @@ test "PUSH handler - inline metadata" {
     cursor[0] = .{ .opcode_handler = &mock_handler };
     cursor[1] = .{ .opcode_handler = &mock_handler };
 
-    var dispatch = TestFrame.Dispatch{
+    const dispatch = TestFrame.Dispatch{
         .cursor = &cursor,
         .bytecode_length = 0,
     };
 
     // Set inline metadata
-    dispatch.cursor[0].metadata = .{ .inline_value = 42 };
+    dispatch.*.cursor[0].metadata = .{ .inline_value = 42 };
 
     _ = try PushHandler(frame, dispatch);
 
@@ -281,13 +299,13 @@ test "PUSH handler - pointer metadata" {
     cursor[0] = .{ .opcode_handler = &mock_handler };
     cursor[1] = .{ .opcode_handler = &mock_handler };
 
-    var dispatch = TestFrame.Dispatch{
+    const dispatch = TestFrame.Dispatch{
         .cursor = &cursor,
         .bytecode_length = 0,
     };
 
     // Set pointer metadata
-    dispatch.cursor[0].metadata = .{ .pointer_value = &value };
+    dispatch.*.cursor[0].metadata = .{ .pointer_value = &value };
 
     _ = try PushHandler(frame, dispatch);
 
@@ -473,12 +491,12 @@ test "PUSH handlers - all sizes inline" {
         cursor[0] = .{ .opcode_handler = &mock_handler };
         cursor[1] = .{ .opcode_handler = &mock_handler };
 
-        var dispatch = TestFrame.Dispatch{
+        const dispatch = TestFrame.Dispatch{
             .cursor = &cursor,
             .bytecode_length = 0,
         };
 
-        dispatch.cursor[0].metadata = .{ .inline_value = value };
+        dispatch.*.cursor[0].metadata = .{ .inline_value = value };
 
         _ = try PushHandler(frame, dispatch);
 
@@ -508,12 +526,12 @@ test "PUSH handlers - all sizes pointer" {
         cursor[0] = .{ .opcode_handler = &mock_handler };
         cursor[1] = .{ .opcode_handler = &mock_handler };
 
-        var dispatch = TestFrame.Dispatch{
+        const dispatch = TestFrame.Dispatch{
             .cursor = &cursor,
             .bytecode_length = 0,
         };
 
-        dispatch.cursor[0].metadata = .{ .pointer_value = &value };
+        dispatch.*.cursor[0].metadata = .{ .pointer_value = &value };
 
         _ = try PushHandler(frame, dispatch);
 
@@ -718,15 +736,15 @@ test "PUSH handlers - edge values" {
         cursor[0] = .{ .opcode_handler = &mock_handler };
         cursor[1] = .{ .opcode_handler = &mock_handler };
 
-        var dispatch = TestFrame.Dispatch{
+        const dispatch = TestFrame.Dispatch{
             .cursor = &cursor,
             .bytecode_length = 0,
         };
 
         if (tc.push_n <= 8) {
-            dispatch.cursor[0].metadata = .{ .inline_value = tc.value };
+            dispatch.*.cursor[0].metadata = .{ .inline_value = tc.value };
         } else {
-            dispatch.cursor[0].metadata = .{ .pointer_value = &tc.value };
+            dispatch.*.cursor[0].metadata = .{ .pointer_value = &tc.value };
         }
 
         _ = try PushHandler(frame, dispatch);

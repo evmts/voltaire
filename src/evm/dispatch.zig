@@ -17,7 +17,7 @@ pub fn Dispatch(comptime FrameType: type) type {
     return struct {
         const Self = @This();
         // We define opcodehandler locally rather than using Frame.OpcodeHandler to avoid circular dependency
-        const OpcodeHandler = *const fn (frame: *FrameType, dispatch: Self) FrameType.Error!noreturn;
+        const OpcodeHandler = *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn;
         /// The optimized instruction stream containing opcode handlers and their metadata.
         /// Each item is exactly 64 bits for optimal cache line usage.
         ///
@@ -71,6 +71,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             opcode: u8,
             _padding: u24 = 0,
         };
+        /// Metadata for jump operations containing pointer to jump table
+        pub const JumpTableMetadata = packed struct(u64) { jump_table: *const JumpTable };
         /// A single item in the dispatch array, either a handler or metadata.
         pub const Item = union(enum) {
             jump_dest: JumpDestMetadata,
@@ -83,7 +85,38 @@ pub fn Dispatch(comptime FrameType: type) type {
             first_block_gas: struct { gas: u64 },
             trace_before: TraceBeforeMetadata,
             trace_after: TraceAfterMetadata,
+            jump_table: JumpTableMetadata,
         };
+        
+        // Comptime validation of Item union
+        comptime {
+            const item_size = @sizeOf(Item);
+            const item_align = @alignOf(Item);
+            const ptr_size = @sizeOf(*anyopaque);
+            
+            // Sizes validated at compile time
+            // Item union size: 32 bytes
+            // Item union alignment: 16 bytes  
+            // OpcodeHandler size: 8 bytes
+            // Pointer size: 8 bytes
+            
+            // Ensure union is properly sized (should be size of largest member + tag)
+            // Tagged union should be at least pointer size + tag
+            if (item_size < ptr_size + 1) {
+                @compileError("Item union is too small!");
+            }
+            
+            // Ensure proper alignment for pointer arithmetic
+            if (item_align < @alignOf(*anyopaque)) {
+                @compileError("Item union alignment is less than pointer alignment!");
+            }
+            
+            // Verify all metadata types fit in 64 bits
+            if (@sizeOf(JumpDestMetadata) != 8) @compileError("JumpDestMetadata must be 64 bits");
+            if (@sizeOf(PushInlineMetadata) != 8) @compileError("PushInlineMetadata must be 64 bits");
+            if (@sizeOf(PushPointerMetadata) != 8) @compileError("PushPointerMetadata must be 64 bits");
+        }
+        
         /// Jump table entry for dynamic jumps
         pub const JumpTableEntry = struct {
             pc: FrameType.PcType,
@@ -165,11 +198,104 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         /// Advance to the next handler in the dispatch array.
         /// Used for opcodes without metadata.
-        pub fn getNext(self: Self) Self {
+        pub inline fn getNext(self: Self) Self {
             return Self{
                 .cursor = self.cursor + 1,
                 .jump_table = self.jump_table,
             };
+        }
+        
+        /// Safe version of getNext that validates the next item
+        /// Returns an error if the next item is not a valid handler
+        pub fn getNextSafe(self: Self) !Self {
+            const log = @import("log.zig");
+            
+            // Debug: log current position
+            log.debug("getNextSafe called:", .{});
+            log.debug("  Current cursor address: 0x{x}", .{@intFromPtr(self.cursor)});
+            
+            // Try to safely access current item to verify cursor is valid
+            const current_tag_ptr = @as([*]const u8, @ptrCast(self.cursor));
+            log.debug("  Current item tag byte: 0x{x:0>2}", .{current_tag_ptr[0]});
+            
+            const next = Self{
+                .cursor = self.cursor + 1,
+                .jump_table = self.jump_table,
+            };
+            
+            log.debug("  Next cursor address: 0x{x} (current + {})", .{ @intFromPtr(next.cursor), @sizeOf(Item) });
+            
+            // Check if next pointer is in valid range
+            const next_addr = @intFromPtr(next.cursor);
+            if (next_addr < 0x1000) {
+                log.err("Next cursor is in low memory: 0x{x}", .{next_addr});
+                return error.InvalidCursor;
+            }
+            
+            // Try to read tag byte at next position
+            const next_tag_ptr = @as([*]const u8, @ptrCast(next.cursor));
+            log.debug("  Attempting to read tag byte at next position...", .{});
+            const next_tag = next_tag_ptr[0];  // This might segfault
+            log.debug("  Next item tag byte: 0x{x:0>2}", .{next_tag});
+            
+            // Check what type of item we're pointing to
+            const next_item = next.cursor[0];
+            
+            // Log the item type for debugging
+            switch (next_item) {
+                .opcode_handler => |handler| {
+                    // Check if handler pointer is valid (not null and looks reasonable)
+                    const handler_addr = @intFromPtr(handler);
+                    if (handler_addr == 0) {
+                        log.err("getNextSafe: Next item is NULL handler pointer!", .{});
+                        return error.InvalidHandler;
+                    }
+                    // Check if it's in a reasonable memory range (not metadata mistaken as pointer)
+                    if (handler_addr < 0x1000) {
+                        log.err("getNextSafe: Handler pointer looks like data: 0x{x}", .{handler_addr});
+                        return error.InvalidHandler;
+                    }
+                    log.debug("getNextSafe: Valid handler at 0x{x}", .{handler_addr});
+                },
+                .push_inline => |meta| {
+                    log.err("getNextSafe ERROR: Next item is push_inline metadata (value=0x{x}), not a handler!", .{meta.value});
+                    return error.MetadataNotHandler;
+                },
+                .push_pointer => |meta| {
+                    log.err("getNextSafe ERROR: Next item is push_pointer metadata (ptr=0x{x}), not a handler!", .{@intFromPtr(meta.value)});
+                    return error.MetadataNotHandler;
+                },
+                .jump_dest => |meta| {
+                    log.err("getNextSafe ERROR: Next item is jump_dest metadata (gas={}), not a handler!", .{meta.gas});
+                    return error.MetadataNotHandler;
+                },
+                .pc => |meta| {
+                    log.err("getNextSafe ERROR: Next item is pc metadata (value={}), not a handler!", .{meta.value});
+                    return error.MetadataNotHandler;
+                },
+                .codesize => |meta| {
+                    log.err("getNextSafe ERROR: Next item is codesize metadata (size={}), not a handler!", .{meta.size});
+                    return error.MetadataNotHandler;
+                },
+                .codecopy => |meta| {
+                    log.err("getNextSafe ERROR: Next item is codecopy metadata (size={}), not a handler!", .{meta.size});
+                    return error.MetadataNotHandler;
+                },
+                .first_block_gas => |meta| {
+                    log.err("getNextSafe ERROR: Next item is first_block_gas (gas={}), not a handler!", .{meta.gas});
+                    return error.MetadataNotHandler;
+                },
+                .trace_before => |meta| {
+                    log.err("getNextSafe ERROR: Next item is trace_before metadata (pc={}), not a handler!", .{meta.pc});
+                    return error.MetadataNotHandler;
+                },
+                .trace_after => |meta| {
+                    log.err("getNextSafe ERROR: Next item is trace_after metadata (pc={}), not a handler!", .{meta.pc});
+                    return error.MetadataNotHandler;
+                },
+            }
+            
+            return next;
         }
 
         /// Skip the current handler's metadata and advance to the next handler.
@@ -222,51 +348,57 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// Returns the total gas cost from the start until the first JUMPDEST, terminator opcode, or end of bytecode.
         pub fn calculateFirstBlockGas(bytecode: anytype) u64 {
             var gas: u64 = 0;
+            var iter = bytecode.createIterator();
             const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
-            
-            // Direct bytecode traversal without iterator
-            var pc: usize = 0;
-            while (pc < bytecode.len()) {
-                const opcode_byte = bytecode.getOpcodeUnsafe(@intCast(pc));
-                const opcode = std.meta.intToEnum(Opcode, opcode_byte) catch {
-                    // Invalid opcode
-                    const gas_to_add = @as(u64, opcode_info[0xFE].gas_cost); // INVALID gas cost
-                    gas = std.math.add(u64, gas, gas_to_add) catch return std.math.maxInt(u64);
-                    return gas;
-                };
 
-                
-                switch (opcode) {
-                    .JUMPDEST => {
+            while (true) {
+                const maybe = iter.next();
+                if (maybe == null) break;
+                const op_data = maybe.?;
+
+                switch (op_data) {
+                    .regular => |data| {
+                        const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
+                        const new_gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            return new_gas;
+                        }
+                        gas = new_gas;
+                        // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
+                        switch (data.opcode) {
+                            0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
+                                return gas;
+                            },
+                            else => {},
+                        }
+                    },
+                    .push => |data| {
+                        const push_opcode = 0x60 + data.size - 1;
+                        const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
+                        const new_gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            return new_gas;
+                        }
+                        gas = new_gas;
+                    },
+                    .jumpdest => {
                         // JUMPDEST terminates the block but its gas is not included
                         return gas;
                     },
-                    .STOP, .RETURN, .REVERT, .INVALID, .SELFDESTRUCT => {
-                        const gas_to_add = @as(u64, opcode_info[opcode_byte].gas_cost);
-                        gas = std.math.add(u64, gas, gas_to_add) catch return std.math.maxInt(u64);
+                    .stop, .invalid => {
+                        const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
+                        gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
                         return gas;
-                    },
-                    .JUMP, .JUMPI => {
-                        const gas_to_add = @as(u64, opcode_info[opcode_byte].gas_cost);
-                        gas = std.math.add(u64, gas, gas_to_add) catch return std.math.maxInt(u64);
-                        return gas;
-                    },
-                    .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, 
-                    .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
-                    .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                    .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
-                        const push_size = @intFromEnum(opcode) - @intFromEnum(Opcode.PUSH1) + 1;
-                        const gas_to_add = @as(u64, opcode_info[opcode_byte].gas_cost);
-                        gas = std.math.add(u64, gas, gas_to_add) catch return std.math.maxInt(u64);
-                        pc += push_size; // Skip push data
                     },
                     else => {
-                        const gas_to_add = @as(u64, opcode_info[opcode_byte].gas_cost);
-                        gas = std.math.add(u64, gas, gas_to_add) catch return std.math.maxInt(u64);
+                        // For fusion operations, approximate gas cost
+                        const new_gas = std.math.add(u64, gas, 6) catch std.math.maxInt(u64);
+                        if (new_gas == std.math.maxInt(u64)) {
+                            return new_gas;
+                        }
+                        gas = new_gas;
                     },
                 }
-                
-                pc += 1;
             }
 
             return gas;
@@ -291,10 +423,13 @@ pub fn Dispatch(comptime FrameType: type) type {
             opcode_handlers: *const [256]OpcodeHandler,
         ) ![]Self.Item {
             const log = @import("log.zig");
-            log.debug("Dispatch.init starting...", .{});
+            log.err("DISPATCH INIT: Starting to parse bytecode with {} bytes", .{bytecode.runtime_code.len});
 
             var schedule_items = ArrayList(Self.Item, null){};
             errdefer schedule_items.deinit(allocator);
+
+            // Create iterator to traverse bytecode
+            var iter = bytecode.createIterator();
 
             // Calculate gas cost for first basic block
             const first_block_gas = calculateFirstBlockGas(bytecode);
@@ -309,66 +444,63 @@ pub fn Dispatch(comptime FrameType: type) type {
                 }
             }
 
-            // Direct bytecode traversal without iterator
-            var pc: usize = 0;
-            while (pc < bytecode.len()) {
-                // Skip if not an opcode start (push data)
-                if (pc < bytecode.packed_bitmap.len and !bytecode.packed_bitmap[pc].is_op_start) {
-                    pc += 1;
-                    continue;
+            var opcode_count: usize = 0;
+            while (true) {
+                const instr_pc = iter.pc;
+                const maybe = iter.next();
+                if (maybe == null) {
+                    break;
                 }
+                const op_data = maybe.?;
+                opcode_count += 1;
                 
-                const instr_pc = pc;
-                const opcode_byte = bytecode.getOpcodeUnsafe(@intCast(pc));
-                
-                // Check if this PC is a fusion candidate
-                if (pc < bytecode.packed_bitmap.len and bytecode.packed_bitmap[pc].is_fusion_candidate) {
-                    // Handle fusion operations
-                    const fusion_data = bytecode.getFusionData(@intCast(pc));
-                    switch (fusion_data) {
-                        .push_add_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_add);
-                        },
-                        .push_mul_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_mul);
-                        },
-                        .push_sub_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_sub);
-                        },
-                        .push_div_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_div);
-                        },
-                        .push_and_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_and);
-                        },
-                        .push_or_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_or);
-                        },
-                        .push_xor_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_xor);
-                        },
-                        .push_jump_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_jump);
-                        },
-                        .push_jumpi_fusion => |data| {
-                            try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_jumpi);
-                        },
-                        else => {},
+                // DEBUG: Log all opcodes being parsed
+                switch (op_data) {
+                    .regular => |data| {
+                        if (opcode_count <= 20) { // Limit spam to first 20 opcodes
+                            log.warn("DISPATCH: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
+                        }
+                    },
+                    .push => |data| {
+                        if (opcode_count <= 20) {
+                            log.warn("DISPATCH: Parsing PUSH{d} at PC {d}", .{ data.size, instr_pc });
+                        }
+                    },
+                    else => {
+                        if (opcode_count <= 20) {
+                            log.warn("DISPATCH: Parsing other operation at PC {d}", .{instr_pc});
+                        }
                     }
-                    // Skip to next instruction after fusion
-                    const size = bytecode.getInstructionSize(@intCast(pc));
-                    pc += size;
-                    continue;
                 }
                 
-                const opcode = std.meta.intToEnum(Opcode, opcode_byte) catch {
-                    // Invalid opcode
-                    try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.INVALID)] });
-                    pc += 1;
-                    continue;
-                };
-                
-                switch (opcode) {
+                switch (op_data) {
+                    .regular => |data| {
+                        // Regular opcode - add handler first, then metadata for PC, CODESIZE, CODECOPY
+                        const handler = opcode_handlers.*[data.opcode];
+                        
+                        // DEBUG: Log specific opcodes we're interested in
+                        if (data.opcode == 0x08) {
+                            log.err("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
+                        } else if (data.opcode == 0x09) {
+                            log.err("DISPATCH DEBUG: Found MULMOD (0x09) at PC {d}, adding handler", .{instr_pc});
+                        } else if (data.opcode == 0x0a) {
+                            log.err("DISPATCH DEBUG: Found EXP (0x0a) at PC {d}, adding handler", .{instr_pc});
+                        }
+                        
+                        // Also log ALL opcodes to see what we're parsing
+                        log.err("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{data.opcode, instr_pc});
+                        
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                        if (data.opcode == @intFromEnum(Opcode.PC)) {
+                            try schedule_items.append(allocator, .{ .pc = .{ .value = @intCast(instr_pc) } });
+                        } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
+                            try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
+                        } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
+                            // Store direct pointer to bytecode data for stable reference
+                            const bytecode_data = bytecode.runtime_code;
+                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr, .size = @intCast(bytecode_data.len) } });
+                        }
+                    },
                     .push => |data| {
                         // PUSH operation - add handler first, then metadata
                         const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
@@ -732,21 +864,21 @@ pub fn Dispatch(comptime FrameType: type) type {
             const S = struct {
                 var tracer: *TracerType = undefined;
 
-                fn handle(frame: *FrameType, dispatch: Self) FrameType.Error!noreturn {
+                fn handle(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
                     if (is_before) {
-                        const metadata = dispatch.cursor[0].trace_before;
+                        const metadata = cursor[1].trace_before;
                         if (@hasDecl(TracerType, "beforeOp")) {
                             tracer.beforeOp(metadata.pc, metadata.opcode, FrameType, frame);
                         }
                     } else {
-                        const metadata = dispatch.cursor[0].trace_after;
+                        const metadata = cursor[1].trace_after;
                         if (@hasDecl(TracerType, "afterOp")) {
                             tracer.afterOp(metadata.pc, metadata.opcode, FrameType, frame);
                         }
                     }
                     // Skip metadata and continue with next handler
-                    const next = dispatch.skipMetadata();
-                    return next.cursor[0].opcode_handler(frame, next);
+                    const next_cursor = cursor + 2; // Skip over current metadata and next handler
+                    return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ frame, next_cursor });
                 }
             };
             S.tracer = tracer_instance;
@@ -923,6 +1055,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .jump_table = jump_table,
                 };
             }
+            
         };
 
         /// Iterator for traversing schedule alongside bytecode
@@ -1155,53 +1288,54 @@ const TestFrame = struct {
     pub const Error = error{
         TestError,
         Stop,
-        Return,
-        SelfDestruct,
     };
 
-    // Success cases are now part of Error enum
-    // Stop, Return, SelfDestruct are error values
-
     // Add OpcodeHandler type for testing
-    pub const OpcodeHandler = *const fn (frame: *TestFrame, dispatch: TestDispatch) Error!noreturn;
+    pub const OpcodeHandler = *const fn (frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) Error!noreturn;
 };
 
 const TestDispatch = Dispatch(TestFrame);
 
 // Mock opcode handlers for testing
-fn mockStop(frame: *TestFrame, dispatch: TestDispatch) TestFrame.Error!noreturn {
+fn mockStop(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockAdd(frame: *TestFrame, dispatch: TestDispatch) TestFrame.Error!noreturn {
+fn mockAdd(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockPush1(frame: *TestFrame, dispatch: TestDispatch) TestFrame.Error!noreturn {
+fn mockPush1(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockJumpdest(frame: *TestFrame, dispatch: TestDispatch) TestFrame.Error!noreturn {
+fn mockJumpdest(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockPc(frame: *TestFrame, dispatch: TestDispatch) TestFrame.Error!noreturn {
+fn mockPc(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockInvalid(frame: *TestFrame, dispatch: TestDispatch) TestFrame.Error!noreturn {
+fn mockInvalid(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.TestError;
 }
 
@@ -1773,15 +1907,17 @@ test "JumpTable - large jump table performance" {
 }
 
 // Mock fusion handlers for testing
-fn mockPushAddFusion(frame: TestFrame, dispatch: *const anyopaque) TestFrame.Error!noreturn {
+fn mockPushAddFusion(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockPushMulFusion(frame: TestFrame, dispatch: *const anyopaque) TestFrame.Error!noreturn {
+fn mockPushMulFusion(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
     _ = frame;
-    _ = dispatch;
+    _ = cursor;
+    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
