@@ -1,5 +1,6 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
+const log = @import("log.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const CallParams = @import("call_params.zig").CallParams;
@@ -551,7 +552,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn @"return"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor, .jump_table = null };
             _ = dispatch;
-            if (self.stack.size() < 2) return Error.StackUnderflow;
+            if (self.stack.size() < 2) {
+                return Error.StackUnderflow;
+            }
             const size = try self.stack.pop();
             const offset = try self.stack.pop();
 
