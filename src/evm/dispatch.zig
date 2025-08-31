@@ -46,6 +46,9 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         /// Thread-local storage for traced allocated pointers (used only for memory cleanup)
         threadlocal var traced_allocated_pointers: ?[]*FrameType.WordType = null;
+        
+        /// Thread-local storage for traced allocated bytecode copies (used only for memory cleanup)
+        threadlocal var traced_allocated_bytecode: ?[][*:0]u8 = null;
 
         /// The optimized instruction stream containing opcode handlers and their metadata.
         /// Each item is exactly 64 bits for optimal cache line usage.
@@ -375,6 +378,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                             const bytecode_data = bytecode.runtime_code;
                             const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
                             @memcpy(null_terminated, bytecode_data);
+                            // Note: This allocation is not tracked for cleanup in non-traced mode
                             try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
                         } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
                             // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
@@ -471,6 +475,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             comptime TracerType: type,
             tracer_instance: *TracerType,
         ) ![]Self.Item {
+            const log = @import("log.zig");
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
@@ -484,16 +489,34 @@ pub fn Dispatch(comptime FrameType: type) type {
                 }
                 allocated_pointers.deinit(allocator);
             }
+            
+            // Track allocated bytecode copies for cleanup
+            const BytecodeList = ArrayList([*:0]u8, null);
+            var allocated_bytecode = BytecodeList{};
+            errdefer {
+                for (allocated_bytecode.items) |ptr| {
+                    const len = std.mem.len(ptr);
+                    allocator.free(ptr[0..len :0]);
+                }
+                allocated_bytecode.deinit(allocator);
+            }
 
-            // Use the static trace handler functions as function pointers
-            const trace_before_handler: OpcodeHandler = &handleTraceBefore;
-            const trace_after_handler: OpcodeHandler = &handleTraceAfter;
+            // Create trace handlers for the specific tracer type
+            const trace_handlers = createTraceHandlers(TracerType);
+            const trace_before_handler = trace_handlers.beforeHandler;
+            const trace_after_handler = trace_handlers.afterHandler;
             
             // Cast tracer to anyopaque for storage in metadata
             const tracer_ptr = @as(*anyopaque, @ptrCast(tracer_instance));
 
-            // NOTE: first_block_gas is disabled for traced execution due to schedule structure differences
-            // Tracing is currently a no-op (handlers just skip to next instruction)
+            // Calculate gas cost for first basic block (same as non-traced version)
+            const first_block_gas = calculateFirstBlockGas(bytecode);
+
+            // Add first_block_gas entry if there's any gas to charge (same as non-traced version)
+            if (first_block_gas > 0) {
+                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
+                log.debug("Added first_block_gas in traced execution: {d}", .{first_block_gas});
+            }
             
             // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
@@ -522,6 +545,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                             const bytecode_data = bytecode.runtime_code;
                             const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
                             @memcpy(null_terminated, bytecode_data);
+                            try allocated_bytecode.append(allocator, null_terminated.ptr);
                             try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
                         } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
                             // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
@@ -602,30 +626,30 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .stop => {
                         const stop_opcode = @intFromEnum(Opcode.STOP);
 
-                        // Insert trace_before
+                        // Insert trace_before with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = stop_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
                         // STOP handler
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[stop_opcode] });
 
-                        // Insert trace_after
+                        // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = stop_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
                     },
                     .invalid => {
                         const invalid_opcode = @intFromEnum(Opcode.INVALID);
 
-                        // Insert trace_before
+                        // Insert trace_before with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = invalid_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
                         // INVALID handler
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[invalid_opcode] });
 
-                        // Insert trace_after
+                        // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = invalid_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
                     },
                 }
             }
@@ -638,29 +662,53 @@ pub fn Dispatch(comptime FrameType: type) type {
             // We need to attach this to the schedule somehow for later cleanup
             // Store it in thread local storage for now
             traced_allocated_pointers = try allocated_pointers.toOwnedSlice(allocator);
+            traced_allocated_bytecode = try allocated_bytecode.toOwnedSlice(allocator);
 
             return schedule_items.toOwnedSlice(allocator);
         }
 
-        // Define trace handlers as static functions
-        fn handleTraceBefore(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
-            // The actual handler is at cursor[2] (skip trace_before handler and metadata)
-            // We need to pass the cursor pointing to the actual handler, not advanced
-            const handler_cursor = cursor + 2;
+        // Create generic trace handler functions that know the TracerType
+        fn createTraceHandlers(comptime TracerTypeParam: type) struct {
+            beforeHandler: OpcodeHandler,
+            afterHandler: OpcodeHandler,
+        } {
+            const Handlers = struct {
+                fn handleTraceBefore(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
+                    // Get tracer from metadata and cast back to correct type
+                    const tracer_ptr = cursor[1].trace_before.tracer_ptr;
+                    const tracer = @as(*TracerTypeParam, @ptrCast(@alignCast(tracer_ptr)));
+                    
+                    // The actual handler is at cursor[2] 
+                    const handler_cursor = cursor + 2;
+                    
+                    // Call tracer's beforeOp method
+                    // Note: We need to track PC and opcode in the tracer itself
+                    tracer.beforeOp(0, 0, FrameType, frame); // Tracer will track its own state
+                    
+                    // Call the actual handler with cursor pointing to itself
+                    return @call(FrameType.getTailCallModifier(), handler_cursor[0].opcode_handler, .{ frame, handler_cursor });
+                }
+                
+                fn handleTraceAfter(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
+                    // Get tracer from metadata and cast back to correct type
+                    const tracer_ptr = cursor[1].trace_after.tracer_ptr;
+                    const tracer = @as(*TracerTypeParam, @ptrCast(@alignCast(tracer_ptr)));
+                    
+                    // The next handler is at cursor[2]
+                    const next_handler_cursor = cursor + 2;
+                    
+                    // Call tracer's afterOp method
+                    tracer.afterOp(0, 0, FrameType, frame); // Tracer will track its own state
+                    
+                    // Call the next handler with cursor pointing to itself
+                    return @call(FrameType.getTailCallModifier(), next_handler_cursor[0].opcode_handler, .{ frame, next_handler_cursor });
+                }
+            };
             
-            // TODO: Call tracer.beforeOp here
-            // The tracer instance is not accessible from these static handlers
-            // This needs a redesign to properly implement tracing
-            
-            // Call the actual handler with cursor pointing to itself
-            return @call(FrameType.getTailCallModifier(), handler_cursor[0].opcode_handler, .{ frame, handler_cursor });
-        }
-        
-        fn handleTraceAfter(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
-            // The next handler is at cursor[2] (skip trace_after handler and metadata)
-            const next_handler_cursor = cursor + 2;
-            // Call the next handler with cursor pointing to itself
-            return @call(FrameType.getTailCallModifier(), next_handler_cursor[0].opcode_handler, .{ frame, next_handler_cursor });
+            return .{
+                .beforeHandler = &Handlers.handleTraceBefore,
+                .afterHandler = &Handlers.handleTraceAfter,
+            };
         }
 
         /// Helper function to handle fusion operations with tracing support
@@ -675,6 +723,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             fusion_type: FusionType,
             pc: u32,
         ) !void {
+            _ = pc; // Currently unused, but may be needed for future tracer enhancements
             const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
 
             // Insert tracing around synthetic operation with tracer pointer
@@ -791,6 +840,16 @@ pub fn Dispatch(comptime FrameType: type) type {
                 for (pointers) |ptr| allocator.destroy(ptr);
                 allocator.free(pointers);
                 traced_allocated_pointers = null;
+            }
+            
+            // If we have traced allocated bytecode copies, free them
+            if (traced_allocated_bytecode) |bytecode_copies| {
+                for (bytecode_copies) |ptr| {
+                    const len = std.mem.len(ptr);
+                    allocator.free(ptr[0..len :0]);
+                }
+                allocator.free(bytecode_copies);
+                traced_allocated_bytecode = null;
             }
 
             // Free the schedule itself
