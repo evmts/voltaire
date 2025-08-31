@@ -573,31 +573,31 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     // Fusion operations with tracing
                     .push_add_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_add, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_add, @intCast(instr_pc));
                     },
                     .push_mul_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_mul, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_mul, @intCast(instr_pc));
                     },
                     .push_sub_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_sub, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_sub, @intCast(instr_pc));
                     },
                     .push_div_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_div, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_div, @intCast(instr_pc));
                     },
                     .push_and_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_and, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_and, @intCast(instr_pc));
                     },
                     .push_or_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_or, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_or, @intCast(instr_pc));
                     },
                     .push_xor_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_xor, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_xor, @intCast(instr_pc));
                     },
                     .push_jump_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_jump, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_jump, @intCast(instr_pc));
                     },
                     .push_jumpi_fusion => |data| {
-                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, data.value, .push_jumpi, @intCast(instr_pc));
+                        try Self.handleFusionOperationWithTracing(&schedule_items, allocator, opcode_handlers, trace_before_handler, trace_after_handler, tracer_ptr, data.value, .push_jumpi, @intCast(instr_pc));
                     },
                     .stop => {
                         const stop_opcode = @intFromEnum(Opcode.STOP);
@@ -670,15 +670,16 @@ pub fn Dispatch(comptime FrameType: type) type {
             opcode_handlers: *const [256]OpcodeHandler,
             trace_before_handler: OpcodeHandler,
             trace_after_handler: OpcodeHandler,
+            tracer_ptr: *anyopaque,
             value: FrameType.WordType,
             fusion_type: FusionType,
             pc: u32,
         ) !void {
             const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
 
-            // Insert tracing around synthetic operation
+            // Insert tracing around synthetic operation with tracer pointer
             try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-            try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(pc), .opcode = synthetic_opcode, ._padding = 0 } });
+            try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[synthetic_opcode] });
             if (value <= std.math.maxInt(u64)) {
@@ -691,7 +692,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             }
 
             try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-            try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(pc), .opcode = synthetic_opcode, ._padding = 0 } });
+            try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
         }
 
         /// Helper function to handle fusion operations consistently.
