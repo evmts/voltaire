@@ -1,5 +1,12 @@
 // Root file that imports all differential tests
 
+const std = @import("std");
+
+// Enable debug logging for tests
+pub const std_options = std.Options{
+    .log_level = .debug,
+};
+
 test {
     _ = @import("math_operations_test.zig");
     _ = @import("system_handlers_test.zig");

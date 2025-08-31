@@ -189,6 +189,8 @@ test "differential: division by zero" {
 test "differential: max value arithmetic" {
     const allocator = testing.allocator;
     
+    std.debug.print("\n\n===== STARTING MAX VALUE ARITHMETIC TEST =====\n", .{});
+    
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
