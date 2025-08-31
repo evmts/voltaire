@@ -580,6 +580,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32))
                 {
                     const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    
+                    // We need to read n bytes after the opcode at position i
+                    // So we need positions i+1 through i+n to be valid
+                    // This means i+n must be less than N (the length)
                     if (i + n >= N) return error.TruncatedPush;
                     
                     // Extract push value for immediate jump validation (only if fusions enabled)
