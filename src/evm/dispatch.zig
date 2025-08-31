@@ -3,6 +3,17 @@ const Opcode = @import("opcode_data.zig").Opcode;
 const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 const bytecode_mod = @import("bytecode.zig");
 const ArrayList = std.ArrayListAligned;
+const dispatch_metadata = @import("dispatch_metadata.zig");
+const dispatch_item = @import("dispatch_item.zig");
+const dispatch_jump_table = @import("dispatch_jump_table.zig");
+const dispatch_pc_mapping = @import("dispatch_pc_mapping.zig");
+const dispatch_jump_table_builder = @import("dispatch_jump_table_builder.zig");
+
+// TODO: Low priority TODO
+// Currently our architecture assumes 64 byte cpu. It will still be functional for 32 byte cpu or 128 byte cpu but potentially not optimal
+// In future we should consider benchmarking other cpu architectures. It's possible we want our metadata to be dynamic based on usize
+// For example, we might want to only store 32 byte inline values on a 32 byte machines rather than 64
+// THis can easily be done by just using the comptime FrameType
 
 /// Dispatch manages the execution flow of EVM opcodes through an optimized instruction stream.
 /// It converts bytecode into a cache-efficient array of function pointers and metadata,
@@ -11,183 +22,138 @@ const ArrayList = std.ArrayListAligned;
 /// The dispatch mechanism uses tail-call optimization to jump between opcode handlers,
 /// keeping hot data in CPU cache and maintaining predictable memory access patterns.
 ///
+/// Here is what the data structure looks like in pseudocode
+///
+///
+/// const cursors: []const u64 = [pushPointer, thePushValueAsMetadata, pushPointer, thePushValueAsMetadata, addPointer, returnPointer]
+///
+/// Because bytecode usually flows from left to right creating a heterogenous array of pointers and metadata is highly cache efficient
+/// The CPU will most of the time load the metadata or function pointer it needs into the cache just because it's the next sequential item
+///
+/// Opcode handlers execute their functionality and then call the next opcode. For example, ADD will pop 2 items off the stock, add them, push
+/// to the stack and then do a @call(.tailcall_only, next_cursor, {frame, next_cursor}) where next_cursor is just current_cursor + 1
+///
 /// @param FrameType - The stack frame type that will execute the opcodes
 /// @return A struct type containing dispatch functionality for the given frame type
 pub fn Dispatch(comptime FrameType: type) type {
     return struct {
         const Self = @This();
-        // We define opcodehandler locally rather than using Frame.OpcodeHandler to avoid circular dependency
+
+        /// The shared interface of any opcode handler
+        /// A handler takes a mutable stack frame and a cursor pointer to where in the instruction stream it is
+        /// We define opcodehandler locally rather than using Frame.OpcodeHandler to avoid circular dependency
         const OpcodeHandler = *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn;
-        
-        // Thread-local storage for traced allocated pointers (used for cleanup)
+
+        /// Thread-local storage for traced allocated pointers (used only for memory cleanup)
         threadlocal var traced_allocated_pointers: ?[]*FrameType.WordType = null;
+
         /// The optimized instruction stream containing opcode handlers and their metadata.
         /// Each item is exactly 64 bits for optimal cache line usage.
         ///
-        /// Layout example: [handler_ptr, metadata, handler_ptr, metadata, ...]
+        /// Layout example: [push_ptr, push_value_as_metadata, push_ptr, push_value_as_metadata, add_ptr, return_ptr]
         ///
-        /// Safety: Always terminated with 2 STOP handlers so accessing cursor[n+1]
+        /// Critical safety/performance property: Always terminated with 2 STOP handlers so accessing cursor[n+1]
         /// or cursor[n+2] is safe without bounds checking.
         cursor: [*]const Item,
 
         // ========================
         // Metadata Types
         // ========================
+        // Import metadata types from dispatch_metadata module
+        const Metadata = dispatch_metadata.DispatchMetadata(FrameType);
+        pub const JumpDestMetadata = Metadata.JumpDestMetadata;
+        pub const FirstBlockMetadata = Metadata.FirstBlockMetadata;
+        pub const PushInlineMetadata = Metadata.PushInlineMetadata;
+        pub const PushPointerMetadata = Metadata.PushPointerMetadata;
+        pub const PcMetadata = Metadata.PcMetadata;
+        pub const CodesizeMetadata = Metadata.CodesizeMetadata;
+        pub const CodecopyMetadata = Metadata.CodecopyMetadata;
+        pub const TraceBeforeMetadata = Metadata.TraceBeforeMetadata;
+        pub const TraceAfterMetadata = Metadata.TraceAfterMetadata;
 
-        /// Metadata for JUMPDEST operations containing pre-calculated gas and stack requirements.
-        /// This enables efficient block-level gas accounting and stack validation.
-        pub const JumpDestMetadata = packed struct(u64) {
-            /// Total gas cost for the entire basic block starting at this JUMPDEST
-            gas: u32 = 0,
-            min_stack: i16 = 0,
-            max_stack: i16 = 0,
-        };
-        /// Metadata for PUSH operations with values that fit in 64 bits.
-        /// Stored inline in the dispatch array for cache efficiency.
-        pub const PushInlineMetadata = packed struct(u64) { value: u64 };
-        /// Metadata for PUSH operations with values larger than 64 bits.
-        /// Contains a pointer to the heap-allocated u256 value.
-        pub const PushPointerMetadata = packed struct(u64) { value: *u256 };
-        /// Metadata for PC opcode containing the program counter value.
-        pub const PcMetadata = packed struct { value: FrameType.PcType };
-        /// Metadata for CODESIZE opcode containing the bytecode size.
-        pub const CodesizeMetadata = packed struct { size: u32 };
-        /// Metadata for CODECOPY opcode containing bytecode pointer and size.
-        pub const CodecopyMetadata = packed struct {
-            bytecode_ptr: [*]const u8, // Direct pointer to bytecode data, not a slice
-            size: u32,
-            _padding: u32 = 0, // Increased padding to maintain 64-bit size
-        };
-        /// Metadata for trace_before_op containing PC and opcode for tracing
-        pub const TraceBeforeMetadata = packed struct(u64) {
-            pc: u32,
-            opcode: u8,
-            _padding: u24 = 0,
-        };
-        /// Metadata for trace_after_op containing PC and opcode for tracing
-        pub const TraceAfterMetadata = packed struct(u64) {
-            pc: u32,
-            opcode: u8,
-            _padding: u24 = 0,
-        };
-        /// Metadata for jump operations containing pointer to jump table
         /// A single item in the dispatch array, either a handler or metadata.
         /// Untagged union for optimal 64-bit cache line usage.
-        pub const Item = union {
+        /// Note: We can't directly use dispatch_item.DispatchItem because it needs OpcodeHandler type
+        pub const Item = packed union {
+            /// Most items are function pointers to an opcode handler
+            opcode_handler: OpcodeHandler,
+            /// Some opcode handlers are followed by metadata specific to that opcode
             jump_dest: JumpDestMetadata,
             push_inline: PushInlineMetadata,
             push_pointer: PushPointerMetadata,
             pc: PcMetadata,
             codesize: CodesizeMetadata,
             codecopy: CodecopyMetadata,
-            opcode_handler: OpcodeHandler,
-            first_block_gas: struct { gas: u64 },
+            first_block_gas: FirstBlockMetadata,
             trace_before: TraceBeforeMetadata,
             trace_after: TraceAfterMetadata,
         };
-
-        // Comptime validation of Item union
         comptime {
-            const item_size = @sizeOf(Item);
-            const item_align = @alignOf(Item);
-            const ptr_size = @sizeOf(*anyopaque);
-
-            // Sizes validated at compile time
-            // Item union size: 32 bytes
-            // Item union alignment: 16 bytes
-            // OpcodeHandler size: 8 bytes
-            // Pointer size: 8 bytes
-
-            // Ensure union is properly sized (should be size of largest member + tag)
-            // Tagged union should be at least pointer size + tag
-            if (item_size < ptr_size + 1) {
-                @compileError("Item union is too small!");
-            }
-
-            // Ensure proper alignment for pointer arithmetic
-            if (item_align < @alignOf(*anyopaque)) {
-                @compileError("Item union alignment is less than pointer alignment!");
-            }
-
-            // Verify all metadata types fit in 64 bits
-            if (@sizeOf(JumpDestMetadata) != 8) @compileError("JumpDestMetadata must be 64 bits");
-            if (@sizeOf(PushInlineMetadata) != 8) @compileError("PushInlineMetadata must be 64 bits");
-            if (@sizeOf(PushPointerMetadata) != 8) @compileError("PushPointerMetadata must be 64 bits");
+            if (@sizeOf(Item) != 8) @compileError("Item must be 64 bits");
         }
 
-        /// Jump table entry for dynamic jumps
-        pub const JumpTableEntry = struct {
-            pc: FrameType.PcType,
-            dispatch: Self,
-        };
-
+        // Performance note: JumpTable is a compact array of structs rather than a sparse bitmap. A sparse bitmap would provide O(1) lookups
+        // But at the cost of cpu cache utilization. For the scale of how many jump destinations contracts have it is more performant to
+        // Create a compact data structure where all to most of the items fit in a single cache line and can be quickly binary searched
         /// Jump table for dynamic JUMP/JUMPI operations
         /// Sorted array of jump destinations for binary search lookup
-        pub const JumpTable = struct {
-            entries: []const JumpTableEntry,
-
-            /// Find the dispatch for a given PC using binary search
-            pub fn findJumpTarget(self: @This(), target_pc: FrameType.PcType) ?Self {
-                var left: usize = 0;
-                var right: usize = self.entries.len;
-
-                while (left < right) {
-                    const mid = left + (right - left) / 2;
-                    const entry = self.entries[mid];
-
-                    if (entry.pc == target_pc) {
-                        return entry.dispatch;
-                    } else if (entry.pc < target_pc) {
-                        left = mid + 1;
-                    } else {
-                        right = mid;
-                    }
-                }
-
-                return null;
-            }
-        };
+        /// Most jumps are done with known constants and validated at analysis time with the jump location pushed as trusted metadata
+        /// If a jump is done dynamically based on the stack value at runtime (rare) we then rely on dynamically finding the jump destination
+        pub const JumpTable = dispatch_jump_table.JumpTable(FrameType, Self);
 
         // ========================
         // Metadata Access Methods
         // ========================
+        // To prevent details of how dispatch structures it's instruction stream from being tightly coupled throughout
+        // The entire EVM we encapsulate how to get the next opcode or how to get metadata into opaque methods that hide
+        // the details of how the stream is structured.
+
+        /// A generic type that casts the 64 byte value to the correct type depending on the opcode
+        /// NOTE: The metadata is not tagged (to save cacheline space) so this working safely depends on us always
+        /// Constructing the instruction stream correctly with the expected metadata consistentally in the expected spots based on opcode!
+        /// We also assume every opcode will correctly pass in the correct enum type for their opcode
+        fn GetOpDataReturnType(comptime opcode: Opcode) type {
+            // TODO: This seems to not handle synthetic opcodes atm we must fix
+            return switch (opcode) {
+                .PC => struct { metadata: PcMetadata, next: Self },
+                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => struct { metadata: PushInlineMetadata, next: Self },
+                .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => struct { metadata: PushPointerMetadata, next: Self },
+                .JUMPDEST => struct { metadata: JumpDestMetadata, next: Self },
+                .CODESIZE => struct { metadata: CodesizeMetadata, next: Self },
+                .CODECOPY => struct { metadata: CodecopyMetadata, next: Self },
+                else => struct { next: Self },
+            };
+        }
 
         /// Get opcode data including metadata and next dispatch position.
         /// This is a comptime-optimized method for specific opcodes.
-        pub fn getOpData(self: Self, comptime opcode: Opcode) switch (opcode) {
-            .PC => struct { metadata: PcMetadata, next: Self },
-            .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => struct { metadata: PushInlineMetadata, next: Self },
-            .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => struct { metadata: PushPointerMetadata, next: Self },
-            .JUMPDEST => struct { metadata: JumpDestMetadata, next: Self },
-            .CODESIZE => struct { metadata: CodesizeMetadata, next: Self },
-            .CODECOPY => struct { metadata: CodecopyMetadata, next: Self },
-            else => struct { next: Self },
-        } {
+        pub fn getOpData(self: Self, comptime opcode: Opcode) GetOpDataReturnType(opcode) {
             return switch (opcode) {
                 .PC => .{
                     .metadata = self.cursor[0].pc,
-                    .next = Self{ .cursor = self.cursor + 2, .jump_table = self.jump_table },
+                    .next = Self{ .cursor = self.cursor + 2 },
                 },
                 .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => .{
                     .metadata = self.cursor[0].push_inline,
-                    .next = Self{ .cursor = self.cursor + 2, .jump_table = self.jump_table },
+                    .next = Self{ .cursor = self.cursor + 2 },
                 },
                 .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => .{
                     .metadata = self.cursor[0].push_pointer,
-                    .next = Self{ .cursor = self.cursor + 2, .jump_table = self.jump_table },
+                    .next = Self{ .cursor = self.cursor + 2 },
                 },
                 .JUMPDEST => .{
                     .metadata = self.cursor[0].jump_dest,
-                    .next = Self{ .cursor = self.cursor + 2, .jump_table = self.jump_table },
+                    .next = Self{ .cursor = self.cursor + 2 },
                 },
                 .CODESIZE => .{
                     .metadata = self.cursor[0].codesize,
-                    .next = Self{ .cursor = self.cursor + 2, .jump_table = self.jump_table },
+                    .next = Self{ .cursor = self.cursor + 2 },
                 },
                 .CODECOPY => .{
                     .metadata = self.cursor[0].codecopy,
-                    .next = Self{ .cursor = self.cursor + 2, .jump_table = self.jump_table },
+                    .next = Self{ .cursor = self.cursor + 2 },
                 },
+                // TODO: This does not handle synthetic opcodes we must fix!
                 else => .{
                     .next = Self{ .cursor = self.cursor + 1, .jump_table = self.jump_table },
                 },
@@ -197,102 +163,57 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// Advance to the next handler in the dispatch array.
         /// Used for opcodes without metadata.
         pub inline fn getNext(self: Self) Self {
+            // TODO: we currently  only use getNext on opcodes that don't have metadata. But we should still to be clean/safe force the opcodes
+            // to pass in their enum value so we can either add an unreachable or advanced +2 for metadata having opcodes
             return Self{
                 .cursor = self.cursor + 1,
             };
-        }
-
-        /// Safe version of getNext that validates the next item
-        /// Returns an error if the next item is not a valid handler
-        pub fn getNextSafe(self: Self) !Self {
-            const log = @import("log.zig");
-
-            // Debug: log current position
-            log.debug("getNextSafe called:", .{});
-            log.debug("  Current cursor address: 0x{x}", .{@intFromPtr(self.cursor)});
-
-            // Try to safely access current item to verify cursor is valid
-            const current_tag_ptr = @as([*]const u8, @ptrCast(self.cursor));
-            log.debug("  Current item tag byte: 0x{x:0>2}", .{current_tag_ptr[0]});
-
-            const next = Self{
-                .cursor = self.cursor + 1,
-            };
-
-            log.debug("  Next cursor address: 0x{x} (current + {})", .{ @intFromPtr(next.cursor), @sizeOf(Item) });
-
-            // Check if next pointer is in valid range
-            const next_addr = @intFromPtr(next.cursor);
-            if (next_addr < 0x1000) {
-                log.err("Next cursor is in low memory: 0x{x}", .{next_addr});
-                return error.InvalidCursor;
-            }
-
-            // Try to read tag byte at next position
-            const next_tag_ptr = @as([*]const u8, @ptrCast(next.cursor));
-            log.debug("  Attempting to read tag byte at next position...", .{});
-            const next_tag = next_tag_ptr[0]; // This might segfault
-            log.debug("  Next item tag byte: 0x{x:0>2}", .{next_tag});
-
-            // Check if next item looks like a valid handler pointer
-            // With untagged union, we assume it's a handler and validate the pointer
-            const handler_ptr = @intFromPtr(next.cursor[0].opcode_handler);
-            if (handler_ptr == 0) {
-                log.err("getNextSafe: Next item is NULL handler pointer!", .{});
-                return error.InvalidHandler;
-            }
-            // Check if it's in a reasonable memory range (not metadata mistaken as pointer)
-            if (handler_ptr < 0x1000) {
-                log.err("getNextSafe: Handler pointer looks like data: 0x{x}", .{handler_ptr});
-                return error.InvalidHandler;
-            }
-            log.debug("getNextSafe: Valid handler at 0x{x}", .{handler_ptr});
-
-            return next;
         }
 
         /// Skip the current handler's metadata and advance to the next handler.
         /// Used for opcodes that have associated metadata.
         pub fn skipMetadata(self: Self) Self {
+            // TODO: we currently  only use getNext on opcodes that don't have metadata. But we should still to be clean/safe force the opcodes
+            // to pass in their enum value so we can either add an unreachable or advanced +2 for metadata having opcodes
             return Self{
                 .cursor = self.cursor + 2,
             };
         }
 
-
         /// Get inline push metadata from the next position.
         /// Assumes the caller verified this is a push with inline metadata.
         pub fn getInlineMetadata(self: Self) PushInlineMetadata {
+            // TODO: This method is how synthetic opcodes get metadata atm. We should instead have them get metadata with getOpData
             return self.cursor[1].push_inline;
         }
 
         /// Get pointer push metadata from the next position.
         /// Assumes the caller verified this is a push with pointer metadata.
         pub fn getPointerMetadata(self: Self) PushPointerMetadata {
+            // TODO: This method is how synthetic opcodes get metadata atm. We should instead have them get metadata with getOpData
             return self.cursor[1].push_pointer;
         }
 
         /// Get PC metadata from the next position.
         /// Assumes the caller verified this is a PC opcode.
         pub fn getPcMetadata(self: Self) PcMetadata {
+            // TODO: This method is how pc get metadata atm. We should instead have it use the getOpData instead
             return self.cursor[1].pc;
         }
 
         /// Get JUMPDEST metadata from the next position.
         /// Assumes the caller verified this is a JUMPDEST opcode.
         pub fn getJumpDestMetadata(self: Self) JumpDestMetadata {
+            // TODO: We should instead have users of this use the getOpData instead
             return self.cursor[1].jump_dest;
         }
-
 
         /// Get first block gas metadata from the current position.
         /// Assumes the caller verified this is a first_block_gas item.
         pub fn getFirstBlockGas(self: Self) @TypeOf(@as(Self.Item, undefined).first_block_gas) {
-            // Since we know this is first_block_gas, we can safely cast and dereference
-            const ptr: *const @TypeOf(@as(Self.Item, undefined).first_block_gas) = @ptrCast(&self.cursor[0]);
-            return ptr.*;
+            // Access the first_block_gas metadata directly
+            return self.cursor[0].first_block_gas;
         }
-
 
         // ========================
         // Helper Functions
@@ -397,7 +318,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // Add first_block_gas entry if there's any gas to charge
             if (first_block_gas > 0) {
-                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = first_block_gas } });
+                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
                 log.debug("Added first_block_gas: {d}", .{first_block_gas});
                 // TEMPORARY DEBUG: Log expected gas for our test bytecode
                 if (bytecode.runtime_code.len == 38) { // Our specific test case
@@ -457,9 +378,11 @@ pub fn Dispatch(comptime FrameType: type) type {
                         } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
                             try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
                         } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                            // Store direct pointer to bytecode data for stable reference
+                            // Create null-terminated copy of bytecode for CODECOPY
                             const bytecode_data = bytecode.runtime_code;
-                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr, .size = @intCast(bytecode_data.len) } });
+                            const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
+                            @memcpy(null_terminated, bytecode_data);
+                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
                         } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
                             // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
                             try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
@@ -536,12 +459,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         }
 
         /// PC mapping entry for tracing
-        pub const PCMapEntry = struct {
-            dispatch_index: usize,
-            pc: FrameType.PcType,
-            opcode: u8,
-            is_synthetic: bool,
-        };
+        pub const PCMapEntry = dispatch_pc_mapping.PCMapEntry(FrameType);
 
         /// Build a mapping from dispatch indices to PC values and opcodes for tracing
         pub fn buildPCMapping(
@@ -549,121 +467,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             schedule: []const Self.Item,
             bytecode: anytype,
         ) ![]PCMapEntry {
-            const PCMapList = ArrayList(PCMapEntry, null);
-            var pc_map = PCMapList{};
-            errdefer pc_map.deinit(allocator);
-
-            // Create iterator to traverse bytecode
-            var iter = bytecode.createIterator();
-            var dispatch_index: usize = 0;
-
-            // Skip first_block_gas if present
-            // First_block_gas is only added if calculateFirstBlockGas(bytecode) > 0
-            const first_block_gas = calculateFirstBlockGas(bytecode);
-            if (first_block_gas > 0 and schedule.len > 0) {
-                dispatch_index = 1;
-            }
-
-            while (true) {
-                const instr_pc = iter.pc;
-                const maybe = iter.next();
-                if (maybe == null) break;
-                const op_data = maybe.?;
-
-                switch (op_data) {
-                    .regular => |data| {
-                        // Map this regular opcode to its dispatch index
-                        try pc_map.append(allocator, .{
-                            .dispatch_index = dispatch_index,
-                            .pc = @intCast(instr_pc),
-                            .opcode = data.opcode,
-                            .is_synthetic = false,
-                        });
-                        dispatch_index += 1;
-
-                        // PC, CODESIZE, CODECOPY opcodes have additional dispatch items
-                        if (data.opcode == @intFromEnum(Opcode.PC) or
-                            data.opcode == @intFromEnum(Opcode.CODESIZE) or
-                            data.opcode == @intFromEnum(Opcode.CODECOPY))
-                        {
-                            dispatch_index += 1; // Account for metadata
-                        }
-                    },
-                    .push => |data| {
-                        const push_opcode = 0x60 + data.size - 1;
-                        try pc_map.append(allocator, .{
-                            .dispatch_index = dispatch_index,
-                            .pc = @intCast(instr_pc),
-                            .opcode = push_opcode,
-                            .is_synthetic = false,
-                        });
-                        dispatch_index += 1;
-
-                        // PUSH operations have additional value item
-                        dispatch_index += 1;
-                    },
-                    .jumpdest => |data| {
-                        _ = data;
-                        try pc_map.append(allocator, .{
-                            .dispatch_index = dispatch_index,
-                            .pc = @intCast(instr_pc),
-                            .opcode = @intFromEnum(Opcode.JUMPDEST),
-                            .is_synthetic = false,
-                        });
-                        dispatch_index += 1;
-
-                        // JUMPDEST has additional metadata
-                        dispatch_index += 1;
-                    },
-                    // Handle fusion operations
-                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => |data| {
-                        _ = data;
-                        const synthetic_opcode: u8 = switch (op_data) {
-                            .push_add_fusion => @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE),
-                            .push_mul_fusion => @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE),
-                            .push_sub_fusion => @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE),
-                            .push_div_fusion => @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE),
-                            .push_and_fusion => @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE),
-                            .push_or_fusion => @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE),
-                            .push_xor_fusion => @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE),
-                            .push_jump_fusion => @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
-                            .push_jumpi_fusion => @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
-                            else => unreachable,
-                        };
-
-                        try pc_map.append(allocator, .{
-                            .dispatch_index = dispatch_index,
-                            .pc = @intCast(instr_pc),
-                            .opcode = synthetic_opcode,
-                            .is_synthetic = true,
-                        });
-                        dispatch_index += 1;
-
-                        // Fusion ops may have additional value item
-                        dispatch_index += 1;
-                    },
-                    .stop => {
-                        try pc_map.append(allocator, .{
-                            .dispatch_index = dispatch_index,
-                            .pc = @intCast(instr_pc),
-                            .opcode = @intFromEnum(Opcode.STOP),
-                            .is_synthetic = false,
-                        });
-                        dispatch_index += 1;
-                    },
-                    .invalid => {
-                        try pc_map.append(allocator, .{
-                            .dispatch_index = dispatch_index,
-                            .pc = @intCast(instr_pc),
-                            .opcode = @intFromEnum(Opcode.INVALID),
-                            .is_synthetic = false,
-                        });
-                        dispatch_index += 1;
-                    },
-                }
-            }
-
-            return pc_map.toOwnedSlice(allocator);
+            return dispatch_pc_mapping.buildPCMapping(FrameType, Self, allocator, schedule, bytecode);
         }
 
         /// Create a dispatch schedule with tracing handlers inserted
@@ -677,7 +481,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
-            
+
             // Track allocated push pointers for cleanup
             const PointerList = ArrayList(*FrameType.WordType, null);
             var allocated_pointers = PointerList{};
@@ -697,7 +501,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // Add first_block_gas entry if there's any gas to charge
             if (first_block_gas > 0) {
-                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = first_block_gas } });
+                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
             }
 
             // Create iterator to traverse bytecode
@@ -712,7 +516,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .regular => |data| {
                         // Insert trace_before
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = data.opcode } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = data.opcode, ._padding = 0 } });
 
                         // Regular opcode handler
                         const handler = opcode_handlers.*[data.opcode];
@@ -722,9 +526,11 @@ pub fn Dispatch(comptime FrameType: type) type {
                         } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
                             try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
                         } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                            // Store direct pointer to bytecode data for stable reference
+                            // Create null-terminated copy of bytecode for CODECOPY
                             const bytecode_data = bytecode.runtime_code;
-                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr, .size = @intCast(bytecode_data.len) } });
+                            const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
+                            @memcpy(null_terminated, bytecode_data);
+                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
                         } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
                             // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
                             try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
@@ -732,14 +538,14 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                         // Insert trace_after
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = data.opcode } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = data.opcode, ._padding = 0 } });
                     },
                     .push => |data| {
                         const push_opcode = 0x60 + data.size - 1;
 
                         // Insert trace_before
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = push_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = push_opcode, ._padding = 0 } });
 
                         // PUSH operation handler and metadata
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
@@ -756,14 +562,14 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                         // Insert trace_after
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = push_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = push_opcode, ._padding = 0 } });
                     },
                     .jumpdest => |data| {
                         const jumpdest_opcode = @intFromEnum(Opcode.JUMPDEST);
 
                         // Insert trace_before
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = jumpdest_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = jumpdest_opcode, ._padding = 0 } });
 
                         // JUMPDEST handler and metadata
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[jumpdest_opcode] });
@@ -771,7 +577,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                         // Insert trace_after
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = jumpdest_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = jumpdest_opcode, ._padding = 0 } });
                     },
                     // Fusion operations with tracing
                     .push_add_fusion => |data| {
@@ -806,28 +612,28 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                         // Insert trace_before
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = stop_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = stop_opcode, ._padding = 0 } });
 
                         // STOP handler
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[stop_opcode] });
 
                         // Insert trace_after
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = stop_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = stop_opcode, ._padding = 0 } });
                     },
                     .invalid => {
                         const invalid_opcode = @intFromEnum(Opcode.INVALID);
 
                         // Insert trace_before
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = invalid_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = invalid_opcode, ._padding = 0 } });
 
                         // INVALID handler
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[invalid_opcode] });
 
                         // Insert trace_after
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = invalid_opcode } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = invalid_opcode, ._padding = 0 } });
                     },
                 }
             }
@@ -840,7 +646,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             // We need to attach this to the schedule somehow for later cleanup
             // Store it in thread local storage for now
             traced_allocated_pointers = try allocated_pointers.toOwnedSlice(allocator);
-            
+
             return schedule_items.toOwnedSlice(allocator);
         }
 
@@ -885,7 +691,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // Insert tracing around synthetic operation
             try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-            try schedule_items.append(allocator, .{ .trace_before = .{ .pc = pc, .opcode = synthetic_opcode } });
+            try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(pc), .opcode = synthetic_opcode, ._padding = 0 } });
 
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[synthetic_opcode] });
             if (value <= std.math.maxInt(u64)) {
@@ -898,7 +704,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             }
 
             try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-            try schedule_items.append(allocator, .{ .trace_after = .{ .pc = pc, .opcode = synthetic_opcode } });
+            try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(pc), .opcode = synthetic_opcode, ._padding = 0 } });
         }
 
         /// Helper function to handle fusion operations consistently.
@@ -994,13 +800,11 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub fn deinitSchedule(allocator: std.mem.Allocator, schedule: []const Item) void {
             // If we have traced allocated pointers, free them
             if (traced_allocated_pointers) |pointers| {
-                for (pointers) |ptr| {
-                    allocator.destroy(ptr);
-                }
+                for (pointers) |ptr| allocator.destroy(ptr);
                 allocator.free(pointers);
                 traced_allocated_pointers = null;
             }
-            
+
             // Free the schedule itself
             allocator.free(schedule);
         }
@@ -1124,134 +928,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         };
 
         /// Builder for creating jump tables with improved error handling
-        pub const JumpTableBuilder = struct {
-            const BuilderEntry = struct {
-                pc: FrameType.PcType,
-                schedule_index: usize,
-            };
-
-            entries: ArrayList(BuilderEntry, null),
-            allocator: std.mem.Allocator,
-
-            pub fn init(allocator: std.mem.Allocator) JumpTableBuilder {
-                return .{
-                    .entries = ArrayList(BuilderEntry, null){},
-                    .allocator = allocator,
-                };
-            }
-
-            pub fn deinit(self: *JumpTableBuilder) void {
-                self.entries.deinit(self.allocator);
-            }
-
-            pub fn addEntry(self: *JumpTableBuilder, pc: FrameType.PcType, schedule_index: usize) !void {
-                try self.entries.append(self.allocator, .{
-                    .pc = pc,
-                    .schedule_index = schedule_index,
-                });
-            }
-
-            pub fn buildFromSchedule(self: *JumpTableBuilder, schedule: []const Item, bytecode: anytype) !void {
-                var iter = bytecode.createIterator();
-                var schedule_index: usize = 0;
-
-                // Skip first_block_gas if present
-                // First_block_gas is only added if calculateFirstBlockGas(bytecode) > 0
-                const first_block_gas = calculateFirstBlockGas(bytecode);
-                if (first_block_gas > 0 and schedule.len > 0) {
-                    schedule_index = 1;
-                }
-
-                while (true) {
-                    const instr_pc = iter.pc;
-                    const maybe = iter.next();
-                    if (maybe == null) break;
-                    const op_data = maybe.?;
-
-                    switch (op_data) {
-                        .jumpdest => {
-                            try self.addEntry(@intCast(instr_pc), schedule_index);
-                            schedule_index += 2; // Handler + metadata
-                        },
-                        .regular => |data| {
-                            schedule_index += 1;
-                            if (data.opcode == @intFromEnum(Opcode.PC) or
-                                data.opcode == @intFromEnum(Opcode.CODESIZE) or
-                                data.opcode == @intFromEnum(Opcode.CODECOPY))
-                            {
-                                schedule_index += 1;
-                            }
-                        },
-                        .push => {
-                            schedule_index += 2; // Handler + metadata
-                        },
-                        .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
-                            schedule_index += 2;
-                        },
-                        .stop, .invalid => {
-                            schedule_index += 1;
-                        },
-                    }
-                }
-            }
-
-            pub fn finalize(self: *JumpTableBuilder) !JumpTable {
-                const builder_entries = try self.entries.toOwnedSlice(self.allocator);
-                defer self.allocator.free(builder_entries);
-
-                // Sort builder entries by PC
-                std.sort.block(BuilderEntry, builder_entries, {}, struct {
-                    pub fn lessThan(context: void, a: BuilderEntry, b: BuilderEntry) bool {
-                        _ = context;
-                        return a.pc < b.pc;
-                    }
-                }.lessThan);
-
-                // Convert to JumpTableEntry array
-                const entries = try self.allocator.alloc(JumpTableEntry, builder_entries.len);
-                errdefer self.allocator.free(entries);
-
-                for (builder_entries, entries) |builder_entry, *entry| {
-                    entry.* = .{
-                        .pc = builder_entry.pc,
-                        .dispatch = Self{
-                            .cursor = undefined, // Must be set by caller
-                            .jump_table = null,
-                        },
-                    };
-                }
-
-                return JumpTable{ .entries = entries };
-            }
-
-            pub fn finalizeWithSchedule(self: *JumpTableBuilder, schedule: []const Item) !JumpTable {
-                const builder_entries = try self.entries.toOwnedSlice(self.allocator);
-                defer self.allocator.free(builder_entries);
-
-                // Sort builder entries by PC
-                std.sort.block(BuilderEntry, builder_entries, {}, struct {
-                    pub fn lessThan(context: void, a: BuilderEntry, b: BuilderEntry) bool {
-                        _ = context;
-                        return a.pc < b.pc;
-                    }
-                }.lessThan);
-
-                // Convert to JumpTableEntry array with proper dispatch pointers
-                const entries = try self.allocator.alloc(JumpTableEntry, builder_entries.len);
-                errdefer self.allocator.free(entries);
-
-                for (builder_entries, entries) |builder_entry, *entry| {
-                    entry.* = .{
-                        .pc = builder_entry.pc,
-                        .dispatch = Self{
-                            .cursor = schedule.ptr + builder_entry.schedule_index,
-                        },
-                    };
-                }
-
-                return JumpTable{ .entries = entries };
-            }
-        };
+        pub const JumpTableBuilder = dispatch_jump_table_builder.JumpTableBuilder(FrameType, Self);
     };
 }
 
@@ -1276,51 +953,45 @@ const TestFrame = struct {
     };
 
     // Add OpcodeHandler type for testing
-    pub const OpcodeHandler = *const fn (frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) Error!noreturn;
+    pub const OpcodeHandler = *const fn (frame: *TestFrame, cursor: [*]const TestDispatch.Item) Error!noreturn;
 };
 
 const TestDispatch = Dispatch(TestFrame);
 
 // Mock opcode handlers for testing
-fn mockStop(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockStop(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockAdd(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockAdd(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockPush1(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockPush1(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockJumpdest(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockJumpdest(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockPc(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockPc(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockInvalid(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockInvalid(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.TestError;
 }
 
@@ -1837,7 +1508,7 @@ test "JumpTable - multiple entries sorted order" {
 
 test "JumpTable - binary search edge cases" {
     // Create manual jump table with edge case PCs
-    const entries = [_]TestDispatch.JumpTableEntry{
+    const entries = [_]TestDispatch.JumpTable.JumpTableEntry{
         .{ .pc = 0, .dispatch = TestDispatch{ .cursor = undefined } },
         .{ .pc = 1, .dispatch = TestDispatch{ .cursor = undefined } },
         .{ .pc = 100, .dispatch = TestDispatch{ .cursor = undefined } },
@@ -1865,7 +1536,7 @@ test "JumpTable - large jump table performance" {
     const allocator = testing.allocator;
 
     // Create large jump table (simulate many JUMPDESTs)
-    const entries = try allocator.alloc(TestDispatch.JumpTableEntry, 1000);
+    const entries = try allocator.alloc(TestDispatch.JumpTable.JumpTableEntry, 1000);
     defer allocator.free(entries);
 
     // Fill with sorted PCs (every 10th PC is a JUMPDEST)
@@ -1892,17 +1563,15 @@ test "JumpTable - large jump table performance" {
 }
 
 // Mock fusion handlers for testing
-fn mockPushAddFusion(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockPushAddFusion(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
-fn mockPushMulFusion(frame: *TestFrame, cursor: [*]const TestDispatch.Item, jump_table: *const TestDispatch.JumpTable) TestFrame.Error!noreturn {
+fn mockPushMulFusion(frame: *TestFrame, cursor: [*]const TestDispatch.Item) TestFrame.Error!noreturn {
     _ = frame;
     _ = cursor;
-    _ = jump_table;
     return TestFrame.Error.Stop;
 }
 
@@ -2120,7 +1789,7 @@ test "JumpTable - sorting validation catches unsorted entries" {
     const allocator = testing.allocator;
 
     // Create manual entries in reverse order
-    var entries = try allocator.alloc(TestDispatch.JumpTableEntry, 3);
+    var entries = try allocator.alloc(TestDispatch.JumpTable.JumpTableEntry, 3);
     defer allocator.free(entries);
 
     entries[0] = .{ .pc = 100, .dispatch = TestDispatch{ .cursor = undefined } };
@@ -2128,8 +1797,8 @@ test "JumpTable - sorting validation catches unsorted entries" {
     entries[2] = .{ .pc = 50, .dispatch = TestDispatch{ .cursor = undefined } };
 
     // Sort them manually using the same algorithm
-    std.sort.block(TestDispatch.JumpTableEntry, entries, {}, struct {
-        pub fn lessThan(context: void, a: TestDispatch.JumpTableEntry, b: TestDispatch.JumpTableEntry) bool {
+    std.sort.block(TestDispatch.JumpTable.JumpTableEntry, entries, {}, struct {
+        pub fn lessThan(context: void, a: TestDispatch.JumpTable.JumpTableEntry, b: TestDispatch.JumpTable.JumpTableEntry) bool {
             _ = context;
             return a.pc < b.pc;
         }
