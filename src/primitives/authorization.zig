@@ -38,47 +38,53 @@ pub const Authorization = struct {
             .r = r_value,
             .s = s_value,
         };
-
-        const allocator = std.heap.page_allocator;
-        const public_key = try crypto.recover_public_key(allocator, h, signature);
-        return address.from_public_key(public_key.bytes);
+        
+        return try crypto.unaudited_recoverAddress(h, signature);
     }
 
     pub fn signing_hash(self: *const Authorization) !Hash {
         const allocator = std.heap.page_allocator;
 
         // RLP encode [chain_id, address, nonce]
-        var list = std.ArrayList(u8).init(allocator);
+        var list = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer list.deinit();
 
         // Encode chain_id
-        try rlp.encode_uint(allocator, self.chain_id, &list);
+        const chain_id_encoded = try rlp.encode(allocator, self.chain_id);
+        defer allocator.free(chain_id_encoded);
+        try list.appendSlice(chain_id_encoded);
 
         // Encode address
-        try rlp.encode_bytes(allocator, &self.address.bytes, &list);
+        const address_encoded = try rlp.encode_bytes(allocator, &self.address.bytes);
+        defer allocator.free(address_encoded);
+        try list.appendSlice(address_encoded);
 
         // Encode nonce
-        try rlp.encode_uint(allocator, self.nonce, &list);
+        const nonce_encoded = try rlp.encode(allocator, self.nonce);
+        defer allocator.free(nonce_encoded);
+        try list.appendSlice(nonce_encoded);
 
         // Wrap in RLP list
-        var rlp_list = std.ArrayList(u8).init(allocator);
+        var rlp_list = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer rlp_list.deinit();
 
         if (list.items.len <= 55) {
             try rlp_list.append(@as(u8, @intCast(0xc0 + list.items.len)));
         } else {
-            const len_bytes = rlp.encode_length(list.items.len);
+            const len_bytes = try rlp.encode_length(allocator, list.items.len);
+            defer allocator.free(len_bytes);
             try rlp_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try rlp_list.appendSlice(len_bytes);
         }
         try rlp_list.appendSlice(list.items);
 
         // EIP-7702 uses keccak256(MAGIC || rlp([chain_id, address, nonce]))
-        var data: [rlp_list.items.len + 1]u8 = undefined;
+        var data = try allocator.alloc(u8, rlp_list.items.len + 1);
+        defer allocator.free(data);
         data[0] = 0x05; // MAGIC byte for EIP-7702
         @memcpy(data[1..], rlp_list.items);
 
-        return hash.keccak256(&data);
+        return hash.keccak256(data);
     }
 
     pub fn validate(self: *const Authorization) !void {
@@ -109,6 +115,7 @@ pub fn create_authorization(
     nonce: u64,
     private_key: crypto.PrivateKey,
 ) !Authorization {
+    _ = allocator;
     var auth = Authorization{
         .chain_id = chain_id,
         .address = addr,
@@ -119,7 +126,7 @@ pub fn create_authorization(
     };
 
     const h = try auth.signing_hash();
-    const signature = try crypto.sign(allocator, private_key, h);
+    const signature = try crypto.unaudited_signHash(h, private_key);
 
     auth.v = signature.v;
     std.mem.writeInt(u256, &auth.r, signature.r, .big);
@@ -133,26 +140,39 @@ pub const AuthorizationList = []const Authorization;
 
 // RLP encode authorization list
 pub fn encode_authorization_list(allocator: Allocator, auth_list: AuthorizationList) ![]u8 {
-    var list = std.ArrayList(u8).init(allocator);
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
     for (auth_list) |auth| {
-        var auth_fields = std.ArrayList(u8).init(allocator);
+        var auth_fields = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer auth_fields.deinit();
 
         // Encode fields: [chain_id, address, nonce, v, r, s]
-        try rlp.encode_uint(allocator, auth.chain_id, &auth_fields);
-        try rlp.encode_bytes(allocator, &auth.address.bytes, &auth_fields);
-        try rlp.encode_uint(allocator, auth.nonce, &auth_fields);
-        try rlp.encode_uint(allocator, auth.v, &auth_fields);
-        try rlp.encode_bytes(allocator, &auth.r, &auth_fields);
-        try rlp.encode_bytes(allocator, &auth.s, &auth_fields);
+        const chain_id_enc = try rlp.encode(allocator, auth.chain_id);
+        defer allocator.free(chain_id_enc);
+        try auth_fields.appendSlice(chain_id_enc);
+        const addr_enc = try rlp.encode_bytes(allocator, &auth.address.bytes);
+        defer allocator.free(addr_enc);
+        try auth_fields.appendSlice(addr_enc);
+        const nonce_enc = try rlp.encode(allocator, auth.nonce);
+        defer allocator.free(nonce_enc);
+        try auth_fields.appendSlice(nonce_enc);
+        const v_enc = try rlp.encode(allocator, auth.v);
+        defer allocator.free(v_enc);
+        try auth_fields.appendSlice(v_enc);
+        const r_enc = try rlp.encode_bytes(allocator, &auth.r);
+        defer allocator.free(r_enc);
+        try auth_fields.appendSlice(r_enc);
+        const s_enc = try rlp.encode_bytes(allocator, &auth.s);
+        defer allocator.free(s_enc);
+        try auth_fields.appendSlice(s_enc);
 
         // Wrap authorization in RLP list
         if (auth_fields.items.len <= 55) {
             try list.append(@as(u8, @intCast(0xc0 + auth_fields.items.len)));
         } else {
-            const len_bytes = rlp.encode_length(auth_fields.items.len);
+            const len_bytes = try rlp.encode_length(allocator, auth_fields.items.len);
+            defer allocator.free(len_bytes);
             try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try list.appendSlice(len_bytes);
         }
@@ -160,7 +180,7 @@ pub fn encode_authorization_list(allocator: Allocator, auth_list: AuthorizationL
     }
 
     // Wrap entire list
-    var result = std.ArrayList(u8).init(allocator);
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
@@ -193,7 +213,7 @@ pub fn process_authorizations(
     allocator: Allocator,
     auth_list: AuthorizationList,
 ) ![]DelegationDesignation {
-    var delegations = std.ArrayList(DelegationDesignation).init(allocator);
+    var delegations = std.array_list.AlignedManaged(DelegationDesignation, null).init(allocator);
     defer delegations.deinit();
 
     for (auth_list) |auth| {

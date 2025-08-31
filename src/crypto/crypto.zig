@@ -194,7 +194,7 @@ pub const Signature = struct {
     }
 
     pub fn is_valid(self: Signature) bool {
-        return secp256k1.validateSignature(self.r, self.s);
+        return secp256k1.unaudited_validate_signature(self.r, self.s);
     }
 };
 
@@ -403,17 +403,17 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
 
         // Calculate r = (k * G).x mod n
         const generator = secp256k1.AffinePoint.generator();
-        const point_r = generator.scalarMul(k);
+        const point_r = generator.scalar_mul(k);
         if (point_r.infinity) continue;
 
         r = point_r.x % SECP256K1_N;
         if (r == 0) continue;
 
         // Calculate s = k^-1 * (hash + r * private_key) mod n
-        const k_inv = secp256k1.invmod(k, SECP256K1_N) orelse continue;
-        const r_d = secp256k1.mulmod(r, private_key_u256, SECP256K1_N);
-        const hash_plus_rd = secp256k1.addmod(message_u256, r_d, SECP256K1_N);
-        s = secp256k1.mulmod(k_inv, hash_plus_rd, SECP256K1_N);
+        const k_inv = secp256k1.unaudited_invmod(k, SECP256K1_N) orelse continue;
+        const r_d = secp256k1.unaudited_mulmod(r, private_key_u256, SECP256K1_N);
+        const hash_plus_rd = secp256k1.unaudited_addmod(message_u256, r_d, SECP256K1_N);
+        s = secp256k1.unaudited_mulmod(k_inv, hash_plus_rd, SECP256K1_N);
 
         if (s == 0) continue;
 
@@ -427,11 +427,11 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         recovery_id = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
 
         // Verify signature by recovering public key
-        const recovered_address = secp256k1.unaudited_recoverAddress(&hash, recovery_id, r, s) catch continue;
+        const recovered_address = unaudited_recoverAddress(hash, .{ .v = recovery_id, .r = r, .s = s }) catch continue;
         const expected_public_key = unaudited_getPublicKey(private_key) catch continue;
         const expected_address = expected_public_key.to_address();
 
-        if (std.mem.eql(u8, &recovered_address, &expected_address)) {
+        if (std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes)) {
             break;
         }
     }
@@ -470,7 +470,7 @@ pub fn unaudited_recoverAddress(hash: Hash.Hash, signature: Signature) !Address 
         return CryptoError.InvalidRecoveryId;
     }
 
-    return secp256k1.unaudited_recoverAddress(&hash, recovery_id, signature.r, signature.s);
+    return secp256k1.unaudited_recover_address(&hash, recovery_id, signature.r, signature.s);
 }
 
 /// Recover address from message and signature
