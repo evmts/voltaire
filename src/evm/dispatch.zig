@@ -644,17 +644,20 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         // Define trace handlers as static functions
         fn handleTraceBefore(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
-            // Skip the metadata at cursor[1] and continue to the actual handler at cursor[2]
-            const next_cursor = cursor + 2;
+            // The actual handler is at cursor[2] (skip trace_before handler and metadata)
+            // We need to pass the cursor pointing to the actual handler, not advanced
+            const handler_cursor = cursor + 2;
             // Debug: Print what we're about to call
-            std.debug.print("DEBUG: handleTraceBefore called, about to call handler at next_cursor[0]\n", .{});
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ frame, next_cursor });
+            std.debug.print("DEBUG: handleTraceBefore called, about to call handler at handler_cursor[0]\n", .{});
+            // Call the actual handler with cursor pointing to itself
+            return @call(FrameType.getTailCallModifier(), handler_cursor[0].opcode_handler, .{ frame, handler_cursor });
         }
         
         fn handleTraceAfter(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
-            // Skip the metadata at cursor[1] and continue to the next handler at cursor[2]
-            const next_cursor = cursor + 2;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ frame, next_cursor });
+            // The next handler is at cursor[2] (skip trace_after handler and metadata)
+            const next_handler_cursor = cursor + 2;
+            // Call the next handler with cursor pointing to itself
+            return @call(FrameType.getTailCallModifier(), next_handler_cursor[0].opcode_handler, .{ frame, next_handler_cursor });
         }
 
         /// Helper function to handle fusion operations with tracing support
