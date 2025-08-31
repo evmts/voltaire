@@ -355,7 +355,7 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
 
     // Multiply generator point by private key
     const generator = secp256k1.AffinePoint.generator();
-    const public_key_point = generator.scalarMul(private_key_u256);
+    const public_key_point = generator.scalar_mul(private_key_u256);
 
     if (public_key_point.infinity) {
         return CryptoError.InvalidPrivateKey;

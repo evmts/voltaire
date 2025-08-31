@@ -218,7 +218,7 @@ test "EIP-7702: Process authorizations before transaction execution" {
     };
     
     // Process authorization
-    const processor = AuthorizationProcessor.init(allocator, &db);
+    var processor = AuthorizationProcessor.init(allocator, &db);
     try processor.processAuthorization(auth, eoa_address);
     
     // Verify delegation was set
@@ -250,9 +250,8 @@ test "EIP-7702: Authorization with wrong nonce is rejected" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    const processor = AuthorizationProcessor.init(allocator, &db);
-    var mutable_processor = processor.*;
-    try testing.expectError(EIP7702Error.NonceMismatch, mutable_processor.processAuthorization(auth, eoa_address));
+    var processor = AuthorizationProcessor.init(allocator, &db);
+    try testing.expectError(EIP7702Error.NonceMismatch, processor.processAuthorization(auth, eoa_address));
 }
 
 test "EIP-7702: Authorization with wrong chain_id is rejected" {
@@ -311,14 +310,16 @@ test "EIP-7702: EOA with delegation executes delegated contract code" {
     
     // Call EOA (should execute contract code)
     const call_params = evm.CallParams{
-        .caller = try Address.from_hex("0x3333333333333333333333333333333333333333"),
-        .target = eoa_address,
-        .value = 0,
-        .data = &[_]u8{},
-        .gas_limit = 100_000,
+        .call = .{
+            .caller = try Address.from_hex("0x3333333333333333333333333333333333333333"),
+            .to = eoa_address,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 100_000,
+        },
     };
     
-    var evm_instance = try evm.Evm.init(allocator, &db.to_database_interface());
+    var evm_instance = try evm.Evm(.{}).init(allocator, &db.to_database_interface());
     defer evm_instance.deinit();
     
     const result = try evm_instance.call(call_params);
@@ -351,17 +352,24 @@ test "EIP-7702: ADDRESS opcode returns EOA address, not delegated address" {
         0x60, 0x00, // PUSH1 0x00
         0xf3,       // RETURN
     };
-    try db.set_code(try Address.from_hex("0x2222222222222222222222222222222222222222").bytes, &contract_code);
+    // Set the contract code - get code hash and set up account
+    const contract_address_2 = try Address.from_hex("0x2222222222222222222222222222222222222222");
+    const code_hash_2 = try db.set_code(&contract_code);
+    var contract_account_2 = evm.Account.zero();
+    contract_account_2.code_hash = code_hash_2;
+    try db.set_account(contract_address_2.bytes, contract_account_2);
     
     const call_params = evm.CallParams{
-        .caller = try Address.from_hex("0x3333333333333333333333333333333333333333"),
-        .target = eoa_address,
-        .value = 0,
-        .data = &[_]u8{},
-        .gas_limit = 100_000,
+        .call = .{
+            .caller = try Address.from_hex("0x3333333333333333333333333333333333333333"),
+            .to = eoa_address,
+            .value = 0,
+            .input = &[_]u8{},
+            .gas = 100_000,
+        },
     };
     
-    var evm_instance = try evm.Evm.init(allocator, &db.to_database_interface());
+    var evm_instance = try evm.Evm(.{}).init(allocator, &db.to_database_interface());
     defer evm_instance.deinit();
     
     const result = try evm_instance.call(call_params);
@@ -478,7 +486,7 @@ test "EIP-7702: Cannot delegate from contract account" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    const processor = AuthorizationProcessor.init(allocator, &db);
+    var processor = AuthorizationProcessor.init(allocator, &db);
     try testing.expectError(EIP7702Error.NotEOA, processor.processAuthorization(auth, contract_address));
 }
 
@@ -533,7 +541,7 @@ test "EIP-7702: Authorization revocation (nonce = 2^64 - 1)" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    const processor = AuthorizationProcessor.init(allocator, &db);
+    var processor = AuthorizationProcessor.init(allocator, &db);
     try processor.processAuthorization(auth, eoa_address);
     
     // Verify delegation was removed
@@ -610,7 +618,7 @@ test "EIP-7702: Full transaction execution with authorization list" {
     };
     
     // Execute transaction
-    var evm_instance = try evm.Evm.init(allocator, &db.to_database_interface());
+    var evm_instance = try evm.Evm(.{}).init(allocator, &db.to_database_interface());
     defer evm_instance.deinit();
     
     const result = try evm_instance.executeTransaction(tx, sender_address);
