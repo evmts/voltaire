@@ -342,7 +342,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             const initial_gas = gas;
             // Route to appropriate handler
             var result = switch (params) {
-                .call => |p| self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
+                .call => |p| self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch |err| {
+                    log.err("EVM.call: executeCall failed with error: {}", .{err});
+                    return CallResult.failure(0);
+                },
                 .callcode => |p| self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
                 .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
                 .staticcall => |p| self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
@@ -491,7 +494,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             input: []const u8,
             gas: u64,
         }) !CallResult {
+            log.debug("executeCall: caller={x}, to={x}, value={}, input_len={}, gas={}", .{params.caller.bytes, params.to.bytes, params.value, params.input.len, params.gas});
             const snapshot_id = self.journal.create_snapshot();
+            log.debug("executeCall: snapshot created, id={}", .{snapshot_id});
 
             // Transfer value if needed
             if (params.value > 0) {
@@ -503,11 +508,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Perform pre-flight checks
+            log.debug("executeCall: calling performCallPreflight", .{});
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
                 log.err("Call preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
+            log.debug("executeCall: preflight complete, result type: {s}", .{@tagName(preflight)});
 
             switch (preflight) {
                 .precompile_result => |result| return result,

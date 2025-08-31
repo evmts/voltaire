@@ -441,15 +441,15 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                         // DEBUG: Log specific opcodes we're interested in
                         if (data.opcode == 0x08) {
-                            log.err("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
+                            log.debug("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
                         } else if (data.opcode == 0x09) {
-                            log.err("DISPATCH DEBUG: Found MULMOD (0x09) at PC {d}, adding handler", .{instr_pc});
+                            log.debug("DISPATCH DEBUG: Found MULMOD (0x09) at PC {d}, adding handler", .{instr_pc});
                         } else if (data.opcode == 0x0a) {
-                            log.err("DISPATCH DEBUG: Found EXP (0x0a) at PC {d}, adding handler", .{instr_pc});
+                            log.debug("DISPATCH DEBUG: Found EXP (0x0a) at PC {d}, adding handler", .{instr_pc});
                         }
 
                         // Also log ALL opcodes to see what we're parsing
-                        log.err("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
+                        log.debug("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
 
                         try schedule_items.append(allocator, .{ .opcode_handler = handler });
                         if (data.opcode == @intFromEnum(Opcode.PC)) {

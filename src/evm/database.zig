@@ -180,7 +180,13 @@ pub const Database = struct {
 
     /// Get contract code by hash
     pub fn get_code(self: *Database, code_hash: [32]u8) Error![]const u8 {
-        return self.code_storage.get(code_hash) orelse return Error.CodeNotFound;
+        const log = std.log.scoped(.database);
+        const code = self.code_storage.get(code_hash) orelse {
+            log.debug("get_code: Code not found for hash {x}", .{code_hash});
+            return Error.CodeNotFound;
+        };
+        log.debug("get_code: Found code with len={} for hash {x}", .{code.len, code_hash});
+        return code;
     }
 
     /// Get contract code by address (supports EIP-7702 delegation)
@@ -206,8 +212,10 @@ pub const Database = struct {
 
     /// Store contract code and return its hash
     pub fn set_code(self: *Database, code: []const u8) Error![32]u8 {
+        const log = std.log.scoped(.database);
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
+        log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
         try self.code_storage.put(hash, code);
         return hash;
     }

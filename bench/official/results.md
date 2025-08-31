@@ -2,19 +2,19 @@
 
 ## Summary
 
-**Test Runs per Case**: 1
+**Test Runs per Case**: 2 (EthereumJS: 1)
 **EVMs Compared**: Guillotine Call2 (Zig with tailcall dispatch), REVM (Rust), EthereumJS (JavaScript), Geth (Go), evmone (C++)
-**Timestamp**: 1756603585 (Unix epoch)
+**Timestamp**: 1756650269 (Unix epoch)
 
 ## Overall Performance Summary (Per Run)
 
 | Test Case | Zig-Call2 | REVM | EthereumJS | Geth | evmone |
 |-----------|-----------|------|------------|------|--------|
-| erc20-approval-transfer   | .{ .value =         0, .unit = .microseconds } | .{ .value = 6.395890700000001, .unit = .milliseconds } | .{ .value =          0, .unit = .microseconds } | .{ .value = 12.518542179999999, .unit = .milliseconds } | .{ .value = 4.6294716000000005, .unit = .milliseconds } |
-| erc20-mint                | .{ .value =         0, .unit = .microseconds } | .{ .value = 5.031915400000001, .unit = .milliseconds } | .{ .value =          0, .unit = .microseconds } | .{ .value = 10.74502494, .unit = .milliseconds } | .{ .value = 3.8889704400000005, .unit = .milliseconds } |
-| erc20-transfer            | .{ .value =         0, .unit = .microseconds } | .{ .value = 7.265388820000001, .unit = .milliseconds } | .{ .value =          0, .unit = .microseconds } | .{ .value = 15.382508399999999, .unit = .milliseconds } | .{ .value = 5.65009504, .unit = .milliseconds } |
-| ten-thousand-hashes       | .{ .value =         0, .unit = .microseconds } | .{ .value = 2.4982341399999997, .unit = .milliseconds } | .{ .value =          0, .unit = .microseconds } | .{ .value = 7.78607346, .unit = .milliseconds } | .{ .value = 1.9732741999999996, .unit = .milliseconds } |
-| snailtracer               | .{ .value =         0, .unit = .microseconds } | .{ .value = 32.3546341, .unit = .milliseconds } | .{ .value =          0, .unit = .microseconds } | .{ .value = 73.15247031999999, .unit = .milliseconds } | .{ .value = 22.65945622, .unit = .milliseconds } |
+| erc20-approval-transfer   |  0.00 μs |   4.83 ms |   0.00 μs |   8.61 ms |   3.67 ms |
+| erc20-mint                |  0.00 μs |   3.66 ms |   0.00 μs |   7.74 ms |   2.22 ms |
+| erc20-transfer            |  0.00 μs |   6.07 ms |   0.00 μs |  11.60 ms |   4.28 ms |
+| ten-thousand-hashes       |  0.00 μs |   1.49 ms |   0.00 μs |   4.43 ms | 935.28 μs |
+| snailtracer               |  0.00 μs |  31.89 ms |   0.00 μs |  94.92 ms |  22.29 ms |
 
 ## Detailed Performance Comparison
 
@@ -22,41 +22,41 @@
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| REVM        | .{ .value = 6.395890700000001, .unit = .milliseconds } | .{ .value = 6.395890700000001, .unit = .milliseconds } | .{ .value = 6.395890700000001, .unit = .milliseconds } | .{ .value = 6.395890700000001, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| Geth        | .{ .value = 12.518542179999999, .unit = .milliseconds } | .{ .value = 12.518542179999999, .unit = .milliseconds } | .{ .value = 12.518542179999999, .unit = .milliseconds } | .{ .value = 12.518542179999999, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| evmone      | .{ .value = 4.6294716000000005, .unit = .milliseconds } | .{ .value = 4.6294716000000005, .unit = .milliseconds } | .{ .value = 4.6294716000000005, .unit = .milliseconds } | .{ .value = 4.6294716000000005, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
+| REVM        |        4.83 ms |          4.83 ms |       4.83 ms |       4.84 ms |         13.18 μs |            20 |
+| Geth        |        8.61 ms |          8.61 ms |       8.60 ms |       8.62 ms |         11.39 μs |            20 |
+| evmone      |        3.67 ms |          3.67 ms |       3.62 ms |       3.72 ms |         70.46 μs |            20 |
 
 ### erc20-mint
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| REVM        | .{ .value = 5.031915400000001, .unit = .milliseconds } | .{ .value = 5.031915400000001, .unit = .milliseconds } | .{ .value = 5.031915400000001, .unit = .milliseconds } | .{ .value = 5.031915400000001, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| Geth        | .{ .value =    10.74502494, .unit = .milliseconds } | .{ .value =      10.74502494, .unit = .milliseconds } | .{ .value =   10.74502494, .unit = .milliseconds } | .{ .value =   10.74502494, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| evmone      | .{ .value = 3.8889704400000005, .unit = .milliseconds } | .{ .value = 3.8889704400000005, .unit = .milliseconds } | .{ .value = 3.8889704400000005, .unit = .milliseconds } | .{ .value = 3.8889704400000005, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
+| REVM        |        3.66 ms |          3.66 ms |       3.64 ms |       3.68 ms |         30.24 μs |            20 |
+| Geth        |        7.74 ms |          7.74 ms |       7.57 ms |       7.91 ms |        237.97 μs |            20 |
+| evmone      |        2.22 ms |          2.22 ms |       2.20 ms |       2.23 ms |         20.31 μs |            20 |
 
 ### erc20-transfer
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| REVM        | .{ .value = 7.265388820000001, .unit = .milliseconds } | .{ .value = 7.265388820000001, .unit = .milliseconds } | .{ .value = 7.265388820000001, .unit = .milliseconds } | .{ .value = 7.265388820000001, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| Geth        | .{ .value = 15.382508399999999, .unit = .milliseconds } | .{ .value = 15.382508399999999, .unit = .milliseconds } | .{ .value = 15.382508399999999, .unit = .milliseconds } | .{ .value = 15.382508399999999, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| evmone      | .{ .value =     5.65009504, .unit = .milliseconds } | .{ .value =       5.65009504, .unit = .milliseconds } | .{ .value =    5.65009504, .unit = .milliseconds } | .{ .value =    5.65009504, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
+| REVM        |        6.07 ms |          6.07 ms |       6.05 ms |       6.09 ms |         29.43 μs |            20 |
+| Geth        |       11.60 ms |         11.60 ms |      11.58 ms |      11.62 ms |         24.42 μs |            20 |
+| evmone      |        4.28 ms |          4.28 ms |       4.26 ms |       4.30 ms |         25.36 μs |            20 |
 
 ### ten-thousand-hashes
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| REVM        | .{ .value = 2.4982341399999997, .unit = .milliseconds } | .{ .value = 2.4982341399999997, .unit = .milliseconds } | .{ .value = 2.4982341399999997, .unit = .milliseconds } | .{ .value = 2.4982341399999997, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| Geth        | .{ .value =     7.78607346, .unit = .milliseconds } | .{ .value =       7.78607346, .unit = .milliseconds } | .{ .value =    7.78607346, .unit = .milliseconds } | .{ .value =    7.78607346, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| evmone      | .{ .value = 1.9732741999999996, .unit = .milliseconds } | .{ .value = 1.9732741999999996, .unit = .milliseconds } | .{ .value = 1.9732741999999996, .unit = .milliseconds } | .{ .value = 1.9732741999999996, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
+| REVM        |        1.49 ms |          1.49 ms |       1.48 ms |       1.50 ms |         12.43 μs |            20 |
+| Geth        |        4.43 ms |          4.43 ms |       4.42 ms |       4.43 ms |          8.45 μs |            20 |
+| evmone      |     935.28 μs |       935.28 μs |    922.93 μs |    947.64 μs |         17.48 μs |            20 |
 
 ### snailtracer
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| REVM        | .{ .value =     32.3546341, .unit = .milliseconds } | .{ .value =       32.3546341, .unit = .milliseconds } | .{ .value =    32.3546341, .unit = .milliseconds } | .{ .value =    32.3546341, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| Geth        | .{ .value = 73.15247031999999, .unit = .milliseconds } | .{ .value = 73.15247031999999, .unit = .milliseconds } | .{ .value = 73.15247031999999, .unit = .milliseconds } | .{ .value = 73.15247031999999, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
-| evmone      | .{ .value =    22.65945622, .unit = .milliseconds } | .{ .value =      22.65945622, .unit = .milliseconds } | .{ .value =   22.65945622, .unit = .milliseconds } | .{ .value =   22.65945622, .unit = .milliseconds } | .{ .value =                 0, .unit = .microseconds } |             1 |
+| REVM        |       31.89 ms |         31.89 ms |      31.62 ms |      32.15 ms |        372.78 μs |             2 |
+| Geth        |       94.92 ms |         94.92 ms |      94.64 ms |      95.20 ms |        398.60 μs |             2 |
+| evmone      |       22.29 ms |         22.29 ms |      22.02 ms |      22.56 ms |        380.95 μs |             2 |
 
 
 ## Notes

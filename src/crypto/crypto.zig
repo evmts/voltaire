@@ -106,8 +106,8 @@ const hex = primitives.Hex;
 // Import the local secp256k1 implementation
 const secp256k1 = @import("secp256k1.zig");
 
-// Use the address type from secp256k1 to avoid import issues
-const Address = secp256k1.Address;
+// Use the address type from primitives
+const Address = primitives.Address.Address;
 
 // Error types for crypto operations
 pub const CryptoError = error{
@@ -315,7 +315,7 @@ pub fn public_key_to_address(public_key: PublicKey) Address {
     const hash = Hash.keccak256(&pub_key_bytes);
 
     var address: Address = undefined;
-    @memcpy(&address, hash[12..32]);
+    @memcpy(&address.bytes, hash[12..32]);
     return address;
 }
 

@@ -1516,6 +1516,19 @@ pub fn build(b: *std.Build) void {
 
     // Add differential testing only if REVM is available
     if (revm_lib != null) {
+        // Create a separate EVM module for differential tests without bn254 to avoid duplicate symbols
+        const evm_mod_no_bn254 = b.createModule(.{
+            .root_source_file = b.path("src/evm/root.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        evm_mod_no_bn254.addImport("primitives", primitives_mod);
+        evm_mod_no_bn254.addImport("crypto", crypto_mod);
+        evm_mod_no_bn254.addImport("build_options", build_options_mod);
+        evm_mod_no_bn254.addImport("zbench", zbench_dep.module("zbench"));
+        evm_mod_no_bn254.addIncludePath(b.path("src/revm_wrapper"));
+        // NOTE: NOT linking bn254_lib here to avoid duplicate symbols with REVM
+        
         const differential_test = b.addTest(.{
             .name = "differential-test",
             .root_module = b.createModule(.{
@@ -1524,13 +1537,16 @@ pub fn build(b: *std.Build) void {
                 .optimize = optimize,
             }),
         });
-        differential_test.root_module.addImport("evm", evm_mod);
+        differential_test.root_module.addImport("evm", evm_mod_no_bn254);
         differential_test.root_module.addImport("primitives", primitives_mod);
         differential_test.root_module.addImport("revm", revm_mod);
         
         differential_test.linkLibrary(revm_lib.?);
         differential_test.addIncludePath(b.path("src/revm_wrapper"));
         differential_test.linkLibC();
+        
+        // Link blst library for BLS12-381 operations required by crypto module
+        differential_test.linkLibrary(blst_lib);
         
         const revm_rust_target_dir_diff = if (optimize == .Debug) "debug" else "release";
         const revm_dylib_path_diff = if (rust_target) |target_triple|

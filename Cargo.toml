@@ -11,6 +11,12 @@ edition = "2021"
 revm = { version = "14.0", features = ["c-kzg", "blst", "std", "serde", "serde-json", "dev"] }
 revm-primitives = "10.0"
 alloy-primitives = "0.8"
+# Arkworks dependencies for elliptic curve operations
+ark-bn254 = "0.5.0"
+ark-ec = "0.5.0"
+ark-ff = "0.5.0"
+ark-serialize = "0.5.0"
+ark-bls12-381 = "0.5.0"
 
 [profile.release]
 # Optimize for size by default (smallest flag)
