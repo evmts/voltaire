@@ -237,10 +237,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                 switch (op_data) {
                     .regular => |data| {
                         const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
-                        const new_gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            return new_gas;
-                        }
+                        // Don't return maxInt on overflow - just return current gas
+                        const new_gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         gas = new_gas;
                         // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
                         switch (data.opcode) {
@@ -253,10 +251,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .push => |data| {
                         const push_opcode = 0x60 + data.size - 1;
                         const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
-                        const new_gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            return new_gas;
-                        }
+                        // Don't return maxInt on overflow - just return current gas
+                        const new_gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         gas = new_gas;
                     },
                     .jumpdest => {
@@ -265,15 +261,12 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     .stop, .invalid => {
                         const gas_to_add = @as(u64, opcode_info[0x00].gas_cost); // STOP gas cost
-                        gas = std.math.add(u64, gas, gas_to_add) catch std.math.maxInt(u64);
+                        gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         return gas;
                     },
                     else => {
                         // For fusion operations, approximate gas cost
-                        const new_gas = std.math.add(u64, gas, 6) catch std.math.maxInt(u64);
-                        if (new_gas == std.math.maxInt(u64)) {
-                            return new_gas;
-                        }
+                        const new_gas = std.math.add(u64, gas, 6) catch gas;
                         gas = new_gas;
                     },
                 }
@@ -492,18 +485,16 @@ pub fn Dispatch(comptime FrameType: type) type {
                 allocated_pointers.deinit(allocator);
             }
 
-            // Create tracing handlers that will be used throughout
-            const trace_before_handler = createTraceHandler(TracerType, tracer_instance, true);
-            const trace_after_handler = createTraceHandler(TracerType, tracer_instance, false);
+            // Use the static trace handler functions as function pointers
+            const trace_before_handler: OpcodeHandler = &handleTraceBefore;
+            const trace_after_handler: OpcodeHandler = &handleTraceAfter;
+            
+            // Suppress unused parameter warning (tracing is temporarily disabled)
+            _ = tracer_instance;
 
-            // Calculate gas cost for first basic block
-            const first_block_gas = calculateFirstBlockGas(bytecode);
-
-            // Add first_block_gas entry if there's any gas to charge
-            if (first_block_gas > 0) {
-                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
-            }
-
+            // NOTE: first_block_gas is disabled for traced execution due to schedule structure differences
+            // Tracing is currently a no-op (handlers just skip to next instruction)
+            
             // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
 
@@ -512,6 +503,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 const maybe = iter.next();
                 if (maybe == null) break;
                 const op_data = maybe.?;
+                
                 switch (op_data) {
                     .regular => |data| {
                         // Insert trace_before
@@ -650,30 +642,19 @@ pub fn Dispatch(comptime FrameType: type) type {
             return schedule_items.toOwnedSlice(allocator);
         }
 
-        /// Create a generic trace handler that reads metadata and calls tracer
-        fn createTraceHandler(comptime TracerType: type, tracer_instance: *TracerType, comptime is_before: bool) OpcodeHandler {
-            const S = struct {
-                var tracer: *TracerType = undefined;
-
-                fn handle(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
-                    if (is_before) {
-                        const metadata = cursor[1].trace_before;
-                        if (@hasDecl(TracerType, "beforeOp")) {
-                            tracer.beforeOp(metadata.pc, metadata.opcode, FrameType, frame);
-                        }
-                    } else {
-                        const metadata = cursor[1].trace_after;
-                        if (@hasDecl(TracerType, "afterOp")) {
-                            tracer.afterOp(metadata.pc, metadata.opcode, FrameType, frame);
-                        }
-                    }
-                    // Skip metadata and continue with next handler
-                    const next_cursor = cursor + 2; // Skip over current metadata and next handler
-                    return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ frame, next_cursor });
-                }
-            };
-            S.tracer = tracer_instance;
-            return S.handle;
+        // Define trace handlers as static functions
+        fn handleTraceBefore(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
+            // Skip the metadata at cursor[1] and continue to the actual handler at cursor[2]
+            const next_cursor = cursor + 2;
+            // Debug: Print what we're about to call
+            std.debug.print("DEBUG: handleTraceBefore called, about to call handler at next_cursor[0]\n", .{});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ frame, next_cursor });
+        }
+        
+        fn handleTraceAfter(frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn {
+            // Skip the metadata at cursor[1] and continue to the next handler at cursor[2]
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ frame, next_cursor });
         }
 
         /// Helper function to handle fusion operations with tracing support
