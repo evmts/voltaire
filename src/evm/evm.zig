@@ -342,9 +342,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             const initial_gas = gas;
             // Route to appropriate handler
             var result = switch (params) {
-                .call => |p| self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch |err| {
-                    log.err("EVM.call: executeCall failed with error: {}", .{err});
-                    return CallResult.failure(0);
+                .call => |p| blk: {
+                    std.debug.print("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{p.to.bytes, p.gas, p.input.len});
+                    break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch |err| {
+                        std.debug.print("DEBUG: EVM.call failed with error: {}\n", .{err});
+                        return CallResult.failure(0);
+                    };
                 },
                 .callcode => |p| self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
                 .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
@@ -509,9 +512,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             input: []const u8,
             gas: u64,
         }) !CallResult {
-            log.debug("executeCall: caller={x}, to={x}, value={}, input_len={}, gas={}", .{params.caller.bytes, params.to.bytes, params.value, params.input.len, params.gas});
+            std.debug.print("DEBUG: executeCall entered, gas={}\n", .{params.gas});
             const snapshot_id = self.journal.create_snapshot();
-            log.debug("executeCall: snapshot created, id={}", .{snapshot_id});
 
             // Transfer value if needed
             if (params.value > 0) {
@@ -523,13 +525,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Perform pre-flight checks
-            log.debug("executeCall: calling performCallPreflight", .{});
+            std.debug.print("DEBUG: calling performCallPreflight\n", .{});
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
-                log.err("Call preflight failed: {}", .{err});
+                std.debug.print("DEBUG: performCallPreflight failed: {}\n", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            log.debug("executeCall: preflight complete, result type: {s}", .{@tagName(preflight)});
+            std.debug.print("DEBUG: preflight result: {s}\n", .{@tagName(preflight)});
 
             switch (preflight) {
                 .precompile_result => |result| return result,
@@ -538,7 +540,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    log.debug("About to execute_frame with code_len={}, gas={}", .{code.len, params.gas});
+                    std.debug.print("DEBUG: Got code, len={}, about to execute_frame\n", .{code.len});
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -920,6 +922,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
+            std.debug.print("DEBUG: execute_frame entered, code_len={}, gas={}\n", .{code.len, gas});
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;
@@ -942,16 +945,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else gas;
             
             const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, @as(u64, @intCast(std.math.maxInt(Frame.GasType))))));
+            std.debug.print("DEBUG: gas_after_base={}, gas_cast={}\n", .{gas_after_base, gas_cast});
 
             // EIP-214: encode static constraints; null to prevent SELFDESTRUCT in static context
             const self_destruct_param = if (is_static) null else &self.self_destruct;
 
+            std.debug.print("DEBUG: About to call Frame.init\n", .{});
             var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
             frame.contract_address = address;
             defer frame.deinit(self.allocator);
 
-            log.debug("Executing frame: code_len={d}, gas={d}, gas_cast={d}, address={x}, is_static={any}", .{code.len, gas, gas_cast, address.bytes, is_static});
-            log.debug("Frame gas_remaining before interpret: {d}", .{frame.gas_remaining});
+            std.debug.print("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
             
             // DEBUG: Log first few bytes of bytecode for JUMPI test
             if (code.len == 22) {

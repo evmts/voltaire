@@ -255,8 +255,10 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.BytecodeTooLarge;
             }
 
+            std.debug.print("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
             var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
+                std.debug.print("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                 return switch (e) {
                     error.BytecodeTooLarge => Error.BytecodeTooLarge,
@@ -268,6 +270,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 };
             };
             defer bytecode.deinit();
+            std.debug.print("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{bytecode.runtime_code.len});
 
             const handlers = &Self.opcode_handlers;
 
@@ -278,31 +281,39 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             if (TracerType) |T| {
+                std.debug.print("DEBUG: Using TRACED execution path\n", .{});
                 log.debug("Frame.interpret_with_tracer: Creating traced schedule with bytecode len={}", .{bytecode.runtime_code.len});
+                std.debug.print("DEBUG: About to call Dispatch.initWithTracing\n", .{});
                 const traced_schedule = Dispatch.initWithTracing(self.allocator, &bytecode, handlers, T, tracer_instance) catch |e| {
+                    std.debug.print("DEBUG: Dispatch.initWithTracing FAILED with error: {}\n", .{e});
                     log.err("Frame.interpret_with_tracer: Failed to create traced schedule: {}", .{e});
                     return Error.AllocationError;
                 };
+                std.debug.print("DEBUG: Dispatch.initWithTracing SUCCESS, schedule_len={}\n", .{traced_schedule.len});
                 log.debug("Frame.interpret_with_tracer: Traced schedule created, len={}", .{traced_schedule.len});
                 defer Dispatch.deinitSchedule(self.allocator, traced_schedule);
 
-                const traced_jump_table = Dispatch.createJumpTable(self.allocator, traced_schedule, &bytecode) catch return Error.AllocationError;
+                std.debug.print("DEBUG: About to create jump table\n", .{});
+                const traced_jump_table = Dispatch.createJumpTable(self.allocator, traced_schedule, &bytecode) catch |e| {
+                    std.debug.print("DEBUG: createJumpTable FAILED with error: {}\n", .{e});
+                    return Error.AllocationError;
+                };
+                std.debug.print("DEBUG: Jump table created with {} entries\n", .{traced_jump_table.entries.len});
                 defer self.allocator.free(traced_jump_table.entries);
                 
                 // Store jump table in frame for JUMP/JUMPI handlers
                 self.jump_table = traced_jump_table;
 
-                var start_index: usize = 0;
-                // Check if first item is first_block_gas and consume gas if so
-                const first_block_gas = Self.Dispatch.calculateFirstBlockGas(bytecode);
-                if (first_block_gas > 0 and traced_schedule.len > 0) {
-                    const temp_dispatch = Self.Dispatch{ .cursor = traced_schedule.ptr };
-                    const meta = temp_dispatch.getFirstBlockGas();
-                    if (meta.gas > 0) try self.consumeGasChecked(@intCast(meta.gas));
-                    start_index = 1;
-                }
+                // NOTE: first_block_gas handling is disabled for traced execution
+                // due to schedule structure differences. Tracing is currently a no-op.
+                const start_index: usize = 0;
 
                 const cursor = Self.Dispatch{ .cursor = traced_schedule.ptr + start_index };
+                std.debug.print("DEBUG: About to start execution at index {}\n", .{start_index});
+                
+                // Debug: Check what the first handler is
+                std.debug.print("DEBUG: First handler in schedule is at address: {*}\n", .{cursor.cursor[0].opcode_handler});
+                std.debug.print("DEBUG: STOP handler address for comparison: {*}\n", .{Self.opcode_handlers[@intFromEnum(Opcode.STOP)]});
                 
                 // Debug check: verify bytecode stream ends with 2 stop handlers
                 if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
@@ -323,12 +334,15 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
                 
                 log.debug("Frame.interpret_with_tracer: Starting traced execution at cursor index {}, gas={}", .{start_index, self.gas_remaining});
+                std.debug.print("DEBUG: About to call traced handler with gas_remaining={}\n", .{self.gas_remaining});
                 cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| {
+                    std.debug.print("DEBUG: Traced handler FAILED with error: {}\n", .{err});
                     log.debug("Frame.interpret_with_tracer: Handler failed with error: {}", .{err});
                     return err;
                 };
                 unreachable; // Handlers never return normally
             } else {
+                std.debug.print("DEBUG: Using NON-TRACED execution path\n", .{});
                 log.debug("Frame.interpret_with_tracer: Dispatch init: bytecode len={d}", .{bytecode.runtime_code.len});
                 const schedule = Dispatch.init(self.allocator, &bytecode, handlers) catch |e| {
                     log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {any}", .{e});
@@ -356,12 +370,16 @@ pub fn Frame(comptime config: FrameConfig) type {
                 var start_index: usize = 0;
                 // Check if first item is first_block_gas and consume gas if so
                 const first_block_gas = Self.Dispatch.calculateFirstBlockGas(bytecode);
+                std.debug.print("DEBUG: first_block_gas calculated = {}\n", .{first_block_gas});
                 if (first_block_gas > 0 and schedule.len > 0) {
                     const temp_dispatch = Self.Dispatch{ .cursor = schedule.ptr };
                     const meta = temp_dispatch.getFirstBlockGas();
-                    log.debug("Frame.interpret_with_tracer: First block gas charge: {d} (current gas: {d})", .{ meta.gas, self.gas_remaining });
-                    if (meta.gas > 0) try self.consumeGasChecked(@intCast(meta.gas));
-                    log.debug("Frame.interpret_with_tracer: Gas after first block charge: {d}", .{self.gas_remaining});
+                    std.debug.print("DEBUG: meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
+                    if (meta.gas > 0) {
+                        std.debug.print("DEBUG: About to consume {} gas\n", .{meta.gas});
+                        try self.consumeGasChecked(@intCast(meta.gas));
+                        std.debug.print("DEBUG: After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
+                    }
                     start_index = 1;
                 }
 
@@ -388,8 +406,12 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Debug: First item should be an opcode_handler after skipping first_block_gas
                 // Since the union is untagged, we can't verify this at runtime
                 log.debug("Frame.interpret_with_tracer: Starting execution at dispatch index {} (schedule length: {})", .{ start_index, schedule.len });
+                std.debug.print("DEBUG: About to call first opcode handler, gas_remaining = {}\n", .{self.gas_remaining});
                 // Pass cursor pointer and jump_table separately - no Dispatch struct needed
-                cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| return err;
+                cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| {
+                    std.debug.print("DEBUG: Opcode handler failed with error: {}\n", .{err});
+                    return err;
+                };
                 unreachable; // Handlers never return normally
             }
 
@@ -558,6 +580,191 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Get number of logs
         pub fn getLogCount(self: *const Self) usize {
             return self.logs.items.len;
+        }
+
+        /// Pretty print the frame state for debugging and visualization.
+        /// Shows stack, memory, gas, and other key state information with ANSI colors.
+        pub fn pretty_print(self: *const Self, allocator: std.mem.Allocator) ![]u8 {
+            const Colors = struct {
+                const reset = "\x1b[0m";
+                const bold = "\x1b[1m";
+                const dim = "\x1b[2m";
+                const red = "\x1b[31m";
+                const green = "\x1b[32m";
+                const yellow = "\x1b[33m";
+                const blue = "\x1b[34m";
+                const magenta = "\x1b[35m";
+                const cyan = "\x1b[36m";
+                const white = "\x1b[37m";
+            };
+
+            var output = std.ArrayList(u8).initCapacity(allocator, 4096) catch return Error.AllocationError;
+            const writer = output.writer(allocator);
+
+            // Header
+            try writer.print("{s}{s}╔══════════════════════════════════════════════════════════════╗{s}\n", .{ Colors.bold, Colors.cyan, Colors.reset });
+            try writer.print("{s}{s}║                       FRAME STATE                               ║{s}\n", .{ Colors.bold, Colors.cyan, Colors.reset });
+            try writer.print("{s}{s}╚══════════════════════════════════════════════════════════════╝{s}\n", .{ Colors.bold, Colors.cyan, Colors.reset });
+
+            // Gas information
+            try writer.print("\n{s}⛽ Gas:{s} ", .{ Colors.yellow, Colors.reset });
+            if (self.gas_remaining > 1_000_000) {
+                try writer.print("{s}{d:.2}M{s}", .{ Colors.green, @as(f64, @floatFromInt(self.gas_remaining)) / 1_000_000.0, Colors.reset });
+            } else if (self.gas_remaining > 1_000) {
+                try writer.print("{s}{d:.2}K{s}", .{ Colors.green, @as(f64, @floatFromInt(self.gas_remaining)) / 1_000.0, Colors.reset });
+            } else if (self.gas_remaining > 100) {
+                try writer.print("{s}{d}{s}", .{ Colors.green, self.gas_remaining, Colors.reset });
+            } else {
+                try writer.print("{s}{d}{s}", .{ Colors.red, self.gas_remaining, Colors.reset });
+            }
+            try writer.print("\n", .{});
+
+            // Contract and caller addresses
+            try writer.print("\n{s}📍 Contract:{s} {s}0x{s}{s}\n", .{ 
+                Colors.blue, 
+                Colors.reset, 
+                Colors.dim,
+                std.fmt.bytesToHex(&self.contract_address.bytes, .lower),
+                Colors.reset 
+            });
+            try writer.print("{s}📞 Caller:{s}   {s}0x{s}{s}\n", .{ 
+                Colors.blue, 
+                Colors.reset, 
+                Colors.dim,
+                std.fmt.bytesToHex(&self.caller.bytes, .lower),
+                Colors.reset 
+            });
+            
+            // Value (if non-zero)
+            if (self.value.* != 0) {
+                try writer.print("{s}💰 Value:{s}    {s}{d}{s}\n", .{ 
+                    Colors.magenta, 
+                    Colors.reset,
+                    Colors.bold,
+                    self.value.*,
+                    Colors.reset 
+                });
+            }
+
+            // Stack visualization (simplified for now)
+            try writer.print("\n{s}📚 Stack: (details available in debug mode){s}\n", .{ 
+                Colors.cyan, 
+                Colors.reset 
+            });
+
+            // Memory visualization
+            const mem_size = self.memory.size();
+            try writer.print("\n{s}💾 Memory [{d} bytes]:{s}\n", .{ 
+                Colors.magenta, 
+                mem_size,
+                Colors.reset 
+            });
+            
+            if (mem_size > 0) {
+                const bytes_to_show = @min(mem_size, 64);
+                const mem_slice = self.memory.get_slice(0, @intCast(bytes_to_show)) catch &[_]u8{};
+                
+                // Show memory in hex with ASCII representation
+                var offset: usize = 0;
+                while (offset < bytes_to_show) : (offset += 16) {
+                    const end = @min(offset + 16, bytes_to_show);
+                    const line = mem_slice[offset..end];
+                    
+                    try writer.print("  {s}0x{x:0>4}:{s} ", .{ Colors.dim, offset, Colors.reset });
+                    
+                    // Hex bytes
+                    for (line) |byte| {
+                        if (byte == 0) {
+                            try writer.print("{s}00{s} ", .{ Colors.dim, Colors.reset });
+                        } else {
+                            try writer.print("{s}{x:0>2}{s} ", .{ Colors.white, byte, Colors.reset });
+                        }
+                    }
+                    
+                    // Padding if line is short
+                    var padding_needed = 16 - line.len;
+                    while (padding_needed > 0) : (padding_needed -= 1) {
+                        try writer.print("   ");
+                    }
+                    
+                    // ASCII representation
+                    try writer.print(" {s}│{s}", .{ Colors.dim, Colors.reset });
+                    for (line) |byte| {
+                        if (byte >= 32 and byte < 127) {
+                            try writer.print("{s}{c}{s}", .{ Colors.green, byte, Colors.reset });
+                        } else if (byte == 0) {
+                            try writer.print("{s}.{s}", .{ Colors.dim, Colors.reset });
+                        } else {
+                            try writer.print("{s}·{s}", .{ Colors.yellow, Colors.reset });
+                        }
+                    }
+                    try writer.print("\n", .{});
+                }
+                
+                if (mem_size > bytes_to_show) {
+                    try writer.print("  {s}... {d} more bytes{s}\n", .{ 
+                        Colors.dim, 
+                        mem_size - bytes_to_show,
+                        Colors.reset 
+                    });
+                }
+            } else {
+                try writer.print("  {s}(empty){s}\n", .{ Colors.dim, Colors.reset });
+            }
+
+            // Calldata preview (if present)
+            if (self.calldata.len > 0) {
+                try writer.print("\n{s}📥 Calldata [{d} bytes]:{s} ", .{ 
+                    Colors.yellow, 
+                    self.calldata.len,
+                    Colors.reset 
+                });
+                
+                const calldata_preview_len = @min(self.calldata.len, 32);
+                for (self.calldata[0..calldata_preview_len]) |byte| {
+                    try writer.print("{x:0>2}", .{byte});
+                }
+                if (self.calldata.len > 32) {
+                    try writer.print("...");
+                }
+                try writer.print("\n", .{});
+            }
+
+            // Logs count
+            if (self.logs.items.len > 0) {
+                try writer.print("\n{s}📝 Logs:{s} {d} events\n", .{ 
+                    Colors.cyan, 
+                    Colors.reset,
+                    self.logs.items.len 
+                });
+            }
+
+            // Output data (if any)
+            if (self.output.len > 0) {
+                try writer.print("\n{s}📤 Output [{d} bytes]:{s} ", .{ 
+                    Colors.green, 
+                    self.output.len,
+                    Colors.reset 
+                });
+                
+                const output_preview_len = @min(self.output.len, 32);
+                for (self.output[0..output_preview_len]) |byte| {
+                    try writer.print("{x:0>2}", .{byte});
+                }
+                if (self.output.len > 32) {
+                    try writer.print("...");
+                }
+                try writer.print("\n", .{});
+            }
+
+            // Footer
+            try writer.print("\n{s}{s}════════════════════════════════════════════════════════════════{s}\n", .{ 
+                Colors.dim, 
+                Colors.cyan, 
+                Colors.reset 
+            });
+
+            return output.toOwnedSlice();
         }
     };
 }
