@@ -304,9 +304,21 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Store jump table in frame for JUMP/JUMPI handlers
                 self.jump_table = traced_jump_table;
 
-                // NOTE: first_block_gas handling is disabled for traced execution
-                // due to schedule structure differences. Tracing is currently a no-op.
-                const start_index: usize = 0;
+                // Handle first_block_gas same as non-traced version
+                var start_index: usize = 0;
+                const first_block_gas = Dispatch.calculateFirstBlockGas(bytecode);
+                std.debug.print("DEBUG: [TRACED] first_block_gas calculated = {}\n", .{first_block_gas});
+                if (first_block_gas > 0 and traced_schedule.len > 0) {
+                    const temp_dispatch = Dispatch{ .cursor = traced_schedule.ptr };
+                    const meta = temp_dispatch.getFirstBlockGas();
+                    std.debug.print("DEBUG: [TRACED] meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
+                    if (meta.gas > 0) {
+                        std.debug.print("DEBUG: [TRACED] About to consume {} gas\n", .{meta.gas});
+                        try self.consumeGasChecked(@intCast(meta.gas));
+                        std.debug.print("DEBUG: [TRACED] After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
+                    }
+                    start_index = 1;
+                }
 
                 const cursor = Self.Dispatch{ .cursor = traced_schedule.ptr + start_index };
                 std.debug.print("DEBUG: About to start execution at index {}\n", .{start_index});
