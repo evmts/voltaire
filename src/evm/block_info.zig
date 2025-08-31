@@ -24,8 +24,12 @@ pub fn BlockInfo(comptime config: BlockInfoConfig) type {
     return struct {
         const Self = @This();
         
+        /// Chain ID for EIP-155 replay protection
+        chain_id: u64,
         /// Block number
         number: u64,
+        /// Parent block hash (for EIP-2935 historical block hashes)
+        parent_hash: [32]u8 = [_]u8{0} ** 32,
         /// Block timestamp
         timestamp: u64,
         /// Block difficulty (pre-merge) or prevrandao (post-merge)
@@ -47,11 +51,16 @@ pub fn BlockInfo(comptime config: BlockInfoConfig) type {
         /// Blob versioned hashes for EIP-4844 blob transactions (cold data)
         /// Empty slice for non-blob transactions
         blob_versioned_hashes: []const [32]u8,
+        /// Beacon block root for EIP-4788 (Dencun)
+        /// Contains the parent beacon block root for trust-minimized access to consensus layer
+        beacon_root: ?[32]u8 = null,
         
         /// Initialize BlockInfo with default values
         pub fn init() Self {
             return Self{
+            .chain_id = 1, // Default to mainnet
             .number = 0,
+            .parent_hash = [_]u8{0} ** 32,
             .timestamp = 0,
             .difficulty = 0,
             .gas_limit = 30_000_000,
