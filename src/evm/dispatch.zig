@@ -489,8 +489,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             const trace_before_handler: OpcodeHandler = &handleTraceBefore;
             const trace_after_handler: OpcodeHandler = &handleTraceAfter;
             
-            // Suppress unused parameter warning (tracing is temporarily disabled)
-            _ = tracer_instance;
+            // Cast tracer to anyopaque for storage in metadata
+            const tracer_ptr = @as(*anyopaque, @ptrCast(tracer_instance));
 
             // NOTE: first_block_gas is disabled for traced execution due to schedule structure differences
             // Tracing is currently a no-op (handlers just skip to next instruction)
@@ -506,9 +506,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                 
                 switch (op_data) {
                     .regular => |data| {
-                        // Insert trace_before
+                        // Insert trace_before with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = data.opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
                         // Regular opcode handler
                         const handler = opcode_handlers.*[data.opcode];
@@ -528,16 +528,16 @@ pub fn Dispatch(comptime FrameType: type) type {
                             try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
                         }
 
-                        // Insert trace_after
+                        // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = data.opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
                     },
                     .push => |data| {
                         const push_opcode = 0x60 + data.size - 1;
 
-                        // Insert trace_before
+                        // Insert trace_before with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = push_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
                         // PUSH operation handler and metadata
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
@@ -552,24 +552,24 @@ pub fn Dispatch(comptime FrameType: type) type {
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
                         }
 
-                        // Insert trace_after
+                        // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = push_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
                     },
                     .jumpdest => |data| {
                         const jumpdest_opcode = @intFromEnum(Opcode.JUMPDEST);
 
-                        // Insert trace_before
+                        // Insert trace_before with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
-                        try schedule_items.append(allocator, .{ .trace_before = .{ .pc = @intCast(instr_pc), .opcode = jumpdest_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
                         // JUMPDEST handler and metadata
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[jumpdest_opcode] });
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
 
-                        // Insert trace_after
+                        // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
-                        try schedule_items.append(allocator, .{ .trace_after = .{ .pc = @intCast(instr_pc), .opcode = jumpdest_opcode, ._padding = 0 } });
+                        try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
                     },
                     // Fusion operations with tracing
                     .push_add_fusion => |data| {

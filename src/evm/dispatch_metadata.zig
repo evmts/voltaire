@@ -51,19 +51,16 @@ pub fn DispatchMetadata(comptime FrameType: type) type {
             bytecode_ptr: [*:0]const u8,
         };
 
-        /// Metadata for trace_before_op containing PC and opcode for tracing
-        /// When tracing is turned on we insert extra instructions before and after every opcode
+        /// Metadata for trace_before_op containing tracer pointer
+        /// The tracer tracks PC and opcode internally based on calls
         pub const TraceBeforeMetadata = packed struct(u64) {
-            pc: FrameType.PcType,
-            opcode: u8,
-            _padding: std.meta.Int(.unsigned, 64 - @bitSizeOf(FrameType.PcType) - 8) = 0,
+            tracer_ptr: *anyopaque,
         };
 
-        /// Metadata for trace_after_op containing PC and opcode for tracing
+        /// Metadata for trace_after_op containing tracer pointer
+        /// The tracer tracks PC and opcode internally based on calls
         pub const TraceAfterMetadata = packed struct(u64) {
-            pc: FrameType.PcType,
-            opcode: u8,
-            _padding: std.meta.Int(.unsigned, 64 - @bitSizeOf(FrameType.PcType) - 8) = 0,
+            tracer_ptr: *anyopaque,
         };
     };
 }
