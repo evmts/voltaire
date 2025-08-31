@@ -729,8 +729,8 @@ pub fn discoverTestCases(self: *Orchestrator) !void {
     // Resolve cases directory relative to the installed executable
     const project_root = try getProjectRoot(self.allocator);
     defer self.allocator.free(project_root);
-    // Test cases live under bench/cases (not bench/official/cases)
-    const cases_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "cases" });
+    // Test cases live under src/evm/fixtures (shared with differential tests)
+    const cases_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "src", "evm", "fixtures" });
     defer self.allocator.free(cases_path);
 
     const cases_dir = try std.fs.openDirAbsolute(cases_path, .{ .iterate = true });
@@ -741,6 +741,9 @@ pub fn discoverTestCases(self: *Orchestrator) !void {
     var it = cases_dir.iterate();
     while (try it.next()) |entry| {
         if (entry.kind != .directory) continue;
+        
+        // Skip non-fixture files like popular_contracts.zig
+        if (std.mem.endsWith(u8, entry.name, ".zig")) continue;
 
         const bytecode_path = try std.fs.path.join(self.allocator, &[_][]const u8{ cases_path, entry.name, "bytecode.txt" });
         errdefer self.allocator.free(bytecode_path);
