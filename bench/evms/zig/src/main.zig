@@ -254,7 +254,7 @@ pub fn main() !void {
             std.debug.print("❌ VALIDATION FAILED: No code found at target address {x}\n", .{target_address});
             std.debug.print("  This indicates deployment failed or contract was not properly installed\n", .{});
             std.debug.print("  Debug: use_direct_install={}, target_address={x}\n", .{use_direct_install, target_address});
-            std.process.exit(4);
+            @panic("Contract deployment failed - no code at target address");
         } else if (verbose) {
             std.debug.print("✓ Contract found at {x}, code_len={}\n", .{target_address, deployed_code.len});
         }
@@ -323,15 +323,12 @@ pub fn main() !void {
 
         // CRITICAL: Validate execution succeeded before recording timing
         if (!result.success) {
-            if (verbose and run_idx == 0) {
-                std.debug.print("⚠️  WARNING: EVM execution returned success=false\n", .{});
-                std.debug.print("  Debug info: gas_provided=30000000, gas_left={}, output_len={}\n", .{ result.gas_left, result.output.len });
-                if (result.output.len > 0 and result.output.len <= 256) {
-                    std.debug.print("  Output: {x}\n", .{result.output});
-                }
+            std.debug.print("❌ EVM EXECUTION FAILED\n", .{});
+            std.debug.print("  Gas provided: 30000000, Gas left: {}, Output len: {}\n", .{ result.gas_left, result.output.len });
+            if (result.output.len > 0 and result.output.len <= 256) {
+                std.debug.print("  Output: {x}\n", .{result.output});
             }
-            // For now, we'll still output timing even if execution fails
-            // This allows us to benchmark the EVM even with bugs
+            @panic("EVM execution failed - cannot benchmark failed execution");
         }
 
         // Calculate gas consumption
@@ -340,11 +337,10 @@ pub fn main() !void {
 
         // STRICT GAS VALIDATION: Ensure realistic gas consumption
         const min_gas_for_any_transaction: u64 = 21000; // Base transaction cost
-        if (gas_used < min_gas_for_any_transaction and result.success) {
+        if (gas_used < min_gas_for_any_transaction) {
             std.debug.print("❌ VALIDATION FAILED: Unrealistic gas usage\n", .{});
             std.debug.print("  Gas used: {} (less than minimum transaction cost of {})\n", .{ gas_used, min_gas_for_any_transaction });
-            std.debug.print("  This suggests the contract didn't execute properly\n", .{});
-            std.process.exit(2);
+            @panic("Gas usage too low - EVM not executing properly");
         }
 
         // Additional validation based on calldata to ensure meaningful work was done
@@ -367,8 +363,7 @@ pub fn main() !void {
                 std.debug.print("❌ VALIDATION FAILED: Insufficient gas usage for operation type\n", .{});
                 std.debug.print("  Selector: 0x{x:0>8}\n", .{selector});
                 std.debug.print("  Gas used: {} (expected at least {})\n", .{ gas_used, min_expected_gas });
-                std.debug.print("  This suggests the operation was trivial or didn't complete properly\n", .{});
-                std.process.exit(2);
+                @panic("Operation didn't consume expected gas - likely not executing properly");
             }
         }
 
@@ -499,18 +494,15 @@ pub fn main() !void {
         //     std.process.exit(1);
         // }
 
-        // SUCCESS: All validations passed, record timing
-        const elapsed_ns = @as(u64, @intCast(end_time - start_time));
-        const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
-        
+        // SUCCESS: All validations passed
         // Validation summary (performed above):
         // ✓ Contract deployment succeeded
         // ✓ Contract execution succeeded (result.success == true)  
         // ✓ Gas consumption is realistic (>21000 base + operation minimum)
         // ✓ Return values match expected format for known operations
-        // ✓ Timing only includes actual execution, not deployment
         
-        print("{d:.6}\n", .{elapsed_ms});
+        _ = start_time;
+        _ = end_time;
     }
 
     // Explicitly exit to avoid any cleanup issues
