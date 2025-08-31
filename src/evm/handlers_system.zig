@@ -47,15 +47,26 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = try self.stack.pop();
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
+            
+            log.debug("CALL: Starting call to address=0x{x}, value={}, gas={}, input_size={}, output_size={}", .{
+                address_u256,
+                value,
+                gas_param,
+                input_size,
+                output_size,
+            });
 
             // EIP-214: Static calls with value > 0 will fail in host.inner_call()
             // Data-oriented design: constraint is encoded in host implementation
 
             // Convert address from u256
             const addr = from_u256(address_u256);
+            
+            log.debug("CALL: Target address=0x{s}", .{std.fmt.bytesToHex(&addr.bytes, .lower)});
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
+                log.warn("CALL: Gas parameter too large: {}, returning failure", .{gas_param});
                 try self.stack.push(0);
                 const next = dispatch.getNext();
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
@@ -118,13 +129,27 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
+            
+            log.debug("CALL: Executing call from 0x{s} to 0x{s} with {} gas", .{
+                std.fmt.bytesToHex(&self.contract_address.bytes, .lower),
+                std.fmt.bytesToHex(&addr.bytes, .lower),
+                gas_u64,
+            });
+            
             const result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
+                    log.warn("CALL: Call failed with error: {}", .{err});
                     try self.stack.push(0);
                     const next = dispatch.getNext();
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            
+            log.debug("CALL: Call completed, success={}, gas_left={}, output_len={}", .{
+                result.success,
+                result.gas_left,
+                result.output.len,
+            });
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
@@ -149,6 +174,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
+            
+            log.debug("CALL: Updated gas_remaining={}, pushing success={}", .{
+                self.gas_remaining,
+                if (result.success) @as(u8, 1) else @as(u8, 0),
+            });
 
             // Push success status (1 for success, 0 for failure)
             try self.stack.push(if (result.success) 1 else 0);
@@ -160,8 +190,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DELEGATECALL opcode (0xf4) - Message-call with alternative account's code but current values.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.err("[EVM2] DELEGATECALL handler called! Stack size: {}", .{self.stack.size()});
-            
             const dispatch = Dispatch{ .cursor = cursor };
             const output_size = try self.stack.pop();
             const output_offset = try self.stack.pop();
@@ -169,9 +197,21 @@ pub fn Handlers(comptime FrameType: type) type {
             const input_offset = try self.stack.pop();
             const address_u256 = try self.stack.pop();
             const gas_param = try self.stack.pop();
+            
+            log.debug("DELEGATECALL: Starting delegatecall to address=0x{x}, gas={}, input_size={}, output_size={}", .{
+                address_u256,
+                gas_param,
+                input_size,
+                output_size,
+            });
 
             // Convert address from u256
             const addr = from_u256(address_u256);
+            
+            log.debug("DELEGATECALL: Target address=0x{s}, preserving caller=0x{s}", .{
+                std.fmt.bytesToHex(&addr.bytes, .lower),
+                std.fmt.bytesToHex(&self.caller.bytes, .lower),
+            });
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {

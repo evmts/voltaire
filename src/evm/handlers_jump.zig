@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
 
@@ -18,9 +19,12 @@ pub fn Handlers(comptime FrameType: type) type {
             const jump_table = self.jump_table;
             
             const dest = try self.stack.pop();
+            
+            log.debug("JUMP: destination=0x{x}, gas_remaining={}", .{ dest, self.gas_remaining });
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
+                log.warn("JUMP: Invalid destination out of range: 0x{x}", .{dest});
                 return Error.InvalidJump;
             }
 
@@ -29,9 +33,11 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use binary search to find valid jump destination
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 // Found valid JUMPDEST - tail call to the jump destination
+                log.debug("JUMP: Valid jump to PC=0x{x}", .{dest_pc});
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
+                log.warn("JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
                 return Error.InvalidJump;
             }
         }
@@ -45,10 +51,19 @@ pub fn Handlers(comptime FrameType: type) type {
             
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
+            
+            log.debug("JUMPI: destination=0x{x}, condition={}, gas_remaining={}", .{ 
+                dest, 
+                condition, 
+                self.gas_remaining 
+            });
 
             if (condition != 0) {
                 // Take the jump - validate destination range
+                log.debug("JUMPI: Taking jump (condition non-zero)", .{});
+                
                 if (dest > std.math.maxInt(u32)) {
+                    log.warn("JUMPI: Invalid destination out of range: 0x{x}", .{dest});
                     return Error.InvalidJump;
                 }
 
@@ -57,13 +72,16 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Use binary search to find valid jump destination
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     // Found valid JUMPDEST - tail call to the jump destination
+                    log.debug("JUMPI: Valid jump to PC=0x{x}", .{dest_pc});
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
+                    log.warn("JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
                     return Error.InvalidJump;
                 }
             } else {
                 // Condition is false, continue to next instruction
+                log.debug("JUMPI: Not jumping (condition zero), continuing to next instruction", .{});
                 // Skip the jump table metadata (cursor + 2)
                 const next_cursor = cursor + 2;
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -79,12 +97,29 @@ pub fn Handlers(comptime FrameType: type) type {
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
             const metadata = dispatch.getJumpDestMetadata();
             const gas_cost = metadata.gas;
+            
+            log.debug("JUMPDEST: Landing at jump destination, basic_block_gas_cost={}, gas_remaining={}", .{ 
+                gas_cost, 
+                self.gas_remaining 
+            });
 
             // Check and consume gas for the entire basic block
             if (self.gas_remaining < gas_cost) {
+                log.warn("JUMPDEST: Out of gas - required={}, available={}", .{ gas_cost, self.gas_remaining });
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
+            
+            // Pretty print the frame state when landing on JUMPDEST
+            // TODO: Re-enable when pretty_print is fully working
+            // if (comptime builtin.mode == .Debug) {
+            //     const frame_state = self.pretty_print(self.allocator) catch |err| {
+            //         log.debug("JUMPDEST: Failed to pretty print frame: {}", .{err});
+            //         return err;
+            //     };
+            //     defer self.allocator.free(frame_state);
+            //     log.debug("JUMPDEST: Frame state after landing:\n{s}", .{frame_state});
+            // }
 
             // Continue to next operation
             const next = dispatch.skipMetadata();
@@ -99,6 +134,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const metadata = dispatch.getPcMetadata();
+            
+            log.debug("PC: Pushing program counter value=0x{x}", .{metadata.value});
+            
             try self.stack.push(metadata.value);
 
             const next = dispatch.skipMetadata();
