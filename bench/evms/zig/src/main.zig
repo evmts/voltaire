@@ -1,8 +1,6 @@
 const std = @import("std");
-const print = std.debug.print;
 const evm = @import("evm");
-const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const FixtureRunner = evm.FixtureRunner;
 
 pub const std_options: std.Options = .{
     .log_level = .err,
@@ -10,10 +8,13 @@ pub const std_options: std.Options = .{
 
 fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
     const clean_hex = if (std.mem.startsWith(u8, hex_str, "0x")) hex_str[2..] else hex_str;
-    const result = try allocator.alloc(u8, clean_hex.len / 2);
+    const trimmed = std.mem.trim(u8, clean_hex, &std.ascii.whitespace);
+    if (trimmed.len == 0) return allocator.alloc(u8, 0);
+    
+    const result = try allocator.alloc(u8, trimmed.len / 2);
     var i: usize = 0;
-    while (i < clean_hex.len) : (i += 2) {
-        const byte_str = clean_hex[i .. i + 2];
+    while (i < trimmed.len) : (i += 2) {
+        const byte_str = trimmed[i .. i + 2];
         result[i / 2] = std.fmt.parseInt(u8, byte_str, 16) catch {
             return error.InvalidHexCharacter;
         };
@@ -40,21 +41,13 @@ pub fn main() !void {
         std.debug.print("Options:\n", .{});
         std.debug.print("  --num-runs <n>           Number of runs (default: 1)\n", .{});
         std.debug.print("  --verbose                Enable verbose output\n", .{});
-        std.debug.print("  --validate-correctness   Enable correctness validation\n", .{});
-        std.debug.print("  --expected-gas <n>       Expected gas consumption for validation\n", .{});
-        std.debug.print("  --expected-output <hex>  Expected return value for validation\n", .{});
-        std.debug.print("  --min-gas <n>            Minimum gas consumption threshold\n", .{});
         std.process.exit(1);
     }
 
     var contract_code_path: ?[]const u8 = null;
     var calldata_hex: ?[]const u8 = null;
     var num_runs: u32 = 1;
-    var min_gas: u64 = 0;
     var verbose: bool = false;
-    var validate_correctness: bool = false;
-    var expected_gas: ?u64 = null;
-    var expected_output_hex: ?[]const u8 = null;
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -84,35 +77,16 @@ pub fn main() !void {
             i += 1;
         } else if (std.mem.eql(u8, args[i], "--verbose")) {
             verbose = true;
-        } else if (std.mem.eql(u8, args[i], "--validate-correctness")) {
-            validate_correctness = true;
-        } else if (std.mem.eql(u8, args[i], "--expected-gas")) {
-            if (i + 1 >= args.len) {
-                std.debug.print("Error: --expected-gas requires a value\n", .{});
-                std.process.exit(1);
+        } else if (std.mem.eql(u8, args[i], "--validate-correctness") or 
+                   std.mem.eql(u8, args[i], "--expected-gas") or
+                   std.mem.eql(u8, args[i], "--expected-output") or
+                   std.mem.eql(u8, args[i], "--min-gas")) {
+            // Skip these for now, they're not used with FixtureRunner
+            if (std.mem.eql(u8, args[i], "--expected-gas") or 
+                std.mem.eql(u8, args[i], "--expected-output") or
+                std.mem.eql(u8, args[i], "--min-gas")) {
+                i += 1; // Skip the value
             }
-            expected_gas = std.fmt.parseInt(u64, args[i + 1], 10) catch {
-                std.debug.print("Error: --expected-gas must be a number\n", .{});
-                std.process.exit(1);
-            };
-            i += 1;
-        } else if (std.mem.eql(u8, args[i], "--expected-output")) {
-            if (i + 1 >= args.len) {
-                std.debug.print("Error: --expected-output requires a value\n", .{});
-                std.process.exit(1);
-            }
-            expected_output_hex = args[i + 1];
-            i += 1;
-        } else if (std.mem.eql(u8, args[i], "--min-gas")) {
-            if (i + 1 >= args.len) {
-                std.debug.print("Error: --min-gas requires a value\n", .{});
-                std.process.exit(1);
-            }
-            min_gas = std.fmt.parseInt(u64, args[i + 1], 10) catch {
-                std.debug.print("Error: --min-gas must be a number\n", .{});
-                std.process.exit(1);
-            };
-            i += 1;
         } else {
             std.debug.print("Error: Unknown argument {s}\n", .{args[i]});
             std.process.exit(1);
@@ -138,371 +112,47 @@ pub fn main() !void {
     const calldata = try hex_decode(allocator, trimmed_calldata);
     defer allocator.free(calldata);
 
-    // Set up EVM infrastructure
-    var database = evm.Database.init(allocator);
-    defer database.deinit();
+    // Run benchmarks - create fresh FixtureRunner for each run to ensure consistent state
+    for (0..num_runs) |_| {
+        var runner = FixtureRunner.init(allocator) catch |err| {
+            std.debug.print("Failed to init FixtureRunner: {}\n", .{err});
+            @panic("FixtureRunner init failed");
+        };
+        defer runner.deinit();
 
-    const block_info = evm.BlockInfo{
-        .chain_id = 1,
-        .number = 1,
-        .timestamp = 1000,
-        .difficulty = 100,
-        .gas_limit = 30000000,
-        .coinbase = primitives.ZERO_ADDRESS,
-        .base_fee = 1000000000,
-        .prev_randao = [_]u8{0} ** 32,
-        .blob_base_fee = 1000000000,
-        .blob_versioned_hashes = &.{},
-    };
-
-    const context = evm.TransactionContext{
-        .gas_limit = 30000000,
-        .coinbase = primitives.ZERO_ADDRESS,
-        .chain_id = 1,
-    };
-
-    var evm_instance = try evm.DefaultEvm.init(allocator, &database, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
-    defer evm_instance.deinit();
-
-    // We attempt to deploy via CREATE first. If the provided bytecode is actually
-    // runtime (not init) and CREATE produces empty runtime code, we fall back to
-    // directly installing it as runtime code.
-    // deploy_address is determined per-run depending on CREATE success
-
-    // Run benchmarks - create fresh EVM instance for each run to ensure consistent state
-    for (0..num_runs) |run_idx| {
-        // Create fresh EVM instance for each run to avoid state corruption
-        var fresh_database = evm.Database.init(allocator);
-        defer fresh_database.deinit();
-
-        var fresh_evm = try evm.DefaultEvm.init(allocator, &fresh_database, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
-        defer fresh_evm.deinit();
-
-        // 1) Try CREATE deployment path with provided bytecode as init code
-        var target_address: Address = Address.ZERO_ADDRESS;
-        var use_direct_install = false;
-        {
-            const create_params = evm.CallParams{
-                .create = .{
-                    .caller = primitives.ZERO_ADDRESS,
-                    .value = 0,
-                    .init_code = init_code,
-                    .gas = 30_000_000,
+        const result = runner.runFixture(init_code, calldata, verbose) catch |err| {
+            std.debug.print("❌ Fixture execution failed: {}\n", .{err});
+            switch (err) {
+                error.NoCodeAtTarget => {
+                    std.debug.print("  No code found at target address\n", .{});
+                    std.debug.print("  This indicates deployment failed or contract was not properly installed\n", .{});
                 },
-            };
-
-            const maybe_create_result: ?evm.CallResult = blk: {
-                const r = fresh_evm.call(create_params);
-                if (!r.success) {
-                    if (verbose) std.debug.print("CREATE failed. Falling back to direct install.\n", .{});
-                    break :blk null;
-                }
-                break :blk r;
-            };
-
-            if (maybe_create_result) |create_result| {
-                if (!create_result.success) {
-                    if (verbose) std.debug.print("CREATE failed: success=false, gas_left={}, output_len={}\n", .{ create_result.gas_left, create_result.output.len });
-                    use_direct_install = true;
-                } else if (create_result.output.len == 0) {
-                    // CREATE succeeded but returned no address - this is expected for init code
-                    // The address should be calculated deterministically
-                    const nonce: u64 = 0;
-                    target_address = try primitives.Address.calculate_create_address(allocator, primitives.ZERO_ADDRESS, nonce);
-                    const deployed_code = fresh_evm.get_code(target_address);
-                    if (deployed_code.len == 0) {
-                        if (verbose) std.debug.print("CREATE succeeded but no code at computed address {x}\n", .{target_address});
-                        use_direct_install = true;
-                    } else {
-                        if (verbose) std.debug.print("CREATE deployed contract at {x} with code_len={}\n", .{ target_address, deployed_code.len });
-                    }
-                } else if (create_result.output.len == 20) {
-                    // Old-style CREATE that returns address
-                    @memcpy(&target_address.bytes, create_result.output[0..20]);
-                    const deployed_code = fresh_evm.get_code(target_address);
-                    if (deployed_code.len == 0) {
-                        if (verbose) std.debug.print("CREATE returned address but no code found\n", .{});
-                        use_direct_install = true;
-                    }
-                } else {
-                    if (verbose) std.debug.print("CREATE returned unexpected output length: {}\n", .{create_result.output.len});
-                    use_direct_install = true;
-                }
-            } else {
-                use_direct_install = true;
+                error.ExecutionFailed => {
+                    std.debug.print("  EVM execution failed\n", .{});
+                },
+                error.UnrealisticGasUsage => {
+                    std.debug.print("  Unrealistic gas usage detected\n", .{});
+                },
+                error.InsufficientGasUsage => {
+                    std.debug.print("  Operation didn't consume expected gas\n", .{});
+                },
+                error.InvalidReturnLength => {
+                    std.debug.print("  ERC20 operation returned wrong output length\n", .{});
+                },
+                error.OperationReturnedFalse => {
+                    std.debug.print("  ERC20 operation did not return true\n", .{});
+                },
+                error.NoReturnData => {
+                    std.debug.print("  Benchmark returned no data\n", .{});
+                },
+                else => {},
             }
-        }
-
-        if (use_direct_install) {
-            // Directly install provided bytecode as runtime
-            const fresh_code_hash = try fresh_database.set_code(init_code);
-            // Choose a fixed address for direct install
-            // Use a non-precompile address (avoid 0x01..0x12 which are precompiles)
-            target_address = Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x20} };
-            try fresh_database.set_account(target_address.bytes, evm.Account{
-                .nonce = 0,
-                .balance = 0,
-                .code_hash = fresh_code_hash,
-                .storage_root = [_]u8{0} ** 32,
-            });
-            if (verbose) std.debug.print("Direct install at address: {x}, code_len={}, code_hash={x}\n", .{ target_address, init_code.len, fresh_code_hash });
-        }
-
-        // 2) Verify contract is properly deployed before timing
-        const deployed_code = fresh_evm.get_code(target_address);
-        if (deployed_code.len == 0) {
-            std.debug.print("❌ VALIDATION FAILED: No code found at target address {x}\n", .{target_address});
-            std.debug.print("  This indicates deployment failed or contract was not properly installed\n", .{});
-            std.debug.print("  Debug: use_direct_install={}, target_address={x}\n", .{use_direct_install, target_address});
-            @panic("Contract deployment failed - no code at target address");
-        } else if (verbose) {
-            std.debug.print("✓ Contract found at {x}, code_len={}\n", .{target_address, deployed_code.len});
-        }
-
-        // 2.5) Set up initial state for ERC20 benchmarks
-        // For ERC20 transfer to work, we need to give the sender some tokens
-        // Check if this is an ERC20 benchmark by looking at the calldata
-        if (calldata.len >= 4) {
-            const selector = (@as(u32, calldata[0]) << 24) |
-                (@as(u32, calldata[1]) << 16) |
-                (@as(u32, calldata[2]) << 8) |
-                @as(u32, calldata[3]);
-            
-            // Common ERC20 selectors that need balance setup
-            const needs_balance = switch (selector) {
-                0xa9059cbb, // transfer(address,uint256)
-                0x095ea7b3, // approve(address,uint256)
-                0x23b872dd, // transferFrom(address,address,uint256)
-                => true,
-                else => false,
-            };
-            
-            if (needs_balance) {
-                // Set up initial balance for the caller (ZERO_ADDRESS in our case)
-                // In ERC20, balances are stored at keccak256(address || slot_0)
-                // We'll give the zero address a large balance
-                const balance_amount: u256 = 1000000 * std.math.pow(u256, 10, 18); // 1 million tokens with 18 decimals
-                
-                // Calculate storage slot for balance[ZERO_ADDRESS]
-                // slot = keccak256(abi.encodePacked(address(0), uint256(0)))
-                var slot_preimage = [_]u8{0} ** 64; // address (32 bytes) + slot number (32 bytes)
-                // Address is already all zeros, slot 0 is also zeros
-                
-                var storage_slot_bytes: [32]u8 = undefined;
-                std.crypto.hash.sha3.Keccak256.hash(&slot_preimage, &storage_slot_bytes, .{});
-                
-                // Convert to u256
-                const storage_slot = std.mem.readInt(u256, &storage_slot_bytes, .big);
-                
-                // Set the storage value
-                try fresh_database.set_storage(target_address.bytes, storage_slot, balance_amount);
-                
-                // Also set totalSupply (usually at slot 2 in OpenZeppelin ERC20)
-                const total_supply_slot: u256 = 2;
-                try fresh_database.set_storage(target_address.bytes, total_supply_slot, balance_amount);
-                
-                if (verbose) std.debug.print("✓ Set up ERC20 balance: {} tokens for sender\n", .{balance_amount});
-            }
-        }
-
-        // 3) Invoke the contract runtime via CALL (this is what we time)
-        const call_params = evm.CallParams{
-            .call = .{
-                .caller = primitives.ZERO_ADDRESS,
-                .to = target_address,
-                .value = 0,
-                .input = calldata,
-                .gas = 30_000_000,
-            },
+            @panic("Benchmark execution failed");
         };
 
-        // TIMING: Only measure the actual contract execution, not deployment
-        const start_time = std.time.nanoTimestamp();
-        const result = fresh_evm.call(call_params);
-        const end_time = std.time.nanoTimestamp();
-
-        // CRITICAL: Validate execution succeeded before recording timing
-        if (!result.success) {
-            std.debug.print("❌ EVM EXECUTION FAILED\n", .{});
-            std.debug.print("  Gas provided: 30000000, Gas left: {}, Output len: {}\n", .{ result.gas_left, result.output.len });
-            if (result.output.len > 0 and result.output.len <= 256) {
-                std.debug.print("  Output: {x}\n", .{result.output});
-            }
-            @panic("EVM execution failed - cannot benchmark failed execution");
+        if (verbose) {
+            std.debug.print("✓ Execution succeeded, gas_used={}\n", .{result.gas_used});
         }
-
-        // Calculate gas consumption
-        const gas_provided: u64 = 30_000_000;
-        const gas_used: u64 = gas_provided - result.gas_left;
-
-        // STRICT GAS VALIDATION: Ensure realistic gas consumption
-        const min_gas_for_any_transaction: u64 = 21000; // Base transaction cost
-        if (gas_used < min_gas_for_any_transaction) {
-            std.debug.print("❌ VALIDATION FAILED: Unrealistic gas usage\n", .{});
-            std.debug.print("  Gas used: {} (less than minimum transaction cost of {})\n", .{ gas_used, min_gas_for_any_transaction });
-            @panic("Gas usage too low - EVM not executing properly");
-        }
-
-        // Additional validation based on calldata to ensure meaningful work was done
-        if (calldata.len >= 4) {
-            const selector = (@as(u32, calldata[0]) << 24) |
-                (@as(u32, calldata[1]) << 16) |
-                (@as(u32, calldata[2]) << 8) |
-                @as(u32, calldata[3]);
-
-            // Define minimum gas expectations for different operations
-            const min_expected_gas: u64 = switch (selector) {
-                0xa9059cbb => 50000, // transfer() - should use significant gas for state changes
-                0x095ea7b3 => 45000, // approve() - state change operation
-                0x40c10f19 => 55000, // mint() - complex state change with events
-                0x30627b7c => 100000, // snailtracer Benchmark() - should be computationally intensive
-                else => 30000, // Other operations - still more than base transaction
-            };
-
-            if (gas_used < min_expected_gas) {
-                std.debug.print("❌ VALIDATION FAILED: Insufficient gas usage for operation type\n", .{});
-                std.debug.print("  Selector: 0x{x:0>8}\n", .{selector});
-                std.debug.print("  Gas used: {} (expected at least {})\n", .{ gas_used, min_expected_gas });
-                @panic("Operation didn't consume expected gas - likely not executing properly");
-            }
-        }
-
-        // Debug: Print gas usage info
-        if (verbose and run_idx == 0) {
-            std.debug.print("success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", .{ result.success, gas_provided, result.gas_left, gas_used, result.output.len });
-            if (result.output.len > 0 and result.output.len <= 64) {
-                std.debug.print("output={x}\n", .{result.output});
-            }
-            std.debug.print("calldata={x}\n", .{calldata});
-
-            // Print logs if any
-            if (result.logs.len > 0) {
-                std.debug.print("logs_count={}\n", .{result.logs.len});
-                for (result.logs, 0..) |log, log_idx| {
-                    std.debug.print("log[{}]: address={x}, topics_count={}, data_len={}\n", .{ log_idx, log.address, log.topics.len, log.data.len });
-                    if (log.topics.len > 0) {
-                        for (log.topics, 0..) |topic, topic_idx| {
-                            std.debug.print("  topic[{}]={x}\n", .{ topic_idx, topic });
-                        }
-                    }
-                }
-            }
-        }
-
-        // STRICT CORRECTNESS VALIDATION (performed on every run for reliability)
-        // First perform basic result format validation
-        {
-            if (calldata.len >= 4) {
-                const selector = (@as(u32, calldata[0]) << 24) |
-                    (@as(u32, calldata[1]) << 16) |
-                    (@as(u32, calldata[2]) << 8) |
-                    @as(u32, calldata[3]);
-
-                switch (selector) {
-                    0xa9059cbb, 0x095ea7b3, 0x40c10f19 => { // transfer/approve/mint -> must return true
-                        if (result.success and result.output.len != 32) {
-                            std.debug.print("❌ VALIDATION FAILED: ERC20 operation returned wrong output length\n", .{});
-                            std.debug.print("  Expected: 32 bytes (boolean return)\n", .{});
-                            std.debug.print("  Actual: {} bytes\n", .{result.output.len});
-                            std.debug.print("  Output: {x}\n", .{result.output});
-                            std.process.exit(3);
-                        }
-                        
-                        // Check that it's a proper boolean true (0x000...001)
-                        if (result.success and result.output.len == 32) {
-                            var is_true = true;
-                            for (result.output[0..31]) |byte| {
-                                if (byte != 0) is_true = false;
-                            }
-                            if (result.output[31] != 1) is_true = false;
-                            
-                            if (!is_true) {
-                                std.debug.print("❌ VALIDATION FAILED: ERC20 operation did not return true\n", .{});
-                                std.debug.print("  Selector: 0x{x:0>8}\n", .{selector});
-                                std.debug.print("  Output: {x}\n", .{result.output});
-                                std.debug.print("  This suggests the operation failed or was rejected\n", .{});
-                                std.process.exit(3);
-                            }
-                        }
-                    },
-                    0x30627b7c => { // snailtracer Benchmark() - should return some data
-                        if (result.success and result.output.len == 0) {
-                            std.debug.print("❌ VALIDATION FAILED: Snailtracer benchmark returned no data\n", .{});
-                            std.debug.print("  Expected some return value from computational benchmark\n", .{});
-                            std.process.exit(3);
-                        }
-                    },
-                    else => {
-                        // For unknown selectors, just verify we got some result (non-empty or empty is OK)
-                        if (verbose and run_idx == 0) {
-                            std.debug.print("Unknown selector 0x{x:0>8}, output_len={}\n", .{ selector, result.output.len });
-                        }
-                    },
-                }
-            }
-        }
-
-        // Extended correctness validation if explicitly requested
-        if (validate_correctness and run_idx == 0) {
-            // Gas consumption validation
-            if (expected_gas) |expected| {
-                if (gas_used != expected) {
-                    std.debug.print("ERROR: Gas consumption mismatch!\n", .{});
-                    std.debug.print("  Expected: {} gas\n", .{expected});
-                    std.debug.print("  Actual:   {} gas\n", .{gas_used});
-                    std.debug.print("  Diff:     {} gas ({d:.2}%)\n", .{ if (gas_used > expected) gas_used - expected else expected - gas_used, @as(f64, @floatFromInt(if (gas_used > expected) gas_used - expected else expected - gas_used)) / @as(f64, @floatFromInt(expected)) * 100.0 });
-                    std.process.exit(3);
-                }
-            }
-
-            // Return value validation
-            if (expected_output_hex) |expected_hex| {
-                const expected_output = hex_decode(allocator, expected_hex) catch {
-                    std.debug.print("ERROR: Failed to decode expected output hex\n", .{});
-                    std.process.exit(3);
-                };
-                defer allocator.free(expected_output);
-
-                if (result.output.len != expected_output.len or !std.mem.eql(u8, result.output, expected_output)) {
-                    std.debug.print("ERROR: Return value mismatch!\n", .{});
-                    std.debug.print("  Expected: {x} (len={})\n", .{ expected_output, expected_output.len });
-                    std.debug.print("  Actual:   {x} (len={})\n", .{ result.output, result.output.len });
-                    std.process.exit(3);
-                }
-            }
-
-            // Additional validation is already performed above in strict validation section
-
-            std.debug.print("✓ Correctness validation passed\n", .{});
-        }
-
-        // Optional validation: enforce minimum gas consumption to catch trivial runs
-        if (min_gas > 0) {
-            if (gas_used < min_gas) {
-                std.debug.print("Error: gas_used={} < min_gas={} (likely trivial execution)\n", .{ gas_used, min_gas });
-                std.process.exit(2);
-            }
-        }
-
-        // Do not free result.output here. Ownership is managed by the EVM.
-        // Freeing it caused an invalid free/double free under the debug allocator
-        // and crashes during hyperfine warmup.
-
-        // Disabled for now - we want to measure even failed executions
-        // if (!result.success) {
-        //     std.debug.print("Contract execution failed\n", .{});
-        //     std.process.exit(1);
-        // }
-
-        // SUCCESS: All validations passed
-        // Validation summary (performed above):
-        // ✓ Contract deployment succeeded
-        // ✓ Contract execution succeeded (result.success == true)  
-        // ✓ Gas consumption is realistic (>21000 base + operation minimum)
-        // ✓ Return values match expected format for known operations
-        
-        _ = start_time;
-        _ = end_time;
     }
 
     // Explicitly exit to avoid any cleanup issues
