@@ -160,7 +160,11 @@ pub const Signature = struct {
     v: u8, // recovery id + 27 (Ethereum convention)
 
     pub fn recovery_id(self: Signature) u8 {
-        return self.v - 27;
+        // Handle both legacy (27/28) and EIP-155 (chainId * 2 + 35/36) formats
+        if (self.v >= 27) {
+            return @intCast((self.v - 27) % 2);
+        }
+        return self.v;
     }
 
     pub fn y_parity(self: Signature) u8 {

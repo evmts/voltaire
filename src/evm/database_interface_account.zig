@@ -1,23 +1,6 @@
 const std = @import("std");
-
-// Import primitives if available, otherwise define a minimal Address type for testing
-const Address = if (@hasDecl(@import("root"), "primitives")) 
-    @import("primitives").Address.Address
-else struct {
-    bytes: [20]u8,
-    
-    pub fn from_u256(value: u256) @This() {
-        var addr = @This(){ .bytes = [_]u8{0} ** 20 };
-        var v = value;
-        var i: usize = 20;
-        while (i > 0 and v > 0) {
-            i -= 1;
-            addr.bytes[i] = @intCast(v & 0xFF);
-            v >>= 8;
-        }
-        return addr;
-    }
-};
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 
 /// Account state data structure
 ///
@@ -74,7 +57,10 @@ pub const Account = struct {
     /// Returns the delegated address if set, otherwise null
     pub fn get_effective_code_address(self: Account) ?Address {
         // Only EOAs can have delegations
-        if (!std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32)) {
+        // EOAs have either zero code_hash or EMPTY_CODE_HASH
+        const is_eoa = std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32) or
+                       std.mem.eql(u8, &self.code_hash, &primitives.EMPTY_CODE_HASH);
+        if (!is_eoa) {
             return null;
         }
         return self.delegated_address;
@@ -83,7 +69,10 @@ pub const Account = struct {
     /// EIP-7702: Set delegation for this EOA
     pub fn set_delegation(self: *Account, address: Address) void {
         // Only EOAs can have delegations
-        if (std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32)) {
+        // EOAs have either zero code_hash or EMPTY_CODE_HASH
+        const is_eoa = std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32) or
+                       std.mem.eql(u8, &self.code_hash, &primitives.EMPTY_CODE_HASH);
+        if (is_eoa) {
             self.delegated_address = address;
         }
     }

@@ -6,6 +6,13 @@ const Address = primitives.Address.Address;
 const Authorization = primitives.Authorization.Authorization;
 const Hash = @import("crypto").Hash.Hash;
 
+// Helper function to create a proper EOA account
+fn createEOAAccount() evm.Account {
+    var account = evm.Account.zero();
+    account.code_hash = primitives.EMPTY_CODE_HASH;
+    return account;
+}
+
 // ============================================================================
 // EIP-7702 Test-Driven Development Specification
 // ============================================================================
@@ -94,7 +101,7 @@ test "EIP-7702: Parse delegation designator correctly" {
     
     // Invalid designator (wrong prefix)
     var invalid_designator = [_]u8{0xef, 0x02, 0x00} ++ delegate_address.bytes;
-    try testing.expectError(EIP7702Error.InvalidDesignator, parseDelegationDesignator(&invalid_designator));
+    try testing.expectError(AuthorizationError.InvalidSignature, parseDelegationDesignator(&invalid_designator));
 }
 
 // ============================================================================
@@ -193,7 +200,7 @@ test "EIP-7702: Process authorizations before transaction execution" {
     
     // Create EOA that will delegate
     const eoa_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
-    var eoa_account = evm.Account.zero();
+    var eoa_account = createEOAAccount();
     eoa_account.balance = 1_000_000_000_000_000_000; // 1 ETH
     eoa_account.nonce = 5;
     try db.set_account(eoa_address.bytes, eoa_account);
@@ -218,7 +225,15 @@ test "EIP-7702: Process authorizations before transaction execution" {
     };
     
     // Process authorization
-    var processor = AuthorizationProcessor.init(allocator, &db);
+    var gas_remaining: i64 = 100_000;
+    const Eips = evm.Eips;
+    const Hardfork = evm.Hardfork;
+    var processor = AuthorizationProcessor{
+        .db = &db,
+        .chain_id = 1,
+        .gas_remaining = &gas_remaining,
+        .eips = Eips{ .hardfork = Hardfork.PRAGUE },
+    };
     try processor.processAuthorization(auth, eoa_address);
     
     // Verify delegation was set
@@ -238,7 +253,7 @@ test "EIP-7702: Authorization with wrong nonce is rejected" {
     defer db.deinit();
     
     const eoa_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
-    var eoa_account = evm.Account.zero();
+    var eoa_account = createEOAAccount();
     eoa_account.nonce = 5;
     try db.set_account(eoa_address.bytes, eoa_account);
     
@@ -251,8 +266,16 @@ test "EIP-7702: Authorization with wrong nonce is rejected" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    var processor = AuthorizationProcessor.init(allocator, &db);
-    try testing.expectError(EIP7702Error.NonceMismatch, processor.processAuthorization(auth, eoa_address));
+    var gas_remaining: i64 = 100_000;
+    const Eips = evm.Eips;
+    const Hardfork = evm.Hardfork;
+    var processor = AuthorizationProcessor{
+        .db = &db,
+        .chain_id = 1,
+        .gas_remaining = &gas_remaining,
+        .eips = Eips{ .hardfork = Hardfork.PRAGUE },
+    };
+    try testing.expectError(AuthorizationError.NonceMismatch, processor.processAuthorization(auth, eoa_address));
 }
 
 test "EIP-7702: Authorization with wrong chain_id is rejected" {
@@ -270,9 +293,16 @@ test "EIP-7702: Authorization with wrong chain_id is rejected" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    var processor = AuthorizationProcessor.init(allocator, &db);
-    processor.chain_id = 1; // Current chain is 1
-    try testing.expectError(EIP7702Error.ChainIdMismatch, processor.processAuthorization(auth, try Address.from_hex("0x1111111111111111111111111111111111111111")));
+    var gas_remaining: i64 = 100_000;
+    const Eips = evm.Eips;
+    const Hardfork = evm.Hardfork;
+    var processor = AuthorizationProcessor{
+        .db = &db,
+        .chain_id = 1, // Current chain is 1
+        .gas_remaining = &gas_remaining,
+        .eips = Eips{ .hardfork = Hardfork.PRAGUE },
+    };
+    try testing.expectError(AuthorizationError.InvalidChainId, processor.processAuthorization(auth, try Address.from_hex("0x1111111111111111111111111111111111111111")));
 }
 
 // ============================================================================
@@ -280,6 +310,8 @@ test "EIP-7702: Authorization with wrong chain_id is rejected" {
 // ============================================================================
 
 test "EIP-7702: EOA with delegation executes delegated contract code" {
+    // TODO: Fix execution with delegated code
+    // return error.SkipZigTest; // Temporarily skip to test others
     const allocator = testing.allocator;
     
     var db = evm.Database.init(allocator);
@@ -287,11 +319,17 @@ test "EIP-7702: EOA with delegation executes delegated contract code" {
     
     // Setup EOA with delegation
     const eoa_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
-    var eoa_account = evm.Account.zero();
+    var eoa_account = createEOAAccount();
     eoa_account.balance = 1_000_000_000_000_000_000;
     const delegated_addr = try Address.from_hex("0x2222222222222222222222222222222222222222");
-    eoa_account.delegated_address = .{ .bytes = delegated_addr.bytes };
+    eoa_account.set_delegation(delegated_addr);
     try db.set_account(eoa_address.bytes, eoa_account);
+    
+    // Verify delegation was set
+    const stored_account = try db.get_account(eoa_address.bytes);
+    try testing.expect(stored_account.?.has_delegation());
+    const effective_addr = stored_account.?.get_effective_code_address();
+    try testing.expect(effective_addr != null);
     
     // Setup contract code
     const contract_address = try Address.from_hex("0x2222222222222222222222222222222222222222");
@@ -353,21 +391,24 @@ test "EIP-7702: EOA with delegation executes delegated contract code" {
     defer allocator.free(result.output);
     
     // Should return 0x42
+    try testing.expect(result.success);
     try testing.expectEqual(@as(usize, 32), result.output.len);
     try testing.expectEqual(@as(u8, 0x42), result.output[31]);
 }
 
 test "EIP-7702: ADDRESS opcode returns EOA address, not delegated address" {
+    // TODO: Fix ADDRESS opcode behavior
+    // return error.SkipZigTest; // Temporarily skip to test others
     const allocator = testing.allocator;
     
     var db = evm.Database.init(allocator);
     defer db.deinit();
     
     const eoa_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
-    var eoa_account = evm.Account.zero();
+    var eoa_account = createEOAAccount();
     eoa_account.balance = 1_000_000_000_000_000_000;
     const delegated_addr = try Address.from_hex("0x2222222222222222222222222222222222222222");
-    eoa_account.delegated_address = .{ .bytes = delegated_addr.bytes };
+    eoa_account.set_delegation(delegated_addr);
     try db.set_account(eoa_address.bytes, eoa_account);
     
     // Contract code that returns ADDRESS
@@ -539,8 +580,16 @@ test "EIP-7702: Cannot delegate from contract account" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    var processor = AuthorizationProcessor.init(allocator, &db);
-    try testing.expectError(EIP7702Error.NotEOA, processor.processAuthorization(auth, contract_address));
+    var gas_remaining: i64 = 100_000;
+    const Eips = evm.Eips;
+    const Hardfork = evm.Hardfork;
+    var processor = AuthorizationProcessor{
+        .db = &db,
+        .chain_id = 1,
+        .gas_remaining = &gas_remaining,
+        .eips = Eips{ .hardfork = Hardfork.PRAGUE },
+    };
+    try testing.expectError(AuthorizationError.NotEOA, processor.processAuthorization(auth, contract_address));
 }
 
 test "EIP-7702: Signature recovery validates authority" {
@@ -578,10 +627,10 @@ test "EIP-7702: Authorization revocation (nonce = 2^64 - 1)" {
     
     // Setup EOA with existing delegation
     const eoa_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
-    var eoa_account = evm.Account.zero();
+    var eoa_account = createEOAAccount();
     eoa_account.nonce = 5;
     const delegated_addr = try Address.from_hex("0x2222222222222222222222222222222222222222");
-    eoa_account.delegated_address = .{ .bytes = delegated_addr.bytes };
+    eoa_account.set_delegation(delegated_addr);
     try db.set_account(eoa_address.bytes, eoa_account);
     
     // Create revocation authorization (nonce = max u64)
@@ -594,7 +643,15 @@ test "EIP-7702: Authorization revocation (nonce = 2^64 - 1)" {
         .s = [_]u8{0x34} ** 32,
     };
     
-    var processor = AuthorizationProcessor.init(allocator, &db);
+    var gas_remaining: i64 = 100_000;
+    const Eips = evm.Eips;
+    const Hardfork = evm.Hardfork;
+    var processor = AuthorizationProcessor{
+        .db = &db,
+        .chain_id = 1,
+        .gas_remaining = &gas_remaining,
+        .eips = Eips{ .hardfork = Hardfork.PRAGUE },
+    };
     try processor.processAuthorization(auth, eoa_address);
     
     // Verify delegation was removed
@@ -608,6 +665,8 @@ test "EIP-7702: Authorization revocation (nonce = 2^64 - 1)" {
 // ============================================================================
 
 test "EIP-7702: Full transaction execution with authorization list" {
+    // TODO: Full integration test
+    // return error.SkipZigTest; // Temporarily skip to test others
     const allocator = testing.allocator;
     
     // Setup database
@@ -616,13 +675,13 @@ test "EIP-7702: Full transaction execution with authorization list" {
     
     // Create sender account
     const sender_address = try Address.from_hex("0x9999999999999999999999999999999999999999");
-    var sender_account = evm.Account.zero();
+    var sender_account = createEOAAccount();
     sender_account.balance = 10_000_000_000_000_000_000; // 10 ETH
     try db.set_account(sender_address.bytes, sender_account);
     
     // Create EOA that will delegate
     const eoa_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
-    var eoa_account = evm.Account.zero();
+    var eoa_account = createEOAAccount();
     eoa_account.balance = 1_000_000_000_000_000_000; // 1 ETH
     eoa_account.nonce = 0;
     try db.set_account(eoa_address.bytes, eoa_account);
@@ -723,14 +782,8 @@ test "EIP-7702: Full transaction execution with authorization list" {
 // Helper Functions (to be implemented)
 // ============================================================================
 
-const EIP7702Error = error{
-    InvalidDesignator,
-    NonceMismatch,
-    ChainIdMismatch,
-    NotEOA,
-    InvalidSignature,
-    OutOfGas,
-};
+// Use the error types from the actual AuthorizationProcessor module
+const AuthorizationError = evm.AuthorizationError;
 
 fn createDelegationDesignator(allocator: std.mem.Allocator, address: Address) ![]u8 {
     var designator = try allocator.alloc(u8, 23);
@@ -742,9 +795,9 @@ fn createDelegationDesignator(allocator: std.mem.Allocator, address: Address) ![
 }
 
 fn parseDelegationDesignator(designator: []const u8) !Address {
-    if (designator.len != 23) return EIP7702Error.InvalidDesignator;
+    if (designator.len != 23) return AuthorizationError.InvalidSignature;
     if (designator[0] != 0xef or designator[1] != 0x01 or designator[2] != 0x00) {
-        return EIP7702Error.InvalidDesignator;
+        return AuthorizationError.InvalidSignature;
     }
     return Address{ .bytes = designator[3..23].* };
 }
@@ -767,10 +820,98 @@ const Eip7702Transaction = struct {
 };
 
 fn encodeEip7702Transaction(allocator: std.mem.Allocator, tx: Eip7702Transaction) ![]u8 {
-    _ = tx;
-    // TODO: Implement RLP encoding for type 0x04 transaction
-    var result = try allocator.alloc(u8, 100);
-    result[0] = 0x04;
+    // For testing purposes, return a simplified EIP-7702 transaction encoding
+    // Format: 0x04 || rlp([chain_id, nonce, ...])
+    
+    const rlp = primitives.Rlp;
+    
+    // Build a buffer with approximate size
+    var buffer = try allocator.alloc(u8, 1024);
+    defer allocator.free(buffer);
+    var offset: usize = 0;
+    
+    // Add transaction type
+    buffer[offset] = 0x04;
+    offset += 1;
+    
+    // Start RLP list (simplified - assume total length < 256)
+    const list_start = offset;
+    offset += 2; // Reserve space for RLP list header
+    
+    // Encode chain_id
+    const chain_id_enc = try rlp.encode(allocator, tx.chain_id);
+    defer allocator.free(chain_id_enc);
+    @memcpy(buffer[offset..offset + chain_id_enc.len], chain_id_enc);
+    offset += chain_id_enc.len;
+    
+    // Encode nonce
+    const nonce_enc = try rlp.encode(allocator, tx.nonce);
+    defer allocator.free(nonce_enc);
+    @memcpy(buffer[offset..offset + nonce_enc.len], nonce_enc);
+    offset += nonce_enc.len;
+    
+    // Encode other fields minimally for test
+    // max_priority_fee_per_gas
+    buffer[offset] = 0x80; // RLP empty/zero
+    offset += 1;
+    
+    // max_fee_per_gas
+    buffer[offset] = 0x80;
+    offset += 1;
+    
+    // gas_limit
+    buffer[offset] = 0x80;
+    offset += 1;
+    
+    // to address
+    if (tx.to) |_| {
+        buffer[offset] = 0x94; // RLP 20-byte string prefix
+        offset += 21; // 1 + 20 bytes
+    } else {
+        buffer[offset] = 0x80;
+        offset += 1;
+    }
+    
+    // value
+    buffer[offset] = 0x80;
+    offset += 1;
+    
+    // data
+    buffer[offset] = 0x80;
+    offset += 1;
+    
+    // access_list (empty list)
+    buffer[offset] = 0xc0;
+    offset += 1;
+    
+    // authorization_list (empty list for simplicity)
+    buffer[offset] = 0xc0;
+    offset += 1;
+    
+    // signature fields (v, r, s) - simplified
+    buffer[offset] = 0x80;
+    offset += 1;
+    buffer[offset] = 0x80;
+    offset += 1;
+    buffer[offset] = 0x80;
+    offset += 1;
+    
+    // Fix up RLP list header
+    const list_len = offset - list_start - 2;
+    if (list_len <= 55) {
+        buffer[list_start] = @as(u8, @intCast(0xc0 + list_len));
+        // Shift everything down by 1
+        std.mem.copyForwards(u8, buffer[list_start + 1..offset - 1], buffer[list_start + 2..offset]);
+        offset -= 1;
+    } else {
+        // For longer lists
+        buffer[list_start] = @as(u8, @intCast(0xf8));
+        buffer[list_start + 1] = @as(u8, @intCast(list_len));
+    }
+    
+    // Return a copy of the used portion
+    const result = try allocator.alloc(u8, offset);
+    @memcpy(result, buffer[0..offset]);
     return result;
 }
 
@@ -778,11 +919,12 @@ fn calculateIntrinsicGas(tx: Eip7702Transaction) !u64 {
     var gas: u64 = 21000; // Base transaction cost
     
     // Add authorization costs
+    // For testing purposes, assume all accounts are non-empty (conservative estimate)
     const auth_gas = primitives.Authorization.calculate_authorization_gas_cost(
         tx.authorization_list,
-        0 // TODO: Count empty accounts
+        0 // Assuming no empty accounts for test
     );
-    gas += auth_gas;
+    gas += @intCast(auth_gas);
     
     // Add data costs
     for (tx.data) |byte| {
@@ -793,28 +935,14 @@ fn calculateIntrinsicGas(tx: Eip7702Transaction) !u64 {
         }
     }
     
+    // Add access list costs (EIP-2930)
+    gas += @as(u64, @intCast(tx.access_list.len)) * 2400; // Per-address cost
+    for (tx.access_list) |item| {
+        gas += @as(u64, @intCast(item.storage_keys.len)) * 1900; // Per-storage-key cost
+    }
+    
     return gas;
 }
 
-// Authorization processor (to be implemented)
-const AuthorizationProcessor = struct {
-    allocator: std.mem.Allocator,
-    db: *evm.Database,
-    chain_id: u64 = 1,
-    
-    pub fn init(allocator: std.mem.Allocator, db: *evm.Database) AuthorizationProcessor {
-        return .{
-            .allocator = allocator,
-            .db = db,
-            .chain_id = 1,
-        };
-    }
-    
-    pub fn processAuthorization(self: *AuthorizationProcessor, auth: Authorization, authority: Address) !void {
-        _ = self;
-        _ = auth;
-        _ = authority;
-        // TODO: Implement authorization processing logic
-        return error.NotImplemented;
-    }
-};
+// Use the real authorization processor
+const AuthorizationProcessor = evm.AuthorizationProcessor;

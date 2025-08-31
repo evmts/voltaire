@@ -453,10 +453,25 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             }
 
-            // Get contract code
-            log.debug("Attempting to get code for address: {x}", .{to.bytes});
-            const code = self.database.get_code_by_address(to.bytes) catch |err| {
-                log.debug("Failed to get code for address {x}: {}", .{ to.bytes, err });
+            // Check for EIP-7702 delegation first
+            const account = self.database.get_account(to.bytes) catch |err| {
+                log.debug("Failed to get account for address {x}: {}", .{ to.bytes, err });
+                return PreflightResult{ .precompile_result = CallResult.failure(0) };
+            };
+            
+            // Get the effective code address (handles delegation)
+            const code_address = if (account) |acc| blk: {
+                if (acc.get_effective_code_address()) |delegated| {
+                    log.debug("Account {x} has delegation to {x}", .{ to.bytes, delegated.bytes });
+                    break :blk delegated;
+                }
+                break :blk to;
+            } else to;
+            
+            // Get contract code (from delegated address if applicable)
+            log.debug("Attempting to get code for address: {x}", .{code_address.bytes});
+            const code = self.database.get_code_by_address(code_address.bytes) catch |err| {
+                log.debug("Failed to get code for address {x}: {}", .{ code_address.bytes, err });
                 const error_str = switch (err) {
                     Database.Error.CodeNotFound => "CodeNotFound",
                     Database.Error.AccountNotFound => "AccountNotFound",

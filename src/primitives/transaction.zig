@@ -239,7 +239,7 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
     try rlp.encodeBytes(allocator, tx.data, &list);
 
     // Encode access list
-    try encode_access_list(allocator, tx.access_list, &list);
+    try encode_access_list_internal(allocator, tx.access_list, &list);
 
     // For unsigned transaction
     if (tx.v == 0) {
@@ -272,8 +272,17 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
     return result.toOwnedSlice();
 }
 
-// Encode access list
-fn encode_access_list(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
+// Encode access list (public wrapper for external use)
+pub fn encode_access_list(allocator: Allocator, access_list: []const AccessListItem) ![]u8 {
+    var output = std.ArrayList(u8).init(allocator);
+    defer output.deinit();
+    
+    try encode_access_list_internal(allocator, access_list, &output);
+    return output.toOwnedSlice();
+}
+
+// Encode access list (internal version that writes to output)
+fn encode_access_list_internal(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
     var list = std.ArrayList(u8).init(allocator);
     defer list.deinit();
 
