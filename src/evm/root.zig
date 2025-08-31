@@ -31,6 +31,7 @@ pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 // Fixtures for testing
 pub const FixtureContract = @import("fixtures/popular_contracts.zig").FixtureContract;
 pub const ContractName = @import("fixtures/popular_contracts.zig").ContractName;
+pub const FixtureRunner = @import("fixture_runner.zig").FixtureRunner;
 
 // Default EVM types for backward compatibility
 pub const DefaultEvm = Evm(.{});

@@ -2,6 +2,7 @@ const std = @import("std");
 const evm = @import("root.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const Log = @import("call_result.zig").Log;
 
 pub const FixtureRunner = struct {
     allocator: std.mem.Allocator,
@@ -290,7 +291,7 @@ pub const FixtureResult = struct {
     success: bool,
     gas_used: u64,
     output: []const u8,
-    logs: []const evm.CallResult.Log,
+    logs: []const Log,
 };
 
 fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
