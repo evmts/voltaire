@@ -647,8 +647,11 @@ pub fn Dispatch(comptime FrameType: type) type {
             // The actual handler is at cursor[2] (skip trace_before handler and metadata)
             // We need to pass the cursor pointing to the actual handler, not advanced
             const handler_cursor = cursor + 2;
-            // Debug: Print what we're about to call
-            std.debug.print("DEBUG: handleTraceBefore called, about to call handler at handler_cursor[0]\n", .{});
+            
+            // TODO: Call tracer.beforeOp here
+            // The tracer instance is not accessible from these static handlers
+            // This needs a redesign to properly implement tracing
+            
             // Call the actual handler with cursor pointing to itself
             return @call(FrameType.getTailCallModifier(), handler_cursor[0].opcode_handler, .{ frame, handler_cursor });
         }
