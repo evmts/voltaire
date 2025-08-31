@@ -27,7 +27,6 @@ log "System: $(uname -a)"
 if command -v zig >/dev/null 2>&1; then log "zig: $(zig version)"; else log "zig: NOT FOUND"; fi
 if command -v rustc >/dev/null 2>&1; then log "rustc: $(rustc --version)"; else log "rustc: NOT FOUND"; fi
 if command -v cargo >/dev/null 2>&1; then log "cargo: $(cargo --version)"; else log "cargo: NOT FOUND"; fi
-if command -v bun >/dev/null 2>&1; then log "bun: $(bun --version)"; else log "bun: NOT FOUND (ethereumjs runner will fail)"; fi
 if command -v hyperfine >/dev/null 2>&1; then log "hyperfine: $(hyperfine --version)"; else log "hyperfine: NOT FOUND (benchmarks will not run)"; fi
 
 # Git diagnostics (best-effort)
@@ -43,7 +42,6 @@ fi
 REVM_RUNNER="${ROOT_DIR}/bench/official/evms/revm/target/release/revm-runner"
 GETH_RUNNER="${ROOT_DIR}/bench/evms/geth/geth-runner"
 EVMONE_RUNNER="${ROOT_DIR}/bench/official/evms/evmone/build/evmone-runner"
-ETHJS_RUNNER="${ROOT_DIR}/bench/evms/ethereumjs/runner.js"
 ZIG_RUNNER="${ROOT_DIR}/zig-out/bin/evm-runner"
 ZIG_RUNNER_SMALL="${ROOT_DIR}/zig-out/bin/evm-runner-small"
 check_path() {
@@ -54,7 +52,6 @@ check_path() {
 check_path "${REVM_RUNNER}"
 check_path "${GETH_RUNNER}"
 check_path "${EVMONE_RUNNER}"
-check_path "${ETHJS_RUNNER}"
 check_path "${ZIG_RUNNER}"
 check_path "${ZIG_RUNNER_SMALL}"
 
@@ -71,38 +68,15 @@ if [[ ! -x "${ORCH_BIN}" ]]; then
   exit 1
 fi
 
-JS_RUNTIME_FLAG=( )
-if [[ -n "${JS_RUNTIME:-}" ]]; then
-  JS_RUNTIME_FLAG=("--js-runtime" "${JS_RUNTIME}")
-  log "Using JS runtime for EthereumJS: ${JS_RUNTIME}"
-fi
-
 log "Running orchestrator with compare mode (single run per case)"
-log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1 ${JS_RUNTIME_FLAG[*]:-}"
-if [[ ${#JS_RUNTIME_FLAG[@]} -gt 0 ]]; then
-  time "${ORCH_BIN}" \
-    --compare \
-    --export markdown \
-    --num-runs 1 \
-    --js-runs 1 \
-    --internal-runs 1 \
-    --js-internal-runs 1 \
-    --snailtracer-internal-runs 1 \
-    --js-snailtracer-internal-runs 1 \
-    "${JS_RUNTIME_FLAG[@]}" \
-    2>&1 | tee -a "${LOG_FILE}"
-else
-  time "${ORCH_BIN}" \
-    --compare \
-    --export markdown \
-    --num-runs 1 \
-    --js-runs 1 \
-    --internal-runs 1 \
-    --js-internal-runs 1 \
-    --snailtracer-internal-runs 1 \
-    --js-snailtracer-internal-runs 1 \
-    2>&1 | tee -a "${LOG_FILE}"
-fi
+log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 1 --internal-runs 1 --snailtracer-internal-runs 1"
+time "${ORCH_BIN}" \
+  --compare \
+  --export markdown \
+  --num-runs 1 \
+  --internal-runs 1 \
+  --snailtracer-internal-runs 1 \
+  2>&1 | tee -a "${LOG_FILE}"
 
 RESULTS_MD="${ROOT_DIR}/bench/official/results.md"
 if [[ -f "${RESULTS_MD}" ]]; then
