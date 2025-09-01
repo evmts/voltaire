@@ -1,12 +1,12 @@
 const std = @import("std");
-const frame_interpreter = @import("frame_interpreter.zig");
-const evm = @import("evm.zig");
-const database_interface = @import("database_interface.zig");
-const memory_database = @import("memory_database.zig");
+const frame_interpreter = @import("evm");
+const evm = @import("evm");
+const database_interface = @import("evm");
+const memory_database = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const block_info = @import("block_info.zig");
-const transaction_context = @import("transaction_context.zig");
+const block_info = @import("evm");
+const transaction_context = @import("evm");
 
 // ============================================================================
 // Edge Case Tests for CREATE Opcode

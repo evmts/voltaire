@@ -30,7 +30,7 @@ test "differential: out of gas during arithmetic operation" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("out of gas EXP", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: out of gas during memory expansion" {
@@ -61,7 +61,7 @@ test "differential: out of gas during memory expansion" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("out of gas memory", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: out of gas during KECCAK256" {
@@ -92,7 +92,7 @@ test "differential: out of gas during KECCAK256" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("out of gas KECCAK", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: out of gas during CALL operation" {
@@ -127,7 +127,7 @@ test "differential: out of gas during CALL operation" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("out of gas CALL", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: gas limit exactly at operation boundary" {
@@ -172,7 +172,7 @@ test "differential: gas limit exactly at operation boundary" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("gas boundary", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: SSTORE gas costs cold vs warm" {
@@ -221,7 +221,7 @@ test "differential: SSTORE gas costs cold vs warm" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("SSTORE gas costs", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: SLOAD gas costs cold vs warm" {
@@ -275,7 +275,7 @@ test "differential: SLOAD gas costs cold vs warm" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("SLOAD gas costs", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory expansion gas progression" {
@@ -326,7 +326,7 @@ test "differential: memory expansion gas progression" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory expansion gas", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: division by zero gas costs" {
@@ -378,7 +378,7 @@ test "differential: division by zero gas costs" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("division by zero gas", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG operations gas costs by data size" {
@@ -441,5 +441,5 @@ test "differential: LOG operations gas costs by data size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG gas costs", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

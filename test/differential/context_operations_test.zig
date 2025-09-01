@@ -16,7 +16,7 @@ test "differential: ADDRESS opcode current contract address" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("ADDRESS", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: BALANCE opcode account balance" {
@@ -36,7 +36,7 @@ test "differential: BALANCE opcode account balance" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("BALANCE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: ORIGIN opcode transaction origin" {
@@ -53,7 +53,7 @@ test "differential: ORIGIN opcode transaction origin" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("ORIGIN", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CALLER opcode message caller" {
@@ -70,7 +70,7 @@ test "differential: CALLER opcode message caller" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("CALLER", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CALLVALUE opcode call value" {
@@ -87,7 +87,7 @@ test "differential: CALLVALUE opcode call value" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("CALLVALUE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CALLDATALOAD opcode load calldata" {
@@ -112,10 +112,7 @@ test "differential: CALLDATALOAD opcode load calldata" {
         0x00,                   // STOP
     };
     
-    // Provide some calldata
-    const calldata = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x11, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x12, 0x34, 0x56 };
-    
-    try testor.test_differential("CALLDATALOAD", &bytecode, &calldata);
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CALLDATASIZE opcode calldata size" {
@@ -131,10 +128,7 @@ test "differential: CALLDATASIZE opcode calldata size" {
         0x52,                   // MSTORE
         0x00,                   // STOP
     };
-    
-    const calldata = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc };
-    
-    try testor.test_differential("CALLDATASIZE", &bytecode, &calldata);
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CALLDATACOPY opcode copy calldata to memory" {
@@ -151,10 +145,7 @@ test "differential: CALLDATACOPY opcode copy calldata to memory" {
         0x37,                   // CALLDATACOPY
         0x00,                   // STOP
     };
-    
-    const calldata = [_]u8{ 0xaa, 0xbb, 0xcc, 0xdd, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc };
-    
-    try testor.test_differential("CALLDATACOPY", &bytecode, &calldata);
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CODESIZE opcode contract code size" {
@@ -171,7 +162,7 @@ test "differential: CODESIZE opcode contract code size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("CODESIZE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CODECOPY opcode copy code to memory" {
@@ -189,7 +180,7 @@ test "differential: CODECOPY opcode copy code to memory" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("CODECOPY", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: GASPRICE opcode transaction gas price" {
@@ -206,7 +197,7 @@ test "differential: GASPRICE opcode transaction gas price" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("GASPRICE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: EXTCODESIZE opcode external code size" {
@@ -226,7 +217,7 @@ test "differential: EXTCODESIZE opcode external code size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("EXTCODESIZE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: EXTCODECOPY opcode copy external code" {
@@ -247,7 +238,7 @@ test "differential: EXTCODECOPY opcode copy external code" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("EXTCODECOPY", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: EXTCODEHASH opcode external code hash" {
@@ -267,7 +258,7 @@ test "differential: EXTCODEHASH opcode external code hash" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("EXTCODEHASH", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: RETURNDATASIZE opcode return data size" {
@@ -284,7 +275,7 @@ test "differential: RETURNDATASIZE opcode return data size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("RETURNDATASIZE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: RETURNDATACOPY opcode copy return data" {
@@ -302,7 +293,7 @@ test "differential: RETURNDATACOPY opcode copy return data" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("RETURNDATACOPY", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: BLOCKHASH opcode recent block hash" {
@@ -327,7 +318,7 @@ test "differential: BLOCKHASH opcode recent block hash" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("BLOCKHASH", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: COINBASE opcode block beneficiary" {
@@ -344,7 +335,7 @@ test "differential: COINBASE opcode block beneficiary" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("COINBASE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: TIMESTAMP opcode block timestamp" {
@@ -361,7 +352,7 @@ test "differential: TIMESTAMP opcode block timestamp" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("TIMESTAMP", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: NUMBER opcode block number" {
@@ -378,7 +369,7 @@ test "differential: NUMBER opcode block number" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("NUMBER", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: DIFFICULTY and PREVRANDAO opcode" {
@@ -395,7 +386,7 @@ test "differential: DIFFICULTY and PREVRANDAO opcode" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("DIFFICULTY/PREVRANDAO", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: GASLIMIT opcode block gas limit" {
@@ -412,7 +403,7 @@ test "differential: GASLIMIT opcode block gas limit" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("GASLIMIT", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CHAINID opcode chain identifier" {
@@ -429,7 +420,7 @@ test "differential: CHAINID opcode chain identifier" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("CHAINID", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: SELFBALANCE opcode current contract balance" {
@@ -446,7 +437,7 @@ test "differential: SELFBALANCE opcode current contract balance" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("SELFBALANCE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: BASEFEE opcode EIP-1559 base fee" {
@@ -463,7 +454,7 @@ test "differential: BASEFEE opcode EIP-1559 base fee" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("BASEFEE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: BLOBHASH opcode EIP-4844 blob hash" {
@@ -481,7 +472,7 @@ test "differential: BLOBHASH opcode EIP-4844 blob hash" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("BLOBHASH", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: BLOBBASEFEE opcode EIP-4844 blob base fee" {
@@ -498,7 +489,7 @@ test "differential: BLOBBASEFEE opcode EIP-4844 blob base fee" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("BLOBBASEFEE", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: GAS opcode remaining gas" {
@@ -526,7 +517,7 @@ test "differential: GAS opcode remaining gas" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("GAS", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: PC opcode program counter" {
@@ -551,7 +542,7 @@ test "differential: PC opcode program counter" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("PC", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: context operations combined test" {
@@ -605,8 +596,5 @@ test "differential: context operations combined test" {
         
         0x00,                   // STOP
     };
-    
-    const calldata = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
-    
-    try testor.test_differential("context combined", &bytecode, &calldata);
+    try testor.test_bytecode(&bytecode);
 }

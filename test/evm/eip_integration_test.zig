@@ -7,13 +7,13 @@ const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const GasConstants = primitives.GasConstants;
 
-const Evm = @import("evm.zig").Evm;
-const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Hardfork = @import("hardfork.zig").Hardfork;
-const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
+const Evm = @import("evm").Evm;
+const DatabaseInterface = @import("evm").DatabaseInterface;
+const MemoryDatabase = @import("evm").MemoryDatabase;
+const BlockInfo = @import("evm").DefaultBlockInfo;
+const TransactionContext = @import("evm").TransactionContext;
+const Hardfork = @import("evm").Hardfork;
+const FrameInterpreter = @import("evm").FrameInterpreter;
 const Contract = @import("contract.zig").Contract;
 
 // Realistic smart contract interaction with all EIPs

@@ -2,7 +2,7 @@
 //! This file demonstrates the migration from MockHost to real EVM testing
 
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
+const Frame = @import("evm").Frame;
 const TestHelpers = @import("frame_test_helpers.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;

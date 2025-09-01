@@ -1,6 +1,6 @@
 const std = @import("std");
 const evm = @import("root.zig");
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Hardfork = @import("evm").Hardfork;
 const testing = std.testing;
 const primitives = @import("primitives");
 

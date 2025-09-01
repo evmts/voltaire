@@ -7,13 +7,13 @@ const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const GasConstants = primitives.GasConstants;
 
-const Evm = @import("evm.zig").Evm;
-const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Hardfork = @import("hardfork.zig").Hardfork;
-const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
+const evm = @import("evm");
+const Evm = evm.Evm;
+const DatabaseInterface = evm.Database;
+const MemoryDatabase = evm.MemoryDatabase;
+const BlockInfo = evm.BlockInfo;
+const TransactionContext = evm.TransactionContext;
+const Hardfork = evm.Hardfork;
 
 // Test COINBASE opcode gas costs with EIP-3651
 test "EIP-3651 - COINBASE opcode uses warm gas cost post-Shanghai" {
@@ -49,8 +49,8 @@ test "EIP-3651 - COINBASE opcode uses warm gas cost post-Shanghai" {
     
     // Test with Shanghai hardfork
     {
-        var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
-        defer evm.deinit();
+        var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
+        defer evm_instance.deinit();
         
         const initial_gas = 100_000;
         var interpreter = try FrameInterpreter(.{ .has_database = true }).init(
@@ -58,7 +58,7 @@ test "EIP-3651 - COINBASE opcode uses warm gas cost post-Shanghai" {
             &bytecode,
             initial_gas,
             db_interface,
-            evm.to_host()
+            evm_instance.to_host()
         );
         defer interpreter.deinit(allocator);
         
@@ -71,11 +71,11 @@ test "EIP-3651 - COINBASE opcode uses warm gas cost post-Shanghai" {
     
     // Test with pre-Shanghai hardfork
     {
-        var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.LONDON);
-        defer evm.deinit();
+        var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.LONDON);
+        defer evm_instance.deinit();
         
         // First access to coinbase should be cold
-        const coinbase_cost = try evm.access_address(coinbase_address);
+        const coinbase_cost = try evm_instance.access_address(coinbase_address);
         try testing.expectEqual(GasConstants.ColdAccountAccessCost, coinbase_cost);
     }
 }
@@ -96,19 +96,19 @@ test "EIP-3651 - COINBASE warmth affects BALANCE/EXTCODE* operations" {
         .chain_id = 1,
     };
     
-    var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
-    defer evm.deinit();
+    var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
+    defer evm_instance.deinit();
     
     // BALANCE on coinbase should be warm immediately
-    const balance_cost = try evm.access_address(coinbase_address);
+    const balance_cost = try evm_instance.access_address(coinbase_address);
     try testing.expectEqual(GasConstants.WarmStorageReadCost, balance_cost);
     
     // EXTCODESIZE on coinbase should also be warm
-    const codesize_cost = try evm.access_address(coinbase_address);
+    const codesize_cost = try evm_instance.access_address(coinbase_address);
     try testing.expectEqual(GasConstants.WarmStorageReadCost, codesize_cost);
     
     // Storage access to coinbase contract should still be cold initially
-    const storage_cost = try evm.access_storage_slot(coinbase_address, 0);
+    const storage_cost = try evm_instance.access_storage_slot(coinbase_address, 0);
     try testing.expectEqual(GasConstants.ColdSloadCost, storage_cost);
 }
 
@@ -144,11 +144,11 @@ test "EIP-3651 - CALL to coinbase uses warm gas cost" {
         .chain_id = 1,
     };
     
-    var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, caller_address, Hardfork.SHANGHAI);
-    defer evm.deinit();
+    var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, caller_address, Hardfork.SHANGHAI);
+    defer evm_instance.deinit();
     
     // First CALL to coinbase should already be warm
-    const call_cost = try evm.access_address(coinbase_address);
+    const call_cost = try evm_instance.access_address(coinbase_address);
     try testing.expectEqual(GasConstants.WarmStorageReadCost, call_cost);
 }
 
@@ -168,12 +168,12 @@ test "EIP-3651 - Coinbase remains warm across multiple operations" {
         .chain_id = 1,
     };
     
-    var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
-    defer evm.deinit();
+    var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
+    defer evm_instance.deinit();
     
     // Multiple accesses to coinbase should all be warm
     for (0..10) |_| {
-        const cost = try evm.access_address(coinbase_address);
+        const cost = try evm_instance.access_address(coinbase_address);
         try testing.expectEqual(GasConstants.WarmStorageReadCost, cost);
     }
 }
@@ -193,11 +193,11 @@ test "EIP-3651 - Zero address coinbase is warmed correctly" {
         .chain_id = 1,
     };
     
-    var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, [_]u8{0x01} ** 20, Hardfork.SHANGHAI);
-    defer evm.deinit();
+    var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, [_]u8{0x01} ** 20, Hardfork.SHANGHAI);
+    defer evm_instance.deinit();
     
     // Zero address as coinbase should also be warm
-    const zero_cost = try evm.access_address(ZERO_ADDRESS);
+    const zero_cost = try evm_instance.access_address(ZERO_ADDRESS);
     try testing.expectEqual(GasConstants.WarmStorageReadCost, zero_cost);
 }
 
@@ -232,10 +232,10 @@ test "EIP-3651 - Hardfork boundary behavior" {
     };
     
     for (hardforks) |test_case| {
-        var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, test_case.fork);
-        defer evm.deinit();
+        var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, test_case.fork);
+        defer evm_instance.deinit();
         
-        const first_cost = try evm.access_address(coinbase_address);
+        const first_cost = try evm_instance.access_address(coinbase_address);
         
         if (test_case.should_be_warm) {
             try testing.expectEqual(GasConstants.WarmStorageReadCost, first_cost);
@@ -265,15 +265,15 @@ test "EIP-3651 - Only coinbase is pre-warmed, not other addresses" {
         .chain_id = 1,
     };
     
-    var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
-    defer evm.deinit();
+    var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, Hardfork.SHANGHAI);
+    defer evm_instance.deinit();
     
     // Coinbase should be warm
-    const coinbase_cost = try evm.access_address(coinbase_address);
+    const coinbase_cost = try evm_instance.access_address(coinbase_address);
     try testing.expectEqual(GasConstants.WarmStorageReadCost, coinbase_cost);
     
     // Other addresses should still be cold
-    const other_cost = try evm.access_address(other_address);
+    const other_cost = try evm_instance.access_address(other_address);
     try testing.expectEqual(GasConstants.ColdAccountAccessCost, other_cost);
 }
 
@@ -302,10 +302,10 @@ test "EIP-3651 - Coinbase warm during contract deployment" {
         .chain_id = 1,
     };
     
-    var evm = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, deployer_address, Hardfork.SHANGHAI);
-    defer evm.deinit();
+    var evm_instance = try Evm(.{}).init(allocator, db_interface, block_info, context, 0, deployer_address, Hardfork.SHANGHAI);
+    defer evm_instance.deinit();
     
     // During contract deployment, coinbase should be warm for fee transfers
-    const coinbase_access = try evm.access_address(coinbase_address);
+    const coinbase_access = try evm_instance.access_address(coinbase_address);
     try testing.expectEqual(GasConstants.WarmStorageReadCost, coinbase_access);
 }

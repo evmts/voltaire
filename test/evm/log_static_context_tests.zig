@@ -2,19 +2,19 @@
 //! These tests verify that LOG operations properly fail in static context
 
 const std = @import("std");
-const frame_mod = @import("frame.zig");
+const frame_mod = @import("evm");
 const Frame = frame_mod.Frame;
-const evm_mod = @import("evm.zig");
+const evm_mod = @import("evm");
 const Evm = evm_mod.Evm;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const Host = @import("host.zig").Host;
+const Host = @import("evm").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const Log = @import("logs.zig").Log;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
+const BlockInfo = @import("evm").DefaultBlockInfo;
 const ZERO_ADDRESS = @import("primitives").ZERO_ADDRESS;
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Hardfork = @import("evm").Hardfork;
 
 // Enhanced MockHost that can simulate static context
 const MockHostWithStaticContext = struct {

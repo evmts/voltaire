@@ -6,7 +6,7 @@ const std = @import("std");
 const testing = std.testing;
 
 // Import the C API
-const precompiles_c = @import("../../src/evm/precompiles_c.zig");
+const precompiles_c = @import("evm").precompiles_c;
 
 test "Precompiles C API: Address validation" {
     // Test valid precompile addresses (0x01-0x0A)

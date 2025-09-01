@@ -3,11 +3,11 @@ const testing = std.testing;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const GasConstants = primitives.GasConstants;
-const Evm = @import("evm.zig").Evm;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
+const Evm = @import("evm").Evm;
+const MemoryDatabase = @import("evm").MemoryDatabase;
+const DatabaseInterface = @import("evm").DatabaseInterface;
+const BlockInfo = @import("evm").DefaultBlockInfo;
+const TransactionContext = @import("evm").TransactionContext;
 const CallParams = @import("call_params.zig").CallParams;
 const CallKind = @import("call_params.zig").CallKind;
 

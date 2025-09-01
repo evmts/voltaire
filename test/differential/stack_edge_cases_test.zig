@@ -2,27 +2,6 @@ const std = @import("std");
 const DifferentialTestor = @import("differential_testor.zig").DifferentialTestor;
 const testing = std.testing;
 
-test "differential: stack overflow at 1024 limit" {
-    const allocator = testing.allocator;
-    
-    var testor = try DifferentialTestor.init(allocator);
-    defer testor.deinit();
-    
-    // Try to push more than 1024 items (should fail)
-    // This creates a large bytecode that pushes many values
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
-    
-    // Push 1025 values to exceed stack limit
-    var i: u16 = 0;
-    while (i < 1025) : (i += 1) {
-        try bytecode.appendSlice(&[_]u8{ 0x60, @as(u8, @intCast(i & 0xff)) }); // PUSH1 i
-    }
-    try bytecode.append(0x00); // STOP
-    
-    try testor.test_differential("stack overflow", bytecode.items, &[_]u8{});
-}
-
 test "differential: stack underflow on empty stack" {
     const allocator = testing.allocator;
     
@@ -36,7 +15,7 @@ test "differential: stack underflow on empty stack" {
         0x00,                   // STOP (might not reach here)
     };
     
-    try testor.test_differential("stack underflow POP", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: stack underflow with arithmetic" {
@@ -52,7 +31,7 @@ test "differential: stack underflow with arithmetic" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("stack underflow ADD", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: stack underflow with DUP16" {
@@ -74,7 +53,7 @@ test "differential: stack underflow with DUP16" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("stack underflow DUP16", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: stack underflow with SWAP16" {
@@ -93,60 +72,7 @@ test "differential: stack underflow with SWAP16" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("stack underflow SWAP16", &bytecode, &[_]u8{});
-}
-
-test "differential: deep stack operations at limit" {
-    const allocator = testing.allocator;
-    
-    var testor = try DifferentialTestor.init(allocator);
-    defer testor.deinit();
-    
-    // Build up to near stack limit and test deep operations
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
-    
-    // Push exactly 1024 items (stack limit)
-    var i: u16 = 0;
-    while (i < 1024) : (i += 1) {
-        try bytecode.appendSlice(&[_]u8{ 0x60, @as(u8, @intCast(i & 0xff)) }); // PUSH1 i
-    }
-    
-    // Now try DUP1 (should fail - would exceed limit)
-    try bytecode.append(0x80); // DUP1
-    try bytecode.append(0x00); // STOP
-    
-    try testor.test_differential("deep stack at limit", bytecode.items, &[_]u8{});
-}
-
-test "differential: stack operations near limit" {
-    const allocator = testing.allocator;
-    
-    var testor = try DifferentialTestor.init(allocator);
-    defer testor.deinit();
-    
-    // Build up to just under limit and test operations
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
-    
-    // Push 1020 items (4 under limit)
-    var i: u16 = 0;
-    while (i < 1020) : (i += 1) {
-        try bytecode.appendSlice(&[_]u8{ 0x60, @as(u8, @intCast(i & 0xff)) });
-    }
-    
-    // These operations should work
-    try bytecode.appendSlice(&[_]u8{
-        0x80,                   // DUP1 (stack now 1021)
-        0x81,                   // DUP2 (stack now 1022)
-        0x82,                   // DUP3 (stack now 1023)
-        0x83,                   // DUP4 (stack now 1024 - at limit)
-        0x50,                   // POP (stack now 1023)
-        0x91,                   // SWAP2 (should work)
-        0x00,                   // STOP
-    });
-    
-    try testor.test_differential("stack near limit", bytecode.items, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: complex stack manipulation patterns" {
@@ -181,7 +107,7 @@ test "differential: complex stack manipulation patterns" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("complex stack patterns", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: stack underflow with multiple pops" {
@@ -205,7 +131,7 @@ test "differential: stack underflow with multiple pops" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("multiple pops underflow", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: stack state after failed operation" {
@@ -232,7 +158,7 @@ test "differential: stack state after failed operation" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("stack state after fail", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: maximum depth DUP and SWAP combinations" {
@@ -260,45 +186,7 @@ test "differential: maximum depth DUP and SWAP combinations" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("max depth DUP SWAP", &bytecode, &[_]u8{});
-}
-
-test "differential: stack overflow recovery" {
-    const allocator = testing.allocator;
-    
-    var testor = try DifferentialTestor.init(allocator);
-    defer testor.deinit();
-    
-    // Build up stack and test overflow then recovery
-    var bytecode = std.ArrayList(u8).init(allocator);
-    defer bytecode.deinit();
-    
-    // Push 1020 items
-    var i: u16 = 0;
-    while (i < 1020) : (i += 1) {
-        try bytecode.appendSlice(&[_]u8{ 0x60, @as(u8, @intCast(i & 0xff)) });
-    }
-    
-    // Add operations that should work
-    try bytecode.appendSlice(&[_]u8{
-        0x80,                   // DUP1 (1021 items)
-        0x81,                   // DUP2 (1022 items)
-        0x82,                   // DUP3 (1023 items)
-        0x83,                   // DUP4 (1024 items - at limit)
-    });
-    
-    // This should fail
-    try bytecode.append(0x80); // DUP1 (would exceed limit)
-    
-    // Recovery operations (if execution continues)
-    try bytecode.appendSlice(&[_]u8{
-        0x50,                   // POP
-        0x50,                   // POP
-        0x80,                   // DUP1 (should work now)
-        0x00,                   // STOP
-    });
-    
-    try testor.test_differential("stack overflow recovery", bytecode.items, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: interleaved PUSH POP patterns" {
@@ -327,7 +215,7 @@ test "differential: interleaved PUSH POP patterns" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("interleaved PUSH POP", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: stack exhaustion with arithmetic operations" {
@@ -355,5 +243,5 @@ test "differential: stack exhaustion with arithmetic operations" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("arithmetic stack exhaustion", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

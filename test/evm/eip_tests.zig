@@ -1,8 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
-const evm_mod = @import("evm.zig");
+const evm_mod = @import("evm");
 const primitives = @import("primitives");
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Hardfork = @import("evm").Hardfork;
 
 // Test EIP-3541: Reject new contract code starting with the 0xEF byte
 test "EIP-3541: reject contracts starting with 0xEF after London" {

@@ -28,7 +28,7 @@ test "differential: LOG0 opcode no topics" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG0 no topics", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG1 opcode one topic" {
@@ -61,7 +61,7 @@ test "differential: LOG1 opcode one topic" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG1 one topic", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG2 opcode two topics" {
@@ -95,7 +95,7 @@ test "differential: LOG2 opcode two topics" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG2 two topics", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG3 opcode three topics" {
@@ -133,7 +133,7 @@ test "differential: LOG3 opcode three topics" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG3 three topics", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG4 opcode four topics" {
@@ -184,7 +184,7 @@ test "differential: LOG4 opcode four topics" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG4 four topics", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG with zero length data" {
@@ -209,7 +209,7 @@ test "differential: LOG with zero length data" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG zero data", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG with large data" {
@@ -248,7 +248,7 @@ test "differential: LOG with large data" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG large data", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: multiple LOG operations in sequence" {
@@ -299,7 +299,7 @@ test "differential: multiple LOG operations in sequence" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("multiple LOGs", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: LOG operations with gas limit edge case" {
@@ -335,5 +335,5 @@ test "differential: LOG operations with gas limit edge case" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("LOG gas edge case", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

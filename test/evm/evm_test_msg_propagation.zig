@@ -4,14 +4,14 @@ const std = @import("std");
 const testing = std.testing;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const evm_mod = @import("evm.zig");
+const evm_mod = @import("evm");
 const Evm = evm_mod.Evm;
 const DefaultEvm = evm_mod.DefaultEvm;
 const DefaultBlockInfo = evm_mod.DefaultBlockInfo;
 const TransactionContext = evm_mod.TransactionContext;
 const Account = evm_mod.Account;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
+const MemoryDatabase = @import("evm").MemoryDatabase;
+const DatabaseInterface = @import("evm").DatabaseInterface;
 
 const ZERO_ADDRESS = Address.ZERO;
 

@@ -27,7 +27,7 @@ test "differential: CREATE opcode basic contract creation" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("CREATE basic", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CREATE2 opcode deterministic creation" {
@@ -57,7 +57,7 @@ test "differential: CREATE2 opcode deterministic creation" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("CREATE2 deterministic", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CALL opcode external call" {
@@ -84,7 +84,7 @@ test "differential: CALL opcode external call" {
         0xf1,                   // CALL
     };
     
-    try testor.test_differential("CALL external", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: DELEGATECALL opcode delegate call" {
@@ -110,7 +110,7 @@ test "differential: DELEGATECALL opcode delegate call" {
         0xf4,                   // DELEGATECALL
     };
     
-    try testor.test_differential("DELEGATECALL", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: STATICCALL opcode static call" {
@@ -136,7 +136,7 @@ test "differential: STATICCALL opcode static call" {
         0xfa,                   // STATICCALL
     };
     
-    try testor.test_differential("STATICCALL", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: RETURN opcode normal return" {
@@ -160,7 +160,7 @@ test "differential: RETURN opcode normal return" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("RETURN normal", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: REVERT opcode with data" {
@@ -184,7 +184,7 @@ test "differential: REVERT opcode with data" {
         0xfd,                   // REVERT
     };
     
-    try testor.test_differential("REVERT with data", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: STOP opcode execution halt" {
@@ -202,7 +202,7 @@ test "differential: STOP opcode execution halt" {
         0x60, 0x99,             // PUSH1 153 (should not execute)
     };
     
-    try testor.test_differential("STOP execution", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: SELFDESTRUCT opcode contract destruction" {
@@ -220,7 +220,7 @@ test "differential: SELFDESTRUCT opcode contract destruction" {
         0x60, 0x99,             // PUSH1 153 (should not execute)
     };
     
-    try testor.test_differential("SELFDESTRUCT", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CREATE with insufficient gas" {
@@ -245,7 +245,7 @@ test "differential: CREATE with insufficient gas" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("CREATE gas failure", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: nested CALL operations" {
@@ -279,5 +279,5 @@ test "differential: nested CALL operations" {
         0xf1,                   // CALL
     };
     
-    try testor.test_differential("nested CALL", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

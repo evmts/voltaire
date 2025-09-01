@@ -6,7 +6,7 @@ const std = @import("std");
 const testing = std.testing;
 
 // Import the C API
-const hardfork_c = @import("../../src/evm/hardfork_c.zig");
+const hardfork_c = @import("evm").hardfork_c;
 
 test "Hardfork C API: Basic hardfork information" {
     // Test hardfork names

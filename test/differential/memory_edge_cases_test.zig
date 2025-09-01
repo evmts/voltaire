@@ -17,7 +17,7 @@ test "differential: memory expansion beyond limit" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory beyond limit", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory word boundary expansion" {
@@ -63,7 +63,7 @@ test "differential: memory word boundary expansion" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory word boundaries", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: overlapping memory operations" {
@@ -98,7 +98,7 @@ test "differential: overlapping memory operations" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("overlapping memory ops", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory access at exact expansion points" {
@@ -136,7 +136,7 @@ test "differential: memory access at exact expansion points" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory expansion points", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: large memory copy operations" {
@@ -169,7 +169,7 @@ test "differential: large memory copy operations" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("large memory copy", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory unaligned byte access patterns" {
@@ -211,7 +211,7 @@ test "differential: memory unaligned byte access patterns" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("unaligned byte access", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory quadratic cost scaling" {
@@ -256,7 +256,7 @@ test "differential: memory quadratic cost scaling" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory quadratic cost", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory operations with zero size" {
@@ -286,7 +286,7 @@ test "differential: memory operations with zero size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory zero size ops", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory access beyond current size" {
@@ -316,7 +316,7 @@ test "differential: memory access beyond current size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory access beyond size", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: CODECOPY with large offsets and sizes" {
@@ -347,7 +347,7 @@ test "differential: CODECOPY with large offsets and sizes" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("CODECOPY large offsets", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory stress test with mixed operations" {
@@ -391,5 +391,5 @@ test "differential: memory stress test with mixed operations" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory stress test", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

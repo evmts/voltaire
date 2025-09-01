@@ -9,14 +9,7 @@ test "differential: DELEGATECALL that reverts with no data" {
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
-    // Create bytecode that will be delegatecalled and reverts immediately
-    const revert_target_code = [_]u8{
-        0x60, 0x00, // PUSH1 0 (revert data size)
-        0x60, 0x00, // PUSH1 0 (revert data offset) 
-        0xfd,       // REVERT (revert with no data)
-    };
-    
-    // Store the target code in contract storage for DELEGATECALL
+    // Store bytecode in memory that will be delegatecalled and reverts immediately
     const bytecode = [_]u8{
         // Store revert target code in memory at offset 100
         0x60, 0x00, 0x60, 0x64, 0x53, // MSTORE8 0x00 at offset 100

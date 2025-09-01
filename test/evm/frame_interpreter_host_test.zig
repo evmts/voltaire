@@ -1,17 +1,17 @@
 const std = @import("std");
-const frame_interpreter_mod = @import("frame_interpreter.zig");
+const frame_interpreter_mod = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const address_utils = primitives.Address;
 const opcode_data = @import("opcode_data.zig");
 const Opcode = @import("opcode.zig").Opcode;
-const Host = @import("host.zig").Host;
+const Host = @import("evm").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const Log = @import("logs.zig").Log;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
+const BlockInfo = @import("evm").DefaultBlockInfo;
 const ZERO_ADDRESS = @import("primitives").ZERO_ADDRESS;
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Hardfork = @import("evm").Hardfork;
 
 // Mock host implementation for testing
 const MockHost = struct {

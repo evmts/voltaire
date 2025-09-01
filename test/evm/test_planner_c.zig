@@ -6,7 +6,7 @@ const std = @import("std");
 const testing = std.testing;
 
 // Import the C API
-const planner_c = @import("../../src/evm/planner_c.zig");
+const planner_c = @import("evm").planner_c;
 
 test "Planner C API: Basic lifecycle" {
     // Create planner

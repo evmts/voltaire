@@ -2,14 +2,14 @@
 //! Provides utilities to create real EVM instances for testing Frame operations
 
 const std = @import("std");
-const Evm = @import("evm.zig").DefaultEvm;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const Evm = @import("evm").DefaultEvm;
+const MemoryDatabase = @import("evm").MemoryDatabase;
 const Address = @import("primitives").Address.Address;
 const primitives = @import("primitives");
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Hardfork = @import("hardfork.zig").Hardfork;
-const Account = @import("database_interface_account.zig").Account;
+const BlockInfo = @import("evm").DefaultBlockInfo;
+const TransactionContext = @import("evm").TransactionContext;
+const Hardfork = @import("evm").Hardfork;
+const Account = @import("evm").Account;
 
 /// Result of creating a test EVM
 pub const TestEvm = struct {

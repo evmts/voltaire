@@ -1,16 +1,16 @@
 const std = @import("std");
-const frame_interpreter = @import("frame_interpreter.zig");
-const evm = @import("evm.zig");
-const database_interface = @import("database_interface.zig");
-const memory_database = @import("memory_database.zig");
+const frame_interpreter = @import("evm");
+const evm = @import("evm");
+const database_interface = @import("evm");
+const memory_database = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const host_mod = @import("host.zig");
+const host_mod = @import("evm");
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
-const block_info = @import("block_info.zig");
-const transaction_context = @import("transaction_context.zig");
-const Hardfork = @import("hardfork.zig").Hardfork;
+const block_info = @import("evm");
+const transaction_context = @import("evm");
+const Hardfork = @import("evm").Hardfork;
 
 // Test addresses
 const TEST_ADDRESS: Address = [_]u8{0x01} ** 20;

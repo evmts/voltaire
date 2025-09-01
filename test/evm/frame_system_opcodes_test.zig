@@ -2,11 +2,11 @@
 //! Uses real EVM instances instead of MockHost
 
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
+const Frame = @import("evm").Frame;
 const TestHelpers = @import("frame_test_helpers.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const Evm = @import("evm.zig").DefaultEvm;
+const Evm = @import("evm").DefaultEvm;
 const CallParams = @import("call_params.zig").CallParams;
 
 // Import needed types

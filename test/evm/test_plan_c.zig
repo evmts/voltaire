@@ -6,7 +6,7 @@ const std = @import("std");
 const testing = std.testing;
 
 // Import the C API
-const plan_c = @import("../../src/evm/plan_c.zig");
+const plan_c = @import("evm").plan_c;
 
 test "Plan C API: Basic lifecycle" {
     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP

@@ -49,7 +49,7 @@ test "differential: deep call stack approaching limit" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("deep call stack", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: call stack overflow at 1024 limit" {
@@ -83,7 +83,7 @@ test "differential: call stack overflow at 1024 limit" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("call stack overflow", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: reentrancy attack pattern" {
@@ -145,7 +145,7 @@ test "differential: reentrancy attack pattern" {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
     
-    try testor.test_differential("reentrancy pattern", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: staticcall context enforcement" {
@@ -190,7 +190,7 @@ test "differential: staticcall context enforcement" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("staticcall context", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: delegatecall context preservation" {
@@ -246,7 +246,7 @@ test "differential: delegatecall context preservation" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("delegatecall context", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: out of gas during nested calls" {
@@ -297,7 +297,7 @@ test "differential: out of gas during nested calls" {
         0x60, 0x20, 0x60, 0x00, 0xf3, // RETURN
     };
     
-    try testor.test_differential("nested call gas limit", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: call return data size limits" {
@@ -347,7 +347,7 @@ test "differential: call return data size limits" {
         0xf3,                   // RETURN (large return data)
     };
     
-    try testor.test_differential("large return data", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: call value transfer edge cases" {
@@ -386,7 +386,7 @@ test "differential: call value transfer edge cases" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("call value edge cases", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: create contract address collision" {
@@ -426,5 +426,5 @@ test "differential: create contract address collision" {
         0xf3,                   // RETURN
     };
     
-    try testor.test_differential("create address collision", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

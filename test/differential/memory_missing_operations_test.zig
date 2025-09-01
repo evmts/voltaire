@@ -43,7 +43,7 @@ test "differential: MSIZE opcode memory size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MSIZE progression", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MSIZE with MSTORE8" {
@@ -82,7 +82,7 @@ test "differential: MSIZE with MSTORE8" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MSIZE with MSTORE8", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MCOPY opcode memory copy basic" {
@@ -115,7 +115,7 @@ test "differential: MCOPY opcode memory copy basic" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MCOPY basic", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MCOPY opcode overlapping regions forward" {
@@ -147,7 +147,7 @@ test "differential: MCOPY opcode overlapping regions forward" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MCOPY overlap forward", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MCOPY opcode overlapping regions backward" {
@@ -179,7 +179,7 @@ test "differential: MCOPY opcode overlapping regions backward" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MCOPY overlap backward", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MCOPY opcode zero size" {
@@ -214,7 +214,7 @@ test "differential: MCOPY opcode zero size" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MCOPY zero size", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MCOPY opcode large copy" {
@@ -256,7 +256,7 @@ test "differential: MCOPY opcode large copy" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MCOPY large", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MCOPY opcode memory expansion" {
@@ -286,7 +286,7 @@ test "differential: MCOPY opcode memory expansion" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MCOPY expansion", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: MSIZE and MCOPY combined operations" {
@@ -331,7 +331,7 @@ test "differential: MSIZE and MCOPY combined operations" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("MSIZE MCOPY combined", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }
 
 test "differential: memory operations gas costs" {
@@ -371,5 +371,5 @@ test "differential: memory operations gas costs" {
         0x00,                   // STOP
     };
     
-    try testor.test_differential("memory gas costs", &bytecode, &[_]u8{});
+    try testor.test_bytecode(&bytecode);
 }

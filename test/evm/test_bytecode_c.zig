@@ -6,7 +6,7 @@ const std = @import("std");
 const testing = std.testing;
 
 // Import the C API
-const bytecode_c = @import("../../src/evm/bytecode_c.zig");
+const bytecode_c = @import("evm").bytecode_c;
 
 test "Bytecode C API: Basic lifecycle" {
     // Test bytecode creation and destruction

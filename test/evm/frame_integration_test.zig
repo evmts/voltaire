@@ -2,14 +2,14 @@
 //! instead of MockHost.
 
 const std = @import("std");
-const Evm = @import("evm.zig").DefaultEvm;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const Evm = @import("evm").DefaultEvm;
+const MemoryDatabase = @import("evm").MemoryDatabase;
 const Address = @import("primitives").Address.Address;
 const primitives = @import("primitives");
 const CallParams = @import("call_params.zig").CallParams;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Hardfork = @import("hardfork.zig").Hardfork;
+const BlockInfo = @import("evm").DefaultBlockInfo;
+const TransactionContext = @import("evm").TransactionContext;
+const Hardfork = @import("evm").Hardfork;
 
 // Helper to convert number to Address
 fn to_address(value: u256) Address {
@@ -68,7 +68,7 @@ test "EVM CALL operation - integration" {
     
     const target_address = to_address(0x2000);
     const code_hash = try evm.database.set_code(&target_bytecode);
-    var account = @import("database_interface_account.zig").Account.zero();
+    var account = @import("evm").Account.zero();
     account.code_hash = code_hash;
     account.balance = 1000; // Give it some balance
     try evm.database.set_account(target_address, account);
@@ -106,11 +106,11 @@ test "EVM CALL with value transfer - integration" {
     const caller_address = to_address(0x1000);
     const target_address = to_address(0x2000);
     
-    var caller_account = @import("database_interface_account.zig").Account.zero();
+    var caller_account = @import("evm").Account.zero();
     caller_account.balance = 10000; // Caller has 10000 wei
     try evm.database.set_account(caller_address, caller_account);
     
-    var target_account = @import("database_interface_account.zig").Account.zero();
+    var target_account = @import("evm").Account.zero();
     target_account.balance = 500; // Target starts with 500 wei
     try evm.database.set_account(target_address, target_account);
     
@@ -163,7 +163,7 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     const target_address = to_address(0x3333);
     
     const code_hash = try evm.database.set_code(&target_bytecode);
-    var account = @import("database_interface_account.zig").Account.zero();
+    var account = @import("evm").Account.zero();
     account.code_hash = code_hash;
     try evm.database.set_account(target_address, account);
     
@@ -212,7 +212,7 @@ test "EVM STATICCALL prevents state changes - integration" {
     
     const target_address = to_address(0x4000);
     const code_hash = try evm.database.set_code(&target_bytecode);
-    var account = @import("database_interface_account.zig").Account.zero();
+    var account = @import("evm").Account.zero();
     account.code_hash = code_hash;
     try evm.database.set_account(target_address, account);
     
@@ -246,7 +246,7 @@ test "Frame CREATE operation - real integration test" {
     
     // Set up creator account with balance
     const creator_address = to_address(0x5000);
-    var creator_account = @import("database_interface_account.zig").Account.zero();
+    var creator_account = @import("evm").Account.zero();
     creator_account.balance = 10000;
     try evm.database.set_account(creator_address, creator_account);
     
