@@ -236,6 +236,13 @@ pub fn Memory(comptime config: MemoryConfig) type {
         }
 
         fn calculate_memory_cost(words: u64) u64 {
+            // Prevent overflow for very large word counts
+            // EVM memory is limited to 16MB (0xFFFFFF bytes = 524287 words)
+            // So words should never exceed 524287 in practice
+            if (words > 524287) {
+                // Return max cost for unrealistic memory sizes
+                return std.math.maxInt(u64);
+            }
             return 3 * words + ((words * words) >> 9); // Bit shift instead of / 512
         }
         pub fn get_expansion_cost(self: *Self, new_size: u24) u64 {

@@ -343,9 +343,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Route to appropriate handler
             var result = switch (params) {
                 .call => |p| blk: {
-                    log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, p.gas, p.input.len });
-                    break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch |err| {
-                        log.debug("DEBUG: EVM.call failed with error: {}\n", .{err});
+                    // log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, p.gas, p.input.len });
+                    break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch {
+                        // log.debug("DEBUG: EVM.call failed with error: {}\n", .{err});
                         return CallResult.failure(0);
                     };
                 },
@@ -512,7 +512,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             input: []const u8,
             gas: u64,
         }) !CallResult {
-            log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
+            // log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
             const snapshot_id = self.journal.create_snapshot();
 
             // Transfer value if needed
@@ -525,13 +525,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Perform pre-flight checks
-            log.debug("DEBUG: calling performCallPreflight\n", .{});
-            const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
-                log.debug("DEBUG: performCallPreflight failed: {}\n", .{err});
+            // log.debug("DEBUG: calling performCallPreflight\n", .{});
+            const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch {
+                // log.debug("DEBUG: performCallPreflight failed: {}\n", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            log.debug("DEBUG: preflight result: {s}\n", .{@tagName(preflight)});
+            // log.debug("DEBUG: preflight result: {s}\n", .{@tagName(preflight)});
 
             switch (preflight) {
                 .precompile_result => |result| return result,
@@ -540,7 +540,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    log.debug("DEBUG: Got code, len={}, about to execute_frame\n", .{code.len});
+                    // log.debug("DEBUG: Got code, len={}, about to execute_frame\n", .{code.len});
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -922,7 +922,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            log.debug("DEBUG: execute_frame entered, code_len={}, gas={}\n", .{ code.len, gas });
+            // log.debug("DEBUG: execute_frame entered, code_len={}, gas={}\n", .{ code.len, gas });
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;
@@ -950,17 +950,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             // EIP-214: encode static constraints; null to prevent SELFDESTRUCT in static context
             const self_destruct_param = if (is_static) null else &self.self_destruct;
 
-            log.debug("DEBUG: About to call Frame.init\n", .{});
+            // log.debug("DEBUG: About to call Frame.init\n", .{});
             var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
             frame.contract_address = address;
             defer frame.deinit(self.allocator);
 
-            log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
+            // log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
             
             // DEBUG: Log first few bytes of bytecode for JUMPI test
-            if (code.len == 22) {
-                log.err("DEBUG: This looks like JUMPI test bytecode, first 8 bytes: {x}", .{code[0..8]});
-            }
+            // if (code.len == 22) {
+            //     log.err("DEBUG: This looks like JUMPI test bytecode, first 8 bytes: {x}", .{code[0..8]});
+            // }
 
             // Execute with tracing if tracer type is configured
             var execution_trace: ?@import("call_result.zig").ExecutionTrace = null;

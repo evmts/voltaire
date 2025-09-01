@@ -27,19 +27,7 @@ pub fn JumpTable(comptime FrameType: type, comptime DispatchType: type) type {
             var right: usize = self.entries.len;
             
             // Log for specific problematic addresses
-            if (target_pc == 0x34 or target_pc == 0x45c or target_pc == 0xb25 or target_pc == 0x954) {
-                const log = std.log.scoped(.jump_table);
-                log.warn("findJumpTarget: Looking for PC {x}, jump table has {} entries", .{target_pc, self.entries.len});
-                if (self.entries.len > 0) {
-                    log.warn("  First entry: PC {x}, Last entry: PC {x}", .{self.entries[0].pc, self.entries[self.entries.len - 1].pc});
-                    // Show nearby entries if we have them
-                    for (self.entries) |entry| {
-                        if (entry.pc >= target_pc -| 5 and entry.pc <= target_pc + 5) {
-                            log.warn("    Near entry: PC {x}", .{entry.pc});
-                        }
-                    }
-                }
-            }
+            // Debug logging removed for performance
 
             while (left < right) {
                 const mid = left + (right - left) / 2;
