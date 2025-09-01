@@ -52,11 +52,17 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
             
-            log.debug("JUMPI: destination=0x{x}, condition={}, gas_remaining={}", .{ 
+            log.debug("JUMPI: destination=0x{x}, condition={}, gas_remaining={}, jump_table_entries={}", .{ 
                 dest, 
                 condition, 
-                self.gas_remaining 
+                self.gas_remaining,
+                jump_table.entries.len 
             });
+            
+            // Debug: log all jump table entries
+            for (jump_table.entries) |entry| {
+                log.debug("  Jump table entry: PC=0x{x}", .{entry.pc});
+            }
 
             if (condition != 0) {
                 // Take the jump - validate destination range

@@ -293,8 +293,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 log.debug("Frame.interpret_with_tracer: Traced schedule created, len={}", .{traced_schedule.len});
                 defer Dispatch.deinitSchedule(self.allocator, traced_schedule);
 
-                log.debug("DEBUG: About to create jump table\n", .{});
-                const traced_jump_table = Dispatch.createJumpTable(self.allocator, traced_schedule, &bytecode) catch |e| {
+                log.debug("DEBUG: About to create jump table with tracing\n", .{});
+                const traced_jump_table = Dispatch.createJumpTableWithTracing(self.allocator, traced_schedule, &bytecode, true) catch |e| {
                     log.debug("DEBUG: createJumpTable FAILED with error: {}\n", .{e});
                     return Error.AllocationError;
                 };
@@ -382,15 +382,16 @@ pub fn Frame(comptime config: FrameConfig) type {
                 var start_index: usize = 0;
                 // Check if first item is first_block_gas and consume gas if so
                 const first_block_gas = Self.Dispatch.calculateFirstBlockGas(bytecode);
-                log.debug("DEBUG: first_block_gas calculated = {}\n", .{first_block_gas});
                 if (first_block_gas > 0 and schedule.len > 0) {
                     const temp_dispatch = Self.Dispatch{ .cursor = schedule.ptr };
                     const meta = temp_dispatch.getFirstBlockGas();
-                    log.debug("DEBUG: meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
                     if (meta.gas > 0) {
-                        log.debug("DEBUG: About to consume {} gas\n", .{meta.gas});
+                        log.warn("Frame: Consuming first_block_gas={} (gas_before={}, gas_after={})", .{
+                            meta.gas, 
+                            self.gas_remaining, 
+                            self.gas_remaining - @as(GasType, @intCast(meta.gas))
+                        });
                         try self.consumeGasChecked(@intCast(meta.gas));
-                        log.debug("DEBUG: After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
                     }
                     start_index = 1;
                 }
@@ -417,11 +418,10 @@ pub fn Frame(comptime config: FrameConfig) type {
                 
                 // Debug: First item should be an opcode_handler after skipping first_block_gas
                 // Since the union is untagged, we can't verify this at runtime
-                log.debug("Frame.interpret_with_tracer: Starting execution at dispatch index {} (schedule length: {})", .{ start_index, schedule.len });
-                log.debug("DEBUG: About to call first opcode handler, gas_remaining = {}\n", .{self.gas_remaining});
+                log.warn("Frame: Starting execution. schedule.len={}, gas_remaining={}", .{ schedule.len, self.gas_remaining });
                 // Pass cursor pointer and jump_table separately - no Dispatch struct needed
                 cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| {
-                    log.debug("DEBUG: Opcode handler failed with error: {}\n", .{err});
+                    log.warn("Frame: Execution failed with error={}, gas_remaining={}", .{err, self.gas_remaining});
                     return err;
                 };
                 unreachable; // Handlers never return normally

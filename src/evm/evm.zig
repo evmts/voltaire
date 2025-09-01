@@ -940,12 +940,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             const BASE_TX_GAS = 21000;
             const gas_after_base = if (self.depth <= 1 and gas >= BASE_TX_GAS) gas_after_base: {
                 const remaining = gas - BASE_TX_GAS;
-                log.debug("Subtracting base gas: {} - {} = {}", .{gas, BASE_TX_GAS, remaining});
+                log.debug("execute_frame: depth={}, Subtracting base gas: {} - {} = {}", .{self.depth, gas, BASE_TX_GAS, remaining});
                 break :gas_after_base remaining;
             } else gas;
             
-            const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, @as(u64, @intCast(std.math.maxInt(Frame.GasType))))));
-            log.debug("DEBUG: gas_after_base={}, gas_cast={}\n", .{ gas_after_base, gas_cast });
+            const max_gas = @as(u64, @intCast(std.math.maxInt(Frame.GasType)));
+            const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, max_gas)));
 
             // EIP-214: encode static constraints; null to prevent SELFDESTRUCT in static context
             const self_destruct_param = if (is_static) null else &self.self_destruct;
