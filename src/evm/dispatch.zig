@@ -425,22 +425,22 @@ pub fn Dispatch(comptime FrameType: type) type {
                 switch (op_data) {
                     .regular => |data| {
                         if (opcode_count <= 20) { // Limit spam to first 20 opcodes
-                            log.warn("DISPATCH: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
+                            log.debug("DISPATCH: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
                         }
                     },
                     .push => |data| {
                         if (opcode_count <= 20) {
-                            log.warn("DISPATCH: Parsing PUSH{d} at PC {d}", .{ data.size, instr_pc });
+                            log.debug("DISPATCH: Parsing PUSH{d} at PC {d}", .{ data.size, instr_pc });
                         }
                     },
                     .jumpdest => |data| {
                         if (opcode_count <= 20) {
-                            log.warn("DISPATCH: Parsing JUMPDEST at PC {d}, gas_cost={d}", .{ instr_pc, data.gas_cost });
+                            log.debug("DISPATCH: Parsing JUMPDEST at PC {d}, gas_cost={d}", .{ instr_pc, data.gas_cost });
                         }
                     },
                     else => {
                         if (opcode_count <= 20) {
-                            log.warn("DISPATCH: Parsing other operation at PC {d}", .{instr_pc});
+                            log.debug("DISPATCH: Parsing other operation at PC {d}", .{instr_pc});
                         }
                     },
                 }
