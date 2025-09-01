@@ -15,8 +15,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn pop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = self.stack.pop_unsafe();
-            const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            const op_data = dispatch.getOpData(.{ .regular = .POP });
+            return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 
         /// PUSH0 opcode (0x5f) - Push 0 onto stack.
@@ -24,8 +24,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn push0(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             self.stack.push_unsafe(0);
-            const next = dispatch.getNext();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            const op_data = dispatch.getOpData(.{ .regular = .PUSH0 });
+            return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 
         /// Generate a push handler for PUSH1-PUSH32
@@ -34,18 +34,57 @@ pub fn Handlers(comptime FrameType: type) type {
             if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
             return &struct {
                 pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
+                    const dispatch = Dispatch{ .cursor = cursor };
+                    const Opcode = @import("opcode_data.zig").Opcode;
+                    
+                    // Map push_n to the corresponding PUSH opcode
+                    const push_opcode = comptime blk: {
+                        break :blk switch (push_n) {
+                            1 => Opcode.PUSH1,
+                            2 => Opcode.PUSH2,
+                            3 => Opcode.PUSH3,
+                            4 => Opcode.PUSH4,
+                            5 => Opcode.PUSH5,
+                            6 => Opcode.PUSH6,
+                            7 => Opcode.PUSH7,
+                            8 => Opcode.PUSH8,
+                            9 => Opcode.PUSH9,
+                            10 => Opcode.PUSH10,
+                            11 => Opcode.PUSH11,
+                            12 => Opcode.PUSH12,
+                            13 => Opcode.PUSH13,
+                            14 => Opcode.PUSH14,
+                            15 => Opcode.PUSH15,
+                            16 => Opcode.PUSH16,
+                            17 => Opcode.PUSH17,
+                            18 => Opcode.PUSH18,
+                            19 => Opcode.PUSH19,
+                            20 => Opcode.PUSH20,
+                            21 => Opcode.PUSH21,
+                            22 => Opcode.PUSH22,
+                            23 => Opcode.PUSH23,
+                            24 => Opcode.PUSH24,
+                            25 => Opcode.PUSH25,
+                            26 => Opcode.PUSH26,
+                            27 => Opcode.PUSH27,
+                            28 => Opcode.PUSH28,
+                            29 => Opcode.PUSH29,
+                            30 => Opcode.PUSH30,
+                            31 => Opcode.PUSH31,
+                            32 => Opcode.PUSH32,
+                            else => unreachable,
+                        };
+                    };
+                    
+                    const op_data = dispatch.getOpData(.{ .regular = push_opcode });
                     
                     if (push_n <= 8) {
-                        const meta = dispatch.getInlineMetadata();
-                        try self.stack.push(meta.value);
+                        try self.stack.push(op_data.metadata.value);
                     } else {
-                        const meta = dispatch.getPointerMetadata();
-                        try self.stack.push(meta.value.*);
+                        try self.stack.push(op_data.metadata.value.*);
                     }
                     
-                    const next = dispatch.skipMetadata();
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                    return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }
             }.pushHandler;
         }
@@ -56,9 +95,12 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
+                    const Opcode = @import("opcode_data.zig").Opcode;
                     try self.stack.dup_n(dup_n);
-                    const next = dispatch.getNext();
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                    // DUP operations don't have metadata, just get next
+                    const dup_opcode = comptime @field(Opcode, std.fmt.comptimePrint("DUP{}", .{dup_n}));
+                    const op_data = dispatch.getOpData(.{ .regular = dup_opcode });
+                    return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }
             }.dupHandler;
         }
@@ -69,9 +111,12 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
+                    const Opcode = @import("opcode_data.zig").Opcode;
                     try self.stack.swap_n(swap_n);
-                    const next = dispatch.getNext();
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                    // SWAP operations don't have metadata, just get next
+                    const swap_opcode = comptime @field(Opcode, std.fmt.comptimePrint("SWAP{}", .{swap_n}));
+                    const op_data = dispatch.getOpData(.{ .regular = swap_opcode });
+                    return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }
             }.swapHandler;
         }
@@ -748,7 +793,7 @@ test "Stack operations - stress test with alternating operations" {
 
     // Stress test: alternating PUSH0, DUP1, SWAP1, POP operations
     const operations = 100;
-    
+
     for (0..operations) |i| {
         const dispatch = createMockDispatch();
         switch (i % 4) {
@@ -779,7 +824,7 @@ test "Stack operations - stress test with alternating operations" {
             else => unreachable,
         }
     }
-    
+
     // Stack should have some items (not empty, not overflow)
     try testing.expect(frame.stack.len() > 0);
     try testing.expect(frame.stack.len() <= 1024);
@@ -809,7 +854,7 @@ test "SWAP operations - adjacent element preservation" {
 
     // Create a distinctive pattern to verify adjacent elements aren't corrupted
     const pattern = [_]u256{ 0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777, 0x8888 };
-    
+
     for (pattern) |val| {
         try frame.stack.push(val);
     }
@@ -821,7 +866,7 @@ test "SWAP operations - adjacent element preservation" {
 
     // Verify the swap happened correctly and adjacent elements preserved
     try testing.expectEqual(@as(u256, 0x4444), try frame.stack.pop()); // Was at position 4
-    try testing.expectEqual(@as(u256, 0x7777), try frame.stack.pop()); // Position 1 unchanged  
+    try testing.expectEqual(@as(u256, 0x7777), try frame.stack.pop()); // Position 1 unchanged
     try testing.expectEqual(@as(u256, 0x6666), try frame.stack.pop()); // Position 2 unchanged
     try testing.expectEqual(@as(u256, 0x5555), try frame.stack.pop()); // Position 3 unchanged
     try testing.expectEqual(@as(u256, 0x8888), try frame.stack.pop()); // Was at position 0
@@ -835,20 +880,22 @@ test "PUSH handlers - inline vs pointer threshold" {
     defer frame.deinit(testing.allocator);
 
     // Test the exact threshold where inline becomes pointer (PUSH8 vs PUSH9)
-    
+
     // PUSH8 should use inline
     const Push8 = TestFrame.StackHandlers.generatePushHandler(8);
     const value8: u256 = 0xFFFFFFFFFFFFFFFF;
-    
+
     var cursor8: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
     const mock_handler8 = struct {
         fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
-            _ = f; _ = d; return TestFrame.Success.stop;
+            _ = f;
+            _ = d;
+            return TestFrame.Success.stop;
         }
     }.handler;
     cursor8[0] = .{ .opcode_handler = &mock_handler8 };
     cursor8[1] = .{ .opcode_handler = &mock_handler8 };
-    
+
     const dispatch8 = TestFrame.Dispatch{ .cursor = &cursor8, .bytecode_length = 0 };
     dispatch8.*.cursor[0].metadata = .{ .inline_value = value8 };
     _ = try Push8(frame, dispatch8);
@@ -857,16 +904,18 @@ test "PUSH handlers - inline vs pointer threshold" {
     // PUSH9 should use pointer
     const Push9 = TestFrame.StackHandlers.generatePushHandler(9);
     const value9: u256 = 0xFFFFFFFFFFFFFFFFFF;
-    
+
     var cursor9: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
     const mock_handler9 = struct {
         fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
-            _ = f; _ = d; return TestFrame.Success.stop;
+            _ = f;
+            _ = d;
+            return TestFrame.Success.stop;
         }
     }.handler;
     cursor9[0] = .{ .opcode_handler = &mock_handler9 };
     cursor9[1] = .{ .opcode_handler = &mock_handler9 };
-    
+
     const dispatch9 = TestFrame.Dispatch{ .cursor = &cursor9, .bytecode_length = 0 };
     dispatch9.*.cursor[0].metadata = .{ .pointer_value = &value9 };
     _ = try Push9(frame, dispatch9);
