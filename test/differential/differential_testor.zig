@@ -74,27 +74,49 @@ pub const ExecutionDiff = struct {
     }
 };
 
-/// Main differential testing coordinator
+/// Configuration for DifferentialTestor
+pub const DifferentialTestConfig = struct {
+    enable_tracing: bool = true,
+};
+
+const TracedEVMType = guillotine_evm.Evm(.{
+    .tracer_type = guillotine_evm.tracer.DebuggingTracer,
+    .frame_config = .{
+        .DatabaseType = guillotine_evm.Database,
+    },
+});
+
+const NoTraceEVMType = guillotine_evm.Evm(.{
+    .tracer_type = guillotine_evm.tracer.NoOpTracer,
+    .frame_config = .{
+        .DatabaseType = guillotine_evm.Database,
+    },
+});
+
+/// Main differential testing coordinator with configurable tracing
 pub const DifferentialTestor = struct {
     revm_instance: revm.Revm,
-    guillotine_instance: guillotine_evm.Evm(.{
-        .tracer_type = guillotine_evm.tracer.DebuggingTracer,
-        .frame_config = .{
-            .DatabaseType = guillotine_evm.Database,
-        },
-    }),
+    guillotine_instance_traced: ?TracedEVMType,
+    guillotine_instance_no_trace: ?NoTraceEVMType,
     guillotine_db: *guillotine_evm.Database,
+    guillotine_db_no_trace: *guillotine_evm.Database,
     allocator: std.mem.Allocator,
     caller: primitives.Address,
     contract: primitives.Address,
+    config: DifferentialTestConfig,
 
     /// Initialize for debugging with enhanced logging
     pub fn initForDebugging(allocator: std.mem.Allocator) !DifferentialTestor {
         return init(allocator);
     }
 
-    /// Simple initialization - creates both EVM instances internally
+    /// Simple initialization - creates both EVM instances internally (with tracing enabled by default)
     pub fn init(allocator: std.mem.Allocator) !DifferentialTestor {
+        return initWithConfig(allocator, .{ .enable_tracing = true });
+    }
+
+    /// Initialize with custom configuration
+    pub fn initWithConfig(allocator: std.mem.Allocator, config: DifferentialTestConfig) !DifferentialTestor {
         // Setup addresses
         const caller = primitives.Address.ZERO_ADDRESS;
         const contract = try primitives.Address.from_hex("0xc0de000000000000000000000000000000000000");
@@ -107,9 +129,12 @@ pub const DifferentialTestor = struct {
 
         try revm_vm.setBalance(caller, 10000000);
 
-        // Setup Guillotine EVM - allocate database on heap
+        // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
         db.* = guillotine_evm.Database.init(allocator);
+        
+        const db_no_trace = try allocator.create(guillotine_evm.Database);
+        db_no_trace.* = guillotine_evm.Database.init(allocator);
 
         try db.set_account(caller.bytes, .{
             .balance = 10000000,
@@ -117,8 +142,13 @@ pub const DifferentialTestor = struct {
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
         });
-
-        // Tracer is now created internally by the EVM when needed
+        
+        try db_no_trace.set_account(caller.bytes, .{
+            .balance = 10000000,
+            .nonce = 0,
+            .code_hash = [_]u8{0} ** 32,
+            .storage_root = [_]u8{0} ** 32,
+        });
 
         const block_info = guillotine_evm.BlockInfo{
             .chain_id = 1,
@@ -141,14 +171,25 @@ pub const DifferentialTestor = struct {
             .blob_base_fee = 0,
         };
 
-        const evm = try guillotine_evm.Evm(.{
-            .tracer_type = guillotine_evm.tracer.DebuggingTracer,
-            .frame_config = .{
-                .DatabaseType = guillotine_evm.Database,
-            },
-        }).init(
+        // Create both traced and non-traced EVMs based on config
+        var evm_traced: ?TracedEVMType = null;
+        var evm_no_trace: ?NoTraceEVMType = null;
+        
+        if (config.enable_tracing) {
+            evm_traced = try TracedEVMType.init(
+                allocator,
+                db,
+                block_info,
+                tx_context,
+                0,
+                caller,
+                .CANCUN,
+            );
+        }
+        
+        evm_no_trace = try NoTraceEVMType.init(
             allocator,
-            db,
+            db_no_trace,
             block_info,
             tx_context,
             0,
@@ -158,11 +199,14 @@ pub const DifferentialTestor = struct {
 
         const testor = DifferentialTestor{
             .revm_instance = revm_vm,
-            .guillotine_instance = evm,
+            .guillotine_instance_traced = evm_traced,
+            .guillotine_instance_no_trace = evm_no_trace,
             .guillotine_db = db,
+            .guillotine_db_no_trace = db_no_trace,
             .allocator = allocator,
             .caller = caller,
             .contract = contract,
+            .config = config,
         };
 
         return testor;
@@ -179,24 +223,46 @@ pub const DifferentialTestor = struct {
 
     pub fn deinit(self: *DifferentialTestor) void {
         self.revm_instance.deinit();
-        self.guillotine_instance.deinit();
+        if (self.guillotine_instance_traced) |*inst| {
+            inst.deinit();
+        }
+        if (self.guillotine_instance_no_trace) |*inst| {
+            inst.deinit();
+        }
         self.guillotine_db.deinit();
+        self.guillotine_db_no_trace.deinit();
         self.allocator.destroy(self.guillotine_db);
+        self.allocator.destroy(self.guillotine_db_no_trace);
     }
 
     /// Simple bytecode testing - deploys bytecode and executes it on both EVMs
+    /// Tests both with tracing on first, then with tracing off
     /// In happy path: does nothing
     /// In unhappy path: collects errors, prints readable diff, and throws clear error
     pub fn test_bytecode(self: *DifferentialTestor, bytecode: []const u8) !void {
+        // First test with tracing enabled (if available)
+        if (self.guillotine_instance_traced) |_| {
+            try self.test_bytecode_with_tracing(bytecode, true);
+        }
+        
+        // Then test with tracing disabled
+        try self.test_bytecode_with_tracing(bytecode, false);
+    }
+    
+    /// Internal helper to test bytecode with specific tracing configuration
+    fn test_bytecode_with_tracing(self: *DifferentialTestor, bytecode: []const u8, enable_tracing: bool) !void {
+        // Select the appropriate database and EVM instance
+        const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
+        
         // Deploy bytecode to both EVMs
         try self.revm_instance.setCode(self.contract, bytecode);
 
-        const code_hash = try self.guillotine_db.set_code(bytecode);
+        const code_hash = try db.set_code(bytecode);
         const log = std.log.scoped(.differential_testor);
-        log.debug("Set code with hash: {x}", .{code_hash});
+        log.debug("Set code with hash: {x} (tracing={})", .{code_hash, enable_tracing});
         log.debug("Contract address is: {x}", .{self.contract.bytes});
 
-        try self.guillotine_db.set_account(self.contract.bytes, .{
+        try db.set_account(self.contract.bytes, .{
             .balance = 0,
             .nonce = 1,
             .code_hash = code_hash,
@@ -205,28 +271,25 @@ pub const DifferentialTestor = struct {
         log.debug("Set account for address: {x}", .{self.contract.bytes});
 
         // Verify deployment
-        const deployed_code = try self.guillotine_db.get_code_by_address(self.contract.bytes);
-        log.debug("Deployed bytecode to {any}: len={} vs deployed_len={}", .{ self.contract, bytecode.len, deployed_code.len });
+        const deployed_code = try db.get_code_by_address(self.contract.bytes);
+        log.debug("Deployed bytecode to {any}: len={} vs deployed_len={} (tracing={})", .{ self.contract, bytecode.len, deployed_code.len, enable_tracing });
         if (deployed_code.len == 0) {
             log.err("WARNING: Deployed code has zero length!", .{});
         }
 
         // Also check if account exists
-        const account_check = try self.guillotine_db.get_account(self.contract.bytes);
+        const account_check = try db.get_account(self.contract.bytes);
         if (account_check) |acc| {
             log.debug("Account found: balance={}, nonce={}, code_hash={x}", .{ acc.balance, acc.nonce, acc.code_hash });
         } else {
             log.err("WARNING: Account not found after deployment!", .{});
         }
-        // Double check the database pointer is the same
-        log.debug("Database pointer in testor: {*}", .{&self.guillotine_db});
-        log.debug("Database pointer in EVM: {*}", .{self.guillotine_instance.database});
 
         // Execute on both EVMs separately to get the results for trace display
         var revm_result = try self.executeRevmWithTrace(self.caller, self.contract, 0, &.{}, 100000);
         defer revm_result.deinit();
         
-        var guillotine_result = try self.executeGuillotineWithTrace(self.caller, self.contract, 0, &.{}, 100000);
+        var guillotine_result = try self.executeGuillotineWithTraceMode(self.caller, self.contract, 0, &.{}, 100000, enable_tracing);
         defer guillotine_result.deinit();
         
         // Generate diff
@@ -237,6 +300,9 @@ pub const DifferentialTestor = struct {
         if (diff.result_match and diff.trace_match) {
             return;
         }
+        
+        const trace_mode = if (enable_tracing) "TRACING ENABLED" else "TRACING DISABLED";
+        log.err("DIFFERENTIAL TEST FAILURE with {s}", .{trace_mode});
 
         // Unhappy path - collect and report errors
         var error_messages: [5][]const u8 = undefined;
@@ -341,17 +407,16 @@ pub const DifferentialTestor = struct {
         };
     }
 
-    /// Execute on Guillotine and capture trace
-    pub fn executeGuillotineWithTrace(
+    /// Execute on Guillotine with configurable tracing mode
+    pub fn executeGuillotineWithTraceMode(
         self: *DifferentialTestor,
         caller: primitives.Address,
         to: primitives.Address,
         value: u256,
         input: []const u8,
         gas_limit: u64,
+        enable_tracing: bool,
     ) !ExecutionResultWithTrace {
-        // Tracer is now managed internally by the EVM
-
         // Use the actual EVM call method
         const params = guillotine_evm.CallParams{
             .call = .{
@@ -363,9 +428,23 @@ pub const DifferentialTestor = struct {
             },
         };
 
-        std.debug.print("DIFFERENTIAL: About to call Guillotine with gas={}, to={x}\n", .{ gas_limit, to.bytes });
-        var result = self.guillotine_instance.call(params);
-        std.debug.print("DIFFERENTIAL: Guillotine call complete, success={}, gas_left={}\n", .{ result.success, result.gas_left });
+        std.debug.print("DIFFERENTIAL: About to call Guillotine with gas={}, to={x} (tracing={})\n", .{ gas_limit, to.bytes, enable_tracing });
+        
+        var result = if (enable_tracing) blk: {
+            if (self.guillotine_instance_traced) |*evm_instance| {
+                break :blk evm_instance.call(params);
+            } else {
+                return error.TracingNotAvailable;
+            }
+        } else blk: {
+            if (self.guillotine_instance_no_trace) |*evm_instance| {
+                break :blk evm_instance.call(params);
+            } else {
+                return error.NoTraceInstanceNotAvailable;
+            }
+        };
+        
+        std.debug.print("DIFFERENTIAL: Guillotine call complete, success={}, gas_left={} (tracing={})\n", .{ result.success, result.gas_left, enable_tracing });
 
         // Transfer ownership of trace from CallResult
         const trace = result.trace;
@@ -377,11 +456,11 @@ pub const DifferentialTestor = struct {
         // Store the execution result status for debugging
         const log = std.log.scoped(.differential_failure);
         const trace_steps_len = if (trace) |t| t.steps.len else 0;
-        log.debug("Guillotine execution completed with tracing enabled: success={}, gas_left={}, output_len={}, trace_steps={}", .{ result.success, result.gas_left, result.output.len, trace_steps_len });
+        log.debug("Guillotine execution completed (tracing={}): success={}, gas_left={}, output_len={}, trace_steps={}", .{ enable_tracing, result.success, result.gas_left, result.output.len, trace_steps_len });
 
         if (!result.success) {
             // Log detailed failure information
-            log.err("Guillotine execution failed!", .{});
+            log.err("Guillotine execution failed (tracing={})!", .{enable_tracing});
             log.err("  Gas limit: {}", .{gas_limit});
             log.err("  Gas left: {}", .{result.gas_left});
             log.err("  Gas used: {}", .{gas_used});
@@ -433,6 +512,18 @@ pub const DifferentialTestor = struct {
             .trace = trace,
             .allocator = self.allocator,
         };
+    }
+
+    /// Execute on Guillotine and capture trace (backwards compatibility - defaults to tracing enabled)
+    pub fn executeGuillotineWithTrace(
+        self: *DifferentialTestor,
+        caller: primitives.Address,
+        to: primitives.Address,
+        value: u256,
+        input: []const u8,
+        gas_limit: u64,
+    ) !ExecutionResultWithTrace {
+        return self.executeGuillotineWithTraceMode(caller, to, value, input, gas_limit, true);
     }
 
     /// Print comprehensive, human-readable diff with context
