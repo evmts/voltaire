@@ -165,7 +165,7 @@ pub fn main() !void {
             .caller = caller_address,
             .value = 0,
             .init_code = init_code,
-            .gas = 10_000_000,
+            .gas = 100_000_000,  // Increase gas for complex contracts
         },
     };
     
@@ -173,14 +173,29 @@ pub fn main() !void {
     const deploy_result = deploy_evm.call(create_params);
     
     if (!deploy_result.success) {
-        std.debug.print("❌ Contract deployment failed\n", .{});
+        std.debug.print("❌ Contract deployment failed: gas_left={}, output_len={}\n", .{deploy_result.gas_left, deploy_result.output.len});
+        if (deploy_result.output.len > 0) {
+            std.debug.print("Deployment output: {x}\n", .{deploy_result.output});
+        }
         @panic("Failed to deploy contract");
     }
     
     // Get the deployed contract address
-    // For CREATE, address is deterministic based on caller + nonce
-    // But for simplicity, we'll use a fixed address like geth/revm
-    const contract_address = primitives.Address{ .bytes = [_]u8{0x5F} ++ [_]u8{0xbD} ++ [_]u8{0xB2} ++ [_]u8{0x31} ++ [_]u8{0x56} ++ [_]u8{0x78} ++ [_]u8{0xaf} ++ [_]u8{0xec} ++ [_]u8{0xb3} ++ [_]u8{0x67} ++ [_]u8{0xf0} ++ [_]u8{0x32} ++ [_]u8{0xd9} ++ [_]u8{0x3F} ++ [_]u8{0x64} ++ [_]u8{0x2f} ++ [_]u8{0x64} ++ [_]u8{0x18} ++ [_]u8{0x0a} ++ [_]u8{0xa3} };
+    // For CREATE, address is deterministic based on caller + nonce (which was 0)
+    const contract_address = primitives.Address.get_contract_address(caller_address, 0);
+    
+    // Store the deployed contract bytecode in the database
+    // set_code returns the hash of the stored code
+    const code_hash = try database.set_code(deploy_result.output);
+    
+    const contract_account = evm.Account{
+        .nonce = 1,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+        .delegated_address = null,
+    };
+    try database.set_account(contract_address.bytes, contract_account);
     
     // Run benchmarks - create fresh EVM for each run
     for (0..num_runs) |run_idx| {
@@ -213,7 +228,10 @@ pub fn main() !void {
         const end = std.time.Instant.now() catch @panic("Failed to get time");
         
         if (!result.success) {
-            std.debug.print("❌ Execution failed\n", .{});
+            std.debug.print("❌ Execution failed: gas_left={}, output_len={}\n", .{result.gas_left, result.output.len});
+            if (result.output.len > 0) {
+                std.debug.print("Output: {x}\n", .{result.output});
+            }
             @panic("Benchmark execution failed");
         }
         
