@@ -1,6 +1,7 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
+const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 
 /// Synthetic jump opcode handlers for the EVM stack frame.
 /// These handle fused PUSH+jump operations for optimization.
@@ -14,8 +15,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes a destination and immediately jumps to it.
         pub fn push_jump_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getInlineMetadata();
-            const dest = metadata.value;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMP_INLINE });
+            const dest = op_data.metadata.value;
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
@@ -38,8 +39,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_JUMP_POINTER - Fused PUSH+JUMP with pointer destination (>8 bytes).
         pub fn push_jump_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getPointerMetadata();
-            const dest = metadata.value.*;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMP_POINTER });
+            const dest = op_data.metadata.value.*;
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
@@ -63,8 +64,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes a destination, pops condition, and conditionally jumps.
         pub fn push_jumpi_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getInlineMetadata();
-            const dest = metadata.value;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMPI_INLINE });
+            const dest = op_data.metadata.value;
 
             // Pop the condition
             const condition = try self.stack.pop();
@@ -88,7 +89,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             } else {
                 // Continue to next instruction
-                const next = dispatch.skipMetadata();
+                const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
         }
@@ -96,8 +97,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_JUMPI_POINTER - Fused PUSH+JUMPI with pointer destination (>8 bytes).
         pub fn push_jumpi_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getPointerMetadata();
-            const dest = metadata.value.*;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMPI_POINTER });
+            const dest = op_data.metadata.value.*;
 
             // Pop the condition
             const condition = try self.stack.pop();
@@ -121,7 +122,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             } else {
                 // Continue to next instruction
-                const next = dispatch.skipMetadata();
+                const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
         }
@@ -170,7 +171,7 @@ fn createInlineDispatch(value: u256) TestFrame.Dispatch {
     cursor[0] = .{ .opcode_handler = &mock_handler };
     cursor[1] = .{ .opcode_handler = &mock_handler };
 
-    cursor[0].metadata = .{ .inline_value = value };
+    cursor[0].metadata = .{ .value = value };
 
     return TestFrame.Dispatch{
         .cursor = &cursor,

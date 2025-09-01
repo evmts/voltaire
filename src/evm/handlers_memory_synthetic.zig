@@ -3,6 +3,7 @@ const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
 const memory_mod = @import("memory.zig");
 const GasConstants = @import("primitives").GasConstants;
+const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 
 /// Synthetic memory opcode handlers for the EVM stack frame.
 /// These handle fused PUSH+memory operations for optimization.
@@ -16,8 +17,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset and immediately loads from that memory location.
         pub fn push_mload_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getInlineMetadata();
-            const offset = metadata.value;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MLOAD_INLINE });
+            const offset = op_data.metadata.value;
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -42,15 +43,15 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = @as(WordType, @truncate(value_u256));
             try self.stack.push(value);
 
-            const next = dispatch.skipMetadata();
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// PUSH_MLOAD_POINTER - Fused PUSH+MLOAD with pointer offset (>8 bytes).
         pub fn push_mload_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getPointerMetadata();
-            const offset = metadata.value.*;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MLOAD_POINTER });
+            const offset = op_data.metadata.value.*;
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -75,7 +76,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = @as(WordType, @truncate(value_u256));
             try self.stack.push(value);
 
-            const next = dispatch.skipMetadata();
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -83,8 +84,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores it at that offset.
         pub fn push_mstore_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getInlineMetadata();
-            const offset = metadata.value;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE_INLINE });
+            const offset = op_data.metadata.value;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -110,15 +111,15 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.skipMetadata();
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
         pub fn push_mstore_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getPointerMetadata();
-            const offset = metadata.value.*;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE_POINTER });
+            const offset = op_data.metadata.value.*;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -144,7 +145,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.skipMetadata();
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -152,8 +153,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores the least significant byte.
         pub fn push_mstore8_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getInlineMetadata();
-            const offset = metadata.value;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE8_INLINE });
+            const offset = op_data.metadata.value;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -179,15 +180,15 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.skipMetadata();
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
         pub fn push_mstore8_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const metadata = dispatch.getPointerMetadata();
-            const offset = metadata.value.*;
+            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE8_POINTER });
+            const offset = op_data.metadata.value.*;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -213,7 +214,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.skipMetadata();
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
     };
@@ -261,7 +262,7 @@ fn createInlineDispatch(value: u256) TestFrame.Dispatch {
     cursor[0] = .{ .opcode_handler = &mock_handler };
     cursor[1] = .{ .opcode_handler = &mock_handler };
 
-    cursor[0].metadata = .{ .inline_value = value };
+    cursor[0].metadata = .{ .value = value };
 
     return TestFrame.Dispatch{
         .cursor = &cursor,
