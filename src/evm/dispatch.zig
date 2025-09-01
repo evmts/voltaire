@@ -44,11 +44,97 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// We define opcodehandler locally rather than using Frame.OpcodeHandler to avoid circular dependency
         const OpcodeHandler = *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn;
 
-        /// Thread-local storage for traced allocated pointers (used only for memory cleanup)
+        /// Thread-local storage for allocated pointers (used for memory cleanup)
         threadlocal var traced_allocated_pointers: ?[]*FrameType.WordType = null;
         
-        /// Thread-local storage for traced allocated bytecode copies (used only for memory cleanup)
+        /// Thread-local storage for allocated bytecode copies (used for memory cleanup)
         threadlocal var traced_allocated_bytecode: ?[][*:0]u8 = null;
+
+        /// Structure to track memory allocations during schedule creation
+        const AllocatedMemory = struct {
+            pointers: ArrayList(*FrameType.WordType, null),
+            bytecode_copies: ArrayList([*:0]u8, null),
+            
+            fn init() AllocatedMemory {
+                return .{
+                    .pointers = ArrayList(*FrameType.WordType, null){},
+                    .bytecode_copies = ArrayList([*:0]u8, null){},
+                };
+            }
+            
+            fn deinit(self: *AllocatedMemory, allocator: std.mem.Allocator) void {
+                for (self.pointers.items) |ptr| {
+                    allocator.destroy(ptr);
+                }
+                self.pointers.deinit(allocator);
+                
+                for (self.bytecode_copies.items) |ptr| {
+                    const len = std.mem.len(ptr);
+                    allocator.free(ptr[0..len :0]);
+                }
+                self.bytecode_copies.deinit(allocator);
+            }
+        };
+
+        /// Process a regular opcode and add to schedule
+        fn processRegularOpcode(
+            schedule_items: anytype,
+            allocator: std.mem.Allocator,
+            allocated_memory: *AllocatedMemory,
+            opcode_handlers: *const [256]OpcodeHandler,
+            bytecode: anytype,
+            data: anytype,
+            instr_pc: anytype,
+        ) !void {
+            const handler = opcode_handlers.*[data.opcode];
+            try schedule_items.append(allocator, .{ .opcode_handler = handler });
+            
+            if (data.opcode == @intFromEnum(Opcode.PC)) {
+                try schedule_items.append(allocator, .{ .pc = .{ .value = @intCast(instr_pc) } });
+            } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
+                try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
+            } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
+                // Create null-terminated copy of bytecode for CODECOPY
+                const bytecode_data = bytecode.runtime_code;
+                const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
+                @memcpy(null_terminated, bytecode_data);
+                try allocated_memory.bytecode_copies.append(allocator, null_terminated.ptr);
+                try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
+            } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
+                // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
+                try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
+            }
+        }
+
+        /// Process a PUSH opcode and add to schedule
+        fn processPushOpcode(
+            schedule_items: anytype,
+            allocator: std.mem.Allocator,
+            allocated_memory: *AllocatedMemory,
+            opcode_handlers: *const [256]OpcodeHandler,
+            data: anytype,
+        ) !void {
+            const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
+            const log = @import("log.zig");
+            log.debug("Dispatch: Adding PUSH{} handler, value={x}, schedule_items.len={}", .{ data.size, data.value, schedule_items.items.len });
+            
+            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
+            
+            if (data.size <= 8 and data.value <= std.math.maxInt(u64)) {
+                // Inline value for small pushes that fit in u64
+                const inline_value: u64 = @intCast(data.value);
+                log.debug("Dispatch: Adding inline metadata for PUSH{}, value={}", .{ data.size, inline_value });
+                try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
+            } else {
+                // Pointer to value for large pushes
+                const value_ptr = try allocator.create(FrameType.WordType);
+                errdefer allocator.destroy(value_ptr);
+                value_ptr.* = data.value;
+                try allocated_memory.pointers.append(allocator, value_ptr);
+                log.debug("Dispatch: Adding pointer metadata for PUSH{}, value={x}", .{ data.size, data.value });
+                try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
+            }
+        }
 
         /// The optimized instruction stream containing opcode handlers and their metadata.
         /// Each item is exactly 64 bits for optimal cache line usage.
@@ -306,6 +392,10 @@ pub fn Dispatch(comptime FrameType: type) type {
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
+            // Track allocated memory for cleanup
+            var allocated_memory = AllocatedMemory.init();
+            errdefer allocated_memory.deinit(allocator);
+
             // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
 
@@ -344,6 +434,11 @@ pub fn Dispatch(comptime FrameType: type) type {
                             log.warn("DISPATCH: Parsing PUSH{d} at PC {d}", .{ data.size, instr_pc });
                         }
                     },
+                    .jumpdest => |data| {
+                        if (opcode_count <= 20) {
+                            log.warn("DISPATCH: Parsing JUMPDEST at PC {d}, gas_cost={d}", .{ instr_pc, data.gas_cost });
+                        }
+                    },
                     else => {
                         if (opcode_count <= 20) {
                             log.warn("DISPATCH: Parsing other operation at PC {d}", .{instr_pc});
@@ -353,9 +448,6 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                 switch (op_data) {
                     .regular => |data| {
-                        // Regular opcode - add handler first, then metadata for PC, CODESIZE, CODECOPY
-                        const handler = opcode_handlers.*[data.opcode];
-
                         // DEBUG: Log specific opcodes we're interested in
                         if (data.opcode == 0x08) {
                             log.debug("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
@@ -368,40 +460,10 @@ pub fn Dispatch(comptime FrameType: type) type {
                         // Also log ALL opcodes to see what we're parsing
                         log.debug("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
 
-                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
-                        if (data.opcode == @intFromEnum(Opcode.PC)) {
-                            try schedule_items.append(allocator, .{ .pc = .{ .value = @intCast(instr_pc) } });
-                        } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
-                            try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
-                        } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                            // Create null-terminated copy of bytecode for CODECOPY
-                            const bytecode_data = bytecode.runtime_code;
-                            const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
-                            @memcpy(null_terminated, bytecode_data);
-                            // Note: This allocation is not tracked for cleanup in non-traced mode
-                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
-                        } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
-                            // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
-                            try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
-                        }
+                        try processRegularOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, bytecode, data, instr_pc);
                     },
                     .push => |data| {
-                        // PUSH operation - add handler first, then metadata
-                        const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
-                        log.debug("Dispatch: Adding PUSH{} handler, value={x}, schedule_items.len={}", .{ data.size, data.value, schedule_items.items.len });
-                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
-                        if (data.size <= 8 and data.value <= std.math.maxInt(u64)) {
-                            // Inline value for small pushes that fit in u64
-                            const inline_value: u64 = @intCast(data.value);
-                            log.debug("Dispatch: Adding inline metadata for PUSH{}, value={}", .{ data.size, inline_value });
-                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
-                        } else {
-                            // Pointer to value for large pushes
-                            const value_ptr = try allocator.create(FrameType.WordType);
-                            value_ptr.* = data.value;
-                            log.debug("Dispatch: Adding pointer metadata for PUSH{}, value={x}", .{ data.size, data.value });
-                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-                        }
+                        try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data);
                     },
                     .jumpdest => |data| {
                         // JUMPDEST - add handler first, then metadata

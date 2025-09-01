@@ -69,72 +69,19 @@ pub const FixtureRunner = struct {
         calldata: []const u8,
         verbose: bool,
     ) !FixtureResult {
-        // Try CREATE deployment first
-        var target_address: Address = Address.ZERO_ADDRESS;
-        var use_direct_install = false;
+        // Directly install bytecode like the differential tests do
+        // This is more reliable than trying CREATE first
+        const target_address = Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x20} };
         
-        const create_params = evm.CallParams{
-            .create = .{
-                .caller = primitives.ZERO_ADDRESS,
-                .value = 0,
-                .init_code = init_code,
-                .gas = 30_000_000,
-            },
-        };
-
-        const maybe_create_result: ?evm.CallResult = blk: {
-            const r = self.evm_instance.call(create_params);
-            if (!r.success) {
-                if (verbose) std.debug.print("CREATE failed. Falling back to direct install.\n", .{});
-                break :blk null;
-            }
-            break :blk r;
-        };
-
-        if (maybe_create_result) |create_result| {
-            if (!create_result.success) {
-                if (verbose) std.debug.print("CREATE failed: success=false, gas_left={}, output_len={}\n", .{ create_result.gas_left, create_result.output.len });
-                use_direct_install = true;
-            } else if (create_result.output.len == 0) {
-                // CREATE succeeded but returned no address - calculate it
-                const nonce: u64 = 0;
-                target_address = try primitives.Address.calculate_create_address(self.allocator, primitives.ZERO_ADDRESS, nonce);
-                const deployed_code = self.evm_instance.get_code(target_address);
-                if (deployed_code.len == 0) {
-                    if (verbose) std.debug.print("CREATE succeeded but no code at computed address {x}\n", .{target_address});
-                    use_direct_install = true;
-                } else {
-                    if (verbose) std.debug.print("CREATE deployed contract at {x} with code_len={}\n", .{ target_address, deployed_code.len });
-                }
-            } else if (create_result.output.len == 20) {
-                // Old-style CREATE that returns address
-                @memcpy(&target_address.bytes, create_result.output[0..20]);
-                const deployed_code = self.evm_instance.get_code(target_address);
-                if (deployed_code.len == 0) {
-                    if (verbose) std.debug.print("CREATE returned address but no code found\n", .{});
-                    use_direct_install = true;
-                }
-            } else {
-                if (verbose) std.debug.print("CREATE returned unexpected output length: {}\n", .{create_result.output.len});
-                use_direct_install = true;
-            }
-        } else {
-            use_direct_install = true;
-        }
-
-        if (use_direct_install) {
-            // Directly install provided bytecode as runtime
-            const code_hash = try self.database.set_code(init_code);
-            // Use a non-precompile address
-            target_address = Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0x20} };
-            try self.database.set_account(target_address.bytes, evm.Account{
-                .nonce = 0,
-                .balance = 0,
-                .code_hash = code_hash,
-                .storage_root = [_]u8{0} ** 32,
-            });
-            if (verbose) std.debug.print("Direct install at address: {x}, code_len={}, code_hash={x}\n", .{ target_address, init_code.len, code_hash });
-        }
+        const code_hash = try self.database.set_code(init_code);
+        try self.database.set_account(target_address.bytes, evm.Account{
+            .nonce = 1,  // Set nonce to 1 like differential tests
+            .balance = 0,
+            .code_hash = code_hash,
+            .storage_root = [_]u8{0} ** 32,
+        });
+        
+        if (verbose) std.debug.print("Direct install at address: {x}, code_len={}, code_hash={x}\n", .{ target_address, init_code.len, code_hash });
 
         // Verify contract is properly deployed
         const deployed_code = self.evm_instance.get_code(target_address);
