@@ -35,10 +35,6 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
         }
 
         pub fn buildFromSchedule(self: *@This(), schedule: []const Self.Item, bytecode: anytype) !void {
-            return self.buildFromScheduleWithTracing(schedule, bytecode, false);
-        }
-        
-        pub fn buildFromScheduleWithTracing(self: *@This(), schedule: []const Self.Item, bytecode: anytype, tracing_enabled: bool) !void {
             var iter = bytecode.createIterator();
             var schedule_index: usize = 0;
 
@@ -50,7 +46,7 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
             }
             
             const log = std.log.scoped(.jump_table);
-            log.debug("buildFromSchedule: Starting bytecode scan for JUMPDESTs, schedule.len={}, tracing={}, bytecode.len={}", .{schedule.len, tracing_enabled, bytecode.len()});
+            log.debug("buildFromSchedule: Starting bytecode scan for JUMPDESTs, schedule.len={}, bytecode.len={}", .{schedule.len, bytecode.len()});
 
             while (true) {
                 const instr_pc = iter.pc;
@@ -63,10 +59,6 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
 
                 switch (op_data) {
                     .jumpdest => {
-                        if (tracing_enabled) {
-                            // With tracing: trace_before (2) + jumpdest handler + metadata + trace_after (2)
-                            schedule_index += 2; // trace_before + tracer_ptr
-                        }
                         // Log only for contracts with issues (0x34, 0x45c, etc.)
                         if (instr_pc == 0x34 or instr_pc == 0x45c or instr_pc == 0xb25 or instr_pc == 0x954) {
                             log.warn("  !! Found JUMPDEST at PC {x}, schedule_index={}", .{instr_pc, schedule_index});
@@ -74,25 +66,13 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
                         log.debug("  Found JUMPDEST at PC {x}, schedule_index={}", .{instr_pc, schedule_index});
                         try self.addEntry(@intCast(instr_pc), schedule_index);
                         schedule_index += 2; // Handler + metadata
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_after + tracer_ptr
-                        }
                     },
                     .regular => |data| {
                         // Check if this is a JUMPDEST opcode
                         if (data.opcode == @intFromEnum(Opcode.JUMPDEST)) {
-                            if (tracing_enabled) {
-                                schedule_index += 2; // trace_before + tracer_ptr
-                            }
                             try self.addEntry(@intCast(instr_pc), schedule_index);
                             schedule_index += 2; // Handler + metadata
-                            if (tracing_enabled) {
-                                schedule_index += 2; // trace_after + tracer_ptr
-                            }
                         } else {
-                            if (tracing_enabled) {
-                                schedule_index += 2; // trace_before + tracer_ptr
-                            }
                             schedule_index += 1; // Handler
                             if (data.opcode == @intFromEnum(Opcode.PC) or
                                 data.opcode == @intFromEnum(Opcode.CODESIZE) or
@@ -102,37 +82,16 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
                             {
                                 schedule_index += 1; // Extra metadata
                             }
-                            if (tracing_enabled) {
-                                schedule_index += 2; // trace_after + tracer_ptr
-                            }
                         }
                     },
                     .push => {
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_before + tracer_ptr
-                        }
                         schedule_index += 2; // Handler + metadata
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_after + tracer_ptr
-                        }
                     },
                     .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_before + tracer_ptr
-                        }
                         schedule_index += 2; // Handler + metadata
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_after + tracer_ptr
-                        }
                     },
                     .stop, .invalid => {
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_before + tracer_ptr
-                        }
                         schedule_index += 1; // Handler
-                        if (tracing_enabled) {
-                            schedule_index += 2; // trace_after + tracer_ptr
-                        }
                     },
                 }
             }
