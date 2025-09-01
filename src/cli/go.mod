@@ -6,7 +6,6 @@ require (
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.6
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/evmts/guillotine/bindings/go v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -29,5 +28,3 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )
-
-replace github.com/evmts/guillotine/bindings/go => ../guillotine-go

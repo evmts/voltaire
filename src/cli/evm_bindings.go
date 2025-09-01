@@ -1,11 +1,8 @@
-//go:build !mock
-// +build !mock
-
 package main
 
 /*
 #cgo CFLAGS: -I../evm
-#cgo LDFLAGS: -L../../zig-out/lib -levm_c
+#cgo LDFLAGS: -L../../zig-out/lib -levm_c -L../../.zig-cache/o/382fbb5a7f149ffbf95bc54ea713644b -lc-kzg-4844 -L../../.zig-cache/o/c0ced02090543ae74391ae22fa5dbbd9 -lbn254_wrapper -L../../.zig-cache/o/e5dbc664786d72c8389073c12701d51c -lblst
 
 #include <stdlib.h>
 #include <stdint.h>
