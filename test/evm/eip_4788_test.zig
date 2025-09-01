@@ -2,8 +2,8 @@
 // This EIP exposes the beacon chain's block root in the EVM for trust-minimized access to consensus layer
 const std = @import("std");
 const testing = std.testing;
-const evm = @import("../../src/evm/root.zig");
-const primitives = @import("../../src/primitives/root.zig");
+const evm = @import("evm");
+const primitives = @import("primitives");
 
 test "EIP-4788: beacon block root precompile at 0x0B" {
     const allocator = testing.allocator;

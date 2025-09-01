@@ -4,7 +4,7 @@ const std = @import("std");
 
 // Enable debug logging for tests
 pub const std_options = std.Options{
-    .log_level = .debug,
+    .log_level = .warn,
 };
 
 test {
