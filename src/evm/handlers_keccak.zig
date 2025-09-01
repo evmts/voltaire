@@ -3,6 +3,7 @@ const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
 const memory_mod = @import("memory.zig");
 const keccak_asm = @import("keccak_asm.zig");
+const Opcode = @import("opcode_data.zig").Opcode;
 
 /// Keccak hash opcode handler for the EVM stack frame.
 /// This is a generic struct that returns a static handler for a given FrameType.
@@ -63,7 +64,8 @@ pub fn Handlers(comptime FrameType: type) type {
                     },
                 };
                 self.stack.push_unsafe(empty_hash);
-                const next = dispatch.getNext();
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.KECCAK256 });
+                const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
@@ -153,7 +155,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
             self.stack.push_unsafe(result_word);
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.KECCAK256 });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
     };

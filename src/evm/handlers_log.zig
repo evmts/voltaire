@@ -6,6 +6,7 @@ const Address = primitives.Address;
 const GasConstants = primitives.GasConstants;
 const logs = @import("logs.zig");
 const Log = logs.Log;
+const Opcode = @import("opcode_data.zig").Opcode;
 
 /// Log opcode handlers for the EVM stack frame.
 /// These handle event emission (LOG0-LOG4).
@@ -20,7 +21,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (topic_count > 4) @compileError("Only LOG0 to LOG4 is supported");
             return &struct {
                 pub fn logHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
+                    const dispatch = Dispatch{ .cursor = cursor };
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // Pop topics in reverse order
@@ -85,7 +86,17 @@ pub fn Handlers(comptime FrameType: type) type {
                     };
                     self.appendLog(log_entry) catch return Error.AllocationError;
 
-                    const next = dispatch.getNext();
+                    // Map topic_count to the appropriate LOG opcode
+                    const log_opcode = switch (topic_count) {
+                        0 => Opcode.LOG0,
+                        1 => Opcode.LOG1,
+                        2 => Opcode.LOG2,
+                        3 => Opcode.LOG3,
+                        4 => Opcode.LOG4,
+                        else => unreachable,
+                    };
+                    const op_data = dispatch.getOpData(.{ .regular = log_opcode });
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
             }.logHandler;

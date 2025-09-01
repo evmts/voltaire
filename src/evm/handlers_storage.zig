@@ -3,6 +3,7 @@ const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
 const GasConstants = @import("primitives").GasConstants;
 const Address = @import("primitives").Address.Address;
+const Opcode = @import("opcode_data.zig").Opcode;
 
 /// Storage operation handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.
@@ -28,7 +29,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Charge gas for storage access
             if (self.gas_remaining < access_cost) {
                 return Error.OutOfGas;
@@ -41,7 +42,8 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             try self.stack.push(value);
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.SLOAD });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -70,11 +72,11 @@ pub fn Handlers(comptime FrameType: type) type {
             const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Calculate gas cost based on EIP-2200 and EIP-2929
             var gas_cost: u64 = undefined;
             const is_warm = access_cost == GasConstants.WarmStorageReadCost;
-            
+
             if (current_value == value) {
                 // No-op: value doesn't change
                 gas_cost = if (is_warm) GasConstants.WarmStorageReadCost else access_cost;
@@ -102,7 +104,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.SSTORE });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -122,7 +125,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
             try self.stack.push(value);
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.TLOAD });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -152,7 +156,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.TSTORE });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
     };

@@ -3,6 +3,7 @@ const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
 const memory_mod = @import("memory.zig");
 const GasConstants = @import("primitives").GasConstants;
+const Opcode = @import("opcode_data.zig").Opcode;
 
 /// Memory operation handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.
@@ -43,7 +44,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = @as(WordType, @truncate(value_u256));
             try self.stack.push(value);
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.MLOAD });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -80,7 +82,8 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug("MSTORE: successfully stored value {} at offset {}", .{ value_u256, offset_usize });
             log.debug("MSTORE: Memory size after store: {}", .{self.memory.size()});
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.MSTORE });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -112,7 +115,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.MSTORE8 });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -123,7 +127,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const size = self.memory.size();
             try self.stack.push(@as(WordType, @intCast(size)));
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.MSIZE });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -149,7 +154,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (size_usize == 0) {
                 // No operation for zero size
-                const next = dispatch.getNext();
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.MCOPY });
+                const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
@@ -181,7 +187,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = dispatch.getNext();
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.MCOPY });
+            const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
     };
@@ -993,15 +1000,15 @@ test "MLOAD opcode - memory expansion at exact boundaries" {
 
     for (boundaries) |boundary| {
         frame.memory.set_u256_evm(boundary, 0x123456789ABCDEF0) catch unreachable;
-        
+
         try frame.stack.push(boundary);
-        
+
         const dispatch = createMockDispatch();
         _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
-        
+
         const loaded = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), loaded);
-        
+
         // Verify memory size is properly aligned
         const expected_min_size = ((boundary + 32 + 31) / 32) * 32;
         try testing.expect(frame.memory.len() >= expected_min_size);
@@ -1013,24 +1020,24 @@ test "MSTORE opcode - partial word overwrites" {
     defer frame.deinit(testing.allocator);
 
     // Store overlapping values to test partial overwrite behavior
-    
+
     // First, store a full pattern
     frame.memory.set_u256_evm(0, std.math.maxInt(u256)) catch unreachable;
-    
+
     // Then store at overlapping offset 16
     try frame.stack.push(16); // offset
     try frame.stack.push(0); // value (all zeros)
-    
+
     const dispatch = createMockDispatch();
     _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
-    
+
     // Verify first 16 bytes remain unchanged
     const first_half = frame.memory.get_slice(0, 16) catch unreachable;
     for (first_half) |byte| {
         try testing.expectEqual(@as(u8, 0xFF), byte);
     }
-    
-    // Verify next 32 bytes are zeros  
+
+    // Verify next 32 bytes are zeros
     const zero_part = frame.memory.get_slice(16, 32) catch unreachable;
     for (zero_part) |byte| {
         try testing.expectEqual(@as(u8, 0x00), byte);
@@ -1043,18 +1050,18 @@ test "memory operations - extreme gas scenarios" {
 
     // Test operations with exactly enough gas
     const base_gas = GasConstants.GasFastestStep;
-    
+
     // MSTORE8 with minimal gas
     frame.gas_remaining = @intCast(base_gas + 1);
     try frame.stack.push(0); // offset
     try frame.stack.push(0xFF); // value
-    
+
     const dispatch = createMockDispatch();
     _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
-    
+
     // Should succeed with gas remaining
     try testing.expect(frame.gas_remaining >= 0);
-    
+
     // Verify byte was stored
     const stored = frame.memory.get_byte(0) catch unreachable;
     try testing.expectEqual(@as(u8, 0xFF), stored);
@@ -1066,19 +1073,19 @@ test "MCOPY opcode - single byte copies" {
 
     // Test copying individual bytes
     const test_bytes = [_]u8{ 0x00, 0xFF, 0xAA, 0x55, 0x0F, 0xF0 };
-    
+
     for (test_bytes, 0..) |test_byte, i| {
         // Store test byte
         frame.memory.set_byte_evm(testing.allocator, @as(u24, @intCast(i)), test_byte) catch unreachable;
-        
+
         // Copy single byte to destination
         try frame.stack.push(100 + i); // dest
         try frame.stack.push(i); // src
         try frame.stack.push(1); // size (1 byte)
-        
+
         const dispatch = createMockDispatch();
         _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
-        
+
         // Verify copy
         const copied = frame.memory.get_byte(@as(u24, @intCast(100 + i))) catch unreachable;
         try testing.expectEqual(test_byte, copied);
