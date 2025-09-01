@@ -863,10 +863,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (result.output.len > 0) {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
                 if (self.eips.eip_3541 and result.output[0] == 0xEF) {
+                    // Free the allocated output memory before returning
+                    self.allocator.free(result.output);
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }
                 const stored_hash = self.database.set_code(result.output) catch {
+                    // Free the allocated output memory before returning
+                    self.allocator.free(result.output);
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 };
@@ -874,6 +878,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 contract_account.code_hash = stored_hash;
             }
             self.database.set_account(args.contract_address.bytes, contract_account) catch {
+                // Free the allocated output memory before returning if it exists
+                if (result.output.len > 0) {
+                    self.allocator.free(result.output);
+                }
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return CallResult.failure(0);
             };

@@ -285,7 +285,7 @@ fn initBytecodes(allocator: std.mem.Allocator) !void {
 
 // Benchmark functions for Frame
 fn benchmarkFrameERC20(allocator: std.mem.Allocator) void {
-    const F = Frame(.{ .has_database = true });
+    const F = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
 
     const host = createBenchHost();
     var memory_db = MemoryDatabase.init(allocator);
@@ -300,7 +300,7 @@ fn benchmarkFrameERC20(allocator: std.mem.Allocator) void {
 }
 
 fn benchmarkFrameSnailtracer(allocator: std.mem.Allocator) void {
-    const F = Frame(.{ .has_database = true });
+    const F = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
 
     const host = createBenchHost();
     var memory_db = MemoryDatabase.init(allocator);

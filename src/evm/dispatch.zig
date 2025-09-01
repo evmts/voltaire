@@ -584,6 +584,12 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// Since Item is now untagged, we identify push_pointer items by checking
         /// if the value looks like a valid heap pointer (heuristic approach)
         pub fn deinitSchedule(allocator: std.mem.Allocator, schedule: []const Item) void {
+            // TODO: We need to track and free heap-allocated push pointers and bytecode copies
+            // Since Item is an untagged union, we can't determine the type from the item itself
+            // This is a known memory leak that needs to be addressed by either:
+            // 1. Making Item a tagged union again
+            // 2. Storing AllocatedMemory alongside the schedule
+            // 3. Using a different memory management strategy
 
             // Free the schedule itself
             allocator.free(schedule);

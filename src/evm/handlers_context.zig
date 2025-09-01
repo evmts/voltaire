@@ -738,7 +738,7 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .has_database = false,
+    .DatabaseType = @import("memory_database.zig").MemoryDatabase,
     .TracerType = NoOpTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
@@ -2222,7 +2222,7 @@ test "WordType truncation behavior" {
         .WordType = u64, // Smaller than u256
         .max_bytecode_size = 1024,
         .block_gas_limit = 30_000_000,
-        .has_database = false,
+        .DatabaseType = @import("memory_database.zig").MemoryDatabase,
         .TracerType = NoOpTracer,
         .memory_initial_capacity = 4096,
         .memory_limit = 0xFFFFFF,
