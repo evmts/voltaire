@@ -1592,6 +1592,28 @@ pub fn build(b: *std.Build) void {
         
         const differential_test_step = b.step("test-differential", "Run differential tests comparing Guillotine and REVM");
         differential_test_step.dependOn(&run_differential_test.step);
+        
+        // Create a separate test for just snailtracer
+        const snailtracer_only_test = b.addTest(.{
+            .name = "snailtracer-only-test",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/differential/specific_fixtures_test.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+            .filters = &.{"differential: snailtracer fixture"},
+        });
+        snailtracer_only_test.root_module.addImport("evm", evm_mod);
+        snailtracer_only_test.root_module.addImport("primitives", primitives_mod);
+        snailtracer_only_test.root_module.addImport("revm", revm_mod);
+        
+        snailtracer_only_test.linkLibrary(revm_lib.?);
+        snailtracer_only_test.addIncludePath(b.path("src/revm_wrapper"));
+        snailtracer_only_test.linkLibC();
+        
+        const run_snailtracer_test = b.addRunArtifact(snailtracer_only_test);
+        const snailtracer_test_step = b.step("test-snailtracer", "Run snailtracer differential test only");
+        snailtracer_test_step.dependOn(&run_snailtracer_test.step);
 
         // Specific fixtures test for ten-thousand-hashes and snailtracer
         const specific_fixtures_test = b.addTest(.{
