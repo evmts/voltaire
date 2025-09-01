@@ -846,7 +846,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             tracing_enabled: bool,
         ) !JumpTable {
             const log = @import("log.zig");
-            log.debug("createJumpTable starting, schedule len: {}, tracing: {}", .{schedule.len, tracing_enabled});
+            log.debug("createJumpTable starting, schedule len: {}, tracing: {}, bytecode len: {}", .{schedule.len, tracing_enabled, bytecode.len()});
 
             var builder = JumpTableBuilder.init(allocator);
             defer builder.deinit();

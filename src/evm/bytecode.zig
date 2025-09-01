@@ -188,11 +188,26 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         packed_bitmap: []PackedBits,
 
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
-            // First, try to parse metadata to separate runtime code
-            const metadata = parseSolidityMetadataFromBytes(code);
+            // Check if this is deployment bytecode
+            const is_deployment = code.len > 4 and 
+                code[0] == 0x60 and code[1] == 0x80 and 
+                code[2] == 0x60 and code[3] == 0x40;
+            
+            // For deployment bytecode, don't strip metadata - it needs to be executed in full
+            // For runtime bytecode, strip metadata if present
+            const metadata = if (!is_deployment) parseSolidityMetadataFromBytes(code) else null;
+            
             const runtime_code = if (metadata) |m| blk: {
+                log.debug("Bytecode: Found Solidity metadata in runtime code, stripping {} bytes from end (full={}, runtime={})", .{
+                    m.metadata_length, code.len, code.len - m.metadata_length
+                });
                 break :blk code[0 .. code.len - m.metadata_length];
             } else blk: {
+                if (is_deployment) {
+                    log.debug("Bytecode: Deployment bytecode detected, using full code without metadata stripping, length={}", .{code.len});
+                } else {
+                    log.debug("Bytecode: No metadata found, using full code length={}", .{code.len});
+                }
                 break :blk code;
             };
 

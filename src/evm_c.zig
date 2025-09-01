@@ -630,7 +630,6 @@ export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     frame.stack.stack_ptr = frame.stack.stack_base;
     frame.memory.clear();
     frame.gas_remaining = @as(DefaultFrame.GasType, @intCast(new_gas));
-    };
     
     return @intFromEnum(FrameError.FRAME_OK);
 }
