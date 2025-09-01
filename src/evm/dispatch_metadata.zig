@@ -51,17 +51,6 @@ pub fn DispatchMetadata(comptime FrameType: type) type {
             bytecode_ptr: [*:0]const u8,
         };
 
-        /// Metadata for trace_before_op containing tracer pointer
-        /// The tracer tracks PC and opcode internally based on calls
-        pub const TraceBeforeMetadata = packed struct(u64) {
-            tracer_ptr: *anyopaque,
-        };
-
-        /// Metadata for trace_after_op containing tracer pointer
-        /// The tracer tracks PC and opcode internally based on calls
-        pub const TraceAfterMetadata = packed struct(u64) {
-            tracer_ptr: *anyopaque,
-        };
     };
 }
 
@@ -149,36 +138,6 @@ test "CodecopyMetadata stores null-terminated bytecode pointer" {
     };
     
     try testing.expectEqual(@as([*:0]const u8, bytecode), metadata.bytecode_ptr);
-}
-
-test "TraceBeforeMetadata packs with proper padding" {
-    const Metadata = DispatchMetadata(TestFrame);
-    
-    try testing.expectEqual(@as(usize, 8), @sizeOf(Metadata.TraceBeforeMetadata));
-    
-    const metadata = Metadata.TraceBeforeMetadata{
-        .pc = 100,
-        .opcode = 0x60, // PUSH1
-        ._padding = 0,
-    };
-    
-    try testing.expectEqual(@as(u32, 100), metadata.pc);
-    try testing.expectEqual(@as(u8, 0x60), metadata.opcode);
-}
-
-test "TraceAfterMetadata packs with proper padding" {
-    const Metadata = DispatchMetadata(TestFrame);
-    
-    try testing.expectEqual(@as(usize, 8), @sizeOf(Metadata.TraceAfterMetadata));
-    
-    const metadata = Metadata.TraceAfterMetadata{
-        .pc = 200,
-        .opcode = 0x01, // ADD
-        ._padding = 0,
-    };
-    
-    try testing.expectEqual(@as(u32, 200), metadata.pc);
-    try testing.expectEqual(@as(u8, 0x01), metadata.opcode);
 }
 
 test "FirstBlockMetadata is same as JumpDestMetadata" {
