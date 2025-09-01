@@ -677,9 +677,10 @@ pub fn main() !void {
     log.debug("\nRunning consolidated EVM benchmarks...\n\n", .{});
     
     // Run benchmarks
-    // TODO: Fix writer interface for Zig 0.15.1
-    // try bench.run(stdout_writer.writer());
-    log.debug("Benchmark temporarily disabled due to writer interface changes.\n", .{});
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer = std.io.getStdOut().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
+    try bench.run(stdout);
     
     log.debug("\n✅ Consolidated EVM benchmarks completed!\n", .{});
     log.debug("\nResults Summary:\n", .{});

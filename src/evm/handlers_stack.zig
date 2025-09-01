@@ -55,8 +55,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-                    self.stack.dup_n_unsafe(dup_n);
+                    const dispatch = Dispatch{ .cursor = cursor };
+                    try self.stack.dup_n(dup_n);
                     const next = dispatch.getNext();
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
@@ -68,8 +68,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-                    self.stack.swap_n_unsafe(swap_n);
+                    const dispatch = Dispatch{ .cursor = cursor };
+                    try self.stack.swap_n(swap_n);
                     const next = dispatch.getNext();
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
