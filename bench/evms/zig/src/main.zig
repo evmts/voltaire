@@ -3,7 +3,7 @@ const evm = @import("evm");
 const primitives = @import("primitives");
 
 pub const std_options: std.Options = .{
-    .log_level = .debug,  // Changed from .err to .debug for debugging
+    .log_level = .warn,  
 };
 
 fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
