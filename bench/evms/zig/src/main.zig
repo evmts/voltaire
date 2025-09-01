@@ -184,19 +184,6 @@ pub fn main() !void {
     // For CREATE, address is deterministic based on caller + nonce (which was 0)
     const contract_address = primitives.Address.get_contract_address(caller_address, 0);
     
-    // Store the deployed contract bytecode in the database
-    // set_code returns the hash of the stored code
-    const code_hash = try database.set_code(deploy_result.output);
-    
-    const contract_account = evm.Account{
-        .nonce = 1,
-        .balance = 0,
-        .code_hash = code_hash,
-        .storage_root = [_]u8{0} ** 32,
-        .delegated_address = null,
-    };
-    try database.set_account(contract_address.bytes, contract_account);
-    
     // Run benchmarks - create fresh EVM for each run
     for (0..num_runs) |run_idx| {
         // Create EVM instance for benchmark execution
