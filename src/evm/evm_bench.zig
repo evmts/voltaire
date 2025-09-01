@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("../log.zig");
 const zbench = @import("zbench");
 const primitives = @import("primitives");
 const evm_mod = @import("evm");
@@ -624,69 +625,69 @@ pub fn main() !void {
     var bench = zbench.Benchmark.init(allocator, .{});
     defer bench.deinit();
 
-    std.debug.print("\n⚡ Consolidated EVM Performance Benchmarks\n", .{});
-    std.debug.print("==========================================\n\n", .{});
+    log.debug("\n⚡ Consolidated EVM Performance Benchmarks\n", .{});
+    log.debug("==========================================\n\n", .{});
 
     // Basic Operations Category
-    std.debug.print("📊 Basic Operations\n", .{});
-    std.debug.print("-------------------\n", .{});
+    log.debug("📊 Basic Operations\n", .{});
+    log.debug("-------------------\n", .{});
     try bench.add("Stack Push/Pop", benchmark_evm_stack_push_pop, .{});
     try bench.add("Arithmetic Sequence", benchmark_evm_arithmetic_sequence, .{});
     try bench.add("Memory Operations", benchmark_evm_memory_operations, .{});
     try bench.add("KECCAK256 Simple", benchmark_evm_keccak256, .{});
-    std.debug.print("\n", .{});
+    log.debug("\n", .{});
 
     // ERC20 Tests Category
-    std.debug.print("📊 ERC20 Tests\n", .{});
-    std.debug.print("--------------\n", .{});
+    log.debug("📊 ERC20 Tests\n", .{});
+    log.debug("--------------\n", .{});
     try bench.add("EVM: ERC20 Transfer", benchmark_evm_erc20_transfer, .{});
     try bench.add("REVM: ERC20 Transfer", benchmark_revm_erc20_transfer, .{});
-    std.debug.print("\n", .{});
+    log.debug("\n", .{});
 
     // Snailtracer Benchmark Category
-    std.debug.print("📊 Snailtracer Benchmark\n", .{});
-    std.debug.print("------------------------\n", .{});
+    log.debug("📊 Snailtracer Benchmark\n", .{});
+    log.debug("------------------------\n", .{});
     try bench.add("EVM: Snailtracer", benchmark_evm_snailtracer, .{});
     try bench.add("REVM: Snailtracer", benchmark_revm_snailtracer, .{});
-    std.debug.print("\n", .{});
+    log.debug("\n", .{});
 
     // Hash-Heavy Operations Category
-    std.debug.print("📊 Hash-Heavy Operations\n", .{});
-    std.debug.print("------------------------\n", .{});
+    log.debug("📊 Hash-Heavy Operations\n", .{});
+    log.debug("------------------------\n", .{});
     try bench.add("EVM: 10k Hashes", benchmark_evm_thousand_hashes, .{});
     try bench.add("REVM: 10k Hashes", benchmark_revm_thousand_hashes, .{});
-    std.debug.print("\n", .{});
+    log.debug("\n", .{});
 
     // Simple Contract Comparisons Category
-    std.debug.print("📊 Simple Contract Comparisons\n", .{});
-    std.debug.print("------------------------------\n", .{});
+    log.debug("📊 Simple Contract Comparisons\n", .{});
+    log.debug("------------------------------\n", .{});
     try bench.add("EVM: Arithmetic Contract", benchmark_evm_arithmetic_contract, .{});
     try bench.add("REVM: Arithmetic Contract", benchmark_revm_arithmetic_contract, .{});
-    std.debug.print("\n", .{});
+    log.debug("\n", .{});
 
     // Advanced Operations Category
-    std.debug.print("📊 Advanced Operations\n", .{});
-    std.debug.print("----------------------\n", .{});
+    log.debug("📊 Advanced Operations\n", .{});
+    log.debug("----------------------\n", .{});
     try bench.add("Memory Expansion Patterns", benchmark_memory_expansion_patterns, .{});
     try bench.add("KECCAK256 Different Sizes", benchmark_keccak256_different_sizes, .{});
     try bench.add("Address Computation", benchmark_address_computation, .{});
     try bench.add("Deep Stack DUP/SWAP", benchmark_deep_stack_dup_swap, .{});
     try bench.add("Storage Access Patterns", benchmark_storage_access_patterns, .{});
 
-    std.debug.print("\nRunning consolidated EVM benchmarks...\n\n", .{});
+    log.debug("\nRunning consolidated EVM benchmarks...\n\n", .{});
     
     // Run benchmarks
     // TODO: Fix writer interface for Zig 0.15.1
     // try bench.run(stdout_writer.writer());
-    std.debug.print("Benchmark temporarily disabled due to writer interface changes.\n", .{});
+    log.debug("Benchmark temporarily disabled due to writer interface changes.\n", .{});
     
-    std.debug.print("\n✅ Consolidated EVM benchmarks completed!\n", .{});
-    std.debug.print("\nResults Summary:\n", .{});
-    std.debug.print("• Basic Operations: Core EVM operations performance\n", .{});
-    std.debug.print("• Contract Tests: Real-world contract execution comparison\n", .{});
-    std.debug.print("• EVM vs REVM: Direct comparison with Rust reference implementation\n", .{});
-    std.debug.print("• Advanced Operations: Complex patterns and stress tests\n", .{});
-    std.debug.print("\nLower times indicate better performance.\n", .{});
+    log.debug("\n✅ Consolidated EVM benchmarks completed!\n", .{});
+    log.debug("\nResults Summary:\n", .{});
+    log.debug("• Basic Operations: Core EVM operations performance\n", .{});
+    log.debug("• Contract Tests: Real-world contract execution comparison\n", .{});
+    log.debug("• EVM vs REVM: Direct comparison with Rust reference implementation\n", .{});
+    log.debug("• Advanced Operations: Complex patterns and stress tests\n", .{});
+    log.debug("\nLower times indicate better performance.\n", .{});
 }
 
 test "consolidated benchmark compilation" {

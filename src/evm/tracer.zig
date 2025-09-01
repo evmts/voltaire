@@ -10,6 +10,7 @@
 /// Tracers are selected at compile time for zero-cost abstractions.
 /// Enable tracing by configuring the Frame with a specific TracerType.
 const std = @import("std");
+const log = @import("../log.zig");
 const frame_mod = @import("frame_c.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
@@ -244,7 +245,7 @@ pub const DebuggingTracer = struct {
 
         // Capture state before operation for step recording
         self.captureStateForStep(pc, opcode, FrameType, frame, true) catch |err| {
-            std.log.warn("Failed to capture before state: {}", .{err});
+            log.debug("Failed to capture before state: {}", .{err});
         };
     }
 
@@ -255,12 +256,12 @@ pub const DebuggingTracer = struct {
 
         // Capture state after operation to complete the step record
         self.captureStateForStep(pc, opcode, FrameType, frame, false) catch |err| {
-            std.log.warn("Failed to capture after state: {}", .{err});
+            log.debug("Failed to capture after state: {}", .{err});
         };
 
         // Create state snapshot if configured
         self.captureState(pc, FrameType, frame) catch |err| {
-            std.log.warn("Failed to capture state snapshot: {}", .{err});
+            log.debug("Failed to capture state snapshot: {}", .{err});
         };
     }
 
@@ -282,7 +283,7 @@ pub const DebuggingTracer = struct {
         // Always pause on error for debugging
         self.paused = true;
 
-        std.log.debug("DebuggingTracer: Error occurred in frame type {s}: {}", .{ @typeName(FrameType), err });
+        log.debug("DebuggingTracer: Error occurred in frame type {s}: {}", .{ @typeName(FrameType), err });
     }
 
     /// Helper function to capture state for step recording
@@ -694,7 +695,7 @@ pub fn Tracer(comptime Writer: type) type {
             // Optionally capture snapshot after each operation
             if (self.cfg.capture_each_op) {
                 self.writeSnapshot(pc, opcode, FrameType, frame) catch |err| {
-                    std.log.warn("Failed to write snapshot: {}", .{err});
+                    log.debug("Failed to write snapshot: {}", .{err});
                 };
             }
         }

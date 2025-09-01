@@ -547,26 +547,9 @@ pub fn Dispatch(comptime FrameType: type) type {
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
-            // Track allocated push pointers for cleanup
-            const PointerList = ArrayList(*FrameType.WordType, null);
-            var allocated_pointers = PointerList{};
-            errdefer {
-                for (allocated_pointers.items) |ptr| {
-                    allocator.destroy(ptr);
-                }
-                allocated_pointers.deinit(allocator);
-            }
-            
-            // Track allocated bytecode copies for cleanup
-            const BytecodeList = ArrayList([*:0]u8, null);
-            var allocated_bytecode = BytecodeList{};
-            errdefer {
-                for (allocated_bytecode.items) |ptr| {
-                    const len = std.mem.len(ptr);
-                    allocator.free(ptr[0..len :0]);
-                }
-                allocated_bytecode.deinit(allocator);
-            }
+            // Track allocated memory for cleanup
+            var allocated_memory = AllocatedMemory.init();
+            errdefer allocated_memory.deinit(allocator);
 
             // Create trace handlers for the specific tracer type
             const trace_handlers = createTraceHandlers(TracerType);
@@ -600,48 +583,20 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
                         try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
-                        // Regular opcode handler
-                        const handler = opcode_handlers.*[data.opcode];
-                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
-                        if (data.opcode == @intFromEnum(Opcode.PC)) {
-                            try schedule_items.append(allocator, .{ .pc = .{ .value = @intCast(instr_pc) } });
-                        } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
-                            try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
-                        } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                            // Create null-terminated copy of bytecode for CODECOPY
-                            const bytecode_data = bytecode.runtime_code;
-                            const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
-                            @memcpy(null_terminated, bytecode_data);
-                            try allocated_bytecode.append(allocator, null_terminated.ptr);
-                            try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
-                        } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
-                            // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
-                            try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
-                        }
+                        // Use shared helper for regular opcode processing
+                        try processRegularOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, bytecode, data, instr_pc);
 
                         // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
                         try schedule_items.append(allocator, .{ .trace_after = .{ .tracer_ptr = tracer_ptr } });
                     },
                     .push => |data| {
-                        const push_opcode = 0x60 + data.size - 1;
-
                         // Insert trace_before with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_before_handler });
                         try schedule_items.append(allocator, .{ .trace_before = .{ .tracer_ptr = tracer_ptr } });
 
-                        // PUSH operation handler and metadata
-                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
-                        if (data.size <= 8 and data.value <= std.math.maxInt(u64)) {
-                            const inline_value: u64 = @intCast(data.value);
-                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
-                        } else {
-                            const value_ptr = try allocator.create(FrameType.WordType);
-                            errdefer allocator.destroy(value_ptr);
-                            value_ptr.* = data.value;
-                            try allocated_pointers.append(allocator, value_ptr);
-                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-                        }
+                        // Use shared helper for push opcode processing
+                        try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data);
 
                         // Insert trace_after with tracer pointer
                         try schedule_items.append(allocator, .{ .opcode_handler = trace_after_handler });
@@ -726,10 +681,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
 
             // Store the allocated pointers list for cleanup
-            // We need to attach this to the schedule somehow for later cleanup
-            // Store it in thread local storage for now
-            traced_allocated_pointers = try allocated_pointers.toOwnedSlice(allocator);
-            traced_allocated_bytecode = try allocated_bytecode.toOwnedSlice(allocator);
+            traced_allocated_pointers = try allocated_memory.pointers.toOwnedSlice(allocator);
+            traced_allocated_bytecode = try allocated_memory.bytecode_copies.toOwnedSlice(allocator);
 
             return schedule_items.toOwnedSlice(allocator);
         }

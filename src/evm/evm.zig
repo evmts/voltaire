@@ -15,6 +15,7 @@
 //! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
 //! EVM passes itself as an *anyopaque pointer to Frame for accessing external data and executing inner calls
 const std = @import("std");
+const log = @import("log.zig");
 const primitives = @import("primitives");
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo; // Default for backward compatibility
 const Database = @import("database.zig").Database;
@@ -29,7 +30,6 @@ const TransactionContext = @import("transaction_context.zig").TransactionContext
 const Opcode = @import("opcode.zig").Opcode;
 pub const CallResult: type = @import("call_result.zig").CallResult;
 pub const CallParams: type = @import("call_params.zig").CallParams;
-const log = @import("log.zig");
 
 /// Creates a configured EVM instance type.
 ///
@@ -343,9 +343,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Route to appropriate handler
             var result = switch (params) {
                 .call => |p| blk: {
-                    std.debug.print("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{p.to.bytes, p.gas, p.input.len});
+                    log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, p.gas, p.input.len });
                     break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch |err| {
-                        std.debug.print("DEBUG: EVM.call failed with error: {}\n", .{err});
+                        log.debug("DEBUG: EVM.call failed with error: {}\n", .{err});
                         return CallResult.failure(0);
                     };
                 },
@@ -512,7 +512,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             input: []const u8,
             gas: u64,
         }) !CallResult {
-            std.debug.print("DEBUG: executeCall entered, gas={}\n", .{params.gas});
+            log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
             const snapshot_id = self.journal.create_snapshot();
 
             // Transfer value if needed
@@ -525,13 +525,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Perform pre-flight checks
-            std.debug.print("DEBUG: calling performCallPreflight\n", .{});
+            log.debug("DEBUG: calling performCallPreflight\n", .{});
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
-                std.debug.print("DEBUG: performCallPreflight failed: {}\n", .{err});
+                log.debug("DEBUG: performCallPreflight failed: {}\n", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            std.debug.print("DEBUG: preflight result: {s}\n", .{@tagName(preflight)});
+            log.debug("DEBUG: preflight result: {s}\n", .{@tagName(preflight)});
 
             switch (preflight) {
                 .precompile_result => |result| return result,
@@ -540,7 +540,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    std.debug.print("DEBUG: Got code, len={}, about to execute_frame\n", .{code.len});
+                    log.debug("DEBUG: Got code, len={}, about to execute_frame\n", .{code.len});
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -922,7 +922,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            std.debug.print("DEBUG: execute_frame entered, code_len={}, gas={}\n", .{code.len, gas});
+            log.debug("DEBUG: execute_frame entered, code_len={}, gas={}\n", .{ code.len, gas });
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;
@@ -945,17 +945,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else gas;
             
             const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, @as(u64, @intCast(std.math.maxInt(Frame.GasType))))));
-            std.debug.print("DEBUG: gas_after_base={}, gas_cast={}\n", .{gas_after_base, gas_cast});
+            log.debug("DEBUG: gas_after_base={}, gas_cast={}\n", .{ gas_after_base, gas_cast });
 
             // EIP-214: encode static constraints; null to prevent SELFDESTRUCT in static context
             const self_destruct_param = if (is_static) null else &self.self_destruct;
 
-            std.debug.print("DEBUG: About to call Frame.init\n", .{});
+            log.debug("DEBUG: About to call Frame.init\n", .{});
             var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
             frame.contract_address = address;
             defer frame.deinit(self.allocator);
 
-            std.debug.print("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
+            log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
             
             // DEBUG: Log first few bytes of bytecode for JUMPI test
             if (code.len == 22) {
@@ -3774,7 +3774,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail
         try std.testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
-        std.log.warn("Low gas (100): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        log.warn("Low gas (100): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 
     // Test 2: Medium gas limit
@@ -3793,7 +3793,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should still fail (infinite loop)
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        std.log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 
     // Test 3: High gas limit
@@ -3812,7 +3812,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail after consuming all gas
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        std.log.warn("High gas (1M): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        log.warn("High gas (1M): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 }
 
@@ -3859,7 +3859,7 @@ test "Debug - Contract deployment and execution" {
 
         try std.testing.expect(result.success); // Empty contract succeeds immediately
         try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
-        std.log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{ elapsed, result.gas_left });
+        log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{ elapsed, result.gas_left });
     }
 
     // Test 2: Simple contract that returns immediately (STOP opcode)
@@ -3890,7 +3890,7 @@ test "Debug - Contract deployment and execution" {
         // STOP should consume minimal gas
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used < 100); // Should use very little gas
-        std.log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
+        log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
     }
 
     // Test 3: Contract with some computation
@@ -3923,7 +3923,7 @@ test "Debug - Contract deployment and execution" {
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used > 0); // Should use some gas
         try std.testing.expect(gas_used < 1000); // But not too much
-        std.log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
+        log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
     }
 }
 
@@ -3991,7 +3991,7 @@ test "Debug - Bytecode size affects execution time" {
         const elapsed = std.time.nanoTimestamp() - start_time;
 
         const gas_used = gas_limit - result.gas_left;
-        std.log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", .{ gas_limit, elapsed, gas_used, result.success });
+        log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", .{ gas_limit, elapsed, gas_used, result.success });
 
         // With low gas, should fail before completing
         if (gas_limit < 50000) {
@@ -6706,9 +6706,9 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
     const init_code = try hex_decode(std.testing.allocator, trimmed_hex);
     defer std.testing.allocator.free(init_code);
 
-    std.debug.print("\n=== Testing ERC20 deployment ===\n", .{});
-    std.debug.print("Init code length: {}\n", .{init_code.len});
-    std.debug.print("First 10 bytes: {x}\n", .{init_code[0..10]});
+    log.debug("\n=== Testing ERC20 deployment ===\n", .{});
+    log.debug("Init code length: {}\n", .{init_code.len});
+    log.debug("First 10 bytes: {x}\n", .{init_code[0..10]});
 
     // Create the contract using CREATE (same as benchmark runner)
     const create_params = CallParams{
@@ -6725,12 +6725,12 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
     
     // Log the result for debugging
     if (result.success) {
-        std.debug.print("✅ Contract deployment succeeded!\n", .{});
-        std.debug.print("Gas left: {}\n", .{result.gas_left});
-        std.debug.print("Output length: {}\n", .{result.output.len});
+        log.debug("✅ Contract deployment succeeded!\n", .{});
+        log.debug("Gas left: {}\n", .{result.gas_left});
+        log.debug("Output length: {}\n", .{result.output.len});
     } else {
-        std.debug.print("❌ Contract deployment failed\n", .{});
-        std.debug.print("Gas left: {}\n", .{result.gas_left});
+        log.debug("❌ Contract deployment failed\n", .{});
+        log.debug("Gas left: {}\n", .{result.gas_left});
     }
 
     // For now, we expect this to fail (reproducing the issue)

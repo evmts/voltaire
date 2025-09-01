@@ -163,7 +163,7 @@ pub fn initFromAnalysisTemplate(
             .CODECOPY => {
                 try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[opcode_byte] });
                 const bytecode_data = bytecode.runtime_code;
-                try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr, .size = @intCast(bytecode_data.len) } });
+                try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = bytecode_data.ptr } });
             },
             else => {
                 // Regular opcode
