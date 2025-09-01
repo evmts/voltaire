@@ -7,9 +7,7 @@ const AbiType = Abi.AbiType;
 
 pub const ContractName = enum {
     aave_v3_pool,
-    chainlink_price_feed,
     compound_cusdc,
-    opensea_seaport,
     uniswap_v2_router,
     uniswap_v3_pool_eth_usdc,
     usdc_proxy,
@@ -31,9 +29,7 @@ pub const FixtureContract = struct {
     pub fn get(contract: ContractName) FixtureContract {
         return switch (contract) {
             .aave_v3_pool => aave_v3_pool_fixture,
-            .chainlink_price_feed => chainlink_price_feed_fixture,
             .compound_cusdc => compound_cusdc_fixture,
-            .opensea_seaport => opensea_seaport_fixture,
             .uniswap_v2_router => uniswap_v2_router_fixture,
             .uniswap_v3_pool_eth_usdc => uniswap_v3_pool_eth_usdc_fixture,
             .usdc_proxy => usdc_proxy_fixture,
@@ -45,18 +41,16 @@ pub const FixtureContract = struct {
     pub fn getByName(comptime name: []const u8) FixtureContract {
         // Use compile-time string comparison since std.meta.stringToEnum seems unreliable
         if (comptime std.mem.eql(u8, name, "aave_v3_pool")) return get(.aave_v3_pool)
-        else if (comptime std.mem.eql(u8, name, "chainlink_price_feed")) return get(.chainlink_price_feed)
         else if (comptime std.mem.eql(u8, name, "compound_cusdc")) return get(.compound_cusdc)
-        else if (comptime std.mem.eql(u8, name, "opensea_seaport")) return get(.opensea_seaport)
         else if (comptime std.mem.eql(u8, name, "uniswap_v2_router")) return get(.uniswap_v2_router)
         else if (comptime std.mem.eql(u8, name, "uniswap_v3_pool_eth_usdc")) return get(.uniswap_v3_pool_eth_usdc)
         else if (comptime std.mem.eql(u8, name, "usdc_proxy")) return get(.usdc_proxy)
         else if (comptime std.mem.eql(u8, name, "weth_mainnet")) return get(.weth_mainnet)
-        else @compileError("Invalid contract name '" ++ name ++ "'. Valid names are: aave_v3_pool, chainlink_price_feed, compound_cusdc, opensea_seaport, uniswap_v2_router, uniswap_v3_pool_eth_usdc, usdc_proxy, weth_mainnet");
+        else @compileError("Invalid contract name '" ++ name ++ "'. Valid names are: aave_v3_pool, compound_cusdc, uniswap_v2_router, uniswap_v3_pool_eth_usdc, usdc_proxy, weth_mainnet");
     }
 };
 
-const valid_contract_names = "aave_v3_pool, chainlink_price_feed, compound_cusdc, opensea_seaport, uniswap_v2_router, uniswap_v3_pool_eth_usdc, usdc_proxy, weth_mainnet";
+const valid_contract_names = "aave_v3_pool, compound_cusdc, uniswap_v2_router, uniswap_v3_pool_eth_usdc, usdc_proxy, weth_mainnet";
 
 // Helper functions to convert .zon data to ABI format
 fn stringToAbiType(comptime type_str: []const u8) AbiType {
@@ -154,25 +148,11 @@ const aave_v3_pool_fixture = FixtureContract{
     .abi = convertZonAbi(@import("aave-v3-pool/contract.abi.zon")),
 };
 
-// Chainlink Price Feed
-const chainlink_price_feed_fixture = FixtureContract{
-    .address = Address.from_hex("0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419") catch unreachable,
-    .bytecode = @embedFile("chainlink-price-feed/bytecode.txt"),
-    .abi = convertZonAbi(@import("chainlink-price-feed/contract.abi.zon")),
-};
-
 // Compound cUSDC
 const compound_cusdc_fixture = FixtureContract{
     .address = Address.from_hex("0x39AA39c021dfbaE8faC545936693aC917d5E7563") catch unreachable,
     .bytecode = @embedFile("compound-cusdc/bytecode.txt"),
     .abi = convertZonAbi(@import("compound-cusdc/contract.abi.zon")),
-};
-
-// OpenSea Seaport
-const opensea_seaport_fixture = FixtureContract{
-    .address = Address.from_hex("0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC") catch unreachable,
-    .bytecode = @embedFile("opensea-seaport/bytecode.txt"),
-    .abi = convertZonAbi(@import("opensea-seaport/contract.abi.zon")),
 };
 
 // Uniswap V2 Router

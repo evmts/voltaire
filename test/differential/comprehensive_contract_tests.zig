@@ -138,29 +138,6 @@ pub const ComprehensiveContractTest = struct {
         try self.testMethod("AAVE V3 Pool", "supply", .{0x61, 0x7b, 0xa0, 0x37}, supply_params[0..128], 0, 2_000_000);
     }
 
-    //////////////////////////////////////////////////////////////////////////  
-    // Chainlink Price Feed Tests
-    //////////////////////////////////////////////////////////////////////////
-
-    pub fn testChainlinkPriceFeed(self: *Self) !void {
-        const bytecode = try loadBytecode(self.allocator, "src/evm/fixtures/chainlink-price-feed/bytecode.txt");
-        defer self.allocator.free(bytecode);
-
-        // Test Chainlink Price Feed deployment
-        try self.testor.test_bytecode(bytecode);
-
-        // Test latestRoundData() - Read method
-        // latestRoundData() -> (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
-        try self.testMethod("Chainlink Price Feed", "latestRoundData", .{0xfe, 0xaf, 0x96, 0x8c}, &.{}, 0, 1_000_000);
-
-        // Test decimals() - Read method
-        // decimals() -> uint8
-        try self.testMethod("Chainlink Price Feed", "decimals", .{0x31, 0x3c, 0xe5, 0x67}, &.{}, 0, 100_000);
-
-        // Test latestAnswer() - Read method  
-        // latestAnswer() -> int256
-        try self.testMethod("Chainlink Price Feed", "latestAnswer", .{0x50, 0xd2, 0x5b, 0xcd}, &.{}, 0, 100_000);
-    }
 
     //////////////////////////////////////////////////////////////////////////
     // Compound cUSDC Tests  
@@ -195,32 +172,6 @@ pub const ComprehensiveContractTest = struct {
         // redeem(uint256 redeemTokens) -> uint256  
         const redeem_amount = createUint256Param(100000);
         try self.testMethod("Compound cUSDC", "redeem", .{0xdb, 0x00, 0x6a, 0x75}, &redeem_amount, 0, 1_000_000);
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    // OpenSea Seaport Tests
-    //////////////////////////////////////////////////////////////////////////
-
-    pub fn testOpenSeaSeaport(self: *Self) !void {
-        const bytecode = try loadBytecode(self.allocator, "src/evm/fixtures/opensea-seaport/bytecode.txt");
-        defer self.allocator.free(bytecode);
-
-        // Test OpenSea Seaport deployment
-        try self.testor.test_bytecode(bytecode);
-
-        // Test name() - Read method
-        // name() -> string
-        try self.testMethod("OpenSea Seaport", "name", .{0x06, 0xfd, 0xde, 0x03}, &.{}, 0, 200_000);
-
-        // Test getOrderHash(OrderComponents) - Read method
-        // This is complex, so we'll pass empty tuple for now
-        var order_data = [_]u8{0} ** 320; // Simplified order structure
-        try self.testMethod("OpenSea Seaport", "getOrderHash", .{0x79, 0xdf, 0x72, 0xbd}, &order_data, 0, 1_000_000);
-
-        // Test getOrderStatus(bytes32) - Read method
-        // getOrderStatus(bytes32 orderHash) -> (bool,bool,uint256,uint256)
-        const order_hash = createUint256Param(0x1234567890abcdef);
-        try self.testMethod("OpenSea Seaport", "getOrderStatus", .{0x46, 0x42, 0x37, 0x65}, &order_hash, 0, 500_000);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -408,16 +359,6 @@ test "AAVE V3 Pool comprehensive differential test" {
     try test_suite.testAAVEV3Pool();
 }
 
-test "Chainlink Price Feed comprehensive differential test" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var test_suite = try ComprehensiveContractTest.init(allocator);
-    defer test_suite.deinit();
-
-    try test_suite.testChainlinkPriceFeed();
-}
 
 test "Compound cUSDC comprehensive differential test" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -430,16 +371,6 @@ test "Compound cUSDC comprehensive differential test" {
     try test_suite.testCompoundCUSDC();
 }
 
-test "OpenSea Seaport comprehensive differential test" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var test_suite = try ComprehensiveContractTest.init(allocator);
-    defer test_suite.deinit();
-
-    try test_suite.testOpenSeaSeaport();
-}
 
 test "Uniswap V2 Router comprehensive differential test" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

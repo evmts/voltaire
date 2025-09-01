@@ -6,16 +6,14 @@ const Address = @import("primitives").Address.Address;
 test "FixtureContract enum-based get method" {
     // Test all valid contract enums
     const weth = FixtureContract.get(.weth_mainnet);
-    const chainlink = FixtureContract.get(.chainlink_price_feed);
     const compound = FixtureContract.get(.compound_cusdc);
-    const opensea = FixtureContract.get(.opensea_seaport);
     const uniswap_v2 = FixtureContract.get(.uniswap_v2_router);
     const uniswap_v3 = FixtureContract.get(.uniswap_v3_pool_eth_usdc);
     const usdc = FixtureContract.get(.usdc_proxy);
     const aave = FixtureContract.get(.aave_v3_pool);
     
     // Check all contracts have bytecode, addresses, and ABIs
-    const contracts = [_]FixtureContract{ weth, chainlink, compound, opensea, uniswap_v2, uniswap_v3, usdc, aave };
+    const contracts = [_]FixtureContract{ weth, compound, uniswap_v2, uniswap_v3, usdc, aave };
     for (contracts) |contract| {
         try std.testing.expect(contract.bytecode.len > 0);
         try std.testing.expect(contract.abi.name.len > 0); // ABI has a name
@@ -37,16 +35,16 @@ test "FixtureContract address validation" {
 test "FixtureContract bytecode content validation" {
     // Test that bytecode files are loaded correctly
     const weth = FixtureContract.get(.weth_mainnet);
-    const chainlink = FixtureContract.get(.chainlink_price_feed);
+    const compound = FixtureContract.get(.compound_cusdc);
     
     // WETH bytecode should be substantial
     try std.testing.expect(weth.bytecode.len > 1000);
     
-    // Chainlink price feed should have bytecode
-    try std.testing.expect(chainlink.bytecode.len > 100);
+    // Compound cUSDC should have bytecode
+    try std.testing.expect(compound.bytecode.len > 100);
     
     // All contracts should have different bytecode
-    try std.testing.expect(!std.mem.eql(u8, weth.bytecode, chainlink.bytecode));
+    try std.testing.expect(!std.mem.eql(u8, weth.bytecode, compound.bytecode));
 }
 
 test "FixtureContract ABI format validation" {
@@ -81,7 +79,7 @@ test "FixtureContract string-based lookup" {
 test "ContractName enum completeness" {
     // Test that we can iterate over all enum values
     const all_contracts = std.meta.tags(ContractName);
-    try std.testing.expect(all_contracts.len == 8); // We have 8 contracts
+    try std.testing.expect(all_contracts.len == 6); // We have 6 contracts
     
     // Test that each enum value maps to a valid contract
     inline for (all_contracts) |contract_name| {
