@@ -13,6 +13,7 @@
 //! all functionality needed for EVM execution without vtable overhead.
 
 const std = @import("std");
+const log = @import("log.zig");
 pub const Account = @import("database_interface_account.zig").Account;
 
 /// High-performance in-memory database for EVM state
@@ -125,7 +126,6 @@ pub const Database = struct {
 
     /// Set account data for the given address
     pub fn set_account(self: *Database, address: [20]u8, account: Account) Error!void {
-        const log = std.log.scoped(.database);
         log.debug("set_account: Setting account for address {x} with code_hash {x}", .{ address, account.code_hash });
         try self.accounts.put(address, account);
     }
@@ -180,7 +180,6 @@ pub const Database = struct {
 
     /// Get contract code by hash
     pub fn get_code(self: *Database, code_hash: [32]u8) Error![]const u8 {
-        const log = std.log.scoped(.database);
         const code = self.code_storage.get(code_hash) orelse {
             log.debug("get_code: Code not found for hash {x}", .{code_hash});
             return Error.CodeNotFound;
@@ -191,7 +190,6 @@ pub const Database = struct {
 
     /// Get contract code by address (supports EIP-7702 delegation)
     pub fn get_code_by_address(self: *Database, address: [20]u8) Error![]const u8 {
-        const log = std.log.scoped(.database);
         log.debug("get_code_by_address: Looking for address {x}", .{address});
         
         if (self.accounts.get(address)) |account| {
@@ -212,7 +210,6 @@ pub const Database = struct {
 
     /// Store contract code and return its hash
     pub fn set_code(self: *Database, code: []const u8) Error![32]u8 {
-        const log = std.log.scoped(.database);
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
         log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
@@ -322,7 +319,6 @@ pub const Database = struct {
 
     /// Set delegation for an EOA to execute another address's code
     pub fn set_delegation(self: *Database, eoa_address: [20]u8, delegated_address: [20]u8) Error!void {
-        const log = std.log.scoped(.database);
         
         // Get or create the EOA account
         var account = (try self.get_account(eoa_address)) orelse Account.zero();
@@ -345,7 +341,6 @@ pub const Database = struct {
 
     /// Clear delegation for an EOA
     pub fn clear_delegation(self: *Database, eoa_address: [20]u8) Error!void {
-        const log = std.log.scoped(.database);
         
         if (try self.get_account(eoa_address)) |*account| {
             account.clear_delegation();

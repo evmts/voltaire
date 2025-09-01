@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const stack_frame_mod = @import("stack_frame.zig");
 const Frame = stack_frame_mod.Frame;
 const Opcode = @import("opcode.zig").Opcode;
@@ -1784,7 +1785,7 @@ fn createTestHandlerChain(comptime FrameType: type) *const fn (*FrameType, *cons
                 pub fn onError(self: *@This(), comptime FrameType: type, frame: *const FrameType, err: anyerror) void {
                     _ = frame;
                     if (false) {
-                        std.debug.print("Error: {}\n", .{err});
+                        log.debug("Error: {}\n", .{err});
                     }
                     self.call_count += 1;
                 }

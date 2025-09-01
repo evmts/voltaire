@@ -94,7 +94,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 // Check if packed_bitmap has enough elements
                 if (iterator.pc >= iterator.bytecode.packed_bitmap.len) {
                     // Log error and return null
-                    const log = @import("log.zig");
                     log.err("Iterator PC {} exceeds packed_bitmap len {}", .{ iterator.pc, iterator.bytecode.packed_bitmap.len });
                     return null;
                 }
@@ -298,7 +297,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
                 else => {
                     // If we hit this branch we failed to implement an opcode or fusion
-                    const log = @import("log.zig");
                     log.err("getFusionData: Unhandled fusion pattern - PUSH{} (value: {}) followed by opcode 0x{x:0>2}", .{ push_size, value, second_op });
                     // TODO: Add more fusion types to OpcodeData union as needed
                     unreachable;
@@ -614,8 +612,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             
                             // Case 1: PUSH + JUMP (for fusion optimization)
                             if (next_op == @intFromEnum(Opcode.JUMP)) {
-                                const log = @import("log.zig");
-                                log.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
+                                            log.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
                                 // Note: We do NOT validate jump targets here - that happens at runtime
                                 // This is only for marking fusion opportunities
                             }
@@ -626,8 +623,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                                      last_push_end == i) {
                                 // We have PUSH(dest) + PUSH(cond) + JUMPI pattern
                                 const jump_dest = last_push_value.?;
-                                const log = @import("log.zig");
-                                log.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
+                                            log.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
                                 // Note: We do NOT validate jump targets here - that happens at runtime
                             }
                         }

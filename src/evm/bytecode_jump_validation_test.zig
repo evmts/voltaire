@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const testing = std.testing;
 const BytecodeDefault = @import("bytecode.zig").BytecodeDefault;
 const Opcode = @import("opcode.zig").Opcode;
@@ -15,7 +16,7 @@ test "bytecode: valid PUSH1+JUMP pattern with JUMPDEST" {
     };
     
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error: {}\n", .{err});
+        log.debug("Error: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -36,7 +37,7 @@ test "bytecode: PUSH2+JUMP pattern with valid JUMPDEST" {
     };
     
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error: {}\n", .{err});
+        log.debug("Error: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -57,7 +58,7 @@ test "bytecode: PUSH+PUSH+JUMPI pattern with valid JUMPDEST" {
     };
     
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error: {}\n", .{err});
+        log.debug("Error: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -81,7 +82,7 @@ test "bytecode: PUSH32 containing JUMP byte should not be detected as JUMP" {
     
     // This should succeed - the 0x56 bytes inside PUSH32 data should NOT be treated as JUMP opcodes
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error initializing bytecode with PUSH32 containing 0x56: {}\n", .{err});
+        log.debug("Error initializing bytecode with PUSH32 containing 0x56: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -107,7 +108,7 @@ test "bytecode: PUSH4 with value that looks like JUMP target should not validate
     };
     
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error: {}\n", .{err});
+        log.debug("Error: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -141,7 +142,7 @@ test "bytecode: complex bytecode with mixed PUSH and JUMP patterns" {
     };
     
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error in complex bytecode test: {}\n", .{err});
+        log.debug("Error in complex bytecode test: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -173,7 +174,7 @@ test "bytecode: unreachable PUSH+JUMP pattern should still be valid" {
     // This should succeed even though the jump target (16) doesn't exist,
     // because the PUSH+JUMP is unreachable
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error with unreachable code: {}\n", .{err});
+        log.debug("Error with unreachable code: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -193,7 +194,7 @@ test "bytecode: PUSH1+JUMP with out-of-bounds target should succeed at init" {
     
     // Should succeed at initialization (validation happens at runtime)
     const bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("Error: {}\n", .{err});
+        log.debug("Error: {}\n", .{err});
         return err;
     };
     defer bc.deinit();

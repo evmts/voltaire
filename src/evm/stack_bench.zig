@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const zbench = @import("zbench");
 const evm_mod = @import("evm");
 const primitives = @import("primitives");
@@ -57,7 +58,7 @@ fn bench_stack_push_500(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -73,7 +74,7 @@ fn bench_stack_pop_500(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -95,7 +96,7 @@ fn bench_stack_unsafe_operations(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -121,7 +122,7 @@ fn bench_stack_dup(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -145,7 +146,7 @@ fn bench_stack_swap(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -168,7 +169,7 @@ fn bench_stack_peek(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -195,7 +196,7 @@ fn bench_direct_push_pop_100(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -220,7 +221,7 @@ fn bench_direct_push_pop_1000(allocator: std.mem.Allocator) void {
         .stack_size = std.math.maxInt(u12),
         .WordType = u256,
     }).init(allocator) catch |err| {
-        std.log.err("Stack benchmark failed to init stack: {}", .{err});
+        log.err("Stack benchmark failed to init stack: {}", .{err});
         @panic("Stack benchmark failed");
     };
     defer stack.deinit(allocator);
@@ -345,7 +346,7 @@ fn generateLargeStackBytecode(allocator: std.mem.Allocator) ![]u8 {
 fn bench_evm_push_pop(allocator: std.mem.Allocator) void {
     // Generate bytecode
     const bytecode = generatePushPopBytecode(allocator) catch |err| {
-        std.log.err("EVM push/pop benchmark failed to generate bytecode: {}", .{err});
+        log.err("EVM push/pop benchmark failed to generate bytecode: {}", .{err});
         @panic("EVM push/pop benchmark failed");
     };
     defer allocator.free(bytecode);
@@ -375,7 +376,7 @@ fn bench_evm_push_pop(allocator: std.mem.Allocator) void {
     
     // Create EVM instance
     var vm = evm_mod.Evm(.{}).init(allocator, &db, block_info, context, 0, ZERO_ADDRESS, .CANCUN) catch |err| {
-        std.log.err("EVM push/pop benchmark failed to init VM: {}", .{err});
+        log.err("EVM push/pop benchmark failed to init VM: {}", .{err});
         @panic("EVM push/pop benchmark failed");
     };
     defer vm.deinit();
@@ -393,7 +394,7 @@ fn bench_evm_push_pop(allocator: std.mem.Allocator) void {
     
     // Deploy contract
     const code_hash = db.set_code(bytecode) catch |err| {
-        std.log.err("EVM push/pop benchmark failed to set code: {}", .{err});
+        log.err("EVM push/pop benchmark failed to set code: {}", .{err});
         @panic("EVM push/pop benchmark failed");
     };
     
@@ -406,13 +407,13 @@ fn bench_evm_push_pop(allocator: std.mem.Allocator) void {
     
     account.code_hash = code_hash;
     db.set_account(CONTRACT_ADDRESS, account) catch |err| {
-        std.log.err("EVM push/pop benchmark failed to set account: {}", .{err});
+        log.err("EVM push/pop benchmark failed to set account: {}", .{err});
         @panic("EVM push/pop benchmark failed");
     };
     
     // Execute the call
     const result = vm.call(call_params) catch |err| {
-        std.log.err("EVM push/pop benchmark failed to call: {}", .{err});
+        log.err("EVM push/pop benchmark failed to call: {}", .{err});
         @panic("EVM push/pop benchmark failed");
     };
     _ = result;
@@ -421,7 +422,7 @@ fn bench_evm_push_pop(allocator: std.mem.Allocator) void {
 fn bench_evm_large_stack(allocator: std.mem.Allocator) void {
     // Generate bytecode
     const bytecode = generateLargeStackBytecode(allocator) catch |err| {
-        std.log.err("EVM large stack benchmark failed to generate bytecode: {}", .{err});
+        log.err("EVM large stack benchmark failed to generate bytecode: {}", .{err});
         @panic("EVM large stack benchmark failed");
     };
     defer allocator.free(bytecode);
@@ -451,7 +452,7 @@ fn bench_evm_large_stack(allocator: std.mem.Allocator) void {
     
     // Create EVM instance
     var vm = evm_mod.Evm(.{}).init(allocator, &db, block_info, context, 0, ZERO_ADDRESS, .CANCUN) catch |err| {
-        std.log.err("EVM large stack benchmark failed to init VM: {}", .{err});
+        log.err("EVM large stack benchmark failed to init VM: {}", .{err});
         @panic("EVM large stack benchmark failed");
     };
     defer vm.deinit();
@@ -469,7 +470,7 @@ fn bench_evm_large_stack(allocator: std.mem.Allocator) void {
     
     // Deploy contract
     const code_hash = db.set_code(bytecode) catch |err| {
-        std.log.err("EVM large stack benchmark failed to set code: {}", .{err});
+        log.err("EVM large stack benchmark failed to set code: {}", .{err});
         @panic("EVM large stack benchmark failed");
     };
     
@@ -482,13 +483,13 @@ fn bench_evm_large_stack(allocator: std.mem.Allocator) void {
     
     account.code_hash = code_hash;
     db.set_account(CONTRACT_ADDRESS, account) catch |err| {
-        std.log.err("EVM large stack benchmark failed to set account: {}", .{err});
+        log.err("EVM large stack benchmark failed to set account: {}", .{err});
         @panic("EVM large stack benchmark failed");
     };
     
     // Execute the call
     const result = vm.call(call_params) catch |err| {
-        std.log.err("EVM large stack benchmark failed to call: {}", .{err});
+        log.err("EVM large stack benchmark failed to call: {}", .{err});
         @panic("EVM large stack benchmark failed");
     };
     _ = result;
@@ -501,7 +502,7 @@ fn bench_evm_large_stack(allocator: std.mem.Allocator) void {
 fn bench_revm_push_pop(allocator: std.mem.Allocator) void {
     // Generate bytecode
     const bytecode = generatePushPopBytecode(allocator) catch |err| {
-        std.log.err("REVM push/pop benchmark failed to generate bytecode: {}", .{err});
+        log.err("REVM push/pop benchmark failed to generate bytecode: {}", .{err});
         @panic("REVM push/pop benchmark failed");
     };
     defer allocator.free(bytecode);
@@ -513,26 +514,26 @@ fn bench_revm_push_pop(allocator: std.mem.Allocator) void {
     };
     
     var vm = revm.Revm.init(allocator, settings) catch |err| {
-        std.log.err("REVM push/pop benchmark failed to init VM: {}", .{err});
+        log.err("REVM push/pop benchmark failed to init VM: {}", .{err});
         @panic("REVM push/pop benchmark failed");
     };
     defer vm.deinit();
     
     // Deploy contract
     vm.setCode(CONTRACT_ADDRESS, bytecode) catch |err| {
-        std.log.err("REVM push/pop benchmark failed to set code: {}", .{err});
+        log.err("REVM push/pop benchmark failed to set code: {}", .{err});
         @panic("REVM push/pop benchmark failed");
     };
     
     // Set balance for caller
     vm.setBalance(CALLER_ADDRESS, 1000000) catch |err| {
-        std.log.err("REVM push/pop benchmark failed to set balance: {}", .{err});
+        log.err("REVM push/pop benchmark failed to set balance: {}", .{err});
         @panic("REVM push/pop benchmark failed");
     };
     
     // Execute the call
     var result = vm.call(CALLER_ADDRESS, CONTRACT_ADDRESS, 0, &.{}, BENCHMARK_GAS_LIMIT) catch |err| {
-        std.log.err("REVM push/pop benchmark failed to call: {}", .{err});
+        log.err("REVM push/pop benchmark failed to call: {}", .{err});
         @panic("REVM push/pop benchmark failed");
     };
     defer result.deinit();
@@ -541,7 +542,7 @@ fn bench_revm_push_pop(allocator: std.mem.Allocator) void {
 fn bench_revm_large_stack(allocator: std.mem.Allocator) void {
     // Generate bytecode
     const bytecode = generateLargeStackBytecode(allocator) catch |err| {
-        std.log.err("REVM large stack benchmark failed to generate bytecode: {}", .{err});
+        log.err("REVM large stack benchmark failed to generate bytecode: {}", .{err});
         @panic("REVM large stack benchmark failed");
     };
     defer allocator.free(bytecode);
@@ -553,26 +554,26 @@ fn bench_revm_large_stack(allocator: std.mem.Allocator) void {
     };
     
     var vm = revm.Revm.init(allocator, settings) catch |err| {
-        std.log.err("REVM large stack benchmark failed to init VM: {}", .{err});
+        log.err("REVM large stack benchmark failed to init VM: {}", .{err});
         @panic("REVM large stack benchmark failed");
     };
     defer vm.deinit();
     
     // Deploy contract
     vm.setCode(CONTRACT_ADDRESS, bytecode) catch |err| {
-        std.log.err("REVM large stack benchmark failed to set code: {}", .{err});
+        log.err("REVM large stack benchmark failed to set code: {}", .{err});
         @panic("REVM large stack benchmark failed");
     };
     
     // Set balance for caller
     vm.setBalance(CALLER_ADDRESS, 1000000) catch |err| {
-        std.log.err("REVM large stack benchmark failed to set balance: {}", .{err});
+        log.err("REVM large stack benchmark failed to set balance: {}", .{err});
         @panic("REVM large stack benchmark failed");
     };
     
     // Execute the call
     var result = vm.call(CALLER_ADDRESS, CONTRACT_ADDRESS, 0, &.{}, BENCHMARK_GAS_LIMIT) catch |err| {
-        std.log.err("REVM large stack benchmark failed to call: {}", .{err});
+        log.err("REVM large stack benchmark failed to call: {}", .{err});
         @panic("REVM large stack benchmark failed");
     };
     defer result.deinit();
