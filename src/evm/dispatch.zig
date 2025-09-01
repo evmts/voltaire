@@ -471,31 +471,31 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
                     .push_add_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_add);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_add);
                     },
                     .push_mul_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_mul);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_mul);
                     },
                     .push_sub_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_sub);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_sub);
                     },
                     .push_div_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_div);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_div);
                     },
                     .push_and_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_and);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_and);
                     },
                     .push_or_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_or);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_or);
                     },
                     .push_xor_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_xor);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_xor);
                     },
                     .push_jump_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_jump);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_jump);
                     },
                     .push_jumpi_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, opcode_handlers, data.value, .push_jumpi);
+                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_jumpi);
                     },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -513,6 +513,11 @@ pub fn Dispatch(comptime FrameType: type) type {
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
+            
+            // Store tracked allocations for later cleanup
+            traced_allocated_pointers = try allocated_memory.pointers.toOwnedSlice(allocator);
+            traced_allocated_bytecode = try allocated_memory.bytecode_copies.toOwnedSlice(allocator);
+            
             log.debug("Dispatch.init complete, schedule length: {}", .{final_schedule.len});
             return final_schedule;
         }
@@ -811,6 +816,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         fn handleFusionOperation(
             schedule_items: anytype,
             allocator: std.mem.Allocator,
+            allocated_memory: *AllocatedMemory,
             opcode_handlers: *const [256]OpcodeHandler,
             value: FrameType.WordType,
             fusion_type: FusionType,
@@ -824,7 +830,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_val } });
             } else {
                 const value_ptr = try allocator.create(FrameType.WordType);
+                errdefer allocator.destroy(value_ptr);
                 value_ptr.* = value;
+                try allocated_memory.pointers.append(allocator, value_ptr);
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
             }
         }

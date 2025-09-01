@@ -6642,3 +6642,98 @@ test "EVM bytecode iterator execution - handles jumps" {
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 0), result.output.len);
 }
+
+test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
+    // This test reproduces the stack underflow issue from the benchmark runner
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 20_000_000,
+        .timestamp = 1_800_000_000,
+        .difficulty = 0,
+        .gas_limit = 1_000_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 7,
+        .prev_randao = [_]u8{0} ** 32,
+        .blob_base_fee = 1000000000,
+        .blob_versioned_hashes = &.{},
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1_000_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Set up caller with large balance (same as benchmark runner)
+    const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
+    try db.set_account(caller_address.bytes, Account{
+        .balance = std.math.maxInt(u256),
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Read the actual ERC20 bytecode from file
+    const bytecode_file = try std.fs.cwd().openFile("src/evm/fixtures/erc20-transfer/bytecode.txt", .{});
+    defer bytecode_file.close();
+    const bytecode_hex = try bytecode_file.readToEndAlloc(std.testing.allocator, 16 * 1024 * 1024);
+    defer std.testing.allocator.free(bytecode_hex);
+    
+    // Hex decode helper
+    const hex_decode = struct {
+        fn decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
+            const clean_hex = if (std.mem.startsWith(u8, hex_str, "0x")) hex_str[2..] else hex_str;
+            const trimmed = std.mem.trim(u8, clean_hex, &std.ascii.whitespace);
+            if (trimmed.len == 0) return allocator.alloc(u8, 0);
+            
+            const result = try allocator.alloc(u8, trimmed.len / 2);
+            var i: usize = 0;
+            while (i < trimmed.len) : (i += 2) {
+                const byte_str = trimmed[i .. i + 2];
+                result[i / 2] = std.fmt.parseInt(u8, byte_str, 16) catch return error.InvalidHexCharacter;
+            }
+            return result;
+        }
+    }.decode;
+    
+    const trimmed_hex = std.mem.trim(u8, bytecode_hex, " \t\n\r");
+    const init_code = try hex_decode(std.testing.allocator, trimmed_hex);
+    defer std.testing.allocator.free(init_code);
+
+    std.debug.print("\n=== Testing ERC20 deployment ===\n", .{});
+    std.debug.print("Init code length: {}\n", .{init_code.len});
+    std.debug.print("First 10 bytes: {x}\n", .{init_code[0..10]});
+
+    // Create the contract using CREATE (same as benchmark runner)
+    const create_params = CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = init_code,
+            .gas = 10_000_000,
+        },
+    };
+
+    // This should reproduce the stack underflow issue
+    const result = evm.call(create_params);
+    
+    // Log the result for debugging
+    if (result.success) {
+        std.debug.print("✅ Contract deployment succeeded!\n", .{});
+        std.debug.print("Gas left: {}\n", .{result.gas_left});
+        std.debug.print("Output length: {}\n", .{result.output.len});
+    } else {
+        std.debug.print("❌ Contract deployment failed\n", .{});
+        std.debug.print("Gas left: {}\n", .{result.gas_left});
+    }
+
+    // For now, we expect this to fail (reproducing the issue)
+    // Once fixed, change this to: try std.testing.expect(result.success);
+    try std.testing.expect(!result.success);
+}
