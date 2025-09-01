@@ -113,6 +113,9 @@ pub const ComprehensiveContractTest = struct {
         const bytecode = try loadBytecode(self.allocator, "src/evm/fixtures/aave-v3-pool/bytecode.txt");
         defer self.allocator.free(bytecode);
 
+        // Log bytecode size to help debug
+        std.log.warn("Testing AAVE V3 Pool deployment with {} bytes of bytecode", .{bytecode.len});
+        
         // Test AAVE V3 Pool deployment
         try self.testor.test_bytecode(bytecode);
 

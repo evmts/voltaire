@@ -3,6 +3,7 @@ const testing = std.testing;
 const evm = @import("evm");
 const primitives = @import("primitives");
 const log = @import("log");
+const OpcodeTracer = @import("opcode_tracer.zig").OpcodeTracer;
 
 const Evm = evm.Evm;
 const Database = evm.Database;
@@ -13,7 +14,11 @@ const TransactionContext = evm.TransactionContext;
 
 test "ERC20 deployment gas consumption issue" {
     const allocator = testing.allocator;
-    log.info("Starting ERC20 deployment test", .{});
+    log.info("Starting ERC20 deployment test with opcode tracing", .{});
+    
+    // Create tracer
+    var tracer = OpcodeTracer.init();
+    defer tracer.deinit();
     
     // Create database
     var database = Database.init(allocator);
@@ -49,8 +54,8 @@ test "ERC20 deployment gas consumption issue" {
     };
     try database.set_account(caller_address.bytes, caller_account);
     
-    // Create EVM instance
-    var evm_instance = try Evm(.{}).init(
+    // Create EVM instance with tracer
+    var evm_instance = try Evm(.{ .tracer_type = OpcodeTracer }).init(
         allocator,
         &database,
         block_info,
@@ -83,14 +88,9 @@ test "ERC20 deployment gas consumption issue" {
     
     log.info("ERC20 init code size: {} bytes", .{init_code.len});
     
-    // Test with different gas amounts to find the threshold
+    // Test with just one small gas amount to see the trace clearly
     const gas_amounts = [_]u64{
         1_000_000,     // 1M gas
-        10_000_000,    // 10M gas  
-        50_000_000,    // 50M gas
-        100_000_000,   // 100M gas
-        500_000_000,   // 500M gas
-        1_000_000_000, // 1B gas
     };
     
     for (gas_amounts) |gas_amount| {
@@ -103,8 +103,8 @@ test "ERC20 deployment gas consumption issue" {
         // Create caller account with balance
         try test_db.set_account(caller_address.bytes, caller_account);
         
-        // Create fresh EVM instance
-        var test_evm = try Evm(.{}).init(
+        // Create fresh EVM instance with tracer
+        var test_evm = try Evm(.{ .tracer_type = OpcodeTracer }).init(
             allocator,
             &test_db,
             block_info,
@@ -176,7 +176,7 @@ test "ERC20 deployment gas consumption issue" {
     defer minimal_db.deinit();
     try minimal_db.set_account(caller_address.bytes, caller_account);
     
-    var minimal_evm = try Evm(.{}).init(
+    var minimal_evm = try Evm(.{ .tracer_type = OpcodeTracer }).init(
         allocator,
         &minimal_db,
         block_info,

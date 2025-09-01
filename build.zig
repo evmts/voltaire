@@ -118,6 +118,31 @@ pub fn build(b: *std.Build) void {
     const run_erc20_gas_test = b.addRunArtifact(erc20_gas_test);
     const erc20_gas_test_step = b.step("test-erc20-gas", "Test ERC20 deployment gas issue");
     erc20_gas_test_step.dependOn(&run_erc20_gas_test.step);
+    
+    // Jump table issue test
+    const jump_table_test = b.addTest(.{
+        .name = "test-jump-table",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/jump_table_issue.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+    });
+    jump_table_test.root_module.addImport("evm", modules.evm_mod);
+    jump_table_test.root_module.addImport("primitives", modules.primitives_mod);
+    jump_table_test.root_module.addImport("crypto", modules.crypto_mod);
+    jump_table_test.root_module.addImport("build_options", config.options_mod);
+    jump_table_test.root_module.addImport("log", b.createModule(.{
+        .root_source_file = b.path("src/log.zig"),
+    }));
+    jump_table_test.linkLibrary(c_kzg_lib);
+    jump_table_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| jump_table_test.linkLibrary(bn254);
+    jump_table_test.linkLibC();
+    
+    const run_jump_table_test = b.addRunArtifact(jump_table_test);
+    const jump_table_test_step = b.step("test-jump-table", "Test jump table JUMPDEST recognition");
+    jump_table_test_step.dependOn(&run_jump_table_test.step);
 
     // BN254 benchmarks
     const zbench_module = zbench_dep.module("zbench");

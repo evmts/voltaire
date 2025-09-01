@@ -18,7 +18,7 @@ test "differential: out of gas during arithmetic operation" {
         0x60, 0x01,             // PUSH1 1
         0x03,                   // SUB
         0x80,                   // DUP1
-        0x60, 0x03,             // PUSH1 3 (jump target)
+        0x60, 0x02,             // PUSH1 2 (jump to JUMPDEST at PC=2)
         0x57,                   // JUMPI (jump if counter > 0)
         0x50,                   // POP (clean up counter)
         
@@ -49,7 +49,7 @@ test "differential: out of gas during memory expansion" {
         0x60, 0x01,             // PUSH1 1
         0x03,                   // SUB
         0x80,                   // DUP1
-        0x60, 0x03,             // PUSH1 3
+        0x60, 0x02,             // PUSH1 2 (jump to JUMPDEST at PC=2)
         0x57,                   // JUMPI
         0x50,                   // POP
         
@@ -80,7 +80,7 @@ test "differential: out of gas during KECCAK256" {
         0x80,                   // DUP1
         0x60, 0x64,             // PUSH1 100
         0x10,                   // LT
-        0x60, 0x03,             // PUSH1 3
+        0x60, 0x02,             // PUSH1 2 (jump to JUMPDEST at PC=2)
         0x57,                   // JUMPI
         0x50,                   // POP
         
