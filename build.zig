@@ -107,6 +107,37 @@ pub fn build(b: *std.Build) void {
     const run_zbench_bn254 = b.addRunArtifact(zbench_bn254);
     const zbench_bn254_step = b.step("bench-bn254", "Run zbench BN254 benchmarks");
     zbench_bn254_step.dependOn(&run_zbench_bn254.step);
+    
+    // EVM benchmarks
+    const zbench_evm = b.addExecutable(.{
+        .name = "zbench-evm",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/evm/evm_bench.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        }),
+    });
+    zbench_evm.root_module.addImport("zbench", zbench_module);
+    zbench_evm.root_module.addImport("log", b.createModule(.{
+        .root_source_file = b.path("src/log.zig"),
+        .target = target,
+        .optimize = optimize,
+    }));
+    zbench_evm.root_module.addImport("primitives", modules.primitives_mod);
+    zbench_evm.root_module.addImport("evm", modules.evm_mod);
+    zbench_evm.root_module.addImport("crypto", modules.crypto_mod);
+    if (modules.revm_mod) |revm_mod| {
+        zbench_evm.root_module.addImport("revm", revm_mod);
+    }
+    if (revm_lib) |revm| zbench_evm.linkLibrary(revm);
+    if (bn254_lib) |bn254| zbench_evm.linkLibrary(bn254);
+    zbench_evm.linkLibrary(c_kzg_lib);
+    zbench_evm.linkLibrary(blst_lib);
+    zbench_evm.linkLibC();
+    
+    const run_zbench_evm = b.addRunArtifact(zbench_evm);
+    const zbench_evm_step = b.step("bench-evm", "Run zbench EVM benchmarks");
+    zbench_evm_step.dependOn(&run_zbench_evm.step);
 
     // Language bindings
     build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);

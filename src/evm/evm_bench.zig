@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("log");
 const zbench = @import("zbench");
 const primitives = @import("primitives");
 const evm_mod = @import("evm");
@@ -678,7 +678,7 @@ pub fn main() !void {
     
     // Run benchmarks
     var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.io.getStdOut().writer(&stdout_buffer);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
     try bench.run(stdout);
     

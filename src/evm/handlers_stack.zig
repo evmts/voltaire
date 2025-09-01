@@ -56,7 +56,7 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
-                    self.stack.dup_n_unsafe(dup_n);
+                    try self.stack.dup_n(dup_n);
                     const next = dispatch.getNext();
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
@@ -69,7 +69,7 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
-                    self.stack.swap_n_unsafe(swap_n);
+                    try self.stack.swap_n(swap_n);
                     const next = dispatch.getNext();
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 }
