@@ -23,4 +23,8 @@ test {
     _ = @import("usdc_proxy_test.zig");
     _ = @import("comprehensive_contract_tests.zig");
     _ = @import("fixtures_comprehensive_differential_test.zig");
+    _ = @import("opcodes_advanced_test.zig");
+    _ = @import("opcodes_dup_swap_test.zig");
+    _ = @import("precompiles_test.zig");
+    _ = @import("erc20_tests.zig");
 }
