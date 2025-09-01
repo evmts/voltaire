@@ -255,10 +255,10 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.BytecodeTooLarge;
             }
 
-            std.debug.print("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
+            log.debug("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
             var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
-                std.debug.print("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
+                log.debug("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                 return switch (e) {
                     error.BytecodeTooLarge => Error.BytecodeTooLarge,
@@ -270,7 +270,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 };
             };
             defer bytecode.deinit();
-            std.debug.print("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{bytecode.runtime_code.len});
+            log.debug("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{bytecode.runtime_code.len});
 
             const handlers = &Self.opcode_handlers;
 
@@ -281,24 +281,24 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             if (TracerType) |T| {
-                std.debug.print("DEBUG: Using TRACED execution path\n", .{});
+                log.debug("DEBUG: Using TRACED execution path\n", .{});
                 log.debug("Frame.interpret_with_tracer: Creating traced schedule with bytecode len={}", .{bytecode.runtime_code.len});
-                std.debug.print("DEBUG: About to call Dispatch.initWithTracing\n", .{});
+                log.debug("DEBUG: About to call Dispatch.initWithTracing\n", .{});
                 const traced_schedule = Dispatch.initWithTracing(self.allocator, &bytecode, handlers, T, tracer_instance) catch |e| {
-                    std.debug.print("DEBUG: Dispatch.initWithTracing FAILED with error: {}\n", .{e});
+                    log.debug("DEBUG: Dispatch.initWithTracing FAILED with error: {}\n", .{e});
                     log.err("Frame.interpret_with_tracer: Failed to create traced schedule: {}", .{e});
                     return Error.AllocationError;
                 };
-                std.debug.print("DEBUG: Dispatch.initWithTracing SUCCESS, schedule_len={}\n", .{traced_schedule.len});
+                log.debug("DEBUG: Dispatch.initWithTracing SUCCESS, schedule_len={}\n", .{traced_schedule.len});
                 log.debug("Frame.interpret_with_tracer: Traced schedule created, len={}", .{traced_schedule.len});
                 defer Dispatch.deinitSchedule(self.allocator, traced_schedule);
 
-                std.debug.print("DEBUG: About to create jump table\n", .{});
+                log.debug("DEBUG: About to create jump table\n", .{});
                 const traced_jump_table = Dispatch.createJumpTable(self.allocator, traced_schedule, &bytecode) catch |e| {
-                    std.debug.print("DEBUG: createJumpTable FAILED with error: {}\n", .{e});
+                    log.debug("DEBUG: createJumpTable FAILED with error: {}\n", .{e});
                     return Error.AllocationError;
                 };
-                std.debug.print("DEBUG: Jump table created with {} entries\n", .{traced_jump_table.entries.len});
+                log.debug("DEBUG: Jump table created with {} entries\n", .{traced_jump_table.entries.len});
                 defer self.allocator.free(traced_jump_table.entries);
                 
                 // Store jump table in frame for JUMP/JUMPI handlers
@@ -307,25 +307,25 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Handle first_block_gas same as non-traced version
                 var start_index: usize = 0;
                 const first_block_gas = Dispatch.calculateFirstBlockGas(bytecode);
-                std.debug.print("DEBUG: [TRACED] first_block_gas calculated = {}\n", .{first_block_gas});
+                log.debug("DEBUG: [TRACED] first_block_gas calculated = {}\n", .{first_block_gas});
                 if (first_block_gas > 0 and traced_schedule.len > 0) {
                     const temp_dispatch = Dispatch{ .cursor = traced_schedule.ptr };
                     const meta = temp_dispatch.getFirstBlockGas();
-                    std.debug.print("DEBUG: [TRACED] meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
+                    log.debug("DEBUG: [TRACED] meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
                     if (meta.gas > 0) {
-                        std.debug.print("DEBUG: [TRACED] About to consume {} gas\n", .{meta.gas});
+                        log.debug("DEBUG: [TRACED] About to consume {} gas\n", .{meta.gas});
                         try self.consumeGasChecked(@intCast(meta.gas));
-                        std.debug.print("DEBUG: [TRACED] After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
+                        log.debug("DEBUG: [TRACED] After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
                     }
                     start_index = 1;
                 }
 
                 const cursor = Self.Dispatch{ .cursor = traced_schedule.ptr + start_index };
-                std.debug.print("DEBUG: About to start execution at index {}\n", .{start_index});
+                log.debug("DEBUG: About to start execution at index {}\n", .{start_index});
                 
                 // Debug: Check what the first handler is
-                std.debug.print("DEBUG: First handler in schedule is at address: {*}\n", .{cursor.cursor[0].opcode_handler});
-                std.debug.print("DEBUG: STOP handler address for comparison: {*}\n", .{Self.opcode_handlers[@intFromEnum(Opcode.STOP)]});
+                log.debug("DEBUG: First handler in schedule is at address: {*}\n", .{cursor.cursor[0].opcode_handler});
+                log.debug("DEBUG: STOP handler address for comparison: {*}\n", .{Self.opcode_handlers[@intFromEnum(Opcode.STOP)]});
                 
                 // Debug check: verify bytecode stream ends with 2 stop handlers
                 if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
@@ -346,15 +346,15 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
                 
                 log.debug("Frame.interpret_with_tracer: Starting traced execution at cursor index {}, gas={}", .{start_index, self.gas_remaining});
-                std.debug.print("DEBUG: About to call traced handler with gas_remaining={}\n", .{self.gas_remaining});
+                log.debug("DEBUG: About to call traced handler with gas_remaining={}\n", .{self.gas_remaining});
                 cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| {
-                    std.debug.print("DEBUG: Traced handler FAILED with error: {}\n", .{err});
+                    log.debug("DEBUG: Traced handler FAILED with error: {}\n", .{err});
                     log.debug("Frame.interpret_with_tracer: Handler failed with error: {}", .{err});
                     return err;
                 };
                 unreachable; // Handlers never return normally
             } else {
-                std.debug.print("DEBUG: Using NON-TRACED execution path\n", .{});
+                log.debug("DEBUG: Using NON-TRACED execution path\n", .{});
                 log.debug("Frame.interpret_with_tracer: Dispatch init: bytecode len={d}", .{bytecode.runtime_code.len});
                 const schedule = Dispatch.init(self.allocator, &bytecode, handlers) catch |e| {
                     log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {any}", .{e});
@@ -382,15 +382,15 @@ pub fn Frame(comptime config: FrameConfig) type {
                 var start_index: usize = 0;
                 // Check if first item is first_block_gas and consume gas if so
                 const first_block_gas = Self.Dispatch.calculateFirstBlockGas(bytecode);
-                std.debug.print("DEBUG: first_block_gas calculated = {}\n", .{first_block_gas});
+                log.debug("DEBUG: first_block_gas calculated = {}\n", .{first_block_gas});
                 if (first_block_gas > 0 and schedule.len > 0) {
                     const temp_dispatch = Self.Dispatch{ .cursor = schedule.ptr };
                     const meta = temp_dispatch.getFirstBlockGas();
-                    std.debug.print("DEBUG: meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
+                    log.debug("DEBUG: meta.gas = {}, current gas_remaining = {}\n", .{meta.gas, self.gas_remaining});
                     if (meta.gas > 0) {
-                        std.debug.print("DEBUG: About to consume {} gas\n", .{meta.gas});
+                        log.debug("DEBUG: About to consume {} gas\n", .{meta.gas});
                         try self.consumeGasChecked(@intCast(meta.gas));
-                        std.debug.print("DEBUG: After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
+                        log.debug("DEBUG: After consuming gas, gas_remaining = {}\n", .{self.gas_remaining});
                     }
                     start_index = 1;
                 }
@@ -418,10 +418,10 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Debug: First item should be an opcode_handler after skipping first_block_gas
                 // Since the union is untagged, we can't verify this at runtime
                 log.debug("Frame.interpret_with_tracer: Starting execution at dispatch index {} (schedule length: {})", .{ start_index, schedule.len });
-                std.debug.print("DEBUG: About to call first opcode handler, gas_remaining = {}\n", .{self.gas_remaining});
+                log.debug("DEBUG: About to call first opcode handler, gas_remaining = {}\n", .{self.gas_remaining});
                 // Pass cursor pointer and jump_table separately - no Dispatch struct needed
                 cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| {
-                    std.debug.print("DEBUG: Opcode handler failed with error: {}\n", .{err});
+                    log.debug("DEBUG: Opcode handler failed with error: {}\n", .{err});
                     return err;
                 };
                 unreachable; // Handlers never return normally

@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const Bytecode = @import("bytecode.zig").Bytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const Opcode = @import("opcode.zig").Opcode;
@@ -21,7 +22,7 @@ pub fn main() !void {
         const end = std.time.nanoTimestamp();
         
         const elapsed = @as(f64, @floatFromInt(end - start)) / 1_000_000.0;
-        std.debug.print("Simple bytecode init: {d:.3}ms\n", .{elapsed});
+        log.debug("Simple bytecode init: {d:.3}ms\n", .{elapsed});
     }
     
     // Test 2: Fusion bytecode
@@ -40,7 +41,7 @@ pub fn main() !void {
         const end = std.time.nanoTimestamp();
         
         const elapsed = @as(f64, @floatFromInt(end - start)) / 1_000_000.0;
-        std.debug.print("Fusion bytecode (300 bytes) init: {d:.3}ms\n", .{elapsed});
+        log.debug("Fusion bytecode (300 bytes) init: {d:.3}ms\n", .{elapsed});
     }
     
     // Test 3: Large bytecode
@@ -70,13 +71,13 @@ pub fn main() !void {
         const end = std.time.nanoTimestamp();
         
         const elapsed = @as(f64, @floatFromInt(end - start)) / 1_000_000.0;
-        std.debug.print("Large bytecode (1000 bytes) init: {d:.3}ms\n", .{elapsed});
+        log.debug("Large bytecode (1000 bytes) init: {d:.3}ms\n", .{elapsed});
     }
     
     // Test 4: Try loading ERC20
     {
         const file = std.fs.cwd().openFile("bench/cases/erc20-transfer/bytecode.txt", .{}) catch |err| {
-            std.debug.print("Could not open ERC20 file: {}\n", .{err});
+            log.debug("Could not open ERC20 file: {}\n", .{err});
             return;
         };
         defer file.close();
@@ -84,7 +85,7 @@ pub fn main() !void {
         const content = try file.readToEndAlloc(allocator, 1024 * 1024);
         defer allocator.free(content);
         
-        std.debug.print("ERC20 file content length: {} bytes\n", .{content.len});
-        std.debug.print("First 100 chars: {s}\n", .{content[0..@min(100, content.len)]});
+        log.debug("ERC20 file content length: {} bytes\n", .{content.len});
+        log.debug("First 100 chars: {s}\n", .{content[0..@min(100, content.len)]});
     }
 }

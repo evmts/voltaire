@@ -1,5 +1,6 @@
 /// Benchmarks for bytecode analysis performance
 const std = @import("std");
+const log = @import("log.zig");
 const zbench = @import("zbench");
 const Bytecode = @import("bytecode.zig").Bytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
@@ -96,13 +97,13 @@ fn loadBytecodeFromFile(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
 // Benchmark functions
 fn benchmarkNoJumps4(allocator: std.mem.Allocator) void {
     const code = generateNoJumpsBytecode(allocator, 1000) catch |err| {
-        std.debug.print("Failed to generate no jumps bytecode: {}\n", .{err});
+        log.debug("Failed to generate no jumps bytecode: {}\n", .{err});
         return;
     };
     defer allocator.free(code);
     
     var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch |err| {
-        std.debug.print("Failed to init no jumps bytecode: {}\n", .{err});
+        log.debug("Failed to init no jumps bytecode: {}\n", .{err});
         return;
     };
     defer bytecode.deinit();
@@ -110,13 +111,13 @@ fn benchmarkNoJumps4(allocator: std.mem.Allocator) void {
 
 fn benchmarkNoJumps5(allocator: std.mem.Allocator) void {
     const code = generateNoJumpsBytecode(allocator, 1000) catch |err| {
-        std.debug.print("Failed to generate no jumps bytecode: {}\n", .{err});
+        log.debug("Failed to generate no jumps bytecode: {}\n", .{err});
         return;
     };
     defer allocator.free(code);
     
     var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch |err| {
-        std.debug.print("Failed to init no jumps bytecode: {}\n", .{err});
+        log.debug("Failed to init no jumps bytecode: {}\n", .{err});
         return;
     };
     defer bytecode.deinit();
@@ -124,13 +125,13 @@ fn benchmarkNoJumps5(allocator: std.mem.Allocator) void {
 
 fn benchmarkFusions4(allocator: std.mem.Allocator) void {
     const code = generateFusionBytecode(allocator, 1000) catch |err| {
-        std.debug.print("Failed to generate fusion bytecode: {}\n", .{err});
+        log.debug("Failed to generate fusion bytecode: {}\n", .{err});
         return;
     };
     defer allocator.free(code);
     
     var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch |err| {
-        std.debug.print("Failed to init fusion bytecode: {}\n", .{err});
+        log.debug("Failed to init fusion bytecode: {}\n", .{err});
         return;
     };
     defer bytecode.deinit();
@@ -138,13 +139,13 @@ fn benchmarkFusions4(allocator: std.mem.Allocator) void {
 
 fn benchmarkFusions5(allocator: std.mem.Allocator) void {
     const code = generateFusionBytecode(allocator, 1000) catch |err| {
-        std.debug.print("Failed to generate fusion bytecode: {}\n", .{err});
+        log.debug("Failed to generate fusion bytecode: {}\n", .{err});
         return;
     };
     defer allocator.free(code);
     
     var bytecode = Bytecode(BytecodeConfig{}).init(allocator, code) catch |err| {
-        std.debug.print("Failed to init fusion bytecode: {}\n", .{err});
+        log.debug("Failed to init fusion bytecode: {}\n", .{err});
         return;
     };
     defer bytecode.deinit();

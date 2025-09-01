@@ -1,6 +1,7 @@
 //! Tests for EVM transaction-level execution and state management.
 
 const std = @import("std");
+const log = @import("log.zig");
 const primitives = @import("primitives");
 const Evm = @import("evm.zig").Evm;
 const DefaultEvm = @import("evm.zig").DefaultEvm;
@@ -1695,12 +1696,12 @@ test "EVM logs - emit_log functionality" {
 
     // Verify log was stored
     try std.testing.expectEqual(@as(usize, 1), evm.logs.items.len);
-    const log = evm.logs.items[0];
-    try std.testing.expectEqual(test_address, log.address);
-    try std.testing.expectEqual(@as(usize, 2), log.topics.len);
-    try std.testing.expectEqual(@as(u256, 0x1234), log.topics[0]);
-    try std.testing.expectEqual(@as(u256, 0x5678), log.topics[1]);
-    try std.testing.expectEqualStrings("test log data", log.data);
+    const log_entry = evm.logs.items[0];
+    try std.testing.expectEqual(test_address, log_entry.address);
+    try std.testing.expectEqual(@as(usize, 2), log_entry.topics.len);
+    try std.testing.expectEqual(@as(u256, 0x1234), log_entry.topics[0]);
+    try std.testing.expectEqual(@as(u256, 0x5678), log_entry.topics[1]);
+    try std.testing.expectEqualStrings("test log data", log_entry.data);
 
     // Test takeLogs
     const taken_logs = evm.takeLogs();
@@ -1762,9 +1763,9 @@ test "EVM logs - included in CallResult" {
     const result = try evm.call(call_params);
     defer {
         // Clean up logs
-        for (result.logs) |log| {
-            std.testing.allocator.free(log.topics);
-            std.testing.allocator.free(log.data);
+        for (result.logs) |log_entry| {
+            std.testing.allocator.free(log_entry.topics);
+            std.testing.allocator.free(log_entry.data);
         }
         std.testing.allocator.free(result.logs);
     }
@@ -2279,7 +2280,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail
         try std.testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
-        std.log.warn("Low gas (100): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        log.warn("Low gas (100): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 
     // Test 2: Medium gas limit
@@ -2298,7 +2299,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should still fail (infinite loop)
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        std.log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 
     // Test 3: High gas limit
@@ -2317,7 +2318,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail after consuming all gas
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        std.log.warn("High gas (1M): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        log.warn("High gas (1M): elapsed = {} ns, success = {}", .{ elapsed, result.success });
     }
 }
 
@@ -2364,7 +2365,7 @@ test "Debug - Contract deployment and execution" {
 
         try std.testing.expect(result.success); // Empty contract succeeds immediately
         try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
-        std.log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{ elapsed, result.gas_left });
+        log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{ elapsed, result.gas_left });
     }
 
     // Test 2: Simple contract that returns immediately (STOP opcode)
@@ -2395,7 +2396,7 @@ test "Debug - Contract deployment and execution" {
         // STOP should consume minimal gas
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used < 100); // Should use very little gas
-        std.log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
+        log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
     }
 
     // Test 3: Contract with some computation
@@ -2428,7 +2429,7 @@ test "Debug - Contract deployment and execution" {
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used > 0); // Should use some gas
         try std.testing.expect(gas_used < 1000); // But not too much
-        std.log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
+        log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
     }
 }
 
@@ -2496,7 +2497,7 @@ test "Debug - Bytecode size affects execution time" {
         const elapsed = std.time.nanoTimestamp() - start_time;
 
         const gas_used = gas_limit - result.gas_left;
-        std.log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", .{ gas_limit, elapsed, gas_used, result.success });
+        log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", .{ gas_limit, elapsed, gas_used, result.success });
 
         // With low gas, should fail before completing
         if (gas_limit < 50000) {
@@ -3635,7 +3636,6 @@ test "Precompile diagnosis - BN254 operations disabled" {
         }
     } else {
         // BN254 operations disabled - this is expected behavior
-        const log = @import("log.zig");
         log.warn("BN254 operations are disabled (no_bn254 build option)", .{});
     }
 }
@@ -4513,9 +4513,9 @@ test "Arena allocator - handles multiple logs efficiently" {
     try std.testing.expectEqual(@as(usize, 100), result.logs.len);
 
     // All logs should have been allocated from arena
-    for (result.logs) |log| {
-        try std.testing.expectEqual(@as(usize, 0), log.topics.len);
-        try std.testing.expectEqual(@as(usize, 32), log.data.len);
+    for (result.logs) |log_entry| {
+        try std.testing.expectEqual(@as(usize, 0), log_entry.topics.len);
+        try std.testing.expectEqual(@as(usize, 32), log_entry.data.len);
     }
 }
 

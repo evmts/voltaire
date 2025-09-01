@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const Bytecode = @import("bytecode.zig").Bytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const Opcode = @import("opcode.zig").Opcode;
@@ -8,8 +9,8 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
     
-    std.debug.print("\n🚀 Bytecode Analysis Performance Test\n", .{});
-    std.debug.print("=====================================\n\n", .{});
+    log.debug("\n🚀 Bytecode Analysis Performance Test\n", .{});
+    log.debug("=====================================\n\n", .{});
     
     // Test 1: Simple bytecode (no jumps)
     {
@@ -41,7 +42,7 @@ pub fn main() !void {
         }
         
         const avg_time = @as(f64, @floatFromInt(total_time)) / @as(f64, iterations) / 1_000_000.0;
-        std.debug.print("No jumps (1000 bytes): {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
+        log.debug("No jumps (1000 bytes): {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
     }
     
     // Test 2: Fusion candidates
@@ -69,13 +70,13 @@ pub fn main() !void {
         }
         
         const avg_time = @as(f64, @floatFromInt(total_time)) / @as(f64, iterations) / 1_000_000.0;
-        std.debug.print("Fusion candidates (999 bytes): {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
+        log.debug("Fusion candidates (999 bytes): {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
     }
     
     // Test 3: Load ERC20 if available
     {
         const file = std.fs.cwd().openFile("bench/cases/erc20-transfer/bytecode.txt", .{}) catch |err| {
-            std.debug.print("Skipping ERC20 benchmark (file not found): {}\n", .{err});
+            log.debug("Skipping ERC20 benchmark (file not found): {}\n", .{err});
             return;
         };
         defer file.close();
@@ -96,7 +97,7 @@ pub fn main() !void {
             bytecode_data[idx / 2] = byte;
         }
         
-        std.debug.print("\nERC20 bytecode size: {} bytes\n", .{bytecode_data.len});
+        log.debug("\nERC20 bytecode size: {} bytes\n", .{bytecode_data.len});
         
         const iterations = 100;
         var total_time: i128 = 0;
@@ -104,7 +105,7 @@ pub fn main() !void {
         for (0..iterations) |_| {
             const start = std.time.nanoTimestamp();
             var bytecode = Bytecode(BytecodeConfig{}).init(allocator, bytecode_data) catch |err| {
-                std.debug.print("ERC20 bytecode validation failed: {}\n", .{err});
+                log.debug("ERC20 bytecode validation failed: {}\n", .{err});
                 return;
             };
             defer bytecode.deinit();
@@ -113,14 +114,14 @@ pub fn main() !void {
         }
         
         const avg_time = @as(f64, @floatFromInt(total_time)) / @as(f64, iterations) / 1_000_000.0;
-        std.debug.print("ERC20 analysis: {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
+        log.debug("ERC20 analysis: {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
     }
     
     // Test 4: SnailTracer
     {
         const file = std.fs.cwd().openFile("bench/cases/snailtracer/bytecode.txt", .{}) catch |err| {
-            std.debug.print("Skipping SnailTracer benchmark (file not found): {}\n", .{err});
-            std.debug.print("\n✅ Benchmarks completed!\n", .{});
+            log.debug("Skipping SnailTracer benchmark (file not found): {}\n", .{err});
+            log.debug("\n✅ Benchmarks completed!\n", .{});
             return;
         };
         defer file.close();
@@ -141,7 +142,7 @@ pub fn main() !void {
             bytecode_data[idx / 2] = byte;
         }
         
-        std.debug.print("\nSnailTracer bytecode size: {} bytes\n", .{bytecode_data.len});
+        log.debug("\nSnailTracer bytecode size: {} bytes\n", .{bytecode_data.len});
         
         const iterations = 10; // Fewer iterations for large bytecode
         var total_time: i128 = 0;
@@ -149,7 +150,7 @@ pub fn main() !void {
         for (0..iterations) |_| {
             const start = std.time.nanoTimestamp();
             var bytecode = Bytecode(BytecodeConfig{}).init(allocator, bytecode_data) catch |err| {
-                std.debug.print("SnailTracer bytecode validation failed: {}\n", .{err});
+                log.debug("SnailTracer bytecode validation failed: {}\n", .{err});
                 break;
             };
             defer bytecode.deinit();
@@ -159,9 +160,9 @@ pub fn main() !void {
         
         if (total_time > 0) {
             const avg_time = @as(f64, @floatFromInt(total_time)) / @as(f64, iterations) / 1_000_000.0;
-            std.debug.print("SnailTracer analysis: {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
+            log.debug("SnailTracer analysis: {d:.3}ms avg over {} iterations\n", .{ avg_time, iterations });
         }
     }
     
-    std.debug.print("\n✅ Benchmarks completed!\n", .{});
+    log.debug("\n✅ Benchmarks completed!\n", .{});
 }

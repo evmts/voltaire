@@ -1,5 +1,6 @@
 //! Benchmarks for EVM bytecode fusion optimizations
 const std = @import("std");
+const log = @import("log.zig");
 const evm = @import("root.zig");
 const Frame = @import("stack_frame.zig").Frame;
 const FrameConfig = @import("stack_frame.zig").FrameConfig;
@@ -52,7 +53,7 @@ const BenchHost = struct {
 
 /// Benchmark PUSH+ADD fusion vs separate operations
 pub fn benchPushAddFusion(allocator: std.mem.Allocator, iterations: usize) !void {
-    std.log.info("\n=== PUSH+ADD Fusion Benchmark ===", .{});
+    log.debug("\n=== PUSH+ADD Fusion Benchmark ===", .{});
     
     // Create bytecode with many PUSH+ADD patterns
     var bytecode = std.ArrayList(u8).init(allocator);
@@ -98,7 +99,7 @@ pub fn benchPushAddFusion(allocator: std.mem.Allocator, iterations: usize) !void
         }
         
         const avg_ns = total_ns / iterations;
-        std.log.info("Without fusion: {} ns/iteration", .{avg_ns});
+        log.debug("Without fusion: {} ns/iteration", .{avg_ns});
     }
     
     // Benchmark with fusion enabled
@@ -129,13 +130,13 @@ pub fn benchPushAddFusion(allocator: std.mem.Allocator, iterations: usize) !void
         }
         
         const avg_ns = total_ns / iterations;
-        std.log.info("With fusion:    {} ns/iteration", .{avg_ns});
+        log.debug("With fusion:    {} ns/iteration", .{avg_ns});
     }
 }
 
 /// Benchmark instruction stream size reduction
 pub fn benchInstructionStreamSize(allocator: std.mem.Allocator) !void {
-    std.log.info("\n=== Instruction Stream Size Benchmark ===", .{});
+    log.debug("\n=== Instruction Stream Size Benchmark ===", .{});
     
     // Create bytecode with fusable patterns
     const bytecode = &[_]u8{
@@ -169,7 +170,7 @@ pub fn benchInstructionStreamSize(allocator: std.mem.Allocator) !void {
         const plan = try planner.create_instruction_stream(allocator, BenchFrame.opcode_handlers);
         defer plan.deinit();
         
-        std.log.info("Without fusion: {} instruction elements", .{plan.instructionStream.len});
+        log.debug("Without fusion: {} instruction elements", .{plan.instructionStream.len});
     }
     
     // With fusion
@@ -192,19 +193,19 @@ pub fn benchInstructionStreamSize(allocator: std.mem.Allocator) !void {
         const plan = try planner.create_instruction_stream(allocator, BenchFrame.opcode_handlers);
         defer plan.deinit();
         
-        std.log.info("With fusion:    {} instruction elements", .{plan.instructionStream.len});
+        log.debug("With fusion:    {} instruction elements", .{plan.instructionStream.len});
         
         // Calculate reduction
         const original_ops = 11; // Count of original opcodes
         const fused_ops = plan.instructionStream.len;
         const reduction_pct = @as(f64, @floatFromInt(original_ops - fused_ops)) / @as(f64, @floatFromInt(original_ops)) * 100.0;
-        std.log.info("Reduction:      {d:.1}%", .{reduction_pct});
+        log.debug("Reduction:      {d:.1}%", .{reduction_pct});
     }
 }
 
 /// Benchmark execution performance with fused opcodes
 pub fn benchExecutionPerformance(allocator: std.mem.Allocator, iterations: usize) !void {
-    std.log.info("\n=== Execution Performance Benchmark ===", .{});
+    log.debug("\n=== Execution Performance Benchmark ===", .{});
     
     // Create test contract that does many arithmetic operations
     var bytecode = std.ArrayList(u8).init(allocator);
@@ -266,8 +267,8 @@ pub fn benchExecutionPerformance(allocator: std.mem.Allocator, iterations: usize
     const avg_ns = total_ns / iterations;
     const ops_per_sec = @as(f64, 1_000_000_000.0) / @as(f64, @floatFromInt(avg_ns)) * 50.0;
     
-    std.log.info("Average execution time: {} ns", .{avg_ns});
-    std.log.info("Operations per second:  {d:.0} ops/sec", .{ops_per_sec});
+    log.debug("Average execution time: {} ns", .{avg_ns});
+    log.debug("Operations per second:  {d:.0} ops/sec", .{ops_per_sec});
 }
 
 /// Run all benchmarks
@@ -276,12 +277,12 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
     
-    std.log.info("Running EVM Fusion Benchmarks...", .{});
+    log.debug("Running EVM Fusion Benchmarks...", .{});
     
     // Run benchmarks
     try benchPushAddFusion(allocator, 1000);
     try benchInstructionStreamSize(allocator);
     try benchExecutionPerformance(allocator, 10000);
     
-    std.log.info("\nBenchmarks complete!", .{});
+    log.debug("\nBenchmarks complete!", .{});
 }
