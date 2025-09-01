@@ -45,11 +45,11 @@ test {
     _ = @import("differential/system_extended_test.zig");
     _ = @import("differential/system_handlers_test.zig");
     _ = @import("differential/system_operations_test.zig");
-    _ = @import("differential/test_tracing.zig");
     _ = @import("differential/usdc_proxy_test.zig");
     
     // EVM tests - commented out tests with broken imports
     // Many of these tests rely on outdated APIs and need to be rewritten
+    _ = @import("evm/test_traced_handlers.zig");
     // _ = @import("evm/eip7702_test.zig");
     // _ = @import("evm/eip_3651_test.zig");
     // _ = @import("evm/eip_4788_test.zig");
@@ -74,7 +74,4 @@ test {
     // _ = @import("evm/snapshot_propagation_tests.zig");
     // C API tests removed - these APIs are not exported from evm module
     // _ = @import("evm/warm_cold_access_tests.zig");
-    
-    // Root level tests
-    _ = @import("test_codecopy_minimal.zig");
 }

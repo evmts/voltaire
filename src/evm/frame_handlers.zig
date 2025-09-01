@@ -19,7 +19,11 @@ const stack_frame_bitwise_synthetic = @import("handlers_bitwise_synthetic.zig");
 const stack_frame_memory_synthetic = @import("handlers_memory_synthetic.zig");
 const stack_frame_jump_synthetic = @import("handlers_jump_synthetic.zig");
 
-/// Returns the opcode handlers array for a given Frame type
+/// Thread-local storage for the tracer instance and its type info
+threadlocal var tracer_instance: ?*anyopaque = null;
+threadlocal var tracer_vtable: ?*const anyopaque = null;
+
+/// Returns the normal (non-traced) opcode handlers array for a given Frame type
 pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler {
     // Import handler modules with FrameType
     const ArithmeticHandlers = stack_frame_arithmetic.Handlers(FrameType);
@@ -184,4 +188,58 @@ pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler 
     h[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE)] = &MemorySyntheticHandlers.push_mstore8_inline;
     h[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER)] = &MemorySyntheticHandlers.push_mstore8_pointer;
     return h;
+}
+
+/// Returns traced opcode handlers that wrap the base handlers with tracer calls
+pub fn getTracedOpcodeHandlers(
+    comptime FrameType: type,
+    comptime TracerType: type,
+) [256]FrameType.OpcodeHandler {
+    // Get the base handlers at compile time
+    const base_handlers = getOpcodeHandlers(FrameType);
+
+    // Create a wrapper function generator
+    const createWrapper = struct {
+        fn wrap(comptime base_handler: FrameType.OpcodeHandler) FrameType.OpcodeHandler {
+            const wrapper = struct {
+                fn handler(frame: *FrameType, cursor: [*]const FrameType.Dispatch.Item) FrameType.Error!noreturn {
+                    // Get the tracer instance from thread-local storage
+                    if (tracer_instance) |tracer_ptr| {
+                        const tracer = @as(*TracerType, @ptrCast(@alignCast(tracer_ptr)));
+
+                        // Call beforeOp if the tracer has it
+                        if (@hasDecl(TracerType, "beforeOp")) {
+                            tracer.beforeOp(FrameType, frame);
+                        }
+                    }
+
+                    // Call the base handler with tail call optimization
+                    // Note: Since handlers are noreturn, we don't need afterOp
+                    return @call(.always_tail, base_handler, .{ frame, cursor });
+                }
+            }.handler;
+            return &wrapper;
+        }
+    }.wrap;
+
+    // Create the traced handlers array at compile time
+    @setEvalBranchQuota(10000);
+    var traced: [256]FrameType.OpcodeHandler = undefined;
+
+    // Wrap each handler at compile time
+    inline for (0..256) |i| {
+        traced[i] = createWrapper(base_handlers[i]);
+    }
+
+    return traced;
+}
+
+/// Set the tracer instance for traced execution
+pub fn setTracerInstance(tracer: anytype) void {
+    tracer_instance = @ptrCast(@alignCast(tracer));
+}
+
+/// Clear the tracer instance
+pub fn clearTracerInstance() void {
+    tracer_instance = null;
 }

@@ -34,30 +34,30 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const subtrahend = try self.stack.pop();     // μ_s[0]
-            const minuend = try self.stack.peek();       // μ_s[1]
-            const result = minuend -% subtrahend;        // μ_s[1] - μ_s[0] per EVM spec
+            const subtrahend = try self.stack.pop(); // μ_s[0]
+            const minuend = try self.stack.peek(); // μ_s[1]
+            const result = minuend -% subtrahend; // μ_s[1] - μ_s[0] per EVM spec
             log.debug("SUB: minuend=0x{x} - subtrahend=0x{x} = 0x{x}", .{ minuend, subtrahend, result });
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop();      // First pop is numerator
-            const denominator = try self.stack.peek();    // Second (remaining) is denominator
+            const numerator = try self.stack.pop(); // First pop is numerator
+            const denominator = try self.stack.peek(); // Second (remaining) is denominator
             const result = if (denominator == 0) 0 else numerator / denominator;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop();      // First pop is numerator
-            const denominator = try self.stack.peek();    // Second (remaining) is denominator
-            
+            const numerator = try self.stack.pop(); // First pop is numerator
+            const denominator = try self.stack.peek(); // Second (remaining) is denominator
+
             log.debug("SDIV: numerator=0x{x}, denominator=0x{x}", .{ numerator, denominator });
             var result: WordType = undefined;
             if (denominator == 0) {
@@ -80,23 +80,23 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop();      // First pop is numerator
-            const denominator = try self.stack.peek();    // Second (remaining) is denominator
+            const numerator = try self.stack.pop(); // First pop is numerator
+            const denominator = try self.stack.peek(); // Second (remaining) is denominator
             const result = if (denominator == 0) 0 else numerator % denominator;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop();      // First pop is numerator
-            const denominator = try self.stack.peek();    // Second (remaining) is denominator
+            const numerator = try self.stack.pop(); // First pop is numerator
+            const denominator = try self.stack.peek(); // Second (remaining) is denominator
             var result: WordType = undefined;
             if (denominator == 0) {
                 result = 0;
@@ -114,7 +114,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// ADDMOD opcode (0x08) - (a + b) % N. All intermediate calculations are performed with arbitrary precision.
@@ -138,7 +138,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// MULMOD opcode (0x09) - (a * b) % N. All intermediate calculations are performed with arbitrary precision.
@@ -155,7 +155,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Debug logging removed
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// Safe modular multiplication using double-width arithmetic to prevent overflow.
@@ -217,9 +217,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top = try self.stack.pop();     // μ_s[0] - base
+            const top = try self.stack.pop(); // μ_s[0] - base
             const second = try self.stack.peek(); // μ_s[1] - exponent
-            
+
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
             // Count the number of bytes in the exponent
@@ -231,16 +231,16 @@ pub fn Handlers(comptime FrameType: type) type {
                     exp_bytes += 1;
                 }
             }
-            
+
             // Calculate dynamic gas cost
             const gas_cost = 10 + 50 * exp_bytes;
             if (self.gas_remaining < gas_cost) {
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @intCast(gas_cost);
-            
+
             var result: WordType = 1;
-            var base_working = top;        // Try reversing: top as base
+            var base_working = top; // Try reversing: top as base
             var exponent_working = second; // second as exponent
             while (exponent_working > 0) : (exponent_working >>= 1) {
                 if (exponent_working & 1 == 1) {
@@ -274,7 +274,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
     };
 }
@@ -1073,27 +1073,27 @@ test "ADDMOD opcode - modulus equals 1" {
 test "MULMOD helper functions - mulmod_safe edge cases" {
     // Test modulus = 0
     try testing.expectEqual(@as(u256, 0), TestFrame.ArithmeticHandlers.mulmod_safe(100, 200, 0));
-    
+
     // Test factor1 = 0
     try testing.expectEqual(@as(u256, 0), TestFrame.ArithmeticHandlers.mulmod_safe(0, 200, 13));
-    
+
     // Test factor2 = 0
     try testing.expectEqual(@as(u256, 0), TestFrame.ArithmeticHandlers.mulmod_safe(100, 0, 13));
-    
+
     // Test modulus = 1
     try testing.expectEqual(@as(u256, 0), TestFrame.ArithmeticHandlers.mulmod_safe(100, 200, 1));
-    
+
     // Test normal case
     try testing.expectEqual(@as(u256, 4), TestFrame.ArithmeticHandlers.mulmod_safe(10, 20, 7));
 }
 
 test "MULMOD helper functions - addmod_safe overflow protection" {
     const max_half = std.math.maxInt(u256) / 2;
-    
+
     // Test overflow case where addend1 > modulus - addend2
     const result = TestFrame.ArithmeticHandlers.addmod_safe(max_half, max_half + 1, 100);
     try testing.expect(result < 100);
-    
+
     // Test non-overflow case
     const result2 = TestFrame.ArithmeticHandlers.addmod_safe(10, 20, 100);
     try testing.expectEqual(@as(u256, 30), result2);
@@ -1106,21 +1106,21 @@ test "SIGNEXTEND opcode - boundary byte indices" {
     // Test: sign extend with byte index 30 (edge case)
     try frame.stack.push(30);
     try frame.stack.push(0x80);
-    
+
     const dispatch = createMockDispatch();
     _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch.cursor);
-    
+
     // With index 30, should extend from bit 247
     const result = try frame.stack.pop();
     try testing.expect(result != 0x80); // Should have been sign extended
-    
+
     // Test: sign extend with byte index exactly 31 (no extension)
     try frame.stack.push(31);
     try frame.stack.push(0x80);
-    
+
     const dispatch2 = createMockDispatch();
     _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch2.cursor);
-    
+
     try testing.expectEqual(@as(u256, 0x80), try frame.stack.pop());
 }
 

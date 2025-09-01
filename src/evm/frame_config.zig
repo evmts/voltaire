@@ -31,6 +31,9 @@ pub const FrameConfig = struct {
     /// Database implementation type for storage operations (always required).
     DatabaseType: type,
     
+    /// Optional tracer type for execution tracing (null for no tracing)
+    TracerType: ?type = null,
+    
     /// Block info configuration for the frame
     block_info_config: @import("block_info_config.zig").BlockInfoConfig = .{},
 

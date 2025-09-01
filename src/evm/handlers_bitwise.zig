@@ -16,7 +16,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const top = try self.stack.peek();
             try self.stack.set_top(top & top_minus_1);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// OR opcode (0x17) - Bitwise OR operation.
@@ -25,7 +25,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const top = try self.stack.peek();
             try self.stack.set_top(top | top_minus_1);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// XOR opcode (0x18) - Bitwise XOR operation.
@@ -34,7 +34,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// NOT opcode (0x19) - Bitwise NOT operation.
@@ -42,7 +42,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const top = try self.stack.peek();
             try self.stack.set_top(~top);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// BYTE opcode (0x1a) - Extract byte from word.
@@ -59,7 +59,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SHL opcode (0x1b) - Shift left operation.
@@ -70,7 +70,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const result = if (shift >= @bitSizeOf(WordType)) 0 else value << @as(ShiftType, @intCast(shift));
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SHR opcode (0x1c) - Logical shift right operation.
@@ -81,7 +81,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const result = if (shift >= @bitSizeOf(WordType)) 0 else value >> @as(ShiftType, @intCast(shift));
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SAR opcode (0x1d) - Arithmetic shift right operation.
@@ -102,7 +102,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor});
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
     };
 }
@@ -835,10 +835,10 @@ test "bitwise operations - pattern testing" {
     defer frame.deinit(testing.allocator);
 
     // Test: Alternating bit patterns
-    const pattern1 = @as(u256, 0xAAAAAAAAAAAAAAAA) << 192 | @as(u256, 0xAAAAAAAAAAAAAAAA) << 128 | 
-                     @as(u256, 0xAAAAAAAAAAAAAAAA) << 64 | @as(u256, 0xAAAAAAAAAAAAAAAA);
-    const pattern2 = @as(u256, 0x5555555555555555) << 192 | @as(u256, 0x5555555555555555) << 128 | 
-                     @as(u256, 0x5555555555555555) << 64 | @as(u256, 0x5555555555555555);
+    const pattern1 = @as(u256, 0xAAAAAAAAAAAAAAAA) << 192 | @as(u256, 0xAAAAAAAAAAAAAAAA) << 128 |
+        @as(u256, 0xAAAAAAAAAAAAAAAA) << 64 | @as(u256, 0xAAAAAAAAAAAAAAAA);
+    const pattern2 = @as(u256, 0x5555555555555555) << 192 | @as(u256, 0x5555555555555555) << 128 |
+        @as(u256, 0x5555555555555555) << 64 | @as(u256, 0x5555555555555555);
 
     // Test: pattern1 XOR pattern2 = MAX
     try frame.stack.push(pattern1);
