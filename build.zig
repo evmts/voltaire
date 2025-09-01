@@ -91,6 +91,33 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run all tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_integration_tests.step);
+    
+    // ERC20 deployment gas issue test
+    const erc20_gas_test = b.addTest(.{
+        .name = "test-erc20-gas",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/erc20_deployment_gas_issue.zig"),
+            .target = target,
+            .optimize = .Debug,  // Debug for better logging
+        }),
+    });
+    erc20_gas_test.root_module.addImport("evm", modules.evm_mod);
+    erc20_gas_test.root_module.addImport("primitives", modules.primitives_mod);
+    erc20_gas_test.root_module.addImport("crypto", modules.crypto_mod);
+    erc20_gas_test.root_module.addImport("build_options", config.options_mod);
+    erc20_gas_test.root_module.addImport("log", b.createModule(.{
+        .root_source_file = b.path("src/log.zig"),
+        .target = target,
+        .optimize = .Debug,
+    }));
+    erc20_gas_test.linkLibrary(c_kzg_lib);
+    erc20_gas_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| erc20_gas_test.linkLibrary(bn254);
+    erc20_gas_test.linkLibC();
+    
+    const run_erc20_gas_test = b.addRunArtifact(erc20_gas_test);
+    const erc20_gas_test_step = b.step("test-erc20-gas", "Test ERC20 deployment gas issue");
+    erc20_gas_test_step.dependOn(&run_erc20_gas_test.step);
 
     // BN254 benchmarks
     const zbench_module = zbench_dep.module("zbench");
