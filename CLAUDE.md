@@ -75,10 +75,12 @@ High-performance EVM focused on correctness, minimal allocations, strong typing.
 - `bn254_wrapper` - BN254 curve operations
 
 ### Key EVM Components
-**Core**: evm.zig, frame.zig, stack.zig, memory.zig
-**Planning**: planner.zig, plan_*.zig (bytecode optimization)
-**State**: database_interface.zig, journal.zig, access_list.zig
-**External**: host.zig, call_params.zig, precompiles.zig
+**Core**: evm.zig, frame.zig, stack.zig, memory.zig, dispatch.zig
+**Handlers**: handlers_*.zig (arithmetic, bitwise, comparison, context, jump, keccak, log, memory, stack, storage, system)
+**State**: database.zig, journal.zig, access_list.zig, memory_database.zig
+**External**: precompiles.zig, call_params.zig, call_result.zig
+**Bytecode**: bytecode.zig, bytecode_analyze.zig, bytecode_stats.zig
+**Infrastructure**: tracer.zig, hardfork.zig, eips.zig
 
 ### Import Rules
 ```zig
@@ -131,11 +133,17 @@ pub fn add(self: *Self) Error!void {
 }
 ```
 
-## Frame.zig Navigation (~2000 lines)
-Contains all opcodes. Search patterns:
+## EVM Opcode Navigation
+Opcodes are now organized in separate handler files:
 ```bash
-grep -n "pub fn add" src/evm/frame.zig
-grep -n "gas_remaining" src/evm/frame.zig
+# Arithmetic operations
+grep -n "pub fn add" src/evm/handlers_arithmetic.zig
+# Stack operations  
+grep -n "pub fn push" src/evm/handlers_stack.zig
+# Memory operations
+grep -n "pub fn mstore" src/evm/handlers_memory.zig
+# System operations
+grep -n "pub fn call" src/evm/handlers_system.zig
 ```
 
 ## References

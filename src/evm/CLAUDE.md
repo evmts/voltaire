@@ -14,12 +14,13 @@ Ground-up EVM implementation targeting:
 ### Key Architectural Components
 
 1. **Frame**: Lightweight execution context with stack, memory, and gas tracking
-2. **Planner**: Analyzes bytecode and produces optimized execution plans  
-3. **Stack**: Cache-aligned, pointer-based stack with downward growth
-4. **Memory**: EVM-compliant memory with word-boundary expansion
-5. **Database Interface**: Pluggable vtable-based state storage abstraction
-6. **Tracer**: Configurable execution tracing (no-op, debugging, file output)
-7. **Host**: External operations interface (calls, creates, environment queries)
+2. **Dispatch**: High-performance opcode dispatch system with tail-call optimization
+3. **Handlers**: Categorized opcode implementations (arithmetic, bitwise, comparison, etc.)
+4. **Stack**: Cache-aligned, pointer-based stack with downward growth
+5. **Memory**: EVM-compliant memory with word-boundary expansion
+6. **Database**: Pluggable state storage with memory and journal implementations
+7. **Tracer**: Configurable execution tracing (no-op, debugging, file output)  
+8. **Bytecode**: Analysis and optimization system for EVM bytecode
 
 ## Test-Driven Development (TDD) Workflow
 
@@ -60,21 +61,23 @@ The Frame is the central execution context for EVM operations, designed with mul
 - **Smart Type Selection**: Automatically chooses optimal integer types based on configuration limits
 - **Cache-Conscious Layout**: Hot fields (stack, gas) grouped for optimal memory access patterns
 
-**Supported Operations**:
-- Stack operations (PUSH, POP, DUP, SWAP)
-- Arithmetic operations (ADD, SUB, MUL, DIV, EXP, etc.)
-- Bitwise operations (AND, OR, XOR, NOT, SHL, SHR, SAR)
-- Comparison operations (LT, GT, EQ, ISZERO, etc.)
-- Memory operations (MLOAD, MSTORE, MSIZE, MCOPY)
-- Storage operations (SLOAD, SSTORE, TLOAD, TSTORE) with database
-- Hashing operations (KECCAK256)
-- LOG operations (LOG0-LOG4)
+**Handler Categories**:
+- **handlers_stack.zig**: PUSH, POP, DUP, SWAP operations
+- **handlers_arithmetic.zig**: ADD, SUB, MUL, DIV, MOD, EXP, etc.
+- **handlers_bitwise.zig**: AND, OR, XOR, NOT, SHL, SHR, SAR
+- **handlers_comparison.zig**: LT, GT, EQ, ISZERO, etc.
+- **handlers_memory.zig**: MLOAD, MSTORE, MSIZE, MCOPY
+- **handlers_storage.zig**: SLOAD, SSTORE operations with database
+- **handlers_keccak.zig**: KECCAK256 hashing
+- **handlers_log.zig**: LOG0-LOG4 event logging
+- **handlers_jump.zig**: JUMP, JUMPI, PC operations
+- **handlers_context.zig**: Context operations (ADDRESS, BALANCE, etc.)
+- **handlers_system.zig**: CALL, CREATE, RETURN, REVERT operations
 
-**Operations NOT Supported** (handled by upper layers):
-- PC tracking and JUMP operations (managed by Plan)
-- CALL/CREATE operations (handled by Host or EVM)
-- Environment operations (BLOCKHASH, COINBASE, etc. via Host)
-- Block operations requiring external context
+**Dispatch System**:
+- Tail-call optimized execution flow
+- Cache-efficient instruction stream
+- Metadata embedding for performance
 
 ### Stack: High-Performance EVM Stack
 
@@ -110,12 +113,13 @@ The Frame is the central execution context for EVM operations, designed with mul
 - Checkpoint system for nested calls
 - Efficient copying and zeroing operations
 
-### Database Interface: Pluggable State Management
+### Database: Pluggable State Management
 
-**Architecture**: Type-safe vtable-based polymorphism for different storage backends
-- **Zero Runtime Cost**: Function pointers eliminate virtual dispatch overhead  
-- **Type Safety**: Compile-time interface validation with clear error types
-- **Backend Agnostic**: Memory, file, network, or custom storage implementations
+**Current Implementations**:
+- **database.zig**: Main database interface and implementation
+- **memory_database.zig**: In-memory storage for testing and benchmarks
+- **journal.zig**: State change tracking for transaction rollbacks
+- **Backend Agnostic**: Pluggable interface for different storage systems
 - **Rich Error Model**: Comprehensive error types for different failure modes
 
 **Supported Operations**:
@@ -468,36 +472,40 @@ src/evm/
 ├── root.zig                       # Module exports and documentation
 ├── evm.zig                        # Main EVM implementation with transaction context
 ├── evm_config.zig                 # EVM configuration
-├── frame.zig                      # Execution context (~2000 lines - see navigation guide)
+├── frame.zig                      # Execution context and frame management
 ├── frame_config.zig               # Frame configuration parameters
-├── frame_interpreter.zig          # Frame-based interpreter implementation
+├── dispatch.zig                   # High-performance opcode dispatch system
+├── dispatch_*.zig                 # Dispatch support modules (metadata, jump table, etc.)
+├── handlers_*.zig                 # Categorized opcode implementations:
+│   ├── handlers_arithmetic.zig    # ADD, SUB, MUL, DIV, MOD, EXP, etc.
+│   ├── handlers_bitwise.zig       # AND, OR, XOR, NOT, SHL, SHR, SAR
+│   ├── handlers_comparison.zig    # LT, GT, EQ, ISZERO, etc.
+│   ├── handlers_context.zig       # ADDRESS, BALANCE, CALLER, etc.
+│   ├── handlers_jump.zig          # JUMP, JUMPI, PC operations
+│   ├── handlers_keccak.zig        # KECCAK256 hashing
+│   ├── handlers_log.zig           # LOG0-LOG4 event logging
+│   ├── handlers_memory.zig        # MLOAD, MSTORE, MSIZE, MCOPY
+│   ├── handlers_stack.zig         # PUSH, POP, DUP, SWAP
+│   ├── handlers_storage.zig       # SLOAD, SSTORE operations
+│   └── handlers_system.zig        # CALL, CREATE, RETURN, REVERT
 ├── stack.zig                      # High-performance EVM stack
 ├── stack_config.zig               # Stack configuration
 ├── memory.zig                     # EVM-compliant memory management  
 ├── memory_config.zig              # Memory configuration
-├── database_interface.zig         # Pluggable storage interface
+├── database.zig                   # Main database implementation
 ├── database_interface_account.zig # Account data structures
 ├── memory_database.zig            # In-memory database implementation
 ├── journal.zig                    # State change tracking for reverts
 ├── journal_entry.zig              # Journal entry types
 ├── journal_config.zig             # Journal configuration
 ├── tracer.zig                     # Execution tracing system
-├── host.zig                       # External operations interface
-├── planner.zig                    # Bytecode analysis and optimization
-├── planner_config.zig             # Planner configuration
-├── planner_strategy.zig           # Planner strategy selection
-├── plan.zig                       # Runtime execution plan structure
-├── plan_config.zig                # Plan configuration
-├── plan_advanced.zig              # Advanced planning strategies
-├── plan_minimal.zig               # Minimal planning implementation
-├── plan_debug.zig                 # Debug planning with validation
-├── bytecode.zig                   # Bytecode representation
-├── bytecode_config.zig            # Bytecode configuration
-├── bytecode_stats.zig             # Bytecode analysis statistics
+├── bytecode.zig                   # Bytecode representation and analysis
+├── bytecode_*.zig                 # Bytecode analysis and benchmarking modules
 ├── opcode.zig                     # EVM opcode enumeration
 ├── opcode_data.zig                # Opcode metadata and gas costs
 ├── opcode_synthetic.zig           # Synthetic fused opcodes
 ├── hardfork.zig                   # Ethereum hard fork support
+├── eips.zig                       # EIP implementations
 ├── access_list.zig                # EIP-2929 access list implementation
 ├── access_list_config.zig         # Access list configuration
 ├── self_destruct.zig              # SELFDESTRUCT tracking
@@ -510,23 +518,30 @@ src/evm/
 ├── logs.zig                       # Event log management
 ├── keccak_asm.zig                 # Optimized Keccak-256 implementation
 ├── precompiles.zig                # Precompiled contracts
-└── test/                          # EVM-specific tests (if any)
+├── authorization_processor.zig    # EIP-3074 authorization processing
+├── beacon_roots.zig               # EIP-4788 beacon root access
+├── historical_block_hashes.zig    # Historical block hash access
+├── validator_*.zig                # Validator deposit/withdrawal processing
+└── test_*.zig                     # Various test modules and fixtures
 ```
 
 ### Key Type Relationships
 
 ```
 Evm
-├── Frame (configured)
+├── Frame (configured execution context)
 │   ├── Stack (high-performance, pointer-based)
 │   ├── Memory (hierarchical, lazy expansion)
-│   ├── DatabaseInterface (vtable-based polymorphism)
-│   ├── Tracer (compile-time selected)
-│   └── Host (external operations)
-├── Planner (bytecode → optimized plan)
-│   ├── Plan (instruction stream + constants)
-│   └── Cache (LRU cached plans)
-└── BlockInfo (execution environment)
+│   ├── Database (pluggable state storage)
+│   └── Tracer (compile-time selected)
+├── Dispatch (opcode execution system)
+│   ├── Handlers (categorized opcode implementations)
+│   ├── Metadata (execution optimization data)
+│   └── Jump Table (fast opcode dispatch)
+├── Bytecode (analysis and representation)
+│   ├── Analysis (optimization and validation)
+│   └── Statistics (performance metrics)
+└── BlockInfo (execution environment context)
 ```
 
 ## Future Development Roadmap

@@ -9,11 +9,12 @@ The benchmarking system is a multi-layered architecture designed to compare EVM 
 ### Core Components
 
 1. **Orchestrator** (`src/Orchestrator.zig`)
-   - Discovers test cases automatically from `cases/` directory
-   - Executes benchmarks using hyperfine
-   - Parses JSON results from hyperfine
+   - Discovers test cases automatically from `cases/` and `official/` directories
+   - Executes benchmarks using hyperfine with configurable runs
+   - Parses JSON results from hyperfine with statistical analysis
    - Exports results in multiple formats (JSON, Markdown)
-   - Manages comparison across multiple EVM implementations
+   - Manages comparison across multiple EVM implementations (evmone, geth, revm, zig)
+   - Supports specialized modes: next hardfork features, call variants, tracing
 
 2. **CLI Interface** (`src/main.zig`)
    - Argument parsing with clap
@@ -22,11 +23,13 @@ The benchmarking system is a multi-layered architecture designed to compare EVM 
    - Help system
 
 3. **EVM Runners** (`evms/*/`)
-   - Standardized command-line interface
-   - Each runner implements: `--contract-code-path`, `--calldata`, `--num-runs`
+   - **zig**: Guillotine EVM implementation (`evms/zig/src/main.zig`)
+   - **revm**: Reference Rust implementation
+   - **geth**: Go Ethereum implementation  
+   - **evmone**: C++ implementation
+   - Standardized CLI: `--contract-code-path`, `--calldata`, `--num-runs`
    - Output format: One timing per line in milliseconds
    - Exit code 0 on success, non-zero on failure
-   - Guillotine runner uses the new EVM implementation from `src/evm/`
 
 ### Test Case Format
 
@@ -74,11 +77,12 @@ const cases_path = "/Users/williamcory/guillotine/bench/cases";
 
 ### EVM Integration
 
-The benchmark runner integrates with the new EVM architecture:
-- Uses `evm.zig` for transaction-level execution
-- Leverages the optimized `Frame` for opcode execution
-- Benefits from the `Planner` bytecode optimization
-- Utilizes the high-performance pointer-based `Stack`
+The Guillotine benchmark runner integrates with the current EVM architecture:
+- Uses `evm.zig` for transaction-level execution with dispatch system
+- Leverages handlers_*.zig for categorized opcode execution
+- Benefits from bytecode analysis and optimization
+- Utilizes the high-performance pointer-based `Stack` and `Memory`
+- Supports database interface for state management
 
 ### JSON Parsing
 
