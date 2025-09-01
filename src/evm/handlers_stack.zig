@@ -11,19 +11,17 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const WordType = FrameType.WordType;
 
         /// POP opcode (0x50) - Remove item from stack.
-        /// Uses unsafe variant as stack bounds are pre-validated by the planner.
         pub fn pop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            _ = self.stack.pop_unsafe();
+            _ = try self.stack.pop();
             const op_data = dispatch.getOpData(.{ .regular = .POP });
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 
         /// PUSH0 opcode (0x5f) - Push 0 onto stack.
-        /// Uses unsafe variant as stack bounds are pre-validated by the planner.
         pub fn push0(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            self.stack.push_unsafe(0);
+            try self.stack.push(0);
             const op_data = dispatch.getOpData(.{ .regular = .PUSH0 });
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }

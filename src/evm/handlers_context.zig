@@ -3,6 +3,7 @@ const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address;
+const GasConstants = primitives.GasConstants;
 // u256 is a built-in type in Zig 0.14+
 const keccak_asm = @import("keccak_asm.zig");
 const Opcode = @import("opcode_data.zig").Opcode;
@@ -455,6 +456,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOCKHASH opcode (0x40) - Get the hash of one of the 256 most recent complete blocks.
         /// Stack: [block_number] → [hash]
         pub fn blockhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // BLOCKHASH costs 20 gas
+            const gas_cost = 20;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_number = try self.stack.pop();
             // Cast to u64 - EVM spec says only last 256 blocks are accessible
@@ -481,6 +489,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// COINBASE opcode (0x41) - Get the current block's beneficiary address.
         /// Stack: [] → [coinbase]
         pub fn coinbase(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // COINBASE costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const coinbase_u256 = to_u256(block_info.coinbase);
@@ -493,6 +508,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// TIMESTAMP opcode (0x42) - Get the current block's timestamp.
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // TIMESTAMP costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
@@ -504,6 +526,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// NUMBER opcode (0x43) - Get the current block's number.
         /// Stack: [] → [number]
         pub fn number(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // NUMBER costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
@@ -515,6 +544,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DIFFICULTY opcode (0x44) - Get the current block's difficulty.
         /// Stack: [] → [difficulty]
         pub fn difficulty(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // DIFFICULTY costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
@@ -533,6 +569,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GASLIMIT opcode (0x45) - Get the current block's gas limit.
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // GASLIMIT costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
@@ -544,6 +587,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CHAINID opcode (0x46) - Get the chain ID.
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // CHAINID costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
@@ -555,6 +605,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // SELFBALANCE costs 5 gas
+            const gas_cost = GasConstants.GasFastStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
@@ -566,6 +623,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BASEFEE opcode (0x48) - Get the current block's base fee.
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // BASEFEE costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
@@ -577,6 +641,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBHASH opcode (0x49) - Get versioned hashes of blob transactions.
         /// Stack: [index] → [hash]
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // BLOBHASH costs 3 gas
+            const gas_cost = GasConstants.GasFastestStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const index = try self.stack.pop();
             // Convert u256 to usize for array access
@@ -607,6 +678,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBBASEFEE opcode (0x4a) - Get the current block's blob base fee.
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // BLOBBASEFEE costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const blob_base_fee = self.block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
@@ -618,6 +696,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GAS opcode (0x5A) - Get the amount of available gas.
         /// Stack: [] → [gas]
         pub fn gas(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // GAS costs 2 gas
+            const gas_cost = GasConstants.GasQuickStep;
+            if (self.gas_remaining < gas_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(gas_cost);
+
             const dispatch = Dispatch{ .cursor = cursor };
             const gas_value = @as(WordType, @max(self.gas_remaining, 0));
             try self.stack.push(gas_value);

@@ -1,6 +1,7 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("log.zig");
+const GasConstants = @import("primitives").GasConstants;
 
 /// Arithmetic opcode handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.
@@ -217,16 +218,16 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top = try self.stack.pop(); // μ_s[0] - base
-            const second = try self.stack.peek(); // μ_s[1] - exponent
+            const base = try self.stack.pop(); // μ_s[0] - base
+            const exponent = try self.stack.peek(); // μ_s[1] - exponent
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
             // Count the number of bytes in the exponent
             var exp_bytes: u32 = 0;
-            if (second > 0) {
+            if (exponent > 0) {
                 // Count significant bytes (excluding leading zeros)
-                var temp_exp = second;
+                var temp_exp = exponent;
                 while (temp_exp > 0) : (temp_exp >>= 8) {
                     exp_bytes += 1;
                 }
@@ -240,15 +241,14 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(gas_cost);
 
             var result: WordType = 1;
-            var base_working = top; // Try reversing: top as base
-            var exponent_working = second; // second as exponent
+            var base_working = base;
+            var exponent_working = exponent;
             while (exponent_working > 0) : (exponent_working >>= 1) {
                 if (exponent_working & 1 == 1) {
                     result *%= base_working;
                 }
                 base_working *%= base_working;
             }
-            // Debug logging removed
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });

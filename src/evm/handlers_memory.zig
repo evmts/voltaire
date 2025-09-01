@@ -27,11 +27,19 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset_usize = @as(usize, @intCast(offset));
 
             // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
-                return Error.OutOfGas;
+            // Check if offset + 32 would overflow u24
+            const end_offset = offset_usize + 32;
+            if (end_offset > 0xFFFFFF) {
+                return Error.OutOfBounds;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
+            // Only check and consume dynamic gas (memory expansion), static gas is handled by JUMPDEST
+            if (memory_expansion_cost > 0) {
+                if (self.gas_remaining < memory_expansion_cost) {
+                    return Error.OutOfGas;
+                }
+                self.gas_remaining -= @intCast(memory_expansion_cost);
+            }
 
             // Read 32 bytes from memory (EVM-compliant with automatic expansion)
             const value_u256 = self.memory.get_u256_evm(self.allocator, @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
@@ -64,11 +72,19 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset_usize = @as(usize, @intCast(offset));
 
             // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
-                return Error.OutOfGas;
+            // Check if offset + 32 would overflow u24
+            const end_offset = offset_usize + 32;
+            if (end_offset > 0xFFFFFF) {
+                return Error.OutOfBounds;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
+            // Only check and consume dynamic gas (memory expansion), static gas is handled by JUMPDEST
+            if (memory_expansion_cost > 0) {
+                if (self.gas_remaining < memory_expansion_cost) {
+                    return Error.OutOfGas;
+                }
+                self.gas_remaining -= @intCast(memory_expansion_cost);
+            }
 
             // Convert to u256 if necessary and store
             const value_u256 = @as(u256, value);
@@ -101,11 +117,19 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset_usize = @as(usize, @intCast(offset));
 
             // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 1)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
-                return Error.OutOfGas;
+            // Check if offset + 1 would overflow u24
+            const end_offset = offset_usize + 1;
+            if (end_offset > 0xFFFFFF) {
+                return Error.OutOfBounds;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
+            // Only check and consume dynamic gas (memory expansion), static gas is handled by JUMPDEST
+            if (memory_expansion_cost > 0) {
+                if (self.gas_remaining < memory_expansion_cost) {
+                    return Error.OutOfGas;
+                }
+                self.gas_remaining -= @intCast(memory_expansion_cost);
+            }
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
@@ -140,32 +164,34 @@ pub fn Handlers(comptime FrameType: type) type {
             const src_offset = try self.stack.pop();
             const size = try self.stack.pop();
 
-            // Check if offsets and size fit in usize
-            if (dest_offset > std.math.maxInt(usize) or
-                src_offset > std.math.maxInt(usize) or
-                size > std.math.maxInt(usize))
-            {
+            // Check if offsets and size fit in u24 (memory limit)
+            if (dest_offset > 0xFFFFFF or src_offset > 0xFFFFFF or size > 0xFFFFFF) {
                 return Error.OutOfBounds;
             }
 
-            const dest_usize = @as(usize, @intCast(dest_offset));
-            const src_usize = @as(usize, @intCast(src_offset));
-            const size_usize = @as(usize, @intCast(size));
+            const dest_u24 = @as(u24, @intCast(dest_offset));
+            const src_u24 = @as(u24, @intCast(src_offset));
+            const size_u24 = @as(u24, @intCast(size));
 
-            if (size_usize == 0) {
+            if (size_u24 == 0) {
                 // No operation for zero size
                 const op_data = dispatch.getOpData(.{ .regular = Opcode.MCOPY });
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
-            // Calculate gas cost
-            const words = (size_usize + 31) / 32;
-            const copy_gas_cost = GasConstants.GasFastestStep + words * GasConstants.CopyGas;
+            // Calculate dynamic gas cost (static gas handled by JUMPDEST)
+            const words = (size_u24 + 31) / 32;
+            const copy_gas_cost = words * GasConstants.CopyGas;  // Only dynamic copy cost
 
             // Calculate memory expansion cost for both source and destination
-            const src_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(src_usize + size_usize)));
-            const dest_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(dest_usize + size_usize)));
+            const src_end = src_u24 + size_u24;
+            const dest_end = dest_u24 + size_u24;
+            if (src_end > 0xFFFFFF or dest_end > 0xFFFFFF) {
+                return Error.OutOfBounds;
+            }
+            const src_expansion_cost = self.memory.get_expansion_cost(src_end);
+            const dest_expansion_cost = self.memory.get_expansion_cost(dest_end);
             const memory_expansion_cost = @max(src_expansion_cost, dest_expansion_cost);
 
             const total_gas_cost = copy_gas_cost + memory_expansion_cost;
@@ -174,19 +200,19 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             self.gas_remaining -= @intCast(total_gas_cost);
 
-            // Perform the memory copy
-            // Get source data
-            const src_data = self.memory.get_slice(@as(u24, @intCast(src_usize)), @as(u24, @intCast(size_usize))) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                else => return Error.AllocationError,
-            };
-
-            // Copy to destination
-            self.memory.set_data_evm(self.allocator, @as(u24, @intCast(dest_usize)), src_data) catch |err| switch (err) {
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
-            };
-
+            // For overlapping memory regions, we need to copy via a temporary buffer
+            // First, read the source data
+            const src_data = self.memory.get_slice(src_u24, size_u24) catch return Error.OutOfBounds;
+            
+            // Create a temporary buffer to handle overlapping regions correctly
+            const temp_buffer = self.allocator.alloc(u8, size_u24) catch return Error.AllocationError;
+            defer self.allocator.free(temp_buffer);
+            
+            @memcpy(temp_buffer, src_data);
+            
+            // Write to destination
+            self.memory.set_data_evm(self.allocator, dest_u24, temp_buffer) catch return Error.AllocationError;
+            
             const op_data = dispatch.getOpData(.{ .regular = Opcode.MCOPY });
             const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
@@ -225,18 +251,22 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
 // Mock dispatch that simulates successful execution flow
 fn createMockDispatch() TestFrame.Dispatch {
     const mock_handler = struct {
-        fn handler(frame: TestFrame, dispatch: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
-            _ = frame;
-            _ = dispatch;
-            return TestFrame.Success.stop;
+        fn handler(self: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = self;
+            _ = cursor;
+            // Return error to stop execution instead of continuing
+            return TestFrame.Error.InvalidOpcode;
         }
     }.handler;
 
-    var cursor: [1]dispatch_mod.ScheduleElement(TestFrame) = undefined;
-    cursor[0] = .{ .opcode_handler = &mock_handler };
+    // Use static storage to avoid dangling pointer
+    const static = struct {
+        var cursor: [1]TestFrame.Dispatch.Item = undefined;
+    };
+    static.cursor[0] = .{ .opcode_handler = &mock_handler };
 
     return TestFrame.Dispatch{
-        .cursor = &cursor,
+        .cursor = &static.cursor,
         .bytecode_length = 0,
     };
 }
@@ -252,7 +282,10 @@ test "MLOAD opcode - basic load" {
     try frame.stack.push(0);
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     try testing.expectEqual(@as(u256, 0x1234567890ABCDEF), try frame.stack.pop());
 }
@@ -265,7 +298,10 @@ test "MLOAD opcode - load from uninitialized memory" {
     try frame.stack.push(64);
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -279,7 +315,10 @@ test "MSTORE opcode - basic store" {
     try frame.stack.push(0xDEADBEEF); // value
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify the value was stored
     const stored_value = frame.memory.get_u256_evm(32) catch unreachable;
@@ -295,7 +334,10 @@ test "MSTORE8 opcode - store single byte" {
     try frame.stack.push(0x11FF); // value (only 0xFF will be stored)
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify only the least significant byte was stored
     const stored_byte = frame.memory.get_byte(0) catch unreachable;
@@ -308,21 +350,30 @@ test "MSIZE opcode - memory size tracking" {
 
     // Initial memory size should be 0
     var dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.msize(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.msize(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 
     // Store at offset 31 - should expand memory to 32 bytes
     frame.memory.set_byte_evm(testing.allocator, 31, 0xFF) catch unreachable;
 
     dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.msize(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.msize(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
     try testing.expectEqual(@as(u256, 32), try frame.stack.pop());
 
     // Store at offset 63 - should expand memory to 64 bytes
     frame.memory.set_byte_evm(testing.allocator, 63, 0xFF) catch unreachable;
 
     dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.msize(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.msize(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
     try testing.expectEqual(@as(u256, 64), try frame.stack.pop());
 }
 
@@ -339,7 +390,10 @@ test "MCOPY opcode - basic copy" {
     try frame.stack.push(32); // size
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify the data was copied
     const copied_value = frame.memory.get_u256_evm(32) catch unreachable;
@@ -360,7 +414,10 @@ test "MCOPY opcode - overlapping copy" {
     try frame.stack.push(48); // size
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Check results
     const val1 = frame.memory.get_u256_evm(0) catch unreachable;
@@ -382,7 +439,10 @@ test "MCOPY opcode - zero size" {
     const initial_msize = frame.memory.len();
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Memory size should not change
     try testing.expectEqual(initial_msize, frame.memory.len());
@@ -399,7 +459,10 @@ test "memory operations - gas consumption" {
     // MLOAD from offset 0
     try frame.stack.push(0);
     var dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Gas should be consumed
     try testing.expect(frame.gas_remaining < initial_gas);
@@ -408,7 +471,10 @@ test "memory operations - gas consumption" {
     const gas_before_expansion = frame.gas_remaining;
     try frame.stack.push(10000);
     dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     const gas_consumed = gas_before_expansion - frame.gas_remaining;
     try testing.expect(gas_consumed > GasConstants.GasFastestStep);
@@ -426,7 +492,7 @@ test "MSTORE opcode - out of gas" {
     try frame.stack.push(42); // value
 
     const dispatch = createMockDispatch();
-    const result = TestFrame.MemoryHandlers.mstore(frame, dispatch);
+    const result = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor);
 
     try testing.expectError(TestFrame.Error.OutOfGas, result);
 }
@@ -452,7 +518,10 @@ test "MLOAD opcode - boundary values" {
         try frame.stack.push(tc.offset);
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         const loaded = try frame.stack.pop();
         try testing.expectEqual(tc.value, loaded);
@@ -472,7 +541,10 @@ test "MLOAD opcode - cross-boundary reads" {
     try frame.stack.push(5);
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     const loaded = try frame.stack.pop();
 
@@ -492,7 +564,7 @@ test "MLOAD opcode - max offset" {
     try frame.stack.push(std.math.maxInt(u256));
 
     const dispatch = createMockDispatch();
-    const result = TestFrame.MemoryHandlers.mload(frame, dispatch);
+    const result = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor);
 
     try testing.expectError(TestFrame.Error.OutOfBounds, result);
 }
@@ -508,7 +580,10 @@ test "MLOAD opcode - memory expansion tracking" {
     try frame.stack.push(100);
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Memory should be expanded to next 32-byte boundary
     try testing.expectEqual(@as(usize, 128), frame.memory.len()); // 100 + 32 = 132, rounded to 128
@@ -536,7 +611,10 @@ test "MSTORE opcode - patterns" {
         try frame.stack.push(pattern); // value
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         // Verify stored
         const stored = frame.memory.get_u256_evm(offset) catch unreachable;
@@ -556,7 +634,10 @@ test "MSTORE opcode - overwrite existing data" {
     try frame.stack.push(0x2222222222222222); // value
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify overwritten
     const stored = frame.memory.get_u256_evm(64) catch unreachable;
@@ -573,7 +654,10 @@ test "MSTORE opcode - unaligned writes" {
     try frame.stack.push(value); // value
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Read back and verify
     const stored = frame.memory.get_u256_evm(13) catch unreachable;
@@ -595,7 +679,10 @@ test "MSTORE8 opcode - all byte values" {
         try frame.stack.push(i); // value (will be truncated to u8)
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         const stored = frame.memory.get_byte(@as(u24, @intCast(i))) catch unreachable;
         try testing.expectEqual(@as(u8, @truncate(i)), stored);
@@ -619,7 +706,10 @@ test "MSTORE8 opcode - truncation" {
         try frame.stack.push(value); // value
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         const stored = frame.memory.get_byte(@as(u24, @intCast(i * 4))) catch unreachable;
         try testing.expectEqual(@as(u8, @truncate(value)), stored);
@@ -635,7 +725,10 @@ test "MSTORE8 opcode - memory expansion" {
     try frame.stack.push(0xFF); // value
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Memory should expand to accommodate
     try testing.expect(frame.memory.len() >= 1001);
@@ -656,7 +749,10 @@ test "MSTORE8 opcode - consecutive writes" {
         try frame.stack.push(@as(u256, char)); // value
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
     }
 
     // Read back and verify
@@ -685,26 +781,38 @@ test "MSIZE opcode - growth tracking" {
             .mload => {
                 try frame.stack.push(op.offset);
                 const dispatch = createMockDispatch();
-                _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+                _ = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
                 _ = try frame.stack.pop(); // Discard result
             },
             .mstore => {
                 try frame.stack.push(op.offset);
                 try frame.stack.push(0xABCD);
                 const dispatch = createMockDispatch();
-                _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
+                _ = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
             },
             .mstore8 => {
                 try frame.stack.push(op.offset);
                 try frame.stack.push(0xFF);
                 const dispatch = createMockDispatch();
-                _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+                _ = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
             },
         }
 
         // Check MSIZE
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.msize(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.msize(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
         const size = try frame.stack.pop();
         try testing.expectEqual(@as(u256, op.expected_size), size);
     }
@@ -720,7 +828,10 @@ test "MSIZE opcode - no spurious growth" {
     // Check size multiple times - should remain constant
     for (0..5) |_| {
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.msize(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.msize(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
         const size = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 32), size);
     }
@@ -746,7 +857,10 @@ test "MCOPY opcode - various sizes" {
         try frame.stack.push(size); // size
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         // Verify all bytes copied correctly
         for (0..size) |i| {
@@ -772,7 +886,10 @@ test "MCOPY opcode - self-overlapping forward" {
     try frame.stack.push(64); // size
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify correct copying with overlap
     const val0 = frame.memory.get_u256_evm(0) catch unreachable;
@@ -800,7 +917,10 @@ test "MCOPY opcode - self-overlapping backward" {
     try frame.stack.push(64); // size
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify
     const val16 = frame.memory.get_u256_evm(16) catch unreachable;
@@ -823,7 +943,10 @@ test "MCOPY opcode - exact overlap" {
     try frame.stack.push(32); // size
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Should still be same value
     const val = frame.memory.get_u256_evm(100) catch unreachable;
@@ -849,7 +972,10 @@ test "MCOPY opcode - large copy" {
     try frame.stack.push(size); // size
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
     // Verify first and last few bytes
     for ([_]usize{ 0, 1, 2, size - 3, size - 2, size - 1 }) |offset| {
@@ -882,7 +1008,10 @@ test "memory operations - gas edge cases" {
         try frame.stack.push(tc.size); // size
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         const gas_used = gas_before - frame.gas_remaining;
 
@@ -932,10 +1061,10 @@ test "memory operations - out of bounds protection" {
 
         const dispatch = createMockDispatch();
         const result = switch (tc.op) {
-            .mload => TestFrame.MemoryHandlers.mload(frame, dispatch),
-            .mstore => TestFrame.MemoryHandlers.mstore(frame, dispatch),
-            .mstore8 => TestFrame.MemoryHandlers.mstore8(frame, dispatch),
-            .mcopy => TestFrame.MemoryHandlers.mcopy(frame, dispatch),
+            .mload => TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor),
+            .mstore => TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor),
+            .mstore8 => TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor),
+            .mcopy => TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor),
         };
 
         if (tc.expect_error) {
@@ -951,16 +1080,16 @@ test "memory operations - stack underflow" {
     const dispatch = createMockDispatch();
 
     // Test each operation with empty stack
-    const mload_result = TestFrame.MemoryHandlers.mload(frame, dispatch);
+    const mload_result = TestFrame.MemoryHandlers.mload(&frame, dispatch.cursor);
     try testing.expectError(TestFrame.Error.StackUnderflow, mload_result);
 
-    const mstore_result = TestFrame.MemoryHandlers.mstore(frame, dispatch);
+    const mstore_result = TestFrame.MemoryHandlers.mstore(&frame, dispatch.cursor);
     try testing.expectError(TestFrame.Error.StackUnderflow, mstore_result);
 
-    const mstore8_result = TestFrame.MemoryHandlers.mstore8(frame, dispatch);
+    const mstore8_result = TestFrame.MemoryHandlers.mstore8(&frame, dispatch.cursor);
     try testing.expectError(TestFrame.Error.StackUnderflow, mstore8_result);
 
-    const mcopy_result = TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+    const mcopy_result = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor);
     try testing.expectError(TestFrame.Error.StackUnderflow, mcopy_result);
 }
 
@@ -980,7 +1109,10 @@ test "MCOPY opcode - gas calculation" {
         try frame.stack.push(size); // size
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+        _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
+        TestFrame.Error.InvalidOpcode => {},
+        else => return err,
+    };
 
         const gas_used = gas_before - frame.gas_remaining;
         const expected_words = (size + 31) / 32;
@@ -1004,7 +1136,7 @@ test "MLOAD opcode - memory expansion at exact boundaries" {
         try frame.stack.push(boundary);
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mload(frame, dispatch);
+        _ = try TestFrame.MemoryHandlers.mload(&frame, dispatch);
 
         const loaded = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), loaded);
@@ -1029,8 +1161,7 @@ test "MSTORE opcode - partial word overwrites" {
     try frame.stack.push(0); // value (all zeros)
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore(frame, dispatch);
-
+    _ = try TestFrame.MemoryHandlers.mstore(&frame, dispatch);
     // Verify first 16 bytes remain unchanged
     const first_half = frame.memory.get_slice(0, 16) catch unreachable;
     for (first_half) |byte| {
@@ -1057,8 +1188,7 @@ test "memory operations - extreme gas scenarios" {
     try frame.stack.push(0xFF); // value
 
     const dispatch = createMockDispatch();
-    _ = try TestFrame.MemoryHandlers.mstore8(frame, dispatch);
-
+    _ = try TestFrame.MemoryHandlers.mstore8(&frame, dispatch);
     // Should succeed with gas remaining
     try testing.expect(frame.gas_remaining >= 0);
 
@@ -1084,7 +1214,7 @@ test "MCOPY opcode - single byte copies" {
         try frame.stack.push(1); // size (1 byte)
 
         const dispatch = createMockDispatch();
-        _ = try TestFrame.MemoryHandlers.mcopy(frame, dispatch);
+        _ = try TestFrame.MemoryHandlers.mcopy(&frame, dispatch);
 
         // Verify copy
         const copied = frame.memory.get_byte(@as(u24, @intCast(100 + i))) catch unreachable;

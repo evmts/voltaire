@@ -25,7 +25,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // Pop topics in reverse order
-                    var topics: [4]WordType = undefined;
+                    var topics: [4]WordType = [_]WordType{0} ** 4;
                     var i: u8 = topic_count;
                     while (i > 0) : (i -= 1) {
                         topics[i - 1] = try self.stack.pop();
@@ -42,8 +42,13 @@ pub fn Handlers(comptime FrameType: type) type {
                     const offset_usize = @as(usize, @intCast(offset));
                     const length_usize = @as(usize, @intCast(length));
 
-                    // Note: Gas calculation is handled by the planner/interpreter layer
-                    // The handler just performs the operation
+                    // Calculate gas cost: LogGas + (topic_count * LogTopicGas) + (data_size * LogDataGas)
+                    const gas_cost = GasConstants.LogGas + 
+                        (@as(u64, topic_count) * GasConstants.LogTopicGas) + 
+                        (@as(u64, length_usize) * GasConstants.LogDataGas);
+                    
+                    // Check gas and consume
+                    try self.consumeGasChecked(@as(u32, @intCast(gas_cost)));
 
                     // Ensure memory capacity
                     if (length_usize > 0) {
@@ -134,8 +139,7 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .has_database = false,
-    .TracerType = NoOpTracer,
+    .DatabaseType = @import("database.zig").Database,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -836,8 +840,7 @@ test "LOG opcodes - WordType smaller than u256" {
         .WordType = u64,
         .max_bytecode_size = 1024,
         .block_gas_limit = 30_000_000,
-        .has_database = false,
-        .TracerType = NoOpTracer,
+        .DatabaseType = @import("database.zig").Database,
         .memory_initial_capacity = 4096,
         .memory_limit = 0xFFFFFF,
     };

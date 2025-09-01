@@ -4,6 +4,7 @@ const log = @import("log.zig");
 const memory_mod = @import("memory.zig");
 const keccak_asm = @import("keccak_asm.zig");
 const Opcode = @import("opcode_data.zig").Opcode;
+const GasConstants = @import("primitives").GasConstants;
 
 /// Keccak hash opcode handler for the EVM stack frame.
 /// This is a generic struct that returns a static handler for a given FrameType.
@@ -28,8 +29,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// - For smaller word types, may use different variants or truncate
         pub fn keccak(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const size = self.stack.pop_unsafe();
-            const offset = self.stack.pop_unsafe();
+            const size = try self.stack.pop();
+            const offset = try self.stack.pop();
 
             // Check bounds
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -40,6 +41,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // Handle empty data case
             if (size == 0) {
                 @branchHint(.unlikely);
+                // Gas cost for empty data (0 words)
+                try self.consumeGasChecked(@as(u32, @intCast(GasConstants.Keccak256Gas)));
+                
                 // Hash of empty data depends on Keccak variant
                 const empty_hash = switch (@bitSizeOf(WordType)) {
                     256 => blk: {
@@ -71,6 +75,13 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const offset_usize = @as(usize, @intCast(offset));
             const size_usize = @as(usize, @intCast(size));
+
+            // Calculate gas cost: 30 + 6 * ((size + 31) / 32)
+            const words = (size_usize + 31) / 32;
+            const gas_cost = GasConstants.Keccak256Gas + words * GasConstants.Keccak256WordGas;
+            
+            // Check gas and consume
+            try self.consumeGasChecked(@as(u32, @intCast(gas_cost)));
 
             // Check for overflow
             const end = std.math.add(usize, offset_usize, size_usize) catch {
@@ -176,8 +187,7 @@ const test_config_u256 = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .has_database = false,
-    .TracerType = NoOpTracer,
+    .DatabaseType = @import("database.zig").Database,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -187,8 +197,7 @@ const test_config_u64 = FrameConfig{
     .WordType = u64,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .has_database = false,
-    .TracerType = NoOpTracer,
+    .DatabaseType = @import("database.zig").Database,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -198,8 +207,7 @@ const test_config_u32 = FrameConfig{
     .WordType = u32,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .has_database = false,
-    .TracerType = NoOpTracer,
+    .DatabaseType = @import("database.zig").Database,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

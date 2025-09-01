@@ -114,6 +114,7 @@ const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 
 // Test configuration
 const test_config = FrameConfig{
@@ -121,8 +122,7 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .has_database = false,
-    .TracerType = NoOpTracer,
+    .DatabaseType = MemoryDatabase,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -132,7 +132,8 @@ const TestBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config.m
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const bytecode = TestBytecode.initEmpty();
-    return try TestFrame.init(allocator, bytecode, 1_000_000, null, null);
+    var db = MemoryDatabase.init();
+    return try TestFrame.init(allocator, bytecode, 1_000_000, &db);
 }
 
 // Mock dispatch that simulates successful execution flow
