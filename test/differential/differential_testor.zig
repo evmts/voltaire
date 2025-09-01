@@ -221,6 +221,76 @@ pub const DifferentialTestor = struct {
         return init(allocator);
     }
 
+    /// Deploy a contract by executing its deployment bytecode
+    fn deployContractGuillotine(self: *DifferentialTestor, deployment_bytecode: []const u8, enable_tracing: bool) ![]u8 {
+        const log = std.log.scoped(.differential_testor);
+        
+        // Select the appropriate database based on tracing
+        const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
+        
+        // Create a temporary address for deployment
+        const deploy_address = try primitives.Address.from_hex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+        
+        // Set the deployment bytecode at the temporary address
+        const deploy_code_hash = try db.set_code(deployment_bytecode);
+        try db.set_account(deploy_address.bytes, .{
+            .balance = 0,
+            .nonce = 1,
+            .code_hash = deploy_code_hash,
+            .storage_root = [_]u8{0} ** 32,
+        });
+        
+        // Execute the deployment bytecode (constructor) based on tracing mode
+        const result = if (enable_tracing) blk: {
+            if (self.guillotine_instance_traced) |*traced| {
+                break :blk traced.call(.{
+                    .call = .{
+                        .caller = self.caller,
+                        .to = deploy_address,
+                        .value = 0,
+                        .input = &.{}, // No constructor arguments for now
+                        .gas = 10_000_000, // Generous gas for deployment
+                    },
+                });
+            } else {
+                return error.TracingNotAvailable;
+            }
+        } else blk: {
+            if (self.guillotine_instance_no_trace) |*no_trace| {
+                break :blk no_trace.call(.{
+                    .call = .{
+                        .caller = self.caller,
+                        .to = deploy_address,
+                        .value = 0,
+                        .input = &.{}, // No constructor arguments for now
+                        .gas = 10_000_000, // Generous gas for deployment
+                    },
+                });
+            } else {
+                return error.NoTraceInstanceNotAvailable;
+            }
+        };
+        
+        if (!result.success) {
+            log.err("Contract deployment failed", .{});
+            return error.DeploymentFailed;
+        }
+        
+        if (result.output.len == 0) {
+            log.err("Contract deployment returned no runtime code", .{});
+            return error.NoRuntimeCode;
+        }
+        
+        // Copy the output (runtime code) to return
+        const runtime_code = try self.allocator.alloc(u8, result.output.len);
+        @memcpy(runtime_code, result.output);
+        
+        // Clean up the temporary deployment address
+        try db.delete_account(deploy_address.bytes);
+        
+        return runtime_code;
+    }
+    
     pub fn deinit(self: *DifferentialTestor) void {
         self.revm_instance.deinit();
         if (self.guillotine_instance_traced) |*inst| {
@@ -259,21 +329,49 @@ pub const DifferentialTestor = struct {
         // Select the appropriate database and EVM instance
         const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
         
-        // Deploy bytecode to both EVMs
-        try self.revm_instance.setCode(self.contract, bytecode);
-
-        const code_hash = try db.set_code(bytecode);
+        // Check if this looks like deployment bytecode (starts with standard Solidity pattern)
+        const is_deployment_bytecode = bytecode.len > 4 and 
+            bytecode[0] == 0x60 and bytecode[1] == 0x80 and 
+            bytecode[2] == 0x60 and bytecode[3] == 0x40;
+        
         const log = std.log.scoped(.differential_testor);
-        log.debug("Set code with hash: {x} (tracing={})", .{code_hash, enable_tracing});
-        log.debug("Contract address is: {x}", .{self.contract.bytes});
+        
+        if (is_deployment_bytecode) {
+            log.warn("Detected deployment bytecode (starts with 608060405), attempting to deploy contract", .{});
+            
+            // For Guillotine: Execute deployment bytecode to get runtime code
+            const runtime_code = try self.deployContractGuillotine(bytecode, enable_tracing);
+            defer self.allocator.free(runtime_code);
+            
+            log.warn("Deployment returned {} bytes of runtime code", .{runtime_code.len});
+            
+            // Set the runtime code
+            const code_hash = try db.set_code(runtime_code);
+            try db.set_account(self.contract.bytes, .{
+                .balance = 0,
+                .nonce = 1,
+                .code_hash = code_hash,
+                .storage_root = [_]u8{0} ** 32,
+            });
+            
+            // For REVM: Also use runtime code for fair comparison
+            try self.revm_instance.setCode(self.contract, runtime_code);
+        } else {
+            // Not deployment bytecode, use as-is (original behavior)
+            try self.revm_instance.setCode(self.contract, bytecode);
+            
+            const code_hash = try db.set_code(bytecode);
+            log.debug("Set code with hash: {x} (tracing={})", .{code_hash, enable_tracing});
+            log.debug("Contract address is: {x}", .{self.contract.bytes});
 
-        try db.set_account(self.contract.bytes, .{
-            .balance = 0,
-            .nonce = 1,
-            .code_hash = code_hash,
-            .storage_root = [_]u8{0} ** 32,
-        });
-        log.debug("Set account for address: {x}", .{self.contract.bytes});
+            try db.set_account(self.contract.bytes, .{
+                .balance = 0,
+                .nonce = 1,
+                .code_hash = code_hash,
+                .storage_root = [_]u8{0} ** 32,
+            });
+            log.debug("Set account for address: {x}", .{self.contract.bytes});
+        }
 
         // Verify deployment
         const deployed_code = try db.get_code_by_address(self.contract.bytes);
