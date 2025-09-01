@@ -48,17 +48,17 @@ pub fn Dispatch(comptime FrameType: type) type {
         threadlocal var traced_allocated_pointers: ?[]*FrameType.WordType = null;
         
         /// Thread-local storage for allocated bytecode copies (used for memory cleanup)
-        threadlocal var traced_allocated_bytecode: ?[][*:0]u8 = null;
+        threadlocal var traced_allocated_bytecode: ?[][:0]u8 = null;
 
         /// Structure to track memory allocations during schedule creation
         const AllocatedMemory = struct {
             pointers: ArrayList(*FrameType.WordType, null),
-            bytecode_copies: ArrayList([*:0]u8, null),
+            bytecode_copies: ArrayList([:0]u8, null),
             
             fn init() AllocatedMemory {
                 return .{
                     .pointers = ArrayList(*FrameType.WordType, null){},
-                    .bytecode_copies = ArrayList([*:0]u8, null){},
+                    .bytecode_copies = ArrayList([:0]u8, null){},
                 };
             }
             
@@ -68,9 +68,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                 }
                 self.pointers.deinit(allocator);
                 
-                for (self.bytecode_copies.items) |ptr| {
-                    const len = std.mem.len(ptr);
-                    allocator.free(ptr[0..len :0]);
+                for (self.bytecode_copies.items) |slice| {
+                    allocator.free(slice[0..slice.len :0]);
                 }
                 self.bytecode_copies.deinit(allocator);
             }
@@ -98,7 +97,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 const bytecode_data = bytecode.runtime_code;
                 const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
                 @memcpy(null_terminated, bytecode_data);
-                try allocated_memory.bytecode_copies.append(allocator, null_terminated.ptr);
+                try allocated_memory.bytecode_copies.append(allocator, null_terminated);
                 try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
             } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
                 // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
@@ -867,9 +866,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             
             // If we have traced allocated bytecode copies, free them
             if (traced_allocated_bytecode) |bytecode_copies| {
-                for (bytecode_copies) |ptr| {
-                    const len = std.mem.len(ptr);
-                    allocator.free(ptr[0..len :0]);
+                for (bytecode_copies) |slice| {
+                    allocator.free(slice[0..slice.len :0]);
                 }
                 allocator.free(bytecode_copies);
                 traced_allocated_bytecode = null;
@@ -999,6 +997,208 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         /// Builder for creating jump tables with improved error handling
         pub const JumpTableBuilder = dispatch_jump_table_builder.JumpTableBuilder(FrameType, Self);
+
+        /// Pretty print the dispatch instruction stream in a human-readable format
+        /// Shows both the original bytecode and the optimized instruction stream
+        /// Returns an allocated string that must be freed by the caller
+        pub fn pretty_print(allocator: std.mem.Allocator, schedule: []const Item, bytecode: anytype) ![]u8 {
+            var output = std.ArrayList(u8).init(allocator);
+            defer output.deinit();
+
+            // ANSI color codes for formatting
+            const Colors = struct {
+                const reset = "\x1b[0m";
+                const bold = "\x1b[1m";
+                const dim = "\x1b[2m";
+                const red = "\x1b[31m";
+                const green = "\x1b[32m";
+                const yellow = "\x1b[33m";
+                const blue = "\x1b[34m";
+                const magenta = "\x1b[35m";
+                const cyan = "\x1b[36m";
+                const white = "\x1b[37m";
+                const bright_red = "\x1b[91m";
+                const bright_green = "\x1b[92m";
+                const bright_yellow = "\x1b[93m";
+                const bright_blue = "\x1b[94m";
+                const bright_magenta = "\x1b[95m";
+                const bright_cyan = "\x1b[96m";
+            };
+
+            // Header
+            try output.writer().print("{s}=== EVM Dispatch Instruction Stream ==={s}\n", .{ Colors.bold, Colors.reset });
+            try output.writer().print("{s}Original bytecode: {} bytes, Dispatch items: {}{s}\n\n", .{ 
+                Colors.dim, bytecode.runtime_code.len, schedule.len, Colors.reset 
+            });
+
+            // Section showing original bytecode
+            try output.writer().print("{s}--- Original Bytecode ---{s}\n", .{ Colors.bold, Colors.reset });
+            if (bytecode.runtime_code.len > 0) {
+                const runtime_code = bytecode.runtime_code;
+                var bytecode_pc: FrameType.PcType = 0;
+                while (bytecode_pc < runtime_code.len) {
+                    const opcode_byte = runtime_code[bytecode_pc];
+                    
+                    // Show PC and hex
+                    try output.writer().print("{s}0x{:04x}:{s} {s}{:02x}{s}", .{ 
+                        Colors.cyan, bytecode_pc, Colors.reset,
+                        Colors.dim, opcode_byte, Colors.reset 
+                    });
+                    
+                    // Try to interpret the opcode
+                    if (std.meta.intToEnum(Opcode, opcode_byte)) |opcode| {
+                        try output.writer().print("  {s}{s}{s}", .{ Colors.white, @tagName(opcode), Colors.reset });
+                        
+                        // Handle PUSH instructions specially
+                        switch (opcode) {
+                            .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, 
+                            .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
+                            .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
+                            .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
+                                const push_size = @intFromEnum(opcode) - @intFromEnum(Opcode.PUSH1) + 1;
+                                var value: u256 = 0;
+                                const end_pc = @min(bytecode_pc + 1 + push_size, @as(FrameType.PcType, @intCast(runtime_code.len)));
+                                
+                                // Collect push data
+                                try output.writer().print(" {s}", .{Colors.bright_magenta});
+                                for (bytecode_pc + 1..end_pc) |i| {
+                                    value = (value << 8) | runtime_code[i];
+                                    try output.writer().print("{:02x}", .{runtime_code[i]});
+                                }
+                                try output.writer().print("{s} {s}(0x{x}){s}", .{ Colors.reset, Colors.dim, value, Colors.reset });
+                                
+                                bytecode_pc = end_pc;
+                                continue;
+                            },
+                            else => {},
+                        }
+                    } else |_| {
+                        try output.writer().print("  {s}INVALID{s}", .{ Colors.bright_red, Colors.reset });
+                    }
+                    
+                    try output.writer().print("\n");
+                    bytecode_pc += 1;
+                }
+            } else {
+                try output.writer().print("{s}(empty){s}\n", .{ Colors.dim, Colors.reset });
+            }
+
+            // Section showing dispatch instruction stream
+            try output.writer().print("\n{s}--- Dispatch Instruction Stream ---{s}\n", .{ Colors.bold, Colors.reset });
+            
+            var i: usize = 0;
+            while (i < schedule.len) {
+                const item = schedule[i];
+                
+                // Item index and address
+                try output.writer().print("{s}[{:3}]:{s} {s}@{*}{s} ", .{ 
+                    Colors.dim, i, Colors.reset,
+                    Colors.cyan, &schedule[i], Colors.reset 
+                });
+
+                switch (item) {
+                    .opcode_handler => |handler| {
+                        try output.writer().print("{s}HANDLER{s} {s}@{*}{s}", .{ 
+                            Colors.green, Colors.reset,
+                            Colors.dim, handler, Colors.reset 
+                        });
+                        
+                        // Try to identify the handler by comparing against known handlers
+                        // This is a best-effort identification
+                        try output.writer().print(" {s}(handler){s}", .{ Colors.dim, Colors.reset });
+                    },
+                    .jump_dest => |metadata| {
+                        try output.writer().print("{s}JUMPDEST{s} {s}gas:{} min_stk:{} max_stk:{}{s}", .{ 
+                            Colors.bright_yellow, Colors.reset,
+                            Colors.dim, metadata.gas, metadata.min_stack, metadata.max_stack, Colors.reset 
+                        });
+                    },
+                    .push_inline => |metadata| {
+                        try output.writer().print("{s}PUSH_INLINE{s} {s}0x{x} ({}){s}", .{ 
+                            Colors.bright_green, Colors.reset,
+                            Colors.bright_magenta, metadata.value, metadata.value, Colors.reset 
+                        });
+                    },
+                    .push_pointer => |metadata| {
+                        const value = metadata.value.*;
+                        try output.writer().print("{s}PUSH_POINTER{s} {s}@{*} -> 0x{x}{s}", .{ 
+                            Colors.bright_green, Colors.reset,
+                            Colors.bright_magenta, metadata.value, value, Colors.reset 
+                        });
+                    },
+                    .pc => |metadata| {
+                        try output.writer().print("{s}PC_META{s} {s}pc:{}{s}", .{ 
+                            Colors.blue, Colors.reset,
+                            Colors.dim, metadata.value, Colors.reset 
+                        });
+                    },
+                    .codesize => |metadata| {
+                        try output.writer().print("{s}CODESIZE_META{s} {s}size:{}{s}", .{ 
+                            Colors.blue, Colors.reset,
+                            Colors.dim, metadata.size, Colors.reset 
+                        });
+                    },
+                    .codecopy => |metadata| {
+                        try output.writer().print("{s}CODECOPY_META{s} {s}@{*}{s}", .{ 
+                            Colors.blue, Colors.reset,
+                            Colors.dim, metadata.bytecode_ptr, Colors.reset 
+                        });
+                    },
+                    .first_block_gas => |metadata| {
+                        try output.writer().print("{s}FIRST_BLOCK{s} {s}gas:{} min_stk:{} max_stk:{}{s}", .{ 
+                            Colors.yellow, Colors.reset,
+                            Colors.dim, metadata.gas, metadata.min_stack, metadata.max_stack, Colors.reset 
+                        });
+                    },
+                    .trace_before => |metadata| {
+                        try output.writer().print("{s}TRACE_BEFORE{s} {s}@{*}{s}", .{ 
+                            Colors.magenta, Colors.reset,
+                            Colors.dim, metadata.tracer_ptr, Colors.reset 
+                        });
+                    },
+                    .trace_after => |metadata| {
+                        try output.writer().print("{s}TRACE_AFTER{s} {s}@{*}{s}", .{ 
+                            Colors.magenta, Colors.reset,
+                            Colors.dim, metadata.tracer_ptr, Colors.reset 
+                        });
+                    },
+                }
+                
+                try output.writer().print("\n");
+                i += 1;
+            }
+
+            // Summary section
+            try output.writer().print("\n{s}--- Summary ---{s}\n", .{ Colors.bold, Colors.reset });
+            
+            var handler_count: usize = 0;
+            var metadata_count: usize = 0;
+            var push_inline_count: usize = 0;
+            var push_pointer_count: usize = 0;
+            var jump_dest_count: usize = 0;
+            
+            for (schedule) |item| {
+                switch (item) {
+                    .opcode_handler => handler_count += 1,
+                    .push_inline => push_inline_count += 1,
+                    .push_pointer => push_pointer_count += 1,
+                    .jump_dest => jump_dest_count += 1,
+                    else => metadata_count += 1,
+                }
+            }
+            
+            try output.writer().print("{s}Handlers: {}, Metadata: {}{s}\n", .{ Colors.dim, handler_count, metadata_count, Colors.reset });
+            try output.writer().print("{s}Push inline: {}, Push pointer: {}, Jump destinations: {}{s}\n", .{ 
+                Colors.dim, push_inline_count, push_pointer_count, jump_dest_count, Colors.reset 
+            });
+            try output.writer().print("{s}Compression ratio: {d:.2}x (bytecode:{} -> dispatch:{}){s}\n", .{ 
+                Colors.dim, 
+                if (schedule.len > 0) @as(f64, @floatFromInt(bytecode.runtime_code.len)) / @as(f64, @floatFromInt(schedule.len)) else 0.0,
+                bytecode.runtime_code.len, schedule.len, Colors.reset 
+            });
+            
+            return output.toOwnedSlice();
+        }
     };
 }
 
@@ -2151,6 +2351,37 @@ test "Dispatch - JumpTableBuilder iterator pattern" {
         const result = builder.addEntry(100, 10);
         try testing.expectError(error.OutOfMemory, result);
     }
+}
+
+test "Dispatch - pretty_print basic functionality" {
+    const allocator = testing.allocator;
+    const handlers = createTestHandlers();
+
+    // Create simple bytecode: PUSH1 0x42, ADD, STOP
+    const code = [_]u8{@intFromEnum(Opcode.PUSH1), 0x42, @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.STOP)};
+    const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+    const bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit(allocator);
+
+    // Create dispatch schedule
+    const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
+    defer TestDispatch.deinitSchedule(allocator, dispatch_items);
+
+    // Test pretty_print
+    const formatted = try TestDispatch.pretty_print(allocator, dispatch_items, &bytecode);
+    defer allocator.free(formatted);
+
+    // Verify the output contains expected elements
+    try testing.expect(std.mem.indexOf(u8, formatted, "=== EVM Dispatch Instruction Stream ===") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "--- Original Bytecode ---") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "--- Dispatch Instruction Stream ---") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "--- Summary ---") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "PUSH1") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "0x42") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "HANDLER") != null);
+
+    // Verify it's a non-empty string
+    try testing.expect(formatted.len > 100);
 }
 
 /// Helper type for tests that represents a scheduled element
