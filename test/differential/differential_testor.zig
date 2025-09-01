@@ -240,17 +240,22 @@ pub const DifferentialTestor = struct {
     /// In happy path: does nothing
     /// In unhappy path: collects errors, prints readable diff, and throws clear error
     pub fn test_bytecode(self: *DifferentialTestor, bytecode: []const u8) !void {
+        try self.test_bytecode_with_calldata(bytecode, &.{});
+    }
+
+    /// Test bytecode with specific calldata
+    pub fn test_bytecode_with_calldata(self: *DifferentialTestor, bytecode: []const u8, calldata: []const u8) !void {
         // First test with tracing enabled (if available)
         if (self.guillotine_instance_traced) |_| {
-            try self.test_bytecode_with_tracing(bytecode, true);
+            try self.test_bytecode_with_tracing_and_calldata(bytecode, calldata, true);
         }
         
         // Then test with tracing disabled
-        try self.test_bytecode_with_tracing(bytecode, false);
+        try self.test_bytecode_with_tracing_and_calldata(bytecode, calldata, false);
     }
     
-    /// Internal helper to test bytecode with specific tracing configuration
-    fn test_bytecode_with_tracing(self: *DifferentialTestor, bytecode: []const u8, enable_tracing: bool) !void {
+    /// Internal helper to test bytecode with specific tracing configuration and calldata
+    fn test_bytecode_with_tracing_and_calldata(self: *DifferentialTestor, bytecode: []const u8, calldata: []const u8, enable_tracing: bool) !void {
         // Select the appropriate database and EVM instance
         const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
         
@@ -286,10 +291,10 @@ pub const DifferentialTestor = struct {
         }
 
         // Execute on both EVMs separately to get the results for trace display
-        var revm_result = try self.executeRevmWithTrace(self.caller, self.contract, 0, &.{}, 100000);
+        var revm_result = try self.executeRevmWithTrace(self.caller, self.contract, 0, calldata, 100000);
         defer revm_result.deinit();
         
-        var guillotine_result = try self.executeGuillotineWithTraceMode(self.caller, self.contract, 0, &.{}, 100000, enable_tracing);
+        var guillotine_result = try self.executeGuillotineWithTraceMode(self.caller, self.contract, 0, calldata, 100000, enable_tracing);
         defer guillotine_result.deinit();
         
         // Generate diff
