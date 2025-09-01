@@ -17,9 +17,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn jump(self: *FrameType, _: [*]const Dispatch.Item) Error!noreturn {
             // Get jump table from frame
             const jump_table = self.jump_table;
-            
+
             const dest = try self.stack.pop();
-            
+
             log.debug("JUMP: destination=0x{x}, gas_remaining={}", .{ dest, self.gas_remaining });
 
             // Validate jump destination range
@@ -48,17 +48,12 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Get jump table from frame
             const jump_table = self.jump_table;
-            
+
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
-            
-            log.debug("JUMPI: destination=0x{x}, condition={}, gas_remaining={}, jump_table_entries={}", .{ 
-                dest, 
-                condition, 
-                self.gas_remaining,
-                jump_table.entries.len 
-            });
-            
+
+            log.debug("JUMPI: destination=0x{x}, condition={}, gas_remaining={}, jump_table_entries={}", .{ dest, condition, self.gas_remaining, jump_table.entries.len });
+
             // Debug: log all jump table entries
             for (jump_table.entries) |entry| {
                 log.debug("  Jump table entry: PC=0x{x}", .{entry.pc});
@@ -67,7 +62,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (condition != 0) {
                 // Take the jump - validate destination range
                 log.debug("JUMPI: Taking jump (condition non-zero)", .{});
-                
+
                 if (dest > std.math.maxInt(u32)) {
                     log.warn("JUMPI: Invalid destination out of range: 0x{x}", .{dest});
                     return Error.InvalidJump;
@@ -100,14 +95,12 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn jumpdest(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Jump table not needed for JUMPDEST itself
             const dispatch = Dispatch{ .cursor = cursor };
+            const Opcode = @import("opcode_data.zig").Opcode;
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
-            const metadata = dispatch.getJumpDestMetadata();
-            const gas_cost = metadata.gas;
-            
-            log.debug("JUMPDEST: Landing at jump destination, basic_block_gas_cost={}, gas_remaining={}", .{ 
-                gas_cost, 
-                self.gas_remaining 
-            });
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.JUMPDEST });
+            const gas_cost = op_data.metadata.gas;
+
+            log.debug("JUMPDEST: Landing at jump destination, basic_block_gas_cost={}, gas_remaining={}", .{ gas_cost, self.gas_remaining });
 
             // Check and consume gas for the entire basic block
             if (self.gas_remaining < gas_cost) {
@@ -115,7 +108,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
-            
+
             // Pretty print the frame state when landing on JUMPDEST
             // TODO: Re-enable when pretty_print is fully working
             // if (comptime builtin.mode == .Debug) {
@@ -128,8 +121,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // }
 
             // Continue to next operation
-            const next = dispatch.skipMetadata();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 
         /// PC opcode (0x58) - Get program counter.
@@ -138,15 +130,15 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Jump table not needed for PC
             const dispatch = Dispatch{ .cursor = cursor };
+            const Opcode = @import("opcode_data.zig").Opcode;
             // Get PC value from metadata
-            const metadata = dispatch.getPcMetadata();
-            
-            log.debug("PC: Pushing program counter value=0x{x}", .{metadata.value});
-            
-            try self.stack.push(metadata.value);
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.PC });
 
-            const next = dispatch.skipMetadata();
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            log.debug("PC: Pushing program counter value=0x{x}", .{op_data.metadata.value});
+
+            try self.stack.push(op_data.metadata.value);
+
+            return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
     };
 }
@@ -563,10 +555,10 @@ test "JUMP opcode - invalid destination should revert" {
     // Create bytecode with JUMPDEST at position 5
     const bytecode_data = [_]u8{
         0x60, 0x03, // PUSH1 3 (invalid destination - not a JUMPDEST)
-        0x56,       // JUMP
-        0x00,       // STOP (should not reach here)
-        0x5b,       // JUMPDEST at position 5
-        0x00,       // STOP
+        0x56, // JUMP
+        0x00, // STOP (should not reach here)
+        0x5b, // JUMPDEST at position 5
+        0x00, // STOP
     };
     var bytecode = try TestBytecode.init(testing.allocator, &bytecode_data);
     defer bytecode.deinit();
@@ -574,7 +566,7 @@ test "JUMP opcode - invalid destination should revert" {
     // Create dispatch with jump table
     const schedule = try TestFrame.Dispatch.init(testing.allocator, &bytecode, &TestFrame.opcode_handlers);
     defer testing.allocator.free(schedule);
-    
+
     const jump_table = try TestFrame.Dispatch.createJumpTable(testing.allocator, schedule, &bytecode);
     defer testing.allocator.free(jump_table.entries);
 
@@ -598,7 +590,7 @@ test "JUMP opcode - invalid destination should revert" {
 
     // Call the JUMP handler
     const result = TestFrame.JumpHandlers.jump(&frame, schedule.ptr + jump_handler_index.?);
-    
+
     // Should return InvalidJump error
     try testing.expectError(TestFrame.Error.InvalidJump, result);
 }
@@ -611,9 +603,9 @@ test "JUMPI opcode - invalid destination should revert when taken" {
     const bytecode_data = [_]u8{
         0x60, 0x01, // PUSH1 1 (condition - true)
         0x60, 0x04, // PUSH1 4 (invalid destination - not a JUMPDEST)
-        0x57,       // JUMPI
-        0x5b,       // JUMPDEST at position 6
-        0x00,       // STOP
+        0x57, // JUMPI
+        0x5b, // JUMPDEST at position 6
+        0x00, // STOP
     };
     var bytecode = try TestBytecode.init(testing.allocator, &bytecode_data);
     defer bytecode.deinit();
@@ -621,7 +613,7 @@ test "JUMPI opcode - invalid destination should revert when taken" {
     // Create dispatch with jump table
     const schedule = try TestFrame.Dispatch.init(testing.allocator, &bytecode, &TestFrame.opcode_handlers);
     defer testing.allocator.free(schedule);
-    
+
     const jump_table = try TestFrame.Dispatch.createJumpTable(testing.allocator, schedule, &bytecode);
     defer testing.allocator.free(jump_table.entries);
 
@@ -646,7 +638,7 @@ test "JUMPI opcode - invalid destination should revert when taken" {
 
     // Call the JUMPI handler
     const result = TestFrame.JumpHandlers.jumpi(&frame, schedule.ptr + jumpi_handler_index.?);
-    
+
     // Should return InvalidJump error
     try testing.expectError(TestFrame.Error.InvalidJump, result);
 }
