@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = @import("../log.zig");
+const log = @import("log.zig");
 const zbench = @import("zbench");
 const primitives = @import("primitives");
 const evm_mod = @import("evm");

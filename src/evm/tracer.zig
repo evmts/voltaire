@@ -10,7 +10,7 @@
 /// Tracers are selected at compile time for zero-cost abstractions.
 /// Enable tracing by configuring the Frame with a specific TracerType.
 const std = @import("std");
-const log = @import("../log.zig");
+const log = @import("log.zig");
 const frame_mod = @import("frame_c.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
@@ -676,11 +676,11 @@ pub fn Tracer(comptime Writer: type) type {
         }
 
         pub fn writeSnapshot(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !void {
-            const log = try self.snapshot(pc, opcode, FrameType, frame_instance);
-            defer self.allocator.free(log.stack);
-            defer if (log.memory) |m| self.allocator.free(m);
+            const snapshot_entry = try self.snapshot(pc, opcode, FrameType, frame_instance);
+            defer self.allocator.free(snapshot_entry.stack);
+            defer if (snapshot_entry.memory) |m| self.allocator.free(m);
 
-            try self.writeJson(&log);
+            try self.writeJson(&snapshot_entry);
         }
 
         pub fn beforeOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
@@ -709,22 +709,22 @@ pub fn Tracer(comptime Writer: type) type {
             // Generic tracer doesn't do anything on error by default
         }
 
-        pub fn writeJson(self: *Self, log: *const DetailedStructLog) !void {
+        pub fn writeJson(self: *Self, log_entry: *const DetailedStructLog) !void {
             try self.writer.print(
                 "{{\"pc\":{},\"op\":\"{s}\",\"gas\":{},\"gasCost\":{},\"depth\":{},\"stack\":[",
-                .{ log.pc, log.op, log.gas, log.gasCost, log.depth },
+                .{ log_entry.pc, log_entry.op, log_entry.gas, log_entry.gasCost, log_entry.depth },
             );
 
             // Write stack array
-            for (log.stack, 0..) |val, i| {
+            for (log_entry.stack, 0..) |val, i| {
                 if (i > 0) try self.writer.writeAll(",");
                 try self.writer.print("\"0x{x}\"", .{val});
             }
 
-            try self.writer.print("],\"memSize\":{},\"refund\":{}", .{ log.memSize, log.refund });
+            try self.writer.print("],\"memSize\":{},\"refund\":{}", .{ log_entry.memSize, log_entry.refund });
 
             // Write memory if captured
-            if (log.memory) |mem| {
+            if (log_entry.memory) |mem| {
                 try self.writer.writeAll(",\"memory\":\"0x");
                 for (mem) |byte| {
                     try self.writer.print("{x:0>2}", .{byte});
@@ -733,7 +733,7 @@ pub fn Tracer(comptime Writer: type) type {
             }
 
             // Write error if present
-            if (log.@"error") |err| {
+            if (log_entry.@"error") |err| {
                 try self.writer.print(",\"error\":\"{s}\"", .{err});
             }
 

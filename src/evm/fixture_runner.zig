@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const evm = @import("root.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
@@ -81,14 +82,14 @@ pub const FixtureRunner = struct {
             .storage_root = [_]u8{0} ** 32,
         });
         
-        if (verbose) std.debug.print("Direct install at address: {x}, code_len={}, code_hash={x}\n", .{ target_address, init_code.len, code_hash });
+        if (verbose) log.debug("Direct install at address: {x}, code_len={}, code_hash={x}\n", .{ target_address, init_code.len, code_hash });
 
         // Verify contract is properly deployed
         const deployed_code = self.evm_instance.get_code(target_address);
         if (deployed_code.len == 0) {
             return error.NoCodeAtTarget;
         } else if (verbose) {
-            std.debug.print("✓ Contract found at {x}, code_len={}\n", .{ target_address, deployed_code.len });
+            log.debug("✓ Contract found at {x}, code_len={}\n", .{ target_address, deployed_code.len });
         }
 
         // Set up initial state for ERC20 benchmarks if needed
@@ -120,7 +121,7 @@ pub const FixtureRunner = struct {
                 const total_supply_slot: u256 = 2;
                 try self.database.set_storage(target_address.bytes, total_supply_slot, balance_amount);
                 
-                if (verbose) std.debug.print("✓ Set up ERC20 balance: {} tokens for sender\n", .{balance_amount});
+                if (verbose) log.debug("✓ Set up ERC20 balance: {} tokens for sender\n", .{balance_amount});
             }
         }
 

@@ -9,6 +9,7 @@
 ///
 /// All bytecode operations are bounds-checked and memory-safe.
 const std = @import("std");
+const log = @import("log.zig");
 const builtin = @import("builtin");
 const ArrayList = std.ArrayListAligned;
 const Opcode = @import("opcode.zig").Opcode;
@@ -1299,7 +1300,7 @@ test "pretty_print: should format bytecode with colors and metadata" {
 
     for (expected_parts) |part| {
         std.testing.expect(std.mem.indexOf(u8, formatted, part) != null) catch |err| {
-            std.debug.print("Expected to find '{s}' in:\n{s}\n", .{ part, formatted });
+            log.debug("Expected to find '{s}' in:\n{s}\n", .{ part, formatted });
             return err;
         };
     }

@@ -1,6 +1,7 @@
 //! Tests for EVM bytecode representation and validation.
 
 const std = @import("std");
+const log = @import("log.zig");
 const builtin = @import("builtin");
 const ArrayList = std.ArrayListAligned;
 const Opcode = @import("opcode.zig").Opcode;
@@ -2285,7 +2286,7 @@ test "PUSH+JUMP: PUSH32 containing JUMP byte should not cause validation error" 
     
     // This should succeed - the 0x56 bytes inside PUSH32 data should NOT be treated as JUMP opcodes
     var bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("PUSH+JUMP test failed: PUSH32 containing 0x56 incorrectly rejected: {}\n", .{err});
+        log.debug("PUSH+JUMP test failed: PUSH32 containing 0x56 incorrectly rejected: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -2315,7 +2316,7 @@ test "PUSH+JUMP: complex bytecode with mixed PUSH and JUMP patterns" {
     };
     
     var bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("PUSH+JUMP test failed: Complex pattern incorrectly rejected: {}\n", .{err});
+        log.debug("PUSH+JUMP test failed: Complex pattern incorrectly rejected: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
@@ -2347,7 +2348,7 @@ test "PUSH+JUMP: unreachable PUSH+JUMP pattern should be valid" {
     // This should succeed even though the jump target (16) doesn't exist,
     // because the PUSH+JUMP is unreachable
     var bc = BytecodeDefault.init(allocator, &bytecode) catch |err| {
-        std.debug.print("PUSH+JUMP test failed: Unreachable code incorrectly rejected: {}\n", .{err});
+        log.debug("PUSH+JUMP test failed: Unreachable code incorrectly rejected: {}\n", .{err});
         return err;
     };
     defer bc.deinit();
