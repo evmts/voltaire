@@ -37,11 +37,6 @@ pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler 
     const ContextHandlers = stack_frame_context.Handlers(FrameType);
     const KeccakHandlers = stack_frame_keccak.Handlers(FrameType);
     const LogHandlers = stack_frame_log.Handlers(FrameType);
-    // Import synthetic handler modules
-    const ArithmeticSyntheticHandlers = stack_frame_arithmetic_synthetic.Handlers(FrameType);
-    const BitwiseSyntheticHandlers = stack_frame_bitwise_synthetic.Handlers(FrameType);
-    const MemorySyntheticHandlers = stack_frame_memory_synthetic.Handlers(FrameType);
-    const JumpSyntheticHandlers = stack_frame_jump_synthetic.Handlers(FrameType);
 
     // The default opcode handler used for any opcode that is not supported by the EVM
     const invalid = struct {
@@ -163,31 +158,48 @@ pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler 
     h[@intFromEnum(Opcode.SELFDESTRUCT)] = &SystemHandlers.selfdestruct;
     h[@intFromEnum(Opcode.AUTH)] = &SystemHandlers.auth;
     h[@intFromEnum(Opcode.AUTHCALL)] = &SystemHandlers.authcall;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE)] = &ArithmeticSyntheticHandlers.push_add_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER)] = &ArithmeticSyntheticHandlers.push_add_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE)] = &ArithmeticSyntheticHandlers.push_mul_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER)] = &ArithmeticSyntheticHandlers.push_mul_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE)] = &ArithmeticSyntheticHandlers.push_div_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER)] = &ArithmeticSyntheticHandlers.push_div_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE)] = &ArithmeticSyntheticHandlers.push_sub_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER)] = &ArithmeticSyntheticHandlers.push_sub_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE)] = &JumpSyntheticHandlers.push_jump_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER)] = &JumpSyntheticHandlers.push_jump_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &JumpSyntheticHandlers.push_jumpi_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &JumpSyntheticHandlers.push_jumpi_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE)] = &MemorySyntheticHandlers.push_mload_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER)] = &MemorySyntheticHandlers.push_mload_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE)] = &MemorySyntheticHandlers.push_mstore_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER)] = &MemorySyntheticHandlers.push_mstore_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE)] = &BitwiseSyntheticHandlers.push_and_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER)] = &BitwiseSyntheticHandlers.push_and_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE)] = &BitwiseSyntheticHandlers.push_or_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER)] = &BitwiseSyntheticHandlers.push_or_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE)] = &BitwiseSyntheticHandlers.push_xor_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER)] = &BitwiseSyntheticHandlers.push_xor_pointer;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE)] = &MemorySyntheticHandlers.push_mstore8_inline;
-    h[@intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER)] = &MemorySyntheticHandlers.push_mstore8_pointer;
+    // Note: Synthetic opcodes (0xa5-0xbc) are NOT mapped here because they should only be used
+    // internally by the dispatch system during optimization. Raw bytecode containing these values
+    // should be treated as invalid opcodes and use the default invalid handler.
     return h;
+}
+
+/// Get a synthetic opcode handler by its opcode value.
+/// This is separate from the main handlers array to ensure synthetic opcodes are only used internally.
+pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) FrameType.OpcodeHandler {
+    // Import synthetic handler modules
+    const ArithmeticSyntheticHandlers = stack_frame_arithmetic_synthetic.Handlers(FrameType);
+    const BitwiseSyntheticHandlers = stack_frame_bitwise_synthetic.Handlers(FrameType);
+    const MemorySyntheticHandlers = stack_frame_memory_synthetic.Handlers(FrameType);
+    const JumpSyntheticHandlers = stack_frame_jump_synthetic.Handlers(FrameType);
+
+    return switch (synthetic_opcode) {
+        @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) => &ArithmeticSyntheticHandlers.push_add_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER) => &ArithmeticSyntheticHandlers.push_add_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) => &ArithmeticSyntheticHandlers.push_mul_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER) => &ArithmeticSyntheticHandlers.push_mul_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) => &ArithmeticSyntheticHandlers.push_div_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER) => &ArithmeticSyntheticHandlers.push_div_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE) => &ArithmeticSyntheticHandlers.push_sub_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER) => &ArithmeticSyntheticHandlers.push_sub_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE) => &JumpSyntheticHandlers.push_jump_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER) => &JumpSyntheticHandlers.push_jump_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => &JumpSyntheticHandlers.push_jumpi_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => &JumpSyntheticHandlers.push_jumpi_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) => &MemorySyntheticHandlers.push_mload_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER) => &MemorySyntheticHandlers.push_mload_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => &MemorySyntheticHandlers.push_mstore_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => &MemorySyntheticHandlers.push_mstore_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) => &BitwiseSyntheticHandlers.push_and_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER) => &BitwiseSyntheticHandlers.push_and_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) => &BitwiseSyntheticHandlers.push_or_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER) => &BitwiseSyntheticHandlers.push_or_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) => &BitwiseSyntheticHandlers.push_xor_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER) => &BitwiseSyntheticHandlers.push_xor_pointer,
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) => &MemorySyntheticHandlers.push_mstore8_inline,
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER) => &MemorySyntheticHandlers.push_mstore8_pointer,
+        else => @panic("Invalid synthetic opcode"),
+    };
 }
 
 /// Returns traced opcode handlers that wrap the base handlers with tracer calls

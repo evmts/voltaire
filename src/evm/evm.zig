@@ -378,20 +378,35 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Store initial gas for EIP-3529 calculations
             const initial_gas = gas;
+            
+            // Deduct intrinsic gas for top-level calls (transactions)
+            const execution_gas = if (is_top_level) blk: {
+                const GasConstants = primitives.GasConstants;
+                const intrinsic_gas = switch (params) {
+                    .create, .create2 => GasConstants.TxGasContractCreation, // 53000 for contract creation
+                    else => GasConstants.TxGas, // 21000 for regular calls
+                };
+                
+                // Check if we have enough gas for intrinsic cost
+                if (gas < intrinsic_gas) return CallResult.failure(0);
+                
+                break :blk gas - intrinsic_gas;
+            } else gas;
+            
             // Route to appropriate handler
             var result = switch (params) {
                 .call => |p| blk: {
-                    // log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, p.gas, p.input.len });
-                    break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch {
+                    // log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, execution_gas, p.input.len });
+                    break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch {
                         // log.debug("DEBUG: EVM.call failed with error: {}\n", .{err});
                         return CallResult.failure(0);
                     };
                 },
-                .callcode => |p| self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
-                .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
-                .staticcall => |p| self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = p.gas }) catch CallResult.failure(0),
-                .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = p.gas }) catch CallResult.failure(0),
-                .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = p.gas }) catch CallResult.failure(0),
+                .callcode => |p| self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
+                .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
+                .staticcall => |p| self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
+                .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch CallResult.failure(0),
+                .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch CallResult.failure(0),
             };
             
             // Apply EIP-3529 gas refund cap if transaction succeeded

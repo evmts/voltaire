@@ -206,12 +206,17 @@ pub fn Handlers(comptime FrameType: type) type {
             
             // Create a temporary buffer to handle overlapping regions correctly
             const temp_buffer = self.allocator.alloc(u8, size_u24) catch return Error.AllocationError;
-            defer self.allocator.free(temp_buffer);
             
             @memcpy(temp_buffer, src_data);
             
             // Write to destination
-            self.memory.set_data_evm(self.allocator, dest_u24, temp_buffer) catch return Error.AllocationError;
+            self.memory.set_data_evm(self.allocator, dest_u24, temp_buffer) catch {
+                self.allocator.free(temp_buffer);
+                return Error.AllocationError;
+            };
+            
+            // Free the temporary buffer before tail call
+            self.allocator.free(temp_buffer);
             
             const op_data = dispatch.getOpData(.{ .regular = Opcode.MCOPY });
             const next = op_data.next;

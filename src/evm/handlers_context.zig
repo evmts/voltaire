@@ -6,6 +6,7 @@ const Address = primitives.Address;
 const GasConstants = primitives.GasConstants;
 // u256 is a built-in type in Zig 0.14+
 const keccak_asm = @import("keccak_asm.zig");
+const memory_mod = @import("memory.zig");
 const Opcode = @import("opcode_data.zig").Opcode;
 
 /// Context opcode handlers for the EVM stack frame.
@@ -342,7 +343,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const length_usize = @as(usize, @intCast(length));
 
             if (length_usize == 0) {
-                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODECOPY }); const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
@@ -363,7 +364,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.memory.set_byte(self.allocator, @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODECOPY }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -726,7 +727,6 @@ const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
 const block_info_mod = @import("block_info.zig");
-const memory_mod = @import("memory.zig");
 
 // Test configuration
 const test_config = FrameConfig{

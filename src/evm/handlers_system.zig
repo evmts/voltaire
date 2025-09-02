@@ -128,7 +128,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             
             
-            const result = self.getEvm().inner_call(params) catch |err| switch (err) {
+            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     try self.stack.push(0);
                     const op_data = dispatch.getOpData(.{ .regular = Opcode.CALL });
@@ -136,6 +136,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            defer result.deinit(self.allocator);
             
 
             // Write return data to memory if successful and output size > 0
@@ -257,7 +258,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
-            const result = self.getEvm().inner_call(params) catch |err| switch (err) {
+            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     try self.stack.push(0);
                     const op_data = dispatch.getOpData(.{ .regular = Opcode.DELEGATECALL });
@@ -265,6 +266,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            defer result.deinit(self.allocator);
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
@@ -382,7 +384,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
-            const result = self.getEvm().inner_call(params) catch |err| switch (err) {
+            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     try self.stack.push(0);
                     const op_data = dispatch.getOpData(.{ .regular = Opcode.STATICCALL });
@@ -390,6 +392,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            defer result.deinit(self.allocator);
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
@@ -475,7 +478,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = @as(u64, @intCast(self.gas_remaining)),
                 },
             };
-            const result = self.getEvm().inner_call(params) catch |err| switch (err) {
+            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     try self.stack.push(0);
                     const op_data = dispatch.getOpData(.{ .regular = Opcode.CREATE });
@@ -483,6 +486,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            defer result.deinit(self.allocator);
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
@@ -559,7 +563,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = @as(u64, @intCast(self.gas_remaining)),
                 },
             };
-            const result = self.getEvm().inner_call(params) catch |err| switch (err) {
+            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     try self.stack.push(0);
                     const op_data = dispatch.getOpData(.{ .regular = Opcode.CREATE2 });
@@ -567,6 +571,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            defer result.deinit(self.allocator);
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
@@ -924,7 +929,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
             
-            const result = self.getEvm().inner_call(params) catch |err| switch (err) {
+            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     try self.stack.push(0);
                     const op_data = dispatch.getOpData(.{ .regular = Opcode.AUTHCALL });
@@ -932,6 +937,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
+            defer result.deinit(self.allocator);
             
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
