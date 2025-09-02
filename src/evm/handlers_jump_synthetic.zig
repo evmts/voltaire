@@ -14,9 +14,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_JUMP_INLINE - Fused PUSH+JUMP with inline destination (≤8 bytes).
         /// Pushes a destination and immediately jumps to it.
         pub fn push_jump_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMP_INLINE });
-            const dest = op_data.metadata.value;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const dest = cursor[1].push_inline.value;
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
@@ -38,9 +37,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_JUMP_POINTER - Fused PUSH+JUMP with pointer destination (>8 bytes).
         pub fn push_jump_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMP_POINTER });
-            const dest = op_data.metadata.value.*;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const dest = cursor[1].push_pointer.value.*;
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
@@ -63,9 +61,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_JUMPI_INLINE - Fused PUSH+JUMPI with inline destination (≤8 bytes).
         /// Pushes a destination, pops condition, and conditionally jumps.
         pub fn push_jumpi_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMPI_INLINE });
-            const dest = op_data.metadata.value;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const dest = cursor[1].push_inline.value;
 
             // Pop the condition
             const condition = try self.stack.pop();
@@ -88,17 +85,15 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.InvalidJump;
                 }
             } else {
-                // Continue to next instruction
-                const next = op_data.next;
-                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                // Continue to next instruction (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
+                return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
             }
         }
 
         /// PUSH_JUMPI_POINTER - Fused PUSH+JUMPI with pointer destination (>8 bytes).
         pub fn push_jumpi_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_JUMPI_POINTER });
-            const dest = op_data.metadata.value.*;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const dest = cursor[1].push_pointer.value.*;
 
             // Pop the condition
             const condition = try self.stack.pop();
@@ -121,9 +116,8 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.InvalidJump;
                 }
             } else {
-                // Continue to next instruction
-                const next = op_data.next;
-                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                // Continue to next instruction (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
+                return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
             }
         }
     };

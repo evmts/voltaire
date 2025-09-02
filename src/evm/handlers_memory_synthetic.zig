@@ -16,9 +16,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_MLOAD_INLINE - Fused PUSH+MLOAD with inline offset (≤8 bytes).
         /// Pushes an offset and immediately loads from that memory location.
         pub fn push_mload_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MLOAD_INLINE });
-            const offset = op_data.metadata.value;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const offset = cursor[1].push_inline.value;
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -43,15 +42,13 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = @as(WordType, @truncate(value_u256));
             try self.stack.push(value);
 
-            const next = op_data.next;
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
 
         /// PUSH_MLOAD_POINTER - Fused PUSH+MLOAD with pointer offset (>8 bytes).
         pub fn push_mload_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MLOAD_POINTER });
-            const offset = op_data.metadata.value.*;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const offset = cursor[1].push_pointer.value.*;
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -76,16 +73,16 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = @as(WordType, @truncate(value_u256));
             try self.stack.push(value);
 
-            const next = op_data.next;
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// PUSH_MSTORE_INLINE - Fused PUSH+MSTORE with inline offset (≤8 bytes).
         /// Pushes an offset, then pops a value and stores it at that offset.
         pub fn push_mstore_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE_INLINE });
-            const offset = op_data.metadata.value;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -111,15 +108,16 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = op_data.next;
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
         pub fn push_mstore_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE_POINTER });
-            const offset = op_data.metadata.value.*;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            // REMOVED getOpData call - direct metadata access insteadPUSH_MSTORE_POINTER });
+            const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -145,16 +143,17 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = op_data.next;
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// PUSH_MSTORE8_INLINE - Fused PUSH+MSTORE8 with inline offset (≤8 bytes).
         /// Pushes an offset, then pops a value and stores the least significant byte.
         pub fn push_mstore8_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE8_INLINE });
-            const offset = op_data.metadata.value;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            // REMOVED getOpData call - direct metadata access insteadPUSH_MSTORE8_INLINE });
+            const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -180,15 +179,16 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = op_data.next;
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
         pub fn push_mstore8_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            const op_data = dispatch.getOpData(.{ .synthetic = OpcodeSynthetic.PUSH_MSTORE8_POINTER });
-            const offset = op_data.metadata.value.*;
+            // For synthetic opcodes, cursor[1] contains the metadata directly
+            // REMOVED getOpData call - direct metadata access insteadPUSH_MSTORE8_POINTER });
+            const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
             const value = try self.stack.pop();
@@ -214,8 +214,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const next = op_data.next;
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
     };
 }
