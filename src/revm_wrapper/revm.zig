@@ -244,7 +244,7 @@ pub const Revm = struct {
         code[i] = 0xf3; i += 1; // RETURN
 
         // Install harness code at a fixed harness address
-        const harness_addr = [_]u8{0xCC} ** 20;
+        const harness_addr = Address{ .bytes = [_]u8{0xCC} ** 20 };
         try self.setCode(harness_addr, code[0..i]);
 
         // Execute call to harness
