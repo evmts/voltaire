@@ -77,6 +77,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const is_cold = !evm.access_list.is_storage_slot_warm(contract_addr, slot);
 
             // Access storage slot to mark it as warm for future accesses
+            // Note: We ignore the returned gas cost since it's already included in sstore_gas_cost
             _ = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };

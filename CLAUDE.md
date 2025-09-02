@@ -61,6 +61,7 @@ return thing;
 - **NO helpers** - Self-contained tests
 - **Test failures = YOUR regression** - Fix immediately
 - Evidence-based debugging only (no speculation)
+- **IMPORTANT**: Zig tests output NOTHING when passing - DO NOT grep for test names/results in successful runs
 
 ## Project Architecture
 

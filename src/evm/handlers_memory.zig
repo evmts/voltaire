@@ -62,8 +62,10 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             // MSTORE stores a 32-byte word to memory
+            log.debug("[MSTORE] Stack before: {any}, gas: {d}", .{ self.stack.get_slice(), self.gas_remaining });
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
+            log.debug("[MSTORE] Storing value {d} at offset {d}", .{ value, offset });
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {

@@ -239,6 +239,27 @@ pub fn build(b: *std.Build) void {
     const erc20_deployment_test_step = b.step("test-erc20-deployment", "Test ERC20 deployment issue");
     erc20_deployment_test_step.dependOn(&run_erc20_deployment_test.step);
 
+    // GT opcode bug test
+    const gt_bug_test = b.addTest(.{
+        .name = "gt-bug-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_gt_exact.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+    });
+    gt_bug_test.root_module.addImport("evm", modules.evm_mod);
+    gt_bug_test.root_module.addImport("primitives", modules.primitives_mod);
+    gt_bug_test.root_module.addImport("crypto", modules.crypto_mod);
+    gt_bug_test.root_module.addImport("build_options", config.options_mod);
+    gt_bug_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+    gt_bug_test.linkLibrary(c_kzg_lib);
+    gt_bug_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| gt_bug_test.linkLibrary(bn254);
+    gt_bug_test.linkLibC();
+    const test_gt_bug = b.step("test-gt-bug", "Test GT opcode bug");
+    test_gt_bug.dependOn(&b.addRunArtifact(gt_bug_test).step);
+
     // Per-opcode differential tests discovered in test/evm/opcodes
     // We dynamically scan the directory and add a test target for each file matching *_test.zig
     const opcode_tests_step = b.step("test-opcodes", "Run all per-opcode differential tests");

@@ -74,37 +74,21 @@ pub fn Handlers(comptime FrameType: type) type {
                         };
                     };
                     
-                    // Debug logging for PUSH32
-                    if (push_n == 32) {
-                        log.debug("PUSH32 handler called:", .{});
-                        log.debug("  Stack depth before: {}", .{self.stack.size()});
-                        log.debug("  Gas remaining: {}", .{self.gas_remaining});
-                    }
-                    
                     const op_data = dispatch.getOpData(.{ .regular = push_opcode });
                     
-                    if (push_n == 32) {
-                        log.debug("  Got op_data, metadata type: {}", .{@TypeOf(op_data.metadata)});
-                    }
+                    log.debug("[PUSH{d}] Stack before: {any}, gas: {d}", .{ push_n, self.stack.get_slice(), self.gas_remaining });
                     
                     if (push_n <= 8) {
                         const value = op_data.metadata.value;
-                        if (push_n == 32) {
-                            log.debug("  PUSH32 using inline value (unexpected): 0x{x}", .{value});
-                        }
+                        log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
                         try self.stack.push(value);
                     } else {
                         const value = op_data.metadata.value.*;
-                        if (push_n == 32) {
-                            log.debug("  PUSH32 value from pointer: 0x{x}", .{value});
-                        }
+                        log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
                         try self.stack.push(value);
                     }
                     
-                    if (push_n == 32) {
-                        log.debug("  Stack depth after: {}", .{self.stack.size()});
-                        log.debug("  Successfully pushed value, calling next handler", .{});
-                    }
+                    log.debug("[PUSH{d}] Stack after: {any}", .{ push_n, self.stack.get_slice() });
                     
                     return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }

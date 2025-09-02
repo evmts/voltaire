@@ -188,21 +188,21 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.ret_top32(allocator, &buf);
         },
         0x16 => { // AND
-            try helpers.push_u8(allocator, &buf, 0x0f);
-            try helpers.push_u8(allocator, &buf, 0xf0);
-            try buf.append(allocator, 0x16);
+            try helpers.push_u8(allocator, &buf, 0x3c); // 0b00111100
+            try helpers.push_u8(allocator, &buf, 0xa5); // 0b10100101 (top)
+            try buf.append(allocator, 0x16); // AND: 0x3c & 0xa5 = 0x24
             try helpers.ret_top32(allocator, &buf);
         },
         0x17 => { // OR
-            try helpers.push_u8(allocator, &buf, 0x0f);
-            try helpers.push_u8(allocator, &buf, 0xf0);
-            try buf.append(allocator, 0x17);
+            try helpers.push_u8(allocator, &buf, 0x12); // 0b00010010
+            try helpers.push_u8(allocator, &buf, 0x45); // 0b01000101 (top)
+            try buf.append(allocator, 0x17); // OR: 0x12 | 0x45 = 0x57
             try helpers.ret_top32(allocator, &buf);
         },
         0x18 => { // XOR
-            try helpers.push_u8(allocator, &buf, 0x0f);
-            try helpers.push_u8(allocator, &buf, 0xff);
-            try buf.append(allocator, 0x18);
+            try helpers.push_u8(allocator, &buf, 0x69); // 0b01101001
+            try helpers.push_u8(allocator, &buf, 0x3a); // 0b00111010 (top)
+            try buf.append(allocator, 0x18); // XOR: 0x69 ^ 0x3a = 0x53
             try helpers.ret_top32(allocator, &buf);
         },
         0x19 => { // NOT
@@ -217,23 +217,23 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.ret_top32(allocator, &buf);
         },
         0x1b => { // SHL
-            try helpers.push_u8(allocator, &buf, 0x01);
-            try helpers.push_u8(allocator, &buf, 0x01);
-            try buf.append(allocator, 0x1b);
+            try helpers.push_u8(allocator, &buf, 0x03); // value to shift (different from shift amount)
+            try helpers.push_u8(allocator, &buf, 0x02); // shift amount (top of stack)
+            try buf.append(allocator, 0x1b); // SHL: value << shift = 3 << 2 = 12
             try helpers.ret_top32(allocator, &buf);
         },
         0x1c => { // SHR
-            try helpers.push_u8(allocator, &buf, 0x02);
-            try helpers.push_u8(allocator, &buf, 0x01);
-            try buf.append(allocator, 0x1c);
+            try helpers.push_u8(allocator, &buf, 0x08); // value to shift (different from shift amount)
+            try helpers.push_u8(allocator, &buf, 0x02); // shift amount (top of stack)
+            try buf.append(allocator, 0x1c); // SHR: value >> shift = 8 >> 2 = 2
             try helpers.ret_top32(allocator, &buf);
         },
         0x1d => { // SAR
-            var neg4: [32]u8 = [_]u8{0xff} ** 32;
-            neg4[31] = 0xfc; // -4
-            try helpers.push_bytes(allocator, &buf, &neg4);
-            try helpers.push_u8(allocator, &buf, 0x01);
-            try buf.append(allocator, 0x1d);
+            var neg16: [32]u8 = [_]u8{0xff} ** 32;
+            neg16[31] = 0xf0; // -16
+            try helpers.push_bytes(allocator, &buf, &neg16); // value to shift
+            try helpers.push_u8(allocator, &buf, 0x03); // shift amount (top)
+            try buf.append(allocator, 0x1d); // SAR: -16 >> 3 = -2
             try helpers.ret_top32(allocator, &buf);
         },
 

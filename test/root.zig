@@ -14,6 +14,7 @@ test {
     _ = @import("differential/stop_opcode_test.zig");
     _ = @import("differential/debug_math_only.zig");
     _ = @import("differential/math_operations_test.zig");
+    _ = @import("test_exp_sequence.zig");
     _ = @import("differential/stack_operations_test.zig");
     _ = @import("differential/bitwise_extended_test.zig");
     _ = @import("differential/memory_operations_test.zig");
@@ -28,6 +29,12 @@ test {
     _ = @import("differential/stack_edge_cases_test.zig");
     _ = @import("differential/memory_edge_cases_test.zig");
     // _ = @import("differential/gas_edge_cases_test.zig"); // CAUSES INFINITE LOOP/HANG
+    
+    // Comprehensive contract differential tests
+    _ = @import("differential/erc20_mint_comprehensive_test.zig");
+    _ = @import("differential/snailtracer_comprehensive_test.zig");
+    _ = @import("differential/weth_comprehensive_test.zig");
+    _ = @import("differential/usdc_proxy_comprehensive_test.zig");
     
     // Re-enabling most tests except the problematic ones
     _ = @import("differential/comparison_opcodes_test.zig");

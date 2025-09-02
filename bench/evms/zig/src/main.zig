@@ -4,7 +4,7 @@ const primitives = @import("primitives");
 const tracer_mod = @import("evm").tracer;
 
 pub const std_options: std.Options = .{
-    .log_level = .err,  
+    .log_level = .warn,  
 };
 
 fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
@@ -193,19 +193,7 @@ pub fn main() !void {
             if (deploy_result.output.len > 0) {
                 std.debug.print("Deployment output: {x}\n", .{deploy_result.output});
             }
-            // Try direct code deployment as fallback
-            std.debug.print("⚠️  Falling back to direct code deployment\n", .{});
-            contract_address = primitives.Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
-            runtime_code = init_code;
-            
-            // Set the code directly
-            const code_hash = try database.set_code(runtime_code);
-            try database.set_account(contract_address.bytes, .{
-                .balance = 0,
-                .nonce = 1,
-                .code_hash = code_hash,
-                .storage_root = [_]u8{0} ** 32,
-            });
+            @panic("Contract deployment failed");
         } else {
             // Get the deployed contract address
             // For CREATE, address is deterministic based on caller + nonce (which was 0)

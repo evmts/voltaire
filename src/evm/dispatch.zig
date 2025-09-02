@@ -40,7 +40,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         // Import metadata types from dispatch_metadata module
         const Metadata = dispatch_metadata.DispatchMetadata(FrameType);
-
+        
         /// Define Item inline to avoid circular dependency
         pub const Item = union {
             /// Most items are function pointers to an opcode handler
@@ -54,7 +54,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             codecopy: Metadata.CodecopyMetadata,
             first_block_gas: Metadata.FirstBlockMetadata,
         };
-
+        
         /// The shared interface of any opcode handler
         const OpcodeHandler = @TypeOf(@as(Item, undefined).opcode_handler);
 
@@ -122,12 +122,15 @@ pub fn Dispatch(comptime FrameType: type) type {
             data: anytype,
         ) !void {
             const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
+            const log = @import("log.zig");
+            log.debug("Dispatch: Adding PUSH{} handler, value={x}, schedule_items.len={}", .{ data.size, data.value, schedule_items.items.len });
 
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
 
             if (data.size <= 8 and data.value <= std.math.maxInt(u64)) {
                 // Inline value for small pushes that fit in u64
                 const inline_value: u64 = @intCast(data.value);
+                log.debug("Dispatch: Adding inline metadata for PUSH{}, value={}", .{ data.size, inline_value });
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
             } else {
                 // Pointer to value for large pushes
@@ -135,6 +138,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 errdefer allocator.destroy(value_ptr);
                 value_ptr.* = data.value;
                 try allocated_memory.pointers.append(allocator, value_ptr);
+                log.debug("Dispatch: Adding pointer metadata for PUSH{}, value={x}", .{ data.size, data.value });
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
             }
         }
@@ -280,27 +284,12 @@ pub fn Dispatch(comptime FrameType: type) type {
             const log = @import("log.zig");
 
             var op_count: u32 = 0;
-
-            // Debug: log bytecode length
-            if (bytecode.len() > 100) {
-                log.debug("calculateFirstBlockGas: Processing bytecode of length {}", .{bytecode.len()});
-            }
-
-            // Limit the scan to avoid excessive gas calculation on large deployment bytecode
-            // Most basic blocks are much smaller than this
-            const MAX_OPCODES_TO_SCAN = 20;
-
+            
             while (true) {
                 const maybe = iter.next();
                 if (maybe == null) break;
                 const op_data = maybe.?;
                 op_count += 1;
-
-                // Stop after scanning reasonable number of opcodes
-                if (op_count >= MAX_OPCODES_TO_SCAN) {
-                    log.debug("calculateFirstBlockGas: Reached scan limit at {} opcodes", .{op_count});
-                    break;
-                }
 
                 switch (op_data) {
                     .regular => |data| {
@@ -311,6 +300,10 @@ pub fn Dispatch(comptime FrameType: type) type {
                         // Stop at JUMP/JUMPI/STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
                         switch (data.opcode) {
                             0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
+                                // Debug: log when we encounter a terminator
+                                if (data.opcode == 0x57) {
+                                    log.debug("calculateFirstBlockGas: Found JUMPI at op_count={}, gas={}", .{op_count, gas});
+                                }
                                 return gas;
                             },
                             else => {},
@@ -340,15 +333,11 @@ pub fn Dispatch(comptime FrameType: type) type {
                 }
             }
 
-            if (gas > 10000) {
-                log.warn("calculateFirstBlockGas: Excessive first block gas! gas={}, op_count={}", .{ gas, op_count });
+            // Log if gas consumption seems excessive
+            if (gas > 10000 or op_count > 100) {
+                log.warn("calculateFirstBlockGas: First block gas={}, op_count={}, bytecode_len={}", .{ gas, op_count, bytecode.len() });
             }
-
-            // Debug excessive gas
-            if (gas > 100000) {
-                log.err("calculateFirstBlockGas: CRITICALLY HIGH first block gas! gas={}, op_count={}", .{ gas, op_count });
-            }
-
+            
             return gas;
         }
 
@@ -398,12 +387,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                     log.warn("DEBUG: This looks like PUSH32+PUSH1+SDIV bytecode, first_block_gas={}", .{first_block_gas});
                 }
             }
-            
-            // Debug: Log the first few opcodes we're about to process
-            log.debug("First bytecode bytes: {x}", .{bytecode.runtime_code[0..@min(10, bytecode.runtime_code.len)]});
 
             var opcode_count: usize = 0;
-            var first_opcode_logged = false;
             while (true) {
                 const instr_pc = iter.pc;
                 const maybe = iter.next();
@@ -412,21 +397,29 @@ pub fn Dispatch(comptime FrameType: type) type {
                 }
                 const op_data = maybe.?;
                 opcode_count += 1;
-                
-                // Log the very first opcode we process
-                if (!first_opcode_logged) {
-                    switch (op_data) {
-                        .regular => |data| {
-                            log.debug("FIRST OPCODE: 0x{x:0>2} at PC {}", .{ data.opcode, instr_pc });
-                        },
-                        .push => |data| {
-                            log.debug("FIRST OPCODE: PUSH{} (value=0x{x}) at PC {}", .{ data.size, data.value, instr_pc });
-                        },
-                        else => {
-                            log.debug("FIRST OPCODE: Special type at PC {}", .{instr_pc});
-                        },
-                    }
-                    first_opcode_logged = true;
+
+                // DEBUG: Log all opcodes being parsed
+                switch (op_data) {
+                    .regular => |data| {
+                        if (opcode_count <= 20) { // Limit spam to first 20 opcodes
+                            log.debug("DISPATCH: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
+                        }
+                    },
+                    .push => |data| {
+                        if (opcode_count <= 20) {
+                            log.debug("DISPATCH: Parsing PUSH{d} at PC {d}", .{ data.size, instr_pc });
+                        }
+                    },
+                    .jumpdest => |data| {
+                        if (opcode_count <= 20) {
+                            log.debug("DISPATCH: Parsing JUMPDEST at PC {d}, gas_cost={d}", .{ instr_pc, data.gas_cost });
+                        }
+                    },
+                    else => {
+                        if (opcode_count <= 20) {
+                            log.debug("DISPATCH: Parsing other operation at PC {d}", .{instr_pc});
+                        }
+                    },
                 }
 
                 switch (op_data) {
@@ -497,6 +490,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
 
+            log.debug("Dispatch.init complete, schedule length: {}", .{final_schedule.len});
             return final_schedule;
         }
 
@@ -567,6 +561,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             // allocated_memory's arrays are now owned by slices; prevent double free
             allocated_memory = AllocatedMemory.init();
 
+            log.debug("Dispatch.initWithOwnership complete, schedule length: {}", .{items.len});
             return BuildOwned{ .items = items, .push_pointers = push_ptrs, .code_copies = copies };
         }
 

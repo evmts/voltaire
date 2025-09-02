@@ -23,20 +23,23 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug("[MUL] Stack before: {any}, gas: {d}", .{ self.stack.get_slice(), self.gas_remaining });
             const b = self.stack.pop_unsafe(); // Second operand (top of stack)
             const a = self.stack.peek_unsafe(); // First operand (second element)
             const result = a *% b;
+            log.debug("[MUL] Operation: {d} * {d} = {d}", .{ a, b, result });
             self.stack.set_top_unsafe(result);
+            log.debug("[MUL] Stack after: {any}", .{ self.stack.get_slice() });
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // SUB operation: pop a (top), peek b (second), push a - b
+            // SUB operation: pop a (top), peek b (second), push b - a (EVM spec)
             const a = self.stack.pop_unsafe();
             const b = self.stack.peek_unsafe();
-            const result = a -% b;
+            const result = b -% a;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -118,9 +121,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADDMOD opcode (0x08) - (a + b) % N. All intermediate calculations are performed with arbitrary precision.
         pub fn addmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const modulus = try self.stack.pop();
-            const addend2 = try self.stack.pop();
-            const addend1 = try self.stack.pop();
+            
+            const addend1 = try self.stack.pop(); // Top of stack (a)
+            const addend2 = try self.stack.pop(); // Second on stack (b)
+            const modulus = try self.stack.pop(); // Third on stack (N)
             var result: WordType = 0;
             if (modulus == 0) {
                 result = 0;
@@ -142,16 +146,16 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MULMOD opcode (0x09) - (a * b) % N. All intermediate calculations are performed with arbitrary precision.
         pub fn mulmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const modulus = try self.stack.pop();
-            const factor2 = try self.stack.pop();
-            const factor1 = try self.stack.pop();
+            
+            const factor1 = try self.stack.pop(); // Top of stack (a)
+            const factor2 = try self.stack.pop(); // Second on stack (b)
+            const modulus = try self.stack.pop(); // Third on stack (N)
             var result: WordType = undefined;
             if (modulus == 0) {
                 result = 0;
             } else {
                 result = mulmod_safe(factor1, factor2, modulus);
             }
-            // Debug logging removed
             try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -216,16 +220,19 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const exponent = self.stack.pop_unsafe(); // μ_s[0] - exponent (top)
-            const base = self.stack.peek_unsafe(); // μ_s[1] - base (second)
+            // EVM Yellow Paper: μ′s[0] ≡ μs[0]^μs[1]
+            // This means: result = (top of stack) ^ (second on stack)
+            // But there's a subtlety with our stack implementation
+            const a = self.stack.pop_unsafe();  // First pop gets top value
+            const b = self.stack.peek_unsafe(); // Peek gets what's now on top (was second)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
-            // Count the number of bytes in the exponent
+            // The exponent for gas calculation is b (second on original stack)
             var exp_bytes: u32 = 0;
-            if (exponent > 0) {
+            if (b > 0) {
                 // Count significant bytes (excluding leading zeros)
-                var temp_exp = exponent;
+                var temp_exp = b;
                 while (temp_exp > 0) : (temp_exp >>= 8) {
                     exp_bytes += 1;
                 }
@@ -238,9 +245,12 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             self.gas_remaining -= @intCast(gas_cost);
 
+            // Calculate a^b
+            // Note: Due to how pop/peek work, a was top and b was second
+            // But EVM wants top^second, which with our values means we need b^a
             var result: WordType = 1;
-            var base_working = base;
-            var exponent_working = exponent;
+            var base_working = b;
+            var exponent_working = a;
             while (exponent_working > 0) : (exponent_working >>= 1) {
                 if (exponent_working & 1 == 1) {
                     result *%= base_working;
@@ -257,7 +267,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
             const value = self.stack.peek_unsafe(); // Value to extend (second element)
             var result: WordType = undefined;
-            if (ext >= 31) {
+            
+            // If ext is too large to fit in usize or >= 32, return value unchanged
+            // SIGNEXTEND with byte position >= 32 means no sign extension needed
+            if (ext > std.math.maxInt(usize) or ext >= 32) {
                 result = value;
             } else {
                 const ext_usize = @as(usize, @intCast(ext));
@@ -698,6 +711,113 @@ test "SIGNEXTEND opcode - no extension needed" {
     _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch.cursor);
 
     try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), try frame.stack.pop());
+}
+
+test "SIGNEXTEND opcode - index 32 returns unchanged" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: sign extend with index = 32 returns value unchanged
+    try frame.stack.push(32);
+    try frame.stack.push(0x123456789ABCDEF0);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch.cursor);
+
+    try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), try frame.stack.pop());
+}
+
+test "SIGNEXTEND opcode - very large index" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test: sign extend with very large index (max u256) returns value unchanged
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(0x123456789ABCDEF0);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch.cursor);
+
+    try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), try frame.stack.pop());
+}
+
+test "SIGNEXTEND opcode - byte 2 with sign bit" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Test case from failing differential test
+    // PUSH32 0x00000000000000000000000000000000000000000000000000000000FF8000
+    // PUSH1 2 (extend from byte 2)
+    const value: u256 = 0x00000000000000000000000000000000000000000000000000000000FF8000;
+    try frame.stack.push(2); // byte index
+    try frame.stack.push(value);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch.cursor);
+
+    // Byte 2 is 0x80 (sign bit set), so should extend with FFs
+    const expected = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8000;
+    try testing.expectEqual(expected, try frame.stack.pop());
+}
+
+test "SIGNEXTEND opcode - byte 2 without sign bit" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Similar to above but with positive value in byte 2
+    const value: u256 = 0x00000000000000000000000000000000000000000000000000000000007F00;
+    try frame.stack.push(2); // byte index
+    try frame.stack.push(value);
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch.cursor);
+
+    // Byte 2 is 0x7F (sign bit not set), so no extension needed
+    const expected: u256 = 0x007F00;
+    try testing.expectEqual(expected, try frame.stack.pop());
+}
+
+test "SIGNEXTEND opcode - all edge indices" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    const test_cases = [_]struct { index: u256, value: u256, expected: u256 }{
+        // Index 0: extend from byte 0
+        .{ .index = 0, .value = 0xFF, .expected = std.math.maxInt(u256) },
+        .{ .index = 0, .value = 0x7F, .expected = 0x7F },
+        
+        // Index 1: extend from byte 1  
+        .{ .index = 1, .value = 0x8000, .expected = std.math.maxInt(u256) - 0x7FFF },
+        .{ .index = 1, .value = 0x7FFF, .expected = 0x7FFF },
+        
+        // Index 30: extend from byte 30
+        .{ .index = 30, .value = 0x80 << (30 * 8), .expected = std.math.maxInt(u256) - ((1 << (31 * 8)) - 1) + (0x80 << (30 * 8)) },
+        
+        // Index 31: no extension needed (full 32 bytes)
+        .{ .index = 31, .value = std.math.maxInt(u256), .expected = std.math.maxInt(u256) },
+        
+        // Index 32: no extension needed
+        .{ .index = 32, .value = 0x12345678, .expected = 0x12345678 },
+        
+        // Index 100: no extension needed
+        .{ .index = 100, .value = 0xABCDEF, .expected = 0xABCDEF },
+    };
+
+    for (test_cases) |tc| {
+        // Clear stack
+        while (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+        
+        try frame.stack.push(tc.index);
+        try frame.stack.push(tc.value);
+        
+        const dispatch2 = createMockDispatch();
+        _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch2.cursor);
+        
+        const result = try frame.stack.pop();
+        try testing.expectEqual(tc.expected, result);
+    }
 }
 
 // Additional edge case tests
