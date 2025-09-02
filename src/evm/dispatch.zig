@@ -284,11 +284,27 @@ pub fn Dispatch(comptime FrameType: type) type {
             const log = @import("log.zig");
 
             var op_count: u32 = 0;
+            
+            // Debug: log bytecode length
+            if (bytecode.len() > 100) {
+                log.debug("calculateFirstBlockGas: Processing bytecode of length {}", .{bytecode.len()});
+            }
+            
+            // Limit the scan to avoid excessive gas calculation on large deployment bytecode
+            // Most basic blocks are much smaller than this
+            const MAX_OPCODES_TO_SCAN = 20;
+            
             while (true) {
                 const maybe = iter.next();
                 if (maybe == null) break;
                 const op_data = maybe.?;
                 op_count += 1;
+                
+                // Stop after scanning reasonable number of opcodes
+                if (op_count >= MAX_OPCODES_TO_SCAN) {
+                    log.debug("calculateFirstBlockGas: Reached scan limit at {} opcodes", .{op_count});
+                    break;
+                }
 
                 switch (op_data) {
                     .regular => |data| {
@@ -331,6 +347,12 @@ pub fn Dispatch(comptime FrameType: type) type {
             if (gas > 10000) {
                 log.warn("calculateFirstBlockGas: Excessive first block gas! gas={}, op_count={}", .{ gas, op_count });
             }
+            
+            // Debug excessive gas
+            if (gas > 100000) {
+                log.err("calculateFirstBlockGas: CRITICALLY HIGH first block gas! gas={}, op_count={}", .{ gas, op_count });
+            }
+            
             return gas;
         }
 
