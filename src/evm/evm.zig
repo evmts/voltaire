@@ -578,7 +578,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    // log.debug("DEBUG: Got code, len={}, about to execute_frame\n", .{code.len});
+                    log.debug("EXECUTE_CALL: Executing code of length {} for address {x}", .{code.len, params.to.bytes});
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -589,7 +589,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         false, // is_static
                         snapshot_id,
                     ) catch |err| {
-                        log.err("execute_frame failed: {}", .{err});
+                        log.err("EXECUTE_CALL: execute_frame failed with error: {}", .{err});
                         self.journal.revert_to_snapshot(snapshot_id);
                         return CallResult.failure(0);
                     };
@@ -982,13 +982,9 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value, .is_static = is_static };
 
-            // Base transaction gas cost (21,000 gas) - only charge for top-level transactions
-            const BASE_TX_GAS = 21000;
-            const gas_after_base = if (self.depth <= 1 and gas >= BASE_TX_GAS) gas_after_base: {
-                const remaining = gas - BASE_TX_GAS;
-                log.debug("execute_frame: depth={}, Subtracting base gas: {} - {} = {}", .{self.depth, gas, BASE_TX_GAS, remaining});
-                break :gas_after_base remaining;
-            } else gas;
+            // Base transaction gas cost (21,000 gas) - only charge for real transactions, not test calls
+            // Test calls start at depth 0, real transactions have depth >= 1 with is_transaction flag
+            const gas_after_base = gas;
             
             const max_gas = @as(u64, @intCast(std.math.maxInt(Frame.GasType)));
             const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, max_gas)));
@@ -1527,7 +1523,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Take all accessed addresses
         fn takeAccessedAddresses(self: *Self) ![]const primitives.Address {
             var addresses = try std.ArrayList(primitives.Address).initCapacity(self.allocator, 0);
-            defer addresses.deinit(self.allocator);
+            errdefer addresses.deinit(self.allocator);
 
             // Get addresses from access list
             var iter = self.access_list.addresses.iterator();
@@ -1541,7 +1537,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Take all accessed storage slots
         fn takeAccessedStorage(self: *Self) ![]const @import("call_result.zig").StorageAccess {
             var storage = try std.ArrayList(@import("call_result.zig").StorageAccess).initCapacity(self.allocator, 0);
-            defer storage.deinit(self.allocator);
+            errdefer storage.deinit(self.allocator);
 
             // Get storage slots from access list
             var iter = self.access_list.storage_slots.iterator();
