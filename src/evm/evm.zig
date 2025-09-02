@@ -330,6 +330,44 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.clear();
                 self.access_list.clear();
             };
+            
+            // Pre-warm addresses for top-level calls (EIP-2929)
+            if (is_top_level) {
+                // Get the target address from params
+                const target_address = switch (params) {
+                    .call => |p| p.to,
+                    .callcode => |p| p.to,
+                    .delegatecall => |p| p.to,
+                    .staticcall => |p| p.to,
+                    .create, .create2 => primitives.Address.ZERO_ADDRESS, // Creates don't have a target
+                };
+                
+                // Pre-warm: tx.origin, target, and coinbase (EIP-3651 for Shanghai+)
+                // Build a small array of addresses to warm (max 3: origin, target, coinbase)
+                var warm_addresses: [3]primitives.Address = undefined;
+                var warm_count: usize = 0;
+                
+                // Always warm origin
+                warm_addresses[warm_count] = self.origin;
+                warm_count += 1;
+                
+                // Warm target if it's not a create operation  
+                if (!std.mem.eql(u8, &target_address.bytes, &primitives.Address.ZERO_ADDRESS.bytes)) {
+                    warm_addresses[warm_count] = target_address;
+                    warm_count += 1;
+                }
+                
+                // EIP-3651: Warm coinbase for Shanghai+
+                if (self.hardfork_config.isAtLeast(.SHANGHAI)) {
+                    warm_addresses[warm_count] = self.block_info.coinbase;
+                    warm_count += 1;
+                }
+                
+                // Pre-warm all addresses
+                if (warm_count > 0) {
+                    self.access_list.pre_warm_addresses(warm_addresses[0..warm_count]) catch {};
+                }
+            }
 
             // Check gas unless disabled
             const gas = switch (params) {
@@ -962,6 +1000,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
             frame.contract_address = address;
             defer frame.deinit(self.allocator);
+            
+            // EIP-2929: Warm the contract address being executed
+            _ = self.access_list.access_address(address) catch {};
 
             // log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
             

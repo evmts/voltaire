@@ -16,7 +16,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const result = top +% top_minus_1;
-            // Debug logging removed
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -27,7 +26,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             const result = top *% top_minus_1;
-            // Debug logging removed
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -35,10 +33,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const subtrahend = try self.stack.pop(); // μ_s[0]
-            const minuend = try self.stack.peek(); // μ_s[1]
-            const result = minuend -% subtrahend; // μ_s[1] - μ_s[0] per EVM spec
-            log.debug("SUB: minuend=0x{x} - subtrahend=0x{x} = 0x{x}", .{ minuend, subtrahend, result });
+            // SUB operation: pop a, pop b, push a - b
+            const a = try self.stack.pop();
+            const b = try self.stack.peek();
+            const result = a -% b;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
