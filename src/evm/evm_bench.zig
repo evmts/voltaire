@@ -676,7 +676,7 @@ pub fn main() !void {
 
     log.debug("\nRunning consolidated EVM benchmarks...\n\n", .{});
     
-    // Run benchmarks
+    // Run benchmarks  
     var stdout_buffer: [4096]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
