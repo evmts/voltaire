@@ -13,20 +13,20 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top_minus_1 = try self.stack.pop();
-            const top = try self.stack.peek();
-            const result = top +% top_minus_1;
-            try self.stack.set_top(result);
+            const b = try self.stack.pop();
+            const a = try self.stack.pop();
+            const result = a +% b;
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top_minus_1 = try self.stack.pop();
-            const top = try self.stack.peek();
-            const result = top *% top_minus_1;
-            try self.stack.set_top(result);
+            const b = try self.stack.pop();
+            const a = try self.stack.pop();
+            const result = a *% b;
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -35,9 +35,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // SUB operation: pop b, pop a, push a - b
             const b = try self.stack.pop();
-            const a = try self.stack.peek();
+            const a = try self.stack.pop();
             const result = a -% b;
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -45,9 +45,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.peek(); // Second (remaining) is dividend
+            const dividend = try self.stack.pop(); // Second pop is dividend
             const result = if (divisor == 0) 0 else dividend / divisor;
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -55,7 +55,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.peek(); // Second (remaining) is dividend
+            const dividend = try self.stack.pop(); // Second pop is dividend
 
             log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ dividend, divisor });
             var result: WordType = undefined;
@@ -77,7 +77,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     log.debug("SDIV: result_signed={}, result=0x{x}", .{ result_signed, result });
                 }
             }
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -85,9 +85,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.peek(); // Second (remaining) is dividend
+            const dividend = try self.stack.pop(); // Second pop is dividend
             const result = if (divisor == 0) 0 else dividend % divisor;
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -95,7 +95,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.peek(); // Second (remaining) is dividend
+            const dividend = try self.stack.pop(); // Second pop is dividend
             var result: WordType = undefined;
             if (divisor == 0) {
                 result = 0;
@@ -111,7 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     result = @as(WordType, @bitCast(result_signed));
                 }
             }
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -120,7 +120,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn addmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const modulus = try self.stack.pop();
             const addend2 = try self.stack.pop();
-            const addend1 = try self.stack.peek();
+            const addend1 = try self.stack.pop();
             var result: WordType = 0;
             if (modulus == 0) {
                 result = 0;
@@ -135,7 +135,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
                 result = r;
             }
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -144,7 +144,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mulmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const modulus = try self.stack.pop();
             const factor2 = try self.stack.pop();
-            const factor1 = try self.stack.peek();
+            const factor1 = try self.stack.pop();
             var result: WordType = undefined;
             if (modulus == 0) {
                 result = 0;
@@ -152,7 +152,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 result = mulmod_safe(factor1, factor2, modulus);
             }
             // Debug logging removed
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -217,7 +217,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const exponent = try self.stack.pop(); // μ_s[0] - exponent (top)
-            const base = try self.stack.peek(); // μ_s[1] - base (second)
+            const base = try self.stack.pop(); // μ_s[1] - base (second)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
@@ -247,7 +247,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
                 base_working *%= base_working;
             }
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -255,7 +255,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
         pub fn signextend(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const ext = try self.stack.pop();
-            const value = try self.stack.peek();
+            const value = try self.stack.pop();
             var result: WordType = undefined;
             if (ext >= 31) {
                 result = value;
@@ -270,7 +270,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     result = value & mask;
                 }
             }
-            try self.stack.set_top(result);
+            try self.stack.push(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }

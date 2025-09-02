@@ -390,7 +390,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (!evm.account_exists(addr)) {
                 // Non-existent account returns 0 per EIP-1052
                 try self.stack.push(0);
-                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODEHASH }); const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
@@ -400,7 +400,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
                 const empty_hash_word = @as(WordType, @truncate(empty_hash_u256));
                 try self.stack.push(empty_hash_word);
-                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODEHASH }); const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
@@ -416,7 +416,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const hash_word = @as(WordType, @truncate(hash_u256));
             try self.stack.push(hash_word);
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODEHASH }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -428,7 +428,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(self.output.len))));
             log.err("[EVM2] RETURNDATASIZE: return_data.len={}, pushing {}", .{ self.output.len, return_data_len });
             try self.stack.push(return_data_len);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.RETURNDATASIZE }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -465,7 +465,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             if (length_usize == 0) {
-                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.RETURNDATACOPY }); const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
 
@@ -492,7 +492,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const src_slice = return_data[offset_usize..][0..length_usize];
             self.memory.set_data(self.allocator, @as(u24, @intCast(dest_offset_usize)), src_slice) catch return Error.OutOfBounds;
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.RETURNDATACOPY }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -525,7 +525,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 try self.stack.push(0);
             }
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.BLOCKHASH }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -544,7 +544,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
             try self.stack.push(coinbase_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.COINBASE }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -562,7 +562,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.block_info;
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             try self.stack.push(timestamp_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.TIMESTAMP }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -580,7 +580,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.block_info;
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             try self.stack.push(block_number_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.NUMBER }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -598,7 +598,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.block_info;
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             try self.stack.push(difficulty_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.DIFFICULTY }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -616,7 +616,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.block_info;
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             try self.stack.push(gas_limit_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.GASLIMIT }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
