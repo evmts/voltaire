@@ -284,8 +284,10 @@ test "differential: max value arithmetic" {
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
-    // Test arithmetic with PUSH32 values
+    // Test arithmetic with PUSH1 values
     const bytecode = [_]u8{
+        // PUSH1 0xFF; PUSH1 0x00; RETURN
+        0x60, 0xFF, 0x60, 0x00, 0xF3,
         // MAX_U256 + 1 = 0 (overflow)
         0x7f, // PUSH32 opcode
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 8 bytes
