@@ -18,29 +18,53 @@ pub const EvmConfig = struct {
     /// This prevents excessive memory usage in single operations
     max_input_size: u18 = 131072, // 128 KB
 
-    /// Frame configuration parameters (database now always enabled)
-    frame_config: FrameConfig = .{ .DatabaseType = @import("database.zig").Database },
-
     /// Enable precompiled contracts support (default: true)
     /// When disabled, precompile calls will fail with an error
     enable_precompiles: bool = true,
 
-    /// Planner strategy for bytecode analysis and optimization (default: minimal)
-    /// Note: When compiling with -Doptimize=ReleaseSmall, this is always forced to .minimal
-    /// regardless of the configured value to minimize binary size.
-    // planner_strategy: PlannerStrategy = .minimal,
+    /// Enable bytecode fusion optimizations (default: true)
+    /// When enabled, common opcode patterns like PUSH+ADD are fused into single operations
+    enable_fusion: bool = true,
 
+    // Frame configuration fields (previously nested)
+    /// The maximum stack size for the evm. Defaults to 1024
+    stack_size: u12 = 1024,
+    /// The size of a single word in the EVM - Defaults to u256
+    WordType: type = u256,
+    /// The maximum amount of bytes allowed in contract code
+    max_bytecode_size: u32 = 24576,
+    /// The maximum amount of bytes allowed in contract deployment
+    max_initcode_size: u32 = 49152,
+    /// The maximum gas limit for a block
+    block_gas_limit: u64 = 30_000_000,
+    /// Memory configuration
+    memory_initial_capacity: usize = 4096,
+    memory_limit: u64 = 0xFFFFFF,
+    /// Database implementation type for storage operations (always required)
+    DatabaseType: type = @import("database.zig").Database,
+    /// Tracer type for execution tracing (default: null for no tracing)
+    /// Set to a tracer type (e.g., JSONRPCTracer) to enable execution tracing
+    TracerType: ?type = null,
+    
     /// Block information configuration
     /// Controls the types used for difficulty and base_fee fields
     block_info_config: BlockInfoConfig = .{},
 
-    /// Enable bytecode fusion optimizations (default: true)
-    /// When enabled, common opcode patterns like PUSH+ADD are fused into single operations
-    enable_fusion: bool = true,
-    
-    /// Tracer type for execution tracing (default: null for no tracing)
-    /// Set to a tracer type (e.g., JSONRPCTracer) to enable execution tracing
-    tracer_type: ?type = null,
+    /// Computed frame configuration from the fields above
+    pub fn frame_config(self: EvmConfig) FrameConfig {
+        return .{
+            .stack_size = self.stack_size,
+            .WordType = self.WordType,
+            .max_bytecode_size = self.max_bytecode_size,
+            .max_initcode_size = self.max_initcode_size,
+            .block_gas_limit = self.block_gas_limit,
+            .memory_initial_capacity = self.memory_initial_capacity,
+            .memory_limit = self.memory_limit,
+            .DatabaseType = self.DatabaseType,
+            .TracerType = self.TracerType,
+            .block_info_config = self.block_info_config,
+        };
+    }
 
     /// Gets the appropriate type for depth based on max_call_depth
     pub fn get_depth_type(self: EvmConfig) type {
@@ -83,7 +107,7 @@ test "EvmConfig - default initialization" {
     try testing.expectEqual(@as(u18, 131072), config.max_input_size);
     try testing.expectEqual(true, config.enable_precompiles);
     try testing.expectEqual(true, config.enable_fusion);
-    try testing.expectEqual(@as(?type, null), config.tracer_type);
+    try testing.expectEqual(@as(?type, null), config.TracerType);
 }
 
 test "EvmConfig - custom configuration" {
@@ -210,15 +234,15 @@ test "EvmConfig - precompiles and fusion combinations" {
 
 test "EvmConfig - tracer type handling" {
     const no_tracer_config = EvmConfig{};
-    try testing.expectEqual(@as(?type, null), no_tracer_config.tracer_type);
+    try testing.expectEqual(@as(?type, null), no_tracer_config.TracerType);
     
     // Test with a dummy tracer type
     const DummyTracer = struct {
         pub fn trace(_: @This()) void {}
     };
     
-    const with_tracer_config = EvmConfig{ .tracer_type = DummyTracer };
-    try testing.expectEqual(DummyTracer, with_tracer_config.tracer_type.?);
+    const with_tracer_config = EvmConfig{ .TracerType = DummyTracer };
+    try testing.expectEqual(DummyTracer, with_tracer_config.TracerType.?);
 }
 
 test "EvmConfig - block info config integration" {
@@ -237,7 +261,7 @@ test "EvmConfig - complete custom configuration" {
         .max_input_size = 200000,
         .enable_precompiles = false,
         .enable_fusion = false,
-        .tracer_type = DummyTracer,
+        .TracerType = DummyTracer,
     };
     
     try testing.expectEqual(Hardfork.ISTANBUL, config.eips.hardfork);
@@ -245,6 +269,6 @@ test "EvmConfig - complete custom configuration" {
     try testing.expectEqual(@as(u18, 200000), config.max_input_size);
     try testing.expectEqual(false, config.enable_precompiles);
     try testing.expectEqual(false, config.enable_fusion);
-    try testing.expectEqual(DummyTracer, config.tracer_type.?);
+    try testing.expectEqual(DummyTracer, config.TracerType.?);
     try testing.expectEqual(u11, config.get_depth_type());
 }

@@ -21,6 +21,10 @@ const stack_frame_jump_synthetic = @import("handlers_jump_synthetic.zig");
 
 /// Thread-local storage for the tracer instance and its type info
 threadlocal var tracer_instance: ?*anyopaque = null;
+
+/// Thread-local storage for current execution context
+threadlocal var current_opcode: u8 = 0;
+threadlocal var current_pc: u32 = 0;
 threadlocal var tracer_vtable: ?*const anyopaque = null;
 
 /// Returns the normal (non-traced) opcode handlers array for a given Frame type
@@ -212,16 +216,20 @@ pub fn getTracedOpcodeHandlers(
 
     // Create a wrapper function generator
     const createWrapper = struct {
-        fn wrap(comptime base_handler: FrameType.OpcodeHandler) FrameType.OpcodeHandler {
+        fn wrap(comptime opcode_index: u8, comptime base_handler: FrameType.OpcodeHandler) FrameType.OpcodeHandler {
             const wrapper = struct {
                 fn handler(frame: *FrameType, cursor: [*]const FrameType.Dispatch.Item) FrameType.Error!noreturn {
                     // Get the tracer instance from thread-local storage
                     if (tracer_instance) |tracer_ptr| {
                         const tracer = @as(*TracerType, @ptrCast(@alignCast(tracer_ptr)));
 
+                        // Use the compile-time opcode value
+                        const opcode: u8 = opcode_index;
+                        const pc: u32 = current_pc; // Use thread-local PC
+
                         // Call beforeOp if the tracer has it
                         if (@hasDecl(TracerType, "beforeOp")) {
-                            tracer.beforeOp(FrameType, frame);
+                            tracer.beforeOp(pc, opcode, FrameType, frame);
                         }
                     }
 
@@ -240,7 +248,7 @@ pub fn getTracedOpcodeHandlers(
 
     // Wrap each handler at compile time
     inline for (0..256) |i| {
-        traced[i] = createWrapper(base_handlers[i]);
+        traced[i] = createWrapper(@intCast(i), base_handlers[i]);
     }
 
     return traced;
@@ -254,4 +262,14 @@ pub fn setTracerInstance(tracer: anytype) void {
 /// Clear the tracer instance
 pub fn clearTracerInstance() void {
     tracer_instance = null;
+}
+
+/// Set the current PC for tracing
+pub fn setCurrentPc(pc: u32) void {
+    current_pc = pc;
+}
+
+/// Get the current PC for tracing
+pub fn getCurrentPc() u32 {
+    return current_pc;
 }

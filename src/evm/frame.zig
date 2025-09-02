@@ -263,10 +263,19 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Use the handlers (traced or non-traced based on TracerType)
             const handlers = &Self.opcode_handlers;
 
-            // Set the tracer instance if tracing is enabled
-            if (TracerType) |_| {
+            // Debug: Check if we're using traced handlers
+            if (TracerType) |T| {
+                log.debug("Using TRACED handlers for type: {s}", .{@typeName(T)});
                 frame_handlers.setTracerInstance(tracer_instance);
-                defer frame_handlers.clearTracerInstance();
+            } else {
+                log.debug("Using NON-TRACED handlers", .{});
+            }
+            
+            // Clear tracer at end of function, not at end of if block
+            defer {
+                if (TracerType != null) {
+                    frame_handlers.clearTracerInstance();
+                }
             }
 
             // Create dispatch schedule with ownership to ensure all allocations are freed
@@ -321,11 +330,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             log.debug("Frame.interpret_with_tracer: Starting execution, gas={}", .{self.gas_remaining});
 
-            // Execute the first handler
-            cursor.cursor[0].opcode_handler(self, cursor.cursor) catch |err| {
-                log.debug("Frame.interpret_with_tracer: Execution failed with error: {}", .{err});
-                return err;
-            };
+            try cursor.cursor[0].opcode_handler(self, cursor.cursor);
             unreachable; // Handlers never return normally
         }
 

@@ -41,20 +41,20 @@ pub fn Evm(comptime config: EvmConfig) type {
         const Self = @This();
 
         /// Frame type for the evm
-        pub const Frame = @import("frame.zig").Frame(config.frame_config);
+        pub const Frame = @import("frame.zig").Frame(config.frame_config());
         /// Static wrappers for EIP-214 (STATICCALL) constraint enforcement
         const static_wrappers = @import("static_wrappers.zig");
         const StaticDatabase = static_wrappers.StaticDatabase;
         /// Bytecode type for bytecode analysis
         pub const BytecodeFactory = @import("bytecode.zig").Bytecode;
         pub const Bytecode = BytecodeFactory(.{
-            .max_bytecode_size = config.frame_config.max_bytecode_size,
+            .max_bytecode_size = config.max_bytecode_size,
             .fusions_enabled = false, // Disable fusions for now
         });
         /// Journal handles reverting state when state needs to be reverted
         pub const Journal: type = @import("journal.zig").Journal(.{
             .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,
-            .WordType = config.frame_config.WordType,
+            .WordType = config.WordType,
             .NonceType = u64,
             .initial_capacity = 128,
         });
@@ -62,7 +62,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Call stack entry to track caller and value for DELEGATECALL
         const CallStackEntry = struct {
             caller: primitives.Address,
-            value: config.frame_config.WordType,
+            value: config.WordType,
             is_static: bool, // EIP-214: Track static context per call level
         };
 
@@ -949,17 +949,30 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Convert tracer data to ExecutionTrace format
         fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("call_result.zig").ExecutionTrace {
             const call_result = @import("call_result.zig");
-            const tracer_steps = tracer.steps.items;
+            
+            // Check if tracer has trace_steps field (only JSONRPCTracer does)
+            if (!@hasField(@TypeOf(tracer.*), "trace_steps")) {
+                // Return empty trace for non-tracing tracers
+                return call_result.ExecutionTrace{
+                    .steps = &[_]call_result.TraceStep{},
+                    .allocator = allocator,
+                };
+            }
+            
+            const tracer_steps = tracer.trace_steps.items;
             var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
             
             for (tracer_steps, 0..) |tracer_step, i| {
+                // Convert opcode name to opcode byte (0 for now since we don't have the mapping)
+                const opcode_byte: u8 = 0; // TODO: Map op string to opcode byte
+                
                 trace_steps[i] = call_result.TraceStep{
-                    .pc = tracer_step.pc,
-                    .opcode = tracer_step.opcode,
-                    .opcode_name = try allocator.dupe(u8, tracer_step.opcode_name),
-                    .gas = @intCast(@max(tracer_step.gas_after, 0)),
-                    .stack = try allocator.dupe(u256, tracer_step.stack_after),
-                    .memory = &.{}, // Empty for now
+                    .pc = @intCast(tracer_step.pc),
+                    .opcode = opcode_byte,
+                    .opcode_name = try allocator.dupe(u8, tracer_step.op),
+                    .gas = tracer_step.gas,
+                    .stack = try allocator.dupe(u256, tracer_step.stack),
+                    .memory = if (tracer_step.memory) |mem| try allocator.dupe(u8, mem) else &.{},
                     .storage_reads = &.{}, // Empty for now  
                     .storage_writes = &.{}, // Empty for now
                 };
@@ -1024,9 +1037,9 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Execute with tracing if tracer type is configured
             var execution_trace: ?@import("call_result.zig").ExecutionTrace = null;
-            if (config.tracer_type) |TracerType| {
+            if (config.TracerType) |TracerType| {
                 // Create tracer instance for this execution
-                var tracer = TracerType.init();
+                var tracer = TracerType.init(self.allocator);
                 defer tracer.deinit();
                 
                 log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
