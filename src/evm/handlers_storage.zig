@@ -29,7 +29,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Charge gas for storage access
             if (self.gas_remaining < access_cost) {
                 return Error.OutOfGas;
@@ -61,8 +61,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // - First push 0x42 (goes to stack position 0)
             // - Then push 0x00 (goes to stack position 1, becoming the top)
             // - SSTORE pops key first (0x00), then value (0x42)
-            const slot = try self.stack.pop();   // Pop key/slot first (top of stack)
-            const value = try self.stack.pop();  // Pop value second
+            const slot = try self.stack.pop(); // Pop key/slot first (top of stack)
+            const value = try self.stack.pop(); // Pop value second
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -75,7 +75,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check if storage slot is cold before accessing it
             const evm = self.getEvm();
             const is_cold = !evm.access_list.is_storage_slot_warm(contract_addr, slot);
-            
+
             // Access storage slot to mark it as warm for future accesses
             _ = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
@@ -87,12 +87,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate SSTORE operation cost (includes cold access cost if applicable)
             const total_gas_cost: u64 = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
-            
+
             log.debug(
                 "SSTORE metering: slot={}, original={}, current={}, new={}, is_cold={}, total={}",
                 .{ slot, original_value, current_value, value, is_cold, total_gas_cost },
             );
-            
+
             if (self.gas_remaining < total_gas_cost) {
                 return Error.OutOfGas;
             }
@@ -106,12 +106,10 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Store the value directly in frame's database
-            log.debug("SSTORE: About to store value={} at slot={} for address={any}", .{ value, slot, contract_addr.bytes });
             self.database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => return Error.WriteProtection,
                 else => return Error.AllocationError,
             };
-            log.debug("SSTORE: Successfully stored value", .{});
 
             // EIP-3529: Only clearing (non-zero -> zero) is eligible for refund
             if (current_value != 0 and value == 0) {
@@ -152,8 +150,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // EIP-214: WriteProtection is handled by host interface for static calls
 
             // TSTORE expects stack: [..., key, value] where key is at top
-            const slot = try self.stack.pop();   // Pop key/slot first (top of stack)
-            const value = try self.stack.pop();  // Pop value second
+            const slot = try self.stack.pop(); // Pop key/slot first (top of stack)
+            const value = try self.stack.pop(); // Pop value second
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;

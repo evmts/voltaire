@@ -20,7 +20,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const dest = try self.stack.pop();
 
-            log.debug("JUMP: destination=0x{x}, gas_remaining={}", .{ dest, self.gas_remaining });
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
@@ -32,8 +31,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Use binary search to find valid jump destination
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
-                // Found valid JUMPDEST - tail call to the jump destination
-                log.debug("JUMP: Valid jump to PC=0x{x}", .{dest_pc});
+                // Found valid JUMPDEST - update thread-local PC for tracing
+                const frame_handlers = @import("frame_handlers.zig");
+                frame_handlers.setCurrentPc(dest_pc);
+                
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
@@ -52,16 +53,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
 
-            log.debug("JUMPI: destination=0x{x}, condition={}, gas_remaining={}, jump_table_entries={}", .{ dest, condition, self.gas_remaining, jump_table.entries.len });
-
-            // Debug: log all jump table entries
-            for (jump_table.entries) |entry| {
-                log.debug("  Jump table entry: PC=0x{x}", .{entry.pc});
-            }
 
             if (condition != 0) {
                 // Take the jump - validate destination range
-                log.debug("JUMPI: Taking jump (condition non-zero)", .{});
 
                 if (dest > std.math.maxInt(u32)) {
                     log.warn("JUMPI: Invalid destination out of range: 0x{x}", .{dest});
@@ -72,8 +66,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
                 // Use binary search to find valid jump destination
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
-                    // Found valid JUMPDEST - tail call to the jump destination
-                    log.debug("JUMPI: Valid jump to PC=0x{x}", .{dest_pc});
+                    // Found valid JUMPDEST - update thread-local PC for tracing
+                    const frame_handlers = @import("frame_handlers.zig");
+                    frame_handlers.setCurrentPc(dest_pc);
+                    
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
@@ -82,7 +78,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             } else {
                 // Condition is false, continue to next instruction
-                log.debug("JUMPI: Not jumping (condition zero), continuing to next instruction", .{});
                 // Skip the jump table metadata (cursor + 2)
                 const next_cursor = cursor + 2;
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -100,7 +95,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch.getOpData(.{ .regular = Opcode.JUMPDEST });
             const gas_cost = op_data.metadata.gas;
 
-            log.debug("JUMPDEST: Landing at jump destination, basic_block_gas_cost={}, gas_remaining={}", .{ gas_cost, self.gas_remaining });
 
             // Check and consume gas for the entire basic block
             if (self.gas_remaining < gas_cost) {
@@ -134,7 +128,6 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.{ .regular = Opcode.PC });
 
-            log.debug("PC: Pushing program counter value=0x{x}", .{op_data.metadata.value});
 
             try self.stack.push(op_data.metadata.value);
 
