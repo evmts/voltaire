@@ -92,7 +92,7 @@ test "ERC20 deployment - REVM vs Guillotine differential testing" {
         tx_context,
         caller_address,
         .{
-            .write_trace_files = true, // Keep traces for debugging
+            .write_trace_files = true,
             .context_before = 20,
             .context_after = 20,
         },
@@ -123,26 +123,8 @@ test "ERC20 deployment - REVM vs Guillotine differential testing" {
         log.err("This indicates that Guillotine and REVM produced different results!", .{});
         log.err("Check the error messages above for details on where they diverged.", .{});
         
-        // Try to get partial trace information
-        if (tracer.guillotine_evm.tracer.trace_steps.items.len > 0) {
-            log.info("\nGuillotine executed {} opcodes before divergence/failure", .{
-                tracer.guillotine_evm.tracer.trace_steps.items.len,
-            });
-            
-            // Show last few opcodes
-            const trace_steps = tracer.guillotine_evm.tracer.trace_steps.items;
-            const start_idx = if (trace_steps.len > 10) trace_steps.len - 10 else 0;
-            
-            log.info("\nLast {} opcodes executed by Guillotine:", .{trace_steps.len - start_idx});
-            for (trace_steps[start_idx..], start_idx..) |step, idx| {
-                log.info("  Step {}: PC={}, Opcode={s}, Gas={}", .{
-                    idx,
-                    step.pc,
-                    step.op,
-                    step.gas,
-                });
-            }
-        }
+        // The differential tracer will handle trace comparison internally
+        // and report detailed divergence information
         
         return err;
     };

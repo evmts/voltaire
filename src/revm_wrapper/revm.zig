@@ -35,6 +35,124 @@ pub const RevmSettings = struct {
     block_difficulty: u64 = 0,
     block_basefee: u64 = 0,
     coinbase: Address = primitives.Address.ZERO_ADDRESS,
+    enable_tracing: bool = false,
+};
+
+/// Call operation parameters - simplified copy from evm/call_params.zig
+pub const CallParams = union(enum) {
+    /// Regular CALL operation
+    call: struct {
+        caller: Address,
+        to: Address,
+        value: u256,
+        input: []const u8,
+        gas: u64,
+    },
+    /// CALLCODE operation
+    callcode: struct {
+        caller: Address,
+        to: Address,
+        value: u256,
+        input: []const u8,
+        gas: u64,
+    },
+    /// DELEGATECALL operation
+    delegatecall: struct {
+        caller: Address,
+        to: Address,
+        input: []const u8,
+        gas: u64,
+    },
+    /// STATICCALL operation
+    staticcall: struct {
+        caller: Address,
+        to: Address,
+        input: []const u8,
+        gas: u64,
+    },
+    /// CREATE operation
+    create: struct {
+        caller: Address,
+        value: u256,
+        init_code: []const u8,
+        gas: u64,
+    },
+    /// CREATE2 operation
+    create2: struct {
+        caller: Address,
+        value: u256,
+        init_code: []const u8,
+        salt: u256,
+        gas: u64,
+    },
+
+    /// Get the gas limit for this call operation
+    pub fn getGas(self: CallParams) u64 {
+        return switch (self) {
+            .call => |params| params.gas,
+            .callcode => |params| params.gas,
+            .delegatecall => |params| params.gas,
+            .staticcall => |params| params.gas,
+            .create => |params| params.gas,
+            .create2 => |params| params.gas,
+        };
+    }
+
+    /// Get the caller address for this call operation
+    pub fn getCaller(self: CallParams) Address {
+        return switch (self) {
+            .call => |params| params.caller,
+            .callcode => |params| params.caller,
+            .delegatecall => |params| params.caller,
+            .staticcall => |params| params.caller,
+            .create => |params| params.caller,
+            .create2 => |params| params.caller,
+        };
+    }
+};
+
+/// Call result structure - simplified copy from evm/call_result.zig
+pub const CallResult = struct {
+    success: bool,
+    gas_left: u64,
+    output: []const u8,
+    logs: []const Log = &.{},
+    error_info: ?[]const u8 = null,
+    allocator: std.mem.Allocator,
+
+    /// Clean up allocated memory
+    pub fn deinit(self: *CallResult) void {
+        // Free output buffer if it's not an empty slice literal
+        if (self.output.len > 0 and self.output.ptr != (&[_]u8{}).ptr) {
+            self.allocator.free(self.output);
+        }
+        
+        // Free logs
+        if (self.logs.len > 0 and self.logs.ptr != (&[_]Log{}).ptr) {
+            for (self.logs) |log| {
+                self.allocator.free(log.topics);
+                self.allocator.free(log.data);
+            }
+            self.allocator.free(self.logs);
+        }
+        
+        // Free error_info if present
+        if (self.error_info) |info| {
+            self.allocator.free(info);
+        }
+        
+        // Reset all fields to empty slices
+        self.output = &.{};
+        self.logs = &.{};
+        self.error_info = null;
+    }
+};
+
+/// Log entry structure for EVM events
+pub const Log = struct {
+    address: Address,
+    topics: []const u256,
+    data: []const u8,
 };
 
 /// Execution result from REVM
@@ -58,6 +176,7 @@ pub const ExecutionResult = struct {
 pub const Revm = struct {
     ptr: *c.RevmVm,
     allocator: std.mem.Allocator,
+    enable_tracing: bool,
 
     /// Initialize a new REVM instance
     pub fn init(allocator: std.mem.Allocator, settings: RevmSettings) !Revm {
@@ -87,6 +206,7 @@ pub const Revm = struct {
         return Revm{
             .ptr = vm_ptr.?,
             .allocator = allocator,
+            .enable_tracing = settings.enable_tracing,
         };
     }
 
@@ -94,7 +214,7 @@ pub const Revm = struct {
     /// STATICCALL to the target and returns a 32-byte word with the success flag.
     ///
     /// This avoids requiring special REVM config for static context at the top level.
-    pub fn staticcall(
+    fn staticcall_internal(
         self: *Revm,
         from: Address,
         to: Address,
@@ -128,7 +248,7 @@ pub const Revm = struct {
         try self.setCode(harness_addr, code[0..i]);
 
         // Execute call to harness
-        var res = try self.call(from, harness_addr, 0, input, gas_limit);
+        var res = try self.execute(from, harness_addr, 0, input, gas_limit);
 
         // Interpret harness output as success flag
         if (res.output.len >= 32) {
@@ -340,16 +460,100 @@ pub const Revm = struct {
         };
     }
 
-    /// Execute a call (convenience method)
-    pub fn call(
-        self: *Revm,
-        from: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas_limit: u64,
-    ) !ExecutionResult {
-        return self.execute(from, to, value, input, gas_limit);
+    /// Execute a call using CallParams and returning CallResult
+    pub fn call(self: *Revm, params: CallParams) !CallResult {
+        const trace_path = if (self.enable_tracing) "revm_trace.json" else null;
+        
+        switch (params) {
+            .call => |p| {
+                const exec_result = if (trace_path) |path|
+                    try self.executeWithTrace(p.caller, p.to, p.value, p.input, p.gas, path)
+                else
+                    try self.execute(p.caller, p.to, p.value, p.input, p.gas);
+                defer exec_result.deinit();
+                
+                return self.convertToCallResult(exec_result, p.gas);
+            },
+            .callcode => |p| {
+                // CALLCODE: execute code at 'to' with current contract's storage
+                // For now, treat it like a regular call (REVM will handle the semantics)
+                const exec_result = if (trace_path) |path|
+                    try self.executeWithTrace(p.caller, p.to, p.value, p.input, p.gas, path)
+                else
+                    try self.execute(p.caller, p.to, p.value, p.input, p.gas);
+                defer exec_result.deinit();
+                
+                return self.convertToCallResult(exec_result, p.gas);
+            },
+            .delegatecall => |p| {
+                // DELEGATECALL: no value transfer, preserve caller context
+                const exec_result = if (trace_path) |path|
+                    try self.executeWithTrace(p.caller, p.to, 0, p.input, p.gas, path)
+                else
+                    try self.execute(p.caller, p.to, 0, p.input, p.gas);
+                defer exec_result.deinit();
+                
+                return self.convertToCallResult(exec_result, p.gas);
+            },
+            .staticcall => |p| {
+                // Use the existing staticcall implementation
+                const exec_result = try self.staticcall_internal(p.caller, p.to, p.input, p.gas);
+                defer exec_result.deinit();
+                
+                return self.convertToCallResult(exec_result, p.gas);
+            },
+            .create => |p| {
+                const exec_result = if (trace_path) |path|
+                    try self.executeWithTrace(p.caller, null, p.value, p.init_code, p.gas, path)
+                else
+                    try self.execute(p.caller, null, p.value, p.init_code, p.gas);
+                defer exec_result.deinit();
+                
+                return self.convertToCallResult(exec_result, p.gas);
+            },
+            .create2 => |p| {
+                // CREATE2 needs special handling for salt, for now treat as CREATE
+                // TODO: Add proper CREATE2 support with salt to REVM wrapper
+                const exec_result = if (trace_path) |path|
+                    try self.executeWithTrace(p.caller, null, p.value, p.init_code, p.gas, path)
+                else
+                    try self.execute(p.caller, null, p.value, p.init_code, p.gas);
+                defer exec_result.deinit();
+                
+                return self.convertToCallResult(exec_result, p.gas);
+            },
+        }
+    }
+
+    /// Convert ExecutionResult to CallResult
+    fn convertToCallResult(self: *Revm, exec_result: ExecutionResult, original_gas: u64) !CallResult {
+        // Copy output data
+        const output = if (exec_result.output.len > 0) blk: {
+            const data = try self.allocator.alloc(u8, exec_result.output.len);
+            @memcpy(data, exec_result.output);
+            break :blk data;
+        } else try self.allocator.alloc(u8, 0);
+        
+        // Copy error info if present
+        const error_info = if (exec_result.revert_reason) |reason| blk: {
+            const info = try self.allocator.dupe(u8, reason);
+            break :blk info;
+        } else null;
+        
+        // Calculate gas_left from gas_used
+        const gas_left = if (original_gas > exec_result.gas_used) 
+            original_gas - exec_result.gas_used 
+        else 
+            0;
+        
+        return CallResult{
+            .success = exec_result.success,
+            .gas_left = gas_left,
+            .output = output,
+            .logs = &.{}, // TODO: Extract logs from REVM if available
+            .error_info = error_info,
+            .allocator = self.allocator,
+        };
     }
 
     /// Execute a contract creation (convenience method)
@@ -540,9 +744,89 @@ test "REVM execute failing transaction" {
     const value: u256 = 1000;
 
     // Don't set any balance (balance is 0)
-    // This should fail with ExecutionFailed error
-    const result = vm.call(from, to, value, &.{}, 21000);
-    try std.testing.expectError(error.ExecutionFailed, result);
+    // This should fail because of insufficient balance
+    const params = CallParams{ .call = .{
+        .caller = from,
+        .to = to,
+        .value = value,
+        .input = &.{},
+        .gas = 21000,
+    } };
+    
+    var result = try vm.call(params);
+    defer result.deinit();
+    
+    try std.testing.expect(!result.success);
+}
+
+test "REVM call with new CallParams API and tracing" {
+    const allocator = std.testing.allocator;
+
+    // Test with tracing enabled
+    const settings = RevmSettings{
+        .enable_tracing = true,
+    };
+    var vm = try Revm.init(allocator, settings);
+    defer vm.deinit();
+
+    const from = try primitives.Address.from_hex("0x1111111111111111111111111111111111111111");
+    const to = try primitives.Address.from_hex("0x2222222222222222222222222222222222222222");
+
+    // Set balance for sender
+    try vm.setBalance(from, 10000000);
+
+    // Test regular CALL
+    {
+        const params = CallParams{ .call = .{
+            .caller = from,
+            .to = to,
+            .value = 100,
+            .input = &[_]u8{0x42, 0x43},
+            .gas = 21000,
+        } };
+        
+        var result = try vm.call(params);
+        defer result.deinit();
+        
+        try std.testing.expect(result.success);
+    }
+
+    // Test STATICCALL
+    {
+        const params = CallParams{ .staticcall = .{
+            .caller = from,
+            .to = to,
+            .input = &[_]u8{0x44, 0x45},
+            .gas = 21000,
+        } };
+        
+        var result = try vm.call(params);
+        defer result.deinit();
+        
+        // Should succeed even without code at destination
+        try std.testing.expect(result.success);
+    }
+
+    // Test CREATE
+    {
+        const init_code = &[_]u8{
+            0x60, 0x00, // PUSH1 0 (return data size)
+            0x60, 0x00, // PUSH1 0 (return data offset)
+            0xF3, // RETURN
+        };
+        
+        const params = CallParams{ .create = .{
+            .caller = from,
+            .value = 0,
+            .init_code = init_code,
+            .gas = 100000,
+        } };
+        
+        var result = try vm.call(params);
+        defer result.deinit();
+        
+        try std.testing.expect(result.success);
+    }
 }
 
 test "REVM contract execution with storage" {
@@ -569,7 +853,15 @@ test "REVM contract execution with storage" {
     try vm.setBalance(caller, 1000000);
 
     // Call contract
-    var result = try vm.call(caller, contract_addr, 0, &.{}, 100000);
+    const params = CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    
+    var result = try vm.call(params);
     defer result.deinit();
 
     try std.testing.expect(result.success);

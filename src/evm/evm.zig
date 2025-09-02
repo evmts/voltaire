@@ -421,11 +421,21 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Reset refund counter for next transaction
                 self.gas_refund_counter = 0;
             }
-            result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
-            self.logs = std.ArrayList(@import("call_result.zig").Log){};
-            result.selfdestructs = self.takeSelfDestructs() catch &.{};
-            result.accessed_addresses = self.takeAccessedAddresses() catch &.{};
-            result.accessed_storage = self.takeAccessedStorage() catch &.{};
+            // Only extract logs for top-level calls
+            // For nested calls, leave logs in the EVM's list to accumulate
+            if (is_top_level) {
+                result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
+                self.logs = std.ArrayList(@import("call_result.zig").Log){};
+                result.selfdestructs = self.takeSelfDestructs() catch &.{};
+                result.accessed_addresses = self.takeAccessedAddresses() catch &.{};
+                result.accessed_storage = self.takeAccessedStorage() catch &.{};
+            } else {
+                // For nested calls, return empty slices - logs accumulate in EVM
+                result.logs = &.{};
+                result.selfdestructs = &.{};
+                result.accessed_addresses = &.{};
+                result.accessed_storage = &.{};
+            }
             return result;
         }
 
@@ -1090,6 +1100,20 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.allocator.free(self.return_data);
             }
             self.return_data = out_buf;
+
+            // Transfer logs from frame to EVM's log list
+            const frame_logs = frame.getLogSlice();
+            for (frame_logs) |log_entry| {
+                // Create copies of the log data with the EVM's allocator
+                const topics_copy = self.allocator.dupe(u256, log_entry.topics) catch return CallResult.failure(0);
+                const data_copy = self.allocator.dupe(u8, log_entry.data) catch return CallResult.failure(0);
+                
+                self.logs.append(self.allocator, @import("call_result.zig").Log{
+                    .address = log_entry.address,
+                    .topics = topics_copy,
+                    .data = data_copy,
+                }) catch return CallResult.failure(0);
+            }
 
             // All success termination cases return the same result with trace data
             var result = CallResult.success_with_output(gas_left, out_buf);
