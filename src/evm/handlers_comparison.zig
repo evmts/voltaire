@@ -12,9 +12,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// LT opcode (0x10) - Less than comparison.
         pub fn lt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = try self.stack.pop(); // Second element
-            const a = try self.stack.peek(); // First element (now top after pop)
-            const result: WordType = if (a < b) 1 else 0;
+            const top = try self.stack.pop(); // Top of stack (second operand in EVM semantics)
+            const second = try self.stack.peek(); // What's now on top (first operand in EVM semantics)
+            // In EVM: LT pops b, then a, and pushes (a < b)
+            const result: WordType = if (second < top) 1 else 0;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -22,9 +23,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// GT opcode (0x11) - Greater than comparison.
         pub fn gt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = try self.stack.pop(); // Second element
-            const a = try self.stack.peek(); // First element (now top after pop)
-            const result: WordType = if (a > b) 1 else 0;
+            const top = try self.stack.pop(); // Top of stack (second operand in EVM semantics)
+            const second = try self.stack.peek(); // What's now on top (first operand in EVM semantics)
+            // In EVM: GT pops b, then a, and pushes (a > b)
+            const result: WordType = if (second > top) 1 else 0;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -32,11 +34,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SLT opcode (0x12) - Signed less than comparison.
         pub fn slt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = try self.stack.pop(); // Second element
-            const a = try self.stack.peek(); // First element (now top after pop)
-            const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-            const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-            const result: WordType = if (a_signed < b_signed) 1 else 0;
+            const top = try self.stack.pop(); // Top of stack (second operand in EVM semantics)
+            const second = try self.stack.peek(); // What's now on top (first operand in EVM semantics)
+            const second_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(second));
+            const top_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(top));
+            // In EVM: SLT pops b, then a, and pushes (a < b) as signed
+            const result: WordType = if (second_signed < top_signed) 1 else 0;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -44,11 +47,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SGT opcode (0x13) - Signed greater than comparison.
         pub fn sgt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = try self.stack.pop(); // Second element
-            const a = try self.stack.peek(); // First element (now top after pop)
-            const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-            const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-            const result: WordType = if (a_signed > b_signed) 1 else 0;
+            const top = try self.stack.pop(); // Top of stack (second operand in EVM semantics)
+            const second = try self.stack.peek(); // What's now on top (first operand in EVM semantics)
+            const second_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(second));
+            const top_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(top));
+            // In EVM: SGT pops b, then a, and pushes (a > b) as signed
+            const result: WordType = if (second_signed > top_signed) 1 else 0;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -56,9 +60,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EQ opcode (0x14) - Equality comparison.
         pub fn eq(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top_minus_1 = try self.stack.pop();
-            const top = try self.stack.peek();
-            const result: WordType = if (top == top_minus_1) 1 else 0;
+            const top = try self.stack.pop(); // Top of stack (second operand in EVM semantics)
+            const second = try self.stack.peek(); // What's now on top (first operand in EVM semantics)
+            // In EVM: EQ pops b, then a, and pushes (a == b)
+            const result: WordType = if (second == top) 1 else 0;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
