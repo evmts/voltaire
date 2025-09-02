@@ -385,7 +385,7 @@ test "differential: simple arithmetic" {
     try testor.test_bytecode(&bytecode);
 }
 
-test "guillotine only: exp edge cases - correct behavior" {
+test "differential: advanced arithmetic" {
     // NOTE: This test was converted from differential testing because REVM has a bug.
     // REVM returns 0xfe03 (65027) but the mathematically correct result is 0x8000...0002.
     // Guillotine correctly implements EVM EXP semantics, so we verify it against the correct result.
@@ -519,7 +519,7 @@ test "guillotine only: exp edge cases - correct behavior" {
     result_copy.deinit(allocator);
 }
 
-test "differential: signed arithmetic overflow" {
+test "differential: basic arithmetic" {
     const allocator = testing.allocator;
     
     var testor = try DifferentialTestor.init(allocator);
