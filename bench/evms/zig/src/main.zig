@@ -164,7 +164,7 @@ pub fn main() !void {
     
     if (is_deployment_code) {
         // Deploy contract using CREATE to get runtime code
-        var deploy_evm = try evm.Evm(.{}).init(
+        var deploy_evm = try evm.Evm(.{ .TracerType = tracer_mod.JSONRPCTracer }).init(
             allocator,
             &database,
             block_info,
@@ -229,8 +229,8 @@ pub fn main() !void {
     
     // Run benchmarks - create fresh EVM for each run
     for (0..num_runs) |run_idx| {
-        // Create EVM instance for benchmark execution
-        var evm_instance = try evm.Evm(.{}).init(
+        // Create EVM instance for benchmark execution with tracing
+        var evm_instance = try evm.Evm(.{ .TracerType = tracer_mod.JSONRPCTracer }).init(
             allocator,
             &database,
             block_info,
@@ -271,6 +271,89 @@ pub fn main() !void {
         
         // Output timing in milliseconds (one per line as expected by orchestrator)
         std.debug.print("{d:.6}\n", .{duration_ms});
+        
+        // Write JSON-RPC trace to file (only on first run)
+        if (run_idx == 0 and result.trace != null) {
+            // Create trace file with timestamp
+            const timestamp = std.time.timestamp();
+            const trace_filename = try std.fmt.allocPrint(allocator, "trace_{}.json", .{timestamp});
+            defer allocator.free(trace_filename);
+            
+            // Write trace as JSON
+            const trace_file = try std.fs.cwd().createFile(trace_filename, .{});
+            defer trace_file.close();
+            
+            // Simple JSON output using File.writeAll
+            var json_str = try std.fmt.allocPrint(allocator, 
+                \\{{
+                \\  "success": {},
+                \\  "gas_used": {},
+                \\  "gas_left": {},
+                \\  "output": "0x",
+            , .{result.success, 1_000_000_000 - result.gas_left, result.gas_left});
+            defer allocator.free(json_str);
+            
+            // Add output hex
+            for (result.output) |byte| {
+                const hex_byte = try std.fmt.allocPrint(allocator, "{x:0>2}", .{byte});
+                defer allocator.free(hex_byte);
+                const new_str = try std.mem.concat(allocator, u8, &.{json_str, hex_byte});
+                allocator.free(json_str);
+                json_str = new_str;
+            }
+            
+            // Add structLogs if available
+            if (result.trace) |trace| {
+                const logs_header = try std.fmt.allocPrint(allocator, 
+                    \\",
+                    \\  "structLogs": [
+                , .{});
+                defer allocator.free(logs_header);
+                const new_str = try std.mem.concat(allocator, u8, &.{json_str, logs_header});
+                allocator.free(json_str);
+                json_str = new_str;
+                
+                // Output limited trace steps to avoid huge files
+                const max_steps = @min(trace.steps.len, 100);
+                for (trace.steps[0..max_steps], 0..) |step, step_idx| {
+                    const comma = if (step_idx < max_steps - 1) "," else "";
+                    const step_json = try std.fmt.allocPrint(allocator,
+                        \\    {{
+                        \\      "pc": {},
+                        \\      "op": "{s}",
+                        \\      "gas": {},
+                        \\      "stack": [],
+                        \\      "depth": 1
+                        \\    }}{s}
+                    , .{step.pc, step.opcode_name, step.gas, comma});
+                    defer allocator.free(step_json);
+                    const step_str = try std.mem.concat(allocator, u8, &.{json_str, "\n", step_json});
+                    allocator.free(json_str);
+                    json_str = step_str;
+                }
+                
+                const logs_footer = 
+                    \\
+                    \\  ]
+                    \\}}
+                ;
+                const final_str = try std.mem.concat(allocator, u8, &.{json_str, logs_footer});
+                allocator.free(json_str);
+                json_str = final_str;
+            } else {
+                const no_logs = 
+                    \\",
+                    \\  "structLogs": []
+                    \\}}
+                ;
+                const final_str = try std.mem.concat(allocator, u8, &.{json_str, no_logs});
+                allocator.free(json_str);
+                json_str = final_str;
+            }
+            
+            try trace_file.writeAll(json_str);
+            std.debug.print("JSON-RPC trace written to: {s}\n", .{trace_filename});
+        }
         
         if (verbose) {
             const gas_used = 1_000_000_000 - result.gas_left;
