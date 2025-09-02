@@ -264,26 +264,84 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
         pub fn signextend(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const logger = @import("log.zig");
+            
+            // Log entry state
+            const stack_size = self.stack.size();
+            logger.err("SIGNEXTEND ENTRY: stack_size={}, stack_ptr={*}", .{
+                stack_size, 
+                self.stack.stack_ptr
+            });
+            
+            // Log stack contents
+            if (stack_size > 0) {
+                const stack_slice = self.stack.get_slice();
+                logger.err("SIGNEXTEND: Stack contents (top first):", .{});
+                for (stack_slice, 0..) |val, i| {
+                    if (i >= 3) break; // Only show top 3
+                    logger.err("  [{}] = {x}", .{i, val});
+                }
+            }
+            
+            // SIGNEXTEND requires 2 items on stack
+            if (stack_size < 2) {
+                logger.err("SIGNEXTEND ERROR: Stack underflow, size={}", .{stack_size});
+                return Error.StackUnderflow;
+            }
+            
+            // Assert stack is valid before pop
+            std.debug.assert(self.stack.size() >= 2);
+            
             const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
+            logger.err("SIGNEXTEND: Popped ext={x}, stack_size now={}", .{ext, self.stack.size()});
+            
+            // Assert stack is still valid before peek
+            std.debug.assert(self.stack.size() >= 1);
+            
             const value = self.stack.peek_unsafe(); // Value to extend (second element)
+            logger.err("SIGNEXTEND: Peeked value={x}, stack_size still={}", .{value, self.stack.size()});
+            
             var result: WordType = undefined;
             
             // If ext is too large to fit in usize or >= 32, return value unchanged
             // SIGNEXTEND with byte position >= 32 means no sign extension needed
             if (ext > std.math.maxInt(usize) or ext >= 32) {
+                logger.err("SIGNEXTEND: ext >= 32 or too large, returning value unchanged", .{});
                 result = value;
             } else {
                 const ext_usize = @as(usize, @intCast(ext));
                 const bit_index = ext_usize * 8 + 7;
-                const mask = (@as(WordType, 1) << @intCast(bit_index)) - 1;
-                const sign_bit = (value >> @intCast(bit_index)) & 1;
+                
+                logger.err("SIGNEXTEND: Processing ext={}, bit_index={}", .{ext, bit_index});
+                
+                // Ensure bit_index is valid for shifting
+                std.debug.assert(bit_index < @bitSizeOf(WordType));
+                
+                // Cast bit_index to the appropriate shift type
+                const shift_amount = @as(u8, @intCast(bit_index));
+                logger.err("SIGNEXTEND: shift_amount={}, about to shift", .{shift_amount});
+                
+                const mask = (@as(WordType, 1) << shift_amount) - 1;
+                const sign_bit = (value >> shift_amount) & 1;
+                logger.err("SIGNEXTEND: mask={x}, sign_bit={}", .{mask, sign_bit});
                 if (sign_bit == 1) {
                     result = value | ~mask;
+                    logger.err("SIGNEXTEND: Sign bit set, result = value | ~mask = {x}", .{result});
                 } else {
                     result = value & mask;
+                    logger.err("SIGNEXTEND: Sign bit not set, result = value & mask = {x}", .{result});
                 }
             }
+            
+            logger.err("SIGNEXTEND: Setting top to result={x}", .{result});
+            
+            // Assert stack is valid before set_top
+            std.debug.assert(self.stack.size() >= 1);
+            
             self.stack.set_top_unsafe(result);
+            
+            logger.err("SIGNEXTEND EXIT: stack_size={}, result set", .{self.stack.size()});
+            
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }

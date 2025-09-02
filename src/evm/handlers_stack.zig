@@ -35,6 +35,13 @@ pub fn Handlers(comptime FrameType: type) type {
                     const dispatch = Dispatch{ .cursor = cursor };
                     const Opcode = @import("opcode_data.zig").Opcode;
                     
+                    // Log entry state at error level to be visible
+                    log.err("PUSH{} ENTRY: stack_size={}, stack_ptr={*}", .{
+                        push_n,
+                        self.stack.size(),
+                        self.stack.stack_ptr
+                    });
+                    
                     // Map push_n to the corresponding PUSH opcode
                     const push_opcode = comptime blk: {
                         break :blk switch (push_n) {
