@@ -17,6 +17,7 @@ fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
     while (i < trimmed.len) : (i += 2) {
         const byte_str = trimmed[i .. i + 2];
         result[i / 2] = std.fmt.parseInt(u8, byte_str, 16) catch {
+            std.debug.print("Failed to parse hex at position {}: '{s}'\n", .{i, byte_str});
             return error.InvalidHexCharacter;
         };
     }
