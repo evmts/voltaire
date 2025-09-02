@@ -24,11 +24,11 @@ fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
     return result;
 }
 
-test "ERC20 deployment - REVM vs Guillotine differential testing" {
+test "ERC20 deployment - REVM vs Guillotine differential testing with simple tracer" {
     std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
     
-    // Read the ERC20 transfer bytecode that's failing
+    // Read the ERC20 transfer bytecode
     const bytecode_file = try std.fs.cwd().openFile("src/evm/fixtures/erc20-transfer/bytecode.txt", .{});
     defer bytecode_file.close();
     const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 16 * 1024 * 1024);
@@ -36,6 +36,77 @@ test "ERC20 deployment - REVM vs Guillotine differential testing" {
     
     const init_code = try hex_decode(allocator, bytecode_hex);
     defer allocator.free(init_code);
+    
+    log.info("Testing ERC20 deployment bytecode: {} bytes", .{init_code.len});
+    
+    // Use the differential tracer from the EVM module
+    const DifferentialTracer = evm.differential_tracer.DifferentialTracer(revm);
+    
+    const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
+    
+    var database = evm.Database.init(allocator);
+    defer database.deinit();
+    
+    try database.set_account(caller_address.bytes, .{
+        .balance = std.math.maxInt(u256),
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = evm.BlockInfo{
+        .chain_id = 1,
+        .number = 20_000_000,
+        .timestamp = 1_800_000_000,
+        .difficulty = 0,
+        .gas_limit = 1_000_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 7,
+        .prev_randao = [_]u8{0} ** 32,
+        .blob_base_fee = 1000000000,
+        .blob_versioned_hashes = &.{},
+    };
+
+    const tx_context = evm.TransactionContext{
+        .gas_limit = 1_000_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var tracer = try DifferentialTracer.init(
+        allocator,
+        &database,
+        block_info,
+        tx_context,
+        caller_address,
+        .{} // Default config
+    );
+    defer tracer.deinit();
+    
+    try tracer.revm_vm.setBalance(caller_address, std.math.maxInt(u256));
+    
+    // Use high gas to rule out gas issues
+    const gas_amount: u64 = 10_000_000;
+    
+    const create_params = evm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = init_code,
+            .gas = gas_amount,
+        },
+    };
+    
+    // This will show us exactly where they diverge
+    var result = try tracer.call(create_params);
+    defer result.deinit(allocator);
+    
+    try std.testing.expect(result.success);
+    log.info("✅ ERC20 differential test passed!", .{});
+}
+
+fn testRevmDeployment(allocator: std.mem.Allocator, init_code: []const u8) !void {
+    // Kept for reference - tests REVM deployment directly
     
     log.info("ERC20 bytecode loaded: {} bytes", .{init_code.len});
     
@@ -103,7 +174,8 @@ test "ERC20 deployment - REVM vs Guillotine differential testing" {
     try tracer.revm_vm.setBalance(caller_address, std.math.maxInt(u256));
     
     // Test with gas amount that should work
-    const gas_amount: u64 = 1_000_000;
+    // Using 10M gas to ensure we have plenty
+    const gas_amount: u64 = 10_000_000;
     
     log.info("\nTesting ERC20 deployment with {} gas", .{gas_amount});
     
@@ -140,7 +212,7 @@ test "ERC20 deployment - REVM vs Guillotine differential testing" {
     }
 }
 
-fn testRevmDeployment(allocator: std.mem.Allocator, init_code: []const u8) !void {
+fn testRevmDeploymentDirect(allocator: std.mem.Allocator, init_code: []const u8) !void {
     // Setup REVM
     var revm_vm = try revm.Revm.init(allocator, .{
         .gas_limit = 1_000_000_000,
@@ -286,6 +358,89 @@ fn getRevmDeploymentTrace(allocator: std.mem.Allocator, init_code: []const u8, g
     
     // Clean up trace file
     std.fs.deleteFileAbsolute(trace_file) catch {};
+}
+
+test "Simple contract differential test" {
+    std.testing.log_level = .debug;
+    const allocator = std.testing.allocator;
+    
+    // Use a very simple contract that just stores 42 and returns empty code
+    const init_code = &[_]u8{
+        0x60, 0x2a, // PUSH1 42
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE
+        0x60, 0x00, // PUSH1 0 (return data size)
+        0x60, 0x00, // PUSH1 0 (return data offset)
+        0xF3, // RETURN
+    };
+    
+    log.info("Simple contract bytecode: {} bytes", .{init_code.len});
+    
+    const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
+    
+    var database = evm.Database.init(allocator);
+    defer database.deinit();
+    
+    try database.set_account(caller_address.bytes, .{
+        .balance = std.math.maxInt(u256),
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = evm.BlockInfo{
+        .chain_id = 1,
+        .number = 20_000_000,
+        .timestamp = 1_800_000_000,
+        .difficulty = 0,
+        .gas_limit = 1_000_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 7,
+        .prev_randao = [_]u8{0} ** 32,
+        .blob_base_fee = 1000000000,
+        .blob_versioned_hashes = &.{},
+    };
+
+    const tx_context = evm.TransactionContext{
+        .gas_limit = 1_000_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    const DifferentialTracer = evm.differential_tracer.DifferentialTracer(revm);
+    
+    var tracer = try DifferentialTracer.init(
+        allocator,
+        &database,
+        block_info,
+        tx_context,
+        caller_address,
+        .{
+            .write_trace_files = false,
+        },
+    );
+    defer tracer.deinit();
+    
+    try tracer.revm_vm.setBalance(caller_address, std.math.maxInt(u256));
+    
+    const gas_amount: u64 = 1_000_000;
+    
+    log.info("\nTesting simple contract with {} gas", .{gas_amount});
+    
+    const create_params = evm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = init_code,
+            .gas = gas_amount,
+        },
+    };
+    
+    var result = try tracer.call(create_params);
+    defer result.deinit(allocator);
+    
+    try std.testing.expect(result.success);
+    log.info("✅ Simple contract differential test passed!", .{});
 }
 
 test "Snailtracer deployment comparison" {
