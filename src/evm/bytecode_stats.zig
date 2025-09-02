@@ -134,10 +134,10 @@ pub const BytecodeStats = struct {
         
         return BytecodeStats{
             .opcode_counts = opcode_counts,
-            .push_values = try push_values.toOwnedSlice(),
-            .potential_fusions = try potential_fusions.toOwnedSlice(),
-            .jumpdests = try jumpdests.toOwnedSlice(),
-            .jumps = try jumps.toOwnedSlice(),
+            .push_values = try push_values.toOwnedSlice(allocator),
+            .potential_fusions = try potential_fusions.toOwnedSlice(allocator),
+            .jumpdests = try jumpdests.toOwnedSlice(allocator),
+            .jumps = try jumps.toOwnedSlice(allocator),
             .backwards_jumps = backwards_jumps,
             .is_create_code = false, // CREATE code pattern detection not implemented
         };
@@ -207,7 +207,7 @@ pub const BytecodeStats = struct {
         try writer.print("Contract type: {s}\n", .{if (self.is_create_code) "Create/Deploy code" else "Runtime code"});
         try writer.writeAll("======================\n");
         
-        return list.toOwnedSlice();
+        return try list.toOwnedSlice(allocator);
     }
 };
 

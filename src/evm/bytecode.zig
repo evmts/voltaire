@@ -1160,12 +1160,12 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 const bright_cyan = "\x1b[96m";
             };
 
-            var output = std.ArrayList(u8).init(allocator);
-            defer output.deinit();
+            var output = std.ArrayListAligned(u8, null){};
+            defer output.deinit(allocator);
 
             // Header
-            try output.writer().print("{s}=== EVM Bytecode Disassembly ==={s}\n", .{ Colors.bold, Colors.reset });
-            try output.writer().print("{s}Length: {} bytes{s}\n\n", .{ Colors.dim, self.runtime_code.len, Colors.reset });
+            try output.writer(allocator).print("{s}=== EVM Bytecode Disassembly ==={s}\n", .{ Colors.bold, Colors.reset });
+            try output.writer(allocator).print("{s}Length: {} bytes{s}\n\n", .{ Colors.dim, self.runtime_code.len, Colors.reset });
 
             var pc: PcType = 0;
             var line_num: u32 = 1;
@@ -1174,30 +1174,30 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 const opcode_byte = self.runtime_code[pc];
 
                 // Line number and PC address
-                try output.writer().print("{s}{:3}:{s} {s}0x{:04x}{s} ", .{ Colors.dim, line_num, Colors.reset, Colors.cyan, pc, Colors.reset });
+                try output.writer(allocator).print("{s}{d:3}:{s} {s}0x{x:0>4}{s} ", .{ Colors.dim, line_num, Colors.reset, Colors.cyan, pc, Colors.reset });
 
                 // Check if this is a jump destination
                 if (self.isValidJumpDest(pc)) {
-                    try output.writer().print("{s}►{s} ", .{ Colors.bright_yellow, Colors.reset });
+                    try output.writer(allocator).print("{s}►{s} ", .{ Colors.bright_yellow, Colors.reset });
                 } else {
-                    try output.writer().print("  ");
+                    try output.writer(allocator).print("  ", .{});
                 }
 
                 // Raw hex bytes (show opcode + data for PUSH instructions)
                 const instruction_size = self.getInstructionSize(pc);
-                var hex_output = std.ArrayList(u8).init(allocator);
-                defer hex_output.deinit();
+                var hex_output = std.ArrayListAligned(u8, null){};
+                defer hex_output.deinit(allocator);
 
                 for (0..instruction_size) |i| {
                     if (pc + i < self.runtime_code.len) {
-                        try hex_output.writer().print("{:02x}", .{self.runtime_code[pc + i]});
-                        if (i + 1 < instruction_size) try hex_output.writer().print(" ");
+                        try hex_output.writer(allocator).print("{x:0>2}", .{self.runtime_code[pc + i]});
+                        if (i + 1 < instruction_size) try hex_output.writer(allocator).print(" ", .{});
                     }
                 }
 
                 // Pad hex to fixed width for alignment
                 const hex_str = hex_output.items;
-                try output.writer().print("{s}{s:<24}{s} ", .{ Colors.dim, hex_str, Colors.reset });
+                try output.writer(allocator).print("{s}{s:<24}{s} ", .{ Colors.dim, hex_str, Colors.reset });
 
                 // Parse and format the instruction
                 if (std.meta.intToEnum(Opcode, opcode_byte)) |opcode| {
@@ -1206,66 +1206,66 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     switch (opcode) {
                         .PUSH0 => {
                             // EIP-3855: PUSH0 pushes zero
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.green, @tagName(opcode), Colors.reset });
-                            try output.writer().print(" {s}0x0{s} {s}(0){s}", .{ Colors.bright_magenta, Colors.reset, Colors.dim, Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.green, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print(" {s}0x0{s} {s}(0){s}", .{ Colors.bright_magenta, Colors.reset, Colors.dim, Colors.reset });
                         },
                         .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
                             const push_size = @intFromEnum(opcode) - @intFromEnum(Opcode.PUSH1) + 1;
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.green, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.green, @tagName(opcode), Colors.reset });
 
                             // Extract and format push value
                             if (self.readPushValueN(pc, push_size)) |value| {
-                                try output.writer().print(" {s}0x{x}{s}", .{ Colors.bright_magenta, value, Colors.reset });
+                                try output.writer(allocator).print(" {s}0x{x}{s}", .{ Colors.bright_magenta, value, Colors.reset });
 
                                 // Show decimal if small value
                                 if (value <= 0xFFFF) {
-                                    try output.writer().print(" {s}({}){s}", .{ Colors.dim, value, Colors.reset });
+                                    try output.writer(allocator).print(" {s}({}){s}", .{ Colors.dim, value, Colors.reset });
                                 }
                             }
                         },
                         .JUMPDEST => {
-                            try output.writer().print("{s}{s}{s:<12}{s}", .{ Colors.bright_yellow, Colors.bold, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s}{s:<12}{s}", .{ Colors.bright_yellow, Colors.bold, @tagName(opcode), Colors.reset });
                         },
                         .JUMP, .JUMPI => {
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.yellow, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.yellow, @tagName(opcode), Colors.reset });
                         },
                         .STOP, .RETURN, .REVERT => {
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.red, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.red, @tagName(opcode), Colors.reset });
                         },
                         .ADD, .SUB, .MUL, .DIV, .SDIV, .MOD, .SMOD, .ADDMOD, .MULMOD, .EXP => {
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.blue, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.blue, @tagName(opcode), Colors.reset });
                         },
                         .LT, .GT, .SLT, .SGT, .EQ, .ISZERO => {
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.magenta, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.magenta, @tagName(opcode), Colors.reset });
                         },
                         .AND, .OR, .XOR, .NOT, .BYTE, .SHL, .SHR, .SAR => {
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.cyan, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.cyan, @tagName(opcode), Colors.reset });
                         },
                         else => {
-                            try output.writer().print("{s}{s:<12}{s}", .{ Colors.white, @tagName(opcode), Colors.reset });
+                            try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.white, @tagName(opcode), Colors.reset });
                         },
                     }
 
                     // Gas cost
-                    try output.writer().print(" {s}[gas: {}]{s}", .{ Colors.dim, opcode_info.gas_cost, Colors.reset });
+                    try output.writer(allocator).print(" {s}[gas: {}]{s}", .{ Colors.dim, opcode_info.gas_cost, Colors.reset });
 
                     // Stack effects
                     if (opcode_info.stack_inputs > 0 or opcode_info.stack_outputs > 0) {
-                        try output.writer().print(" {s}[stack: -{}, +{}]{s}", .{ Colors.dim, opcode_info.stack_inputs, opcode_info.stack_outputs, Colors.reset });
+                        try output.writer(allocator).print(" {s}[stack: -{}, +{}]{s}", .{ Colors.dim, opcode_info.stack_inputs, opcode_info.stack_outputs, Colors.reset });
                     }
                 } else |_| {
                     // Invalid opcode
-                    try output.writer().print("{s}INVALID(0x{:02x}){s}", .{ Colors.bright_red, opcode_byte, Colors.reset });
+                    try output.writer(allocator).print("{s}INVALID(0x{x:0>2}){s}", .{ Colors.bright_red, opcode_byte, Colors.reset });
                 }
 
-                try output.writer().print("\n");
+                try output.writer(allocator).print("\n", .{});
 
                 pc += instruction_size;
                 line_num += 1;
             }
 
             // Footer with summary
-            try output.writer().print("\n{s}=== Summary ==={s}\n", .{ Colors.bold, Colors.reset });
+            try output.writer(allocator).print("\n{s}=== Summary ==={s}\n", .{ Colors.bold, Colors.reset });
 
             // Count jump destinations
             var jumpdest_count: u32 = 0;
@@ -1275,17 +1275,17 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
             }
             
-            try output.writer().print("{s}Jump destinations: {}{s}\n", .{ Colors.dim, jumpdest_count, Colors.reset });
-            try output.writer().print("{s}Total instructions: {}{s}\n", .{ Colors.dim, line_num - 1, Colors.reset });
+            try output.writer(allocator).print("{s}Jump destinations: {}{s}\n", .{ Colors.dim, jumpdest_count, Colors.reset });
+            try output.writer(allocator).print("{s}Total instructions: {}{s}\n", .{ Colors.dim, line_num - 1, Colors.reset });
             
             if (self.metadata) |meta| {
-                try output.writer().print("{s}Solidity metadata: {} bytes{s}\n", .{ Colors.dim, meta.metadata_length, Colors.reset });
-                try output.writer().print("{s}Compiler version: {}.{}.{}{s}\n", .{ 
+                try output.writer(allocator).print("{s}Solidity metadata: {} bytes{s}\n", .{ Colors.dim, meta.metadata_length, Colors.reset });
+                try output.writer(allocator).print("{s}Compiler version: {}.{}.{}{s}\n", .{ 
                     Colors.dim, meta.solc_version[0], meta.solc_version[1], meta.solc_version[2], Colors.reset 
                 });
             }
             
-            return output.toOwnedSlice();
+            return output.toOwnedSlice(allocator);
         }
     };
 }
