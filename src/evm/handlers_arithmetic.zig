@@ -33,9 +33,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // SUB operation: pop a, pop b, push a - b
-            const a = try self.stack.pop();
-            const b = try self.stack.peek();
+            // SUB operation: pop b, pop a, push a - b
+            const b = try self.stack.pop();
+            const a = try self.stack.peek();
             const result = a -% b;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
@@ -216,8 +216,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const base = try self.stack.pop(); // μ_s[0] - base
-            const exponent = try self.stack.peek(); // μ_s[1] - exponent
+            const exponent = try self.stack.pop(); // μ_s[0] - exponent (top)
+            const base = try self.stack.peek(); // μ_s[1] - base (second)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)

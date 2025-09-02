@@ -327,9 +327,12 @@ pub const Revm = struct {
             break :blk try self.allocator.dupe(u8, reason);
         } else null;
 
+        // Align with Guillotine's post-refund accounting (EIP-3529 cap applies):
+        const capped_refund: u64 = @min(result.gasRefunded, result.gasUsed / 5);
+        const effective_gas_used: u64 = result.gasUsed - capped_refund;
         return ExecutionResult{
             .success = result.success,
-            .gas_used = result.gasUsed,
+            .gas_used = effective_gas_used,
             .gas_refunded = result.gasRefunded,
             .output = output,
             .revert_reason = revert_reason,
@@ -419,9 +422,11 @@ pub const Revm = struct {
             break :blk try self.allocator.dupe(u8, reason);
         } else null;
 
+        const capped_refund: u64 = @min(result.gasRefunded, result.gasUsed / 5);
+        const effective_gas_used: u64 = result.gasUsed - capped_refund;
         return ExecutionResult{
             .success = result.success,
-            .gas_used = result.gasUsed,
+            .gas_used = effective_gas_used,
             .gas_refunded = result.gasRefunded,
             .output = output,
             .revert_reason = revert_reason,

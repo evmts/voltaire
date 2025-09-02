@@ -5404,3 +5404,739 @@ test "EIP-2935: historical block hashes via system contract" {
     // The old slot might be overwritten by a newer block in the ring buffer
     _ = old_hash; // Just checking it doesn't error
 }
+
+test "E2E STATICCALL - read-only enforcement" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Deploy contract that attempts state modifications
+    // This contract tries to: SSTORE, LOG0, CREATE, CALL with value
+    const state_modifying_bytecode = [_]u8{
+        // Try SSTORE (should fail in static context)
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE
+        // Return success
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const contract_address: primitives.Address = [_]u8{0x10} ++ [_]u8{0} ** 19;
+    const code_hash = try db.set_code(&state_modifying_bytecode);
+    try db.set_account(contract_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Deploy a pure reading contract (no state changes)
+    const read_only_bytecode = [_]u8{
+        // Load from storage
+        0x60, 0x00, // PUSH1 0
+        0x54, // SLOAD
+        // Return the value
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const reader_address: primitives.Address = [_]u8{0x20} ++ [_]u8{0} ** 19;
+    const reader_code_hash = try db.set_code(&read_only_bytecode);
+    try db.set_account(reader_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = reader_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Test 1: STATICCALL to state-modifying contract should fail
+    {
+        const staticcall_params = DefaultEvm.CallParams{
+            .staticcall = .{
+                .caller = primitives.ZERO_ADDRESS,
+                .to = contract_address,
+                .input = &.{},
+                .gas = 100000,
+            },
+        };
+
+        const result = try evm.call(staticcall_params);
+        
+        // Should fail due to SSTORE in static context
+        try std.testing.expect(!result.success);
+    }
+
+    // Test 2: STATICCALL to read-only contract should succeed
+    {
+        // First set a value to read
+        try db.set_storage(reader_address, 0, 0x1234);
+        
+        const staticcall_params = DefaultEvm.CallParams{
+            .staticcall = .{
+                .caller = primitives.ZERO_ADDRESS,
+                .to = reader_address,
+                .input = &.{},
+                .gas = 100000,
+            },
+        };
+
+        const result = try evm.call(staticcall_params);
+        defer if (result.output.len > 0) evm.allocator.free(result.output);
+        
+        // Should succeed since it only reads
+        try std.testing.expect(result.success);
+        try std.testing.expectEqual(@as(usize, 32), result.output.len);
+        
+        // Verify it returned the stored value
+        const returned_value = @as(u256, @bitCast(result.output[0..32].*));
+        try std.testing.expectEqual(@as(u256, 0x1234), returned_value);
+    }
+
+    // Test 3: STATICCALL cannot transfer value
+    {
+        // Set up caller with balance
+        const caller_address: primitives.Address = [_]u8{0x30} ++ [_]u8{0} ** 19;
+        try db.set_account(caller_address, Account{
+            .balance = 1000000,
+            .nonce = 0,
+            .code_hash = [_]u8{0} ** 32,
+            .storage_root = [_]u8{0} ** 32,
+        });
+
+        // STATICCALL doesn't have a value field - it's always 0
+        const staticcall_params = DefaultEvm.CallParams{
+            .staticcall = .{
+                .caller = caller_address,
+                .to = reader_address,
+                .input = &.{},
+                .gas = 100000,
+            },
+        };
+
+        const initial_balance = (try db.get_account(reader_address)).?.balance;
+        const result = try evm.call(staticcall_params);
+        
+        try std.testing.expect(result.success);
+        
+        // Balance should not change
+        const final_balance = (try db.get_account(reader_address)).?.balance;
+        try std.testing.expectEqual(initial_balance, final_balance);
+    }
+}
+
+test "E2E DELEGATECALL - context preservation" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Deploy implementation contract that stores caller and self address
+    const implementation_bytecode = [_]u8{
+        // Store CALLER at slot 0
+        0x33, // CALLER
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE
+        
+        // Store ADDRESS (self) at slot 1
+        0x30, // ADDRESS
+        0x60, 0x01, // PUSH1 1
+        0x55, // SSTORE
+        
+        // Store a value passed as input at slot 2
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x35, // CALLDATALOAD
+        0x60, 0x02, // PUSH1 2
+        0x55, // SSTORE
+        
+        // Return success
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const implementation_address: primitives.Address = [_]u8{0x40} ++ [_]u8{0} ** 19;
+    const impl_code_hash = try db.set_code(&implementation_bytecode);
+    try db.set_account(implementation_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = impl_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Deploy proxy contract that uses DELEGATECALL
+    const proxy_bytecode = [_]u8{
+        // DELEGATECALL to implementation
+        // gas, to, in_offset, in_size, out_offset, out_size
+        0x5A, // GAS
+        0x73, // PUSH20
+    } ++ implementation_address ++ [_]u8{
+        0x60, 0x00, // PUSH1 0 (in_offset)
+        0x60, 0x20, // PUSH1 32 (in_size)
+        0x60, 0x00, // PUSH1 0 (out_offset)
+        0x60, 0x20, // PUSH1 32 (out_size)
+        0xF4, // DELEGATECALL
+        // Return the result
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const proxy_address: primitives.Address = [_]u8{0x50} ++ [_]u8{0} ** 19;
+    const proxy_code_hash = try db.set_code(&proxy_bytecode);
+    try db.set_account(proxy_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = proxy_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Test DELEGATECALL behavior
+    const original_caller: primitives.Address = [_]u8{0x60} ++ [_]u8{0} ** 19;
+    const test_value: u256 = 0xABCDEF;
+    
+    // Prepare input data
+    var input_data: [32]u8 = @bitCast(test_value);
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = original_caller,
+            .to = proxy_address,
+            .value = 0,
+            .input = &input_data,
+            .gas = 200000,
+        },
+    };
+
+    const result = try evm.call(call_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+    
+    try std.testing.expect(result.success);
+
+    // Verify storage was written to PROXY's storage, not implementation's
+    // Slot 0: Should contain original_caller (preserved through DELEGATECALL)
+    const stored_caller = try db.get_storage(proxy_address, 0);
+    const caller_bytes = @as([32]u8, @bitCast(stored_caller));
+    try std.testing.expectEqualSlices(u8, &original_caller, caller_bytes[12..32]);
+    
+    // Slot 1: Should contain proxy_address (ADDRESS returns current contract)
+    const stored_address = try db.get_storage(proxy_address, 1);
+    const address_bytes = @as([32]u8, @bitCast(stored_address));
+    try std.testing.expectEqualSlices(u8, &proxy_address, address_bytes[12..32]);
+    
+    // Slot 2: Should contain the test value
+    const stored_value = try db.get_storage(proxy_address, 2);
+    try std.testing.expectEqual(test_value, stored_value);
+    
+    // Implementation contract's storage should be empty
+    const impl_slot0 = try db.get_storage(implementation_address, 0);
+    try std.testing.expectEqual(@as(u256, 0), impl_slot0);
+    const impl_slot1 = try db.get_storage(implementation_address, 1);
+    try std.testing.expectEqual(@as(u256, 0), impl_slot1);
+    const impl_slot2 = try db.get_storage(implementation_address, 2);
+    try std.testing.expectEqual(@as(u256, 0), impl_slot2);
+}
+
+test "E2E CALL with value transfer" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Deploy contract that receives and tracks value
+    const receiver_bytecode = [_]u8{
+        // Store msg.value at slot 0
+        0x34, // CALLVALUE
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE
+        // Store msg.sender at slot 1
+        0x33, // CALLER
+        0x60, 0x01, // PUSH1 1
+        0x55, // SSTORE
+        // Return success
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const receiver_address: primitives.Address = [_]u8{0xA0} ++ [_]u8{0} ** 19;
+    const receiver_code_hash = try db.set_code(&receiver_bytecode);
+    try db.set_account(receiver_address, Account{
+        .balance = 1000, // Initial balance
+        .nonce = 0,
+        .code_hash = receiver_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    const sender_address: primitives.Address = [_]u8{0xB0} ++ [_]u8{0} ** 19;
+    const sender_initial_balance: u256 = 10000000;
+    try db.set_account(sender_address, Account{
+        .balance = sender_initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    const transfer_amount: u256 = 123456;
+    
+    // Test value transfer with CALL
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender_address,
+            .to = receiver_address,
+            .value = transfer_amount,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+
+    const result = try evm.call(call_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+    
+    try std.testing.expect(result.success);
+
+    // Verify value was transferred
+    const sender_final = (try db.get_account(sender_address)).?;
+    const receiver_final = (try db.get_account(receiver_address)).?;
+    
+    try std.testing.expectEqual(
+        sender_initial_balance - transfer_amount,
+        sender_final.balance
+    );
+    try std.testing.expectEqual(
+        1000 + transfer_amount,
+        receiver_final.balance
+    );
+
+    // Verify contract recorded the transfer
+    const stored_value = try db.get_storage(receiver_address, 0);
+    try std.testing.expectEqual(transfer_amount, stored_value);
+    
+    const stored_sender = try db.get_storage(receiver_address, 1);
+    const sender_bytes = @as([32]u8, @bitCast(stored_sender));
+    try std.testing.expectEqualSlices(u8, &sender_address, sender_bytes[12..32]);
+}
+
+test "E2E nested calls - CALL -> DELEGATECALL -> STATICCALL" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 3000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Level 3: Final contract that just returns a value from storage
+    const final_bytecode = [_]u8{
+        0x60, 0x99, // PUSH1 0x99
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const final_address: primitives.Address = [_]u8{0x03} ++ [_]u8{0} ** 19;
+    const final_code_hash = try db.set_code(&final_bytecode);
+    try db.set_account(final_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = final_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Level 2: Contract that does STATICCALL to final
+    const middle_bytecode = [_]u8{
+        // STATICCALL to final contract
+        0x5A, // GAS
+        0x73, // PUSH20
+    } ++ final_address ++ [_]u8{
+        0x60, 0x00, // PUSH1 0 (in_offset)
+        0x60, 0x00, // PUSH1 0 (in_size)
+        0x60, 0x00, // PUSH1 0 (out_offset)
+        0x60, 0x20, // PUSH1 32 (out_size)
+        0xFA, // STATICCALL
+        // Return the result
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const middle_address: primitives.Address = [_]u8{0x02} ++ [_]u8{0} ** 19;
+    const middle_code_hash = try db.set_code(&middle_bytecode);
+    try db.set_account(middle_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = middle_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Level 1: Contract that does DELEGATECALL to middle
+    const entry_bytecode = [_]u8{
+        // DELEGATECALL to middle contract
+        0x5A, // GAS
+        0x73, // PUSH20
+    } ++ middle_address ++ [_]u8{
+        0x60, 0x00, // PUSH1 0 (in_offset)
+        0x60, 0x00, // PUSH1 0 (in_size)
+        0x60, 0x00, // PUSH1 0 (out_offset)
+        0x60, 0x20, // PUSH1 32 (out_size)
+        0xF4, // DELEGATECALL
+        // Store something to verify context
+        0x60, 0xAA, // PUSH1 0xAA
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE
+        // Return the result
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const entry_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const entry_code_hash = try db.set_code(&entry_bytecode);
+    try db.set_account(entry_address, Account{
+        .balance = 1000000,
+        .nonce = 0,
+        .code_hash = entry_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Execute the nested calls
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = entry_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 500000,
+        },
+    };
+
+    const result = try evm.call(call_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+    
+    try std.testing.expect(result.success);
+    try std.testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // Verify the final value was returned through all the calls
+    const returned_value = @as(u256, @bitCast(result.output[0..32].*));
+    try std.testing.expectEqual(@as(u256, 0x99), returned_value);
+    
+    // Verify that SSTORE executed in entry contract's context
+    const entry_storage = try db.get_storage(entry_address, 0);
+    try std.testing.expectEqual(@as(u256, 0xAA), entry_storage);
+    
+    // Middle and final contracts should have no storage changes
+    const middle_storage = try db.get_storage(middle_address, 0);
+    try std.testing.expectEqual(@as(u256, 0), middle_storage);
+    const final_storage = try db.get_storage(final_address, 0);
+    try std.testing.expectEqual(@as(u256, 0), final_storage);
+}
+
+test "E2E call types - gas consumption differences" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 3000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Deploy a simple contract that does minimal work
+    const simple_bytecode = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
+    };
+    
+    const target_address: primitives.Address = [_]u8{0x90} ++ [_]u8{0} ** 19;
+    const code_hash = try db.set_code(&simple_bytecode);
+    try db.set_account(target_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    const caller_address: primitives.Address = [_]u8{0x91} ++ [_]u8{0} ** 19;
+    try db.set_account(caller_address, Account{
+        .balance = 10000000,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    const gas_limit: u64 = 100000;
+    
+    // Test CALL gas consumption
+    const call_gas_used = blk: {
+        const params = DefaultEvm.CallParams{
+            .call = .{
+                .caller = caller_address,
+                .to = target_address,
+                .value = 0,
+                .input = &.{},
+                .gas = gas_limit,
+            },
+        };
+        const result = try evm.call(params);
+        defer if (result.output.len > 0) evm.allocator.free(result.output);
+        try std.testing.expect(result.success);
+        break :blk gas_limit - result.gas_left;
+    };
+
+    // Test STATICCALL gas consumption
+    const staticcall_gas_used = blk: {
+        const params = DefaultEvm.CallParams{
+            .staticcall = .{
+                .caller = caller_address,
+                .to = target_address,
+                .input = &.{},
+                .gas = gas_limit,
+            },
+        };
+        const result = try evm.call(params);
+        defer if (result.output.len > 0) evm.allocator.free(result.output);
+        try std.testing.expect(result.success);
+        break :blk gas_limit - result.gas_left;
+    };
+
+    // Test DELEGATECALL gas consumption
+    const delegatecall_gas_used = blk: {
+        const params = DefaultEvm.CallParams{
+            .delegatecall = .{
+                .caller = caller_address,
+                .to = target_address,
+                .input = &.{},
+                .gas = gas_limit,
+            },
+        };
+        const result = try evm.call(params);
+        defer if (result.output.len > 0) evm.allocator.free(result.output);
+        try std.testing.expect(result.success);
+        break :blk gas_limit - result.gas_left;
+    };
+
+    // Log gas consumption for analysis
+    log.debug("Gas consumption - CALL: {}, STATICCALL: {}, DELEGATECALL: {}", .{
+        call_gas_used,
+        staticcall_gas_used,
+        delegatecall_gas_used,
+    });
+
+    // All should consume gas
+    try std.testing.expect(call_gas_used > 0);
+    try std.testing.expect(staticcall_gas_used > 0);
+    try std.testing.expect(delegatecall_gas_used > 0);
+    
+    // STATICCALL typically uses slightly less gas than CALL (no value transfer checks)
+    // But the difference is minimal for simple cases
+}
+
+test "E2E CALL failure scenarios" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Deploy contract that reverts
+    const reverting_bytecode = [_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xFD, // REVERT
+    };
+    
+    const reverting_address: primitives.Address = [_]u8{0xC0} ++ [_]u8{0} ** 19;
+    const reverting_code_hash = try db.set_code(&reverting_bytecode);
+    try db.set_account(reverting_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = reverting_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Test 1: Call to reverting contract
+    {
+        const call_params = DefaultEvm.CallParams{
+            .call = .{
+                .caller = primitives.ZERO_ADDRESS,
+                .to = reverting_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 100000,
+            },
+        };
+
+        const result = try evm.call(call_params);
+        
+        // Should fail due to REVERT
+        try std.testing.expect(!result.success);
+        // Gas should be consumed (not all returned)
+        try std.testing.expect(result.gas_left < 100000);
+    }
+
+    // Test 2: Call with insufficient balance for value transfer
+    {
+        const poor_sender: primitives.Address = [_]u8{0xD0} ++ [_]u8{0} ** 19;
+        try db.set_account(poor_sender, Account{
+            .balance = 100, // Only 100 wei
+            .nonce = 0,
+            .code_hash = [_]u8{0} ** 32,
+            .storage_root = [_]u8{0} ** 32,
+        });
+
+        const call_params = DefaultEvm.CallParams{
+            .call = .{
+                .caller = poor_sender,
+                .to = reverting_address,
+                .value = 1000, // More than balance
+                .input = &.{},
+                .gas = 100000,
+            },
+        };
+
+        const result = try evm.call(call_params);
+        
+        // Should fail due to insufficient balance
+        try std.testing.expect(!result.success);
+        try std.testing.expectEqual(@as(u64, 0), result.gas_left);
+    }
+
+    // Test 3: Call with zero gas
+    {
+        const call_params = DefaultEvm.CallParams{
+            .call = .{
+                .caller = primitives.ZERO_ADDRESS,
+                .to = reverting_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 0,
+            },
+        };
+
+        // This should error during validation
+        try std.testing.expectError(
+            DefaultEvm.CallParams.ValidationError.GasZeroError,
+            call_params.validate()
+        );
+    }
+}

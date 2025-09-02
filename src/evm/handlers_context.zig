@@ -56,11 +56,16 @@ pub fn Handlers(comptime FrameType: type) type {
             const addr = from_u256(address_u256);
 
             // Access the address for warm/cold accounting (EIP-2929)
-            // This returns the gas cost but the frame interpreter handles gas consumption
             const evm = self.getEvm();
-            _ = evm.access_address(addr) catch |err| switch (err) {
+            const access_cost = evm.access_address(addr) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
+            
+            // Charge gas for address access
+            if (self.gas_remaining < access_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(access_cost);
 
             const bal = evm.get_balance(addr);
             const balance_word = @as(WordType, @truncate(bal));
@@ -282,7 +287,20 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
-            const code = self.getEvm().get_code(addr);
+            
+            // Access the address for warm/cold accounting (EIP-2929)
+            const evm = self.getEvm();
+            const access_cost = evm.access_address(addr) catch |err| switch (err) {
+                else => return Error.AllocationError,
+            };
+            
+            // Charge gas for address access
+            if (self.gas_remaining < access_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(access_cost);
+            
+            const code = evm.get_code(addr);
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
             try self.stack.push(code_len);
             const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLVALUE }); const next = op_data.next;
@@ -307,6 +325,18 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             const addr = from_u256(address_u256);
+            
+            // Access the address for warm/cold accounting (EIP-2929)
+            const evm = self.getEvm();
+            const access_cost = evm.access_address(addr) catch |err| switch (err) {
+                else => return Error.AllocationError,
+            };
+            
+            // Charge gas for address access
+            if (self.gas_remaining < access_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(access_cost);
             const dest_offset_usize = @as(usize, @intCast(dest_offset));
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
@@ -343,8 +373,20 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const address_u256 = try self.stack.pop();
             const addr = from_u256(address_u256);
+            
+            // Access the address for warm/cold accounting (EIP-2929)
+            const evm = self.getEvm();
+            const access_cost = evm.access_address(addr) catch |err| switch (err) {
+                else => return Error.AllocationError,
+            };
+            
+            // Charge gas for address access
+            if (self.gas_remaining < access_cost) {
+                return Error.OutOfGas;
+            }
+            self.gas_remaining -= @intCast(access_cost);
 
-            if (!self.getEvm().account_exists(addr)) {
+            if (!evm.account_exists(addr)) {
                 // Non-existent account returns 0 per EIP-1052
                 try self.stack.push(0);
                 const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLVALUE }); const next = op_data.next;
@@ -569,13 +611,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GASLIMIT opcode (0x45) - Get the current block's gas limit.
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // GASLIMIT costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
@@ -587,13 +622,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CHAINID opcode (0x46) - Get the chain ID.
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // CHAINID costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
@@ -605,13 +633,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // SELFBALANCE costs 5 gas
-            const gas_cost = GasConstants.GasFastStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
@@ -623,13 +644,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BASEFEE opcode (0x48) - Get the current block's base fee.
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // BASEFEE costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.block_info;
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
@@ -641,13 +655,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBHASH opcode (0x49) - Get versioned hashes of blob transactions.
         /// Stack: [index] → [hash]
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // BLOBHASH costs 3 gas
-            const gas_cost = GasConstants.GasFastestStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
             const index = try self.stack.pop();
             // Convert u256 to usize for array access
@@ -678,13 +685,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBBASEFEE opcode (0x4a) - Get the current block's blob base fee.
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // BLOBBASEFEE costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
             const blob_base_fee = self.block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
@@ -696,14 +696,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GAS opcode (0x5A) - Get the amount of available gas.
         /// Stack: [] → [gas]
         pub fn gas(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // GAS costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @intCast(gas_cost);
-
             const dispatch = Dispatch{ .cursor = cursor };
+            // Note: The gas value pushed should be after the gas for this instruction is consumed
+            // The dispatch system handles the gas consumption before calling this handler
             const gas_value = @as(WordType, @max(self.gas_remaining, 0));
             try self.stack.push(gas_value);
             const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLVALUE }); const next = op_data.next;

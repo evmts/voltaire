@@ -24,15 +24,15 @@ pub fn Handlers(comptime FrameType: type) type {
                     const dispatch = Dispatch{ .cursor = cursor };
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
-                    // Pop topics in reverse order
-                    var topics: [4]WordType = [_]WordType{0} ** 4;
-                    var i: u8 = topic_count;
-                    while (i > 0) : (i -= 1) {
-                        topics[i - 1] = try self.stack.pop();
-                    }
-
-                    const length = try self.stack.pop();
+                    // Pop offset and length first (they're on top of stack)
                     const offset = try self.stack.pop();
+                    const length = try self.stack.pop();
+                    
+                    // Pop topics in order (topic1 is deepest, topicN is shallowest)
+                    var topics: [4]WordType = [_]WordType{0} ** 4;
+                    for (0..topic_count) |j| {
+                        topics[j] = try self.stack.pop();
+                    }
 
                     // Check bounds
                     if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
@@ -42,13 +42,27 @@ pub fn Handlers(comptime FrameType: type) type {
                     const offset_usize = @as(usize, @intCast(offset));
                     const length_usize = @as(usize, @intCast(length));
 
-                    // Calculate gas cost: LogGas + (topic_count * LogTopicGas) + (data_size * LogDataGas)
-                    const gas_cost = GasConstants.LogGas + 
-                        (@as(u64, topic_count) * GasConstants.LogTopicGas) + 
-                        (@as(u64, length_usize) * GasConstants.LogDataGas);
+                    // Calculate memory expansion cost if reading data
+                    var memory_expansion_cost: u64 = 0;
+                    if (length_usize > 0) {
+                        const end_offset = offset_usize + length_usize;
+                        if (end_offset > std.math.maxInt(u24)) {
+                            return Error.OutOfBounds;
+                        }
+                        memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
+                    }
+
+                    // Calculate dynamic gas cost: data gas + memory expansion
+                    const data_gas_cost = @as(u64, length_usize) * GasConstants.LogDataGas;
+                    const total_dynamic_gas = data_gas_cost + memory_expansion_cost;
                     
-                    // Check gas and consume
-                    try self.consumeGasChecked(@as(u32, @intCast(gas_cost)));
+                    // Check gas and consume dynamic gas
+                    if (total_dynamic_gas > 0) {
+                        if (self.gas_remaining < total_dynamic_gas) {
+                            return Error.OutOfGas;
+                        }
+                        self.gas_remaining -= @intCast(total_dynamic_gas);
+                    }
 
                     // Ensure memory capacity
                     if (length_usize > 0) {

@@ -193,18 +193,26 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 code[0] == 0x60 and code[1] == 0x80 and 
                 code[2] == 0x60 and code[3] == 0x40;
             
-            // For deployment bytecode, don't strip metadata - it needs to be executed in full
-            // For runtime bytecode, strip metadata if present
-            const metadata = if (!is_deployment) parseSolidityMetadataFromBytes(code) else null;
+            // Always try to parse metadata to detect its presence
+            const metadata = parseSolidityMetadataFromBytes(code);
             
-            const runtime_code = if (metadata) |m| blk: {
+            // For deployment bytecode with metadata, we need to handle it specially
+            // The constructor code needs to execute fully, but we should only validate
+            // the actual code portion, not the metadata bytes
+            const runtime_code = if (is_deployment and metadata != null) blk: {
+                // For deployment bytecode with metadata, we keep the full code
+                // but we'll handle validation specially
+                log.debug("Bytecode: Deployment bytecode with metadata detected, length={}, metadata_len={}", .{code.len, metadata.?.metadata_length});
+                break :blk code;
+            } else if (metadata) |m| blk: {
+                // For runtime bytecode with metadata, strip it
                 log.debug("Bytecode: Found Solidity metadata in runtime code, stripping {} bytes from end (full={}, runtime={})", .{
                     m.metadata_length, code.len, code.len - m.metadata_length
                 });
                 break :blk code[0 .. code.len - m.metadata_length];
             } else blk: {
                 if (is_deployment) {
-                    log.debug("Bytecode: Deployment bytecode detected, using full code without metadata stripping, length={}", .{code.len});
+                    log.debug("Bytecode: Deployment bytecode detected without metadata, length={}", .{code.len});
                 } else {
                     log.debug("Bytecode: No metadata found, using full code length={}", .{code.len});
                 }
@@ -226,8 +234,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 .is_jumpdest = &.{},
                 .packed_bitmap = &.{},
             };
-            // Build bitmaps and validate only the runtime code
-            try self.buildBitmapsAndValidate();
+            // Build bitmaps and validate
+            // For deployment bytecode with metadata, pass the metadata length to avoid validating it
+            const validation_len = if (is_deployment and metadata != null) 
+                code.len - metadata.?.metadata_length 
+            else 
+                runtime_code.len;
+            try self.buildBitmapsAndValidateWithLength(validation_len);
             return self;
         }
 
@@ -458,7 +471,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Build bitmaps and validate bytecode in a single pass
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
+            return self.buildBitmapsAndValidateWithLength(self.runtime_code.len);
+        }
+        
+        /// Build bitmaps and validate bytecode with a specific validation length
+        /// This allows validating only the code portion of deployment bytecode, excluding metadata
+        fn buildBitmapsAndValidateWithLength(self: *Self, validation_length: usize) ValidationError!void {
             const N = self.runtime_code.len;
+            const validate_up_to = @min(validation_length, N);
             
             // Set up cleanup in case of errors
             var cleanup_state: struct {
@@ -535,11 +555,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             defer immediate_jumps.deinit(self.allocator);
             
             var i: PcType = 0;
-            while (i < N) {
+            while (i < validate_up_to) {
                 @branchHint(.likely);
 
                 // Prefetch ahead for better cache performance on large bytecode
-                if (@as(usize, i) + PREFETCH_DISTANCE < N) {
+                if (@as(usize, i) + PREFETCH_DISTANCE < validate_up_to) {
                     @prefetch(&self.runtime_code[@as(usize, i) + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3, // Low temporal locality
@@ -574,7 +594,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         const next_op_idx = i + 1 + push_size;
 
                         // Ensure we can read the next opcode
-                        if (next_op_idx < N) {
+                        if (next_op_idx < validate_up_to) {
                             const next_op = self.runtime_code[next_op_idx];
                             // Check for fusable patterns
                             const is_fusable = switch (next_op) {
@@ -597,8 +617,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     
                     // We need to read n bytes after the opcode at position i
                     // So we need positions i+1 through i+n to be valid
-                    // This means i+n must be less than N (the length)
-                    if (i + n >= N) return error.TruncatedPush;
+                    // This means i+n must be less than the validation length
+                    if (i + n >= validate_up_to) return error.TruncatedPush;
                     
                     // Extract push value for immediate jump validation (only if fusions enabled)
                     var push_value: u256 = 0;
@@ -622,7 +642,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     // ONLY check for immediate jump patterns if fusions are enabled
                     // This is for optimization purposes, not correctness validation
                     if (comptime fusions_enabled) {
-                        if (push_end < N) {
+                        if (push_end < validate_up_to) {
                             const next_op = self.runtime_code[push_end];
                             
                             // Case 1: PUSH + JUMP (for fusion optimization)
@@ -633,7 +653,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             }
                             
                             // Case 2: PUSH + JUMPI (check if previous was also a PUSH)
-                            else if (next_op == @intFromEnum(Opcode.JUMPI) and 
+                            else if (push_end < validate_up_to and next_op == @intFromEnum(Opcode.JUMPI) and 
                                      last_push_value != null and 
                                      last_push_end == i) {
                                 // We have PUSH(dest) + PUSH(cond) + JUMPI pattern
@@ -1707,4 +1727,76 @@ test "Security - malformed jump patterns" {
     // PUSH1 2, JUMP, JUMPDEST (but jump target is push data, not the JUMPDEST)
     const code = [_]u8{ 0x60, 0x02, 0x56, 0x5B };
     try testing.expectError(BytecodeDefault.ValidationError.InvalidJumpDestination, BytecodeDefault.init(allocator, &code));
+}
+
+test "Minimal repro - deployment bytecode with apparent truncated PUSH" {
+    const allocator = testing.allocator;
+    
+    // Minimal case that triggers TruncatedPush
+    // This simulates the end of deployment bytecode where a PUSH instruction
+    // appears to be truncated but is actually part of the constructor return data
+    const code = [_]u8{
+        0x60, 0x80, // PUSH1 0x80
+        0x60, 0x40, // PUSH1 0x40  
+        0x52,       // MSTORE
+        0x60, 0x97, // PUSH1 0x97 (size of runtime code)
+        0x80,       // DUP1
+        0x60, 0x1a, // PUSH1 0x1a (offset in memory)
+        0x5f,       // PUSH0
+        0x39,       // CODECOPY
+        0x5f,       // PUSH0  
+        0xf3,       // RETURN
+        0xfe,       // INVALID (start of runtime code)
+        0x60        // PUSH1 without data - this triggers TruncatedPush
+    };
+    
+    // This should fail with TruncatedPush because the last byte is PUSH1 without data
+    try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
+}
+
+test "Deployment bytecode - actual ten-thousand-hashes fixture" {
+    const allocator = testing.allocator;
+    
+    // First 32 bytes of the actual ten-thousand-hashes bytecode that's failing
+    // This is deployment bytecode that ends with what looks like a truncated PUSH
+    const code = [_]u8{
+        0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15,
+        0x60, 0x0e, 0x57, 0x5f, 0x5f, 0xfd, 0x5b, 0x50,
+        0x60, 0x97, 0x80, 0x60, 0x1a, 0x5f, 0x39, 0x5f,
+        0xf3, 0xfe, // RETURN opcode followed by INVALID
+        0x60, 0x80, 0x60, 0x40, 0x52, 0x34, // Start of runtime bytecode
+        0x80, 0x15, 0x60 // This ends with 0x60 (PUSH1) without the data byte
+    };
+    
+    // This should fail because it ends with an incomplete PUSH1
+    try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
+}
+
+test "Deployment vs Runtime bytecode handling" {
+    const allocator = testing.allocator;
+    
+    // Simplified deployment bytecode that deploys a simple runtime code
+    // Constructor bytecode that returns runtime bytecode
+    const deployment_code = [_]u8{
+        // Constructor code
+        0x60, 0x04, // PUSH1 0x04 (size of runtime code)
+        0x80,       // DUP1
+        0x60, 0x0c, // PUSH1 0x0c (offset of runtime code)
+        0x5f,       // PUSH0 (destination in memory)
+        0x39,       // CODECOPY
+        0x5f,       // PUSH0 (offset in memory)
+        0xf3,       // RETURN
+        // Runtime code (what gets deployed)
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0x00
+        0x55,       // SSTORE
+        0x00,       // STOP
+    };
+    
+    // This should work because it's complete deployment bytecode
+    var bytecode = try BytecodeDefault.init(allocator, &deployment_code);
+    defer bytecode.deinit();
+    
+    // The bytecode init detects deployment pattern and uses full code
+    try testing.expect(bytecode.runtime_code.len == deployment_code.len);
 }

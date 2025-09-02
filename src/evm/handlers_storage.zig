@@ -56,8 +56,13 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // EIP-214: WriteProtection is handled by database interface for static calls
 
-            const slot = try self.stack.pop();
-            const value = try self.stack.pop();
+            // SSTORE expects stack: [..., key, value] where key is at top
+            // The bytecode PUSH1 0x42, PUSH1 0x00, SSTORE means:
+            // - First push 0x42 (goes to stack position 0)
+            // - Then push 0x00 (goes to stack position 1, becoming the top)
+            // - SSTORE pops key first (0x00), then value (0x42)
+            const slot = try self.stack.pop();   // Pop key/slot first (top of stack)
+            const value = try self.stack.pop();  // Pop value second
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -67,7 +72,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            // Access storage slot and get gas cost (cold vs warm)
+            // Access storage slot to mark it as warm for future accesses and get access cost
             const evm = self.getEvm();
             const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
@@ -77,14 +82,22 @@ pub fn Handlers(comptime FrameType: type) type {
             const original_opt = evm.get_original_storage(contract_addr, slot);
             const original_value: WordType = original_opt orelse current_value;
 
-            // Calculate gas cost based on EIP-2200 and EIP-2929 using centralized helper
-            const is_cold = access_cost != GasConstants.WarmStorageReadCost;
-            const gas_cost: u64 = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
+            // Calculate SSTORE operation cost (without cold access since we handle that separately)
+            // We pass is_cold=false to sstore_gas_cost since we already account for the access cost
+            const sstore_cost: u64 = GasConstants.sstore_gas_cost(current_value, original_value, value, false);
             
-            if (self.gas_remaining < gas_cost) {
+            // Total gas cost is access cost + sstore operation cost
+            const total_gas_cost = access_cost + sstore_cost;
+            
+            log.debug(
+                "SSTORE metering: slot={}, original={}, current={}, new={}, access_cost={}, sstore_cost={}, total={}",
+                .{ slot, original_value, current_value, value, access_cost, sstore_cost, total_gas_cost },
+            );
+            
+            if (self.gas_remaining < total_gas_cost) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
+            self.gas_remaining -= @intCast(total_gas_cost);
 
             // Record original value for journal on first write in this transaction
             if (original_opt == null) {
@@ -94,10 +107,12 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Store the value directly in frame's database
+            log.debug("SSTORE: About to store value={} at slot={} for address={any}", .{ value, slot, contract_addr.bytes });
             self.database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => return Error.WriteProtection,
                 else => return Error.AllocationError,
             };
+            log.debug("SSTORE: Successfully stored value", .{});
 
             // EIP-3529: Only clearing (non-zero -> zero) is eligible for refund
             if (current_value != 0 and value == 0) {
@@ -137,8 +152,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // EIP-214: WriteProtection is handled by host interface for static calls
 
-            const slot = try self.stack.pop();
-            const value = try self.stack.pop();
+            // TSTORE expects stack: [..., key, value] where key is at top
+            const slot = try self.stack.pop();   // Pop key/slot first (top of stack)
+            const value = try self.stack.pop();  // Pop value second
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;

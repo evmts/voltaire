@@ -66,8 +66,13 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn shl(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-            const ShiftType = std.math.Log2Int(WordType);
-            const result = if (shift >= @bitSizeOf(WordType)) 0 else value << @as(ShiftType, @intCast(shift));
+            const result = if (shift >= @bitSizeOf(WordType)) blk: {
+                break :blk 0;
+            } else blk: {
+                const ShiftType = std.math.Log2Int(WordType);
+                // shift is guaranteed to be < 256 here, safe to cast
+                break :blk value << @as(ShiftType, @truncate(shift));
+            };
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -77,8 +82,13 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn shr(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-            const ShiftType = std.math.Log2Int(WordType);
-            const result = if (shift >= @bitSizeOf(WordType)) 0 else value >> @as(ShiftType, @intCast(shift));
+            const result = if (shift >= @bitSizeOf(WordType)) blk: {
+                break :blk 0;
+            } else blk: {
+                const ShiftType = std.math.Log2Int(WordType);
+                // shift is guaranteed to be < 256 here, safe to cast
+                break :blk value >> @as(ShiftType, @truncate(shift));
+            };
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -95,7 +105,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 break :blk if (sign_bit == 1) @as(WordType, std.math.maxInt(WordType)) else @as(WordType, 0);
             } else blk: {
                 const ShiftType = std.math.Log2Int(WordType);
-                const shift_amount = @as(ShiftType, @intCast(shift));
+                const shift_amount = @as(ShiftType, @truncate(shift));
                 const value_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(value));
                 const result_signed = value_signed >> shift_amount;
                 break :blk @as(WordType, @bitCast(result_signed));
