@@ -119,12 +119,12 @@ pub const DifferentialTestor = struct {
 
         // Setup REVM
         var revm_vm = try revm.Revm.init(allocator, .{
-            .gas_limit = 100000,
+            .gas_limit = gas_limit,
             .chain_id = 1,
             .enable_tracing = config.enable_tracing,
         });
 
-        try revm_vm.setBalance(caller, 10000000);
+        try revm_vm.setBalance(caller, gas_limit00);
 
         // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
@@ -134,14 +134,14 @@ pub const DifferentialTestor = struct {
         db_no_trace.* = guillotine_evm.Database.init(allocator);
 
         try db.set_account(caller.bytes, .{
-            .balance = 10000000,
+            .balance = gas_limit00,
             .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
         });
         
         try db_no_trace.set_account(caller.bytes, .{
-            .balance = 10000000,
+            .balance = gas_limit00,
             .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
@@ -151,7 +151,7 @@ pub const DifferentialTestor = struct {
             .chain_id = 1,
             .number = 1,
             .timestamp = 0,
-            .gas_limit = 100000,
+            .gas_limit = gas_limit,
             .coinbase = primitives.Address.ZERO_ADDRESS,
             .difficulty = 0,
             .base_fee = 0,
@@ -162,7 +162,7 @@ pub const DifferentialTestor = struct {
 
         const tx_context = guillotine_evm.TransactionContext{
             .chain_id = 1,
-            .gas_limit = 100000,
+            .gas_limit = gas_limit,
             .coinbase = primitives.Address.ZERO_ADDRESS,
             .blob_versioned_hashes = &.{},
             .blob_base_fee = 0,
@@ -326,7 +326,7 @@ pub const DifferentialTestor = struct {
     }
     
     /// Internal helper to test bytecode with specific tracing configuration and calldata
-    fn test_bytecode_with_tracing_and_calldata(self: *DifferentialTestor, bytecode: []const u8, calldata: []const u8, enable_tracing: bool) !void {
+    fn test_bytecode_with_tracing_and_calldata_and_gas(self: *DifferentialTestor, bytecode: []const u8, calldata: []const u8, gas_limit: u64, enable_tracing: bool) !void {
         // Select the appropriate database and EVM instance
         const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
         
@@ -390,10 +390,10 @@ pub const DifferentialTestor = struct {
         }
 
         // Execute on both EVMs separately to get the results for trace display
-        var revm_result = try self.executeRevmWithTrace(self.caller, self.contract, 0, calldata, 100000);
+        var revm_result = try self.executeRevmWithTrace(self.caller, self.contract, 0, calldata, gas_limit);
         defer revm_result.deinit();
         
-        var guillotine_result = try self.executeGuillotineWithTraceMode(self.caller, self.contract, 0, calldata, 100000, enable_tracing);
+        var guillotine_result = try self.executeGuillotineWithTraceMode(self.caller, self.contract, 0, calldata, gas_limit, enable_tracing);
         defer guillotine_result.deinit();
         
         // Generate diff
