@@ -97,8 +97,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SAR opcode (0x1d) - Arithmetic shift right operation.
         /// Preserves the sign bit during shift.
         pub fn sar(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const shift = try self.stack.pop();
-            const value = try self.stack.peek();
+            const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
+            const value = self.stack.peek_unsafe(); // Second from top - value to shift
             const word_bits = @bitSizeOf(WordType);
             const result = if (shift >= word_bits) blk: {
                 const sign_bit = value >> (word_bits - 1);
@@ -110,7 +110,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 const result_signed = value_signed >> shift_amount;
                 break :blk @as(WordType, @bitCast(result_signed));
             };
-            try self.stack.set_top(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
