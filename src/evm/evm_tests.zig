@@ -1770,10 +1770,19 @@ test "EVM logs - included in CallResult" {
         std.testing.allocator.free(result.logs);
     }
 
-    // For now, we expect no logs because LOG0 isn't implemented in the frame
-    // This test just verifies the infrastructure works
+    // LOG0 should emit a log with the data from memory
     try std.testing.expect(result.success);
-    try std.testing.expect(result.logs.len == 0); // Will be > 0 when LOG opcodes are implemented
+    try std.testing.expectEqual(@as(usize, 1), result.logs.len);
+    
+    // Verify the log details
+    const log_entry = result.logs[0];
+    try std.testing.expectEqual(contract_address, log_entry.address);
+    try std.testing.expectEqual(@as(usize, 0), log_entry.topics.len); // LOG0 has no topics
+    // The data should be 5 bytes from memory offset 0 (which is uninitialized, so all zeros)
+    try std.testing.expectEqual(@as(usize, 5), log_entry.data.len);
+    for (log_entry.data) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
 }
 
 test "Host interface - hardfork compatibility checks" {

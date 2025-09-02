@@ -121,6 +121,7 @@ pub const DifferentialTestor = struct {
         var revm_vm = try revm.Revm.init(allocator, .{
             .gas_limit = 100000,
             .chain_id = 1,
+            .enable_tracing = config.enable_tracing,
         });
 
         try revm_vm.setBalance(caller, 10000000);
@@ -481,39 +482,35 @@ pub const DifferentialTestor = struct {
         input: []const u8,
         gas_limit: u64,
     ) !ExecutionResultWithTrace {
-        // Generate temporary trace file path
-        const temp_file = try std.fmt.allocPrint(self.allocator, "/tmp/revm_trace_{}.json", .{std.time.milliTimestamp()});
-        defer self.allocator.free(temp_file);
-
-        // Execute REVM with tracing
-        var result = self.revm_instance.callWithTrace(caller, to, value, input, gas_limit, temp_file) catch |err| {
+        // Execute REVM using the new CallParams API
+        const params = revm.CallParams{ .call = .{
+            .caller = caller,
+            .to = to,
+            .value = value,
+            .input = input,
+            .gas = gas_limit,
+        } };
+        
+        var result = self.revm_instance.call(params) catch |err| {
             const log = std.log.scoped(.revm_trace);
-            log.err("REVM callWithTrace failed: {} - this breaks differential testing!", .{err});
-            return err; // Don't fall back - we need tracing to work
+            log.err("REVM call failed: {} - this breaks differential testing!", .{err});
+            return err;
         };
         defer result.deinit();
 
         const output = try self.allocator.dupe(u8, result.output);
         
-        // Attempt minimal trace stats: count SSTORE/SLOAD occurrences
-        var sstore_count: usize = 0;
-        var sload_count: usize = 0;
-        const file = std.fs.openFileAbsolute(temp_file, .{}) catch null;
-        if (file) |f| {
-            defer f.close();
-            const stat = f.stat() catch null;
-            if (stat) |st| {
-                const size = @as(usize, @intCast(st.size));
-                var buf = try self.allocator.alloc(u8, size);
-                defer self.allocator.free(buf);
-                const read_n = f.readAll(buf) catch 0;
-                if (read_n > 0) {
-                    sstore_count = std.mem.count(u8, buf[0..read_n], "\"op\":\"SSTORE\"");
-                    sload_count = std.mem.count(u8, buf[0..read_n], "\"op\":\"SLOAD\"");
-                    const log = std.log.scoped(.revm_trace);
-                    log.warn("REVM trace file at {s} — SSTOREs: {}, SLOADs: {}", .{ temp_file, sstore_count, sload_count });
-                }
-            }
+        // Calculate gas_used from gas_left (REVM now returns gas_left)
+        const gas_used = if (gas_limit > result.gas_left) 
+            gas_limit - result.gas_left 
+        else 
+            0;
+        
+        // If tracing is enabled, we might have trace files generated
+        // For now, just log that tracing occurred
+        if (self.revm_instance.enable_tracing) {
+            const log = std.log.scoped(.revm_trace);
+            log.warn("REVM executed with tracing enabled (trace file at revm_trace.json if available)", .{});
         }
 
         // Trace parsing to ExecutionTrace remains disabled; keep null
@@ -521,7 +518,7 @@ pub const DifferentialTestor = struct {
 
         return ExecutionResultWithTrace{
             .success = result.success,
-            .gas_used = result.gas_used,
+            .gas_used = gas_used,
             .output = output,
             .trace = trace,
             .allocator = self.allocator,

@@ -143,49 +143,51 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
         }
 
         /// Execute on REVM
-        fn executeRevm(self: *@This(), params: CallParams) !?revm_module.ExecutionResult {
-            switch (params) {
-                .call => |call_params| {
-                    return try self.revm_vm.call(
-                        call_params.caller,
-                        call_params.to,
-                        call_params.value,
-                        call_params.input,
-                        call_params.gas,
-                    );
-                },
-                .create => |create_params| {
-                    return try self.revm_vm.create(
-                        create_params.caller,
-                        create_params.value,
-                        create_params.init_code,
-                        create_params.gas,
-                    );
-                },
-                .create2 => {
-                    // REVM wrapper doesn't support create2 yet
-                    log.warn("CREATE2 not supported in REVM wrapper, skipping differential test", .{});
-                    return null;
-                },
-                .callcode => {
-                    // REVM wrapper doesn't support callcode yet
-                    log.warn("CALLCODE not supported in REVM wrapper, skipping differential test", .{});
-                    return null;
-                },
-                .delegatecall => {
-                    // REVM wrapper doesn't support delegatecall yet
-                    log.warn("DELEGATECALL not supported in REVM wrapper, skipping differential test", .{});
-                    return null;
-                },
-                .staticcall => |staticcall_params| {
-                    return try self.revm_vm.staticcall(
-                        staticcall_params.caller,
-                        staticcall_params.to,
-                        staticcall_params.input,
-                        staticcall_params.gas,
-                    );
-                },
-            }
+        fn executeRevm(self: *@This(), params: CallParams) !?revm_module.CallResult {
+            // Convert EVM CallParams to REVM CallParams
+            const revm_params = switch (params) {
+                .call => |p| revm_module.CallParams{ .call = .{
+                    .caller = p.caller,
+                    .to = p.to,
+                    .value = p.value,
+                    .input = p.input,
+                    .gas = p.gas,
+                } },
+                .callcode => |p| revm_module.CallParams{ .callcode = .{
+                    .caller = p.caller,
+                    .to = p.to,
+                    .value = p.value,
+                    .input = p.input,
+                    .gas = p.gas,
+                } },
+                .delegatecall => |p| revm_module.CallParams{ .delegatecall = .{
+                    .caller = p.caller,
+                    .to = p.to,
+                    .input = p.input,
+                    .gas = p.gas,
+                } },
+                .staticcall => |p| revm_module.CallParams{ .staticcall = .{
+                    .caller = p.caller,
+                    .to = p.to,
+                    .input = p.input,
+                    .gas = p.gas,
+                } },
+                .create => |p| revm_module.CallParams{ .create = .{
+                    .caller = p.caller,
+                    .value = p.value,
+                    .init_code = p.init_code,
+                    .gas = p.gas,
+                } },
+                .create2 => |p| revm_module.CallParams{ .create2 = .{
+                    .caller = p.caller,
+                    .value = p.value,
+                    .init_code = p.init_code,
+                    .salt = p.salt,
+                    .gas = p.gas,
+                } },
+            };
+            
+            return try self.revm_vm.call(revm_params);
         }
 
         /// Execute on Guillotine
@@ -197,7 +199,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
         fn compareResults(
             self: *@This(),
             params: CallParams,
-            revm_result: ?revm_module.ExecutionResult,
+            revm_result: ?revm_module.CallResult,
             guillotine_result: CallResult,
             errors: *std.ArrayList([]const u8),
             allocator: std.mem.Allocator,
@@ -222,14 +224,12 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 ));
             }
 
-            // Compare gas usage
-            const guillotine_gas_used = guillotine_result.gasConsumed(params.getGas());
-
-            if (revm_res.gas_used != guillotine_gas_used) {
+            // Compare gas usage (both now have gas_left)
+            if (revm_res.gas_left != guillotine_result.gas_left) {
                 try errors.append(allocator, try std.fmt.allocPrint(
                     allocator,
-                    "GAS MISMATCH: REVM={}, Guillotine={}",
-                    .{ revm_res.gas_used, guillotine_gas_used },
+                    "GAS MISMATCH: REVM gas_left={}, Guillotine gas_left={}",
+                    .{ revm_res.gas_left, guillotine_result.gas_left },
                 ));
             }
 
