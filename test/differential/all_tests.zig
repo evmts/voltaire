@@ -8,6 +8,7 @@ pub const std_options = std.Options{
 };
 
 test {
+    _ = @import("arithmetic_minimal_test.zig");
     _ = @import("math_operations_test.zig");
     _ = @import("system_handlers_test.zig");
     _ = @import("jump_handlers_test.zig");

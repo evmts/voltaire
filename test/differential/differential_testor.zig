@@ -495,11 +495,29 @@ pub const DifferentialTestor = struct {
 
         const output = try self.allocator.dupe(u8, result.output);
         
-        // Parse REVM trace file (disabled for now to avoid compilation issues)
-        const trace: ?ExecutionTrace = null;
+        // Attempt minimal trace stats: count SSTORE/SLOAD occurrences
+        var sstore_count: usize = 0;
+        var sload_count: usize = 0;
+        const file = std.fs.openFileAbsolute(temp_file, .{}) catch null;
+        if (file) |f| {
+            defer f.close();
+            const stat = f.stat() catch null;
+            if (stat) |st| {
+                const size = @as(usize, @intCast(st.size));
+                var buf = try self.allocator.alloc(u8, size);
+                defer self.allocator.free(buf);
+                const read_n = f.readAll(buf) catch 0;
+                if (read_n > 0) {
+                    sstore_count = std.mem.count(u8, buf[0..read_n], "\"op\":\"SSTORE\"");
+                    sload_count = std.mem.count(u8, buf[0..read_n], "\"op\":\"SLOAD\"");
+                    const log = std.log.scoped(.revm_trace);
+                    log.warn("REVM trace file at {s} — SSTOREs: {}, SLOADs: {}", .{ temp_file, sstore_count, sload_count });
+                }
+            }
+        }
 
-        // Delete trace file for now to avoid format errors
-        std.fs.deleteFileAbsolute(temp_file) catch {};
+        // Trace parsing to ExecutionTrace remains disabled; keep null
+        const trace: ?ExecutionTrace = null;
 
         return ExecutionResultWithTrace{
             .success = result.success,
