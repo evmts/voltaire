@@ -49,6 +49,7 @@ pub const FileTracer = @import("tracer.zig").FileTracer;
 pub const NoOpTracer = @import("tracer.zig").NoOpTracer;
 pub const DebuggingTracer = @import("tracer.zig").DebuggingTracer;
 pub const differential_tracer = @import("differential_tracer.zig");
+pub const trace_comparer = @import("trace_comparer.zig");
 pub const JSONRPCTracer = @import("tracer.zig").JSONRPCTracer;
 
 // Bytecode modules

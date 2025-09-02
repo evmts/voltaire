@@ -80,6 +80,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 .block_difficulty = @intCast(block_info.difficulty),
                 .block_basefee = @intCast(block_info.base_fee),
                 .coinbase = block_info.coinbase,
+                .enable_tracing = config.write_trace_files, // Enable tracing based on config
             });
             errdefer revm_vm.deinit();
 
@@ -104,10 +105,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
 
         /// Execute call on both EVMs and compare results
         pub fn call(self: *@This(), params: CallParams) !CallResult {
-            var errors = std.ArrayList([]const u8){
-                .items = &.{},
-                .capacity = 0,
-            };
+            var errors = std.ArrayList([]const u8){};
             defer {
                 for (errors.items) |err_msg| {
                     self.allocator.free(err_msg);
@@ -190,6 +188,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 } },
             };
             
+            // REVM will automatically trace if enable_tracing was set during init
             return try self.revm_vm.call(revm_params);
         }
 
@@ -271,23 +270,58 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
             _ = self;
             _ = revm_result;
             _ = errors;
-            _ = allocator;
-
-            // If REVM has trace data available, compare step by step
-            // For now, we'll focus on comparing the number of steps as a basic check
-
-            log.info("Comparing execution traces...", .{});
-            log.info("  Guillotine trace steps: {}", .{guillotine_trace.steps.len});
-
-            // If we can get REVM trace (through executeWithTrace), compare them
-            // This would require enhancing REVM wrapper to return structured trace data
-
-            // For now, log that we have Guillotine trace data
-            if (guillotine_trace.steps.len > 0) {
-                log.debug("First 5 Guillotine trace steps:", .{});
-                const max_steps = @min(5, guillotine_trace.steps.len);
+            
+            // Import the trace comparer
+            const TraceComparer = @import("trace_comparer.zig").TraceComparer;
+            
+            var comparer = TraceComparer.init(allocator);
+            defer comparer.deinit();
+            
+            // Parse Guillotine trace
+            const guillotine_steps = try comparer.parseGuillotineTrace(guillotine_trace);
+            defer {
+                for (guillotine_steps) |step| {
+                    allocator.free(step.opcode_name);
+                    allocator.free(step.stack);
+                    allocator.free(step.memory);
+                }
+                allocator.free(guillotine_steps);
+            }
+            
+            // Try to parse REVM trace if available
+            if (std.fs.cwd().openFile("revm_trace.json", .{})) |file| {
+                file.close();
+                const revm_steps = try comparer.parseRevmTraceFile("revm_trace.json");
+                defer {
+                    for (revm_steps) |step| {
+                        allocator.free(step.opcode_name);
+                        if (step.stack.len > 0) allocator.free(step.stack);
+                        if (step.memory.len > 0) allocator.free(step.memory);
+                    }
+                    allocator.free(revm_steps);
+                }
+                
+                // Compare and log
+                try comparer.compareAndLogDivergence(revm_steps, guillotine_steps);
+            } else |_| {
+                // No REVM trace file, just log Guillotine trace
+                log.info("\n📊 Guillotine Trace ({} steps):", .{guillotine_trace.steps.len});
+                const max_steps = @min(20, guillotine_trace.steps.len);
                 for (guillotine_trace.steps[0..max_steps], 0..) |step, i| {
-                    log.debug("  Step {}: pc={}, opcode={x}, gas={}", .{ i, step.pc, step.opcode, step.gas });
+                    log.info("  Step {:4}: PC={:5} Op=0x{x:0>2} ({s:12}) Gas={:10} Stack=[{}]", .{
+                        i, step.pc, step.opcode, step.opcode_name, step.gas, step.stack.len
+                    });
+                    
+                    // Show stack values for important operations
+                    if (step.stack.len > 0 and step.stack.len <= 3) {
+                        for (step.stack, 0..) |val, j| {
+                            log.debug("           Stack[{}]: 0x{x}", .{ j, val });
+                        }
+                    }
+                }
+                
+                if (guillotine_trace.steps.len > max_steps) {
+                    log.info("  ... {} more steps", .{guillotine_trace.steps.len - max_steps});
                 }
             }
         }

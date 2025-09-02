@@ -951,7 +951,9 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Return the deployed bytecode as output
             // The contract address is handled separately by the CREATE opcode handler
-            return CallResult.success_with_output(result.gas_left, result.output);
+            var final_result = CallResult.success_with_output(result.gas_left, result.output);
+            final_result.trace = result.trace;
+            return final_result;
         }
 
         /// Convert tracer data to ExecutionTrace format
@@ -971,12 +973,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
             
             for (tracer_steps, 0..) |tracer_step, i| {
-                // Convert opcode name to opcode byte (0 for now since we don't have the mapping)
-                const opcode_byte: u8 = 0; // TODO: Map op string to opcode byte
-                
                 trace_steps[i] = call_result.TraceStep{
                     .pc = @intCast(tracer_step.pc),
-                    .opcode = opcode_byte,
+                    .opcode = tracer_step.opcode,  // Use the actual opcode byte from tracer
                     .opcode_name = try allocator.dupe(u8, tracer_step.op),
                     .gas = tracer_step.gas,
                     .stack = try allocator.dupe(u256, tracer_step.stack),

@@ -427,6 +427,7 @@ pub const JSONRPCTracer = struct {
     
     pub const JSONRPCStep = struct {
         op: []const u8,
+        opcode: u8,  // Add the actual opcode byte
         pc: u64,
         gas: u64,
         gasCost: u64,
@@ -523,6 +524,7 @@ pub const JSONRPCTracer = struct {
         // Create the step (gas cost will be calculated in afterOp)
         const step = JSONRPCStep{
             .op = op_name_copy,
+            .opcode = opcode,  // Store the actual opcode byte
             .pc = @intCast(self.current_pc),
             .gas = gas_before,
             .gasCost = 0, // Will be updated in afterOp

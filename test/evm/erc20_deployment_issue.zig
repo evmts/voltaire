@@ -79,7 +79,7 @@ test "ERC20 deployment - REVM vs Guillotine differential testing with simple tra
         block_info,
         tx_context,
         caller_address,
-        .{} // Default config
+        .{ .write_trace_files = true } // Enable trace files for debugging
     );
     defer tracer.deinit();
     
@@ -416,7 +416,7 @@ test "Simple contract differential test" {
         tx_context,
         caller_address,
         .{
-            .write_trace_files = false,
+            .write_trace_files = true, // Enable tracing to see divergence
         },
     );
     defer tracer.deinit();
