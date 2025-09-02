@@ -269,12 +269,13 @@ pub fn Frame(comptime config: FrameConfig) type {
                 defer frame_handlers.clearTracerInstance();
             }
 
-            // Create dispatch schedule with the selected handlers
-            const schedule = Dispatch.init(self.allocator, &bytecode, handlers) catch |e| {
+            // Create dispatch schedule with ownership to ensure all allocations are freed
+            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &bytecode, handlers) catch |e| {
                 log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                 return Error.AllocationError;
             };
-            defer Dispatch.deinitSchedule(self.allocator, schedule);
+            defer schedule_raii.deinit();
+            const schedule = schedule_raii.items;
 
             // Create jump table
             const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &bytecode) catch return Error.AllocationError;

@@ -342,6 +342,8 @@ pub fn Dispatch(comptime FrameType: type) type {
         ///
         /// This function analyzes the bytecode and generates an efficient instruction
         /// stream with inline metadata, leveraging opcode fusion opportunities.
+        /// Returns just the schedule slice. For owning deallocation of auxiliary
+        /// allocations (push pointers, code copies), use initWithOwnership/DispatchSchedule.
         ///
         /// @param allocator - Memory allocator for the dispatch array
         /// @param bytecode - The bytecode to convert
@@ -481,12 +483,79 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
 
-            // Note: allocated_memory contains pointers and bytecode copies that need to be
-            // freed when the schedule is deinitialized. We handle this in deinitSchedule
-            // by detecting pointer metadata items.
-
             log.debug("Dispatch.init complete, schedule length: {}", .{final_schedule.len});
             return final_schedule;
+        }
+
+        /// Result that carries both schedule items and ownership of associated allocations.
+        pub const BuildOwned = struct {
+            items: []Self.Item,
+            push_pointers: []*FrameType.WordType,
+            code_copies: [][:0]u8,
+        };
+
+        /// Build schedule and return ownership of auxiliary allocations for safe deallocation.
+        pub fn initWithOwnership(
+            allocator: std.mem.Allocator,
+            bytecode: anytype,
+            opcode_handlers: *const [256]OpcodeHandler,
+        ) !BuildOwned {
+            const log = @import("log.zig");
+
+            const ScheduleList = ArrayList(Self.Item, null);
+            var schedule_items = ScheduleList{};
+            errdefer schedule_items.deinit(allocator);
+
+            var allocated_memory = AllocatedMemory.init();
+            errdefer allocated_memory.deinit(allocator);
+
+            var iter = bytecode.createIterator();
+            const first_block_gas = calculateFirstBlockGas(bytecode);
+            if (first_block_gas > 0) {
+                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
+                log.debug("Added first_block_gas: {d}", .{first_block_gas});
+            }
+
+            var opcode_count: usize = 0;
+            while (true) {
+                const instr_pc = iter.pc;
+                const maybe = iter.next();
+                if (maybe == null) break;
+                const op_data = maybe.?;
+                opcode_count += 1;
+
+                switch (op_data) {
+                    .regular => |data| try processRegularOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, bytecode, data, instr_pc),
+                    .push => |data| try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data),
+                    .jumpdest => |data| {
+                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
+                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
+                    },
+                    .push_add_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_add),
+                    .push_mul_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_mul),
+                    .push_sub_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_sub),
+                    .push_div_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_div),
+                    .push_and_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_and),
+                    .push_or_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_or),
+                    .push_xor_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_xor),
+                    .push_jump_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_jump),
+                    .push_jumpi_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, opcode_handlers, data.value, .push_jumpi),
+                    .stop => try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] }),
+                    .invalid => try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.INVALID)] }),
+                }
+            }
+
+            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
+            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
+
+            const items = try schedule_items.toOwnedSlice(allocator);
+            const push_ptrs = try allocated_memory.pointers.toOwnedSlice(allocator);
+            const copies = try allocated_memory.bytecode_copies.toOwnedSlice(allocator);
+            // allocated_memory's arrays are now owned by slices; prevent double free
+            allocated_memory = AllocatedMemory.init();
+
+            log.debug("Dispatch.initWithOwnership complete, schedule length: {}", .{items.len});
+            return BuildOwned{ .items = items, .push_pointers = push_ptrs, .code_copies = copies };
         }
 
         /// Helper function to handle fusion operations consistently.
@@ -581,17 +650,9 @@ pub fn Dispatch(comptime FrameType: type) type {
         }
 
         /// Clean up heap-allocated push pointer values and bytecode copies in the schedule
-        /// Since Item is now untagged, we identify push_pointer items by checking
-        /// if the value looks like a valid heap pointer (heuristic approach)
+        /// Since Item is an untagged union here, we cannot introspect metadata variants.
+        /// This retains the current behavior of freeing only the schedule slice.
         pub fn deinitSchedule(allocator: std.mem.Allocator, schedule: []const Item) void {
-            // TODO: We need to track and free heap-allocated push pointers and bytecode copies
-            // Since Item is an untagged union, we can't determine the type from the item itself
-            // This is a known memory leak that needs to be addressed by either:
-            // 1. Making Item a tagged union again
-            // 2. Storing AllocatedMemory alongside the schedule
-            // 3. Using a different memory management strategy
-
-            // Free the schedule itself
             allocator.free(schedule);
         }
 
@@ -599,18 +660,35 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub const DispatchSchedule = struct {
             items: []Item,
             allocator: std.mem.Allocator,
+            push_pointers: []const *FrameType.WordType = &.{},
+            code_copies: []const [:0]u8 = &.{},
 
             /// Initialize a dispatch schedule from bytecode with automatic cleanup
             pub fn init(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler) !DispatchSchedule {
-                const items = try Self.init(allocator, bytecode, opcode_handlers);
+                const owned = try Self.initWithOwnership(allocator, bytecode, opcode_handlers);
                 return DispatchSchedule{
-                    .items = items,
+                    .items = owned.items,
                     .allocator = allocator,
+                    .push_pointers = owned.push_pointers,
+                    .code_copies = owned.code_copies,
                 };
             }
 
             /// Clean up the schedule including all heap-allocated push pointers
             pub fn deinit(self: *DispatchSchedule) void {
+                // Free push pointers
+                for (self.push_pointers) |ptr| {
+                    self.allocator.destroy(ptr);
+                }
+                if (self.push_pointers.len > 0) self.allocator.free(self.push_pointers);
+
+                // Free code copies (sentinel-backed)
+                for (self.code_copies) |slice| {
+                    self.allocator.free(slice[0..slice.len :0]);
+                }
+                if (self.code_copies.len > 0) self.allocator.free(self.code_copies);
+
+                // Free schedule itself
                 Self.deinitSchedule(self.allocator, self.items);
             }
 
