@@ -201,18 +201,16 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODESIZE opcode (0x38) - Get size of code running in current environment.
         /// Stack: [] → [size]
         pub fn codesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            // Get codesize from dispatch metadata
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.CODESIZE });
-            const bytecode_len = @as(WordType, @intCast(op_data.metadata.size));
+            // Get codesize from frame's bytecode object
+            const bytecode_len = if (self.bytecode) |bc| @as(WordType, @intCast(bc.full_code.len)) else 0;
             try self.stack.push(bytecode_len);
-            return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
+            const next = cursor + 1;
+            return @call(FrameType.getTailCallModifier(), next[0].opcode_handler, .{ self, next });
         }
 
         /// CODECOPY opcode (0x39) - Copy code running in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
             const dest_offset = try self.stack.pop();
             const offset = try self.stack.pop();
             const length = try self.stack.pop();
@@ -229,13 +227,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
 
-            // Get codecopy metadata from dispatch
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.CODECOPY });
-            const metadata = op_data.metadata;
-            const next = op_data.next;
-
             if (length_usize == 0) {
-                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                const next = cursor + 1;
+                return @call(FrameType.getTailCallModifier(), next[0].opcode_handler, .{ self, next });
             }
 
             // Calculate gas cost for memory expansion and copy operation
@@ -257,8 +251,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            // Create a slice from the null-terminated bytecode pointer
-            const code_data = std.mem.span(metadata.bytecode_ptr);
+            // Get bytecode from frame
+            const code_data = if (self.bytecode) |bc| bc.full_code else &[_]u8{};
 
             // Copy code to memory with proper zero-padding
             var i: usize = 0;
@@ -268,7 +262,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.memory.set_byte(self.allocator, @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
-            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            const next = cursor + 1;
+            return @call(FrameType.getTailCallModifier(), next[0].opcode_handler, .{ self, next });
         }
 
         /// GASPRICE opcode (0x3A) - Get price of gas in current environment.

@@ -70,6 +70,9 @@ test {
     // _ = @import("evm/evm_added_tests.zig");
     // _ = @import("evm/evm_test_msg_propagation.zig");
     // _ = @import("evm/frame_integration_test.zig");
+    
+    // ERC20 deployment differential test
+    _ = @import("evm/erc20_deployment_issue.zig");
     // _ = @import("evm/frame_interpreter_create_edge_tests.zig");
     // _ = @import("evm/frame_interpreter_host_test.zig");
     // _ = @import("evm/frame_interpreter_integration_test.zig");

@@ -50,8 +50,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             push_inline: Metadata.PushInlineMetadata,
             push_pointer: Metadata.PushPointerMetadata,
             pc: Metadata.PcMetadata,
-            codesize: Metadata.CodesizeMetadata,
-            codecopy: Metadata.CodecopyMetadata,
             first_block_gas: Metadata.FirstBlockMetadata,
         };
         
@@ -61,12 +59,10 @@ pub fn Dispatch(comptime FrameType: type) type {
         /// Structure to track memory allocations during schedule creation
         const AllocatedMemory = struct {
             pointers: ArrayList(*FrameType.WordType, null),
-            bytecode_copies: ArrayList([:0]u8, null),
 
             fn init() AllocatedMemory {
                 return .{
                     .pointers = ArrayList(*FrameType.WordType, null){},
-                    .bytecode_copies = ArrayList([:0]u8, null){},
                 };
             }
 
@@ -75,11 +71,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                     allocator.destroy(ptr);
                 }
                 self.pointers.deinit(allocator);
-
-                for (self.bytecode_copies.items) |slice| {
-                    allocator.free(slice[0..slice.len :0]);
-                }
-                self.bytecode_copies.deinit(allocator);
             }
         };
 
@@ -87,9 +78,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         fn processRegularOpcode(
             schedule_items: *ArrayList(Self.Item, null),
             allocator: std.mem.Allocator,
-            allocated_memory: *AllocatedMemory,
             opcode_handlers: *const [256]OpcodeHandler,
-            bytecode: anytype,
             data: anytype,
             instr_pc: anytype,
         ) !void {
@@ -98,15 +87,6 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             if (data.opcode == @intFromEnum(Opcode.PC)) {
                 try schedule_items.append(allocator, .{ .pc = .{ .value = @intCast(instr_pc) } });
-            } else if (data.opcode == @intFromEnum(Opcode.CODESIZE)) {
-                try schedule_items.append(allocator, .{ .codesize = .{ .size = @intCast(bytecode.runtime_code.len) } });
-            } else if (data.opcode == @intFromEnum(Opcode.CODECOPY)) {
-                // Create null-terminated copy of bytecode for CODECOPY
-                const bytecode_data = bytecode.runtime_code;
-                const null_terminated = try allocator.allocSentinel(u8, bytecode_data.len, 0);
-                @memcpy(null_terminated, bytecode_data);
-                try allocated_memory.bytecode_copies.append(allocator, null_terminated);
-                try schedule_items.append(allocator, .{ .codecopy = .{ .bytecode_ptr = null_terminated.ptr } });
             } else if (data.opcode == @intFromEnum(Opcode.JUMP) or data.opcode == @intFromEnum(Opcode.JUMPI)) {
                 // JUMP/JUMPI need access to jump table - store placeholder that will be filled later
                 try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
@@ -161,8 +141,6 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub const PushInlineMetadata = Metadata.PushInlineMetadata;
         pub const PushPointerMetadata = Metadata.PushPointerMetadata;
         pub const PcMetadata = Metadata.PcMetadata;
-        pub const CodesizeMetadata = Metadata.CodesizeMetadata;
-        pub const CodecopyMetadata = Metadata.CodecopyMetadata;
 
         // Performance note: JumpTable is a compact array of structs rather than a sparse bitmap. A sparse bitmap would provide O(1) lookups
         // But at the cost of cpu cache utilization. For the scale of how many jump destinations contracts have it is more performant to
@@ -207,8 +185,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => struct { metadata: PushInlineMetadata, next: Self },
                     .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => struct { metadata: PushPointerMetadata, next: Self },
                     .JUMPDEST => struct { metadata: JumpDestMetadata, next: Self },
-                    .CODESIZE => struct { metadata: CodesizeMetadata, next: Self },
-                    .CODECOPY => struct { metadata: CodecopyMetadata, next: Self },
                     else => struct { next: Self },
                 },
                 .synthetic => |op| switch (op) {
@@ -237,14 +213,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     .JUMPDEST => .{
                         .metadata = self.cursor[1].jump_dest,
-                        .next = Self{ .cursor = self.cursor + 2 },
-                    },
-                    .CODESIZE => .{
-                        .metadata = self.cursor[1].codesize,
-                        .next = Self{ .cursor = self.cursor + 2 },
-                    },
-                    .CODECOPY => .{
-                        .metadata = self.cursor[1].codecopy,
                         .next = Self{ .cursor = self.cursor + 2 },
                     },
                     else => .{
@@ -436,7 +404,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                         // Also log ALL opcodes to see what we're parsing
                         log.debug("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
 
-                        try processRegularOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, bytecode, data, instr_pc);
+                        try processRegularOpcode(&schedule_items, allocator, opcode_handlers, data, instr_pc);
                     },
                     .push => |data| {
                         try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data);
@@ -498,7 +466,6 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub const BuildOwned = struct {
             items: []Self.Item,
             push_pointers: []*FrameType.WordType,
-            code_copies: [][:0]u8,
         };
 
         /// Build schedule and return ownership of auxiliary allocations for safe deallocation.
@@ -532,7 +499,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 opcode_count += 1;
 
                 switch (op_data) {
-                    .regular => |data| try processRegularOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, bytecode, data, instr_pc),
+                    .regular => |data| try processRegularOpcode(&schedule_items, allocator, opcode_handlers, data, instr_pc),
                     .push => |data| try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data),
                     .jumpdest => |data| {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
@@ -557,12 +524,11 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             const items = try schedule_items.toOwnedSlice(allocator);
             const push_ptrs = try allocated_memory.pointers.toOwnedSlice(allocator);
-            const copies = try allocated_memory.bytecode_copies.toOwnedSlice(allocator);
             // allocated_memory's arrays are now owned by slices; prevent double free
             allocated_memory = AllocatedMemory.init();
 
             log.debug("Dispatch.initWithOwnership complete, schedule length: {}", .{items.len});
-            return BuildOwned{ .items = items, .push_pointers = push_ptrs, .code_copies = copies };
+            return BuildOwned{ .items = items, .push_pointers = push_ptrs };
         }
 
         /// Helper function to handle fusion operations consistently.
@@ -669,7 +635,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             items: []Item,
             allocator: std.mem.Allocator,
             push_pointers: []const *FrameType.WordType = &.{},
-            code_copies: []const [:0]u8 = &.{},
 
             /// Initialize a dispatch schedule from bytecode with automatic cleanup
             pub fn init(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler) !DispatchSchedule {
@@ -678,7 +643,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .items = owned.items,
                     .allocator = allocator,
                     .push_pointers = owned.push_pointers,
-                    .code_copies = owned.code_copies,
                 };
             }
 
@@ -689,12 +653,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                     self.allocator.destroy(ptr);
                 }
                 if (self.push_pointers.len > 0) self.allocator.free(self.push_pointers);
-
-                // Free code copies (sentinel-backed)
-                for (self.code_copies) |slice| {
-                    self.allocator.free(slice[0..slice.len :0]);
-                }
-                if (self.code_copies.len > 0) self.allocator.free(self.code_copies);
 
                 // Free schedule itself
                 Self.deinitSchedule(self.allocator, self.items);
@@ -765,7 +723,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 // Skip metadata items
                 if (self.schedule_index < self.schedule.len) {
                     switch (self.schedule[self.schedule_index]) {
-                        .jump_dest, .push_inline, .push_pointer, .pc, .codesize, .codecopy => {
+                        .jump_dest, .push_inline, .push_pointer, .pc => {
                             self.schedule_index += 1;
                         },
                         else => {},

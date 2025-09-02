@@ -156,6 +156,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
         block_info: BlockInfo, // ~188B - Block context (spans multiple cache lines)
         authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
+        bytecode: ?Bytecode = null, // Bytecode object (for CODESIZE/CODECOPY/analysis)
 
         //
         /// Initialize a new execution frame.
@@ -244,7 +245,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             log.debug("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
-            var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
+            self.bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
                 log.debug("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
@@ -257,8 +258,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                     else => Error.AllocationError,
                 };
             };
-            defer bytecode.deinit();
-            log.debug("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{bytecode.runtime_code.len});
+            defer if (self.bytecode) |*bc| bc.deinit();
+            log.debug("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{self.bytecode.?.runtime_code.len});
 
             // Use the handlers (traced or non-traced based on TracerType)
             const handlers = &Self.opcode_handlers;
@@ -279,7 +280,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Create dispatch schedule with ownership to ensure all allocations are freed
-            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &bytecode, handlers) catch |e| {
+            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &self.bytecode.?, handlers) catch |e| {
                 log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                 return Error.AllocationError;
             };
@@ -287,7 +288,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const schedule = schedule_raii.items;
 
             // Create jump table
-            const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &bytecode) catch return Error.AllocationError;
+            const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &self.bytecode.?) catch return Error.AllocationError;
             defer self.allocator.free(jump_table.entries);
 
             // Store jump table in frame for JUMP/JUMPI handlers
@@ -295,7 +296,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Handle first_block_gas
             var start_index: usize = 0;
-            const first_block_gas = Dispatch.calculateFirstBlockGas(bytecode);
+            const first_block_gas = Dispatch.calculateFirstBlockGas(self.bytecode.?);
             if (first_block_gas > 0 and schedule.len > 0) {
                 const temp_dispatch = Dispatch{ .cursor = schedule.ptr };
                 const meta = temp_dispatch.getFirstBlockGas();

@@ -56,7 +56,7 @@ pub const TraceComparer = struct {
             const op_match = r.opcode == g.opcode;
             const stack_match = r.stack.len == g.stack.len and stacksEqual(r.stack, g.stack);
             const mem_match = r.memory.len == g.memory.len and std.mem.eql(u8, r.memory, g.memory);
-            const gas_match = @abs(@as(i64, @intCast(r.gas)) - @as(i64, @intCast(g.gas))) < 100000; // Allow some gas difference
+            _ = @abs(@as(i64, @intCast(r.gas)) - @as(i64, @intCast(g.gas))); // Gas difference (not checked for now)
             
             if (pc_match and op_match and stack_match and mem_match) {
                 // Traces match - show unified line
@@ -65,10 +65,15 @@ pub const TraceComparer = struct {
                 // Traces diverge - show both
                 if (divergence_step == null) {
                     divergence_step = i;
-                    if (!pc_match) divergence_reason = "PC mismatch";
-                    else if (!op_match) divergence_reason = "Opcode mismatch";
-                    else if (!stack_match) divergence_reason = "Stack mismatch";
-                    else if (!mem_match) divergence_reason = "Memory mismatch";
+                    if (!pc_match) {
+                        divergence_reason = "PC mismatch";
+                    } else if (!op_match) {
+                        divergence_reason = "Opcode mismatch";
+                    } else if (!stack_match) {
+                        divergence_reason = "Stack mismatch";
+                    } else if (!mem_match) {
+                        divergence_reason = "Memory mismatch";
+                    }
                     
                     log.err("\n>>> DIVERGENCE at step {} ({s}) <<<\n", .{ i, divergence_reason });
                 }
@@ -94,16 +99,33 @@ pub const TraceComparer = struct {
                 else 
                     "REVM trace ended early";
                 log.err("\n>>> DIVERGENCE: {s} <<<\n", .{divergence_reason});
+                
+                // Show remaining steps from the longer trace
+                if (revm_trace.len > guillotine_trace.len) {
+                    log.info("Remaining REVM steps:", .{});
+                    for (min_steps..revm_trace.len) |i| {
+                        self.printUnifiedStep(i, revm_trace[i]);
+                    }
+                } else if (guillotine_trace.len > revm_trace.len) {
+                    log.info("Remaining Guillotine steps:", .{});
+                    for (min_steps..guillotine_trace.len) |i| {
+                        self.printUnifiedStep(i, guillotine_trace[i]);
+                    }
+                }
             } else {
                 log.info("\n✅ All {} steps match perfectly!", .{min_steps});
             }
         }
     }
     
-    fn stacksEqual(a: []const u256, b: []const u256) bool {
-        if (a.len != b.len) return false;
-        for (a, b) |av, bv| {
-            if (av != bv) return false;
+    fn stacksEqual(revm_stack: []const u256, guil_stack: []const u256) bool {
+        if (revm_stack.len != guil_stack.len) return false;
+        // REVM stores stack with top at end, Guillotine with top at beginning
+        // So we need to compare them in reverse order
+        for (0..revm_stack.len) |i| {
+            const revm_val = revm_stack[revm_stack.len - 1 - i];
+            const guil_val = guil_stack[i];
+            if (revm_val != guil_val) return false;
         }
         return true;
     }
@@ -113,27 +135,31 @@ pub const TraceComparer = struct {
         
         // Format stack (show top 4 items)
         var stack_buf: [256]u8 = undefined;
-        var stack_str = std.fmt.bufPrint(&stack_buf, "[", .{}) catch "[?]";
+        var fbs = std.io.fixedBufferStream(&stack_buf);
+        const writer = fbs.writer();
+        
+        writer.print("[", .{}) catch {};
         const max_stack = @min(4, trace.stack.len);
         for (0..max_stack) |j| {
-            if (j > 0) {
-                stack_str = std.fmt.bufPrint(stack_buf[stack_str.len..], ", ", .{}) catch break;
-            }
-            const val = trace.stack[trace.stack.len - 1 - j];
+            if (j > 0) writer.print(", ", .{}) catch {};
+            // REVM stores stack with top at the end (read backwards)
+            // Guillotine stores stack with top at the beginning (read forwards)
+            const val = if (trace.opcode_name.len > 0 and trace.opcode_name[0] != 'U') // REVM has actual opcode names
+                trace.stack[trace.stack.len - 1 - j]  // REVM: read backwards from end
+            else
+                trace.stack[j];  // Guillotine (UNKNOWN): read forwards from start
             if (val < 256) {
-                const new_part = std.fmt.bufPrint(stack_buf[stack_str.len..], "{}", .{val}) catch break;
-                stack_str.len += new_part.len;
+                writer.print("{}", .{val}) catch {};
             } else {
-                const new_part = std.fmt.bufPrint(stack_buf[stack_str.len..], "0x{x}", .{val}) catch break;
-                stack_str.len += new_part.len;
+                writer.print("0x{x}", .{val}) catch {};
             }
         }
         if (trace.stack.len > max_stack) {
-            const new_part = std.fmt.bufPrint(stack_buf[stack_str.len..], ", ...+{}", .{trace.stack.len - max_stack}) catch "";
-            stack_str.len += new_part.len;
+            writer.print(", ...+{}", .{trace.stack.len - max_stack}) catch {};
         }
-        const final_part = std.fmt.bufPrint(stack_buf[stack_str.len..], "]", .{}) catch "";
-        stack_str.len += final_part.len;
+        writer.print("]", .{}) catch {};
+        
+        const stack_str = fbs.getWritten();
         
         // Format memory size
         var mem_buf: [32]u8 = undefined;
@@ -157,27 +183,31 @@ pub const TraceComparer = struct {
         
         // Format stack (show top 4 items)
         var stack_buf: [256]u8 = undefined;
-        var stack_str = std.fmt.bufPrint(&stack_buf, "[", .{}) catch "[?]";
+        var fbs = std.io.fixedBufferStream(&stack_buf);
+        const writer = fbs.writer();
+        
+        writer.print("[", .{}) catch {};
         const max_stack = @min(4, trace.stack.len);
         for (0..max_stack) |j| {
-            if (j > 0) {
-                stack_str = std.fmt.bufPrint(stack_buf[stack_str.len..], ", ", .{}) catch break;
-            }
-            const val = trace.stack[trace.stack.len - 1 - j];
+            if (j > 0) writer.print(", ", .{}) catch {};
+            // REVM stores stack with top at the end (read backwards)
+            // Guillotine stores stack with top at the beginning (read forwards)
+            const val = if (trace.opcode_name.len > 0 and trace.opcode_name[0] != 'U') // REVM has actual opcode names
+                trace.stack[trace.stack.len - 1 - j]  // REVM: read backwards from end
+            else
+                trace.stack[j];  // Guillotine (UNKNOWN): read forwards from start
             if (val < 256) {
-                const new_part = std.fmt.bufPrint(stack_buf[stack_str.len..], "{}", .{val}) catch break;
-                stack_str.len += new_part.len;
+                writer.print("{}", .{val}) catch {};
             } else {
-                const new_part = std.fmt.bufPrint(stack_buf[stack_str.len..], "0x{x}", .{val}) catch break;
-                stack_str.len += new_part.len;
+                writer.print("0x{x}", .{val}) catch {};
             }
         }
         if (trace.stack.len > max_stack) {
-            const new_part = std.fmt.bufPrint(stack_buf[stack_str.len..], ", ...+{}", .{trace.stack.len - max_stack}) catch "";
-            stack_str.len += new_part.len;
+            writer.print(", ...+{}", .{trace.stack.len - max_stack}) catch {};
         }
-        const final_part = std.fmt.bufPrint(stack_buf[stack_str.len..], "]", .{}) catch "";
-        stack_str.len += final_part.len;
+        writer.print("]", .{}) catch {};
+        
+        const stack_str = fbs.getWritten();
         
         // Format memory size
         var mem_buf: [32]u8 = undefined;
@@ -246,6 +276,9 @@ pub const TraceComparer = struct {
         
         while (lines.next()) |line| {
             if (line.len == 0) continue;
+            
+            // Skip lines that don't have an "op" field (like the final summary line)
+            if (std.mem.indexOf(u8, line, "\"op\":") == null) continue;
             
             // Parse PC
             var pc: u64 = 0;

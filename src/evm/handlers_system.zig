@@ -597,6 +597,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn @"return"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
+            
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }

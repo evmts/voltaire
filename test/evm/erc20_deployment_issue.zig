@@ -1,7 +1,7 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
-const log = @import("log");
+const log = std.log;
 const revm = @import("revm");
 
 test {

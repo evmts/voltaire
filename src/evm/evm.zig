@@ -1073,6 +1073,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 },
                 else => {
                     // Actual errors
+                    log.err("Frame execution failed with error: {}", .{err});
                     return CallResult.failure(0);
                 },
             };

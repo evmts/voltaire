@@ -1092,6 +1092,8 @@ fn getOpcodeName(opcode: u8) []const u8 {
         0x51 => "MLOAD",
         0x52 => "MSTORE",
         0x53 => "MSTORE8",
+        0x54 => "SLOAD",
+        0x55 => "SSTORE",
         0x56 => "JUMP",
         0x57 => "JUMPI",
         0x58 => "PC",
