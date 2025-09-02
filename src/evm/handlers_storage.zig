@@ -73,37 +73,36 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            // Calculate gas cost based on EIP-2200 and EIP-2929
-            var gas_cost: u64 = undefined;
-            const is_warm = access_cost == GasConstants.WarmStorageReadCost;
-            
-            if (current_value == value) {
-                // No-op: value doesn't change
-                gas_cost = if (is_warm) GasConstants.WarmStorageReadCost else access_cost;
-            } else if (current_value == 0 and value != 0) {
-                // Zero to non-zero (most expensive)
-                gas_cost = if (is_warm) GasConstants.SstoreSetGas else access_cost + GasConstants.SstoreSetGas - GasConstants.WarmStorageReadCost;
-            } else if (current_value != 0 and value == 0) {
-                // Non-zero to zero (eligible for refund)
-                gas_cost = if (is_warm) GasConstants.SstoreClearGas else access_cost + GasConstants.SstoreClearGas - GasConstants.WarmStorageReadCost;
-                // Add gas refund for clearing storage
-                evm.add_gas_refund(GasConstants.SstoreRefundGas);
-            } else {
-                // Non-zero to non-zero (different value)
-                // Use reset gas, not clear gas
-                gas_cost = if (is_warm) GasConstants.SstoreResetGas else access_cost + GasConstants.SstoreResetGas - GasConstants.WarmStorageReadCost;
-            }
+            // Determine original value at start of transaction (for EIP-2200 logic)
+            const original_opt = evm.get_original_storage(contract_addr, slot);
+            const original_value: WordType = original_opt orelse current_value;
+
+            // Calculate gas cost based on EIP-2200 and EIP-2929 using centralized helper
+            const is_cold = access_cost != GasConstants.WarmStorageReadCost;
+            const gas_cost: u64 = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
             
             if (self.gas_remaining < gas_cost) {
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @intCast(gas_cost);
 
+            // Record original value for journal on first write in this transaction
+            if (original_opt == null) {
+                evm.record_storage_change(contract_addr, slot, original_value) catch |err| switch (err) {
+                    else => return Error.AllocationError,
+                };
+            }
+
             // Store the value directly in frame's database
             self.database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => return Error.WriteProtection,
                 else => return Error.AllocationError,
             };
+
+            // EIP-3529: Only clearing (non-zero -> zero) is eligible for refund
+            if (current_value != 0 and value == 0) {
+                evm.add_gas_refund(GasConstants.SstoreRefundGas);
+            }
 
             const op_data = dispatch.getOpData(.{ .regular = Opcode.SSTORE });
             const next = op_data.next;

@@ -44,9 +44,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop(); // First pop is numerator
-            const denominator = try self.stack.peek(); // Second (remaining) is denominator
-            const result = if (denominator == 0) 0 else numerator / denominator;
+            const divisor = try self.stack.pop(); // First pop is divisor
+            const dividend = try self.stack.peek(); // Second (remaining) is dividend
+            const result = if (divisor == 0) 0 else dividend / divisor;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -54,25 +54,25 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop(); // First pop is numerator
-            const denominator = try self.stack.peek(); // Second (remaining) is denominator
+            const divisor = try self.stack.pop(); // First pop is divisor
+            const dividend = try self.stack.peek(); // Second (remaining) is dividend
 
-            log.debug("SDIV: numerator=0x{x}, denominator=0x{x}", .{ numerator, denominator });
+            log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ dividend, divisor });
             var result: WordType = undefined;
-            if (denominator == 0) {
+            if (divisor == 0) {
                 result = 0;
                 log.debug("SDIV: division by zero, result=0", .{});
             } else {
-                const numerator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(numerator));
-                const denominator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(denominator));
-                log.debug("SDIV: numerator_signed={}, denominator_signed={}", .{ numerator_signed, denominator_signed });
+                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(dividend));
+                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(divisor));
+                log.debug("SDIV: dividend_signed={}, divisor_signed={}", .{ dividend_signed, divisor_signed });
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
-                if (numerator_signed == min_signed and denominator_signed == -1) {
+                if (dividend_signed == min_signed and divisor_signed == -1) {
                     // MIN / -1 overflow case
-                    result = numerator;
+                    result = dividend;
                     log.debug("SDIV: overflow case, result=0x{x}", .{result});
                 } else {
-                    const result_signed = @divTrunc(numerator_signed, denominator_signed);
+                    const result_signed = @divTrunc(dividend_signed, divisor_signed);
                     result = @as(WordType, @bitCast(result_signed));
                     log.debug("SDIV: result_signed={}, result=0x{x}", .{ result_signed, result });
                 }
@@ -84,9 +84,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop(); // First pop is numerator
-            const denominator = try self.stack.peek(); // Second (remaining) is denominator
-            const result = if (denominator == 0) 0 else numerator % denominator;
+            const divisor = try self.stack.pop(); // First pop is divisor
+            const dividend = try self.stack.peek(); // Second (remaining) is dividend
+            const result = if (divisor == 0) 0 else dividend % divisor;
             try self.stack.set_top(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -94,20 +94,20 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const numerator = try self.stack.pop(); // First pop is numerator
-            const denominator = try self.stack.peek(); // Second (remaining) is denominator
+            const divisor = try self.stack.pop(); // First pop is divisor
+            const dividend = try self.stack.peek(); // Second (remaining) is dividend
             var result: WordType = undefined;
-            if (denominator == 0) {
+            if (divisor == 0) {
                 result = 0;
             } else {
-                const numerator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(numerator));
-                const denominator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(denominator));
+                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(dividend));
+                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(divisor));
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
                 // Special case: MIN_INT % -1 = 0 (to avoid overflow)
-                if (numerator_signed == min_signed and denominator_signed == -1) {
+                if (dividend_signed == min_signed and divisor_signed == -1) {
                     result = 0;
                 } else {
-                    const result_signed = @rem(numerator_signed, denominator_signed);
+                    const result_signed = @rem(dividend_signed, divisor_signed);
                     result = @as(WordType, @bitCast(result_signed));
                 }
             }
