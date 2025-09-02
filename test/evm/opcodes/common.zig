@@ -87,7 +87,7 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.ret_top32(allocator, &buf);
         },
         0x03 => { // SUB: 10 - 3 = 7
-            try helpers.push_u8(allocator, &buf, 0x0a); // push a=10
+            try helpers.push_u8(allocator, &buf, 0x0a); // push a=10 (bottom)
             try helpers.push_u8(allocator, &buf, 0x03); // push b=3 (top)
             try buf.append(allocator, 0x03); // SUB: a - b = 7
             try helpers.ret_top32(allocator, &buf);
