@@ -191,6 +191,130 @@ pub fn build(b: *std.Build) void {
     const zbench_evm_step = b.step("bench-evm", "Run zbench EVM benchmarks");
     zbench_evm_step.dependOn(&run_zbench_evm.step);
 
+    // ERC20 deployment issue test
+    const erc20_deployment_test = b.addTest(.{
+        .name = "test-erc20-deployment",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/evm/erc20_deployment_issue.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+    });
+    erc20_deployment_test.root_module.addImport("evm", modules.evm_mod);
+    erc20_deployment_test.root_module.addImport("primitives", modules.primitives_mod);
+    erc20_deployment_test.root_module.addImport("crypto", modules.crypto_mod);
+    erc20_deployment_test.root_module.addImport("build_options", config.options_mod);
+    erc20_deployment_test.root_module.addImport("log", b.createModule(.{
+        .root_source_file = b.path("src/log.zig"),
+        .target = target,
+        .optimize = .Debug,
+    }));
+    
+    // Add REVM module and library for differential testing
+    if (modules.revm_mod) |revm_mod| {
+        erc20_deployment_test.root_module.addImport("revm", revm_mod);
+        if (revm_lib) |revm| {
+            erc20_deployment_test.linkLibrary(revm);
+            erc20_deployment_test.addIncludePath(b.path("src/revm_wrapper"));
+            
+            const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
+            const revm_dylib_path_test = if (rust_target) |target_triple|
+                b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
+            else
+                b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
+            erc20_deployment_test.addObjectFile(b.path(revm_dylib_path_test));
+            
+            if (target.result.os.tag == .linux) {
+                erc20_deployment_test.linkSystemLibrary("m");
+                erc20_deployment_test.linkSystemLibrary("pthread");
+                erc20_deployment_test.linkSystemLibrary("dl");
+            } else if (target.result.os.tag == .macos) {
+                erc20_deployment_test.linkSystemLibrary("c++");
+                erc20_deployment_test.linkFramework("Security");
+                erc20_deployment_test.linkFramework("SystemConfiguration");
+                erc20_deployment_test.linkFramework("CoreFoundation");
+            }
+            
+            erc20_deployment_test.step.dependOn(&revm.step);
+        }
+    }
+    
+    erc20_deployment_test.linkLibrary(c_kzg_lib);
+    erc20_deployment_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| erc20_deployment_test.linkLibrary(bn254);
+    erc20_deployment_test.linkLibC();
+    
+    const run_erc20_deployment_test = b.addRunArtifact(erc20_deployment_test);
+    const erc20_deployment_test_step = b.step("test-erc20-deployment", "Test ERC20 deployment issue");
+    erc20_deployment_test_step.dependOn(&run_erc20_deployment_test.step);
+
+    // Per-opcode differential tests discovered in test/evm/opcodes
+    // We dynamically scan the directory and add a test target for each file matching *_test.zig
+    const opcode_tests_step = b.step("test-opcodes", "Run all per-opcode differential tests");
+    if (std.fs.cwd().openDir("test/evm/opcodes", .{ .iterate = true }) catch null) |op_dir_val| {
+        var op_dir = op_dir_val; // make mutable for close()
+        defer op_dir.close();
+        var it = op_dir.iterate();
+        while (it.next() catch null) |entry| {
+            if (entry.kind != .file) continue;
+            if (!std.mem.endsWith(u8, entry.name, "_test.zig")) continue;
+
+            const file_path = b.fmt("test/evm/opcodes/{s}", .{entry.name});
+            const test_name = b.fmt("opcode-{s}", .{entry.name});
+
+            const t = b.addTest(.{
+                .name = test_name,
+                .root_module = b.createModule(.{
+                    .root_source_file = b.path(file_path),
+                    .target = target,
+                    .optimize = .Debug,
+                }),
+            });
+            // Inject module dependencies used by the differential harness
+            t.root_module.addImport("evm", modules.evm_mod);
+            t.root_module.addImport("primitives", modules.primitives_mod);
+            t.root_module.addImport("crypto", modules.crypto_mod);
+            t.root_module.addImport("build_options", config.options_mod);
+            t.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+
+            // Link external libs
+            t.linkLibrary(c_kzg_lib);
+            t.linkLibrary(blst_lib);
+            if (bn254_lib) |bn254| t.linkLibrary(bn254);
+            t.linkLibC();
+
+            // Add REVM integration for differential tests
+            if (modules.revm_mod) |revm_mod| {
+                t.root_module.addImport("revm", revm_mod);
+                if (revm_lib) |revm| {
+                    t.linkLibrary(revm);
+                    t.addIncludePath(b.path("src/revm_wrapper"));
+                    const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
+                    const revm_dylib_path_test = if (rust_target) |target_triple|
+                        b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
+                    else
+                        b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
+                    t.addObjectFile(b.path(revm_dylib_path_test));
+
+                    if (target.result.os.tag == .linux) {
+                        t.linkSystemLibrary("m");
+                        t.linkSystemLibrary("pthread");
+                        t.linkSystemLibrary("dl");
+                    } else if (target.result.os.tag == .macos) {
+                        t.linkSystemLibrary("c++");
+                        t.linkFramework("Security");
+                        t.linkFramework("SystemConfiguration");
+                        t.linkFramework("CoreFoundation");
+                    }
+                    t.step.dependOn(&revm.step);
+                }
+            }
+
+            const run_t = b.addRunArtifact(t);
+            opcode_tests_step.dependOn(&run_t.step);
+        }
+    }
+
     // Language bindings
     build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
     build_pkg.PythonBindings.createPythonSteps(b);
