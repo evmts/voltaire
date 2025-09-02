@@ -42,6 +42,20 @@ pub fn JumpTable(comptime FrameType: type, comptime DispatchType: type) type {
             }
             return null;
         }
+
+        /// Find the PC for a given dispatch pointer
+        /// This is used by tracers to determine the current PC when landing on a jump destination
+        pub fn findPc(self: @This(), dispatch: Self) ?FrameType.PcType {
+            // Linear search through entries to find matching dispatch
+            // This is OK since jump tables are typically small and this is only called on jumps
+            for (self.entries) |entry| {
+                // Compare dispatch cursors
+                if (@intFromPtr(entry.dispatch.cursor) == @intFromPtr(dispatch.cursor)) {
+                    return entry.pc;
+                }
+            }
+            return null;
+        }
     };
 }
 
