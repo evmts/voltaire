@@ -47,7 +47,8 @@ pub const NoOpTracer = struct {
         error_msg: ?[]const u8,
     };
 
-    pub fn init() NoOpTracer {
+    pub fn init(allocator: std.mem.Allocator) NoOpTracer {
+        _ = allocator; // NoOpTracer doesn't use allocator
         return .{
             .steps = std.ArrayList(ExecutionStep){},
         };
@@ -141,10 +142,7 @@ pub const DebuggingTracer = struct {
         timestamp: i64,
     };
 
-    pub fn init() Self {
-        // Use a global allocator for debugging tracer
-        // This is acceptable for debugging scenarios
-        const allocator = std.heap.c_allocator;
+    pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .allocator = allocator,
             .breakpoints = std.AutoHashMap(u32, void).init(allocator),
@@ -423,6 +421,9 @@ pub const JSONRPCTracer = struct {
     trace_steps: std.ArrayList(JSONRPCStep),
     current_depth: u32 = 0,
     gas_used: u64 = 0,
+    current_pc: u32 = 0,
+    jump_table: ?*const anyopaque = null, // Pointer to jump table for PC lookups
+    last_opcode: u8 = 0, // Track last opcode to detect jumps
     
     pub const JSONRPCStep = struct {
         op: []const u8,
@@ -481,6 +482,26 @@ pub const JSONRPCTracer = struct {
     
     /// Called before each opcode operation
     pub fn beforeOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+        // Update our PC tracking based on the last opcode
+        if (self.trace_steps.items.len > 0) {
+            // Check if we just did a JUMP/JUMPI and need to update PC from jump table
+            if (self.last_opcode == 0x56 or self.last_opcode == 0x57) { // JUMP or JUMPI
+                // For jumps, the PC passed in should be the jump destination
+                self.current_pc = pc;
+            } else if (self.last_opcode >= 0x60 and self.last_opcode <= 0x7f) {
+                // PUSH instruction - skip the push data bytes
+                const push_size = self.last_opcode - 0x5f;
+                self.current_pc += push_size + 1;
+            } else {
+                // Regular instruction - increment by 1
+                self.current_pc += 1;
+            }
+        } else {
+            // First instruction, use PC 0
+            self.current_pc = 0;
+        }
+        
+        
         // Capture pre-execution state for the step
         const gas_before: u64 = @max(frame.gas_remaining, 0);
         
@@ -502,7 +523,7 @@ pub const JSONRPCTracer = struct {
         // Create the step (gas cost will be calculated in afterOp)
         const step = JSONRPCStep{
             .op = op_name_copy,
-            .pc = @intCast(pc),
+            .pc = @intCast(self.current_pc),
             .gas = gas_before,
             .gasCost = 0, // Will be updated in afterOp
             .depth = depth_val,
@@ -510,7 +531,10 @@ pub const JSONRPCTracer = struct {
             .memSize = if (comptime @hasField(FrameType, "memory")) @intCast(@constCast(&frame.memory).size()) else 0,
         };
         
-        self.trace_steps.append(step) catch return; // Return on allocation failure
+        self.trace_steps.append(self.allocator, step) catch return; // Return on allocation failure
+        
+        // Update last opcode for next iteration
+        self.last_opcode = opcode;
     }
     
     /// Called after each opcode operation
@@ -1560,7 +1584,7 @@ fn getOpcodeName(opcode: u8) []const u8 {
 
 // Test that NoOpTracer has zero cost
 test "NoOpTracer has zero runtime cost" {
-    var tracer = NoOpTracer.init();
+    var tracer = NoOpTracer.init(std.testing.allocator);
 
     const TestFrame = struct {
         gas: i32,
@@ -1765,7 +1789,7 @@ const TestHost = struct {
 // }
 
 test "DebuggingTracer basic functionality" {
-    var tracer = DebuggingTracer.init();
+    var tracer = DebuggingTracer.init(std.testing.allocator);
     defer tracer.deinit();
 
     // Test breakpoint management
@@ -1795,7 +1819,7 @@ test "DebuggingTracer basic functionality" {
 }
 
 test "DebuggingTracer memory management" {
-    var tracer = DebuggingTracer.init();
+    var tracer = DebuggingTracer.init(std.testing.allocator);
     defer tracer.deinit();
 
     // This test verifies that the tracer properly manages memory

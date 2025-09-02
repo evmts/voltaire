@@ -273,9 +273,29 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         }
 
         pub fn deinit(self: *Self) void {
-            self.allocator.free(self.is_push_data);
-            self.allocator.free(self.is_op_start);
-            self.allocator.free(self.is_jumpdest);
+            // Check if we used aligned allocation (same logic as in init)
+            const use_aligned = comptime !builtin.is_test;
+            
+            // Free bitmaps - must match allocation method
+            if (use_aligned and self.is_push_data.len > 0) {
+                // For aligned allocations, we need to compute the aligned size
+                const bitmap_bytes = (self.runtime_code.len + 7) / 8;
+                const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
+                
+                // Create properly aligned slices for freeing
+                const aligned_push_data: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_push_data[0..aligned_bitmap_bytes]);
+                const aligned_op_start: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_op_start[0..aligned_bitmap_bytes]);
+                const aligned_jumpdest: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_jumpdest[0..aligned_bitmap_bytes]);
+                
+                self.allocator.free(aligned_push_data);
+                self.allocator.free(aligned_op_start);
+                self.allocator.free(aligned_jumpdest);
+            } else {
+                self.allocator.free(self.is_push_data);
+                self.allocator.free(self.is_op_start);
+                self.allocator.free(self.is_jumpdest);
+            }
+            
             self.allocator.free(self.packed_bitmap);
             self.* = undefined;
         }
