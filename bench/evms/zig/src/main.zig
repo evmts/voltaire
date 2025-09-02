@@ -1,6 +1,7 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
+const tracer_mod = @import("evm").tracer;
 
 pub const std_options: std.Options = .{
     .log_level = .err,  

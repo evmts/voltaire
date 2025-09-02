@@ -28,8 +28,8 @@ pub fn build(b: *std.Build) void {
     const guillotine_exe = build_pkg.GuillotineExe.createExecutable(b, modules.exe_mod);
     _ = build_pkg.GuillotineExe.createRunStep(b, guillotine_exe);
 
-    const evm_runner = build_pkg.EvmRunnerExe.createEvmRunner(b, target, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
-    const evm_runner_small = build_pkg.EvmRunnerExe.createEvmRunnerSmall(b, target, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
+    const evm_runner = build_pkg.EvmRunnerExe.createEvmRunner(b, target, optimize, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
+    const evm_runner_small = build_pkg.EvmRunnerExe.createEvmRunnerSmall(b, target, .ReleaseSmall, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
     build_pkg.EvmRunnerExe.createRunSteps(b, evm_runner, evm_runner_small);
 
     // Asset generation for devtool
@@ -57,7 +57,7 @@ pub fn build(b: *std.Build) void {
     const simple_crash_test = build_pkg.BenchmarksExe.createSimpleCrashTest(b, target, modules.evm_mod, modules.primitives_mod);
 
     // Get the build step created by EvmRunnerExe.createRunSteps
-    const build_evm_runner_step = b.step("build-evm-runner-manual", "Build the EVM benchmark runner (ReleaseFast)");
+    const build_evm_runner_step = b.step("build-evm-runner-manual", "Build the EVM benchmark runner");
     build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner, .{}).step);
 
     _ = build_pkg.BenchmarksExe.createPoopRunner(b, target, build_evm_runner_step);

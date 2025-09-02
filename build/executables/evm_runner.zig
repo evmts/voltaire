@@ -3,6 +3,7 @@ const std = @import("std");
 pub fn createEvmRunner(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
     evm_mod: *std.Build.Module,
     primitives_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
@@ -14,7 +15,7 @@ pub fn createEvmRunner(
         .root_module = b.createModule(.{
             .root_source_file = b.path("bench/evms/zig/src/main.zig"),
             .target = target,
-            .optimize = .ReleaseFast,
+            .optimize = optimize,
         }),
     });
     
@@ -36,6 +37,7 @@ pub fn createEvmRunner(
 pub fn createEvmRunnerSmall(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
     evm_mod: *std.Build.Module,
     primitives_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
@@ -47,7 +49,7 @@ pub fn createEvmRunnerSmall(
         .root_module = b.createModule(.{
             .root_source_file = b.path("bench/evms/zig/src/main.zig"),
             .target = target,
-            .optimize = .ReleaseSmall,
+            .optimize = optimize,
         }),
     });
     
@@ -75,7 +77,7 @@ pub fn createRunSteps(b: *std.Build, exe: *std.Build.Step.Compile, exe_small: *s
     const evm_runner_step = b.step("evm-runner", "Run the EVM benchmark runner");
     evm_runner_step.dependOn(&run_evm_runner_cmd.step);
 
-    const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner (ReleaseFast)");
+    const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
     build_evm_runner_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
 
     const build_evm_runner_small_step = b.step("build-evm-runner-small", "Build the EVM benchmark runner (ReleaseSmall)");
