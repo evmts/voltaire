@@ -90,7 +90,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 evm.add_gas_refund(GasConstants.SstoreRefundGas);
             } else {
                 // Non-zero to non-zero (different value)
-                gas_cost = if (is_warm) GasConstants.SstoreClearGas else access_cost + GasConstants.SstoreClearGas - GasConstants.WarmStorageReadCost;
+                // Use reset gas, not clear gas
+                gas_cost = if (is_warm) GasConstants.SstoreResetGas else access_cost + GasConstants.SstoreResetGas - GasConstants.WarmStorageReadCost;
             }
             
             if (self.gas_remaining < gas_cost) {
