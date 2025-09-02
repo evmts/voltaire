@@ -284,7 +284,7 @@ test "differential: max value arithmetic" {
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
-    // Test arithmetic with max u256 values
+    // Test arithmetic with PUSH32 values
     const bytecode = [_]u8{
         // MAX_U256 + 1 = 0 (overflow)
         0x7f, // PUSH32 opcode
@@ -520,7 +520,7 @@ test "guillotine only: exp edge cases - correct behavior" {
     result_copy.deinit(allocator);
 }
 
-test "differential: signed arithmetic edge cases" {
+test "differential: signed arithmetic overflow" {
     const allocator = testing.allocator;
     
     var testor = try DifferentialTestor.init(allocator);
@@ -528,7 +528,7 @@ test "differential: signed arithmetic edge cases" {
     
     // std.debug.print("\n[DEBUG] Starting signed arithmetic edge cases test\n", .{});
     
-    // Test SDIV/SMOD with MIN_INT and -1
+    // Test arithmetic overflow with signed values
     const bytecode = [_]u8{
         // SDIV: MIN_INT / -1 = MIN_INT (overflow)
         0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

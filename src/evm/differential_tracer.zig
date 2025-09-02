@@ -313,10 +313,13 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 try g_file.writeAll("[\n");
                 for (trace.steps, 0..) |step, i| {
                     if (i > 0) try g_file.writeAll(",\n");
-                    try g_file.writer().print(
+                    const line = try std.fmt.allocPrint(
+                        self.allocator,
                         "  {{\"pc\": {}, \"opcode\": {}, \"gas\": {}, \"stack_size\": {}, \"memory_size\": {}}}",
-                        .{ step.pc, step.opcode, step.gas_remaining, step.stack_size, step.memory_size },
+                        .{ step.pc, step.opcode, step.gas, step.stack.len, step.memory.len },
                     );
+                    defer self.allocator.free(line);
+                    try g_file.writeAll(line);
                 }
                 try g_file.writeAll("\n]\n");
 
