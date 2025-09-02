@@ -619,7 +619,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Footer
             try writer.print("\n{s}{s}════════════════════════════════════════════════════════════════{s}\n", .{ Colors.dim, Colors.cyan, Colors.reset });
 
-            return output.toOwnedSlice();
+            return try output.toOwnedSlice(allocator);
         }
     };
 }

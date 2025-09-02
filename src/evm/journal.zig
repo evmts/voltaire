@@ -146,7 +146,7 @@ pub fn Journal(comptime config: JournalConfig) type {
                     try result.append(entry);
                 }
             }
-            return result.toOwnedSlice();
+            return try result.toOwnedSlice(allocator);
         }
     };
 }

@@ -13,34 +13,35 @@ const Opcode = @import("opcode.zig").Opcode;
 
 /// Synthetic opcodes for fused operations.
 /// These values are chosen to avoid conflicts with standard EVM opcodes.
+/// Using 0xA5-0xBF range which is undefined in the EVM specification.
 /// The compile-time check below ensures no conflicts exist.
 pub const OpcodeSynthetic = enum(u8) {
-    PUSH_ADD_INLINE = 0xB0,
-    PUSH_ADD_POINTER = 0xB1,
-    PUSH_MUL_INLINE = 0xB2,
-    PUSH_MUL_POINTER = 0xB3,
-    PUSH_DIV_INLINE = 0xB4,
-    PUSH_DIV_POINTER = 0xB5,
-    PUSH_JUMP_INLINE = 0xB6,
-    PUSH_JUMP_POINTER = 0xB7,
-    PUSH_JUMPI_INLINE = 0xB8,
-    PUSH_JUMPI_POINTER = 0xB9,
-    PUSH_SUB_INLINE = 0xBA,
-    PUSH_SUB_POINTER = 0xBB,
+    PUSH_ADD_INLINE = 0xA5,
+    PUSH_ADD_POINTER = 0xA6,
+    PUSH_MUL_INLINE = 0xA7,
+    PUSH_MUL_POINTER = 0xA8,
+    PUSH_DIV_INLINE = 0xA9,
+    PUSH_DIV_POINTER = 0xAA,
+    PUSH_JUMP_INLINE = 0xAB,
+    PUSH_JUMP_POINTER = 0xAC,
+    PUSH_JUMPI_INLINE = 0xAD,
+    PUSH_JUMPI_POINTER = 0xAE,
+    PUSH_SUB_INLINE = 0xAF,
+    PUSH_SUB_POINTER = 0xB0,
     // New: PUSH+MLOAD and PUSH+MSTORE fusions (immediate offset)
-    PUSH_MLOAD_INLINE = 0xBC,
-    PUSH_MLOAD_POINTER = 0xBD,
-    PUSH_MSTORE_INLINE = 0xBE,
-    PUSH_MSTORE_POINTER = 0xBF,
+    PUSH_MLOAD_INLINE = 0xB1,
+    PUSH_MLOAD_POINTER = 0xB2,
+    PUSH_MSTORE_INLINE = 0xB3,
+    PUSH_MSTORE_POINTER = 0xB4,
     // New: bitwise fusions and MSTORE8
-    PUSH_AND_INLINE = 0xC0,
-    PUSH_AND_POINTER = 0xC1,
-    PUSH_OR_INLINE = 0xC2,
-    PUSH_OR_POINTER = 0xC3,
-    PUSH_XOR_INLINE = 0xC4,
-    PUSH_XOR_POINTER = 0xC5,
-    PUSH_MSTORE8_INLINE = 0xC6,
-    PUSH_MSTORE8_POINTER = 0xC7,
+    PUSH_AND_INLINE = 0xB5,
+    PUSH_AND_POINTER = 0xB6,
+    PUSH_OR_INLINE = 0xB7,
+    PUSH_OR_POINTER = 0xB8,
+    PUSH_XOR_INLINE = 0xB9,
+    PUSH_XOR_POINTER = 0xBA,
+    PUSH_MSTORE8_INLINE = 0xBB,
+    PUSH_MSTORE8_POINTER = 0xBC,
 };
 
 // Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
@@ -77,28 +78,28 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
             try std.testing.expect(op1 != op2);
         }
     }
-    try std.testing.expectEqual(@as(u8, 0xB0), @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB1), @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB2), @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB3), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB4), @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB5), @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB6), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB7), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB8), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xBA), @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xBB), @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xBC), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xBD), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xBE), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xBF), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xC0), @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xC1), @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xC2), @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xC3), @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xC4), @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xC5), @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xC6), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xC7), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xA5), @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xA6), @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xA7), @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xA8), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xA9), @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xAA), @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xAB), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xAC), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xAD), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xAE), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xAF), @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB0), @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB1), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB2), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB3), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB4), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB5), @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB6), @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB7), @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB8), @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xBA), @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xBB), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xBC), @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER));
 }
