@@ -122,7 +122,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
             const guillotine_result = try self.executeGuillotine(params);
 
             // Compare results
-            try self.compareResults(params, revm_result, guillotine_result, &errors, self.allocator);
+            try self.compareResults(revm_result, guillotine_result, &errors, self.allocator);
 
             // If there were differences, report them
             if (errors.items.len > 0) {
@@ -192,7 +192,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
 
         /// Execute on Guillotine
         fn executeGuillotine(self: *@This(), params: CallParams) !CallResult {
-            return try self.guillotine_evm.call(params);
+            return self.guillotine_evm.call(params);
         }
 
         /// Compare execution results between REVM and Guillotine
@@ -260,7 +260,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
         /// Compare execution traces in detail
         fn compareTraces(
             self: *@This(),
-            revm_result: revm_module.ExecutionResult,
+            revm_result: ?revm_module.CallResult,
             guillotine_trace: @import("call_result.zig").ExecutionTrace,
             errors: *std.ArrayList([]const u8),
             allocator: std.mem.Allocator,
@@ -284,7 +284,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 log.debug("First 5 Guillotine trace steps:", .{});
                 const max_steps = @min(5, guillotine_trace.steps.len);
                 for (guillotine_trace.steps[0..max_steps], 0..) |step, i| {
-                    log.debug("  Step {}: pc={}, opcode={x}, gas={}", .{ i, step.pc, step.opcode, step.gas_remaining });
+                    log.debug("  Step {}: pc={}, opcode={x}, gas={}", .{ i, step.pc, step.opcode, step.gas });
                 }
             }
         }
@@ -292,7 +292,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
         /// Write trace files for debugging
         fn writeTraceFiles(
             self: *@This(),
-            revm_result: ?revm_module.ExecutionResult,
+            revm_result: ?revm_module.CallResult,
             guillotine_result: CallResult,
         ) !void {
             const timestamp = std.time.milliTimestamp();
