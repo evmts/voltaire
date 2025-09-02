@@ -285,6 +285,10 @@ pub const DifferentialTestor = struct {
         const runtime_code = try self.allocator.alloc(u8, result.output.len);
         @memcpy(runtime_code, result.output);
         
+        // Clean up call result memory
+        var result_copy = result;
+        result_copy.deinit(self.allocator);
+        
         // Clean up the temporary deployment address
         try db.delete_account(deploy_address.bytes);
         
@@ -599,32 +603,8 @@ pub const DifferentialTestor = struct {
         // Copy output before freeing result
         const output_copy = try self.allocator.dupe(u8, result.output);
         
-        // Clean up CallResult allocated memory (except trace which we took ownership of)
-        // Note: logs, selfdestructs, accessed_addresses, accessed_storage are all slices
-        // that were allocated by the EVM and need to be freed
-        if (result.logs.len > 0) {
-            // Free log data
-            for (result.logs) |log_entry| {
-                self.allocator.free(log_entry.topics);
-                self.allocator.free(log_entry.data);
-            }
-            self.allocator.free(result.logs);
-        }
-        if (result.selfdestructs.len > 0) {
-            self.allocator.free(result.selfdestructs);
-        }
-        if (result.accessed_addresses.len > 0) {
-            self.allocator.free(result.accessed_addresses);
-        }
-        if (result.accessed_storage.len > 0) {
-            self.allocator.free(result.accessed_storage);
-        }
-        if (result.output.len > 0) {
-            self.allocator.free(result.output);
-        }
-        if (result.error_info) |error_info| {
-            self.allocator.free(error_info);
-        }
+        // Clean up CallResult allocated memory using the comprehensive deinit method
+        result.deinit(self.allocator);
 
         return ExecutionResultWithTrace{
             .success = result.success,

@@ -5,7 +5,7 @@ const std = @import("std");
 
 // Enable debug logging for tests
 pub const std_options = std.Options{
-    .log_level = .warn,
+    .log_level = .debug,
 };
 
 test {
@@ -30,6 +30,7 @@ test {
     // _ = @import("differential/gas_edge_cases_test.zig"); // CAUSES INFINITE LOOP/HANG
     
     // Re-enabling most tests except the problematic ones
+    _ = @import("differential/comparison_opcodes_test.zig");
     _ = @import("differential/call_stack_edge_cases_test.zig");
     _ = @import("differential/create_failure_test.zig");
     _ = @import("differential/environmental_extended_test.zig");
@@ -80,4 +81,7 @@ test {
     // _ = @import("evm/snapshot_propagation_tests.zig");
     // C API tests removed - these APIs are not exported from evm module
     // _ = @import("evm/warm_cold_access_tests.zig");
+    
+    // Opcode differential tests
+    _ = @import("evm/opcodes/all_opcodes.zig");
 }

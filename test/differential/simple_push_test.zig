@@ -71,7 +71,8 @@ test "simple PUSH32 execution" {
     try db.set_account(address, account);
     
     // Execute the bytecode
-    const result = try evm.call(call_params);
+    var result = try evm.call(call_params);
+    defer result.deinit(allocator);
     
     // Check result - after PUSH32 and STOP, we should have success
     try testing.expect(result.status == .success);
@@ -153,7 +154,8 @@ test "PUSH32 + PUSH1 + SDIV execution" {
     try db.set_account(address, account);
     
     // Execute the bytecode
-    const result = try evm.call(call_params);
+    var result = try evm.call(call_params);
+    defer result.deinit(allocator);
     
     // Check result - after PUSH32, PUSH1, SDIV and STOP
     std.debug.print("\nSDIV test result: success={}, error={s}, gas_used={}, output_len={}\n", .{

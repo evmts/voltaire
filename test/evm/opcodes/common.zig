@@ -1,0 +1,684 @@
+const std = @import("std");
+
+pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    errdefer buf.deinit(allocator);
+
+    // Helper functions as a struct namespace
+    const helpers = struct {
+        inline fn push_bytes(alloc: std.mem.Allocator, b: *std.ArrayList(u8), data: []const u8) !void {
+            if (data.len == 0) {
+                try b.append(alloc, 0x5f); // PUSH0
+                return;
+            }
+            if (data.len > 32) return error.InvalidPushLength;
+            const op: u8 = 0x60 + @as(u8, @intCast(data.len - 1));
+            try b.append(alloc, op);
+            try b.appendSlice(alloc, data);
+        }
+
+        inline fn push_u8(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u8) !void {
+            if (v == 0) {
+                try b.append(alloc, 0x5f); // PUSH0
+            } else {
+                try b.append(alloc, 0x60); // PUSH1
+                try b.append(alloc, v);
+            }
+        }
+
+        inline fn push_u16(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u16) !void {
+            if (v <= 0xff) {
+                try push_u8(alloc, b, @intCast(v));
+            } else {
+                try b.append(alloc, 0x61); // PUSH2
+                try b.append(alloc, @intCast((v >> 8) & 0xff));
+                try b.append(alloc, @intCast(v & 0xff));
+            }
+        }
+
+        inline fn push_u256(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u256) !void {
+            if (v == 0) return push_u8(alloc, b, 0);
+            var tmp: [32]u8 = [_]u8{0} ** 32;
+            std.mem.writeInt(u256, &tmp, v, .big);
+            const first_non_zero = std.mem.indexOfNonePos(u8, &tmp, 0, &[_]u8{0}) orelse 32;
+            const slice = tmp[first_non_zero..];
+            try push_bytes(alloc, b, slice);
+        }
+
+        inline fn ret_top32(alloc: std.mem.Allocator, b: *std.ArrayList(u8)) !void {
+            // MSTORE at offset 0 then return 32 bytes
+            try push_u8(alloc, b, 0x00);
+            try b.append(alloc, 0x52); // MSTORE
+            try push_u8(alloc, b, 0x20);
+            try push_u8(alloc, b, 0x00);
+            try b.append(alloc, 0xf3); // RETURN
+        }
+
+        inline fn ret_const(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u256) !void {
+            try push_u256(alloc, b, v);
+            try ret_top32(alloc, b);
+        }
+
+        inline fn discard_top_and_return_const(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u256) !void {
+            try b.append(alloc, 0x50); // POP
+            try ret_const(alloc, b, v);
+        }
+    };
+
+    // Build by category
+    switch (opcode) {
+        // 0x00 STOP
+        0x00 => {
+            try buf.append(allocator, 0x00);
+            // No return; STOP exits successfully with empty output
+        },
+
+        // Arithmetic 0x01..0x0b
+        0x01 => { // ADD: 2 + 3 = 5
+            try helpers.push_u8(allocator, &buf, 0x02); // push a=2
+            try helpers.push_u8(allocator, &buf, 0x03); // push b=3 (top)
+            try buf.append(allocator, 0x01); // ADD: a + b = 5
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x02 => { // MUL: 5 * 2 = 10
+            try helpers.push_u8(allocator, &buf, 0x05); // push a=5
+            try helpers.push_u8(allocator, &buf, 0x02); // push b=2 (top)
+            try buf.append(allocator, 0x02); // MUL: a * b = 10
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x03 => { // SUB: 10 - 3 = 7
+            try helpers.push_u8(allocator, &buf, 0x0a); // push a=10
+            try helpers.push_u8(allocator, &buf, 0x03); // push b=3 (top)
+            try buf.append(allocator, 0x03); // SUB: a - b = 7
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x04 => { // DIV: 20 / 4 = 5
+            try helpers.push_u8(allocator, &buf, 0x14); // push a=20
+            try helpers.push_u8(allocator, &buf, 0x04); // push b=4 (top)
+            try buf.append(allocator, 0x04); // DIV: a / b = 5
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x05 => { // SDIV: -10 / 3 = -3
+            var minus10: [32]u8 = [_]u8{0xff} ** 32;
+            minus10[31] = 0xf6; // two's complement -10
+            try helpers.push_bytes(allocator, &buf, &minus10); // push a=-10
+            try helpers.push_u8(allocator, &buf, 0x03); // push b=3 (top)
+            try buf.append(allocator, 0x05); // SDIV: a / b = -3
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x06 => { // MOD: 17 % 5 = 2
+            try helpers.push_u8(allocator, &buf, 0x11); // push a=17
+            try helpers.push_u8(allocator, &buf, 0x05); // push b=5 (top)
+            try buf.append(allocator, 0x06); // MOD: a % b = 2
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x07 => { // SMOD: -10 % 3 = -1
+            var minus10b: [32]u8 = [_]u8{0xff} ** 32;
+            minus10b[31] = 0xf6; // -10
+            try helpers.push_bytes(allocator, &buf, &minus10b); // push a=-10
+            try helpers.push_u8(allocator, &buf, 0x03); // push b=3 (top)
+            try buf.append(allocator, 0x07); // SMOD: a % b = -1
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x08 => { // ADDMOD: (10 + 6) % 5 = 1
+            try helpers.push_u8(allocator, &buf, 0x0a); // push a=10
+            try helpers.push_u8(allocator, &buf, 0x06); // push b=6
+            try helpers.push_u8(allocator, &buf, 0x05); // push N=5 (modulus)
+            try buf.append(allocator, 0x08); // ADDMOD: (a + b) % N = 1
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x09 => { // MULMOD: (7 * 4) % 5 = 3
+            try helpers.push_u8(allocator, &buf, 0x07); // push a=7
+            try helpers.push_u8(allocator, &buf, 0x04); // push b=4
+            try helpers.push_u8(allocator, &buf, 0x05); // push N=5 (modulus)
+            try buf.append(allocator, 0x09); // MULMOD: (a * b) % N = 3
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x0a => { // EXP: 2^3 = 8
+            try helpers.push_u8(allocator, &buf, 0x02); // push base=2
+            try helpers.push_u8(allocator, &buf, 0x03); // push exp=3 (top)
+            try buf.append(allocator, 0x0a); // EXP: base^exp = 8
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x0b => { // SIGNEXTEND: extend byte 0 of 0xff
+            try helpers.push_u8(allocator, &buf, 0xff); // push value=0xff
+            try helpers.push_u8(allocator, &buf, 0x00); // push byte_num=0 (top)
+            try buf.append(allocator, 0x0b); // SIGNEXTEND
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // Comparisons and bitwise 0x10..0x1d
+        0x10 => { // LT
+            try helpers.push_u8(allocator, &buf, 0x04);
+            try helpers.push_u8(allocator, &buf, 0x03);
+            try buf.append(allocator, 0x10);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x11 => { // GT
+            try helpers.push_u8(allocator, &buf, 0x04);
+            try helpers.push_u8(allocator, &buf, 0x05);
+            try buf.append(allocator, 0x11);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x12 => { // SLT
+            try helpers.push_u8(allocator, &buf, 0x01);
+            var neg2: [32]u8 = [_]u8{0xff} ** 32;
+            neg2[31] = 0xfe; // -2
+            try helpers.push_bytes(allocator, &buf, &neg2);
+            try buf.append(allocator, 0x12);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x13 => { // SGT
+            var neg2b: [32]u8 = [_]u8{0xff} ** 32;
+            neg2b[31] = 0xfe; // -2
+            try helpers.push_bytes(allocator, &buf, &neg2b);
+            try helpers.push_u8(allocator, &buf, 0x01);
+            try buf.append(allocator, 0x13);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x14 => { // EQ
+            try helpers.push_u8(allocator, &buf, 0x2a);
+            try helpers.push_u8(allocator, &buf, 0x2a);
+            try buf.append(allocator, 0x14);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x15 => { // ISZERO
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x15);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x16 => { // AND
+            try helpers.push_u8(allocator, &buf, 0x0f);
+            try helpers.push_u8(allocator, &buf, 0xf0);
+            try buf.append(allocator, 0x16);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x17 => { // OR
+            try helpers.push_u8(allocator, &buf, 0x0f);
+            try helpers.push_u8(allocator, &buf, 0xf0);
+            try buf.append(allocator, 0x17);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x18 => { // XOR
+            try helpers.push_u8(allocator, &buf, 0x0f);
+            try helpers.push_u8(allocator, &buf, 0xff);
+            try buf.append(allocator, 0x18);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x19 => { // NOT
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x19);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x1a => { // BYTE
+            try helpers.push_u8(allocator, &buf, 0xaa);
+            try helpers.push_u8(allocator, &buf, 0x1f); // index 31
+            try buf.append(allocator, 0x1a);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x1b => { // SHL
+            try helpers.push_u8(allocator, &buf, 0x01);
+            try helpers.push_u8(allocator, &buf, 0x01);
+            try buf.append(allocator, 0x1b);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x1c => { // SHR
+            try helpers.push_u8(allocator, &buf, 0x02);
+            try helpers.push_u8(allocator, &buf, 0x01);
+            try buf.append(allocator, 0x1c);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x1d => { // SAR
+            var neg4: [32]u8 = [_]u8{0xff} ** 32;
+            neg4[31] = 0xfc; // -4
+            try helpers.push_bytes(allocator, &buf, &neg4);
+            try helpers.push_u8(allocator, &buf, 0x01);
+            try buf.append(allocator, 0x1d);
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // SHA3 0x20
+        0x20 => { // SHA3/KECCAK256
+            // Store some data, then hash it
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0x20); // SHA3
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // Context ops 0x30..0x3f
+        0x30 => { // ADDRESS
+            try buf.append(allocator, 0x30);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x31 => { // BALANCE
+            try buf.append(allocator, 0x30); // Get address first
+            try buf.append(allocator, 0x31); // Then balance
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x32 => { // ORIGIN
+            try buf.append(allocator, 0x32);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x33 => { // CALLER
+            try buf.append(allocator, 0x33);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x34 => { // CALLVALUE
+            try buf.append(allocator, 0x34);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x35 => { // CALLDATALOAD
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x35);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x36 => { // CALLDATASIZE
+            try buf.append(allocator, 0x36);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x37 => { // CALLDATACOPY
+            try helpers.push_u8(allocator, &buf, 0x04); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x00); // destOffset
+            try buf.append(allocator, 0x37);
+            // Return first 32 bytes of memory
+            try helpers.push_u8(allocator, &buf, 0x20);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0xf3); // RETURN
+        },
+        0x38 => { // CODESIZE
+            try buf.append(allocator, 0x38);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x39 => { // CODECOPY
+            try helpers.push_u8(allocator, &buf, 0x04); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x00); // destOffset
+            try buf.append(allocator, 0x39);
+            // Return first 32 bytes of memory
+            try helpers.push_u8(allocator, &buf, 0x20);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0xf3); // RETURN
+        },
+        0x3a => { // GASPRICE
+            try buf.append(allocator, 0x3a);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x3b => { // EXTCODESIZE
+            try buf.append(allocator, 0x30); // ADDRESS
+            try buf.append(allocator, 0x3b);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x3c => { // EXTCODECOPY
+            try helpers.push_u8(allocator, &buf, 0x04); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x00); // destOffset
+            try buf.append(allocator, 0x30); // ADDRESS
+            try buf.append(allocator, 0x3c);
+            // Return first 32 bytes of memory
+            try helpers.push_u8(allocator, &buf, 0x20);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0xf3); // RETURN
+        },
+        0x3d => { // RETURNDATASIZE
+            // This requires a previous call, just check it doesn't crash
+            try buf.append(allocator, 0x3d);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x3e => { // RETURNDATACOPY
+            // Skip for now - requires previous call
+            try helpers.ret_const(allocator, &buf, 0);
+        },
+        0x3f => { // EXTCODEHASH
+            try buf.append(allocator, 0x30); // ADDRESS
+            try buf.append(allocator, 0x3f);
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // Block context 0x40..0x48
+        0x40 => { // BLOCKHASH
+            try helpers.push_u8(allocator, &buf, 0x01);
+            try buf.append(allocator, 0x40);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x41 => { // COINBASE
+            try buf.append(allocator, 0x41);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x42 => { // TIMESTAMP
+            try buf.append(allocator, 0x42);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x43 => { // NUMBER
+            try buf.append(allocator, 0x43);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x44 => { // DIFFICULTY/PREVRANDAO
+            try buf.append(allocator, 0x44);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x45 => { // GASLIMIT
+            try buf.append(allocator, 0x45);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x46 => { // CHAINID
+            try buf.append(allocator, 0x46);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x47 => { // SELFBALANCE
+            try buf.append(allocator, 0x47);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x48 => { // BASEFEE
+            try buf.append(allocator, 0x48);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x49 => { // BLOBHASH
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x49);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x4a => { // BLOBBASEFEE
+            try buf.append(allocator, 0x4a);
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // Stack ops 0x50..0x5f
+        0x50 => { // POP
+            try helpers.push_u8(allocator, &buf, 0x42);
+            try buf.append(allocator, 0x50);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0x51 => { // MLOAD
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x51);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x52 => { // MSTORE
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x51); // MLOAD
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x53 => { // MSTORE8
+            try helpers.push_u8(allocator, &buf, 0xab);
+            try helpers.push_u8(allocator, &buf, 0x1f);
+            try buf.append(allocator, 0x53);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x51); // MLOAD
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x54 => { // SLOAD
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x54);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x55 => { // SSTORE
+            try helpers.push_u256(allocator, &buf, 0xcafe);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x55);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x54); // SLOAD to verify
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x56 => { // JUMP
+            // Create a simple jump target
+            try helpers.push_u8(allocator, &buf, 0x05); // Jump to position 5 (where JUMPDEST actually is)
+            try buf.append(allocator, 0x56); // JUMP
+            try buf.append(allocator, 0x00); // Should be skipped
+            try buf.append(allocator, 0x00); // Should be skipped
+            try buf.append(allocator, 0x5b); // JUMPDEST at position 5
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0x57 => { // JUMPI
+            // Conditional jump (condition true)
+            try helpers.push_u8(allocator, &buf, 0x07); // Jump to position 7 (where JUMPDEST actually is)
+            try helpers.push_u8(allocator, &buf, 0x01); // Condition true
+            try buf.append(allocator, 0x57); // JUMPI
+            try buf.append(allocator, 0x00); // Should be skipped
+            try buf.append(allocator, 0x00); // Should be skipped
+            try buf.append(allocator, 0x5b); // JUMPDEST at position 7
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0x58 => { // PC
+            try buf.append(allocator, 0x58);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x59 => { // MSIZE
+            try buf.append(allocator, 0x59);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x5a => { // GAS
+            try buf.append(allocator, 0x5a);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x5b => { // JUMPDEST
+            try buf.append(allocator, 0x5b);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0x5c => { // TLOAD
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x5c);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x5d => { // TSTORE
+            try helpers.push_u256(allocator, &buf, 0xbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x5d);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x5c); // TLOAD to verify
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x5e => { // MCOPY
+            // Store some data first
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            // Copy 32 bytes from 0 to 32
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // src
+            try helpers.push_u8(allocator, &buf, 0x20); // dest
+            try buf.append(allocator, 0x5e); // MCOPY
+            // Load from destination
+            try helpers.push_u8(allocator, &buf, 0x20);
+            try buf.append(allocator, 0x51); // MLOAD
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0x5f => { // PUSH0
+            try buf.append(allocator, 0x5f);
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // PUSH operations 0x60..0x7f
+        0x60...0x7f => |push_op| {
+            const n = push_op - 0x5f;
+            try buf.append(allocator, push_op);
+            // Push n bytes of data
+            var i: u8 = 0;
+            while (i < n) : (i += 1) {
+                try buf.append(allocator, 0xaa + i);
+            }
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // DUP operations 0x80..0x8f
+        0x80...0x8f => |dup_op| {
+            const n = dup_op - 0x7f;
+            // Push n different values
+            var i: u8 = 1;
+            while (i <= n) : (i += 1) {
+                try helpers.push_u8(allocator, &buf, i);
+            }
+            try buf.append(allocator, dup_op);
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // SWAP operations 0x90..0x9f
+        0x90...0x9f => |swap_op| {
+            const n = swap_op - 0x8f;
+            // Push n+1 different values
+            var i: u8 = 0;
+            while (i <= n) : (i += 1) {
+                try helpers.push_u8(allocator, &buf, i);
+            }
+            try buf.append(allocator, swap_op);
+            try helpers.ret_top32(allocator, &buf);
+        },
+
+        // LOG operations 0xa0..0xa4
+        0xa0 => { // LOG0
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xa0);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0xa1 => { // LOG1
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u256(allocator, &buf, 0xaabbccdd); // topic
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xa1);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0xa2 => { // LOG2
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u256(allocator, &buf, 0x22222222); // topic2
+            try helpers.push_u256(allocator, &buf, 0x11111111); // topic1
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xa2);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0xa3 => { // LOG3
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u256(allocator, &buf, 0x33333333); // topic3
+            try helpers.push_u256(allocator, &buf, 0x22222222); // topic2
+            try helpers.push_u256(allocator, &buf, 0x11111111); // topic1
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xa3);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+        0xa4 => { // LOG4
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u256(allocator, &buf, 0x44444444); // topic4
+            try helpers.push_u256(allocator, &buf, 0x33333333); // topic3
+            try helpers.push_u256(allocator, &buf, 0x22222222); // topic2
+            try helpers.push_u256(allocator, &buf, 0x11111111); // topic1
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xa4);
+            try helpers.ret_const(allocator, &buf, 1);
+        },
+
+        // System operations 0xf0..0xff
+        0xf0 => { // CREATE
+            // Deploy minimal contract
+            try helpers.push_u8(allocator, &buf, 0x00); // salt
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x00); // value
+            try buf.append(allocator, 0xf0);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xf1 => { // CALL
+            // Call self with no data
+            try helpers.push_u8(allocator, &buf, 0x00); // retLength
+            try helpers.push_u8(allocator, &buf, 0x00); // retOffset
+            try helpers.push_u8(allocator, &buf, 0x00); // argsLength
+            try helpers.push_u8(allocator, &buf, 0x00); // argsOffset
+            try helpers.push_u8(allocator, &buf, 0x00); // value
+            try buf.append(allocator, 0x30); // ADDRESS
+            try helpers.push_u16(allocator, &buf, 0x2710); // gas 10000
+            try buf.append(allocator, 0xf1);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xf2 => { // CALLCODE
+            try helpers.push_u8(allocator, &buf, 0x00); // retLength
+            try helpers.push_u8(allocator, &buf, 0x00); // retOffset
+            try helpers.push_u8(allocator, &buf, 0x00); // argsLength
+            try helpers.push_u8(allocator, &buf, 0x00); // argsOffset
+            try helpers.push_u8(allocator, &buf, 0x00); // value
+            try buf.append(allocator, 0x30); // ADDRESS
+            try helpers.push_u16(allocator, &buf, 0x2710); // gas 10000
+            try buf.append(allocator, 0xf2);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xf3 => { // RETURN
+            try helpers.push_u256(allocator, &buf, 0xcafebabe);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xf3);
+        },
+        0xf4 => { // DELEGATECALL
+            try helpers.push_u8(allocator, &buf, 0x00); // retLength
+            try helpers.push_u8(allocator, &buf, 0x00); // retOffset
+            try helpers.push_u8(allocator, &buf, 0x00); // argsLength
+            try helpers.push_u8(allocator, &buf, 0x00); // argsOffset
+            try buf.append(allocator, 0x30); // ADDRESS
+            try helpers.push_u16(allocator, &buf, 0x2710); // gas 10000
+            try buf.append(allocator, 0xf4);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xf5 => { // CREATE2
+            // Deploy minimal contract with salt
+            try helpers.push_u256(allocator, &buf, 0x12345678); // salt
+            try helpers.push_u8(allocator, &buf, 0x00); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x00); // value
+            try buf.append(allocator, 0xf5);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xfa => { // STATICCALL
+            try helpers.push_u8(allocator, &buf, 0x00); // retLength
+            try helpers.push_u8(allocator, &buf, 0x00); // retOffset
+            try helpers.push_u8(allocator, &buf, 0x00); // argsLength
+            try helpers.push_u8(allocator, &buf, 0x00); // argsOffset
+            try buf.append(allocator, 0x30); // ADDRESS
+            try helpers.push_u16(allocator, &buf, 0x2710); // gas 10000
+            try buf.append(allocator, 0xfa);
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xfd => { // REVERT
+            try helpers.push_u256(allocator, &buf, 0xdeadbeef);
+            try helpers.push_u8(allocator, &buf, 0x00);
+            try buf.append(allocator, 0x52); // MSTORE
+            try helpers.push_u8(allocator, &buf, 0x20); // length
+            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try buf.append(allocator, 0xfd);
+        },
+        0xfe => { // INVALID
+            try buf.append(allocator, 0xfe);
+        },
+        0xff => { // SELFDESTRUCT
+            try buf.append(allocator, 0x30); // ADDRESS
+            try buf.append(allocator, 0xff);
+        },
+
+        // Undefined opcodes
+        else => {
+            // Just emit the opcode - should fail in both EVMs
+            try buf.append(allocator, opcode);
+        },
+    }
+
+    return buf.toOwnedSlice(allocator);
+}
