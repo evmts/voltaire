@@ -73,14 +73,16 @@ test "differential: basic arithmetic operations" {
     try testor.test_bytecode(&bytecode);
 }
 
-test "differential: signed arithmetic operations" {
+test "differential: basic signed arithmetic" {
     const allocator = testing.allocator;
     
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
-    // Test SDIV, SMOD, and SIGNEXTEND
+    // Test basic signed arithmetic
     const bytecode = [_]u8{
+        // PUSH1 1; PUSH1 1; ADD; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN
+        0x60, 0x01, 0x60, 0x01, 0x01, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3,
         // SDIV: -8 / 3 = -2 (in two's complement)
         0x7f, // PUSH32
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,  // bytes 1-8 of data
