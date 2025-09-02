@@ -426,7 +426,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Return data is stored in the frame's output field after a call
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(self.output.len))));
-            log.err("[EVM2] RETURNDATASIZE: return_data.len={}, pushing {}", .{ self.output.len, return_data_len });
             try self.stack.push(return_data_len);
             const op_data = dispatch.getOpData(.{ .regular = Opcode.RETURNDATASIZE }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
@@ -435,8 +434,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// RETURNDATACOPY opcode (0x3E) - Copy output data from the previous call to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn returndatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.err("[EVM2] RETURNDATACOPY handler called! Stack size: {}", .{self.stack.size()});
-
             const dispatch = Dispatch{ .cursor = cursor };
             const length = try self.stack.pop();
             const offset = try self.stack.pop();
@@ -638,7 +635,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
             try self.stack.push(balance_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.SELFBALANCE }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -649,7 +646,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.block_info;
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             try self.stack.push(base_fee_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.BASEFEE }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -661,7 +658,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Convert u256 to usize for array access
             if (index > std.math.maxInt(usize)) {
                 try self.stack.push(0);
-                const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.BLOBHASH }); const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
             const index_usize = @as(usize, @intCast(index));
@@ -679,7 +676,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Index out of bounds - push zero
                 try self.stack.push(0);
             }
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.BLOBHASH }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -690,7 +687,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const blob_base_fee = self.block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             try self.stack.push(blob_base_fee_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.BLOBBASEFEE }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 

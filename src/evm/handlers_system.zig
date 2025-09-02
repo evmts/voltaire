@@ -502,7 +502,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 try self.stack.push(0);
             }
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.CREATE2 });
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.CREATE });
             const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }

@@ -12,35 +12,35 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// AND opcode (0x16) - Bitwise AND operation.
         pub fn @"and"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top_minus_1 = try self.stack.pop();
-            const top = try self.stack.peek();
-            try self.stack.set_top(top & top_minus_1);
+            const b = self.stack.pop_unsafe(); // Top of stack - second operand
+            const a = self.stack.peek_unsafe(); // Second from top - first operand
+            self.stack.set_top_unsafe(a & b);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// OR opcode (0x17) - Bitwise OR operation.
         pub fn @"or"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top_minus_1 = try self.stack.pop();
-            const top = try self.stack.peek();
-            try self.stack.set_top(top | top_minus_1);
+            const b = self.stack.pop_unsafe(); // Top of stack - second operand
+            const a = self.stack.peek_unsafe(); // Second from top - first operand
+            self.stack.set_top_unsafe(a | b);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// XOR opcode (0x18) - Bitwise XOR operation.
         pub fn xor(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top_minus_1 = try self.stack.pop();
-            const top = try self.stack.peek();
-            try self.stack.set_top(top ^ top_minus_1);
+            const b = self.stack.pop_unsafe(); // Top of stack - second operand
+            const a = self.stack.peek_unsafe(); // Second from top - first operand
+            self.stack.set_top_unsafe(a ^ b);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// NOT opcode (0x19) - Bitwise NOT operation.
         pub fn not(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const top = try self.stack.peek();
-            try self.stack.set_top(~top);
+            const value = self.stack.peek_unsafe();
+            self.stack.set_top_unsafe(~value);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -49,15 +49,15 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Takes byte index from stack top, value from second position.
         /// Returns the byte at that index or 0 if index >= 32.
         pub fn byte(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const byte_index = try self.stack.pop();
-            const value = try self.stack.peek();
+            const byte_index = self.stack.pop_unsafe(); // Top of stack - byte index
+            const value = self.stack.peek_unsafe(); // Second from top - value to extract from
             const result = if (byte_index >= 32) 0 else blk: {
                 const index_usize = @as(usize, @intCast(byte_index));
                 const shift_amount = (31 - index_usize) * 8;
                 const ShiftType = std.math.Log2Int(WordType);
                 break :blk (value >> @as(ShiftType, @intCast(shift_amount))) & 0xFF;
             };
-            try self.stack.set_top(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
