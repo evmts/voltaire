@@ -638,7 +638,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     // We need to read n bytes after the opcode at position i
                     // So we need positions i+1 through i+n to be valid
                     // This means i+n must be less than the validation length
-                    if (i + n >= validate_up_to) return error.TruncatedPush;
+                    // PUSH32 at position 0 needs to read bytes 1-32, so position 32 must be valid
+                    // Therefore i+1+n must be <= validate_up_to, or i+n < validate_up_to
+                    if (i + 1 + n > validate_up_to) return error.TruncatedPush;
                     
                     // Extract push value for immediate jump validation (only if fusions enabled)
                     var push_value: u256 = 0;
@@ -1789,6 +1791,17 @@ test "Deployment bytecode - actual ten-thousand-hashes fixture" {
     };
     
     // This should fail because it ends with an incomplete PUSH1
+    try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
+}
+
+test "Iterator should not read past truncated PUSH32" {
+    const allocator = testing.allocator;
+    
+    // PUSH32 with only 31 bytes of data (malformed)
+    // Total: 1 byte opcode + 31 bytes data = 32 bytes (should be 33)
+    var code = [_]u8{0x7F} ++ [_]u8{0x00} ** 31; // PUSH32 (truncated)
+    
+    // This should fail validation
     try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
 }
 
