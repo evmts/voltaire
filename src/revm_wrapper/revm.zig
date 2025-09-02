@@ -229,7 +229,7 @@ pub const Revm = struct {
         code[i] = 0x5a; i += 1; // GAS
         code[i] = 0x73; i += 1; // PUSH20
         // Write 20-byte address
-        @memcpy(code[i .. i + 20], @ptrCast(*const [20]u8, to));
+        @memcpy(code[i .. i + 20], &to.bytes);  // OK: bytes is a [20]u8
         i += 20;
         code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0 (in_offset)
         code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0 (in_size)
