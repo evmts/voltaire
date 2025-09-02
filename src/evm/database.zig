@@ -92,10 +92,15 @@ pub const Database = struct {
 
     /// Initialize a new database
     pub fn init(allocator: std.mem.Allocator) Database {
+        // Pre-allocate capacity for transient storage to avoid growth-related memory leaks
+        var transient_map = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator);
+        // Reserve initial capacity to prevent HashMap growth during typical TSTORE operations
+        transient_map.ensureTotalCapacity(16) catch {};
+        
         return Database{
             .accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
             .storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
-            .transient_storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .transient_storage = transient_map,
             .code_storage = std.HashMap([32]u8, []const u8, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
             .snapshots = .{ .items = &[_]Snapshot{}, .capacity = 0 },
             .next_snapshot_id = 1,

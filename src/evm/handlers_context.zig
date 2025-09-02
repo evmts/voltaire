@@ -627,7 +627,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
             try self.stack.push(chain_id_word);
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.EXTCODESIZE }); const next = op_data.next;
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.CHAINID }); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
