@@ -135,6 +135,58 @@ pub const CallResult = struct {
         }
         allocator.free(logs);
     }
+
+    /// Clean up all allocated memory in the CallResult
+    /// Call this when the CallResult contains owned data that needs to be freed
+    pub fn deinit(self: *CallResult, allocator: std.mem.Allocator) void {
+        // Free output buffer if it's not an empty slice literal
+        if (self.output.len > 0 and self.output.ptr != (&[_]u8{}).ptr) {
+            allocator.free(self.output);
+        }
+        
+        // Free logs
+        if (self.logs.len > 0 and self.logs.ptr != (&[_]Log{}).ptr) {
+            for (self.logs) |log| {
+                allocator.free(log.topics);
+                allocator.free(log.data);
+            }
+            allocator.free(self.logs);
+        }
+        
+        // Free selfdestructs
+        if (self.selfdestructs.len > 0 and self.selfdestructs.ptr != (&[_]SelfDestructRecord{}).ptr) {
+            allocator.free(self.selfdestructs);
+        }
+        
+        // Free accessed_addresses
+        if (self.accessed_addresses.len > 0 and self.accessed_addresses.ptr != (&[_]Address{}).ptr) {
+            allocator.free(self.accessed_addresses);
+        }
+        
+        // Free accessed_storage
+        if (self.accessed_storage.len > 0 and self.accessed_storage.ptr != (&[_]StorageAccess{}).ptr) {
+            allocator.free(self.accessed_storage);
+        }
+        
+        // Free trace if present
+        if (self.trace) |*trace| {
+            trace.deinit();
+        }
+        
+        // Free error_info if present
+        if (self.error_info) |info| {
+            allocator.free(info);
+        }
+        
+        // Reset all fields to empty slices
+        self.output = &.{};
+        self.logs = &.{};
+        self.selfdestructs = &.{};
+        self.accessed_addresses = &.{};
+        self.accessed_storage = &.{};
+        self.trace = null;
+        self.error_info = null;
+    }
 };
 
 const std = @import("std");
