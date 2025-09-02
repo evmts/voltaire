@@ -138,22 +138,22 @@ pub const DifferentialTracer = struct {
         // Compare gas (both now have gas_left)
         if (revm_result.gas_left != guillotine_result.gas_left) {
             log.err("❌ GAS MISMATCH: REVM gas_left={}, Guillotine gas_left={}", .{ 
-                    revm_res.gas_used, 
-                    guillotine_gas_used 
+                    revm_result.gas_left, 
+                    guillotine_result.gas_left 
                 });
             } else {
-                log.info("✅ Gas usage matches: {}", .{revm_res.gas_used});
+                log.info("✅ Gas matches: gas_left={}", .{revm_result.gas_left});
             }
             
-            if (!std.mem.eql(u8, revm_res.output, guillotine_result.output)) {
+            if (!std.mem.eql(u8, revm_result.output, guillotine_result.output)) {
                 log.err("❌ OUTPUT MISMATCH: REVM len={}, Guillotine len={}", .{ 
-                    revm_res.output.len, 
+                    revm_result.output.len, 
                     guillotine_result.output.len 
                 });
                 
-                if (revm_res.output.len > 0) {
+                if (revm_result.output.len > 0) {
                     log.err("  REVM output (first 32 bytes): {x}", .{
-                        revm_res.output[0..@min(32, revm_res.output.len)]
+                        revm_result.output[0..@min(32, revm_result.output.len)]
                     });
                 }
                 if (guillotine_result.output.len > 0) {
@@ -162,9 +162,8 @@ pub const DifferentialTracer = struct {
                     });
                 }
             } else {
-                log.info("✅ Output matches: {} bytes", .{revm_res.output.len});
+                log.info("✅ Output matches: {} bytes", .{revm_result.output.len});
             }
-        }
         
         return guillotine_result;
     }
