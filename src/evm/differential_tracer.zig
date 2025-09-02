@@ -117,7 +117,10 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
 
             // Execute on both EVMs
             const revm_result = try self.executeRevm(params);
-            defer if (revm_result) |*r| r.deinit();
+            defer if (revm_result) |*r| {
+                var mutable = r.*;
+                mutable.deinit();
+            };
 
             const guillotine_result = try self.executeGuillotine(params);
 
@@ -338,10 +341,13 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 const r_file = try std.fs.cwd().createFile(r_filename, .{});
                 defer r_file.close();
 
-                try r_file.writer().print(
-                    "{{\"success\": {}, \"gas_used\": {}, \"output_len\": {}}}",
-                    .{ revm_res.success, revm_res.gas_used, revm_res.output.len },
+                const json = try std.fmt.allocPrint(
+                    self.allocator,
+                    "{{\"success\": {}, \"gas_left\": {}, \"output_len\": {}}}",
+                    .{ revm_res.success, revm_res.gas_left, revm_res.output.len },
                 );
+                defer self.allocator.free(json);
+                try r_file.writeAll(json);
 
                 log.info("REVM result written to: {s}", .{r_filename});
             }

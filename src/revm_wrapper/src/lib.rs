@@ -431,11 +431,18 @@ pub unsafe extern "C" fn revm_execute(
             tx.value = value;
             tx.data = input.clone();
             tx.gas_limit = gas_limit;
-            // Use 0 gas price for calls (like main.rs benchmark), 1 wei for contract creation
-            tx.gas_price = if to_addr.is_some() { 
-                U256::ZERO // Free gas for calls
-            } else { 
-                U256::from(1u64) // 1 wei for contract creation
+            // Set gas price to at least base fee to avoid GasPriceLessThanBasefee error
+            let base_fee = U256::from(vm.settings.block_basefee);
+            tx.gas_price = if base_fee.is_zero() {
+                // If no base fee, use 1 wei for contract creation, 0 for calls
+                if to_addr.is_some() { 
+                    U256::ZERO 
+                } else { 
+                    U256::from(1u64)
+                }
+            } else {
+                // Use at least the base fee
+                base_fee
             };
         })
         .build();
@@ -648,10 +655,18 @@ pub unsafe extern "C" fn revm_execute_with_trace(
             tx.value = value;
             tx.data = input.clone();
             tx.gas_limit = gas_limit;
-            tx.gas_price = if to_addr.is_some() { 
-                U256::ZERO
-            } else { 
-                U256::from(1u64)
+            // Set gas price to at least base fee to avoid GasPriceLessThanBasefee error
+            let base_fee = U256::from(vm.settings.block_basefee);
+            tx.gas_price = if base_fee.is_zero() {
+                // If no base fee, use 1 wei for contract creation, 0 for calls
+                if to_addr.is_some() { 
+                    U256::ZERO 
+                } else { 
+                    U256::from(1u64)
+                }
+            } else {
+                // Use at least the base fee
+                base_fee
             };
         })
         .build();

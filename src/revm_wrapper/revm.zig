@@ -416,6 +416,14 @@ pub const Revm = struct {
         );
 
         if (success != 1) {
+            // Log the error for debugging
+            if (error_ptr) |err| {
+                const error_msg = c.revm_get_error_message(err);
+                if (error_msg != null) {
+                    const msg = std.mem.sliceTo(error_msg.?, 0);
+                    std.log.err("REVM execution failed: {s}", .{msg});
+                }
+            }
             defer c.revm_free_error(error_ptr);
             return error.ExecutionFailed;
         }
@@ -533,12 +541,12 @@ pub const Revm = struct {
 
     /// Convert ExecutionResult to CallResult
     fn convertToCallResult(self: *Revm, exec_result: ExecutionResult, original_gas: u64) !CallResult {
-        // Copy output data
+        // Copy output data - use empty slice literal for zero-length output
         const output = if (exec_result.output.len > 0) blk: {
             const data = try self.allocator.alloc(u8, exec_result.output.len);
             @memcpy(data, exec_result.output);
             break :blk data;
-        } else try self.allocator.alloc(u8, 0);
+        } else &[_]u8{};
         
         // Copy error info if present
         const error_info = if (exec_result.revert_reason) |reason| blk: {
@@ -611,6 +619,14 @@ pub const Revm = struct {
         );
 
         if (success != 1) {
+            // Log the error for debugging
+            if (error_ptr) |err| {
+                const error_msg = c.revm_get_error_message(err);
+                if (error_msg != null) {
+                    const msg = std.mem.sliceTo(error_msg.?, 0);
+                    std.log.err("REVM execution failed: {s}", .{msg});
+                }
+            }
             defer c.revm_free_error(error_ptr);
             return error.ExecutionFailed;
         }
