@@ -64,8 +64,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SHL opcode (0x1b) - Shift left operation.
         pub fn shl(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const shift = try self.stack.pop();
-            const value = try self.stack.peek();
+            const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
+            const value = self.stack.peek_unsafe(); // Second from top - value to shift
             const result = if (shift >= @bitSizeOf(WordType)) blk: {
                 break :blk 0;
             } else blk: {
@@ -73,15 +73,15 @@ pub fn Handlers(comptime FrameType: type) type {
                 // shift is guaranteed to be < 256 here, safe to cast
                 break :blk value << @as(ShiftType, @truncate(shift));
             };
-            try self.stack.set_top(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SHR opcode (0x1c) - Logical shift right operation.
         pub fn shr(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const shift = try self.stack.pop();
-            const value = try self.stack.peek();
+            const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
+            const value = self.stack.peek_unsafe(); // Second from top - value to shift
             const result = if (shift >= @bitSizeOf(WordType)) blk: {
                 break :blk 0;
             } else blk: {
@@ -89,7 +89,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // shift is guaranteed to be < 256 here, safe to cast
                 break :blk value >> @as(ShiftType, @truncate(shift));
             };
-            try self.stack.set_top(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
