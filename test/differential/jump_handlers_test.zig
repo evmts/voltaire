@@ -12,10 +12,10 @@ test "differential: JUMP to valid destination" {
     // Test basic JUMP
     const bytecode = [_]u8{
         // Jump over bad instruction
-        0x60, 0x05, // PUSH1 5
+        0x60, 0x04, // PUSH1 4 (corrected jump destination)
         0x56,       // JUMP
         0xfe,       // INVALID (should be skipped)
-        0x5b,       // JUMPDEST (offset 5)
+        0x5b,       // JUMPDEST (offset 4)
         // Return 42
         0x60, 0x2a, // PUSH1 42
         0x60, 0x00, // PUSH1 0
@@ -60,13 +60,13 @@ test "differential: JUMPI conditional taken" {
     const bytecode = [_]u8{
         // Jump if 1 (true)
         0x60, 0x01, // PUSH1 1 (condition)
-        0x60, 0x08, // PUSH1 8 (destination)
+        0x60, 0x0a, // PUSH1 10 (destination - corrected)
         0x57,       // JUMPI
         // This should be skipped
         0x60, 0x00, // PUSH1 0
         0x60, 0x00, // PUSH1 0
         0x00,       // STOP
-        0x5b,       // JUMPDEST (offset 8)
+        0x5b,       // JUMPDEST (offset 10)
         // Return 1
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
@@ -89,14 +89,14 @@ test "differential: JUMPI conditional not taken" {
     const bytecode = [_]u8{
         // Don't jump if 0 (false)
         0x60, 0x00, // PUSH1 0 (condition)
-        0x60, 0x0a, // PUSH1 10 (destination)
+        0x60, 0x0b, // PUSH1 11 (destination - corrected)
         0x57,       // JUMPI
         // This should execute
         0x60, 0x02, // PUSH1 2
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
         0x00,       // STOP
-        0x5b,       // JUMPDEST (offset 10)
+        0x5b,       // JUMPDEST (offset 11)
         // This should not execute
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
@@ -147,13 +147,13 @@ test "differential: JUMPI with various conditions" {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // PUSH32 MAX_U256
-        0x60, 0x28, // PUSH1 40 (destination)
+        0x60, 0x27, // PUSH1 39 (destination - corrected)
         0x57,       // JUMPI
         // Should skip this
         0x60, 0x00, // PUSH1 0
         0x00,       // STOP
         
-        0x5b,       // JUMPDEST (offset 40)
+        0x5b,       // JUMPDEST (offset 39)
         // Return success
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
@@ -175,24 +175,24 @@ test "differential: nested jumps" {
     // Test complex jump patterns
     const bytecode = [_]u8{
         // First jump
-        0x60, 0x05, // PUSH1 5
+        0x60, 0x04, // PUSH1 4 (corrected)
         0x56,       // JUMP
         0xfe,       // INVALID
         
-        0x5b,       // JUMPDEST (offset 5)
+        0x5b,       // JUMPDEST (offset 4)
         // Second jump
-        0x60, 0x0a, // PUSH1 10
+        0x60, 0x09, // PUSH1 9 (corrected)
         0x56,       // JUMP
         0xfe,       // INVALID
         
-        0x5b,       // JUMPDEST (offset 10)
+        0x5b,       // JUMPDEST (offset 9)
         // Conditional jump back
         0x60, 0x01, // PUSH1 1
-        0x60, 0x14, // PUSH1 20
+        0x60, 0x10, // PUSH1 16 (corrected again)
         0x57,       // JUMPI
         0xfe,       // INVALID
         
-        0x5b,       // JUMPDEST (offset 20)
+        0x5b,       // JUMPDEST (offset 16)
         // Return
         0x60, 0x03, // PUSH1 3 (three jumps taken)
         0x60, 0x00, // PUSH1 0
@@ -214,13 +214,13 @@ test "differential: JUMP with stack operations" {
     // Test JUMP with dynamic destination calculation
     const bytecode = [_]u8{
         // Calculate jump destination
-        0x60, 0x08, // PUSH1 8
+        0x60, 0x06, // PUSH1 6 (corrected)
         0x60, 0x02, // PUSH1 2
-        0x01,       // ADD (8 + 2 = 10)
+        0x01,       // ADD (6 + 2 = 8)
         0x56,       // JUMP
         0xfe,       // INVALID
         0xfe,       // INVALID
-        0x5b,       // JUMPDEST (offset 10)
+        0x5b,       // JUMPDEST (offset 8)
         
         // Return calculated value
         0x60, 0x0a, // PUSH1 10
@@ -248,13 +248,13 @@ test "differential: PC opcode with jumps" {
         0x52,       // MSTORE
         
         // Jump forward
-        0x60, 0x0a, // PUSH1 10
+        0x60, 0x08, // PUSH1 8 (corrected)
         0x56,       // JUMP
         0xfe,       // INVALID
         
-        0x5b,       // JUMPDEST (offset 10)
+        0x5b,       // JUMPDEST (offset 8)
         // Get PC after jump
-        0x58,       // PC (should be 11)
+        0x58,       // PC (should be 9)
         0x60, 0x20, // PUSH1 32
         0x52,       // MSTORE
         
@@ -331,12 +331,12 @@ test "differential: JUMPDEST in PUSH data" {
     // Test that JUMPDEST inside PUSH data is not valid
     const bytecode = [_]u8{
         // Try to jump into PUSH data
-        0x60, 0x04, // PUSH1 4
+        0x60, 0x06, // PUSH1 6 (jump to real JUMPDEST)
         0x56,       // JUMP
         0x61, 0x5b, 0x5b, // PUSH2 0x5b5b (contains JUMPDEST bytes)
         
         // Real JUMPDEST
-        0x5b,       // JUMPDEST (offset 7)
+        0x5b,       // JUMPDEST (offset 6)
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE

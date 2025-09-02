@@ -136,7 +136,7 @@ test "differential: STOP in conditional execution branch" {
         0x60, 0x01, // PUSH1 1
         0x60, 0x01, // PUSH1 1
         0x14,       // EQ (result: 1/true)
-        0x60, 0x0e, // PUSH1 14 (jump destination)
+        0x60, 0x12, // PUSH1 18 (jump destination - corrected)
         0x57,       // JUMPI (should jump since condition is true)
         
         // This should not execute

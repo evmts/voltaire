@@ -128,6 +128,7 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
         pub fn finalizeWithSchedule(self: *@This(), schedule: []const Self.Item) !Self.JumpTable {
             const builder_entries = try self.entries.toOwnedSlice(self.allocator);
             defer self.allocator.free(builder_entries);
+            
 
             // Sort builder entries by PC
             std.sort.block(BuilderEntry, builder_entries, {}, struct {
