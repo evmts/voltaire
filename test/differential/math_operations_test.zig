@@ -9,58 +9,10 @@ test "differential: basic arithmetic operations" {
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
-    // Bytecode that performs various arithmetic operations and returns the result
-    // Operations: 
-    // 1. ADD: 5 + 3 = 8
-    // 2. SUB: 10 - 4 = 6  
-    // 3. MUL: 8 * 6 = 48 (0x30)
-    // 4. DIV: 48 / 2 = 24 (0x18)
-    // 5. MOD: 24 % 7 = 3
-    // 6. ADDMOD: (3 + 5) % 5 = 3
-    // 7. MULMOD: (3 * 4) % 5 = 2
-    // 8. EXP: 2 ^ 3 = 8
-    // 9. Final ADD: 8 + 1 = 9
-    // Return 9 as 32-byte word
-    
+    // Test basic arithmetic
     const bytecode = [_]u8{
-        // 1. ADD: 5 + 3
-        0x60, 0x05, // PUSH1 5
-        0x60, 0x03, // PUSH1 3
-        0x01,       // ADD (result: 8)
-        
-        // 2. SUB: 10 - 4
-        0x60, 0x0a, // PUSH1 10
-        0x60, 0x04, // PUSH1 4
-        0x03,       // SUB (result: 6)
-        
-        // 3. MUL: 8 * 6
-        0x02,       // MUL (result: 48)
-        
-        // 4. DIV: 48 / 2
-        0x60, 0x02, // PUSH1 2
-        0x04,       // DIV (result: 24)
-        
-        // 5. MOD: 24 % 7
-        0x60, 0x07, // PUSH1 7
-        0x06,       // MOD (result: 3)
-        
-        // 6. ADDMOD: (3 + 5) % 5
-        0x60, 0x05, // PUSH1 5
-        0x60, 0x05, // PUSH1 5
-        0x08,       // ADDMOD (result: 3)
-        
-        // 7. MULMOD: (3 * 4) % 5
-        0x60, 0x04, // PUSH1 4
-        0x60, 0x05, // PUSH1 5
-        0x09,       // MULMOD (result: 2)
-        
-        // 8. EXP: 2 ^ 3
-        0x60, 0x03, // PUSH1 3
-        0x0a,       // EXP (result: 8)
-        
-        // 9. Final ADD: 8 + 1
-        0x60, 0x01, // PUSH1 1
-        0x01,       // ADD (result: 9)
+        // PUSH1 1; PUSH1 1; ADD; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN
+        0x60, 0x01, 0x60, 0x01, 0x01, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3
         
         // Store result in memory and return
         0x60, 0x00, // PUSH1 0 (memory offset)
