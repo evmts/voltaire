@@ -470,7 +470,7 @@ pub const Revm = struct {
                     try self.executeWithTrace(p.caller, p.to, p.value, p.input, p.gas, path)
                 else
                     try self.execute(p.caller, p.to, p.value, p.input, p.gas);
-                defer exec_result.deinit();
+                defer exec_result.*.deinit();
                 
                 return self.convertToCallResult(exec_result, p.gas);
             },
@@ -481,7 +481,7 @@ pub const Revm = struct {
                     try self.executeWithTrace(p.caller, p.to, p.value, p.input, p.gas, path)
                 else
                     try self.execute(p.caller, p.to, p.value, p.input, p.gas);
-                defer exec_result.deinit();
+                defer exec_result.*.deinit();
                 
                 return self.convertToCallResult(exec_result, p.gas);
             },
@@ -491,14 +491,14 @@ pub const Revm = struct {
                     try self.executeWithTrace(p.caller, p.to, 0, p.input, p.gas, path)
                 else
                     try self.execute(p.caller, p.to, 0, p.input, p.gas);
-                defer exec_result.deinit();
+                defer exec_result.*.deinit();
                 
                 return self.convertToCallResult(exec_result, p.gas);
             },
             .staticcall => |p| {
                 // Use the existing staticcall implementation
                 const exec_result = try self.staticcall_internal(p.caller, p.to, p.input, p.gas);
-                defer exec_result.deinit();
+                defer exec_result.*.deinit();
                 
                 return self.convertToCallResult(exec_result, p.gas);
             },
@@ -507,7 +507,7 @@ pub const Revm = struct {
                     try self.executeWithTrace(p.caller, null, p.value, p.init_code, p.gas, path)
                 else
                     try self.execute(p.caller, null, p.value, p.init_code, p.gas);
-                defer exec_result.deinit();
+                defer exec_result.*.deinit();
                 
                 return self.convertToCallResult(exec_result, p.gas);
             },
@@ -518,7 +518,7 @@ pub const Revm = struct {
                     try self.executeWithTrace(p.caller, null, p.value, p.init_code, p.gas, path)
                 else
                     try self.execute(p.caller, null, p.value, p.init_code, p.gas);
-                defer exec_result.deinit();
+                defer exec_result.*.deinit();
                 
                 return self.convertToCallResult(exec_result, p.gas);
             },

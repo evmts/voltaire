@@ -198,7 +198,6 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
         /// Compare execution results between REVM and Guillotine
         fn compareResults(
             self: *@This(),
-            params: CallParams,
             revm_result: ?revm_module.CallResult,
             guillotine_result: CallResult,
             errors: *std.ArrayList([]const u8),
