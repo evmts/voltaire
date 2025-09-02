@@ -24,7 +24,7 @@ fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
     return result;
 }
 
-test "ERC20 deployment - REVM vs Guillotine comparison with tracing" {
+test "ERC20 deployment - REVM vs Guillotine differential testing" {
     std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
     
@@ -47,26 +47,7 @@ test "ERC20 deployment - REVM vs Guillotine comparison with tracing" {
     log.info("Is deployment code: {}", .{is_deployment_code});
     try std.testing.expect(is_deployment_code);
     
-    // First test with REVM to verify it works
-    log.info("\n=== Testing with REVM (reference implementation) ===", .{});
-    try testRevmDeployment(allocator, init_code);
-    
-    // Parse and pretty print the bytecode to understand what we're executing
-    const BytecodeType = evm.Bytecode(.{});
-    var bytecode_analyzed = try BytecodeType.init(allocator, init_code);
-    defer bytecode_analyzed.deinit();
-    
-    // Pretty print the bytecode
-    const bytecode_pretty = try bytecode_analyzed.pretty_print(allocator);
-    defer allocator.free(bytecode_pretty);
-    
-    // Write bytecode analysis to file
-    const bytecode_file_out = try std.fs.cwd().createFile("erc20_bytecode_analysis.txt", .{});
-    defer bytecode_file_out.close();
-    try bytecode_file_out.writeAll(bytecode_pretty);
-    log.info("Bytecode analysis written to erc20_bytecode_analysis.txt", .{});
-    
-    // Setup EVM
+    // Setup EVM state
     const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
     
     var database = evm.Database.init(allocator);
@@ -99,33 +80,34 @@ test "ERC20 deployment - REVM vs Guillotine comparison with tracing" {
         .chain_id = 1,
     };
     
-    // Gas amounts array not needed since we're using fixed amount
+    // Create differential tracer
+    log.info("\n=== Starting Differential Testing: REVM vs Guillotine ===", .{});
     
-    // Now test with Guillotine
-    log.info("\n=== Testing with Guillotine ===", .{});
+    const DifferentialTracer = evm.differential_tracer.DifferentialTracer(revm);
     
-    // Test with same gas amount that worked for REVM
-    const gas_amount: u64 = 1_000_000;
-    
-    log.info("\n=== Testing Guillotine with gas: {} (with DebuggingTracer) ===", .{gas_amount});
-    
-    // Create EVM with debugging tracer  
-    const EvmWithTracer = evm.Evm(.{
-        .TracerType = evm.DebuggingTracer,
-    });
-    
-    var deploy_evm = try EvmWithTracer.init(
+    var tracer = try DifferentialTracer.init(
         allocator,
         &database,
         block_info,
         tx_context,
-        0,
         caller_address,
-        .CANCUN
+        .{
+            .write_trace_files = true, // Keep traces for debugging
+            .context_before = 20,
+            .context_after = 20,
+        },
     );
-    defer deploy_evm.deinit();
-        
-    // Try to deploy the contract
+    defer tracer.deinit();
+    
+    // Set up REVM with same state
+    try tracer.revm_vm.setBalance(caller_address, std.math.maxInt(u256));
+    
+    // Test with gas amount that should work
+    const gas_amount: u64 = 1_000_000;
+    
+    log.info("\nTesting ERC20 deployment with {} gas", .{gas_amount});
+    
+    // Create deployment params
     const create_params = evm.CallParams{
         .create = .{
             .caller = caller_address,
@@ -135,39 +117,44 @@ test "ERC20 deployment - REVM vs Guillotine comparison with tracing" {
         },
     };
     
-    var deploy_result = deploy_evm.call(create_params);
-    defer deploy_result.deinit(allocator);
-    
-    log.info("Deployment result: success={}, gas_left={}, output_len={}", .{
-        deploy_result.success,
-        deploy_result.gas_left,
-        deploy_result.output.len,
-    });
-    
-    // Log trace summary if available
-    if (deploy_result.trace) |trace| {
-        log.info("Guillotine trace has {} steps", .{trace.steps.len});
-    }
-    
-    if (!deploy_result.success) {
-        log.warn("❌ Deployment failed with {} gas", .{gas_amount});
-        if (deploy_result.output.len > 0) {
-            log.info("Revert data: {x}", .{deploy_result.output});
-            // Try to decode panic code if it's a Solidity panic
-            if (deploy_result.output.len >= 36) {
-                const panic_selector = deploy_result.output[0..4];
-                const expected_selector = [_]u8{ 0x4e, 0x48, 0x7b, 0x71 }; // Panic(uint256)
-                if (std.mem.eql(u8, panic_selector, &expected_selector)) {
-                    const panic_code = std.mem.readInt(u256, deploy_result.output[4..36], .big);
-                    log.info("Solidity panic code: 0x{x} ({})", .{ panic_code, panic_code });
-                    // 0x41 = arithmetic overflow/underflow
-                }
+    // Run differential test
+    var result = tracer.call(create_params) catch |err| {
+        log.err("\n❌ DIFFERENTIAL TEST FAILED: {}", .{err});
+        log.err("This indicates that Guillotine and REVM produced different results!", .{});
+        log.err("Check the error messages above for details on where they diverged.", .{});
+        
+        // Try to get partial trace information
+        if (tracer.guillotine_evm.tracer.trace_steps.items.len > 0) {
+            log.info("\nGuillotine executed {} opcodes before divergence/failure", .{
+                tracer.guillotine_evm.tracer.trace_steps.items.len,
+            });
+            
+            // Show last few opcodes
+            const trace_steps = tracer.guillotine_evm.tracer.trace_steps.items;
+            const start_idx = if (trace_steps.len > 10) trace_steps.len - 10 else 0;
+            
+            log.info("\nLast {} opcodes executed by Guillotine:", .{trace_steps.len - start_idx});
+            for (trace_steps[start_idx..], start_idx..) |step, idx| {
+                log.info("  Step {}: PC={}, Opcode={s}, Gas={}", .{
+                    idx,
+                    step.pc,
+                    step.op,
+                    step.gas,
+                });
             }
         }
         
+        return err;
+    };
+    defer result.deinit(allocator);
+    
+    if (result.success) {
+        log.info("\n✅ DIFFERENTIAL TEST PASSED!", .{});
+        log.info("Both REVM and Guillotine successfully deployed the ERC20 contract", .{});
+        log.info("Gas used: {}", .{result.gasConsumed(gas_amount)});
+        log.info("Output (runtime code) length: {} bytes", .{result.output.len});
     } else {
-        log.info("✅ Deployment succeeded with {} gas", .{gas_amount});
-        log.info("Gas used: {}", .{gas_amount - deploy_result.gas_left});
+        log.warn("\n⚠️ Both EVMs failed, but in the same way (which is consistent)", .{});
     }
 }
 
