@@ -949,11 +949,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult.failure(0);
             };
 
-            // Return the contract address as 20 bytes (unpadded)
-            // The handler will convert it to u256 when pushing to stack
-            const out20 = self.small_output_buf[0..20];
-            @memcpy(out20, &args.contract_address.bytes);
-            return CallResult.success_with_output(result.gas_left, out20);
+            // Return the deployed bytecode as output
+            // The contract address is handled separately by the CREATE opcode handler
+            return CallResult.success_with_output(result.gas_left, result.output);
         }
 
         /// Convert tracer data to ExecutionTrace format
