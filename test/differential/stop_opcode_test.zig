@@ -102,6 +102,26 @@ test "differential: STOP after storage operations" {
     var testor = try DifferentialTestor.init(allocator);
     defer testor.deinit();
     
+    // TODO: Gas mismatch investigation (REVM=25517 vs Guillotine=65417)
+    // The ~40k gas difference suggests we're charging cold access costs when we shouldn't.
+    // 
+    // What we found:
+    // 1. We ARE pre-warming transaction addresses (origin, target, coinbase) per EIP-2929
+    // 2. We ARE warming the contract address when executing it
+    // 3. The issue seems to be that storage slots are being treated as cold when they should be warm
+    // 
+    // Possible causes to investigate:
+    // - Access list might be getting cleared between pre-warming and execution
+    // - The contract address used for storage ops might differ from the warmed address
+    // - We might be double-counting access costs (once for reading current value, once for access check)
+    // - The access list warming might not be persisting correctly across the call boundary
+    //
+    // This bytecode does:
+    // - SSTORE key=1, value=0x11 (zero to non-zero, should cost 20000 gas when warm)
+    // - SSTORE key=2, value=0x22 (zero to non-zero, should cost 20000 gas when warm)  
+    // - SLOAD key=1 (should cost 100 gas when warm)
+    // - Total expected: ~40120 gas (but REVM uses 25517, we use 65417)
+    
     // Test STOP after storage operations
     const bytecode = [_]u8{
         // Store values in storage
