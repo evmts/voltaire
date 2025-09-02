@@ -519,8 +519,8 @@ test "differential: advanced arithmetic" {
     result_copy.deinit(allocator);
 }
 
-test "differential: basic arithmetic" {
-    std.debug.print("\n=== Testing basic arithmetic ===\n", .{});
+test "differential: simple add" {
+    std.debug.print("\n=== Testing simple add operation ===\n", .{});
     const allocator = testing.allocator;
     
     var testor = try DifferentialTestor.init(allocator);
@@ -528,7 +528,7 @@ test "differential: basic arithmetic" {
     
     // std.debug.print("\n[DEBUG] Starting signed arithmetic edge cases test\n", .{});
     
-    // Test arithmetic overflow with signed values
+    // Test simple arithmetic operation
     const bytecode = [_]u8{
         // SDIV: MIN_INT / -1 = MIN_INT (overflow)
         0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
