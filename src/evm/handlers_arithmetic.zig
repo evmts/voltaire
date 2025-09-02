@@ -13,63 +13,63 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = try self.stack.pop();
-            const a = try self.stack.pop();
+            const b = self.stack.pop_unsafe(); // Second operand (top of stack)
+            const a = self.stack.peek_unsafe(); // First operand (second element)
             const result = a +% b;
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = try self.stack.pop();
-            const a = try self.stack.pop();
+            const b = self.stack.pop_unsafe(); // Second operand (top of stack)
+            const a = self.stack.peek_unsafe(); // First operand (second element)
             const result = a *% b;
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // SUB operation: pop b, pop a, push a - b
-            const b = try self.stack.pop();
-            const a = try self.stack.pop();
+            // SUB operation: pop a (top), peek b (second), push a - b
+            const a = self.stack.pop_unsafe();
+            const b = self.stack.peek_unsafe();
             const result = a -% b;
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.pop(); // Second pop is dividend
-            const result = if (divisor == 0) 0 else dividend / divisor;
-            try self.stack.push(result);
+            const a = self.stack.pop_unsafe(); // First pop (divisor)
+            const b = self.stack.peek_unsafe(); // Second element (dividend)
+            const result = if (a == 0) 0 else b / a;
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.pop(); // Second pop is dividend
+            const a = self.stack.pop_unsafe(); // First pop (divisor)
+            const b = self.stack.peek_unsafe(); // Second element (dividend)
 
-            log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ dividend, divisor });
+            log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ b, a });
             var result: WordType = undefined;
-            if (divisor == 0) {
+            if (a == 0) {
                 result = 0;
                 log.debug("SDIV: division by zero, result=0", .{});
             } else {
-                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(dividend));
-                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(divisor));
+                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
+                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
                 log.debug("SDIV: dividend_signed={}, divisor_signed={}", .{ dividend_signed, divisor_signed });
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
                 if (dividend_signed == min_signed and divisor_signed == -1) {
                     // MIN / -1 overflow case
-                    result = dividend;
+                    result = b;
                     log.debug("SDIV: overflow case, result=0x{x}", .{result});
                 } else {
                     const result_signed = @divTrunc(dividend_signed, divisor_signed);
@@ -77,31 +77,31 @@ pub fn Handlers(comptime FrameType: type) type {
                     log.debug("SDIV: result_signed={}, result=0x{x}", .{ result_signed, result });
                 }
             }
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.pop(); // Second pop is dividend
-            const result = if (divisor == 0) 0 else dividend % divisor;
-            try self.stack.push(result);
+            const a = self.stack.pop_unsafe(); // First pop 
+            const b = self.stack.peek_unsafe(); // Second element 
+            const result = if (a == 0) 0 else b % a;
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const divisor = try self.stack.pop(); // First pop is divisor
-            const dividend = try self.stack.pop(); // Second pop is dividend
+            const a = self.stack.pop_unsafe(); // First pop (divisor)
+            const b = self.stack.peek_unsafe(); // Second element (dividend)
             var result: WordType = undefined;
-            if (divisor == 0) {
+            if (a == 0) {
                 result = 0;
             } else {
-                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(dividend));
-                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(divisor));
+                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
+                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
                 // Special case: MIN_INT % -1 = 0 (to avoid overflow)
                 if (dividend_signed == min_signed and divisor_signed == -1) {
@@ -111,7 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     result = @as(WordType, @bitCast(result_signed));
                 }
             }
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -216,8 +216,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const exponent = try self.stack.pop(); // μ_s[0] - exponent (top)
-            const base = try self.stack.pop(); // μ_s[1] - base (second)
+            const exponent = self.stack.pop_unsafe(); // μ_s[0] - exponent (top)
+            const base = self.stack.peek_unsafe(); // μ_s[1] - base (second)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
@@ -247,15 +247,15 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
                 base_working *%= base_working;
             }
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
         pub fn signextend(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const ext = try self.stack.pop();
-            const value = try self.stack.pop();
+            const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
+            const value = self.stack.peek_unsafe(); // Value to extend (second element)
             var result: WordType = undefined;
             if (ext >= 31) {
                 result = value;
@@ -270,7 +270,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     result = value & mask;
                 }
             }
-            try self.stack.push(result);
+            self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
