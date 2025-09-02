@@ -119,12 +119,12 @@ pub const DifferentialTestor = struct {
 
         // Setup REVM
         var revm_vm = try revm.Revm.init(allocator, .{
-            .gas_limit = gas_limit,
+            .gas_limit = 100000,
             .chain_id = 1,
             .enable_tracing = config.enable_tracing,
         });
 
-        try revm_vm.setBalance(caller, gas_limit00);
+        try revm_vm.setBalance(caller, 10_000_000);
 
         // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
@@ -151,7 +151,7 @@ pub const DifferentialTestor = struct {
             .chain_id = 1,
             .number = 1,
             .timestamp = 0,
-            .gas_limit = gas_limit,
+            .gas_limit = 100000,
             .coinbase = primitives.Address.ZERO_ADDRESS,
             .difficulty = 0,
             .base_fee = 0,
@@ -162,7 +162,7 @@ pub const DifferentialTestor = struct {
 
         const tx_context = guillotine_evm.TransactionContext{
             .chain_id = 1,
-            .gas_limit = gas_limit,
+            .gas_limit = 100000,
             .coinbase = primitives.Address.ZERO_ADDRESS,
             .blob_versioned_hashes = &.{},
             .blob_base_fee = 0,
@@ -488,7 +488,7 @@ pub const DifferentialTestor = struct {
             .to = to,
             .value = value,
             .input = input,
-            .gas = gas_limit,
+            .gas = 100_000,
         } };
         
         var result = self.revm_instance.call(params) catch |err| {
@@ -542,7 +542,7 @@ pub const DifferentialTestor = struct {
                 .to = to,
                 .value = value,
                 .input = input,
-                .gas = gas_limit,
+                .gas = 100_000,
             },
         };
 
