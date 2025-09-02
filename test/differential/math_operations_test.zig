@@ -520,6 +520,7 @@ test "differential: advanced arithmetic" {
 }
 
 test "differential: basic arithmetic" {
+    std.debug.print("\n=== Testing basic arithmetic ===\n", .{});
     const allocator = testing.allocator;
     
     var testor = try DifferentialTestor.init(allocator);
