@@ -75,58 +75,69 @@ pub const DifferentialTracer = struct {
     }
     
     pub fn call(self: *DifferentialTracer, params: CallParams) !CallResult {
-        // Execute on REVM first
-        var revm_result: ?revm.ExecutionResult = null;
-        switch (params) {
-            .call => |call_params| {
-                revm_result = try self.revm_vm.call(
-                    call_params.caller,
-                    call_params.to,
-                    call_params.value,
-                    call_params.input,
-                    call_params.gas,
-                );
-            },
-            .create => |create_params| {
-                revm_result = try self.revm_vm.create(
-                    create_params.caller,
-                    create_params.value,
-                    create_params.init_code,
-                    create_params.gas,
-                );
-            },
-            else => {
-                log.warn("Unsupported call type for differential testing", .{});
-            },
-        }
-        defer if (revm_result) |*r| {
-            r.deinit();
+        // Convert EVM CallParams to REVM CallParams
+        const revm_params = switch (params) {
+            .call => |p| revm.CallParams{ .call = .{
+                .caller = p.caller,
+                .to = p.to,
+                .value = p.value,
+                .input = p.input,
+                .gas = p.gas,
+            } },
+            .callcode => |p| revm.CallParams{ .callcode = .{
+                .caller = p.caller,
+                .to = p.to,
+                .value = p.value,
+                .input = p.input,
+                .gas = p.gas,
+            } },
+            .delegatecall => |p| revm.CallParams{ .delegatecall = .{
+                .caller = p.caller,
+                .to = p.to,
+                .input = p.input,
+                .gas = p.gas,
+            } },
+            .staticcall => |p| revm.CallParams{ .staticcall = .{
+                .caller = p.caller,
+                .to = p.to,
+                .input = p.input,
+                .gas = p.gas,
+            } },
+            .create => |p| revm.CallParams{ .create = .{
+                .caller = p.caller,
+                .value = p.value,
+                .init_code = p.init_code,
+                .gas = p.gas,
+            } },
+            .create2 => |p| revm.CallParams{ .create2 = .{
+                .caller = p.caller,
+                .value = p.value,
+                .init_code = p.init_code,
+                .salt = p.salt,
+                .gas = p.gas,
+            } },
         };
+        
+        // Execute on REVM first
+        var revm_result = try self.revm_vm.call(revm_params);
+        defer revm_result.deinit();
         
         // Execute on Guillotine
         const guillotine_result = try self.guillotine_evm.call(params);
         
         // Compare results
-        if (revm_result) |revm_res| {
-            if (revm_res.success != guillotine_result.success) {
-                log.err("❌ SUCCESS MISMATCH: REVM={}, Guillotine={}", .{ 
-                    revm_res.success, 
-                    guillotine_result.success 
-                });
-            } else {
-                log.info("✅ Success status matches: {}", .{revm_res.success});
-            }
-            
-            const guillotine_gas_used = guillotine_result.gasConsumed(
-                switch (params) {
-                    .call => |p| p.gas,
-                    .create => |p| p.gas,
-                    else => 0,
-                }
-            );
-            
-            if (revm_res.gas_used != guillotine_gas_used) {
-                log.err("❌ GAS MISMATCH: REVM={}, Guillotine={}", .{ 
+        if (revm_result.success != guillotine_result.success) {
+            log.err("❌ SUCCESS MISMATCH: REVM={}, Guillotine={}", .{ 
+                revm_result.success, 
+                guillotine_result.success 
+            });
+        } else {
+            log.info("✅ Success status matches: {}", .{revm_result.success});
+        }
+        
+        // Compare gas (both now have gas_left)
+        if (revm_result.gas_left != guillotine_result.gas_left) {
+            log.err("❌ GAS MISMATCH: REVM gas_left={}, Guillotine gas_left={}", .{ 
                     revm_res.gas_used, 
                     guillotine_gas_used 
                 });
