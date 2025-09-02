@@ -29,7 +29,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-
+            
             // Charge gas for storage access
             if (self.gas_remaining < access_cost) {
                 return Error.OutOfGas;
@@ -76,7 +76,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Calculate gas cost based on EIP-2200 and EIP-2929
             var gas_cost: u64 = undefined;
             const is_warm = access_cost == GasConstants.WarmStorageReadCost;
-
+            
             if (current_value == value) {
                 // No-op: value doesn't change
                 gas_cost = if (is_warm) GasConstants.WarmStorageReadCost else access_cost;
@@ -92,7 +92,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Non-zero to non-zero (different value)
                 gas_cost = if (is_warm) GasConstants.SstoreClearGas else access_cost + GasConstants.SstoreClearGas - GasConstants.WarmStorageReadCost;
             }
-
+            
             if (self.gas_remaining < gas_cost) {
                 return Error.OutOfGas;
             }

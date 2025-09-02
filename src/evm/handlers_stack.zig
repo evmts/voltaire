@@ -77,9 +77,11 @@ pub fn Handlers(comptime FrameType: type) type {
                     const op_data = dispatch.getOpData(.{ .regular = push_opcode });
                     
                     if (push_n <= 8) {
-                        try self.stack.push(op_data.metadata.value);
+                        const value = op_data.metadata.value;
+                        try self.stack.push(value);
                     } else {
-                        try self.stack.push(op_data.metadata.value.*);
+                        const value = op_data.metadata.value.*;
+                        try self.stack.push(value);
                     }
                     
                     return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
