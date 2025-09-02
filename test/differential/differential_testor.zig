@@ -134,14 +134,14 @@ pub const DifferentialTestor = struct {
         db_no_trace.* = guillotine_evm.Database.init(allocator);
 
         try db.set_account(caller.bytes, .{
-            .balance = gas_limit00,
+            .balance = 10_000_000,
             .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
         });
         
         try db_no_trace.set_account(caller.bytes, .{
-            .balance = gas_limit00,
+            .balance = 10_000_000,
             .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
