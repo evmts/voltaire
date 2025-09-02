@@ -152,10 +152,8 @@ test "guillotine only: comparison operations - correct behavior" {
     };
 
     const NoTraceEVM = Evm(.{
-        .tracer_type = @import("evm").tracer.NoOpTracer,
-        .frame_config = .{
-            .DatabaseType = Database,
-        },
+        .TracerType = @import("evm").tracer.NoOpTracer,
+        .DatabaseType = Database,
     });
     
     var evm = try NoTraceEVM.init(
@@ -435,10 +433,8 @@ test "guillotine only: exp edge cases - correct behavior" {
     };
 
     const NoTraceEVM = Evm(.{
-        .tracer_type = @import("evm").tracer.NoOpTracer,
-        .frame_config = .{
-            .DatabaseType = Database,
-        },
+        .TracerType = @import("evm").tracer.NoOpTracer,
+        .DatabaseType = Database,
     });
     
     var evm = try NoTraceEVM.init(

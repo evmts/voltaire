@@ -80,17 +80,13 @@ pub const DifferentialTestConfig = struct {
 };
 
 const TracedEVMType = guillotine_evm.Evm(.{
-    .tracer_type = guillotine_evm.tracer.DebuggingTracer,
-    .frame_config = .{
-        .DatabaseType = guillotine_evm.Database,
-    },
+    .TracerType = guillotine_evm.tracer.DebuggingTracer,
+    .DatabaseType = guillotine_evm.Database,
 });
 
 const NoTraceEVMType = guillotine_evm.Evm(.{
-    .tracer_type = guillotine_evm.tracer.NoOpTracer,
-    .frame_config = .{
-        .DatabaseType = guillotine_evm.Database,
-    },
+    .TracerType = guillotine_evm.tracer.NoOpTracer,
+    .DatabaseType = guillotine_evm.Database,
 });
 
 /// Main differential testing coordinator with configurable tracing

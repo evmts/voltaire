@@ -111,7 +111,7 @@ test "ERC20 deployment - REVM vs Guillotine comparison with tracing" {
     
     // Create EVM with debugging tracer  
     const EvmWithTracer = evm.Evm(.{
-        .tracer_type = evm.DebuggingTracer,
+        .TracerType = evm.DebuggingTracer,
     });
     
     var deploy_evm = try EvmWithTracer.init(

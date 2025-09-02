@@ -45,10 +45,8 @@ test "guillotine standalone: basic arithmetic operations" {
 
     // Use EVM without tracing for cleaner output
     const NoTraceEVM = Evm(.{
-        .tracer_type = @import("evm").tracer.NoOpTracer,
-        .frame_config = .{
-            .DatabaseType = Database,
-        },
+        .TracerType = @import("evm").tracer.NoOpTracer,
+        .DatabaseType = Database,
     });
     
     var evm = try NoTraceEVM.init(

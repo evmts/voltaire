@@ -55,7 +55,7 @@ test "ERC20 deployment gas consumption issue" {
     try database.set_account(caller_address.bytes, caller_account);
     
     // Create EVM instance with tracer
-    var evm_instance = try Evm(.{ .tracer_type = OpcodeTracer }).init(
+    var evm_instance = try Evm(.{ .TracerType = OpcodeTracer }).init(
         allocator,
         &database,
         block_info,
@@ -104,7 +104,7 @@ test "ERC20 deployment gas consumption issue" {
         try test_db.set_account(caller_address.bytes, caller_account);
         
         // Create fresh EVM instance with tracer
-        var test_evm = try Evm(.{ .tracer_type = OpcodeTracer }).init(
+        var test_evm = try Evm(.{ .TracerType = OpcodeTracer }).init(
             allocator,
             &test_db,
             block_info,
@@ -176,7 +176,7 @@ test "ERC20 deployment gas consumption issue" {
     defer minimal_db.deinit();
     try minimal_db.set_account(caller_address.bytes, caller_account);
     
-    var minimal_evm = try Evm(.{ .tracer_type = OpcodeTracer }).init(
+    var minimal_evm = try Evm(.{ .TracerType = OpcodeTracer }).init(
         allocator,
         &minimal_db,
         block_info,
