@@ -318,11 +318,11 @@ pub const DifferentialTestor = struct {
     pub fn test_bytecode_with_calldata(self: *DifferentialTestor, bytecode: []const u8, calldata: []const u8) !void {
         // First test with tracing enabled (if available)
         if (self.guillotine_instance_traced) |_| {
-            try self.test_bytecode_with_tracing_and_calldata(bytecode, calldata, true);
+            try self.test_bytecode_with_tracing_and_calldata_and_gas(bytecode, calldata, 1_000_000, true);
         }
         
         // Then test with tracing disabled
-        try self.test_bytecode_with_tracing_and_calldata(bytecode, calldata, false);
+        try self.test_bytecode_with_tracing_and_calldata_and_gas(bytecode, calldata, 1_000_000, false);
     }
     
     /// Internal helper to test bytecode with specific tracing configuration and calldata
