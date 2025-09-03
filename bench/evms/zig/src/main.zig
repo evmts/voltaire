@@ -1,23 +1,19 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
-const tracer_mod = @import("evm").tracer;
-
-pub const std_options: std.Options = .{
-    .log_level = .warn,  
-};
+// Tracer removed for benchmark accuracy and minimal overhead
 
 fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
     const clean_hex = if (std.mem.startsWith(u8, hex_str, "0x")) hex_str[2..] else hex_str;
     const trimmed = std.mem.trim(u8, clean_hex, &std.ascii.whitespace);
     if (trimmed.len == 0) return allocator.alloc(u8, 0);
-    
+
     const result = try allocator.alloc(u8, trimmed.len / 2);
     var i: usize = 0;
     while (i < trimmed.len) : (i += 2) {
         const byte_str = trimmed[i .. i + 2];
         result[i / 2] = std.fmt.parseInt(u8, byte_str, 16) catch {
-            std.debug.print("Failed to parse hex at position {}: '{s}'\n", .{i, byte_str});
+            std.debug.print("Failed to parse hex at position {}: '{s}'\n", .{ i, byte_str });
             return error.InvalidHexCharacter;
         };
     }
@@ -50,6 +46,8 @@ pub fn main() !void {
     var calldata_hex: ?[]const u8 = null;
     var num_runs: u32 = 1;
     var verbose: bool = false;
+    var expected_output_hex: ?[]const u8 = null;
+    var min_gas_opt: ?u64 = null;
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -79,16 +77,23 @@ pub fn main() !void {
             i += 1;
         } else if (std.mem.eql(u8, args[i], "--verbose")) {
             verbose = true;
-        } else if (std.mem.eql(u8, args[i], "--validate-correctness") or 
-                   std.mem.eql(u8, args[i], "--expected-gas") or
-                   std.mem.eql(u8, args[i], "--expected-output") or
-                   std.mem.eql(u8, args[i], "--min-gas")) {
-            // Skip these for now, they're not used with FixtureRunner
-            if (std.mem.eql(u8, args[i], "--expected-gas") or 
-                std.mem.eql(u8, args[i], "--expected-output") or
-                std.mem.eql(u8, args[i], "--min-gas")) {
-                i += 1; // Skip the value
+        } else if (std.mem.eql(u8, args[i], "--expected-output")) {
+            if (i + 1 >= args.len) {
+                std.debug.print("Error: --expected-output requires a hex value\n", .{});
+                std.process.exit(1);
             }
+            expected_output_hex = args[i + 1];
+            i += 1;
+        } else if (std.mem.eql(u8, args[i], "--min-gas")) {
+            if (i + 1 >= args.len) {
+                std.debug.print("Error: --min-gas requires a number\n", .{});
+                std.process.exit(1);
+            }
+            min_gas_opt = std.fmt.parseInt(u64, args[i + 1], 10) catch {
+                std.debug.print("Error: --min-gas must be a number\n", .{});
+                std.process.exit(1);
+            };
+            i += 1;
         } else {
             std.debug.print("Error: Unknown argument {s}\n", .{args[i]});
             std.process.exit(1);
@@ -116,11 +121,11 @@ pub fn main() !void {
 
     // Setup similar to revm and geth
     const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
-    
+
     // Create database
     var database = evm.Database.init(allocator);
     defer database.deinit();
-    
+
     // Set up caller with large balance
     try database.set_account(caller_address.bytes, .{
         .balance = std.math.maxInt(u256),
@@ -128,14 +133,14 @@ pub fn main() !void {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     });
-    
+
     // Setup block info and transaction context
     const block_info = evm.BlockInfo{
         .chain_id = 1,
-        .number = 20_000_000,  // Ensure after all fork blocks
-        .timestamp = 1_800_000_000,  // Ensure after Shanghai
+        .number = 20_000_000, // Ensure after all fork blocks
+        .timestamp = 1_800_000_000, // Ensure after Shanghai
         .difficulty = 0,
-        .gas_limit = 1_000_000_000,
+        .gas_limit = 2_100_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .base_fee = 7,
         .prev_randao = [_]u8{0} ** 32,
@@ -144,211 +149,148 @@ pub fn main() !void {
     };
 
     const tx_context = evm.TransactionContext{
-        .gas_limit = 1_000_000_000,
+        .gas_limit = 2_100_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
-    // Check if this is deployment bytecode or runtime bytecode
-    // Deployment bytecode typically starts with 0x6080604052 (PUSH1 0x80 PUSH1 0x40 MSTORE)
-    const is_deployment_code = init_code.len > 4 and 
-        init_code[0] == 0x60 and init_code[1] == 0x80 and 
-        init_code[2] == 0x60 and init_code[3] == 0x40;
-    
-    if (verbose) {
-        std.debug.print("Bytecode len={}, treating as runtime code\n", .{init_code.len});
-    }
-    
+
+    // Prefer CREATE deployment to extract true runtime code; fallback to direct install if it fails
     var contract_address: primitives.Address = undefined;
     var runtime_code: []const u8 = undefined;
-    
-    if (is_deployment_code) {
-        // Deploy contract using CREATE to get runtime code
-        var deploy_evm = try evm.Evm(.{ .TracerType = tracer_mod.JSONRPCTracer }).init(
-            allocator,
-            &database,
-            block_info,
-            tx_context,
-            0,
-            caller_address,
-            .CANCUN
-        );
+
+    if (verbose) {
+        std.debug.print("Bytecode len={} (attempting CREATE first)\n", .{init_code.len});
+    }
+
+    var did_deploy: bool = false;
+    {
+        var deploy_evm = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address, .CANCUN);
         defer deploy_evm.deinit();
-        
-        // Setup CREATE call parameters with much higher gas
-        const create_params = evm.CallParams{
-            .create = .{
-                .caller = caller_address,
-                .value = 0,
-                .init_code = init_code,
-                .gas = 500_000_000,  // Much higher gas for deployment
-            },
-        };
-        
-        // Deploy the contract
+        const create_params = evm.CallParams{ .create = .{ .caller = caller_address, .value = 0, .init_code = init_code, .gas = 500_000_000 } };
         const deploy_result = deploy_evm.call(create_params);
-        
-        if (!deploy_result.success) {
-            std.debug.print("❌ Contract deployment failed\n", .{});
-            @panic("Contract deployment failed");
-        } else {
-            // Get the deployed contract address
-            // For CREATE, address is deterministic based on caller + nonce (which was 0)
+        if (deploy_result.output.len > 0) {
+            did_deploy = true;
             contract_address = primitives.Address.get_contract_address(caller_address, 0);
             runtime_code = deploy_result.output;
         }
-    } else {
-        // Not deployment bytecode, use directly as runtime code
+    }
+
+    if (!did_deploy) {
+        // Fallback: treat provided code as runtime and install directly
+        if (verbose) std.debug.print("CREATE failed or returned no code; installing as runtime\n", .{});
         contract_address = primitives.Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
         runtime_code = init_code;
-        
-        // Set the code directly
         const code_hash = try database.set_code(runtime_code);
-        try database.set_account(contract_address.bytes, .{
-            .balance = 0,
-            .nonce = 1,
-            .code_hash = code_hash,
-            .storage_root = [_]u8{0} ** 32,
-        });
+        try database.set_account(contract_address.bytes, .{ .balance = 0, .nonce = 1, .code_hash = code_hash, .storage_root = [_]u8{0} ** 32 });
     }
-    
+
     // Verify contract is ready
     const contract_account = database.get_account(contract_address.bytes) catch null;
     if (contract_account == null) {
         std.debug.print("❌ Contract not found\n", .{});
         @panic("Contract setup failed");
     }
-    
+
     // Run benchmarks - create fresh EVM for each run
     for (0..num_runs) |run_idx| {
         // Create EVM instance for benchmark execution with tracing
-        var evm_instance = try evm.Evm(.{ .TracerType = tracer_mod.JSONRPCTracer }).init(
-            allocator,
-            &database,
-            block_info,
-            tx_context,
-            0,
-            caller_address,
-            .CANCUN
-        );
+        var evm_instance = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address, .CANCUN);
         defer evm_instance.deinit();
-        
+
         // Setup call parameters
+        const provided_gas: u64 = 1_000_000_000;
         const call_params = evm.CallParams{
             .call = .{
                 .caller = caller_address,
                 .to = contract_address,
                 .value = 0,
                 .input = calldata,
-                .gas = 1_000_000_000,  // Use 1B gas like revm/geth
+                .gas = provided_gas, // High gas to avoid OOG in heavy cases
             },
         };
-        
+
         // Measure execution time
         const start = std.time.Instant.now() catch @panic("Failed to get time");
         const result = evm_instance.call(call_params);
         const end = std.time.Instant.now() catch @panic("Failed to get time");
-        
+
         if (!result.success) {
-            std.debug.print("❌ Execution failed: gas_left={}, output_len={}\n", .{result.gas_left, result.output.len});
+            std.debug.print("❌ Execution failed: gas_left={}, output_len={}\n", .{ result.gas_left, result.output.len });
             if (result.output.len > 0) {
                 std.debug.print("Output: {x}\n", .{result.output});
             }
             @panic("Benchmark execution failed");
         }
-        
+
         // Calculate duration in milliseconds
         const duration_ns = end.since(start);
         const duration_ms = @as(f64, @floatFromInt(duration_ns)) / 1_000_000.0;
-        
+
+        // Gas and correctness guards
+        const gas_used: u64 = if (result.gas_left <= provided_gas) (provided_gas - result.gas_left) else 0;
+        var min_expected_gas: u64 = 0;
+        if (calldata.len >= 4) {
+            const selector: u32 = (@as(u32, calldata[0]) << 24) | (@as(u32, calldata[1]) << 16) | (@as(u32, calldata[2]) << 8) | @as(u32, calldata[3]);
+            min_expected_gas = switch (selector) {
+                0xa9059cbb => 50_000, // transfer
+                0x095ea7b3 => 45_000, // approve
+                0x40c10f19 => 55_000, // mint
+                0x30627b7c => 100_000, // snailtracer
+                else => 21_000,
+            };
+            if (expected_output_hex == null and (selector == 0xa9059cbb or selector == 0x095ea7b3 or selector == 0x40c10f19)) {
+                if (result.output.len != 32) {
+                    std.debug.print("❌ Invalid return length: {} (expected 32)\n", .{result.output.len});
+                    std.process.exit(2);
+                }
+                var is_true = true;
+                var idx: usize = 0;
+                while (idx < 31) : (idx += 1) {
+                    if (result.output[idx] != 0) is_true = false;
+                }
+                if (result.output[31] != 1) is_true = false;
+                if (!is_true) {
+                    std.debug.print("❌ Boolean result was false\n", .{});
+                    std.process.exit(2);
+                }
+            }
+            if (expected_output_hex == null and selector == 0x30627b7c and result.output.len == 0) {
+                std.debug.print("❌ Snailtracer returned empty output\n", .{});
+                std.process.exit(2);
+            }
+        }
+        if (min_gas_opt) |eg| {
+            if (gas_used < eg) {
+                std.debug.print("❌ Gas too low: used={}, expected_at_least={}\n", .{ gas_used, eg });
+                std.process.exit(2);
+            }
+        } else {
+            if (gas_used < min_expected_gas) {
+                std.debug.print("❌ Gas too low: used={}, min_expected={}\n", .{ gas_used, min_expected_gas });
+                std.process.exit(2);
+            }
+        }
+
+        if (expected_output_hex) |hex_out| {
+            const exp_trim = std.mem.trim(u8, hex_out, " \t\n\r");
+            const exp_bytes = hex_decode(allocator, exp_trim) catch {
+                std.debug.print("❌ Failed to parse --expected-output\n", .{});
+                std.process.exit(2);
+                @panic("unreachable");
+            };
+            defer allocator.free(exp_bytes);
+            if (!std.mem.eql(u8, exp_bytes, result.output)) {
+                std.debug.print("❌ Output mismatch: got {} bytes, expected {} bytes\n", .{ result.output.len, exp_bytes.len });
+                std.process.exit(2);
+            }
+        }
+
         // Output timing in milliseconds (one per line as expected by orchestrator)
         std.debug.print("{d:.6}\n", .{duration_ms});
-        
-        // Write JSON-RPC trace to file (only on first run)
-        if (run_idx == 0 and result.trace != null) {
-            // Create trace file with timestamp
-            const timestamp = std.time.timestamp();
-            const trace_filename = try std.fmt.allocPrint(allocator, "trace_{}.json", .{timestamp});
-            defer allocator.free(trace_filename);
-            
-            // Write trace as JSON
-            const trace_file = try std.fs.cwd().createFile(trace_filename, .{});
-            defer trace_file.close();
-            
-            // Simple JSON output using File.writeAll
-            var json_str = try std.fmt.allocPrint(allocator, 
-                \\{{
-                \\  "success": {},
-                \\  "gas_used": {},
-                \\  "gas_left": {},
-                \\  "output": "0x",
-            , .{result.success, 1_000_000_000 - result.gas_left, result.gas_left});
-            defer allocator.free(json_str);
-            
-            // Add output hex
-            for (result.output) |byte| {
-                const hex_byte = try std.fmt.allocPrint(allocator, "{x:0>2}", .{byte});
-                defer allocator.free(hex_byte);
-                const new_str = try std.mem.concat(allocator, u8, &.{json_str, hex_byte});
-                allocator.free(json_str);
-                json_str = new_str;
-            }
-            
-            // Add structLogs if available
-            if (result.trace) |trace| {
-                const logs_header = try std.fmt.allocPrint(allocator, 
-                    \\",
-                    \\  "structLogs": [
-                , .{});
-                defer allocator.free(logs_header);
-                const new_str = try std.mem.concat(allocator, u8, &.{json_str, logs_header});
-                allocator.free(json_str);
-                json_str = new_str;
-                
-                // Output limited trace steps to avoid huge files
-                const max_steps = @min(trace.steps.len, 100);
-                for (trace.steps[0..max_steps], 0..) |step, step_idx| {
-                    const comma = if (step_idx < max_steps - 1) "," else "";
-                    const step_json = try std.fmt.allocPrint(allocator,
-                        \\    {{
-                        \\      "pc": {},
-                        \\      "op": "{s}",
-                        \\      "gas": {},
-                        \\      "stack": [],
-                        \\      "depth": 1
-                        \\    }}{s}
-                    , .{step.pc, step.opcode_name, step.gas, comma});
-                    defer allocator.free(step_json);
-                    const step_str = try std.mem.concat(allocator, u8, &.{json_str, "\n", step_json});
-                    allocator.free(json_str);
-                    json_str = step_str;
-                }
-                
-                const logs_footer = 
-                    \\
-                    \\  ]
-                    \\}}
-                ;
-                const final_str = try std.mem.concat(allocator, u8, &.{json_str, logs_footer});
-                allocator.free(json_str);
-                json_str = final_str;
-            } else {
-                const no_logs = 
-                    \\",
-                    \\  "structLogs": []
-                    \\}}
-                ;
-                const final_str = try std.mem.concat(allocator, u8, &.{json_str, no_logs});
-                allocator.free(json_str);
-                json_str = final_str;
-            }
-            
-            try trace_file.writeAll(json_str);
-            std.debug.print("JSON-RPC trace written to: {s}\n", .{trace_filename});
-        }
-        
+
+        // Tracer disabled: no JSON-RPC trace emitted to avoid overhead
+
         if (verbose) {
-            const gas_used = 1_000_000_000 - result.gas_left;
             std.debug.print("Run {}: {d:.6}ms, gas_used={}\n", .{ run_idx + 1, duration_ms, gas_used });
         }
     }

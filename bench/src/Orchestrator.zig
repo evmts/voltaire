@@ -868,7 +868,41 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     const call2_flag = "";
     // For EthereumJS, invoke via bun explicitly to avoid shebang/exec issues
     const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) (if (std.mem.eql(u8, self.js_runtime, "node")) "node " else "bun ") else "";
-    const hyperfine_cmd = try std.fmt.allocPrint(self.allocator, "{s}{s} --contract-code-path {s} --calldata {s} --num-runs {}{s}{s}", .{ js_prefix, runner_path, test_case.bytecode_path, trimmed_calldata, internal_runs_to_use, next_flag, call2_flag });
+    // Extra guards for Zig runner: min-gas and expected-output (ERC20 booleans)
+    var extra_flags = try std.fmt.allocPrint(self.allocator, "", .{});
+    defer self.allocator.free(extra_flags);
+    if (std.mem.eql(u8, self.evm_name, "zig") or std.mem.eql(u8, self.evm_name, "zig-call2")) {
+        var min_gas: ?u64 = null;
+        var expect_true: bool = false;
+        if (std.mem.eql(u8, test_case.name, "erc20-approval-transfer")) {
+            min_gas = 45_000; expect_true = true;
+        } else if (std.mem.eql(u8, test_case.name, "erc20-transfer")) {
+            min_gas = 50_000; expect_true = true;
+        } else if (std.mem.eql(u8, test_case.name, "erc20-mint")) {
+            min_gas = 55_000; expect_true = true;
+        } else if (std.mem.eql(u8, test_case.name, "ten-thousand-hashes")) {
+            min_gas = 100_000;
+        } else if (std.mem.eql(u8, test_case.name, "snailtracer")) {
+            min_gas = 100_000;
+        }
+        if (min_gas) |mg| {
+            const mg_str = try std.fmt.allocPrint(self.allocator, " --min-gas {}", .{mg});
+            const new_flags = try std.mem.concat(self.allocator, u8, &.{ extra_flags, mg_str });
+            self.allocator.free(extra_flags);
+            self.allocator.free(mg_str);
+            extra_flags = new_flags;
+        }
+        if (expect_true) {
+            // constant 32-byte true
+            const exp_true_hex = "0x0000000000000000000000000000000000000000000000000000000000000001";
+            const exp_str = try std.fmt.allocPrint(self.allocator, " --expected-output {s}", .{exp_true_hex});
+            const new_flags2 = try std.mem.concat(self.allocator, u8, &.{ extra_flags, exp_str });
+            self.allocator.free(extra_flags);
+            self.allocator.free(exp_str);
+            extra_flags = new_flags2;
+        }
+    }
+    const hyperfine_cmd = try std.fmt.allocPrint(self.allocator, "{s}{s} --contract-code-path {s} --calldata {s} --num-runs {}{s}{s}{s}", .{ js_prefix, runner_path, test_case.bytecode_path, trimmed_calldata, internal_runs_to_use, next_flag, call2_flag, extra_flags });
     defer self.allocator.free(hyperfine_cmd);
 
     // Prepare export file path to avoid mixing JSON with other output

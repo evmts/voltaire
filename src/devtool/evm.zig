@@ -14,6 +14,7 @@ const debug_state = @import("debug_state.zig");
 // Default EVM configuration for devtool (currently unused)
 const config = Evm.EvmConfig.init(.CANCUN);
 const EvmType = Evm.Evm;
+const log = Evm.log;
 
 const DevtoolEvm = @This();
 
@@ -197,14 +198,17 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
     self.current_contract = contract;
 
     // Build code analysis for the current bytecode using default opcode metadata
+    const t_analysis_start = std.time.Instant.now() catch unreachable;
     const table = OpcodeMetadata.DEFAULT;
     const analysis = try Evm.CodeAnalysis.from_code(self.allocator, self.bytecode, &table);
+    const t_analysis_end = std.time.Instant.now() catch unreachable;
     // Own the analysis in the devtool for frame lifetime
     const analysis_ptr = try self.allocator.create(Evm.CodeAnalysis);
     analysis_ptr.* = analysis;
     self.analysis = analysis_ptr;
 
     // Prepare frame dependencies from the VM
+    const t_frame_start = std.time.Instant.now() catch unreachable;
     const frame_val = try Evm.Frame.init(
         1_000_000, // gas_remaining
         false, // static_call
@@ -222,6 +226,7 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
     );
     const frame_ptr = try self.allocator.create(Evm.Frame);
     frame_ptr.* = frame_val;
+    const t_frame_end = std.time.Instant.now() catch unreachable;
     // Ensure opcodes that reference code (e.g., CODECOPY, CODESIZE) have access
     // to the actual contract bytecode
     frame_ptr.code = self.bytecode;
@@ -238,6 +243,10 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
     // analysis-driven stepping does not expose opcode byte/name in UI
     self.is_completed = false;
     // No PC tracking for UI
+    // Emit timings for devtool visibility at debug level (avoid test failures)
+    const analysis_ns = t_analysis_end.since(t_analysis_start);
+    const frame_init_ns = t_frame_end.since(t_frame_start);
+    log.debug("devtool timing: analysis_ns={} frame_init_ns={}", .{ analysis_ns, frame_init_ns });
 }
 
 /// Get current EVM state as JSON string
