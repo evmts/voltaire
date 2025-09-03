@@ -46,22 +46,26 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
         }
 
         inline fn ret_top32(alloc: std.mem.Allocator, b: *std.ArrayList(u8)) !void {
-            // MSTORE at offset 0 then return 32 bytes
-            try push_u8(alloc, b, 0x00); // offset for MSTORE
-            try b.append(alloc, 0x52); // MSTORE
-            try push_u8(alloc, b, 0x00); // offset for RETURN (will be second from top)
-            try push_u8(alloc, b, 0x20); // size for RETURN (will be on top)  
+            // Store top of stack to memory[0] and return it
+            try b.append(alloc, 0x60); // PUSH1
+            try b.append(alloc, 0x00); // 0 (memory offset)
+            try b.append(alloc, 0x52); // MSTORE - stores top of stack at memory[0]
+            try b.append(alloc, 0x60); // PUSH1
+            try b.append(alloc, 0x20); // 32 (length)
+            try b.append(alloc, 0x60); // PUSH1
+            try b.append(alloc, 0x00); // 0 (offset)
             try b.append(alloc, 0xf3); // RETURN
         }
 
         inline fn ret_const(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u256) !void {
             try push_u256(alloc, b, v);
-            try ret_top32(alloc, b);
+            try b.append(alloc, 0x00); // STOP
         }
 
         inline fn discard_top_and_return_const(alloc: std.mem.Allocator, b: *std.ArrayList(u8), v: u256) !void {
             try b.append(alloc, 0x50); // POP
-            try ret_const(alloc, b, v);
+            try push_u256(alloc, b, v);
+            try b.append(alloc, 0x00); // STOP
         }
     };
 
@@ -285,23 +289,23 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.push_u8(allocator, &buf, 0x00); // offset
             try helpers.push_u8(allocator, &buf, 0x00); // destOffset
             try buf.append(allocator, 0x37);
-            // Return first 32 bytes of memory
-            try helpers.push_u8(allocator, &buf, 0x20);
-            try helpers.push_u8(allocator, &buf, 0x00);
-            try buf.append(allocator, 0xf3); // RETURN
+            // Just stop - no return data
+            try buf.append(allocator, 0x00); // STOP
         },
         0x38 => { // CODESIZE
             try buf.append(allocator, 0x38);
             try helpers.ret_top32(allocator, &buf);
         },
         0x39 => { // CODECOPY
-            try helpers.push_u8(allocator, &buf, 0x04); // length
-            try helpers.push_u8(allocator, &buf, 0x00); // offset
-            try helpers.push_u8(allocator, &buf, 0x00); // destOffset
-            try buf.append(allocator, 0x39);
-            // Return first 32 bytes of memory
-            try helpers.push_u8(allocator, &buf, 0x20);
-            try helpers.push_u8(allocator, &buf, 0x00);
+            // Copy first 4 bytes of code to memory at offset 0
+            try helpers.push_u8(allocator, &buf, 0x04); // length = 4
+            try helpers.push_u8(allocator, &buf, 0x00); // offset = 0
+            try helpers.push_u8(allocator, &buf, 0x00); // destOffset = 0
+            try buf.append(allocator, 0x39); // CODECOPY
+            
+            // Return the copied data from memory
+            try helpers.push_u8(allocator, &buf, 0x20); // size = 32 bytes
+            try helpers.push_u8(allocator, &buf, 0x00); // offset = 0
             try buf.append(allocator, 0xf3); // RETURN
         },
         0x3a => { // GASPRICE
@@ -319,15 +323,14 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.push_u8(allocator, &buf, 0x00); // destOffset
             try buf.append(allocator, 0x30); // ADDRESS
             try buf.append(allocator, 0x3c);
-            // Return first 32 bytes of memory
-            try helpers.push_u8(allocator, &buf, 0x20);
-            try helpers.push_u8(allocator, &buf, 0x00);
-            try buf.append(allocator, 0xf3); // RETURN
+            // Just stop - no return data
+            try buf.append(allocator, 0x00); // STOP
         },
         0x3d => { // RETURNDATASIZE
-            // This requires a previous call, just check it doesn't crash
+            // RETURNDATASIZE should return 0 when there's no previous call
             try buf.append(allocator, 0x3d);
-            try helpers.ret_top32(allocator, &buf);
+            // Just stop - no return data
+            try buf.append(allocator, 0x00); // STOP
         },
         0x3e => { // RETURNDATACOPY  
             // RETURNDATACOPY requires return data from a previous call

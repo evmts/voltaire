@@ -149,9 +149,11 @@ pub fn main() !void {
         .chain_id = 1,
     };
     
-    // For benchmarking, always treat bytecode as runtime code
-    // This avoids deployment issues and matches what other EVMs do
-    const is_deployment_code = false;
+    // Check if this is deployment bytecode or runtime bytecode
+    // Deployment bytecode typically starts with 0x6080604052 (PUSH1 0x80 PUSH1 0x40 MSTORE)
+    const is_deployment_code = init_code.len > 4 and 
+        init_code[0] == 0x60 and init_code[1] == 0x80 and 
+        init_code[2] == 0x60 and init_code[3] == 0x40;
     
     if (verbose) {
         std.debug.print("Bytecode len={}, treating as runtime code\n", .{init_code.len});

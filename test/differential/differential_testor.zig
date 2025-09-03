@@ -383,7 +383,7 @@ pub const DifferentialTestor = struct {
 
         // Also check if account exists
         const account_check = try db.get_account(self.contract.bytes);
-        if (account_check) |acc| {
+        if (account_check) |_| {
             // log.debug("Account found: balance={}, nonce={}, code_hash={x}", .{ acc.balance, acc.nonce, acc.code_hash });
         } else {
             log.err("WARNING: Account not found after deployment!", .{});
@@ -546,7 +546,7 @@ pub const DifferentialTestor = struct {
             },
         };
 
-        std.debug.print("DIFFERENTIAL: About to call Guillotine with gas={}, to={x} (tracing={})\n", .{ gas_limit, to.bytes, enable_tracing });
+        // std.debug.print("DIFFERENTIAL: About to call Guillotine with gas={}, to={x} (tracing={})\n", .{ gas_limit, to.bytes, enable_tracing });
         
         var result = if (enable_tracing) blk: {
             if (self.guillotine_instance_traced) |*evm_instance| {
@@ -562,7 +562,7 @@ pub const DifferentialTestor = struct {
             }
         };
         
-        std.debug.print("DIFFERENTIAL: Guillotine call complete, success={}, gas_left={} (tracing={})\n", .{ result.success, result.gas_left, enable_tracing });
+        // std.debug.print("DIFFERENTIAL: Guillotine call complete, success={}, gas_left={} (tracing={})\n", .{ result.success, result.gas_left, enable_tracing });
 
         // Transfer ownership of trace from CallResult
         const trace = result.trace;
@@ -573,7 +573,7 @@ pub const DifferentialTestor = struct {
 
         // Store the execution result status for debugging
         const log = std.log.scoped(.differential_failure);
-        const trace_steps_len = if (trace) |t| t.steps.len else 0;
+        _ = if (trace) |t| t.steps.len else 0;
         // log.debug("Guillotine execution completed (tracing={}): success={}, gas_left={}, output_len={}, trace_steps={}", .{ enable_tracing, result.success, result.gas_left, result.output.len, trace_steps_len });
 
         if (!result.success) {
@@ -797,7 +797,7 @@ pub const DifferentialTestor = struct {
         } else if (guillotine_steps_len > 0 and guillotine_result.trace != null and revm_result.trace != null) {
             // TODO: Implement detailed trace comparison when REVM tracing is working
             // For now, just note that we have both traces
-            const log = std.log.scoped(.differential_trace);
+            // const log = std.log.scoped(.differential_trace);
             // log.debug("Both REVM and Guillotine traces available ({} steps each), detailed comparison not yet implemented", .{guillotine_steps_len});
             diff.trace_match = true; // Don't fail on trace comparison yet
         }
