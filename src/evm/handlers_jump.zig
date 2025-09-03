@@ -20,7 +20,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const dest = try self.stack.pop();
 
-
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
                 log.warn("JUMP: Invalid destination out of range: 0x{x}", .{dest});
@@ -34,7 +33,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Found valid JUMPDEST - update thread-local PC for tracing
                 const frame_handlers = @import("frame_handlers.zig");
                 frame_handlers.setCurrentPc(dest_pc);
-                
+
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
@@ -53,7 +52,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
 
-
             if (condition != 0) {
                 // Take the jump - validate destination range
 
@@ -69,7 +67,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Found valid JUMPDEST - update thread-local PC for tracing
                     const frame_handlers = @import("frame_handlers.zig");
                     frame_handlers.setCurrentPc(dest_pc);
-                    
+
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
@@ -78,9 +76,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             } else {
                 // Condition is false, continue to next instruction
-                // Skip the jump table metadata (cursor + 2)
-                const next_cursor = cursor + 2;
-                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+                const dispatch = Dispatch{ .cursor = cursor };
+                const Opcode = @import("opcode_data.zig").Opcode;
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.JUMPI });
+                return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
             }
         }
 
@@ -94,7 +93,6 @@ pub fn Handlers(comptime FrameType: type) type {
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
             const op_data = dispatch.getOpData(.{ .regular = Opcode.JUMPDEST });
             const gas_cost = op_data.metadata.gas;
-
 
             // Check and consume gas for the entire basic block
             if (self.gas_remaining < gas_cost) {
@@ -127,7 +125,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const Opcode = @import("opcode_data.zig").Opcode;
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.{ .regular = Opcode.PC });
-
 
             try self.stack.push(op_data.metadata.value);
 

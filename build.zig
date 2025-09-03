@@ -326,6 +326,11 @@ pub fn build(b: *std.Build) void {
 
             const file_path = b.fmt("test/evm/opcodes/{s}", .{entry.name});
             const test_name = b.fmt("opcode-{s}", .{entry.name});
+            
+            // Extract opcode hex from filename (e.g., "01_test.zig" -> "0x01")
+            const opcode_hex = entry.name[0..std.mem.indexOf(u8, entry.name, "_") orelse continue];
+            const individual_step_name = b.fmt("test-opcodes-0x{s}", .{opcode_hex});
+            const individual_step_desc = b.fmt("Test opcode 0x{s}", .{opcode_hex});
 
             const t = b.addTest(.{
                 .name = test_name,
@@ -376,7 +381,13 @@ pub fn build(b: *std.Build) void {
             }
 
             const run_t = b.addRunArtifact(t);
+            
+            // Add to the "all opcodes" step
             opcode_tests_step.dependOn(&run_t.step);
+            
+            // Create individual test step for this opcode
+            const individual_step = b.step(individual_step_name, individual_step_desc);
+            individual_step.dependOn(&run_t.step);
         }
     }
 

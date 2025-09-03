@@ -102,15 +102,12 @@ pub fn Dispatch(comptime FrameType: type) type {
             data: anytype,
         ) !void {
             const push_opcode = 0x60 + data.size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
-            const log = @import("log.zig");
-            log.debug("Dispatch: Adding PUSH{} handler, value={x}, schedule_items.len={}", .{ data.size, data.value, schedule_items.items.len });
 
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[push_opcode] });
 
             if (data.size <= 8 and data.value <= std.math.maxInt(u64)) {
                 // Inline value for small pushes that fit in u64
                 const inline_value: u64 = @intCast(data.value);
-                log.debug("Dispatch: Adding inline metadata for PUSH{}, value={}", .{ data.size, inline_value });
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
             } else {
                 // Pointer to value for large pushes
@@ -118,7 +115,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                 errdefer allocator.destroy(value_ptr);
                 value_ptr.* = data.value;
                 try allocated_memory.pointers.append(allocator, value_ptr);
-                log.debug("Dispatch: Adding pointer metadata for PUSH{}, value={x}", .{ data.size, data.value });
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
             }
         }
@@ -457,8 +453,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
-
-            log.debug("Dispatch.init complete, schedule length: {}", .{final_schedule.len});
             return final_schedule;
         }
 
@@ -526,8 +520,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             const push_ptrs = try allocated_memory.pointers.toOwnedSlice(allocator);
             // allocated_memory's arrays are now owned by slices; prevent double free
             allocated_memory = AllocatedMemory.init();
-
-            log.debug("Dispatch.initWithOwnership complete, schedule length: {}", .{items.len});
             return BuildOwned{ .items = items, .push_pointers = push_ptrs };
         }
 

@@ -23,23 +23,23 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug("[MUL] Stack before: {any}, gas: {d}", .{ self.stack.get_slice(), self.gas_remaining });
             const b = self.stack.pop_unsafe(); // Second operand (top of stack)
             const a = self.stack.peek_unsafe(); // First operand (second element)
             const result = a *% b;
-            log.debug("[MUL] Operation: {d} * {d} = {d}", .{ a, b, result });
             self.stack.set_top_unsafe(result);
-            log.debug("[MUL] Stack after: {any}", .{ self.stack.get_slice() });
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // SUB operation: pop a (top), peek b (second), push b - a (EVM spec)
-            const a = self.stack.pop_unsafe();
-            const b = self.stack.peek_unsafe();
+            const b = self.stack.pop_unsafe();
+            const a = self.stack.peek_unsafe();
             const result = b -% a;
+            std.log.err("SUB operation:", .{});
+            std.log.err("  a : {}", .{a});
+            std.log.err("  b : {}", .{b});
+            std.log.err("  result (b - a): {}", .{result});
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -87,8 +87,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // First pop 
-            const b = self.stack.peek_unsafe(); // Second element 
+            const a = self.stack.pop_unsafe(); // First pop
+            const b = self.stack.peek_unsafe(); // Second element
             const result = if (a == 0) 0 else b % a;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
@@ -121,7 +121,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADDMOD opcode (0x08) - (a + b) % N. All intermediate calculations are performed with arbitrary precision.
         pub fn addmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            
             const addend1 = try self.stack.pop(); // Top of stack (a)
             const addend2 = try self.stack.pop(); // Second on stack (b)
             const modulus = try self.stack.pop(); // Third on stack (N)
@@ -146,7 +145,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MULMOD opcode (0x09) - (a * b) % N. All intermediate calculations are performed with arbitrary precision.
         pub fn mulmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            
             const factor1 = try self.stack.pop(); // Top of stack (a)
             const factor2 = try self.stack.pop(); // Second on stack (b)
             const modulus = try self.stack.pop(); // Third on stack (N)
@@ -223,7 +221,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // EVM Yellow Paper: μ′s[0] ≡ μs[0]^μs[1]
             // This means: result = (top of stack) ^ (second on stack)
             // But there's a subtlety with our stack implementation
-            const a = self.stack.pop_unsafe();  // First pop gets top value
+            const a = self.stack.pop_unsafe(); // First pop gets top value
             const b = self.stack.peek_unsafe(); // Peek gets what's now on top (was second)
 
             // EIP-160: Dynamic gas cost for EXP
@@ -265,44 +263,41 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
         pub fn signextend(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const logger = @import("log.zig");
-            
+
             // Log entry state
             const stack_size = self.stack.size();
-            logger.err("SIGNEXTEND ENTRY: stack_size={}, stack_ptr={*}", .{
-                stack_size, 
-                self.stack.stack_ptr
-            });
-            
+            logger.err("SIGNEXTEND ENTRY: stack_size={}, stack_ptr={*}", .{ stack_size, self.stack.stack_ptr });
+
             // Log stack contents
             if (stack_size > 0) {
                 const stack_slice = self.stack.get_slice();
                 logger.err("SIGNEXTEND: Stack contents (top first):", .{});
                 for (stack_slice, 0..) |val, i| {
                     if (i >= 3) break; // Only show top 3
-                    logger.err("  [{}] = {x}", .{i, val});
+                    logger.err("  [{}] = {x}", .{ i, val });
                 }
             }
-            
+
             // SIGNEXTEND requires 2 items on stack
             if (stack_size < 2) {
                 logger.err("SIGNEXTEND ERROR: Stack underflow, size={}", .{stack_size});
                 return Error.StackUnderflow;
             }
-            
+
             // Assert stack is valid before pop
             std.debug.assert(self.stack.size() >= 2);
-            
+
             const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
-            logger.err("SIGNEXTEND: Popped ext={x}, stack_size now={}", .{ext, self.stack.size()});
-            
+            logger.err("SIGNEXTEND: Popped ext={x}, stack_size now={}", .{ ext, self.stack.size() });
+
             // Assert stack is still valid before peek
             std.debug.assert(self.stack.size() >= 1);
-            
+
             const value = self.stack.peek_unsafe(); // Value to extend (second element)
-            logger.err("SIGNEXTEND: Peeked value={x}, stack_size still={}", .{value, self.stack.size()});
-            
+            logger.err("SIGNEXTEND: Peeked value={x}, stack_size still={}", .{ value, self.stack.size() });
+
             var result: WordType = undefined;
-            
+
             // If ext is too large to fit in usize or >= 32, return value unchanged
             // SIGNEXTEND with byte position >= 32 means no sign extension needed
             if (ext > std.math.maxInt(usize) or ext >= 32) {
@@ -311,19 +306,19 @@ pub fn Handlers(comptime FrameType: type) type {
             } else {
                 const ext_usize = @as(usize, @intCast(ext));
                 const bit_index = ext_usize * 8 + 7;
-                
-                logger.err("SIGNEXTEND: Processing ext={}, bit_index={}", .{ext, bit_index});
-                
+
+                logger.err("SIGNEXTEND: Processing ext={}, bit_index={}", .{ ext, bit_index });
+
                 // Ensure bit_index is valid for shifting
                 std.debug.assert(bit_index < @bitSizeOf(WordType));
-                
+
                 // Cast bit_index to the appropriate shift type
                 const shift_amount = @as(u8, @intCast(bit_index));
                 logger.err("SIGNEXTEND: shift_amount={}, about to shift", .{shift_amount});
-                
+
                 const mask = (@as(WordType, 1) << shift_amount) - 1;
                 const sign_bit = (value >> shift_amount) & 1;
-                logger.err("SIGNEXTEND: mask={x}, sign_bit={}", .{mask, sign_bit});
+                logger.err("SIGNEXTEND: mask={x}, sign_bit={}", .{ mask, sign_bit });
                 if (sign_bit == 1) {
                     result = value | ~mask;
                     logger.err("SIGNEXTEND: Sign bit set, result = value | ~mask = {x}", .{result});
@@ -332,16 +327,16 @@ pub fn Handlers(comptime FrameType: type) type {
                     logger.err("SIGNEXTEND: Sign bit not set, result = value & mask = {x}", .{result});
                 }
             }
-            
+
             logger.err("SIGNEXTEND: Setting top to result={x}", .{result});
-            
+
             // Assert stack is valid before set_top
             std.debug.assert(self.stack.size() >= 1);
-            
+
             self.stack.set_top_unsafe(result);
-            
+
             logger.err("SIGNEXTEND EXIT: stack_size={}, result set", .{self.stack.size()});
-            
+
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
@@ -843,20 +838,20 @@ test "SIGNEXTEND opcode - all edge indices" {
         // Index 0: extend from byte 0
         .{ .index = 0, .value = 0xFF, .expected = std.math.maxInt(u256) },
         .{ .index = 0, .value = 0x7F, .expected = 0x7F },
-        
-        // Index 1: extend from byte 1  
+
+        // Index 1: extend from byte 1
         .{ .index = 1, .value = 0x8000, .expected = std.math.maxInt(u256) - 0x7FFF },
         .{ .index = 1, .value = 0x7FFF, .expected = 0x7FFF },
-        
+
         // Index 30: extend from byte 30
         .{ .index = 30, .value = 0x80 << (30 * 8), .expected = std.math.maxInt(u256) - ((1 << (31 * 8)) - 1) + (0x80 << (30 * 8)) },
-        
+
         // Index 31: no extension needed (full 32 bytes)
         .{ .index = 31, .value = std.math.maxInt(u256), .expected = std.math.maxInt(u256) },
-        
+
         // Index 32: no extension needed
         .{ .index = 32, .value = 0x12345678, .expected = 0x12345678 },
-        
+
         // Index 100: no extension needed
         .{ .index = 100, .value = 0xABCDEF, .expected = 0xABCDEF },
     };
@@ -866,13 +861,13 @@ test "SIGNEXTEND opcode - all edge indices" {
         while (frame.stack.len() > 0) {
             _ = try frame.stack.pop();
         }
-        
+
         try frame.stack.push(tc.index);
         try frame.stack.push(tc.value);
-        
+
         const dispatch2 = createMockDispatch();
         _ = try TestFrame.ArithmeticHandlers.signextend(&frame, dispatch2.cursor);
-        
+
         const result = try frame.stack.pop();
         try testing.expectEqual(tc.expected, result);
     }
@@ -1394,4 +1389,29 @@ test "MULMOD opcode - overflow bug reproduction" {
 
     // The current implementation returns the incorrect result due to overflow
     try testing.expectEqual(incorrect_result, buggy_result);
+}
+
+test "SUB opcode - ERC20 bug reproduction (2^64 - 1)" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Reproduce the exact values from the failing ERC20 test
+    // SHL produced 0x10000000000000000 (2^64)
+    // PUSH1 produced 1
+    // SUB should compute 0x10000000000000000 - 1 = 0xffffffffffffffff
+    const value_2_pow_64: u256 = @as(u256, 1) << 64; // 0x10000000000000000
+    const one: u256 = 1;
+
+    // Push values in correct order for SUB
+    // SUB pops b first, then peeks a, and computes a - b
+    try frame.stack.push(value_2_pow_64); // Will be 'a' (peeked)
+    try frame.stack.push(one); // Will be 'b' (popped first)
+
+    const dispatch = createMockDispatch();
+    _ = try TestFrame.ArithmeticHandlers.sub(&frame, dispatch.cursor);
+
+    const result = try frame.stack.pop();
+    const expected: u256 = 0xffffffffffffffff; // 18446744073709551615
+
+    try testing.expectEqual(expected, result);
 }
