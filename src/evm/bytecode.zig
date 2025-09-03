@@ -143,7 +143,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         iterator.pc += 1;
                         return OpcodeData{ .stop = {} };
                     },
-                    0xFE, 0xFF => { // INVALID
+                    0xFE => { // INVALID
                         iterator.pc += 1;
                         return OpcodeData{ .invalid = {} };
                     },

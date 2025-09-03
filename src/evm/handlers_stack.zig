@@ -81,17 +81,17 @@ pub fn Handlers(comptime FrameType: type) type {
                         };
                     };
                     
+                    // For PUSH1-PUSH8, we get push_inline metadata with u64 value
+                    // For PUSH9-PUSH32, we get push_pointer metadata with *u256 value
                     const op_data = dispatch.getOpData(.{ .regular = push_opcode });
-                    
-                    // log.debug("[PUSH{d}] Stack before: {any}, gas: {d}", .{ push_n, self.stack.get_slice(), self.gas_remaining });
                     
                     if (push_n <= 8) {
                         const value = op_data.metadata.value;
-                        // log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
+                        // log.debug("[PUSH{d}] Pushing inline value: {d}", .{ push_n, value });
                         try self.stack.push(value);
                     } else {
                         const value = op_data.metadata.value.*;
-                        // log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
+                        // log.debug("[PUSH{d}] Pushing pointer value: {d}", .{ push_n, value });
                         try self.stack.push(value);
                     }
                     

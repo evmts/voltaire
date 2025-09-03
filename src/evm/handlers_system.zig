@@ -41,13 +41,14 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn call(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             // Check static context - CALL with non-zero value is not allowed in static context
-            const output_size = try self.stack.pop();
-            const output_offset = try self.stack.pop();
-            const input_size = try self.stack.pop();
-            const input_offset = try self.stack.pop();
-            const value = try self.stack.pop();
-            const address_u256 = try self.stack.pop();
+            // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
             const gas_param = try self.stack.pop();
+            const address_u256 = try self.stack.pop();
+            const value = try self.stack.pop();
+            const input_offset = try self.stack.pop();
+            const input_size = try self.stack.pop();
+            const output_offset = try self.stack.pop();
+            const output_size = try self.stack.pop();
             
 
             // EIP-214: Static calls with value > 0 will fail in host.inner_call()
@@ -64,7 +65,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            const gas_u64 = @as(u64, @intCast(gas_param));
+            const gas_u64_raw = @as(u64, @intCast(gas_param));
+            const caller_gas_available: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const max_forwardable: u64 = caller_gas_available - (caller_gas_available / 64);
+            const gas_u64 = if (gas_u64_raw < max_forwardable) gas_u64_raw else max_forwardable;
 
             // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
@@ -161,11 +165,16 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             @memcpy(self.output, result.output);
 
-            // Update gas remaining
-            self.gas_remaining = @intCast(result.gas_left);
+            // Update caller gas: subtract only gas actually used by callee
+            const provided_gas_call: u64 = gas_u64;
+            const used_gas_call: u64 = if (result.gas_left > provided_gas_call) 0 else (provided_gas_call - result.gas_left);
+            const caller_gas_call: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const new_gas_call: u64 = if (used_gas_call > caller_gas_call) 0 else caller_gas_call - used_gas_call;
+            self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_call));
             
 
             // Push success status (1 for success, 0 for failure)
+            // log.debug("CALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
             try self.stack.push(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.{ .regular = Opcode.CALL });
@@ -177,13 +186,14 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
         pub fn callcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const output_size = try self.stack.pop();
-            const output_offset = try self.stack.pop();
-            const input_size = try self.stack.pop();
-            const input_offset = try self.stack.pop();
-            const value = try self.stack.pop();
-            const address_u256 = try self.stack.pop();
+            // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
             const gas_param = try self.stack.pop();
+            const address_u256 = try self.stack.pop();
+            const value = try self.stack.pop();
+            const input_offset = try self.stack.pop();
+            const input_size = try self.stack.pop();
+            const output_offset = try self.stack.pop();
+            const output_size = try self.stack.pop();
 
             // Convert address from u256
             const addr = from_u256(address_u256);
@@ -195,7 +205,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            const gas_u64 = @as(u64, @intCast(gas_param));
+            const gas_u64_raw = @as(u64, @intCast(gas_param));
+            const caller_gas_available_cc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const max_forwardable_cc: u64 = caller_gas_available_cc - (caller_gas_available_cc / 64);
+            const gas_u64 = if (gas_u64_raw < max_forwardable_cc) gas_u64_raw else max_forwardable_cc;
 
             // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
@@ -275,7 +288,15 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
             }
 
+            // Update caller gas: subtract only gas actually used by callee
+            const provided_gas_callcode: u64 = gas_u64;
+            const used_gas_callcode: u64 = if (result.gas_left > provided_gas_callcode) 0 else (provided_gas_callcode - result.gas_left);
+            const caller_gas_callcode: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const new_gas_callcode: u64 = if (used_gas_callcode > caller_gas_callcode) 0 else caller_gas_callcode - used_gas_callcode;
+            self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_callcode));
+
             // Push success (1) or failure (0) onto stack
+            // log.debug("CALLCODE result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
             try self.stack.push(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
@@ -287,12 +308,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const output_size = try self.stack.pop();
-            const output_offset = try self.stack.pop();
-            const input_size = try self.stack.pop();
-            const input_offset = try self.stack.pop();
-            const address_u256 = try self.stack.pop();
+            // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
             const gas_param = try self.stack.pop();
+            const address_u256 = try self.stack.pop();
+            const input_offset = try self.stack.pop();
+            const input_size = try self.stack.pop();
+            const output_offset = try self.stack.pop();
+            const output_size = try self.stack.pop();
             
 
             // Convert address from u256
@@ -306,7 +328,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            const gas_u64 = @as(u64, @intCast(gas_param));
+            const gas_u64_raw = @as(u64, @intCast(gas_param));
+            const caller_gas_available_dc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const max_forwardable_dc: u64 = caller_gas_available_dc - (caller_gas_available_dc / 64);
+            const gas_u64 = if (gas_u64_raw < max_forwardable_dc) gas_u64_raw else max_forwardable_dc;
 
             // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
@@ -400,13 +425,18 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             @memcpy(self.output, result.output);
 
-            // Update gas remaining
-            self.gas_remaining = @intCast(result.gas_left);
+            // Update caller gas: subtract only gas actually used by callee
+            const provided_gas_delegate: u64 = gas_u64;
+            const used_gas_delegate: u64 = if (result.gas_left > provided_gas_delegate) 0 else (provided_gas_delegate - result.gas_left);
+            const caller_gas_delegate: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const new_gas_delegate: u64 = if (used_gas_delegate > caller_gas_delegate) 0 else caller_gas_delegate - used_gas_delegate;
+            self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_delegate));
 
             // Push success status (1 for success, 0 for failure)
+            // log.debug("DELEGATECALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
             try self.stack.push(if (result.success) 1 else 0);
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.STATICCALL });
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.DELEGATECALL });
             const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
@@ -416,12 +446,13 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn staticcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             
             const dispatch = Dispatch{ .cursor = cursor };
-            const output_size = try self.stack.pop();
-            const output_offset = try self.stack.pop();
-            const input_size = try self.stack.pop();
-            const input_offset = try self.stack.pop();
-            const address_u256 = try self.stack.pop();
+            // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
             const gas_param = try self.stack.pop();
+            const address_u256 = try self.stack.pop();
+            const input_offset = try self.stack.pop();
+            const input_size = try self.stack.pop();
+            const output_offset = try self.stack.pop();
+            const output_size = try self.stack.pop();
 
             // Convert address from u256
             const addr = from_u256(address_u256);
@@ -433,7 +464,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            const gas_u64 = @as(u64, @intCast(gas_param));
+            const gas_u64_raw = @as(u64, @intCast(gas_param));
+            const caller_gas_available_sc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const max_forwardable_sc: u64 = caller_gas_available_sc - (caller_gas_available_sc / 64);
+            const gas_u64 = if (gas_u64_raw < max_forwardable_sc) gas_u64_raw else max_forwardable_sc;
 
             // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
@@ -526,13 +560,17 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             @memcpy(self.output, result.output);
 
-            // Update gas remaining
-            self.gas_remaining = @intCast(result.gas_left);
+            // Update caller gas: subtract only gas actually used by callee
+            const provided_gas_sc: u64 = gas_u64;
+            const used_gas_sc: u64 = if (result.gas_left > provided_gas_sc) 0 else (provided_gas_sc - result.gas_left);
+            const caller_gas_sc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+            const new_gas_sc: u64 = if (used_gas_sc > caller_gas_sc) 0 else caller_gas_sc - used_gas_sc;
+            self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_sc));
 
             // Push success status (1 for success, 0 for failure)
             try self.stack.push(if (result.success) 1 else 0);
 
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.CREATE });
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.STATICCALL });
             const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
@@ -620,10 +658,11 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
-            const salt = try self.stack.pop();
-            const size = try self.stack.pop();
-            const offset = try self.stack.pop();
+            // EVM pop order: value, offset, size, salt (top first)
             const value = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const size = try self.stack.pop();
+            const salt = try self.stack.pop();
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -703,8 +742,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
-            const size = try self.stack.pop();    // Top of stack
-            const offset = try self.stack.pop();  // Second from top
+            const offset = try self.stack.pop();  // Top of stack
+            const size = try self.stack.pop();    // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -795,6 +834,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.output = &[_]u8{};
             }
 
+            // Reduce log noise: no verbose REVERT logging
+            
             // Always return REVERT error for proper handling
             return Error.REVERT;
         }
@@ -807,10 +848,11 @@ pub fn Handlers(comptime FrameType: type) type {
             _ = dispatch;
             const recipient_u256 = try self.stack.pop();
             const recipient = from_u256(recipient_u256);
+            // Reduce log noise
 
             // EIP-214: Data-oriented design - self_destruct is null for static calls
             if (self.self_destruct == null) {
-                @branchHint(.unlikely);
+                // Reduce log noise
                 return Error.WriteProtection;
             }
 
@@ -823,7 +865,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 error.StaticCallViolation => return Error.WriteProtection,
                 else => {
                     @branchHint(.unlikely);
-                    log.err("SELFDESTRUCT mark_for_destruction failed with error: {}", .{err});
+                    log.debug("SELFDESTRUCT failed with error: {}", .{err});
                     return Error.OutOfGas;
                 },
             };
@@ -831,6 +873,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // According to EIP-6780 (Cancun hardfork), SELFDESTRUCT only actually destroys
             // the contract if it was created in the same transaction. This is handled by the host.
             // SELFDESTRUCT always stops execution
+            // Reduce log noise
             return Error.SelfDestruct;
         }
 

@@ -141,32 +141,36 @@ pub const CallResult = struct {
     /// Clean up all allocated memory in the CallResult
     /// Call this when the CallResult contains owned data that needs to be freed
     pub fn deinit(self: *CallResult, allocator: std.mem.Allocator) void {
-        // Free output buffer if it's not an empty slice literal
-        if (self.output.len > 0 and self.output.ptr != (&[_]u8{}).ptr) {
+        // Free output buffer if it's allocated
+        if (self.output.len > 0) {
             allocator.free(self.output);
         }
         
-        // Free logs
-        if (self.logs.len > 0 and self.logs.ptr != (&[_]Log{}).ptr) {
+        // Free logs - always free if we have logs since they're allocated
+        if (self.logs.len > 0) {
             for (self.logs) |log| {
-                allocator.free(log.topics);
-                allocator.free(log.data);
+                if (log.topics.len > 0) {
+                    allocator.free(log.topics);
+                }
+                if (log.data.len > 0) {
+                    allocator.free(log.data);
+                }
             }
             allocator.free(self.logs);
         }
         
-        // Free selfdestructs
-        if (self.selfdestructs.len > 0 and self.selfdestructs.ptr != (&[_]SelfDestructRecord{}).ptr) {
+        // Free selfdestructs if allocated
+        if (self.selfdestructs.len > 0) {
             allocator.free(self.selfdestructs);
         }
         
-        // Free accessed_addresses
-        if (self.accessed_addresses.len > 0 and self.accessed_addresses.ptr != (&[_]Address{}).ptr) {
+        // Free accessed_addresses if allocated
+        if (self.accessed_addresses.len > 0) {
             allocator.free(self.accessed_addresses);
         }
         
-        // Free accessed_storage
-        if (self.accessed_storage.len > 0 and self.accessed_storage.ptr != (&[_]StorageAccess{}).ptr) {
+        // Free accessed_storage if allocated
+        if (self.accessed_storage.len > 0) {
             allocator.free(self.accessed_storage);
         }
         

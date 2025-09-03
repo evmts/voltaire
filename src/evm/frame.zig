@@ -236,6 +236,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
+            // Measure dispatch schedule + jump table creation vs. opcode execution
+            var analysis_ns: u64 = 0;
+            var dispatch_build_ns: u64 = 0;
             // log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
 
             if (bytecode_raw.len > config.max_bytecode_size) {
@@ -245,6 +248,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // log.debug("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
+            const t_analysis_start = std.time.Instant.now() catch unreachable;
             self.bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
                 // log.debug("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
@@ -258,6 +262,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                     else => Error.AllocationError,
                 };
             };
+            const t_analysis_end = std.time.Instant.now() catch unreachable;
+            analysis_ns = t_analysis_end.since(t_analysis_start);
             defer if (self.bytecode) |*bc| bc.deinit();
             // log.debug("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{self.bytecode.?.runtime_code.len});
 
@@ -280,6 +286,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Create dispatch schedule with ownership to ensure all allocations are freed
+            const t_dispatch_start = std.time.Instant.now() catch unreachable;
             var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &self.bytecode.?, handlers) catch |e| {
                 log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                 return Error.AllocationError;
@@ -290,6 +297,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Create jump table
             const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &self.bytecode.?) catch return Error.AllocationError;
             defer self.allocator.free(jump_table.entries);
+            const t_dispatch_end = std.time.Instant.now() catch unreachable;
+            dispatch_build_ns = t_dispatch_end.since(t_dispatch_start);
 
             // Store jump table in frame for JUMP/JUMPI handlers
             self.jump_table = jump_table;
@@ -330,6 +339,15 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // log.debug("Frame.interpret_with_tracer: Starting execution, gas={}", .{self.gas_remaining});
+
+            // Measure opcode handler execution time; errdefer ensures it logs when unwinding with Stop/Return/etc.
+            const t_exec_start = std.time.Instant.now() catch unreachable;
+            errdefer {
+                const t_exec_end = std.time.Instant.now() catch unreachable;
+                const exec_ns = t_exec_end.since(t_exec_start);
+                // Debug-level timing to avoid failing tests that treat errors as failures
+                log.debug("timing: analysis_ns={} dispatch_ns={} handlers_ns={}", .{ analysis_ns, dispatch_build_ns, exec_ns });
+            }
 
             try cursor.cursor[0].opcode_handler(self, cursor.cursor);
             unreachable; // Handlers never return normally

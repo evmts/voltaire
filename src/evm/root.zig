@@ -52,6 +52,9 @@ pub const differential_tracer = @import("differential_tracer.zig");
 pub const trace_comparer = @import("trace_comparer.zig");
 pub const JSONRPCTracer = @import("tracer.zig").JSONRPCTracer;
 
+// Logging facade for modules outside evm/ to use standardized logging
+pub const log = @import("log.zig");
+
 // Bytecode modules
 pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 pub const Bytecode = @import("bytecode.zig").Bytecode;

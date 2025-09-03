@@ -217,29 +217,28 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // EVM semantics: base ^ exponent
-            const exponent = try self.stack.pop(); // Top of stack (exponent)
-            const base = try self.stack.peek(); // Second from top (base)
+            // Match REVM operand ordering: treat top-of-stack as base and
+            // second-from-top as exponent, computing base^exponent.
+            const base = try self.stack.pop(); // Top of stack (base)
+            const exponent = try self.stack.peek(); // Below top (exponent)
 
             // EIP-160: Dynamic gas cost for EXP
-            // Gas cost = 10 + 50 * (number of bytes in exponent)
+            // Gas cost = 10 + 50 * (number of non-zero bytes in exponent)
             var exp_bytes: u32 = 0;
             if (exponent > 0) {
-                // Count significant bytes (excluding leading zeros)
                 var temp_exp = exponent;
                 while (temp_exp > 0) : (temp_exp >>= 8) {
                     exp_bytes += 1;
                 }
             }
 
-            // Calculate dynamic gas cost
             const gas_cost = 10 + 50 * exp_bytes;
             if (self.gas_remaining < gas_cost) {
                 return Error.OutOfGas;
             }
             self.gas_remaining -= @intCast(gas_cost);
 
-            // Calculate base^exponent
+            // Calculate base^exponent with wrapping multiplication (mod 2^256)
             var result: WordType = 1;
             var base_working = base;
             var exponent_working = exponent;

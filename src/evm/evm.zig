@@ -424,11 +424,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Only extract logs for top-level calls
             // For nested calls, leave logs in the EVM's list to accumulate
             if (is_top_level) {
+                // Transfer logs to result - the CallResult now owns them and will free on deinit
                 result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
-                self.logs = std.ArrayList(@import("call_result.zig").Log){};
-                result.selfdestructs = self.takeSelfDestructs() catch &.{};
-                result.accessed_addresses = self.takeAccessedAddresses() catch &.{};
-                result.accessed_storage = self.takeAccessedStorage() catch &.{};
+                result.selfdestructs = &.{};
+                result.accessed_addresses = &.{};
+                result.accessed_storage = &.{};
+                // Reset internal accumulators (logs already transferred)
+                self.self_destruct.clear();
+                self.access_list.clear();
             } else {
                 // For nested calls, return empty slices - logs accumulate in EVM
                 result.logs = &.{};
@@ -614,7 +617,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         false, // is_static
                         snapshot_id,
                     ) catch |err| {
-                        log.err("EXECUTE_CALL: execute_frame failed with error: {}", .{err});
+                        log.debug("EXECUTE_CALL: execute_frame failed with error: {}", .{err});
                         self.journal.revert_to_snapshot(snapshot_id);
                         return CallResult.failure(0);
                     };
@@ -681,7 +684,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
-                log.err("Delegatecall preflight failed: {}", .{err});
+                log.debug("Delegatecall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -723,7 +726,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, true, snapshot_id) catch |err| {
-                log.err("Staticcall preflight failed: {}", .{err});
+                log.debug("Staticcall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -824,20 +827,25 @@ pub fn Evm(comptime config: EvmConfig) type {
             salt: u256,
             gas: u64,
         }) !CallResult {
+            // debug: CREATE2 invocation context (disabled by default)
+            log.debug("CREATE2: gas={}, init_len={}, value={}", .{ params.gas, params.init_code.len, params.value });
             // Check depth
             if (self.depth >= config.max_call_depth) {
+                log.debug("CREATE2: depth exceeded", .{});
                 return CallResult.failure(0);
             }
 
             const snapshot_id = self.journal.create_snapshot();
 
             const caller_account = self.database.get_account(params.caller.bytes) catch {
+                log.debug("CREATE2: get_account failed", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             } orelse Account.zero();
 
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
+                log.debug("CREATE2: insufficient balance", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
@@ -846,13 +854,15 @@ pub fn Evm(comptime config: EvmConfig) type {
             const keccak_asm = @import("keccak_asm.zig");
             var init_code_hash_bytes: [32]u8 = undefined;
             try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
-            const salt_bytes = @as([32]u8, @bitCast(params.salt));
+            var salt_bytes: [32]u8 = undefined;
+            std.mem.writeInt(u256, &salt_bytes, params.salt, .big);
             const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
 
             const existed_before = self.database.account_exists(contract_address.bytes);
             if (existed_before) {
                 const existing = self.database.get_account(contract_address.bytes) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
+                    log.debug("CREATE2: collision at address", .{});
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 }
@@ -864,6 +874,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const hash_cost = @as(u64, @intCast(params.init_code.len)) * GasConstants.Keccak256WordGas / 32;
             const total_overhead = create_overhead + hash_cost;
             if (params.gas < total_overhead) {
+                log.debug("CREATE2: insufficient gas for overhead: need={}, have={}", .{ total_overhead, params.gas });
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
@@ -893,41 +904,38 @@ pub fn Evm(comptime config: EvmConfig) type {
             snapshot_id: Journal.SnapshotIdType,
             existed_before: bool,
         }) !CallResult {
-            std.debug.print("executeCreateInternal: contract_address={any}, init_code_len={}, gas={}\n", .{
-                args.contract_address, args.init_code.len, args.gas_left,
-            });
+            // Reduce log noise: omit verbose create trace
             
             // Track created contract for EIP-6780
             try self.created_contracts.mark_created(args.contract_address);
 
             // Transfer value to the new contract before executing init code (per spec)
             if (args.value > 0) {
-                std.debug.print("Transferring value {} to new contract\n", .{args.value});
+                // Reduce log noise
                 self.doTransfer(args.caller, args.contract_address, args.value, args.snapshot_id) catch {
-                    std.debug.print("Value transfer failed\n", .{});
+                    // Reduce log noise
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 };
             }
 
             // Execute initialization code
-            std.debug.print("Executing init code\n", .{});
             const result = self.execute_init_code(
                 args.init_code,
                 args.gas_left,
                 args.contract_address,
                 args.snapshot_id,
             ) catch |err| {
-                std.debug.print("execute_init_code failed with error: {}\n", .{err});
+                log.debug("execute_init_code failed with error: {}", .{err});
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return CallResult.failure(0);
             };
             if (!result.success) {
-                std.debug.print("Init code execution failed, success=false\n", .{});
+                log.debug("Init code execution failed, success=false", .{});
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return result;
             }
-            std.debug.print("Init code executed successfully, output_len={}\n", .{result.output.len});
+            // Reduce log noise
 
             // Ensure contract account exists and set nonce/code
             var contract_account = self.database.get_account(args.contract_address.bytes) catch {
@@ -967,9 +975,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult.failure(0);
             };
 
-            // Return the deployed bytecode as output
-            // The contract address is handled separately by the CREATE opcode handler
-            var final_result = CallResult.success_with_output(result.gas_left, result.output);
+            // Do not return the deployed bytecode to avoid leaks; caller can query code by address
+            // The contract address is handled separately by the CREATE/CREATE2 opcode handlers
+            if (result.output.len > 0) self.allocator.free(result.output);
+            var final_result = CallResult.success_empty(result.gas_left);
             final_result.trace = result.trace;
             return final_result;
         }
@@ -1074,6 +1083,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Execute with tracing if tracer type is configured
             var execution_trace: ?@import("call_result.zig").ExecutionTrace = null;
+            const Termination = error{ Stop, Return, SelfDestruct };
+            var termination_reason: ?Termination = null;
             if (config.TracerType) |TracerType| {
                 // Create tracer instance for this execution
                 var tracer = TracerType.init(self.allocator);
@@ -1082,16 +1093,36 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
                 
                 // Frame.interpret_with_tracer returns Error!void and uses errors for success termination
-                // std.debug.print("Calling frame.interpret_with_tracer with code_len={}, tracer={s}\n", .{code.len, @typeName(TracerType)});
+                // reduce tracer call logging noise
                 frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
-                error.Stop, error.Return, error.SelfDestruct => {
-                    // std.debug.print("Frame terminated with tracer: {}, frame.output.len={}\n", .{err, frame.output.len});
-                    // These are success termination cases
+                error.Stop => {
+                    termination_reason = error.Stop;
+                },
+                error.Return => {
+                    termination_reason = error.Return;
+                },
+                error.SelfDestruct => {
+                    log.debug("execute_frame: termination SelfDestruct (traced)", .{});
+                    termination_reason = error.SelfDestruct;
+                },
+                error.REVERT => {
+                    // REVERT is a special case - it's a successful termination but indicates failure
+                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                    const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
+                    // Copy revert data to avoid double-free with frame.deinit
+                    const out_len = frame.output.len;
+                    const out_copy = if (out_len > 0) blk: {
+                        const buf = try self.allocator.alloc(u8, out_len);
+                        @memcpy(buf, frame.output);
+                        break :blk buf;
+                    } else &[_]u8{};
+                    var result = CallResult.revert_with_data(gas_left, out_copy);
+                    result.trace = execution_trace;
+                    return result;
                 },
                 else => {
                     // Actual errors - but still extract trace for debugging
-                    std.debug.print("Frame execution with tracer failed: {}\n", .{err});
-                    log.debug("Frame execution failed with error: {}", .{err});
+                    log.debug("Frame execution with tracer failed: {}", .{err});
                     // Extract trace even on failure for debugging
                     execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
                     var failure = CallResult.failure(0);
@@ -1104,16 +1135,20 @@ pub fn Evm(comptime config: EvmConfig) type {
             execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
             } else {
                 // Execute without tracing (original path)
-                std.debug.print("Calling frame.interpret with code_len={}\n", .{code.len});
                 frame.interpret(code) catch |err| switch (err) {
-                error.Stop, error.Return, error.SelfDestruct => {
-                    std.debug.print("Frame terminated with: {}\n", .{err});
-                    // These are success termination cases
+                error.Stop => {
+                    termination_reason = error.Stop;
+                },
+                error.Return => {
+                    termination_reason = error.Return;
+                },
+                error.SelfDestruct => {
+                    log.debug("execute_frame: termination SelfDestruct", .{});
+                    termination_reason = error.SelfDestruct;
                 },
                 else => {
                     // Actual errors
-                    std.debug.print("Frame execution failed with error: {}\n", .{err});
-                    log.err("Frame execution failed with error: {}", .{err});
+                    log.debug("Frame execution failed with error: {}", .{err});
                     return CallResult.failure(0);
                 },
             };
@@ -1153,8 +1188,37 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }) catch return CallResult.failure(0);
             }
 
-            // All success termination cases return the same result with trace data
-            var result = CallResult.success_with_output(gas_left, out_buf);
+            // Handle different termination reasons appropriately
+            var result: CallResult = undefined;
+            if (termination_reason) |reason| {
+                switch (reason) {
+                    error.Stop => {
+                        // STOP opcode should return empty output regardless of frame output
+                        if (out_buf.len > 0) {
+                            self.allocator.free(out_buf); // Free the allocated output since we won't use it
+                        }
+                        // Ensure return_data matches empty output semantics
+                        self.return_data = &.{};
+                        result = CallResult.success_with_output(gas_left, &.{});
+                    },
+                    error.Return => {
+                        // RETURN opcode should return the frame's output
+                        result = CallResult.success_with_output(gas_left, out_buf);
+                    },
+                    error.SelfDestruct => {
+                        // SELFDESTRUCT should return empty output
+                        if (out_buf.len > 0) {
+                            self.allocator.free(out_buf); // Free the allocated output since we won't use it
+                        }
+                        // Ensure return_data matches empty output semantics
+                        self.return_data = &.{};
+                        result = CallResult.success_with_output(gas_left, &.{});
+                    },
+                }
+            } else {
+                // This should not happen in normal execution
+                result = CallResult.success_with_output(gas_left, out_buf);
+            }
             result.trace = execution_trace;
             return result;
         }
@@ -1166,18 +1230,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             address: primitives.Address,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            std.debug.print("execute_init_code: code_len={}, gas={}, address={any}\n", .{
-                code.len, gas, address,
-            });
+            // Reduce log noise for init code execution
             // Check initcode size limit (EIP-3860)
             if (self.eips.eip_3860 and code.len > 49152) {
-                std.debug.print("Init code too large: {} > 49152\n", .{code.len});
+                log.debug("Init code too large: {} > 49152", .{code.len});
                 return CallResult.failure(0);
             }
             // Simply delegate to execute_frame with no input
             // Init code execution is the same as regular execution
             // but the output becomes the deployed contract code
-            std.debug.print("Calling execute_frame for init code\n", .{});
+            // Reduce log noise
             const result = self.execute_frame(
                 code,
                 &.{}, // No input for init code
@@ -1188,12 +1250,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 false, // Not static during init
                 snapshot_id,
             ) catch |err| {
-                std.debug.print("execute_frame failed with error: {}\n", .{err});
+                log.debug("execute_frame failed with error: {}", .{err});
                 return err;
             };
-            std.debug.print("execute_frame returned: success={}, output_len={}, gas_left={}\n", .{
-                result.success, result.output.len, result.gas_left,
-            });
+            // Reduce log noise
             return result;
         }
 

@@ -211,9 +211,10 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODECOPY opcode (0x39) - Copy code running in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const length = try self.stack.pop();       // Top of stack
-            const offset = try self.stack.pop();       // Second from top  
-            const dest_offset = try self.stack.pop();  // Third from top
+            // EVM stack order: [destOffset, offset, length] with dest on top
+            const dest_offset = try self.stack.pop();  // Top of stack
+            const offset = try self.stack.pop();       // Next
+            const length = try self.stack.pop();       // Next
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or
@@ -430,9 +431,10 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [destOffset, offset, length] → []
         pub fn returndatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const length = try self.stack.pop();
-            const offset = try self.stack.pop();
+            // EVM stack order: [destOffset, offset, length] with dest on top
             const dest_offset = try self.stack.pop();
+            const offset = try self.stack.pop();
+            const length = try self.stack.pop();
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or
