@@ -113,6 +113,12 @@ pub const Database = struct {
         self.accounts.deinit();
         self.storage.deinit();
         self.transient_storage.deinit();
+        
+        // Free all allocated code before deinitializing the hashmap
+        var code_iter = self.code_storage.iterator();
+        while (code_iter.next()) |entry| {
+            self.allocator.free(entry.value_ptr.*);
+        }
         self.code_storage.deinit();
 
         for (self.snapshots.items) |*snapshot| {
@@ -218,7 +224,12 @@ pub const Database = struct {
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
         // log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
-        try self.code_storage.put(hash, code);
+        
+        // Make a copy of the code to own it
+        const code_copy = self.allocator.alloc(u8, code.len) catch return Error.OutOfMemory;
+        @memcpy(code_copy, code);
+        
+        try self.code_storage.put(hash, code_copy);
         return hash;
     }
 

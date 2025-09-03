@@ -957,6 +957,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }
+                // Store the code in the database - database will make its own copy
                 const stored_hash = self.database.set_code(result.output) catch {
                     // Free the allocated output memory before returning
                     self.allocator.free(result.output);
@@ -965,6 +966,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
                 try self.journal.record_code_change(args.snapshot_id, args.contract_address, contract_account.code_hash);
                 contract_account.code_hash = stored_hash;
+                // Don't free result.output here - we'll return it
             }
             self.database.set_account(args.contract_address.bytes, contract_account) catch {
                 // Free the allocated output memory before returning if it exists
@@ -975,10 +977,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult.failure(0);
             };
 
-            // Do not return the deployed bytecode to avoid leaks; caller can query code by address
-            // The contract address is handled separately by the CREATE/CREATE2 opcode handlers
-            if (result.output.len > 0) self.allocator.free(result.output);
-            var final_result = CallResult.success_empty(result.gas_left);
+            // Return the deployed bytecode as output for CREATE/CREATE2
+            // This matches the expected behavior where CREATE returns the runtime code
+            // Don't free the output here - it will be owned by the CallResult
+            var final_result = if (result.output.len > 0)
+                CallResult.success_with_output(result.gas_left, result.output)
+            else
+                CallResult.success_empty(result.gas_left);
             final_result.trace = result.trace;
             return final_result;
         }

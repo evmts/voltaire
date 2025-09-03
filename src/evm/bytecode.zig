@@ -189,9 +189,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
             // Check if this is deployment bytecode
-            const is_deployment = code.len >= 4 and 
-                code[0] == 0x60 and code[1] == 0x80 and 
-                code[2] == 0x60 and code[3] == 0x40;
+            const is_deployment = blk: {
+                if (code.len < 4) break :blk false;
+                break :blk (code[0] == 0x60 and code[1] == 0x80 and 
+                           code[2] == 0x60 and code[3] == 0x40);
+            };
             
             // Always try to parse metadata to detect its presence
             const metadata = parseSolidityMetadataFromBytes(code);
