@@ -75,11 +75,8 @@ pub fn Handlers(comptime FrameType: type) type {
             //     log.err("  [{}] = {x}", .{i, val});
             // }
             
-            log.debug("[MSTORE] Stack before: {any}, gas: {d}", .{ self.stack.get_slice(), self.gas_remaining });
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
-            // log.err("MSTORE: Popped offset={x}, value={x}", .{ offset, value });
-            log.debug("[MSTORE] Storing value {d} at offset {d}", .{ value, offset });
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -104,7 +101,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Convert to u256 if necessary and store
             const value_u256 = @as(u256, value);
-            log.debug("MSTORE: Converting value {} (type: {s}) to u256: {}", .{ value, @typeName(@TypeOf(value)), value_u256 });
             self.memory.set_u256_evm(self.allocator, @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
