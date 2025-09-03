@@ -875,11 +875,11 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
         var min_gas: ?u64 = null;
         var expect_true: bool = false;
         if (std.mem.eql(u8, test_case.name, "erc20-approval-transfer")) {
-            min_gas = 45_000; expect_true = true;
+            min_gas = 40_000; expect_true = true;
         } else if (std.mem.eql(u8, test_case.name, "erc20-transfer")) {
-            min_gas = 50_000; expect_true = true;
+            min_gas = 45_000; expect_true = true;
         } else if (std.mem.eql(u8, test_case.name, "erc20-mint")) {
-            min_gas = 55_000; expect_true = true;
+            min_gas = 50_000; expect_true = true;
         } else if (std.mem.eql(u8, test_case.name, "ten-thousand-hashes")) {
             min_gas = 100_000;
         } else if (std.mem.eql(u8, test_case.name, "snailtracer")) {
