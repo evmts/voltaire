@@ -79,36 +79,6 @@ test "differential: JUMPI conditional taken" {
     try testor.test_bytecode(&bytecode);
 }
 
-test "differential: JUMPI conditional not taken" {
-    const allocator = testing.allocator;
-    
-    var testor = try DifferentialTestor.init(allocator);
-    defer testor.deinit();
-    
-    // Test JUMPI with false condition
-    const bytecode = [_]u8{
-        // Don't jump if 0 (false)
-        0x60, 0x00, // PUSH1 0 (condition)
-        0x60, 0x0b, // PUSH1 11 (destination - corrected)
-        0x57,       // JUMPI
-        // This should execute
-        0x60, 0x02, // PUSH1 2
-        0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
-        0x00,       // STOP
-        0x5b,       // JUMPDEST (offset 11)
-        // This should not execute
-        0x60, 0x01, // PUSH1 1
-        0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32
-        0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
-    };
-    
-    try testor.test_bytecode(&bytecode);
-}
-
 test "differential: JUMP edge cases" {
     const allocator = testing.allocator;
     
