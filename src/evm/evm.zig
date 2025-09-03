@@ -1082,10 +1082,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
                 
                 // Frame.interpret_with_tracer returns Error!void and uses errors for success termination
-                std.debug.print("Calling frame.interpret_with_tracer with code_len={}, tracer={s}\n", .{code.len, @typeName(TracerType)});
+                // std.debug.print("Calling frame.interpret_with_tracer with code_len={}, tracer={s}\n", .{code.len, @typeName(TracerType)});
                 frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
                 error.Stop, error.Return, error.SelfDestruct => {
-                    std.debug.print("Frame terminated with tracer: {}, frame.output.len={}\n", .{err, frame.output.len});
+                    // std.debug.print("Frame terminated with tracer: {}, frame.output.len={}\n", .{err, frame.output.len});
                     // These are success termination cases
                 },
                 else => {

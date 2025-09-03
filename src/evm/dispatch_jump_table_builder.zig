@@ -45,7 +45,8 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
                 schedule_index = 1;
             }
 
-            // const log = std.log.scoped(.jump_table);
+            const log = std.log.scoped(.jump_table);
+            _ = log; // Mark as used to avoid unused variable warning
             // log.debug("buildFromSchedule: Starting bytecode scan for JUMPDESTs, schedule.len={}, bytecode.len={}", .{ schedule.len, bytecode.len() });
 
             while (true) {

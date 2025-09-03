@@ -12,8 +12,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// LT opcode (0x10) - Less than comparison.
         pub fn lt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
-            const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
+            const a = try self.stack.pop(); // Top of stack (second pushed value)
+            const b = try self.stack.peek(); // Second from top (first pushed value)
             // EVM: pops a, then b, and pushes (b < a) - second < first
             const result: WordType = if (b < a) 1 else 0;
             self.stack.set_top_unsafe(result);
@@ -23,8 +23,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// GT opcode (0x11) - Greater than comparison.
         pub fn gt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
-            const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
+            const a = try self.stack.pop(); // Top of stack (second pushed value)
+            const b = try self.stack.peek(); // Second from top (first pushed value)
             // EVM: pops a, then b, and pushes (b > a) - second > first
             const result: WordType = if (b > a) 1 else 0;
             self.stack.set_top_unsafe(result);
@@ -34,8 +34,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SLT opcode (0x12) - Signed less than comparison.
         pub fn slt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
-            const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
+            const a = try self.stack.pop(); // Top of stack (second pushed value)
+            const b = try self.stack.peek(); // Second from top (first pushed value)
             const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
             const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
             // EVM: pops a, then b, and pushes (b < a) as signed - second < first
@@ -47,8 +47,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SGT opcode (0x13) - Signed greater than comparison.
         pub fn sgt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
-            const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
+            const a = try self.stack.pop(); // Top of stack (second pushed value)
+            const b = try self.stack.peek(); // Second from top (first pushed value)
             const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
             const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
             // EVM: pops a, then b, and pushes (b > a) as signed - second > first
@@ -60,8 +60,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EQ opcode (0x14) - Equality comparison.
         pub fn eq(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Top of stack - second operand
-            const a = self.stack.peek_unsafe(); // Second from top - first operand
+            const b = try self.stack.pop(); // Top of stack - second operand
+            const a = try self.stack.peek(); // Second from top - first operand
             // EVM: pops b, then a, and pushes (a == b)
             const result: WordType = if (a == b) 1 else 0;
             self.stack.set_top_unsafe(result);
@@ -71,7 +71,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ISZERO opcode (0x15) - Check if value is zero.
         pub fn iszero(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const value = self.stack.peek_unsafe();
+            const value = try self.stack.peek();
             const result: WordType = if (value == 0) 1 else 0;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;

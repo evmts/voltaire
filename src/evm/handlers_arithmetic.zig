@@ -217,9 +217,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // EVM semantics: top ^ second
-            const base = try self.stack.pop(); // Top of stack (base)
-            const exponent = try self.stack.peek(); // Second from top (exponent)
+            // EVM semantics: base ^ exponent
+            const exponent = try self.stack.pop(); // Top of stack (exponent)
+            const base = try self.stack.peek(); // Second from top (base)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
@@ -261,10 +261,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
 
 
-            const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
+            const ext = try self.stack.pop(); // Extension byte index (top of stack)
 
 
-            const value = self.stack.peek_unsafe(); // Value to extend (second element)
+            const value = try self.stack.peek(); // Value to extend (second element)
 
             var result: WordType = undefined;
 
