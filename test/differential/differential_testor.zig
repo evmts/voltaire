@@ -222,9 +222,6 @@ pub const DifferentialTestor = struct {
     fn deployContractGuillotine(self: *DifferentialTestor, deployment_bytecode: []const u8, enable_tracing: bool) ![]u8 {
         const log = std.log.scoped(.differential_testor);
         
-        // Create a temporary address for deployment
-        const deploy_address = try primitives.Address.from_hex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-        
         // Execute the deployment bytecode (init code) using CREATE semantics
         // This should execute the init code and return the runtime code
         const result = if (enable_tracing) blk: {
