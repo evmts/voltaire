@@ -9,6 +9,7 @@ pub fn createEvmRunner(
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     bn254_lib: ?*std.Build.Step.Compile,
+    clap_dep: *std.Build.Dependency,
 ) *std.Build.Step.Compile {
     const exe = b.addExecutable(.{
         .name = "evm-runner",
@@ -21,6 +22,7 @@ pub fn createEvmRunner(
     
     exe.root_module.addImport("evm", evm_mod);
     exe.root_module.addImport("primitives", primitives_mod);
+    exe.root_module.addImport("clap", clap_dep.module("clap"));
     exe.linkLibrary(c_kzg_lib);
     exe.linkLibrary(blst_lib);
     exe.linkLibC();
@@ -43,6 +45,7 @@ pub fn createEvmRunnerSmall(
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     bn254_lib: ?*std.Build.Step.Compile,
+    clap_dep: *std.Build.Dependency,
 ) *std.Build.Step.Compile {
     const exe = b.addExecutable(.{
         .name = "evm-runner-small",
@@ -55,6 +58,7 @@ pub fn createEvmRunnerSmall(
     
     exe.root_module.addImport("evm", evm_mod);
     exe.root_module.addImport("primitives", primitives_mod);
+    exe.root_module.addImport("clap", clap_dep.module("clap"));
     exe.linkLibrary(c_kzg_lib);
     exe.linkLibrary(blst_lib);
     exe.linkLibC();

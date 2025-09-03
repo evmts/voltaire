@@ -28,8 +28,8 @@ pub fn build(b: *std.Build) void {
     const guillotine_exe = build_pkg.GuillotineExe.createExecutable(b, modules.exe_mod);
     _ = build_pkg.GuillotineExe.createRunStep(b, guillotine_exe);
 
-    const evm_runner = build_pkg.EvmRunnerExe.createEvmRunner(b, target, optimize, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
-    const evm_runner_small = build_pkg.EvmRunnerExe.createEvmRunnerSmall(b, target, .ReleaseSmall, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
+    const evm_runner = build_pkg.EvmRunnerExe.createEvmRunner(b, target, optimize, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib, clap_dep);
+    const evm_runner_small = build_pkg.EvmRunnerExe.createEvmRunnerSmall(b, target, .ReleaseSmall, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib, clap_dep);
     build_pkg.EvmRunnerExe.createRunSteps(b, evm_runner, evm_runner_small);
 
     // Asset generation for devtool
