@@ -91,6 +91,26 @@ test "opcode 0x30 differential test" {
     };
     defer revm_result.deinit();
     
+    // Debug output
+    std.debug.print("\n=== ADDRESS opcode (0x30) test ===\n", .{});
+    std.debug.print("Caller address: {x}\n", .{caller_address.bytes});
+    std.debug.print("Guillotine success: {}\n", .{guillotine_result.success});
+    if (guillotine_result.output.len == 32) {
+        std.debug.print("Guillotine ADDRESS: ", .{});
+        for (guillotine_result.output) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
+        }
+        std.debug.print("\n", .{});
+    }
+    std.debug.print("REVM success: {}\n", .{revm_result.success});
+    if (revm_result.output.len == 32) {
+        std.debug.print("REVM ADDRESS: ", .{});
+        for (revm_result.output) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
+        }
+        std.debug.print("\n", .{});
+    }
+    
     // Compare results
     try std.testing.expectEqual(revm_result.success, guillotine_result.success);
     if (revm_result.success and guillotine_result.success) {

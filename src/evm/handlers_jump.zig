@@ -43,14 +43,14 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// JUMPI opcode (0x57) - Conditional jump.
-        /// Pops destination and condition from stack.
+        /// Pops condition and destination from stack.
         /// Jumps to destination if condition is non-zero, otherwise continues to next instruction.
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Get jump table from frame
             const jump_table = self.jump_table;
 
-            const dest = try self.stack.pop();
-            const condition = try self.stack.pop();
+            const condition = try self.stack.pop();  // Top of stack
+            const dest = try self.stack.pop();       // Second from top
 
             if (condition != 0) {
                 // Take the jump - validate destination range
