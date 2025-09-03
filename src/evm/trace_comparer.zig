@@ -332,18 +332,22 @@ pub const TraceComparer = struct {
                     // Find next string value
                     if (line[pos] == '"') {
                         const val_start = pos + 1;
-                        const val_end = std.mem.indexOfScalarPos(u8, line, val_start, '"').?;
-                        const val_str = line[val_start..val_end];
-                        
-                        // Parse hex value
-                        var value: u256 = 0;
-                        if (val_str.len > 2 and val_str[0] == '0' and val_str[1] == 'x') {
-                            value = std.fmt.parseInt(u256, val_str[2..], 16) catch 0;
+                        const val_end = std.mem.indexOfScalarPos(u8, line, val_start, '"') orelse line.len;
+                        if (val_end > val_start) {
+                            const val_str = line[val_start..val_end];
+                            
+                            // Parse hex value
+                            var value: u256 = 0;
+                            if (val_str.len > 2 and val_str[0] == '0' and val_str[1] == 'x') {
+                                value = std.fmt.parseInt(u256, val_str[2..], 16) catch 0;
+                            } else {
+                                value = std.fmt.parseInt(u256, val_str, 16) catch 0;
+                            }
+                            try stack_items.append(self.allocator, value);
+                            pos = val_end + 1;
                         } else {
-                            value = std.fmt.parseInt(u256, val_str, 16) catch 0;
+                            pos += 1;
                         }
-                        try stack_items.append(self.allocator, value);
-                        pos = val_end + 1;
                     } else {
                         pos += 1;
                     }

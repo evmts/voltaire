@@ -394,6 +394,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else gas;
             
             // Route to appropriate handler
+            std.debug.print("Dispatching call type: {}, gas={}\n", .{ std.meta.activeTag(params), execution_gas });
             var result = switch (params) {
                 .call => |p| blk: {
                     // log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, execution_gas, p.input.len });
@@ -405,7 +406,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .callcode => |p| self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
                 .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
                 .staticcall => |p| self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
-                .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch CallResult.failure(0),
+                .create => |p| blk: {
+                    std.debug.print("About to call executeCreate\n", .{});
+                    break :blk self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch |err| {
+                        std.debug.print("executeCreate failed with error: {}\n", .{err});
+                        return CallResult.failure(0);
+                    };
+                },
                 .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch CallResult.failure(0),
             };
             
@@ -760,27 +767,34 @@ pub fn Evm(comptime config: EvmConfig) type {
             init_code: []const u8,
             gas: u64,
         }) !CallResult {
+            std.debug.print("executeCreate: caller={any}, value={}, init_code_len={}, gas={}\n", .{
+                params.caller, params.value, params.init_code.len, params.gas,
+            });
             const snapshot_id = self.journal.create_snapshot();
 
             // Get caller account
             var caller_account = self.database.get_account(params.caller.bytes) catch {
+                std.debug.print("Failed to get caller account\n", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             } orelse Account.zero();
 
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
+                std.debug.print("Insufficient balance: has {}, needs {}\n", .{ caller_account.balance, params.value });
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
 
             // Calculate contract address from sender and nonce
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
+            std.debug.print("Contract address: {any}, nonce: {}\n", .{ contract_address, caller_account.nonce });
 
             // Pre-increment caller nonce (journaled)
             try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
+                std.debug.print("Failed to update caller account\n", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -789,10 +803,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (existed_before) {
                 const existing = self.database.get_account(contract_address.bytes) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
+                    std.debug.print("Contract collision detected\n", .{});
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 }
             }
+            std.debug.print("Calling executeCreateInternal\n", .{});
             // Delegate to unified helper
             const GasConstants = primitives.GasConstants;
             const create_overhead = GasConstants.CreateGas; // 32000
@@ -885,31 +901,41 @@ pub fn Evm(comptime config: EvmConfig) type {
             snapshot_id: Journal.SnapshotIdType,
             existed_before: bool,
         }) !CallResult {
+            std.debug.print("executeCreateInternal: contract_address={any}, init_code_len={}, gas={}\n", .{
+                args.contract_address, args.init_code.len, args.gas_left,
+            });
+            
             // Track created contract for EIP-6780
             try self.created_contracts.mark_created(args.contract_address);
 
             // Transfer value to the new contract before executing init code (per spec)
             if (args.value > 0) {
+                std.debug.print("Transferring value {} to new contract\n", .{args.value});
                 self.doTransfer(args.caller, args.contract_address, args.value, args.snapshot_id) catch {
+                    std.debug.print("Value transfer failed\n", .{});
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 };
             }
 
             // Execute initialization code
+            std.debug.print("Executing init code\n", .{});
             const result = self.execute_init_code(
                 args.init_code,
                 args.gas_left,
                 args.contract_address,
                 args.snapshot_id,
-            ) catch {
+            ) catch |err| {
+                std.debug.print("execute_init_code failed with error: {}\n", .{err});
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return CallResult.failure(0);
             };
             if (!result.success) {
+                std.debug.print("Init code execution failed, success=false\n", .{});
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return result;
             }
+            std.debug.print("Init code executed successfully, output_len={}\n", .{result.output.len});
 
             // Ensure contract account exists and set nonce/code
             var contract_account = self.database.get_account(args.contract_address.bytes) catch {
@@ -971,6 +997,15 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             const tracer_steps = tracer.trace_steps.items;
             var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
+            errdefer allocator.free(trace_steps);
+            
+            var allocated_count: usize = 0;
+            errdefer {
+                // Clean up any partially allocated trace steps
+                for (trace_steps[0..allocated_count]) |*step| {
+                    step.deinit(allocator);
+                }
+            }
             
             for (tracer_steps, 0..) |tracer_step, i| {
                 trace_steps[i] = call_result.TraceStep{
@@ -983,6 +1018,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .storage_reads = &.{}, // Empty for now  
                     .storage_writes = &.{}, // Empty for now
                 };
+                allocated_count += 1;
             }
             
             return call_result.ExecutionTrace{
@@ -1003,7 +1039,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            // log.debug("DEBUG: execute_frame entered, code_len={}, gas={}\n", .{ code.len, gas });
+            std.debug.print("execute_frame: code_len={}, gas={}, address={any}, depth={}\n", .{ 
+                code.len, gas, address, self.depth,
+            });
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;
@@ -1052,27 +1090,37 @@ pub fn Evm(comptime config: EvmConfig) type {
                 log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
                 
                 // Frame.interpret_with_tracer returns Error!void and uses errors for success termination
+                std.debug.print("Calling frame.interpret_with_tracer with code_len={}, tracer={s}\n", .{code.len, @typeName(TracerType)});
                 frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
                 error.Stop, error.Return, error.SelfDestruct => {
+                    std.debug.print("Frame terminated with tracer: {}\n", .{err});
                     // These are success termination cases
                 },
                 else => {
-                    // Actual errors
+                    // Actual errors - but still extract trace for debugging
+                    std.debug.print("Frame execution with tracer failed: {}\n", .{err});
                     log.debug("Frame execution failed with error: {}", .{err});
-                    return CallResult.failure(0);
+                    // Extract trace even on failure for debugging
+                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                    var failure = CallResult.failure(0);
+                    failure.trace = execution_trace;
+                    return failure;
                 },
             };
             
-            // Extract trace data before tracer is destroyed
+            // Extract trace data before tracer is destroyed (for success cases)
             execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
             } else {
                 // Execute without tracing (original path)
+                std.debug.print("Calling frame.interpret with code_len={}\n", .{code.len});
                 frame.interpret(code) catch |err| switch (err) {
                 error.Stop, error.Return, error.SelfDestruct => {
+                    std.debug.print("Frame terminated with: {}\n", .{err});
                     // These are success termination cases
                 },
                 else => {
                     // Actual errors
+                    std.debug.print("Frame execution failed with error: {}\n", .{err});
                     log.err("Frame execution failed with error: {}", .{err});
                     return CallResult.failure(0);
                 },
@@ -1126,12 +1174,19 @@ pub fn Evm(comptime config: EvmConfig) type {
             address: primitives.Address,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
+            std.debug.print("execute_init_code: code_len={}, gas={}, address={any}\n", .{
+                code.len, gas, address,
+            });
             // Check initcode size limit (EIP-3860)
-            if (self.eips.eip_3860 and code.len > 49152) return CallResult.failure(0);
+            if (self.eips.eip_3860 and code.len > 49152) {
+                std.debug.print("Init code too large: {} > 49152\n", .{code.len});
+                return CallResult.failure(0);
+            }
             // Simply delegate to execute_frame with no input
             // Init code execution is the same as regular execution
             // but the output becomes the deployed contract code
-            return try self.execute_frame(
+            std.debug.print("Calling execute_frame for init code\n", .{});
+            const result = self.execute_frame(
                 code,
                 &.{}, // No input for init code
                 gas,
@@ -1140,7 +1195,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 0, // No value during init
                 false, // Not static during init
                 snapshot_id,
-            );
+            ) catch |err| {
+                std.debug.print("execute_frame failed with error: {}\n", .{err});
+                return err;
+            };
+            std.debug.print("execute_frame returned: success={}, output_len={}, gas_left={}\n", .{
+                result.success, result.output.len, result.gas_left,
+            });
+            return result;
         }
 
         /// Execute nested EVM call - used for calls from within the EVM

@@ -62,23 +62,23 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             // MSTORE stores a 32-byte word to memory
-            log.err("MSTORE ENTRY: stack_size={}, stack_ptr={*}", .{
-                self.stack.size(),
-                self.stack.stack_ptr
-            });
-            
-            // Log stack contents
-            const stack_slice = self.stack.get_slice();
-            log.err("MSTORE: Stack contents (top first):", .{});
-            for (stack_slice, 0..) |val, i| {
-                if (i >= 3) break;
-                log.err("  [{}] = {x}", .{i, val});
-            }
+            // log.err("MSTORE ENTRY: stack_size={}, stack_ptr={*}", .{
+            //     self.stack.size(),
+            //     self.stack.stack_ptr
+            // });
+            // 
+            // // Log stack contents
+            // const stack_slice = self.stack.get_slice();
+            // log.err("MSTORE: Stack contents (top first):", .{});
+            // for (stack_slice, 0..) |val, i| {
+            //     if (i >= 3) break;
+            //     log.err("  [{}] = {x}", .{i, val});
+            // }
             
             log.debug("[MSTORE] Stack before: {any}, gas: {d}", .{ self.stack.get_slice(), self.gas_remaining });
             const offset = try self.stack.pop();
             const value = try self.stack.pop();
-            log.err("MSTORE: Popped offset={x}, value={x}", .{ offset, value });
+            // log.err("MSTORE: Popped offset={x}, value={x}", .{ offset, value });
             log.debug("[MSTORE] Storing value {d} at offset {d}", .{ value, offset });
 
             // Check if offset fits in usize
@@ -114,17 +114,17 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch.getOpData(.{ .regular = Opcode.MSTORE });
             const next = op_data.next;
             
-            // Log exit state
-            log.err("MSTORE EXIT: stack_size={}, gas_remaining={}, next_opcode={x}", .{
-                self.stack.size(),
-                self.gas_remaining,
-                @intFromPtr(next.cursor[0].opcode_handler),
-            });
-            
-            // Check stack state before next operation
-            if (self.stack.size() == 0) {
-                log.err("MSTORE EXIT WARNING: Stack is empty before next operation!", .{});
-            }
+            // // Log exit state
+            // log.err("MSTORE EXIT: stack_size={}, gas_remaining={}, next_opcode={x}", .{
+            //     self.stack.size(),
+            //     self.gas_remaining,
+            //     @intFromPtr(next.cursor[0].opcode_handler),
+            // });
+            // 
+            // // Check stack state before next operation
+            // if (self.stack.size() == 0) {
+            //     log.err("MSTORE EXIT WARNING: Stack is empty before next operation!", .{});
+            // }
             
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
