@@ -1,5 +1,4 @@
 const std = @import("std");
-const log = @import("log.zig");
 const Opcode = @import("opcode_data.zig").Opcode;
 const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 const bytecode_mod = @import("bytecode.zig");
@@ -299,7 +298,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // Log if gas consumption seems excessive
             if (gas > 10000 or op_count > 100) {
-                log.warn("calculateFirstBlockGas: First block gas={}, op_count={}, bytecode_len={}", .{ gas, op_count, bytecode.len() });
+                // log.warn("calculateFirstBlockGas: First block gas={}, op_count={}, bytecode_len={}", .{ gas, op_count, bytecode.len() });
             }
             
             return gas;
@@ -325,8 +324,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             bytecode: anytype,
             opcode_handlers: *const [256]OpcodeHandler,
         ) ![]Self.Item {
-            const log = @import("log.zig");
-            log.debug("Starting to parse bytecode with {} bytes", .{bytecode.runtime_code.len});
+            // log.debug("Starting to parse bytecode with {} bytes", .{bytecode.runtime_code.len});
 
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
@@ -348,7 +346,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 // log.debug("Added first_block_gas: {d}", .{first_block_gas});
                 // TEMPORARY DEBUG: Log expected gas for our test bytecode
                 if (bytecode.runtime_code.len == 38) { // Our specific test case
-                    log.warn("DEBUG: This looks like PUSH32+PUSH1+SDIV bytecode, first_block_gas={}", .{first_block_gas});
+                    // log.warn("DEBUG: This looks like PUSH32+PUSH1+SDIV bytecode, first_block_gas={}", .{first_block_gas});
                 }
             }
 
@@ -363,42 +361,21 @@ pub fn Dispatch(comptime FrameType: type) type {
                 opcode_count += 1;
 
                 // DEBUG: Log all opcodes being parsed
-                switch (op_data) {
-                    .regular => |data| {
-                        if (opcode_count <= 20) { // Limit spam to first 20 opcodes
-                            log.debug("DISPATCH: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
-                        }
-                    },
-                    .push => |data| {
-                        if (opcode_count <= 20) {
-                            log.debug("DISPATCH: Parsing PUSH{d} at PC {d}", .{ data.size, instr_pc });
-                        }
-                    },
-                    .jumpdest => |data| {
-                        if (opcode_count <= 20) {
-                            log.debug("DISPATCH: Parsing JUMPDEST at PC {d}, gas_cost={d}", .{ instr_pc, data.gas_cost });
-                        }
-                    },
-                    else => {
-                        if (opcode_count <= 20) {
-                            log.debug("DISPATCH: Parsing other operation at PC {d}", .{instr_pc});
-                        }
-                    },
-                }
+                // Commented out for performance
 
                 switch (op_data) {
                     .regular => |data| {
                         // DEBUG: Log specific opcodes we're interested in
                         if (data.opcode == 0x08) {
-                            log.debug("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
+                            // log.debug("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
                         } else if (data.opcode == 0x09) {
-                            log.debug("DISPATCH DEBUG: Found MULMOD (0x09) at PC {d}, adding handler", .{instr_pc});
+                            // log.debug("DISPATCH DEBUG: Found MULMOD (0x09) at PC {d}, adding handler", .{instr_pc});
                         } else if (data.opcode == 0x0a) {
-                            log.debug("DISPATCH DEBUG: Found EXP (0x0a) at PC {d}, adding handler", .{instr_pc});
+                            // log.debug("DISPATCH DEBUG: Found EXP (0x0a) at PC {d}, adding handler", .{instr_pc});
                         }
 
                         // Also log ALL opcodes to see what we're parsing
-                        log.debug("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
+                        // log.debug("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
 
                         try processRegularOpcode(&schedule_items, allocator, opcode_handlers, data, instr_pc);
                     },
