@@ -16,15 +16,23 @@ test "opcode 0x01 differential test" {
     defer database.deinit();
     
     const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
+    const contract_address = primitives.Address{ .bytes = [_]u8{0x20} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
     
-    // Set the bytecode on the account
+    // Set the bytecode on the contract account
     const code_hash = try database.set_code(bytecode);
     
+    try database.set_account(contract_address.bytes, .{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
     
+    // Set balance for caller account (EOA)
     try database.set_account(caller_address.bytes, .{
         .balance = std.math.maxInt(u256),
         .nonce = 0,
-        .code_hash = code_hash,
+        .code_hash = [_]u8{0} ** 32, // Empty code hash for EOA
         .storage_root = [_]u8{0} ** 32,
     });
     
@@ -62,7 +70,7 @@ test "opcode 0x01 differential test" {
     const call_params = evm.CallParams{
         .call = .{
             .caller = caller_address,
-            .to = caller_address,
+            .to = contract_address,
             .value = 0,
             .input = &.{}, // Empty input - code is on the account
             .gas = 1_000_000,
@@ -85,6 +93,7 @@ test "opcode 0x01 differential test" {
         std.debug.print("{x:0>2} ", .{b});
     }
     std.debug.print("\n", .{});
+    std.debug.print("Guillotine output length: {}\n", .{guillotine_result.output.len});
     if (guillotine_result.output.len >= 32) {
         const result_value = std.mem.readInt(u256, guillotine_result.output[0..32], .big);
         std.debug.print("Guillotine value: {}\n", .{result_value});
@@ -99,7 +108,8 @@ test "opcode 0x01 differential test" {
     
     try revm_vm.setBalance(caller_address, std.math.maxInt(u256));
     
-    // Execute with REVM
+    // Execute with REVM using CREATE - treat bytecode as init code that returns the result
+    // This avoids the setCode formatting bug
     var revm_result = revm_vm.execute(caller_address, null, 0, bytecode, 1_000_000) catch |err| {
         // If REVM fails, check if Guillotine also failed
         if (guillotine_result.success) {

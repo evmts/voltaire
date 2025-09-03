@@ -149,15 +149,12 @@ pub fn main() !void {
         .chain_id = 1,
     };
     
-    // Check if this is deployment bytecode or runtime bytecode
-    // Deployment bytecode typically starts with 0x6080604052 (PUSH1 0x80 PUSH1 0x40 MSTORE)
-    const is_deployment_code = init_code.len > 4 and 
-        init_code[0] == 0x60 and init_code[1] == 0x80 and 
-        init_code[2] == 0x60 and init_code[3] == 0x40;
+    // For benchmarking, always treat bytecode as runtime code
+    // This avoids deployment issues and matches what other EVMs do
+    const is_deployment_code = false;
     
     if (verbose) {
-        std.debug.print("Bytecode analysis: len={}, first_bytes={x}\n", .{init_code.len, init_code[0..@min(10, init_code.len)]});
-        std.debug.print("Is deployment code: {}\n", .{is_deployment_code});
+        std.debug.print("Bytecode len={}, treating as runtime code\n", .{init_code.len});
     }
     
     var contract_address: primitives.Address = undefined;
@@ -190,10 +187,7 @@ pub fn main() !void {
         const deploy_result = deploy_evm.call(create_params);
         
         if (!deploy_result.success) {
-            std.debug.print("❌ Contract deployment failed: gas_left={}, output_len={}\n", .{deploy_result.gas_left, deploy_result.output.len});
-            if (deploy_result.output.len > 0) {
-                std.debug.print("Deployment output: {x}\n", .{deploy_result.output});
-            }
+            std.debug.print("❌ Contract deployment failed\n", .{});
             @panic("Contract deployment failed");
         } else {
             // Get the deployed contract address
@@ -214,6 +208,13 @@ pub fn main() !void {
             .code_hash = code_hash,
             .storage_root = [_]u8{0} ** 32,
         });
+    }
+    
+    // Verify contract is ready
+    const contract_account = database.get_account(contract_address.bytes) catch null;
+    if (contract_account == null) {
+        std.debug.print("❌ Contract not found\n", .{});
+        @panic("Contract setup failed");
     }
     
     // Run benchmarks - create fresh EVM for each run

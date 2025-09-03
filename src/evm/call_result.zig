@@ -14,6 +14,8 @@ pub const CallResult = struct {
     trace: ?ExecutionTrace = null,
     /// Error information (for debugging and differential testing)
     error_info: ?[]const u8 = null,
+    /// Address of created contract (for CREATE/CREATE2 operations)
+    created_address: ?Address = null,
 
     /// Create a successful call result
     pub fn success_with_output(gas_left: u64, output: []const u8) CallResult {

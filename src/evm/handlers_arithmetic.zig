@@ -33,9 +33,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Top of stack (subtrahend)
-            const a = self.stack.peek_unsafe(); // Second from top (minuend)
-            const result = a -% b; // a - b
+            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
+            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            // EVM semantics: top - second = a - b
+            const result = a -% b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -43,8 +44,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
-            const a = self.stack.peek_unsafe(); // Second from top (dividend)
+            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
+            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            // EVM semantics: top / second = a / b
             const result = if (b == 0) 0 else a / b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
@@ -53,25 +55,25 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
-            const a = self.stack.peek_unsafe(); // Second from top (dividend)
+            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
+            const b = self.stack.peek_unsafe(); // Second from top (second operand)
 
-            log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ a, b });
+            log.debug("SDIV: first=0x{x}, second=0x{x}", .{ a, b });
             var result: WordType = undefined;
             if (b == 0) {
                 result = 0;
                 log.debug("SDIV: division by zero, result=0", .{});
             } else {
-                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-                log.debug("SDIV: dividend_signed={}, divisor_signed={}", .{ dividend_signed, divisor_signed });
+                const first_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
+                const second_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
+                log.debug("SDIV: first_signed={}, second_signed={}", .{ first_signed, second_signed });
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
-                if (dividend_signed == min_signed and divisor_signed == -1) {
+                if (first_signed == min_signed and second_signed == -1) {
                     // MIN / -1 overflow case
                     result = a;
                     log.debug("SDIV: overflow case, result=0x{x}", .{result});
                 } else {
-                    const result_signed = @divTrunc(dividend_signed, divisor_signed);
+                    const result_signed = @divTrunc(first_signed, second_signed);
                     result = @as(WordType, @bitCast(result_signed));
                     log.debug("SDIV: result_signed={}, result=0x{x}", .{ result_signed, result });
                 }
@@ -83,8 +85,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
-            const a = self.stack.peek_unsafe(); // Second from top (dividend)
+            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
+            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            // EVM semantics: top % second = a % b
             const result = if (b == 0) 0 else a % b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
@@ -93,20 +96,20 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
-            const a = self.stack.peek_unsafe(); // Second from top (dividend)
+            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
+            const b = self.stack.peek_unsafe(); // Second from top (second operand)
             var result: WordType = undefined;
             if (b == 0) {
                 result = 0;
             } else {
-                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
+                const first_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
+                const second_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
                 // Special case: MIN_INT % -1 = 0 (to avoid overflow)
-                if (dividend_signed == min_signed and divisor_signed == -1) {
+                if (first_signed == min_signed and second_signed == -1) {
                     result = 0;
                 } else {
-                    const result_signed = @rem(dividend_signed, divisor_signed);
+                    const result_signed = @rem(first_signed, second_signed);
                     result = @as(WordType, @bitCast(result_signed));
                 }
             }
@@ -214,9 +217,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // EVM: base^exponent where exponent is top of stack
-            const exponent = self.stack.pop_unsafe(); // Top of stack
-            const base = self.stack.peek_unsafe(); // Second from top
+            // EVM semantics: top ^ second
+            const base = self.stack.pop_unsafe(); // Top of stack (base)
+            const exponent = self.stack.peek_unsafe(); // Second from top (exponent)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
@@ -253,80 +256,44 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
         pub fn signextend(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const logger = @import("log.zig");
 
-            // Log entry state
-            const stack_size = self.stack.size();
-            logger.err("SIGNEXTEND ENTRY: stack_size={}, stack_ptr={*}", .{ stack_size, self.stack.stack_ptr });
 
-            // Log stack contents
-            if (stack_size > 0) {
-                const stack_slice = self.stack.get_slice();
-                logger.err("SIGNEXTEND: Stack contents (top first):", .{});
-                for (stack_slice, 0..) |val, i| {
-                    if (i >= 3) break; // Only show top 3
-                    logger.err("  [{}] = {x}", .{ i, val });
-                }
-            }
 
-            // SIGNEXTEND requires 2 items on stack
-            if (stack_size < 2) {
-                logger.err("SIGNEXTEND ERROR: Stack underflow, size={}", .{stack_size});
-                return Error.StackUnderflow;
-            }
 
-            // Assert stack is valid before pop
-            std.debug.assert(self.stack.size() >= 2);
 
             const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
-            logger.err("SIGNEXTEND: Popped ext={x}, stack_size now={}", .{ ext, self.stack.size() });
 
-            // Assert stack is still valid before peek
-            std.debug.assert(self.stack.size() >= 1);
 
             const value = self.stack.peek_unsafe(); // Value to extend (second element)
-            logger.err("SIGNEXTEND: Peeked value={x}, stack_size still={}", .{ value, self.stack.size() });
 
             var result: WordType = undefined;
 
             // If ext is too large to fit in usize or >= 32, return value unchanged
             // SIGNEXTEND with byte position >= 32 means no sign extension needed
             if (ext > std.math.maxInt(usize) or ext >= 32) {
-                logger.err("SIGNEXTEND: ext >= 32 or too large, returning value unchanged", .{});
                 result = value;
             } else {
                 const ext_usize = @as(usize, @intCast(ext));
                 const bit_index = ext_usize * 8 + 7;
 
-                logger.err("SIGNEXTEND: Processing ext={}, bit_index={}", .{ ext, bit_index });
 
-                // Ensure bit_index is valid for shifting
-                std.debug.assert(bit_index < @bitSizeOf(WordType));
 
                 // Cast bit_index to the appropriate shift type
                 const shift_amount = @as(u8, @intCast(bit_index));
-                logger.err("SIGNEXTEND: shift_amount={}, about to shift", .{shift_amount});
 
                 const mask = (@as(WordType, 1) << shift_amount) - 1;
                 const sign_bit = (value >> shift_amount) & 1;
-                logger.err("SIGNEXTEND: mask={x}, sign_bit={}", .{ mask, sign_bit });
                 if (sign_bit == 1) {
                     result = value | ~mask;
-                    logger.err("SIGNEXTEND: Sign bit set, result = value | ~mask = {x}", .{result});
                 } else {
                     result = value & mask;
-                    logger.err("SIGNEXTEND: Sign bit not set, result = value & mask = {x}", .{result});
                 }
             }
 
-            logger.err("SIGNEXTEND: Setting top to result={x}", .{result});
 
-            // Assert stack is valid before set_top
-            std.debug.assert(self.stack.size() >= 1);
 
             self.stack.set_top_unsafe(result);
 
-            logger.err("SIGNEXTEND EXIT: stack_size={}, result set", .{self.stack.size()});
 
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });

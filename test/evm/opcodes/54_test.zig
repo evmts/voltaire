@@ -91,6 +91,10 @@ test "opcode 0x54 differential test" {
     };
     defer revm_result.deinit();
     
+    // Debug output
+    std.debug.print("REVM success: {}, output len: {}\n", .{ revm_result.success, revm_result.output.len });
+    std.debug.print("Guillotine success: {}, output len: {}\n", .{ guillotine_result.success, guillotine_result.output.len });
+    
     // Compare results
     try std.testing.expectEqual(revm_result.success, guillotine_result.success);
     if (revm_result.success and guillotine_result.success) {

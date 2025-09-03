@@ -28,4 +28,5 @@ test {
     _ = @import("opcodes_dup_swap_test.zig");
     _ = @import("precompiles_test.zig");
     _ = @import("erc20_tests.zig");
+    _ = @import("ten_thousand_hashes_test.zig");
 }

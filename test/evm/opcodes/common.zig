@@ -47,10 +47,10 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
 
         inline fn ret_top32(alloc: std.mem.Allocator, b: *std.ArrayList(u8)) !void {
             // MSTORE at offset 0 then return 32 bytes
-            try push_u8(alloc, b, 0x00);
+            try push_u8(alloc, b, 0x00); // offset for MSTORE
             try b.append(alloc, 0x52); // MSTORE
-            try push_u8(alloc, b, 0x20);
-            try push_u8(alloc, b, 0x00);
+            try push_u8(alloc, b, 0x00); // offset for RETURN (will be second from top)
+            try push_u8(alloc, b, 0x20); // size for RETURN (will be on top)  
             try b.append(alloc, 0xf3); // RETURN
         }
 
@@ -437,13 +437,19 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.ret_const(allocator, &buf, 1);
         },
         0x57 => { // JUMPI
-            // Conditional jump (condition true)
-            try helpers.push_u8(allocator, &buf, 0x07); // Jump to position 7 (where JUMPDEST actually is)
+            // Test both branches: condition true AND false
+            // First: condition false (no jump)
+            try helpers.push_u8(allocator, &buf, 0x00); // Condition false
+            try helpers.push_u8(allocator, &buf, 0xFF); // Invalid destination (doesn't matter)
+            try buf.append(allocator, 0x57); // JUMPI - should NOT jump
+            
+            // Then: condition true (jump)
             try helpers.push_u8(allocator, &buf, 0x01); // Condition true
-            try buf.append(allocator, 0x57); // JUMPI
+            try helpers.push_u8(allocator, &buf, 0x0C); // Jump to position 12 (JUMPDEST)
+            try buf.append(allocator, 0x57); // JUMPI - should jump
             try buf.append(allocator, 0x00); // Should be skipped
             try buf.append(allocator, 0x00); // Should be skipped
-            try buf.append(allocator, 0x5b); // JUMPDEST at position 7
+            try buf.append(allocator, 0x5b); // JUMPDEST at position 12
             try helpers.ret_const(allocator, &buf, 1);
         },
         0x58 => { // PC
@@ -591,8 +597,9 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
         // System operations 0xf0..0xff
         0xf0 => { // CREATE
             // Deploy minimal contract
-            try helpers.push_u8(allocator, &buf, 0x00); // salt
-            try helpers.push_u8(allocator, &buf, 0x00); // offset
+            // Stack order for CREATE: [value, offset, size]
+            try helpers.push_u8(allocator, &buf, 0x00); // size
+            try helpers.push_u8(allocator, &buf, 0x00); // offset  
             try helpers.push_u8(allocator, &buf, 0x00); // value
             try buf.append(allocator, 0xf0);
             try helpers.ret_top32(allocator, &buf);

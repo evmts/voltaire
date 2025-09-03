@@ -16,14 +16,23 @@ test "opcode 0x9d differential test" {
     defer database.deinit();
     
     const caller_address = primitives.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
+    const contract_address = primitives.Address{ .bytes = [_]u8{0x20} ++ [_]u8{0} ** 18 ++ [_]u8{0x02} };
     
-    // Set the bytecode on the account
+    // Set the bytecode on the contract account
     const code_hash = try database.set_code(bytecode);
     
+    try database.set_account(contract_address.bytes, .{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Set up caller as EOA with balance
     try database.set_account(caller_address.bytes, .{
         .balance = std.math.maxInt(u256),
         .nonce = 0,
-        .code_hash = code_hash,
+        .code_hash = [_]u8{0} ** 32, // Empty code hash for EOA
         .storage_root = [_]u8{0} ** 32,
     });
     
@@ -61,7 +70,7 @@ test "opcode 0x9d differential test" {
     const call_params = evm.CallParams{
         .call = .{
             .caller = caller_address,
-            .to = caller_address,
+            .to = contract_address,
             .value = 0,
             .input = &.{}, // Empty input - code is on the account
             .gas = 1_000_000,
@@ -81,7 +90,11 @@ test "opcode 0x9d differential test" {
     try revm_vm.setBalance(caller_address, std.math.maxInt(u256));
     
     // Execute with REVM
-    var revm_result = revm_vm.execute(caller_address, null, 0, bytecode, 1_000_000) catch |err| {
+    // Deploy the bytecode to the contract_address in REVM (similar to Guillotine setup)
+    try revm_vm.setCode(contract_address, bytecode);
+    
+    // Execute with REVM - now calling the deployed contract
+    var revm_result = revm_vm.execute(caller_address, contract_address, 0, &.{}, 1_000_000) catch |err| {
         // If REVM fails, check if Guillotine also failed
         if (guillotine_result.success) {
             std.debug.print("REVM failed but Guillotine succeeded for opcode 0x9d\n", .{});

@@ -182,9 +182,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Copies memory from one location to another.
         pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const dest_offset = try self.stack.pop();
-            const src_offset = try self.stack.pop();
-            const size = try self.stack.pop();
+            const size = try self.stack.pop();         // Top of stack
+            const src_offset = try self.stack.pop();   // Second from top
+            const dest_offset = try self.stack.pop();  // Third from top
 
             // Check if offsets and size fit in u24 (memory limit)
             if (dest_offset > 0xFFFFFF or src_offset > 0xFFFFFF or size > 0xFFFFFF) {

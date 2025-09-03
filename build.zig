@@ -292,6 +292,59 @@ pub fn build(b: *std.Build) void {
     const fixtures_differential_test_step = b.step("test-fixtures-differential", "Run differential tests for benchmark fixtures (ERC20, snailtracer, etc.)");
     fixtures_differential_test_step.dependOn(&run_fixtures_differential_test.step);
 
+    // Snailtracer differential test
+    const snailtracer_test = b.addTest(.{
+        .name = "snailtracer-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/evm/snailtracer_test.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+    });
+    snailtracer_test.root_module.addImport("evm", modules.evm_mod);
+    snailtracer_test.root_module.addImport("primitives", modules.primitives_mod);
+    snailtracer_test.root_module.addImport("crypto", modules.crypto_mod);
+    snailtracer_test.root_module.addImport("build_options", config.options_mod);
+    snailtracer_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+    
+    // Add REVM module and library for differential testing
+    if (modules.revm_mod) |revm_mod| {
+        snailtracer_test.root_module.addImport("revm", revm_mod);
+        if (revm_lib) |revm| {
+            snailtracer_test.linkLibrary(revm);
+            snailtracer_test.addIncludePath(b.path("src/revm_wrapper"));
+            
+            const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
+            const revm_dylib_path_test = if (rust_target) |target_triple|
+                b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
+            else
+                b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
+            snailtracer_test.addObjectFile(b.path(revm_dylib_path_test));
+            
+            if (target.result.os.tag == .linux) {
+                snailtracer_test.linkSystemLibrary("m");
+                snailtracer_test.linkSystemLibrary("pthread");
+                snailtracer_test.linkSystemLibrary("dl");
+            } else if (target.result.os.tag == .macos) {
+                snailtracer_test.linkSystemLibrary("c++");
+                snailtracer_test.linkFramework("Security");
+                snailtracer_test.linkFramework("SystemConfiguration");
+                snailtracer_test.linkFramework("CoreFoundation");
+            }
+            
+            snailtracer_test.step.dependOn(&revm.step);
+        }
+    }
+    
+    snailtracer_test.linkLibrary(c_kzg_lib);
+    snailtracer_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| snailtracer_test.linkLibrary(bn254);
+    snailtracer_test.linkLibC();
+    
+    const run_snailtracer_test = b.addRunArtifact(snailtracer_test);
+    const snailtracer_test_step = b.step("test-snailtracer", "Run snailtracer differential test");
+    snailtracer_test_step.dependOn(&run_snailtracer_test.step);
+
     // GT opcode bug test
     const gt_bug_test = b.addTest(.{
         .name = "gt-bug-test",
@@ -389,6 +442,84 @@ pub fn build(b: *std.Build) void {
             const individual_step = b.step(individual_step_name, individual_step_desc);
             individual_step.dependOn(&run_t.step);
         }
+    }
+
+    // ERC20 mint differential test
+    {
+        const erc20_mint_test = b.addTest(.{
+            .name = "erc20_mint_test",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/evm/erc20_mint_test.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+
+        // Add all the required dependencies
+        erc20_mint_test.root_module.addImport("evm", modules.evm_mod);
+        erc20_mint_test.root_module.addImport("primitives", modules.primitives_mod);
+        erc20_mint_test.root_module.addImport("crypto", modules.crypto_mod);
+        
+        // Add REVM module and library for differential testing
+        if (modules.revm_mod) |revm_mod| {
+            erc20_mint_test.root_module.addImport("revm", revm_mod);
+            if (revm_lib) |revm| {
+                erc20_mint_test.linkLibrary(revm);
+                erc20_mint_test.addIncludePath(b.path("src/revm_wrapper"));
+                
+                const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
+                const revm_dylib_path_test = if (rust_target) |target_triple|
+                    b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
+                else
+                    b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
+                erc20_mint_test.addObjectFile(b.path(revm_dylib_path_test));
+                
+                if (target.result.os.tag == .linux) {
+                    erc20_mint_test.linkSystemLibrary("m");
+                    erc20_mint_test.linkSystemLibrary("pthread");
+                    erc20_mint_test.linkSystemLibrary("dl");
+                } else if (target.result.os.tag == .macos) {
+                    erc20_mint_test.linkSystemLibrary("c++");
+                    erc20_mint_test.linkFramework("Security");
+                    erc20_mint_test.linkFramework("SystemConfiguration");
+                    erc20_mint_test.linkFramework("CoreFoundation");
+                }
+                
+                erc20_mint_test.step.dependOn(&revm.step);
+            }
+        }
+        
+        // Link other required libraries
+        erc20_mint_test.linkLibrary(c_kzg_lib);
+        erc20_mint_test.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| erc20_mint_test.linkLibrary(bn254);
+        erc20_mint_test.linkLibC();
+
+        const run_erc20_mint_test = b.addRunArtifact(erc20_mint_test);
+        
+        const erc20_mint_step = b.step("test-erc20-mint", "Run ERC20 mint differential test");
+        erc20_mint_step.dependOn(&run_erc20_mint_test.step);
+    }
+
+    // CODECOPY+RETURN test
+    {
+        const codecopy_test = b.addTest(.{
+            .name = "codecopy_return_test",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/evm/codecopy_return_test.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        
+        codecopy_test.root_module.addImport("evm", modules.evm_mod);
+        codecopy_test.root_module.addImport("primitives", modules.primitives_mod);
+        codecopy_test.root_module.addImport("crypto", modules.crypto_mod);
+        codecopy_test.root_module.addImport("build_options", config.options_mod);
+        
+        const run_codecopy_test = b.addRunArtifact(codecopy_test);
+        const codecopy_step = b.step("test-codecopy-return", "Test CODECOPY and RETURN opcodes");
+        codecopy_step.dependOn(&run_codecopy_test.step);
     }
 
     // Language bindings

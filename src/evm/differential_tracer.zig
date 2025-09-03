@@ -144,7 +144,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                         });
                     }
                     // Show last few steps to see what caused the revert
-                    if (g_trace.steps.len > 10) {
+                    if (g_trace.steps.len > 20) {
                         log.err("  ... {} intermediate steps ...", .{g_trace.steps.len - 20});
                         const start = @max(10, g_trace.steps.len - 10);
                         for (g_trace.steps[start..], start..) |step, i| {
@@ -172,6 +172,29 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
 
         /// Execute on REVM
         fn executeRevm(self: *@This(), params: CallParams) !?revm_module.CallResult {
+            // Sync the target contract account to REVM before calling
+            const target_address = switch (params) {
+                .call => |p| p.to,
+                .callcode => |p| p.to,
+                .delegatecall => |p| p.to,
+                .staticcall => |p| p.to,
+                .create => primitives.Address.ZERO,
+                .create2 => primitives.Address.ZERO,
+            };
+            
+            // Only sync if it's a call to an existing contract
+            if ((std.meta.activeTag(params) != .create) and (std.meta.activeTag(params) != .create2)) {
+                if (try self.guillotine_evm.database.get_account(target_address.bytes)) |account| {
+                    try self.revm_vm.setBalance(target_address, account.balance);
+                    
+                    // If account has code, sync it
+                    if (!std.mem.eql(u8, &account.code_hash, &([_]u8{0} ** 32))) {
+                        const code = try self.guillotine_evm.database.get_code(account.code_hash);
+                        try self.revm_vm.setCode(target_address, code);
+                    }
+                }
+            }
+            
             // Convert EVM CallParams to REVM CallParams
             const revm_params = switch (params) {
                 .call => |p| revm_module.CallParams{ .call = .{

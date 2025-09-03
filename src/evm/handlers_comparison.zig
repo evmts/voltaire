@@ -14,8 +14,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn lt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
             const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
-            // EVM: pops a, then b, and pushes (a < b)
-            const result: WordType = if (a < b) 1 else 0;
+            // EVM: pops a, then b, and pushes (b < a) - second < first
+            const result: WordType = if (b < a) 1 else 0;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -25,8 +25,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn gt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
             const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
-            // EVM: pops a, then b, and pushes (a > b)
-            const result: WordType = if (a > b) 1 else 0;
+            // EVM: pops a, then b, and pushes (b > a) - second > first
+            const result: WordType = if (b > a) 1 else 0;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -38,8 +38,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
             const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
             const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-            // EVM: pops a, then b, and pushes (a < b) as signed
-            const result: WordType = if (a_signed < b_signed) 1 else 0;
+            // EVM: pops a, then b, and pushes (b < a) as signed - second < first
+            const result: WordType = if (b_signed < a_signed) 1 else 0;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -51,8 +51,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
             const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
             const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-            // EVM: pops a, then b, and pushes (a > b) as signed
-            const result: WordType = if (a_signed > b_signed) 1 else 0;
+            // EVM: pops a, then b, and pushes (b > a) as signed - second > first
+            const result: WordType = if (b_signed > a_signed) 1 else 0;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });

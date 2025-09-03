@@ -394,7 +394,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else gas;
             
             // Route to appropriate handler
-            std.debug.print("Dispatching call type: {}, gas={}\n", .{ std.meta.activeTag(params), execution_gas });
             var result = switch (params) {
                 .call => |p| blk: {
                     // log.debug("DEBUG: EVM.call starting, to={x}, gas={}, input_len={}\n", .{ p.to.bytes, execution_gas, p.input.len });
@@ -406,13 +405,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .callcode => |p| self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
                 .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
                 .staticcall => |p| self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
-                .create => |p| blk: {
-                    std.debug.print("About to call executeCreate\n", .{});
-                    break :blk self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch |err| {
-                        std.debug.print("executeCreate failed with error: {}\n", .{err});
-                        return CallResult.failure(0);
-                    };
-                },
+                .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch CallResult.failure(0),
                 .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch CallResult.failure(0),
             };
             
@@ -767,34 +760,27 @@ pub fn Evm(comptime config: EvmConfig) type {
             init_code: []const u8,
             gas: u64,
         }) !CallResult {
-            std.debug.print("executeCreate: caller={any}, value={}, init_code_len={}, gas={}\n", .{
-                params.caller, params.value, params.init_code.len, params.gas,
-            });
             const snapshot_id = self.journal.create_snapshot();
 
             // Get caller account
             var caller_account = self.database.get_account(params.caller.bytes) catch {
-                std.debug.print("Failed to get caller account\n", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             } orelse Account.zero();
 
             // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
-                std.debug.print("Insufficient balance: has {}, needs {}\n", .{ caller_account.balance, params.value });
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
 
             // Calculate contract address from sender and nonce
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
-            std.debug.print("Contract address: {any}, nonce: {}\n", .{ contract_address, caller_account.nonce });
 
             // Pre-increment caller nonce (journaled)
             try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
-                std.debug.print("Failed to update caller account\n", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -803,12 +789,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (existed_before) {
                 const existing = self.database.get_account(contract_address.bytes) catch null;
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
-                    std.debug.print("Contract collision detected\n", .{});
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 }
             }
-            std.debug.print("Calling executeCreateInternal\n", .{});
             // Delegate to unified helper
             const GasConstants = primitives.GasConstants;
             const create_overhead = GasConstants.CreateGas; // 32000
@@ -817,7 +801,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult.failure(0);
             }
             const remaining_gas: u64 = params.gas - create_overhead;
-            return self.executeCreateInternal(.{
+            var result = self.executeCreateInternal(.{
                 .caller = params.caller,
                 .value = params.value,
                 .init_code = params.init_code,
@@ -825,7 +809,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .contract_address = contract_address,
                 .snapshot_id = snapshot_id,
                 .existed_before = existed_before,
-            });
+            }) catch return CallResult.failure(0);
+            
+            // Add the created contract address to the result
+            result.created_address = contract_address;
+            return result;
         }
 
         /// Execute CREATE2 operation (inlined)
@@ -881,7 +869,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             const remaining_gas: u64 = params.gas - total_overhead;
 
-            return self.executeCreateInternal(.{
+            var result = self.executeCreateInternal(.{
                 .caller = params.caller,
                 .value = params.value,
                 .init_code = params.init_code,
@@ -889,7 +877,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .contract_address = contract_address,
                 .snapshot_id = snapshot_id,
                 .existed_before = existed_before,
-            });
+            }) catch return CallResult.failure(0);
+            
+            // Add the created contract address to the result
+            result.created_address = contract_address;
+            return result;
         }
 
         fn executeCreateInternal(self: *Self, args: struct {
@@ -1093,7 +1085,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 std.debug.print("Calling frame.interpret_with_tracer with code_len={}, tracer={s}\n", .{code.len, @typeName(TracerType)});
                 frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
                 error.Stop, error.Return, error.SelfDestruct => {
-                    std.debug.print("Frame terminated with tracer: {}\n", .{err});
+                    std.debug.print("Frame terminated with tracer: {}, frame.output.len={}\n", .{err, frame.output.len});
                     // These are success termination cases
                 },
                 else => {

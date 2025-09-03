@@ -156,9 +156,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [destOffset, offset, length] → []
         pub fn calldatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const dest_offset = try self.stack.pop();
-            const offset = try self.stack.pop();
-            const length = try self.stack.pop();
+            const length = try self.stack.pop();       // Top of stack
+            const offset = try self.stack.pop();       // Second from top
+            const dest_offset = try self.stack.pop();  // Third from top
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or
@@ -211,9 +211,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODECOPY opcode (0x39) - Copy code running in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dest_offset = try self.stack.pop();
-            const offset = try self.stack.pop();
-            const length = try self.stack.pop();
+            const length = try self.stack.pop();       // Top of stack
+            const offset = try self.stack.pop();       // Second from top  
+            const dest_offset = try self.stack.pop();  // Third from top
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or
@@ -307,10 +307,10 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [address, destOffset, offset, length] → []
         pub fn extcodecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const address_u256 = try self.stack.pop();
-            const dest_offset = try self.stack.pop();
-            const offset = try self.stack.pop();
-            const length = try self.stack.pop();
+            const length = try self.stack.pop();       // Top of stack  
+            const offset = try self.stack.pop();       // Second from top
+            const dest_offset = try self.stack.pop();  // Third from top
+            const address_u256 = try self.stack.pop(); // Fourth from top
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or

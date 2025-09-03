@@ -43,14 +43,14 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// JUMPI opcode (0x57) - Conditional jump.
-        /// Pops condition and destination from stack.
+        /// Pops destination and condition from stack.
         /// Jumps to destination if condition is non-zero, otherwise continues to next instruction.
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Get jump table from frame
             const jump_table = self.jump_table;
 
-            const condition = try self.stack.pop();  // Top of stack
-            const dest = try self.stack.pop();       // Second from top
+            const dest = try self.stack.pop();       // Top of stack (destination)
+            const condition = try self.stack.pop();  // Second from top (condition)
 
             if (condition != 0) {
                 // Take the jump - validate destination range
@@ -76,10 +76,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             } else {
                 // Condition is false, continue to next instruction
-                const dispatch = Dispatch{ .cursor = cursor };
-                const Opcode = @import("opcode_data.zig").Opcode;
-                const op_data = dispatch.getOpData(.{ .regular = Opcode.JUMPI });
-                return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
+                // JUMPI has jump_dest metadata at cursor[1], so next instruction is at cursor + 2
+                const next_cursor = cursor + 2;
+                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
         }
 
@@ -200,9 +199,9 @@ test "JUMPI opcode - conditional jump taken" {
     var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
-    // Push destination and non-zero condition
-    try frame.stack.push(200); // destination
+    // Push condition and destination (stack order: bottom to top)
     try frame.stack.push(1); // condition (non-zero = jump)
+    try frame.stack.push(200); // destination (top of stack)
 
     const dispatch = createMockDispatch();
     const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -218,9 +217,9 @@ test "JUMPI opcode - conditional jump not taken" {
     var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
-    // Push destination and zero condition
-    try frame.stack.push(200); // destination
+    // Push condition and destination (stack order: bottom to top)
     try frame.stack.push(0); // condition (zero = no jump)
+    try frame.stack.push(200); // destination (top of stack)
 
     const dispatch = createMockDispatch();
     _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -348,9 +347,9 @@ test "JUMPI opcode - various conditions" {
             _ = try frame.stack.pop();
         }
 
-        // Push destination and condition
-        try frame.stack.push(300); // destination
+        // Push condition and destination (stack order: bottom to top)
         try frame.stack.push(tc.condition); // condition
+        try frame.stack.push(300); // destination (top of stack)
 
         const dispatch = createMockDispatch();
         const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -496,9 +495,9 @@ test "JUMPI opcode - dynamic validation with valid destination when taken" {
     var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
-    // Push destination and non-zero condition
-    try frame.stack.push(5); // Valid destination (would need JUMPDEST in real bytecode)
+    // Push condition and destination (stack order: bottom to top)
     try frame.stack.push(1); // Non-zero condition
+    try frame.stack.push(5); // Valid destination (top of stack)
 
     const dispatch = createMockDispatch();
     const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -512,9 +511,9 @@ test "JUMPI opcode - dynamic validation with invalid destination when taken" {
     var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
-    // Push invalid destination and non-zero condition
-    try frame.stack.push(10); // Invalid destination (no JUMPDEST)
+    // Push condition and invalid destination (stack order: bottom to top)
     try frame.stack.push(1); // Non-zero condition
+    try frame.stack.push(10); // Invalid destination (top of stack)
 
     const dispatch = createMockDispatch();
     const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -527,9 +526,9 @@ test "JUMPI opcode - no validation when not taken" {
     var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
-    // Push invalid destination but zero condition
-    try frame.stack.push(10); // Invalid destination (but won't be used)
+    // Push condition and invalid destination (stack order: bottom to top)
     try frame.stack.push(0); // Zero condition - jump not taken
+    try frame.stack.push(10); // Invalid destination (top of stack, but won't be used)
 
     const dispatch = createMockDispatch();
     _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -622,9 +621,9 @@ test "JUMPI opcode - invalid destination should revert when taken" {
 
     try testing.expect(jumpi_handler_index != null);
 
-    // Push destination and condition
-    try frame.stack.push(4); // Invalid destination
+    // Push condition and destination (stack order: bottom to top)
     try frame.stack.push(1); // Condition (true)
+    try frame.stack.push(4); // Invalid destination (top of stack)
 
     // Call the JUMPI handler
     const result = TestFrame.JumpHandlers.jumpi(&frame, schedule.ptr + jumpi_handler_index.?);
@@ -748,8 +747,8 @@ test "JUMPI opcode - edge case conditions" {
             _ = try frame.stack.pop();
         }
 
-        try frame.stack.push(tc.destination);
         try frame.stack.push(tc.condition);
+        try frame.stack.push(tc.destination);
 
         const dispatch = createMockDispatch();
         const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);
@@ -934,8 +933,8 @@ test "Jump operations - gas consumption patterns" {
     try testing.expectEqual(initial_gas, frame.gas_remaining);
 
     // Test JUMPI (taken)
-    try frame.stack.push(100);
     try frame.stack.push(1);
+    try frame.stack.push(100);
     dispatch = createMockDispatch();
     _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
 
@@ -943,8 +942,8 @@ test "Jump operations - gas consumption patterns" {
     try testing.expectEqual(initial_gas, frame.gas_remaining);
 
     // Test JUMPI (not taken)
-    try frame.stack.push(100);
     try frame.stack.push(0);
+    try frame.stack.push(100);
     dispatch = createMockDispatch();
     _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
 
@@ -994,8 +993,8 @@ test "Jump operations - maximum stack depth" {
     try testing.expectEqual(@as(usize, max_items), frame.stack.len());
 
     // JUMPI should work with full stack (pops 2)
-    try frame.stack.push(200);
     try frame.stack.push(1);
+    try frame.stack.push(200);
     dispatch = createMockDispatch();
     _ = try TestFrame.JumpHandlers.jumpi(frame, dispatch);
     try testing.expectEqual(@as(usize, max_items), frame.stack.len());
@@ -1110,14 +1109,8 @@ test "JUMPI opcode - pattern analysis" {
         // Setup condition
         try pattern.setup(&frame);
 
-        // Push destination
+        // Push destination (destination goes on top of condition)
         try frame.stack.push(pattern.destination);
-
-        // Swap to get [destination, condition]
-        const condition = try frame.stack.pop();
-        const dest = try frame.stack.pop();
-        try frame.stack.push(dest);
-        try frame.stack.push(condition);
 
         const dispatch = createMockDispatch();
         const result = TestFrame.JumpHandlers.jumpi(frame, dispatch);

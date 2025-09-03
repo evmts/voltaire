@@ -492,12 +492,8 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining = @intCast(result.gas_left);
 
             // Push created contract address or 0 on failure
-            if (result.success and result.output.len == 20) {
-                // Output contains the created contract address
-                var addr_bytes: [20]u8 = undefined;
-                @memcpy(&addr_bytes, result.output);
-                const created_addr = Address{ .bytes = addr_bytes };
-                try self.stack.push(to_u256(created_addr));
+            if (result.success and result.created_address != null) {
+                try self.stack.push(to_u256(result.created_address.?));
             } else {
                 try self.stack.push(0);
             }
@@ -577,12 +573,8 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining = @intCast(result.gas_left);
 
             // Push created contract address or 0 on failure
-            if (result.success and result.output.len == 20) {
-                // Output contains the created contract address
-                var addr_bytes: [20]u8 = undefined;
-                @memcpy(&addr_bytes, result.output);
-                const created_addr = Address{ .bytes = addr_bytes };
-                try self.stack.push(to_u256(created_addr));
+            if (result.success and result.created_address != null) {
+                try self.stack.push(to_u256(result.created_address.?));
             } else {
                 try self.stack.push(0);
             }
@@ -601,8 +593,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
-            const offset = try self.stack.pop();
-            const size = try self.stack.pop();
+            const offset = try self.stack.pop();    // Top of stack  
+            const size = try self.stack.pop();  // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -623,6 +615,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity
             self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
+            
             // Extract return data from memory and store it
             if (size_usize > 0) {
                 const return_data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
@@ -648,8 +641,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn revert(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
-            const offset = try self.stack.pop();
-            const size = try self.stack.pop();
+            const size = try self.stack.pop();    // Top of stack
+            const offset = try self.stack.pop();  // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -711,11 +704,16 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.WriteProtection;
             }
 
+            // Note: Gas consumption for SELFDESTRUCT (5000 gas) is handled automatically
+            // by the dispatch system via first_block_gas calculation
+
             // Mark contract for destruction via host interface
             // TODO: Consider if this should use a different pattern for EVM access
             self.getEvm().mark_for_destruction(self.contract_address, recipient) catch |err| switch (err) {
+                error.StaticCallViolation => return Error.WriteProtection,
                 else => {
                     @branchHint(.unlikely);
+                    log.err("SELFDESTRUCT mark_for_destruction failed with error: {}", .{err});
                     return Error.OutOfGas;
                 },
             };
