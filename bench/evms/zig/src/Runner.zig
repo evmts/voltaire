@@ -127,6 +127,11 @@ pub fn deployContract(self: *Runner, init_code: []const u8) !struct { address: p
         std.debug.print("CREATE failed or returned no code; installing as runtime\n", .{});
     }
     
+    // Ensure we have valid code before installing
+    if (init_code.len == 0) {
+        return RunnerError.DeploymentFailed;
+    }
+    
     const contract_address = primitives.Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
     const code_hash = try self.database.set_code(init_code);
     try self.database.set_account(contract_address.bytes, .{
@@ -136,7 +141,9 @@ pub fn deployContract(self: *Runner, init_code: []const u8) !struct { address: p
         .storage_root = [_]u8{0} ** 32,
     });
     
-    return .{ .address = contract_address, .runtime_code = init_code };
+    // Retrieve the code from the database to ensure we're using the database's copy
+    const stored_code = try self.database.get_code(code_hash);
+    return .{ .address = contract_address, .runtime_code = stored_code };
 }
 
 pub const BenchmarkResult = struct {
@@ -238,22 +245,28 @@ pub fn runBenchmark(
 }
 
 pub fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
-    const clean_hex = if (std.mem.startsWith(u8, hex_str, "0x")) 
-        hex_str[2..] 
+    // Trim all whitespace including newlines first
+    const trimmed_input = std.mem.trim(u8, hex_str, " \t\n\r");
+    
+    const clean_hex = if (std.mem.startsWith(u8, trimmed_input, "0x")) 
+        trimmed_input[2..] 
     else 
-        hex_str;
+        trimmed_input;
     
-    const trimmed = std.mem.trim(u8, clean_hex, &std.ascii.whitespace);
-    
-    if (trimmed.len == 0) {
+    if (clean_hex.len == 0) {
         return allocator.alloc(u8, 0);
     }
     
-    const result = try allocator.alloc(u8, trimmed.len / 2);
+    // Check for odd length
+    if (clean_hex.len % 2 != 0) {
+        return RunnerError.InvalidHexCharacter;
+    }
+    
+    const result = try allocator.alloc(u8, clean_hex.len / 2);
     
     var i: usize = 0;
-    while (i < trimmed.len) : (i += 2) {
-        const byte_str = trimmed[i .. i + 2];
+    while (i < clean_hex.len) : (i += 2) {
+        const byte_str = clean_hex[i .. i + 2];
         result[i / 2] = std.fmt.parseInt(u8, byte_str, 16) catch {
             allocator.free(result);
             return RunnerError.InvalidHexCharacter;
