@@ -33,13 +33,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe();
-            const a = self.stack.peek_unsafe();
-            const result = b -% a;
-            std.log.err("SUB operation:", .{});
-            std.log.err("  a : {}", .{a});
-            std.log.err("  b : {}", .{b});
-            std.log.err("  result (b - a): {}", .{result});
+            const b = self.stack.pop_unsafe(); // Top of stack (subtrahend)
+            const a = self.stack.peek_unsafe(); // Second from top (minuend)
+            const result = a -% b; // a - b
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -47,9 +43,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // First pop (divisor)
-            const b = self.stack.peek_unsafe(); // Second element (dividend)
-            const result = if (a == 0) 0 else b / a;
+            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
+            const a = self.stack.peek_unsafe(); // Second from top (dividend)
+            const result = if (b == 0) 0 else a / b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -57,22 +53,22 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // First pop (divisor)
-            const b = self.stack.peek_unsafe(); // Second element (dividend)
+            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
+            const a = self.stack.peek_unsafe(); // Second from top (dividend)
 
-            log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ b, a });
+            log.debug("SDIV: dividend=0x{x}, divisor=0x{x}", .{ a, b });
             var result: WordType = undefined;
-            if (a == 0) {
+            if (b == 0) {
                 result = 0;
                 log.debug("SDIV: division by zero, result=0", .{});
             } else {
-                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
+                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
+                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
                 log.debug("SDIV: dividend_signed={}, divisor_signed={}", .{ dividend_signed, divisor_signed });
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
                 if (dividend_signed == min_signed and divisor_signed == -1) {
                     // MIN / -1 overflow case
-                    result = b;
+                    result = a;
                     log.debug("SDIV: overflow case, result=0x{x}", .{result});
                 } else {
                     const result_signed = @divTrunc(dividend_signed, divisor_signed);
@@ -87,9 +83,9 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // First pop
-            const b = self.stack.peek_unsafe(); // Second element
-            const result = if (a == 0) 0 else b % a;
+            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
+            const a = self.stack.peek_unsafe(); // Second from top (dividend)
+            const result = if (b == 0) 0 else a % b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -97,14 +93,14 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // First pop (divisor)
-            const b = self.stack.peek_unsafe(); // Second element (dividend)
+            const b = self.stack.pop_unsafe(); // Top of stack (divisor)
+            const a = self.stack.peek_unsafe(); // Second from top (dividend)
             var result: WordType = undefined;
-            if (a == 0) {
+            if (b == 0) {
                 result = 0;
             } else {
-                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
+                const dividend_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
+                const divisor_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
                 // Special case: MIN_INT % -1 = 0 (to avoid overflow)
                 if (dividend_signed == min_signed and divisor_signed == -1) {
@@ -218,19 +214,16 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // EVM Yellow Paper: μ′s[0] ≡ μs[0]^μs[1]
-            // This means: result = (top of stack) ^ (second on stack)
-            // But there's a subtlety with our stack implementation
-            const a = self.stack.pop_unsafe(); // First pop gets top value
-            const b = self.stack.peek_unsafe(); // Peek gets what's now on top (was second)
+            // EVM: base^exponent where exponent is top of stack
+            const exponent = self.stack.pop_unsafe(); // Top of stack
+            const base = self.stack.peek_unsafe(); // Second from top
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)
-            // The exponent for gas calculation is b (second on original stack)
             var exp_bytes: u32 = 0;
-            if (b > 0) {
+            if (exponent > 0) {
                 // Count significant bytes (excluding leading zeros)
-                var temp_exp = b;
+                var temp_exp = exponent;
                 while (temp_exp > 0) : (temp_exp >>= 8) {
                     exp_bytes += 1;
                 }
@@ -243,12 +236,10 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             self.gas_remaining -= @intCast(gas_cost);
 
-            // Calculate a^b
-            // Note: Due to how pop/peek work, a was top and b was second
-            // But EVM wants top^second, which with our values means we need b^a
+            // Calculate base^exponent
             var result: WordType = 1;
-            var base_working = b;
-            var exponent_working = a;
+            var base_working = base;
+            var exponent_working = exponent;
             while (exponent_working > 0) : (exponent_working >>= 1) {
                 if (exponent_working & 1 == 1) {
                     result *%= base_working;
