@@ -2,7 +2,7 @@
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*)
 argument-hint: [--dry-run] [--all]
 description: Analyze git changes and create atomic conventional commits with emoji prefixes
-model: claude-3-5-sonnet-20241022
+model: claude-sonnet-4-20250514
 ---
 
 # Intelligent Git Commit Command
@@ -12,25 +12,28 @@ Analyze the current git repository state and create atomic, conventional commits
 ## Instructions
 
 1. **Analyze Repository State**
+
    - Run `git status --porcelain` to see all changes
-   - Run `git diff --cached` to see staged changes 
+   - Run `git diff --cached` to see staged changes
    - Run `git diff` to see unstaged changes
    - Show a summary of what files have changed
 
-2. **Filter Temporary Files** 
+2. **Filter Temporary Files**
    Unless `--all` is specified in $ARGUMENTS, automatically exclude these patterns:
+
    - Files starting with `test_`, `debug_`, `temp_`
    - Files ending with `.tmp`, `.log`, `.bak`, `.swp`, `.swo`, `~`
    - IDE directories: `.vscode/`, `.idea/`, `.vs/`
    - Build artifacts: `node_modules/`, `target/debug/`, `target/release/`, `.zig-cache/`, `zig-out/`
    - OS files: `.DS_Store`, `Thumbs.db`
-   
+
    Explain what files were filtered out and why.
 
 3. **Group Changes Logically**
    Group files into logical atomic commits based on:
+
    - **EVM module**: `src/evm/` files
-   - **Core functionality**: `src/` files (non-EVM)  
+   - **Core functionality**: `src/` files (non-EVM)
    - **Tests**: `test/` files or files containing "test"
    - **Documentation**: `.md` files or `doc/` files
    - **Build system**: `build.zig`, build-related files
@@ -40,6 +43,7 @@ Analyze the current git repository state and create atomic, conventional commits
 
 4. **Determine Commit Types**
    For each group, analyze and determine the appropriate conventional commit type:
+
    - **🎉 feat**: New features or functionality
    - **🐛 fix**: Bug fixes
    - **♻️ refactor**: Code refactoring without functional changes
@@ -53,13 +57,15 @@ Analyze the current git repository state and create atomic, conventional commits
 
 5. **Create Atomic Commits**
    For each logical group:
+
    - Stage the files with `git add <files>`
    - Create a commit with this exact format:
+
    ```
    {emoji} {type}: {description}
-   
+
    🤖 Generated with [Claude Code](https://claude.ai/code)
-   
+
    Co-Authored-By: Claude <noreply@anthropic.com>
    ```
 
@@ -72,7 +78,7 @@ Analyze the current git repository state and create atomic, conventional commits
 ## Examples of Good Commit Messages
 
 - `🎉 feat: Add storage state tracking to EVM tracer`
-- `🐛 fix: Resolve memory leak in stack operations` 
+- `🐛 fix: Resolve memory leak in stack operations`
 - `♻️ refactor: Simplify bytecode dispatch logic`
 - `📚 docs: Update API documentation for tracers`
 - `✅ test: Add comprehensive tracer test suite`
@@ -90,6 +96,7 @@ Analyze the current git repository state and create atomic, conventional commits
 ## Safety Checks
 
 Before creating any commits:
+
 1. Verify no sensitive information (API keys, passwords, tokens) is being committed
 2. Ensure build artifacts and temporary files are properly filtered
 3. Check that test files are not mixed with production code changes
