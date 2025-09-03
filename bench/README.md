@@ -19,7 +19,7 @@ bench/official/
 ├── src/                    # Benchmark orchestrator source
 │   ├── main.zig           # CLI entry point
 │   └── Orchestrator.zig   # Benchmark execution logic
-├── cases/                 # Test cases with bytecode and calldata
+├── src/evm/fixtures/     # Test cases with bytecode and calldata
 │   ├── erc20-approval-transfer/
 │   ├── erc20-mint/
 │   ├── erc20-transfer/
@@ -94,7 +94,7 @@ You can also run specific test cases directly:
 
 ```bash
 hyperfine --runs 10 --warmup 3 \
-  "zig-out/bin/evm-runner --contract-code-path bench/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+  "zig-out/bin/evm-runner --contract-code-path src/evm/fixtures/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
 ```
 
 ## Test Cases
@@ -120,7 +120,7 @@ All times are in milliseconds (ms). Lower values indicate better performance.
 
 ## How It Works
 
-1. **Test Discovery**: The orchestrator scans the `cases/` directory for test cases
+1. **Test Discovery**: The orchestrator scans the `src/evm/fixtures/` directory for test cases
 2. **Runner Execution**: Each EVM runner executes the bytecode with provided calldata
 3. **Timing**: Hyperfine measures execution time with statistical accuracy
 4. **Results**: Performance data is collected and formatted for analysis
@@ -142,7 +142,7 @@ Each runner:
 
 To add a new benchmark test case:
 
-1. Create a directory under `cases/` with a descriptive name
+1. Create a directory under `src/evm/fixtures/` with a descriptive name
 2. Add two files:
    - `bytecode.txt`: Hex-encoded contract bytecode
    - `calldata.txt`: Hex-encoded calldata for the contract call
