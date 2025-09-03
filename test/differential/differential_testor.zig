@@ -311,15 +311,30 @@ pub const DifferentialTestor = struct {
         // Select the appropriate database and EVM instance
         const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
         
-        // Check if this looks like deployment bytecode (starts with standard Solidity pattern)
-        const is_deployment_bytecode = bytecode.len > 4 and 
-            bytecode[0] == 0x60 and bytecode[1] == 0x80 and 
-            bytecode[2] == 0x60 and bytecode[3] == 0x40;
+        // Better heuristic: deployment bytecode usually contains CODECOPY (0x39) followed by RETURN (0xf3)
+        // This pattern is used to copy runtime code to memory and return it
+        var is_deployment_bytecode = false;
+        if (bytecode.len > 10) {
+            // Look for CODECOPY (0x39) followed eventually by RETURN (0xf3) in the bytecode
+            for (bytecode, 0..) |byte, i| {
+                if (byte == 0x39 and i + 1 < bytecode.len) { // Found CODECOPY
+                    // Look for RETURN within the next 10 bytes
+                    const search_end = @min(i + 10, bytecode.len);
+                    for (bytecode[i+1..search_end]) |next_byte| {
+                        if (next_byte == 0xf3) { // Found RETURN after CODECOPY
+                            is_deployment_bytecode = true;
+                            break;
+                        }
+                    }
+                    if (is_deployment_bytecode) break;
+                }
+            }
+        }
         
         const log = std.log.scoped(.differential_testor);
         
         if (is_deployment_bytecode) {
-            log.warn("Detected deployment bytecode (starts with 608060405), attempting to deploy contract", .{});
+            log.warn("Detected deployment bytecode (contains CODECOPY + RETURN pattern), attempting to deploy contract", .{});
             
             // For Guillotine: Execute deployment bytecode to get runtime code
             const runtime_code = try self.deployContractGuillotine(bytecode, enable_tracing);
