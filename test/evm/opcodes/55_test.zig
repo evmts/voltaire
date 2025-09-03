@@ -97,7 +97,6 @@ test "opcode 0x55 differential test" {
     var revm_result = revm_vm.execute(caller_address, contract_address, 0, &.{}, 1_000_000) catch |err| {
         // If REVM fails, check if Guillotine also failed
         if (guillotine_result.success) {
-            std.debug.print("REVM failed but Guillotine succeeded for opcode 0x55\n", .{});
             return err;
         }
         return; // Both failed, which is expected for some opcodes

@@ -80,19 +80,6 @@ test "opcode 0x7f differential test" {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
     
-    // Debug output
-    std.debug.print("\n=== PUSH32 opcode (0x7f) test ===\n", .{});
-    std.debug.print("Bytecode ({} bytes): ", .{bytecode.len});
-    for (bytecode) |b| {
-        std.debug.print("{x:0>2} ", .{b});
-    }
-    std.debug.print("\n", .{});
-    std.debug.print("Guillotine success: {}\n", .{guillotine_result.success});
-    std.debug.print("Guillotine output ({} bytes): ", .{guillotine_result.output.len});
-    for (guillotine_result.output) |b| {
-        std.debug.print("{x:0>2} ", .{b});
-    }
-    std.debug.print("\n", .{});
     
     // Setup REVM
     var revm_vm = try revm.Revm.init(allocator, .{
@@ -111,7 +98,6 @@ test "opcode 0x7f differential test" {
     var revm_result = revm_vm.execute(caller_address, contract_address, 0, &.{}, 1_000_000) catch |err| {
         // If REVM fails, check if Guillotine also failed
         if (guillotine_result.success) {
-            std.debug.print("REVM failed but Guillotine succeeded for opcode 0x7f\n", .{});
             return err;
         }
         return; // Both failed, which is expected for some opcodes

@@ -80,15 +80,6 @@ test "opcode 0x00 differential test" {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
     
-    // Debug output
-    std.debug.print("\n=== STOP opcode (0x00) test ===\n", .{});
-    std.debug.print("Bytecode: ", .{});
-    for (bytecode) |b| {
-        std.debug.print("{x:0>2} ", .{b});
-    }
-    std.debug.print("\n", .{});
-    std.debug.print("Guillotine success: {}\n", .{guillotine_result.success});
-    std.debug.print("Guillotine output len: {}\n", .{guillotine_result.output.len});
     
     // Setup REVM
     var revm_vm = try revm.Revm.init(allocator, .{
@@ -107,15 +98,12 @@ test "opcode 0x00 differential test" {
     var revm_result = revm_vm.execute(caller_address, contract_address, 0, &.{}, 1_000_000) catch |err| {
         // If REVM fails, check if Guillotine also failed
         if (guillotine_result.success) {
-            std.debug.print("REVM failed but Guillotine succeeded for opcode 0x00\n", .{});
             return err;
         }
         return; // Both failed, which is expected for some opcodes
     };
     defer revm_result.deinit();
     
-    std.debug.print("REVM success: {}\n", .{revm_result.success});
-    std.debug.print("REVM output len: {}\n", .{revm_result.output.len});
     
     // Compare results
     try std.testing.expectEqual(revm_result.success, guillotine_result.success);

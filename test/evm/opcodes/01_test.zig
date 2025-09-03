@@ -80,23 +80,9 @@ test "opcode 0x01 differential test" {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
     
-    // Debug output
-    std.debug.print("\n=== ADD opcode (0x01) test ===\n", .{});
-    std.debug.print("Bytecode: ", .{});
-    for (bytecode) |b| {
-        std.debug.print("{x:0>2} ", .{b});
-    }
-    std.debug.print("\n", .{});
-    std.debug.print("Guillotine success: {}\n", .{guillotine_result.success});
-    std.debug.print("Guillotine output: ", .{});
-    for (guillotine_result.output) |b| {
-        std.debug.print("{x:0>2} ", .{b});
-    }
-    std.debug.print("\n", .{});
-    std.debug.print("Guillotine output length: {}\n", .{guillotine_result.output.len});
     if (guillotine_result.output.len >= 32) {
         const result_value = std.mem.readInt(u256, guillotine_result.output[0..32], .big);
-        std.debug.print("Guillotine value: {}\n", .{result_value});
+        _ = result_value; // Used for verification in manual testing
     }
     
     // Setup REVM
@@ -113,22 +99,14 @@ test "opcode 0x01 differential test" {
     var revm_result = revm_vm.execute(caller_address, null, 0, bytecode, 1_000_000) catch |err| {
         // If REVM fails, check if Guillotine also failed
         if (guillotine_result.success) {
-            std.debug.print("REVM failed but Guillotine succeeded for opcode 0x01\n", .{});
             return err;
         }
         return; // Both failed, which is expected for some opcodes
     };
     defer revm_result.deinit();
-    
-    std.debug.print("REVM success: {}\n", .{revm_result.success});
-    std.debug.print("REVM output: ", .{});
-    for (revm_result.output) |b| {
-        std.debug.print("{x:0>2} ", .{b});
-    }
-    std.debug.print("\n", .{});
     if (revm_result.output.len >= 32) {
         const result_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
-        std.debug.print("REVM value: {}\n", .{result_value});
+        _ = result_value; // Used for verification in manual testing
     }
     
     // Compare results
