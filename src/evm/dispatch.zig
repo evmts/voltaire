@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const Opcode = @import("opcode_data.zig").Opcode;
 const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 const bytecode_mod = @import("bytecode.zig");
@@ -245,7 +246,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             var gas: u64 = 0;
             var iter = bytecode.createIterator();
             const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
-            const log = @import("log.zig");
 
             var op_count: u32 = 0;
             
@@ -266,7 +266,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                             0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
                                 // Debug: log when we encounter a terminator
                                 if (data.opcode == 0x57) {
-                                    log.debug("calculateFirstBlockGas: Found JUMPI at op_count={}, gas={}", .{op_count, gas});
+                                    // log.debug("calculateFirstBlockGas: Found JUMPI at op_count={}, gas={}", .{op_count, gas});
                                 }
                                 return gas;
                             },
@@ -345,7 +345,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             // Add first_block_gas entry if there's any gas to charge
             if (first_block_gas > 0) {
                 try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
-                log.debug("Added first_block_gas: {d}", .{first_block_gas});
+                // log.debug("Added first_block_gas: {d}", .{first_block_gas});
                 // TEMPORARY DEBUG: Log expected gas for our test bytecode
                 if (bytecode.runtime_code.len == 38) { // Our specific test case
                     log.warn("DEBUG: This looks like PUSH32+PUSH1+SDIV bytecode, first_block_gas={}", .{first_block_gas});
@@ -468,7 +468,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             bytecode: anytype,
             opcode_handlers: *const [256]OpcodeHandler,
         ) !BuildOwned {
-            const log = @import("log.zig");
 
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
@@ -481,7 +480,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             const first_block_gas = calculateFirstBlockGas(bytecode);
             if (first_block_gas > 0) {
                 try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
-                log.debug("Added first_block_gas: {d}", .{first_block_gas});
+                // log.debug("Added first_block_gas: {d}", .{first_block_gas});
             }
 
             var opcode_count: usize = 0;
@@ -591,8 +590,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             schedule: []const Item,
             bytecode: anytype,
         ) !JumpTable {
-            const log = @import("log.zig");
-            log.debug("createJumpTable starting, schedule len: {}, bytecode len: {}", .{ schedule.len, bytecode.len() });
+            // log.debug("createJumpTable starting, schedule len: {}, bytecode len: {}", .{ schedule.len, bytecode.len() });
 
             var builder = JumpTableBuilder.init(allocator);
             defer builder.deinit();

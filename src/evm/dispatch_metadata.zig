@@ -44,13 +44,6 @@ pub fn DispatchMetadata(comptime FrameType: type) type {
         /// Only one opcode needs this data so it's better to store it as metadata for that opcode than store on frame
         pub const CodesizeMetadata = packed struct { size: u32 };
 
-        /// Metadata for CODECOPY opcode containing bytecode pointer and size.
-        /// Only one opcode needs this data so it's better to store it as metadata for that opcode than store on frame
-        pub const CodecopyMetadata = packed struct(u64) {
-            /// Direct pointer to bytecode data (null-terminated)
-            bytecode_ptr: [*:0]const u8,
-        };
-
     };
 }
 
@@ -127,18 +120,6 @@ test "CodesizeMetadata stores bytecode size" {
     try testing.expectEqual(@as(u32, 65536), metadata.size);
 }
 
-test "CodecopyMetadata stores null-terminated bytecode pointer" {
-    const Metadata = DispatchMetadata(TestFrame);
-    
-    try testing.expectEqual(@as(usize, 8), @sizeOf(Metadata.CodecopyMetadata));
-    
-    const bytecode = "test_bytecode";
-    const metadata = Metadata.CodecopyMetadata{
-        .bytecode_ptr = bytecode,
-    };
-    
-    try testing.expectEqual(@as([*:0]const u8, bytecode), metadata.bytecode_ptr);
-}
 
 test "FirstBlockMetadata is same as JumpDestMetadata" {
     const Metadata = DispatchMetadata(TestFrame);

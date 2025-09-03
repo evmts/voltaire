@@ -83,19 +83,19 @@ pub fn Handlers(comptime FrameType: type) type {
                     
                     const op_data = dispatch.getOpData(.{ .regular = push_opcode });
                     
-                    log.debug("[PUSH{d}] Stack before: {any}, gas: {d}", .{ push_n, self.stack.get_slice(), self.gas_remaining });
+                    // log.debug("[PUSH{d}] Stack before: {any}, gas: {d}", .{ push_n, self.stack.get_slice(), self.gas_remaining });
                     
                     if (push_n <= 8) {
                         const value = op_data.metadata.value;
-                        log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
+                        // log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
                         try self.stack.push(value);
                     } else {
                         const value = op_data.metadata.value.*;
-                        log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
+                        // log.debug("[PUSH{d}] Pushing value: {d}", .{ push_n, value });
                         try self.stack.push(value);
                     }
                     
-                    log.debug("[PUSH{d}] Stack after: {any}", .{ push_n, self.stack.get_slice() });
+                    // log.debug("[PUSH{d}] Stack after: {any}", .{ push_n, self.stack.get_slice() });
                     
                     return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }

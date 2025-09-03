@@ -105,6 +105,21 @@ test "opcode 0x6d differential test" {
     defer revm_result.deinit();
     
     // Compare results
+    std.debug.print("REVM result: success={}, output_len={}, gas_used={}\n", .{revm_result.success, revm_result.output.len, revm_result.gas_used});
+    std.debug.print("Guillotine result: success={}, output_len={}, gas_used={}\n", .{guillotine_result.success, guillotine_result.output.len, 1_000_000 - guillotine_result.gas_left});
+    
+    if (revm_result.output.len > 0) {
+        std.debug.print("REVM output: ", .{});
+        for (revm_result.output) |b| std.debug.print("{x:0>2} ", .{b});
+        std.debug.print("\n", .{});
+    }
+    
+    if (guillotine_result.output.len > 0) {
+        std.debug.print("Guillotine output: ", .{});
+        for (guillotine_result.output) |b| std.debug.print("{x:0>2} ", .{b});
+        std.debug.print("\n", .{});
+    }
+    
     try std.testing.expectEqual(revm_result.success, guillotine_result.success);
     if (revm_result.success and guillotine_result.success) {
         try std.testing.expectEqualSlices(u8, revm_result.output, guillotine_result.output);

@@ -13,8 +13,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Second operand (top of stack)
-            const a = self.stack.peek_unsafe(); // First operand (second element)
+            const b = try self.stack.pop(); // Second operand (top of stack)
+            const a = try self.stack.peek(); // First operand (second element)
             const result = a +% b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
@@ -23,8 +23,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const b = self.stack.pop_unsafe(); // Second operand (top of stack)
-            const a = self.stack.peek_unsafe(); // First operand (second element)
+            const b = try self.stack.pop(); // Second operand (top of stack)
+            const a = try self.stack.peek(); // First operand (second element)
             const result = a *% b;
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
@@ -33,8 +33,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            const a = try self.stack.pop(); // Top of stack (first operand)
+            const b = try self.stack.peek(); // Second from top (second operand)
             // EVM semantics: top - second = a - b
             const result = a -% b;
             self.stack.set_top_unsafe(result);
@@ -44,8 +44,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            const a = try self.stack.pop(); // Top of stack (first operand)
+            const b = try self.stack.peek(); // Second from top (second operand)
             // EVM semantics: top / second = a / b
             const result = if (b == 0) 0 else a / b;
             self.stack.set_top_unsafe(result);
@@ -55,8 +55,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SDIV opcode (0x05) - Signed integer division.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            const a = try self.stack.pop(); // Top of stack (first operand)
+            const b = try self.stack.peek(); // Second from top (second operand)
 
             log.debug("SDIV: first=0x{x}, second=0x{x}", .{ a, b });
             var result: WordType = undefined;
@@ -85,8 +85,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            const a = try self.stack.pop(); // Top of stack (first operand)
+            const b = try self.stack.peek(); // Second from top (second operand)
             // EVM semantics: top % second = a % b
             const result = if (b == 0) 0 else a % b;
             self.stack.set_top_unsafe(result);
@@ -96,8 +96,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            const a = try self.stack.pop(); // Top of stack (first operand)
+            const b = try self.stack.peek(); // Second from top (second operand)
             var result: WordType = undefined;
             if (b == 0) {
                 result = 0;
@@ -218,8 +218,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // EVM semantics: top ^ second
-            const base = self.stack.pop_unsafe(); // Top of stack (base)
-            const exponent = self.stack.peek_unsafe(); // Second from top (exponent)
+            const base = try self.stack.pop(); // Top of stack (base)
+            const exponent = try self.stack.peek(); // Second from top (exponent)
 
             // EIP-160: Dynamic gas cost for EXP
             // Gas cost = 10 + 50 * (number of bytes in exponent)

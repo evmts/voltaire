@@ -91,7 +91,7 @@ const CApiHost = struct {
         return 0;
     }
 
-    pub fn get_chain_id(self: *Self) u16 {
+    pub fn get_chain_id(self: *Self) u64 {
         _ = self;
         return 1;
     }

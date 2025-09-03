@@ -168,7 +168,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// EIP-214: For static calls, self_destruct should be null to prevent
         /// SELFDESTRUCT operations which modify blockchain state.
         pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: *const WordType, calldata: []const u8, block_info: BlockInfo, evm_ptr: *anyopaque, self_destruct: ?*SelfDestruct) Error!Self {
-            log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata.len, self_destruct != null });
+            // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata.len, self_destruct != null });
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
                 log.err("Frame.init: Failed to initialize stack", .{});
@@ -182,7 +182,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             errdefer memory.deinit(allocator);
 
-            log.debug("Frame.init: Successfully initialized frame components", .{});
+            // log.debug("Frame.init: Successfully initialized frame components", .{});
             return Self{
                 // Cache line 1
                 .stack = stack,
@@ -236,7 +236,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
-            log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
+            // log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
 
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.unlikely);
@@ -244,10 +244,10 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.BytecodeTooLarge;
             }
 
-            log.debug("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
+            // log.debug("DEBUG: About to init bytecode, raw_len={}\n", .{bytecode_raw.len});
             self.bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
-                log.debug("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
+                // log.debug("DEBUG: Bytecode init FAILED with error: {}\n", .{e});
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                 return switch (e) {
                     error.BytecodeTooLarge => Error.BytecodeTooLarge,
@@ -259,17 +259,17 @@ pub fn Frame(comptime config: FrameConfig) type {
                 };
             };
             defer if (self.bytecode) |*bc| bc.deinit();
-            log.debug("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{self.bytecode.?.runtime_code.len});
+            // log.debug("DEBUG: Bytecode init SUCCESS, runtime_code_len={}\n", .{self.bytecode.?.runtime_code.len});
 
             // Use the handlers (traced or non-traced based on TracerType)
             const handlers = &Self.opcode_handlers;
 
             // Debug: Check if we're using traced handlers
-            if (TracerType) |T| {
-                log.debug("Using TRACED handlers for type: {s}", .{@typeName(T)});
+            if (TracerType) |_| {
+                // log.debug("Using TRACED handlers for type: {s}", .{@typeName(T)});
                 frame_handlers.setTracerInstance(tracer_instance);
             } else {
-                log.debug("Using NON-TRACED handlers", .{});
+                // log.debug("Using NON-TRACED handlers", .{});
             }
             
             // Clear tracer at end of function, not at end of if block
@@ -301,7 +301,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 const temp_dispatch = Dispatch{ .cursor = schedule.ptr };
                 const meta = temp_dispatch.getFirstBlockGas();
                 if (meta.gas > 0) {
-                    log.debug("Frame.interpret_with_tracer: Consuming first_block_gas={}", .{meta.gas});
+                    // log.debug("Frame.interpret_with_tracer: Consuming first_block_gas={}", .{meta.gas});
                     try self.consumeGasChecked(@intCast(meta.gas));
                 }
                 start_index = 1;
@@ -329,7 +329,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            log.debug("Frame.interpret_with_tracer: Starting execution, gas={}", .{self.gas_remaining});
+            // log.debug("Frame.interpret_with_tracer: Starting execution, gas={}", .{self.gas_remaining});
 
             try cursor.cursor[0].opcode_handler(self, cursor.cursor);
             unreachable; // Handlers never return normally

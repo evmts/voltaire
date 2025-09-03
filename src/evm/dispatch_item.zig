@@ -14,7 +14,6 @@ pub fn DispatchItem(comptime FrameType: type, comptime HandlerType: type) type {
         push_pointer: Metadata.PushPointerMetadata,
         pc: Metadata.PcMetadata,
         codesize: Metadata.CodesizeMetadata,
-        codecopy: Metadata.CodecopyMetadata,
         first_block_gas: Metadata.FirstBlockMetadata,
     };
 

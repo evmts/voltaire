@@ -202,19 +202,19 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             const runtime_code = if (is_deployment and metadata != null) blk: {
                 // For deployment bytecode with metadata, we keep the full code
                 // but we'll handle validation specially
-                log.debug("Bytecode: Deployment bytecode with metadata detected, length={}, metadata_len={}", .{code.len, metadata.?.metadata_length});
+                // log.debug("Bytecode: Deployment bytecode with metadata detected, length={}, metadata_len={}", .{code.len, metadata.?.metadata_length});
                 break :blk code;
             } else if (metadata) |m| blk: {
                 // For runtime bytecode with metadata, strip it
-                log.debug("Bytecode: Found Solidity metadata in runtime code, stripping {} bytes from end (full={}, runtime={})", .{
-                    m.metadata_length, code.len, code.len - m.metadata_length
-                });
+                // log.debug("Bytecode: Found Solidity metadata in runtime code, stripping {} bytes from end (full={}, runtime={})", .{
+                //     m.metadata_length, code.len, code.len - m.metadata_length
+                // });
                 break :blk code[0 .. code.len - m.metadata_length];
             } else blk: {
                 if (is_deployment) {
-                    log.debug("Bytecode: Deployment bytecode detected without metadata, length={}", .{code.len});
+                    // log.debug("Bytecode: Deployment bytecode detected without metadata, length={}", .{code.len});
                 } else {
-                    log.debug("Bytecode: No metadata found, using full code length={}", .{code.len});
+                    // log.debug("Bytecode: No metadata found, using full code length={}", .{code.len});
                 }
                 break :blk code;
             };

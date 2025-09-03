@@ -227,7 +227,7 @@ const TestHost = struct {
         return &[_]u8{};
     }
 
-    pub fn get_chain_id(self: *Self) u16 {
+    pub fn get_chain_id(self: *Self) u64 {
         _ = self;
         return 1;
     }

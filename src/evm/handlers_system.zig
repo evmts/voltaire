@@ -173,6 +173,116 @@ pub fn Handlers(comptime FrameType: type) type {
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
+        /// CALLCODE opcode (0xf2) - Message-call with alternative account's code but current context.
+        /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
+        pub fn callcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch = Dispatch{ .cursor = cursor };
+            const output_size = try self.stack.pop();
+            const output_offset = try self.stack.pop();
+            const input_size = try self.stack.pop();
+            const input_offset = try self.stack.pop();
+            const value = try self.stack.pop();
+            const address_u256 = try self.stack.pop();
+            const gas_param = try self.stack.pop();
+
+            // Convert address from u256
+            const addr = from_u256(address_u256);
+
+            // Bounds checking for gas parameter
+            if (gas_param > std.math.maxInt(u64)) {
+                try self.stack.push(0);
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+                const next = op_data.next;
+                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            }
+            const gas_u64 = @as(u64, @intCast(gas_param));
+
+            // Bounds checking for memory offsets and sizes
+            if (input_offset > std.math.maxInt(usize) or
+                input_size > std.math.maxInt(usize) or
+                output_offset > std.math.maxInt(usize) or
+                output_size > std.math.maxInt(usize))
+            {
+                try self.stack.push(0);
+                const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+                const next = op_data.next;
+                return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+            }
+
+            const input_offset_usize = @as(usize, @intCast(input_offset));
+            const input_size_usize = @as(usize, @intCast(input_size));
+            const output_offset_usize = @as(usize, @intCast(output_offset));
+            const output_size_usize = @as(usize, @intCast(output_size));
+
+            // Ensure memory capacity for input
+            if (input_size_usize > 0) {
+                const input_end = input_offset_usize + input_size_usize;
+                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(input_end))) catch {
+                    try self.stack.push(0);
+                    const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+                    const next = op_data.next;
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                };
+            }
+
+            // Ensure memory capacity for output
+            if (output_size_usize > 0) {
+                const output_end = output_offset_usize + output_size_usize;
+                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(output_end))) catch {
+                    try self.stack.push(0);
+                    const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+                    const next = op_data.next;
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                };
+            }
+
+            // Extract input data
+            var input_data: []const u8 = &.{};
+            if (input_size_usize > 0) {
+                input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
+                    try self.stack.push(0);
+                    const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+                    const next = op_data.next;
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                };
+            }
+
+            // CALLCODE: Execute code from `addr` but in current contract's context
+            // This means using current contract's address, storage, and balance
+            const call_params = CallParams{
+                .callcode = .{
+                    .caller = self.contract_address,
+                    .to = addr, // Code to execute from this address
+                    .value = value, // Value to appear to be sent
+                    .input = input_data,
+                    .gas = gas_u64,
+                },
+            };
+
+            var result = self.getEvm().inner_call(call_params) catch |err| switch (err) {
+                else => {
+                    try self.stack.push(0);
+                    const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+                    const next = op_data.next;
+                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                },
+            };
+            defer result.deinit(self.allocator);
+
+            // Write return data to memory if successful and output size > 0
+            if (result.success and output_size_usize > 0 and result.output.len > 0) {
+                const copy_size = @min(output_size_usize, result.output.len);
+                self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
+            }
+
+            // Push success (1) or failure (0) onto stack
+            try self.stack.push(if (result.success) 1 else 0);
+
+            const op_data = dispatch.getOpData(.{ .regular = Opcode.CALLCODE });
+            const next = op_data.next;
+            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+        }
+
         /// DELEGATECALL opcode (0xf4) - Message-call with alternative account's code but current values.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
@@ -593,8 +703,8 @@ pub fn Handlers(comptime FrameType: type) type {
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
-            const offset = try self.stack.pop();    // Top of stack  
-            const size = try self.stack.pop();  // Second from top
+            const size = try self.stack.pop();    // Top of stack
+            const offset = try self.stack.pop();  // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {

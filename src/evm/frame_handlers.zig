@@ -153,7 +153,7 @@ pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler 
     h[@intFromEnum(Opcode.CREATE)] = &SystemHandlers.create;
     h[@intFromEnum(Opcode.CALL)] = &SystemHandlers.call;
     h[@intFromEnum(Opcode.CREATE2)] = &SystemHandlers.create2;
-    h[@intFromEnum(Opcode.CALLCODE)] = &invalid; // Deprecated (kept as invalid)
+    h[@intFromEnum(Opcode.CALLCODE)] = &SystemHandlers.callcode;
     h[@intFromEnum(Opcode.RETURN)] = &SystemHandlers.@"return";
     h[@intFromEnum(Opcode.DELEGATECALL)] = &SystemHandlers.delegatecall;
     h[@intFromEnum(Opcode.STATICCALL)] = &SystemHandlers.staticcall;

@@ -240,7 +240,7 @@ pub fn StaticHost(comptime HostType: type) type {
             return self.inner.get_return_data();
         }
 
-        pub fn get_chain_id(self: *Self) u16 {
+        pub fn get_chain_id(self: *Self) u64 {
             return self.inner.get_chain_id();
         }
 

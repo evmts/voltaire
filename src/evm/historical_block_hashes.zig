@@ -62,7 +62,7 @@ pub const HistoricalBlockHashesContract = struct {
         // System call to update block hash
         if (std.mem.eql(u8, &caller.bytes, &SYSTEM_ADDRESS.bytes)) {
             if (input.len != 64) {
-                log.debug("HistoricalBlockHashes: Invalid system call input length: {}", .{input.len});
+                // log.debug("HistoricalBlockHashes: Invalid system call input length: {}", .{input.len});
                 return .{ .output = &.{}, .gas_used = 0 };
             }
             
@@ -90,14 +90,14 @@ pub const HistoricalBlockHashesContract = struct {
                 @bitCast(block_hash),
             );
             
-            log.debug("HistoricalBlockHashes: Stored hash for block {} at slot {}", .{ block_number, slot });
+            // log.debug("HistoricalBlockHashes: Stored hash for block {} at slot {}", .{ block_number, slot });
             
             return .{ .output = &.{}, .gas_used = BLOCK_HASH_WRITE_GAS };
         }
         
         // Regular call to read block hash
         if (input.len != 32) {
-            log.debug("HistoricalBlockHashes: Invalid read input length: {}", .{input.len});
+            // log.debug("HistoricalBlockHashes: Invalid read input length: {}", .{input.len});
             return .{ .output = &.{}, .gas_used = 0 };
         }
         
@@ -150,7 +150,7 @@ pub const HistoricalBlockHashesContract = struct {
             @bitCast(parent_hash),
         );
         
-        log.debug("HistoricalBlockHashes: Updated block hash for block {}", .{parent_number});
+        // log.debug("HistoricalBlockHashes: Updated block hash for block {}", .{parent_number});
     }
     
     /// Get a block hash from the contract or recent history

@@ -362,8 +362,8 @@ pub const DifferentialTestor = struct {
             try self.revm_instance.setCode(self.contract, bytecode);
             
             const code_hash = try db.set_code(bytecode);
-            log.debug("Set code with hash: {x} (tracing={})", .{code_hash, enable_tracing});
-            log.debug("Contract address is: {x}", .{self.contract.bytes});
+            // log.debug("Set code with hash: {x} (tracing={})", .{code_hash, enable_tracing});
+            // log.debug("Contract address is: {x}", .{self.contract.bytes});
 
             try db.set_account(self.contract.bytes, .{
                 .balance = 0,
@@ -371,12 +371,12 @@ pub const DifferentialTestor = struct {
                 .code_hash = code_hash,
                 .storage_root = [_]u8{0} ** 32,
             });
-            log.debug("Set account for address: {x}", .{self.contract.bytes});
+            // log.debug("Set account for address: {x}", .{self.contract.bytes});
         }
 
         // Verify deployment
         const deployed_code = try db.get_code_by_address(self.contract.bytes);
-        log.debug("Deployed bytecode to {any}: len={} vs deployed_len={} (tracing={})", .{ self.contract, bytecode.len, deployed_code.len, enable_tracing });
+        // log.debug("Deployed bytecode to {any}: len={} vs deployed_len={} (tracing={})", .{ self.contract, bytecode.len, deployed_code.len, enable_tracing });
         if (deployed_code.len == 0) {
             log.err("WARNING: Deployed code has zero length!", .{});
         }
@@ -384,7 +384,7 @@ pub const DifferentialTestor = struct {
         // Also check if account exists
         const account_check = try db.get_account(self.contract.bytes);
         if (account_check) |acc| {
-            log.debug("Account found: balance={}, nonce={}, code_hash={x}", .{ acc.balance, acc.nonce, acc.code_hash });
+            // log.debug("Account found: balance={}, nonce={}, code_hash={x}", .{ acc.balance, acc.nonce, acc.code_hash });
         } else {
             log.err("WARNING: Account not found after deployment!", .{});
         }
@@ -574,7 +574,7 @@ pub const DifferentialTestor = struct {
         // Store the execution result status for debugging
         const log = std.log.scoped(.differential_failure);
         const trace_steps_len = if (trace) |t| t.steps.len else 0;
-        log.debug("Guillotine execution completed (tracing={}): success={}, gas_left={}, output_len={}, trace_steps={}", .{ enable_tracing, result.success, result.gas_left, result.output.len, trace_steps_len });
+        // log.debug("Guillotine execution completed (tracing={}): success={}, gas_left={}, output_len={}, trace_steps={}", .{ enable_tracing, result.success, result.gas_left, result.output.len, trace_steps_len });
 
         if (!result.success) {
             // Log detailed failure information
@@ -798,7 +798,7 @@ pub const DifferentialTestor = struct {
             // TODO: Implement detailed trace comparison when REVM tracing is working
             // For now, just note that we have both traces
             const log = std.log.scoped(.differential_trace);
-            log.debug("Both REVM and Guillotine traces available ({} steps each), detailed comparison not yet implemented", .{guillotine_steps_len});
+            // log.debug("Both REVM and Guillotine traces available ({} steps each), detailed comparison not yet implemented", .{guillotine_steps_len});
             diff.trace_match = true; // Don't fail on trace comparison yet
         }
 
@@ -872,7 +872,7 @@ pub const DifferentialTestor = struct {
         defer self.allocator.free(trace_content);
 
         const log = std.log.scoped(.revm_trace);
-        log.debug("REVM trace file content ({} bytes)", .{trace_content.len});
+        // log.debug("REVM trace file content ({} bytes)", .{trace_content.len});
 
         // Simple trace parsing for debugging - just count steps and log key operations
         var step_count: u32 = 0;

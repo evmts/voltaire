@@ -131,7 +131,7 @@ pub const Database = struct {
 
     /// Set account data for the given address
     pub fn set_account(self: *Database, address: [20]u8, account: Account) Error!void {
-        log.debug("set_account: Setting account for address {x} with code_hash {x}", .{ address, account.code_hash });
+        // log.debug("set_account: Setting account for address {x} with code_hash {x}", .{ address, account.code_hash });
         try self.accounts.put(address, account);
     }
 
@@ -186,30 +186,30 @@ pub const Database = struct {
     /// Get contract code by hash
     pub fn get_code(self: *Database, code_hash: [32]u8) Error![]const u8 {
         const code = self.code_storage.get(code_hash) orelse {
-            log.debug("get_code: Code not found for hash {x}", .{code_hash});
+            // log.debug("get_code: Code not found for hash {x}", .{code_hash});
             return Error.CodeNotFound;
         };
-        log.debug("get_code: Found code with len={} for hash {x}", .{code.len, code_hash});
+        // log.debug("get_code: Found code with len={} for hash {x}", .{code.len, code_hash});
         return code;
     }
 
     /// Get contract code by address (supports EIP-7702 delegation)
     pub fn get_code_by_address(self: *Database, address: [20]u8) Error![]const u8 {
-        log.debug("get_code_by_address: Looking for address {x}", .{address});
+        // log.debug("get_code_by_address: Looking for address {x}", .{address});
         
         if (self.accounts.get(address)) |account| {
             // EIP-7702: Check if this EOA has delegated code
             if (account.get_effective_code_address()) |delegated_addr| {
-                log.debug("get_code_by_address: EOA has delegation to {x}", .{delegated_addr.bytes});
+                // log.debug("get_code_by_address: EOA has delegation to {x}", .{delegated_addr.bytes});
                 // Recursively get code from delegated address
                 return self.get_code_by_address(delegated_addr.bytes);
             }
             
-            log.debug("get_code_by_address: Found account with code_hash {x}", .{account.code_hash});
+            // log.debug("get_code_by_address: Found account with code_hash {x}", .{account.code_hash});
             return self.get_code(account.code_hash);
         }
         
-        log.debug("get_code_by_address: Account not found for address {x}", .{address});
+        // log.debug("get_code_by_address: Account not found for address {x}", .{address});
         return Error.AccountNotFound;
     }
 
@@ -217,7 +217,7 @@ pub const Database = struct {
     pub fn set_code(self: *Database, code: []const u8) Error![32]u8 {
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
-        log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
+        // log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
         try self.code_storage.put(hash, code);
         return hash;
     }

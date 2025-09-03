@@ -329,8 +329,16 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try buf.append(allocator, 0x3d);
             try helpers.ret_top32(allocator, &buf);
         },
-        0x3e => { // RETURNDATACOPY
-            // Skip for now - requires previous call
+        0x3e => { // RETURNDATACOPY  
+            // RETURNDATACOPY requires return data from a previous call
+            // Since there's no return data initially, trying to copy anything should fail
+            // Let's test by trying to copy 1 byte, which should cause OutOfBounds error
+            try helpers.push_u8(allocator, &buf, 0x01); // length = 1 byte
+            try helpers.push_u8(allocator, &buf, 0x00); // offset in return data = 0  
+            try helpers.push_u8(allocator, &buf, 0x00); // destOffset in memory = 0
+            try buf.append(allocator, 0x3e); // RETURNDATACOPY
+            
+            // If we get here somehow, return 0 (should not reach this)
             try helpers.ret_const(allocator, &buf, 0);
         },
         0x3f => { // EXTCODEHASH
@@ -631,8 +639,8 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.push_u256(allocator, &buf, 0xcafebabe);
             try helpers.push_u8(allocator, &buf, 0x00);
             try buf.append(allocator, 0x52); // MSTORE
-            try helpers.push_u8(allocator, &buf, 0x20); // length
             try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x20); // length 
             try buf.append(allocator, 0xf3);
         },
         0xf4 => { // DELEGATECALL
@@ -668,8 +676,8 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try helpers.push_u256(allocator, &buf, 0xdeadbeef);
             try helpers.push_u8(allocator, &buf, 0x00);
             try buf.append(allocator, 0x52); // MSTORE
-            try helpers.push_u8(allocator, &buf, 0x20); // length
             try helpers.push_u8(allocator, &buf, 0x00); // offset
+            try helpers.push_u8(allocator, &buf, 0x20); // length
             try buf.append(allocator, 0xfd);
         },
         0xfe => { // INVALID

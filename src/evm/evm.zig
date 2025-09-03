@@ -535,9 +535,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else to;
             
             // Get contract code (from delegated address if applicable)
-            log.debug("Attempting to get code for address: {x}", .{code_address.bytes});
+            // log.debug("Attempting to get code for address: {x}", .{code_address.bytes});
             const code = self.database.get_code_by_address(code_address.bytes) catch |err| {
-                log.debug("Failed to get code for address {x}: {}", .{ code_address.bytes, err });
+                // log.debug("Failed to get code for address {x}: {}", .{ code_address.bytes, err });
                 const error_str = switch (err) {
                     Database.Error.CodeNotFound => "CodeNotFound",
                     Database.Error.AccountNotFound => "AccountNotFound",
@@ -556,14 +556,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
 
 
-            log.debug("Got code for address, length: {}", .{code.len});
+            // log.debug("Got code for address, length: {}", .{code.len});
             
             if (code.len == 0) {
                 log.debug("Code is empty, returning empty account result", .{});
                 return PreflightResult{ .empty_account = gas };
             }
 
-            log.debug("Returning code for execution, code_len={}", .{code.len});
+            // log.debug("Returning code for execution, code_len={}", .{code.len});
             return PreflightResult{ .execute_with_code = code };
         }
 
@@ -599,11 +599,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             switch (preflight) {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| {
-                    log.debug("EXECUTE_CALL: Call to empty account: {any}", .{params.to});
+                    // log.debug("EXECUTE_CALL: Call to empty account: {any}", .{params.to});
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    log.debug("EXECUTE_CALL: Executing code of length {} for address {x}", .{code.len, params.to.bytes});
+                    // log.debug("EXECUTE_CALL: Executing code of length {} for address {x}", .{code.len, params.to.bytes});
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -1031,9 +1031,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            std.debug.print("execute_frame: code_len={}, gas={}, address={any}, depth={}\n", .{ 
-                code.len, gas, address, self.depth,
-            });
+            // std.debug.print("execute_frame: code_len={}, gas={}, address={any}, depth={}\n", .{ 
+            //     code.len, gas, address, self.depth,
+            // });
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;
@@ -1079,7 +1079,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 var tracer = TracerType.init(self.allocator);
                 defer tracer.deinit();
                 
-                log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
+                // log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
                 
                 // Frame.interpret_with_tracer returns Error!void and uses errors for success termination
                 std.debug.print("Calling frame.interpret_with_tracer with code_len={}, tracer={s}\n", .{code.len, @typeName(TracerType)});
@@ -1121,11 +1121,11 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Map frame outcome to CallResult
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-            log.debug("Frame execution complete. gas_remaining={d}, gas_left={d}", .{frame.gas_remaining, gas_left});
+            // log.debug("Frame execution complete. gas_remaining={d}, gas_left={d}", .{frame.gas_remaining, gas_left});
             const out_items = frame.output;
-            log.debug("Frame execution complete. Output length: {d}", .{out_items.len});
+            // log.debug("Frame execution complete. Output length: {d}", .{out_items.len});
             if (out_items.len > 0) {
-                log.debug("Output data: {x}", .{out_items});
+                // log.debug("Output data: {x}", .{out_items});
             }
             const out_buf = if (out_items.len > 0) blk: {
                 const b = try self.allocator.alloc(u8, out_items.len);
@@ -1506,9 +1506,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             return self.return_data;
         }
 
-        /// Get chain ID
-        pub fn get_chain_id(self: *Self) u16 {
-            return self.context.chain_id;
+        /// Get chain ID  
+        pub fn get_chain_id(self: *Self) u64 {
+            return self.block_info.chain_id;
         }
 
         /// Get block hash by number
