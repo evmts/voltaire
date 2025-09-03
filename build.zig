@@ -239,6 +239,59 @@ pub fn build(b: *std.Build) void {
     const erc20_deployment_test_step = b.step("test-erc20-deployment", "Test ERC20 deployment issue");
     erc20_deployment_test_step.dependOn(&run_erc20_deployment_test.step);
 
+    // Fixtures comprehensive differential test
+    const fixtures_differential_test = b.addTest(.{
+        .name = "fixtures-differential-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/differential/fixtures_comprehensive_differential_test.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+    });
+    fixtures_differential_test.root_module.addImport("evm", modules.evm_mod);
+    fixtures_differential_test.root_module.addImport("primitives", modules.primitives_mod);
+    fixtures_differential_test.root_module.addImport("crypto", modules.crypto_mod);
+    fixtures_differential_test.root_module.addImport("build_options", config.options_mod);
+    fixtures_differential_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+    
+    // Add REVM module and library for differential testing
+    if (modules.revm_mod) |revm_mod| {
+        fixtures_differential_test.root_module.addImport("revm", revm_mod);
+        if (revm_lib) |revm| {
+            fixtures_differential_test.linkLibrary(revm);
+            fixtures_differential_test.addIncludePath(b.path("src/revm_wrapper"));
+            
+            const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
+            const revm_dylib_path_test = if (rust_target) |target_triple|
+                b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
+            else
+                b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
+            fixtures_differential_test.addObjectFile(b.path(revm_dylib_path_test));
+            
+            if (target.result.os.tag == .linux) {
+                fixtures_differential_test.linkSystemLibrary("m");
+                fixtures_differential_test.linkSystemLibrary("pthread");
+                fixtures_differential_test.linkSystemLibrary("dl");
+            } else if (target.result.os.tag == .macos) {
+                fixtures_differential_test.linkSystemLibrary("c++");
+                fixtures_differential_test.linkFramework("Security");
+                fixtures_differential_test.linkFramework("SystemConfiguration");
+                fixtures_differential_test.linkFramework("CoreFoundation");
+            }
+            
+            fixtures_differential_test.step.dependOn(&revm.step);
+        }
+    }
+    
+    fixtures_differential_test.linkLibrary(c_kzg_lib);
+    fixtures_differential_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| fixtures_differential_test.linkLibrary(bn254);
+    fixtures_differential_test.linkLibC();
+    
+    const run_fixtures_differential_test = b.addRunArtifact(fixtures_differential_test);
+    const fixtures_differential_test_step = b.step("test-fixtures-differential", "Run differential tests for benchmark fixtures (ERC20, snailtracer, etc.)");
+    fixtures_differential_test_step.dependOn(&run_fixtures_differential_test.step);
+
     // GT opcode bug test
     const gt_bug_test = b.addTest(.{
         .name = "gt-bug-test",
