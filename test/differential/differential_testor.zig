@@ -469,7 +469,7 @@ pub const DifferentialTestor = struct {
             .to = to,
             .value = value,
             .input = input,
-            .gas = 100_000,
+            .gas = gas_limit,
         } };
         
         var result = self.revm_instance.call(params) catch |err| {
