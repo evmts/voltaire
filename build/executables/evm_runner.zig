@@ -72,6 +72,50 @@ pub fn createEvmRunnerSmall(
     return exe;
 }
 
+pub fn createTestStep(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    evm_mod: *std.Build.Module,
+    primitives_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    bn254_lib: ?*std.Build.Step.Compile,
+) *std.Build.Step {
+    const test_exe = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("bench/evms/zig/src/test_runner.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    
+    // Add the Runner module
+    const runner_mod = b.createModule(.{
+        .root_source_file = b.path("bench/evms/zig/src/Runner.zig"),
+    });
+    runner_mod.addImport("evm", evm_mod);
+    runner_mod.addImport("primitives", primitives_mod);
+    
+    test_exe.root_module.addImport("Runner", runner_mod);
+    test_exe.root_module.addImport("evm", evm_mod);
+    test_exe.root_module.addImport("primitives", primitives_mod);
+    
+    test_exe.linkLibrary(c_kzg_lib);
+    test_exe.linkLibrary(blst_lib);
+    test_exe.linkLibC();
+    
+    if (bn254_lib) |bn254| {
+        test_exe.linkLibrary(bn254);
+        test_exe.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const test_step = b.step("test-runner", "Run EVM runner tests");
+    test_step.dependOn(&b.addRunArtifact(test_exe).step);
+    
+    return test_step;
+}
+
 pub fn createRunSteps(b: *std.Build, exe: *std.Build.Step.Compile, exe_small: *std.Build.Step.Compile) void {
     const run_evm_runner_cmd = b.addRunArtifact(exe);
     if (b.args) |args| {
