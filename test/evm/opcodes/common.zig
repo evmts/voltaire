@@ -1,8 +1,9 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
 
 pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
-    var buf = std.ArrayList(u8){};
-    errdefer buf.deinit(allocator);
+    var buf = ArrayList(u8){};
+    defer buf.deinit(allocator);
 
     // Helper functions as a struct namespace
     const helpers = struct {

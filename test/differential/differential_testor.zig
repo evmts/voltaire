@@ -222,30 +222,18 @@ pub const DifferentialTestor = struct {
     fn deployContractGuillotine(self: *DifferentialTestor, deployment_bytecode: []const u8, enable_tracing: bool) ![]u8 {
         const log = std.log.scoped(.differential_testor);
         
-        // Select the appropriate database based on tracing
-        const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
-        
         // Create a temporary address for deployment
         const deploy_address = try primitives.Address.from_hex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
         
-        // Set the deployment bytecode at the temporary address
-        const deploy_code_hash = try db.set_code(deployment_bytecode);
-        try db.set_account(deploy_address.bytes, .{
-            .balance = 0,
-            .nonce = 1,
-            .code_hash = deploy_code_hash,
-            .storage_root = [_]u8{0} ** 32,
-        });
-        
-        // Execute the deployment bytecode (constructor) based on tracing mode
+        // Execute the deployment bytecode (init code) using CREATE semantics
+        // This should execute the init code and return the runtime code
         const result = if (enable_tracing) blk: {
             if (self.guillotine_instance_traced) |*traced| {
                 break :blk traced.call(.{
-                    .call = .{
+                    .create = .{
                         .caller = self.caller,
-                        .to = deploy_address,
                         .value = 0,
-                        .input = &.{}, // No constructor arguments for now
+                        .init_code = deployment_bytecode,
                         .gas = 10_000_000, // Generous gas for deployment
                     },
                 });
@@ -255,11 +243,10 @@ pub const DifferentialTestor = struct {
         } else blk: {
             if (self.guillotine_instance_no_trace) |*no_trace| {
                 break :blk no_trace.call(.{
-                    .call = .{
+                    .create = .{
                         .caller = self.caller,
-                        .to = deploy_address,
                         .value = 0,
-                        .input = &.{}, // No constructor arguments for now
+                        .init_code = deployment_bytecode,
                         .gas = 10_000_000, // Generous gas for deployment
                     },
                 });
@@ -285,9 +272,6 @@ pub const DifferentialTestor = struct {
         // Clean up call result memory
         var result_copy = result;
         result_copy.deinit(self.allocator);
-        
-        // Clean up the temporary deployment address
-        try db.delete_account(deploy_address.bytes);
         
         return runtime_code;
     }

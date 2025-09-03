@@ -13,13 +13,6 @@ test "differential: basic arithmetic operations" {
     const bytecode = [_]u8{
         // PUSH1 1; PUSH1 1; ADD; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN
         0x60, 0x01, 0x60, 0x01, 0x01, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3,
-        
-        // Store result in memory and return
-        0x60, 0x00, // PUSH1 0 (memory offset)
-        0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32 (return size)
-        0x60, 0x00, // PUSH1 0 (return offset)
-        0xf3,       // RETURN
     };
     
     try testor.test_bytecode(&bytecode);
@@ -33,8 +26,6 @@ test "differential: basic signed arithmetic" {
     
     // Test basic signed arithmetic
     const bytecode = [_]u8{
-        // PUSH1 1; PUSH1 1; ADD; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN
-        0x60, 0x01, 0x60, 0x01, 0x01, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3,
         // SDIV: -8 / 3 = -2 (in two's complement)
         0x7f, // PUSH32
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,  // bytes 1-8 of data
@@ -110,8 +101,6 @@ test "differential: max value arithmetic" {
     
     // Test arithmetic with PUSH1 values
     const bytecode = [_]u8{
-        // PUSH1 0xFF; PUSH1 0x00; RETURN
-        0x60, 0xFF, 0x60, 0x00, 0xF3,
         // MAX_U256 + 1 = 0 (overflow)
         0x7f, // PUSH32 opcode
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 8 bytes
@@ -151,11 +140,6 @@ test "differential: MAX_INT arithmetic" {
     const bytecode = [_]u8{
         // PUSH1 1; PUSH1 1; ADD; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN
         0x60, 0x01, 0x60, 0x01, 0x01, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3,
-        0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32
-        0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
     };
     
     try testor.test_bytecode(&bytecode);
@@ -196,9 +180,11 @@ test "differential: simple add" {
     
     // Test simple arithmetic operation
     const bytecode = [_]u8{
-        // PUSH1 0; PUSH1 0; RETURN (success)
-        0x60, 0x00, 0x60, 0x00, 0xf3,
-                // Store and return
+        // Simple add: 1 + 1 = 2
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x01, // PUSH1 1
+        0x01,       // ADD
+        // Store and return
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
         0x60, 0x20, // PUSH1 32
