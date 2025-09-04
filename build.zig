@@ -584,4 +584,86 @@ pub fn build(b: *std.Build) void {
     build_pkg.SwiftBindings.createSwiftSteps(b);
     build_pkg.GoBindings.createGoSteps(b);
     build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
+
+    // Focused fusion tests aggregator
+    {
+        // Basic fusion detection and execution tests
+        const fusions_basic = b.addTest(.{
+            .name = "fusions_basic",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/fusions.zig"),
+                .target = target,
+                .optimize = .Debug,
+            }),
+        });
+        fusions_basic.root_module.addImport("evm", modules.evm_mod);
+        fusions_basic.root_module.addImport("primitives", modules.primitives_mod);
+        fusions_basic.root_module.addImport("crypto", modules.crypto_mod);
+        fusions_basic.root_module.addImport("build_options", config.options_mod);
+        fusions_basic.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+        fusions_basic.linkLibrary(c_kzg_lib);
+        fusions_basic.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| fusions_basic.linkLibrary(bn254);
+        fusions_basic.linkLibC();
+
+        // Dispatch-specific fusion tests (jump resolution, etc.)
+        const fusions_dispatch = b.addTest(.{
+            .name = "fusions_dispatch",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/fusions_dispatch.zig"),
+                .target = target,
+                .optimize = .Debug,
+            }),
+        });
+        fusions_dispatch.root_module.addImport("evm", modules.evm_mod);
+        fusions_dispatch.root_module.addImport("primitives", modules.primitives_mod);
+        fusions_dispatch.root_module.addImport("crypto", modules.crypto_mod);
+        fusions_dispatch.root_module.addImport("build_options", config.options_mod);
+        fusions_dispatch.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+        fusions_dispatch.linkLibrary(c_kzg_lib);
+        fusions_dispatch.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| fusions_dispatch.linkLibrary(bn254);
+        fusions_dispatch.linkLibC();
+
+        // Differential harness: non-fuseable pattern sanity check
+        const fusions_diff_toggle = b.addTest(.{
+            .name = "fusions_diff_toggle",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/differential/synthetic_toggle_test.zig"),
+                .target = target,
+                .optimize = .Debug,
+            }),
+        });
+        fusions_diff_toggle.root_module.addImport("evm", modules.evm_mod);
+        fusions_diff_toggle.root_module.addImport("primitives", modules.primitives_mod);
+        fusions_diff_toggle.root_module.addImport("crypto", modules.crypto_mod);
+        fusions_diff_toggle.root_module.addImport("build_options", config.options_mod);
+        fusions_diff_toggle.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+        if (modules.revm_mod) |revm_mod| {
+            fusions_diff_toggle.root_module.addImport("revm", revm_mod);
+            if (revm_lib) |revm| {
+                fusions_diff_toggle.linkLibrary(revm);
+                fusions_diff_toggle.addIncludePath(b.path("src/revm_wrapper"));
+                const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
+                const revm_dylib_path_test = if (rust_target) |target_triple|
+                    b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
+                else
+                    b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
+                fusions_diff_toggle.addObjectFile(b.path(revm_dylib_path_test));
+            }
+        }
+        fusions_diff_toggle.linkLibrary(c_kzg_lib);
+        fusions_diff_toggle.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| fusions_diff_toggle.linkLibrary(bn254);
+        fusions_diff_toggle.linkLibC();
+
+        const run_fusions_basic = b.addRunArtifact(fusions_basic);
+        const run_fusions_dispatch = b.addRunArtifact(fusions_dispatch);
+        const run_fusions_diff_toggle = b.addRunArtifact(fusions_diff_toggle);
+
+        const test_fusions_step = b.step("test-fusions", "Run focused fusion tests (unit + dispatch + differential)");
+        test_fusions_step.dependOn(&run_fusions_basic.step);
+        test_fusions_step.dependOn(&run_fusions_dispatch.step);
+        test_fusions_step.dependOn(&run_fusions_diff_toggle.step);
+    }
 }
