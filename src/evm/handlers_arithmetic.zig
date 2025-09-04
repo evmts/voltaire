@@ -260,10 +260,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
 
 
-            const ext = try self.stack.pop(); // Extension byte index (top of stack)
+            const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
 
 
-            const value = try self.stack.peek(); // Value to extend (second element)
+            const value = self.stack.peek_unsafe(); // Value to extend (second element)
 
             var result: WordType = undefined;
 

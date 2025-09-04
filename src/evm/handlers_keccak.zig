@@ -29,8 +29,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// - For smaller word types, may use different variants or truncate
         pub fn keccak(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const offset = try self.stack.pop();  // Top of stack is offset
-            const size = try self.stack.pop();    // Second is size
+            const offset = self.stack.pop_unsafe();  // Top of stack is offset
+            const size = self.stack.pop_unsafe();    // Second is size
 
             // Check bounds
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {

@@ -40,7 +40,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
-            try self.stack.push(value);
+            self.stack.push_unsafe(value);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
@@ -71,7 +71,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
-            try self.stack.push(value);
+            self.stack.push_unsafe(value);
 
             // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
             const next_cursor = cursor + 2;
@@ -85,7 +85,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
-            const value = try self.stack.pop();
+            const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -120,7 +120,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
-            const value = try self.stack.pop();
+            const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -156,7 +156,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
-            const value = try self.stack.pop();
+            const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -191,7 +191,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
-            const value = try self.stack.pop();
+            const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {

@@ -18,7 +18,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             // MLOAD loads a 32-byte word from memory
-            const offset = try self.stack.pop();
+            const offset = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -50,7 +50,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Convert to WordType (truncate if necessary for smaller word types)
             const value = @as(WordType, @truncate(value_u256));
-            try self.stack.push(value);
+            self.stack.push_unsafe(value);
 
             const op_data = dispatch.getOpData(.MLOAD);
             const next = op_data.next;
@@ -75,8 +75,8 @@ pub fn Handlers(comptime FrameType: type) type {
             //     log.err("  [{}] = {x}", .{i, val});
             // }
             
-            const offset = try self.stack.pop();
-            const value = try self.stack.pop();
+            const offset = self.stack.pop_unsafe();
+            const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -129,8 +129,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pops memory offset and value from stack, stores the least significant byte at that offset.
         pub fn mstore8(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const offset = try self.stack.pop();
-            const value = try self.stack.pop();
+            const offset = self.stack.pop_unsafe();
+            const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -171,7 +171,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn msize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             const size = self.memory.size();
-            try self.stack.push(@as(WordType, @intCast(size)));
+            self.stack.push_unsafe(@as(WordType, @intCast(size)));
 
             const op_data = dispatch.getOpData(.MSIZE);
             const next = op_data.next;
@@ -182,9 +182,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Copies memory from one location to another.
         pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const size = try self.stack.pop();         // Top of stack
-            const src_offset = try self.stack.pop();   // Second from top
-            const dest_offset = try self.stack.pop();  // Third from top
+            const size = self.stack.pop_unsafe();         // Top of stack
+            const src_offset = self.stack.pop_unsafe();   // Second from top
+            const dest_offset = self.stack.pop_unsafe();  // Third from top
 
             // Check if offsets and size fit in u24 (memory limit)
             if (dest_offset > 0xFFFFFF or src_offset > 0xFFFFFF or size > 0xFFFFFF) {

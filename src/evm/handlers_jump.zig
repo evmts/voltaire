@@ -18,7 +18,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get jump table from frame
             const jump_table = self.jump_table;
 
-            const dest = try self.stack.pop();
+            const dest = self.stack.pop_unsafe();
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
@@ -49,8 +49,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get jump table from frame
             const jump_table = self.jump_table;
 
-            const dest = try self.stack.pop();       // Top of stack (destination)
-            const condition = try self.stack.pop();  // Second from top (condition)
+            const dest = self.stack.pop_unsafe();       // Top of stack (destination)
+            const condition = self.stack.pop_unsafe();  // Second from top (condition)
 
             if (condition != 0) {
                 // Take the jump - validate destination range
@@ -123,7 +123,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);
 
-            try self.stack.push(op_data.metadata.value);
+            self.stack.push_unsafe(op_data.metadata.value);
 
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }

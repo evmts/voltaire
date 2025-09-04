@@ -25,13 +25,13 @@ pub fn Handlers(comptime FrameType: type) type {
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // Pop offset and length first (they're on top of stack)
-                    const offset = try self.stack.pop();
-                    const length = try self.stack.pop();
+                    const offset = self.stack.pop_unsafe();
+                    const length = self.stack.pop_unsafe();
                     
                     // Pop topics in order (topic1 is deepest, topicN is shallowest)
                     var topics: [4]WordType = [_]WordType{0} ** 4;
                     for (0..topic_count) |j| {
-                        topics[j] = try self.stack.pop();
+                        topics[j] = self.stack.pop_unsafe();
                     }
 
                     // Check bounds

@@ -19,7 +19,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // SLOAD loads a value from storage
 
-            const slot = try self.stack.pop();
+            const slot = self.stack.pop_unsafe();
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -40,7 +40,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = self.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            try self.stack.push(value);
+            self.stack.push_unsafe(value);
 
             const op_data = dispatch.getOpData(.SLOAD);
             const next = op_data.next;
@@ -61,8 +61,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // - First push 0x42 (goes to stack position 0)
             // - Then push 0x00 (goes to stack position 1, becoming the top)
             // - SSTORE pops key first (0x00), then value (0x42)
-            const slot = try self.stack.pop(); // Pop key/slot first (top of stack)
-            const value = try self.stack.pop(); // Pop value second
+            const slot = self.stack.pop_unsafe(); // Pop key/slot first (top of stack)
+            const value = self.stack.pop_unsafe(); // Pop value second
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -127,7 +127,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Loads value from transient storage slot and pushes it onto the stack.
         pub fn tload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const slot = try self.stack.pop();
+            const slot = self.stack.pop_unsafe();
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -137,7 +137,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            try self.stack.push(value);
+            self.stack.push_unsafe(value);
 
             const op_data = dispatch.getOpData(.TLOAD);
             const next = op_data.next;
@@ -152,8 +152,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // EIP-214: WriteProtection is handled by host interface for static calls
 
             // TSTORE expects stack: [..., key, value] where key is at top
-            const slot = try self.stack.pop(); // Pop key/slot first (top of stack)
-            const value = try self.stack.pop(); // Pop value second
+            const slot = self.stack.pop_unsafe(); // Pop key/slot first (top of stack)
+            const value = self.stack.pop_unsafe(); // Pop value second
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;

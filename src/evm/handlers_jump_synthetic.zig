@@ -65,7 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = cursor[1].push_inline.value;
 
             // Pop the condition
-            const condition = try self.stack.pop();
+            const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
                 // Take the jump - validate destination range
@@ -96,7 +96,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = cursor[1].push_pointer.value.*;
 
             // Pop the condition
-            const condition = try self.stack.pop();
+            const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
                 // Take the jump - validate destination range

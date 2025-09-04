@@ -17,9 +17,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const push_value = cursor[1].push_inline.value;
 
             // Pop top value and add the pushed value
-            const top = try self.stack.pop();
+            const top = self.stack.pop_unsafe();
             const result = top +% push_value;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             // Continue to next operation (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -31,9 +31,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const push_value = cursor[1].push_pointer.value.*;
 
             // Pop top value and add the pushed value
-            const top = try self.stack.pop();
+            const top = self.stack.pop_unsafe();
             const result = top +% push_value;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             // Continue to next operation (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -44,9 +44,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_inline.value;
 
-            const top = try self.stack.pop();
+            const top = self.stack.pop_unsafe();
             const result = top *% push_value;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
@@ -56,9 +56,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_pointer.value.*;
 
-            const top = try self.stack.pop();
+            const top = self.stack.pop_unsafe();
             const result = top *% push_value;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
@@ -68,9 +68,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const divisor = cursor[1].push_inline.value;
 
-            const dividend = try self.stack.pop();
+            const dividend = self.stack.pop_unsafe();
             const result = if (divisor == 0) 0 else dividend / divisor;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
@@ -80,9 +80,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const divisor = cursor[1].push_pointer.value.*;
 
-            const dividend = try self.stack.pop();
+            const dividend = self.stack.pop_unsafe();
             const result = if (divisor == 0) 0 else dividend / divisor;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
@@ -92,9 +92,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_inline.value;
 
-            const top = try self.stack.pop();
+            const top = self.stack.pop_unsafe();
             const result = top -% push_value;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
@@ -104,9 +104,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_pointer.value.*;
 
-            const top = try self.stack.pop();
+            const top = self.stack.pop_unsafe();
             const result = top -% push_value;
-            try self.stack.push(result);
+            self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
