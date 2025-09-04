@@ -965,7 +965,7 @@ fn bytesToU32(bytes: []const u8) u32 {
     // This handles Ethereum’s 32-byte length encoding where only the last byte is often set.
     var result: u32 = 0;
     for (bytes) |byte| {
-        result = std.math.shl(u256, result, 8) | byte;
+        result = std.math.shl(u32, result, 8) | byte;
     }
     return result;
 }

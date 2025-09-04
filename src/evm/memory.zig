@@ -250,7 +250,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
             const current_size = @as(u64, @intCast(self.size_internal()));
             if (new_size_u64 <= current_size) return 0;
             const new_words = std.math.shr(u64, new_size_u64 + 31, 5); // Using std.math.shr instead of / 32
-            const current_words = std.math.shr(u32, current_size + 31, 5); // Using std.math.shr instead of / 32
+            const current_words = std.math.shr(u64, current_size + 31, 5); // Using std.math.shr instead of / 32
             const new_cost = calculate_memory_cost(new_words);
             const current_cost = calculate_memory_cost(current_words);
             return new_cost - current_cost;

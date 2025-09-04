@@ -398,7 +398,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             if (pc >= self.len()) return false;
             // https://ziglang.org/documentation/master/#as
             // @as performs type coercion, ensuring the value fits the target type
-            return (self.is_jumpdest[std.math.shr(PcType, pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(pc & BITMAP_MASK))) != 0;
+            return (self.is_jumpdest[std.math.shr(PcType, pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(pc & BITMAP_MASK)))) != 0;
         }
 
         /// Count the number of set bits in a byte range of a bitmap
@@ -535,7 +535,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 return;
             }
 
-            const bitmap_bytes = std.math.shr(comptime_int, N + BITMAP_MASK, BITMAP_SHIFT);
+            const bitmap_bytes = (N + BITMAP_MASK) >> BITMAP_SHIFT;
 
             // Allocate bitmaps upfront for single-pass population
             const use_aligned = comptime !builtin.is_test;
@@ -590,7 +590,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
 
                 // Mark operation start
-                self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @intCast(i & BITMAP_MASK));
+                self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)));
                 self.packed_bitmap[i].is_op_start = true;
 
                 const op = self.runtime_code[i];
@@ -604,7 +604,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Check if it's a JUMPDEST (and not push data)
                 if (op == @intFromEnum(Opcode.JUMPDEST)) {
-                    self.is_jumpdest[std.math.shr(u32, i, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @intCast(i & BITMAP_MASK));
+                    self.is_jumpdest[std.math.shr(u32, i, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)));
                     self.packed_bitmap[i].is_jumpdest = true;
                 }
 
@@ -657,7 +657,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     var j: PcType = 0;
                     while (j < n) : (j += 1) {
                         const idx = i + 1 + j;
-                        self.is_push_data[std.math.shr(u32, idx, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @intCast(idx & BITMAP_MASK));
+                        self.is_push_data[std.math.shr(u32, idx, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(idx & BITMAP_MASK)));
                         self.packed_bitmap[idx].is_push_data = true;
                     }
                     
@@ -715,7 +715,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var i: PcType = 0;
             const N = self.runtime_code.len;
             while (i < N) {
-                if ((self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(i & BITMAP_MASK))) == 0) {
+                if ((self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)))) == 0) {
                     i += 1;
                     continue;
                 }
@@ -725,7 +725,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     const dest = self.readImmediateJumpTarget(i) orelse null;
                     if (dest) |target_pc| {
                         if (target_pc >= self.len()) return error.InvalidJumpDestination;
-                        if ((self.is_jumpdest[std.math.shr(u32, target_pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(target_pc & BITMAP_MASK))) == 0) {
+                        if ((self.is_jumpdest[std.math.shr(u32, target_pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(target_pc & BITMAP_MASK)))) == 0) {
                             return error.InvalidJumpDestination;
                         }
                     }
@@ -734,7 +734,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     const dest = self.readImmediateJumpiTarget(i) orelse null;
                     if (dest) |target_pc| {
                         if (target_pc >= self.len()) return error.InvalidJumpDestination;
-                        if ((self.is_jumpdest[std.math.shr(u32, target_pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(target_pc & BITMAP_MASK))) == 0) {
+                        if ((self.is_jumpdest[std.math.shr(u32, target_pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(target_pc & BITMAP_MASK)))) == 0) {
                             return error.InvalidJumpDestination;
                         }
                     }
@@ -747,7 +747,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         fn readImmediateJumpTarget_DEPRECATED(self: *Self, i: PcType) ?PcType {
             var j: PcType = 0;
             while (j < i) {
-                if ((self.is_op_start[std.math.shr(u32, j, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(j & BITMAP_MASK))) != 0) {
+                if ((self.is_op_start[std.math.shr(u32, j, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(j & BITMAP_MASK)))) != 0) {
                     const prev_op = self.runtime_code[j];
                     if (prev_op >= @intFromEnum(Opcode.PUSH1) and prev_op <= @intFromEnum(Opcode.PUSH32)) {
                         const size = self.getInstructionSize(j);
@@ -771,7 +771,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var j: PcType = 0;
             var second_push_start: ?PcType = null;
             while (j < i) : (j += 1) {
-                if ((self.is_op_start[std.math.shr(u32, j, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(j & BITMAP_MASK))) != 0) {
+                if ((self.is_op_start[std.math.shr(u32, j, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(j & BITMAP_MASK)))) != 0) {
                     const op = self.runtime_code[j];
                     if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                         if (j + self.getInstructionSize(j) == second_push_end) {
@@ -787,7 +787,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var k: PcType = 0;
             var first_push_start: ?PcType = null;
             while (k < second_start) : (k += 1) {
-                if ((self.is_op_start[std.math.shr(u32, k, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(k & BITMAP_MASK))) != 0) {
+                if ((self.is_op_start[std.math.shr(u32, k, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(k & BITMAP_MASK)))) != 0) {
                     const op = self.runtime_code[k];
                     if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                         if (k + self.getInstructionSize(k) == second_start) {
@@ -1104,7 +1104,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     });
                 }
 
-                if ((self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @intCast(i & BITMAP_MASK))) == 0) {
+                if ((self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)))) == 0) {
                     i += 1;
                     continue;
                 }
