@@ -504,6 +504,33 @@ pub fn build(b: *std.Build) void {
         erc20_mint_step.dependOn(&run_erc20_mint_test.step);
     }
 
+    // ERC20 transfer test
+    {
+        const erc20_transfer_test = b.addTest(.{
+            .name = "erc20_transfer_test",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/evm/erc20_transfer_test.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+
+        erc20_transfer_test.root_module.addImport("evm", modules.evm_mod);
+        erc20_transfer_test.root_module.addImport("primitives", modules.primitives_mod);
+        erc20_transfer_test.root_module.addImport("crypto", modules.crypto_mod);
+        erc20_transfer_test.root_module.addImport("build_options", config.options_mod);
+        
+        // Link required libraries
+        erc20_transfer_test.linkLibrary(c_kzg_lib);
+        erc20_transfer_test.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| erc20_transfer_test.linkLibrary(bn254);
+        erc20_transfer_test.linkLibC();
+        
+        const run_erc20_transfer_test = b.addRunArtifact(erc20_transfer_test);
+        const erc20_transfer_step = b.step("test-erc20-transfer", "Run ERC20 transfer test");
+        erc20_transfer_step.dependOn(&run_erc20_transfer_test.step);
+    }
+
     // CODECOPY+RETURN test
     {
         const codecopy_test = b.addTest(.{
