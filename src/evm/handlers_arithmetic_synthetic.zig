@@ -135,78 +135,87 @@ const test_config = FrameConfig{
 
 const TestFrame = Frame(test_config);
 const TestBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config.max_bytecode_size });
+const Address = @import("primitives").Address.Address;
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const bytecode = TestBytecode.initEmpty();
-    return try TestFrame.init(allocator, bytecode, 1_000_000, null, null);
+    const database = try MemoryDatabase.init(allocator);
+    const value = try allocator.create(u256);
+    value.* = 0;
+    const block_info = TestFrame.BlockInfo.init();
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, block_info, @ptrFromInt(1), null);
+    // Initialize empty bytecode
+    const empty_code = &[_]u8{};
+    frame.bytecode = try TestBytecode.init(allocator, empty_code);
+    return frame;
 }
 
-// Helper to create dispatch with inline metadata
-fn createInlineDispatch(value: u256) TestFrame.Dispatch {
-    const mock_handler = struct {
-        fn handler(frame: TestFrame, dispatch: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
-            _ = frame;
-            _ = dispatch;
-            return TestFrame.Success.stop;
-        }
-    }.handler;
-
-    var cursor: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
-    cursor[0] = .{ .opcode_handler = &mock_handler };
-    cursor[1] = .{ .opcode_handler = &mock_handler };
-
-    cursor[0].metadata = .{ .inline_value = value };
-
-    return TestFrame.Dispatch{
-        .cursor = &cursor,
-        .bytecode_length = 0,
-    };
+fn destroyTestFrame(frame: *TestFrame, allocator: std.mem.Allocator) void {
+    if (frame.bytecode) |*bc| bc.deinit();
+    frame.database.deinit();
+    allocator.destroy(@ptrCast(@alignCast(frame.value)));
+    frame.deinit(allocator);
 }
 
-// Helper to create dispatch with pointer metadata
-fn createPointerDispatch(value: *const u256) TestFrame.Dispatch {
-    const mock_handler = struct {
-        fn handler(frame: TestFrame, dispatch: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
-            _ = frame;
-            _ = dispatch;
-            return TestFrame.Success.stop;
-        }
-    }.handler;
+// Test helpers to create proper dispatch items
+var test_cursor_storage: [3]TestFrame.Dispatch.Item = undefined;
+var test_value_storage: u256 = undefined;
 
-    var cursor: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
-    cursor[0] = .{ .opcode_handler = &mock_handler };
-    cursor[1] = .{ .opcode_handler = &mock_handler };
+fn stopHandler(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+    _ = frame;
+    _ = cursor;
+    return TestFrame.Error.Stop;
+}
 
-    cursor[0].metadata = .{ .pointer_value = value };
+fn createTestCursorInline(value: u256) [*]TestFrame.Dispatch.Item {
+    // Store value as u64 (truncating for inline metadata)
+    const inline_value = @as(u64, @truncate(value));
+    
+    test_cursor_storage[0] = .{ .opcode_handler = undefined }; // Will be set by caller
+    test_cursor_storage[1] = .{ .push_inline = .{ .value = inline_value } };
+    test_cursor_storage[2] = .{ .opcode_handler = &stopHandler };
+    
+    return &test_cursor_storage;
+}
 
-    return TestFrame.Dispatch{
-        .cursor = &cursor,
-        .bytecode_length = 0,
-    };
+fn createTestCursorPointer(value: u256) [*]TestFrame.Dispatch.Item {
+    test_value_storage = value;
+    
+    test_cursor_storage[0] = .{ .opcode_handler = undefined }; // Will be set by caller
+    test_cursor_storage[1] = .{ .push_pointer = .{ .value = &test_value_storage } };
+    test_cursor_storage[2] = .{ .opcode_handler = &stopHandler };
+    
+    return &test_cursor_storage;
 }
 
 test "PUSH_ADD_INLINE - basic addition" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Stack: [10], then PUSH 5 + ADD = 15
     try frame.stack.push(10);
 
-    const dispatch = createInlineDispatch(5);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_add_inline(frame, dispatch);
+    const cursor = createTestCursorInline(5);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_add_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 15), try frame.stack.pop());
 }
 
 test "PUSH_ADD_POINTER - large value addition" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     const large_value = std.math.maxInt(u256) - 100;
     try frame.stack.push(50);
 
-    const dispatch = createPointerDispatch(&large_value);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_add_pointer(frame, dispatch);
+    const cursor = createTestCursorPointer(large_value);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_pointer;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_add_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     // Should wrap around
     try testing.expectEqual(@as(u256, std.math.maxInt(u256) - 50), try frame.stack.pop());
@@ -214,36 +223,45 @@ test "PUSH_ADD_POINTER - large value addition" {
 
 test "PUSH_MUL_INLINE - multiplication" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     try frame.stack.push(7);
 
-    const dispatch = createInlineDispatch(6);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(frame, dispatch);
+    const cursor = createTestCursorInline(6);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 42), try frame.stack.pop());
 }
 
 test "PUSH_DIV_INLINE - division" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     try frame.stack.push(100);
 
-    const dispatch = createInlineDispatch(4);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_div_inline(frame, dispatch);
+    const cursor = createTestCursorInline(4);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_div_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 25), try frame.stack.pop());
 }
 
 test "PUSH_DIV_INLINE - division by zero" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     try frame.stack.push(42);
 
-    const dispatch = createInlineDispatch(0);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_div_inline(frame, dispatch);
+    const cursor = createTestCursorInline(0);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_div_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     // EVM spec: division by zero returns 0
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -251,24 +269,30 @@ test "PUSH_DIV_INLINE - division by zero" {
 
 test "PUSH_SUB_INLINE - subtraction" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     try frame.stack.push(100);
 
-    const dispatch = createInlineDispatch(30);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(frame, dispatch);
+    const cursor = createTestCursorInline(30);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 70), try frame.stack.pop());
 }
 
 test "PUSH_SUB_INLINE - underflow" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     try frame.stack.push(10);
 
-    const dispatch = createInlineDispatch(20);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(frame, dispatch);
+    const cursor = createTestCursorInline(20);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     // Should wrap around
     try testing.expectEqual(std.math.maxInt(u256) - 9, try frame.stack.pop());
@@ -276,147 +300,182 @@ test "PUSH_SUB_INLINE - underflow" {
 
 test "synthetic arithmetic - all pointer variants" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test PUSH_MUL_POINTER
     const mul_value: u256 = 1000;
     try frame.stack.push(5);
-    var dispatch = createPointerDispatch(&mul_value);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer(frame, dispatch);
+    var cursor = createTestCursorPointer(mul_value);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer;
+    var result = TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 5000), try frame.stack.pop());
 
     // Test PUSH_DIV_POINTER
     const div_value: u256 = 8;
     try frame.stack.push(64);
-    dispatch = createPointerDispatch(&div_value);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_div_pointer(frame, dispatch);
+    cursor = createTestCursorPointer(div_value);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_pointer;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_div_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 8), try frame.stack.pop());
 
     // Test PUSH_SUB_POINTER
     const sub_value: u256 = 150;
     try frame.stack.push(200);
-    dispatch = createPointerDispatch(&sub_value);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer(frame, dispatch);
+    cursor = createTestCursorPointer(sub_value);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 50), try frame.stack.pop());
 }
 
 test "PUSH_ADD_INLINE - overflow wrapping" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test: MAX + 1 = 0 (wraps around)
     const max = std.math.maxInt(u256);
     try frame.stack.push(max);
 
-    const dispatch = createInlineDispatch(1);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_add_inline(frame, dispatch);
+    const cursor = createTestCursorInline(1);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_add_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
 
 test "PUSH_MUL_INLINE - overflow wrapping" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test: MAX * 2 = MAX - 1 (overflow wraps)
     const max = std.math.maxInt(u256);
     try frame.stack.push(max);
 
-    const dispatch = createInlineDispatch(2);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(frame, dispatch);
+    const cursor = createTestCursorInline(2);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_inline;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(max - 1, try frame.stack.pop());
 }
 
 test "PUSH_SUB_POINTER - underflow wrapping" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test: 5 - 10 = MAX - 4 (underflow wraps)
     const sub_value: u256 = 10;
     try frame.stack.push(5);
 
-    const dispatch = createPointerDispatch(&sub_value);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer(frame, dispatch);
+    const cursor = createTestCursorPointer(sub_value);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(std.math.maxInt(u256) - 4, try frame.stack.pop());
 }
 
 test "PUSH_DIV_POINTER - division by zero" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test: 42 / 0 = 0 (EVM specification)
     const zero_value: u256 = 0;
     try frame.stack.push(42);
 
-    const dispatch = createPointerDispatch(&zero_value);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_div_pointer(frame, dispatch);
+    const cursor = createTestCursorPointer(zero_value);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_pointer;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_div_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
 
 test "PUSH_MUL_POINTER - large value multiplication" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test: (2^128) * (2^128) = 0 (overflow wraps)
     const large: u256 = @as(u256, 1) << 128;
     try frame.stack.push(large);
 
-    const dispatch = createPointerDispatch(&large);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer(frame, dispatch);
+    const cursor = createTestCursorPointer(large);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer;
+    
+    const result = TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
 
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
 
 test "synthetic arithmetic - maximum value operations" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     const max = std.math.maxInt(u256);
 
     // Test PUSH_ADD with maximum values
     try frame.stack.push(max);
-    var dispatch = createInlineDispatch(max);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_add_inline(frame, dispatch);
+    var cursor = createTestCursorInline(@truncate(max));
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_inline;
+    var result = TestFrame.ArithmeticSyntheticHandlers.push_add_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(max - 1, try frame.stack.pop());
 
     // Test PUSH_SUB with maximum values
     try frame.stack.push(max);
-    dispatch = createInlineDispatch(max);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(frame, dispatch);
+    cursor = createTestCursorInline(@truncate(max));
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_inline;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 
     // Test PUSH_DIV with maximum values
     try frame.stack.push(max);
-    dispatch = createInlineDispatch(max);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_div_inline(frame, dispatch);
+    cursor = createTestCursorInline(@truncate(max));
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_inline;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_div_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
 }
 
 test "synthetic arithmetic - zero operations" {
     var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
+    defer destroyTestFrame(&frame, testing.allocator);
 
     // Test all operations with zero
     try frame.stack.push(0);
-    var dispatch = createInlineDispatch(42);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_add_inline(frame, dispatch);
+    var cursor = createTestCursorInline(42);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_inline;
+    var result = TestFrame.ArithmeticSyntheticHandlers.push_add_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 42), try frame.stack.pop());
 
     try frame.stack.push(0);
-    dispatch = createInlineDispatch(42);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(frame, dispatch);
+    cursor = createTestCursorInline(42);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_inline;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 
     try frame.stack.push(0);
-    dispatch = createInlineDispatch(42);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(frame, dispatch);
+    cursor = createTestCursorInline(42);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_inline;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(std.math.maxInt(u256) - 41, try frame.stack.pop());
 
     try frame.stack.push(0);
-    dispatch = createInlineDispatch(42);
-    _ = try TestFrame.ArithmeticSyntheticHandlers.push_div_inline(frame, dispatch);
+    cursor = createTestCursorInline(42);
+    cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_inline;
+    result = TestFrame.ArithmeticSyntheticHandlers.push_div_inline(&frame, cursor);
+    try testing.expectError(TestFrame.Error.Stop, result);
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }

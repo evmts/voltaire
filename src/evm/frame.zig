@@ -134,6 +134,12 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const StorageHandlers = @import("handlers_storage.zig").Handlers(Self);
         pub const SystemHandlers = @import("handlers_system.zig").Handlers(Self);
 
+        // Synthetic handler groups for optimized opcode fusion
+        pub const ArithmeticSyntheticHandlers = @import("handlers_arithmetic_synthetic.zig").Handlers(Self);
+        pub const BitwiseSyntheticHandlers = @import("handlers_bitwise_synthetic.zig").Handlers(Self);
+        pub const MemorySyntheticHandlers = @import("handlers_memory_synthetic.zig").Handlers(Self);
+        pub const JumpSyntheticHandlers = @import("handlers_jump_synthetic.zig").Handlers(Self);
+
         // CACHE LINE 1 (0-63 bytes) - ULTRA HOT PATH
         stack: Stack, // 16B - Stack operations
         gas_remaining: GasType, // 8B - Gas tracking (i64)

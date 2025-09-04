@@ -116,8 +116,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
         pub fn push_mstore_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
-            // REMOVED getOpData call - direct metadata access insteadPUSH_MSTORE_POINTER });
-            const offset = cursor[1].push_inline.value;
+            const offset = cursor[1].push_pointer.value.*;
 
             // Pop the value to store
             const value = self.stack.pop_unsafe();
@@ -152,7 +151,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores the least significant byte.
         pub fn push_mstore8_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
-            // REMOVED getOpData call - direct metadata access insteadPUSH_MSTORE8_INLINE });
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
@@ -187,8 +185,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
         pub fn push_mstore8_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
-            // REMOVED getOpData call - direct metadata access insteadPUSH_MSTORE8_POINTER });
-            const offset = cursor[1].push_inline.value;
+            const offset = cursor[1].push_pointer.value.*;
 
             // Pop the value to store
             const value = self.stack.pop_unsafe();

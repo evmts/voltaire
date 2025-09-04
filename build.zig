@@ -552,6 +552,32 @@ pub fn build(b: *std.Build) void {
         codecopy_step.dependOn(&run_codecopy_test.step);
     }
 
+    // Synthetic opcodes tests
+    {
+        const synthetic_test = b.addTest(.{
+            .name = "synthetic_opcodes_test",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/evm/test_synthetic_opcodes.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        
+        // Add module imports needed by the test
+        synthetic_test.root_module.addImport("primitives", modules.primitives_mod);
+        synthetic_test.root_module.addImport("crypto", modules.crypto_mod);
+        synthetic_test.root_module.addImport("build_options", config.options_mod);
+        
+        synthetic_test.linkLibrary(c_kzg_lib);
+        synthetic_test.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| synthetic_test.linkLibrary(bn254);
+        synthetic_test.linkLibC();
+        
+        const run_synthetic_test = b.addRunArtifact(synthetic_test);
+        const synthetic_step = b.step("test-synthetic", "Test synthetic opcodes");
+        synthetic_step.dependOn(&run_synthetic_test.step);
+    }
+
     // Language bindings
     build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
     build_pkg.PythonBindings.createPythonSteps(b);
