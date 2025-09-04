@@ -2,8 +2,8 @@ const std = @import("std");
 const evm = @import("root.zig");
 const primitives = @import("primitives");
 const log = @import("log.zig");
-const CallParams = @import("call_params.zig").CallParams;
-const CallResult = @import("call_result.zig").CallResult;
+const CallParams = @import("call_params.zig").CallParams({});
+const CallResult = @import("call_result.zig").CallResult({});
 const revm = @import("revm");
 
 /// Configuration for differential testing
