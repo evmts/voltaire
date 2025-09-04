@@ -1,5 +1,11 @@
-/// Call result structure for EVM calls
-pub const CallResult = struct {
+/// Creates a CallResult type specialized for the given EVM configuration.
+/// This allows the CallResult structure to be adapted based on configuration
+/// while maintaining backward compatibility with existing code.
+pub fn CallResult(comptime config: anytype) type {
+    // We can add config-specific customizations here in the future
+    _ = config; // Currently unused but reserved for future enhancements
+    
+    return struct {
     success: bool,
     gas_left: u64,
     output: []const u8,
@@ -18,8 +24,8 @@ pub const CallResult = struct {
     created_address: ?Address = null,
 
     /// Create a successful call result
-    pub fn success_with_output(gas_left: u64, output: []const u8) CallResult {
-        return CallResult{
+    pub fn success_with_output(gas_left: u64, output: []const u8) @This() {
+        return @This(){
             .success = true,
             .gas_left = gas_left,
             .output = output,
@@ -31,8 +37,8 @@ pub const CallResult = struct {
     }
 
     /// Create a successful call result with empty output
-    pub fn success_empty(gas_left: u64) CallResult {
-        return CallResult{
+    pub fn success_empty(gas_left: u64) @This() {
+        return @This(){
             .success = true,
             .gas_left = gas_left,
             .output = &[_]u8{},
@@ -44,8 +50,8 @@ pub const CallResult = struct {
     }
 
     /// Create a failed call result
-    pub fn failure(gas_left: u64) CallResult {
-        return CallResult{
+    pub fn failure(gas_left: u64) @This() {
+        return @This(){
             .success = false,
             .gas_left = gas_left,
             .output = &[_]u8{},
@@ -57,8 +63,8 @@ pub const CallResult = struct {
     }
 
     /// Create a failed call result with error info
-    pub fn failure_with_error(gas_left: u64, error_info: []const u8) CallResult {
-        return CallResult{
+    pub fn failure_with_error(gas_left: u64, error_info: []const u8) @This() {
+        return @This(){
             .success = false,
             .gas_left = gas_left,
             .output = &[_]u8{},
@@ -71,8 +77,8 @@ pub const CallResult = struct {
     }
 
     /// Create a reverted call result with revert data
-    pub fn revert_with_data(gas_left: u64, revert_data: []const u8) CallResult {
-        return CallResult{
+    pub fn revert_with_data(gas_left: u64, revert_data: []const u8) @This() {
+        return @This(){
             .success = false,
             .gas_left = gas_left,
             .output = revert_data,
@@ -84,8 +90,8 @@ pub const CallResult = struct {
     }
 
     /// Create a successful call result with output and logs
-    pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) CallResult {
-        return CallResult{
+    pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) @This() {
+        return @This(){
             .success = true,
             .gas_left = gas_left,
             .output = output,
@@ -97,29 +103,29 @@ pub const CallResult = struct {
     }
 
     /// Check if the call succeeded
-    pub fn isSuccess(self: CallResult) bool {
+    pub fn isSuccess(self: @This()) bool {
         return self.success;
     }
 
     /// Check if the call failed
-    pub fn isFailure(self: CallResult) bool {
+    pub fn isFailure(self: @This()) bool {
         return !self.success;
     }
 
     /// Check if the call has output data
-    pub fn hasOutput(self: CallResult) bool {
+    pub fn hasOutput(self: @This()) bool {
         return self.output.len > 0;
     }
 
     /// Get the amount of gas consumed (assuming original_gas was provided)
-    pub fn gasConsumed(self: CallResult, original_gas: u64) u64 {
+    pub fn gasConsumed(self: @This(), original_gas: u64) u64 {
         if (self.gas_left > original_gas) return 0; // Sanity check
         return original_gas - self.gas_left;
     }
 
     /// Clean up all memory associated with logs
     /// Must be called when CallResult contains owned log data
-    pub fn deinitLogs(self: *CallResult, allocator: std.mem.Allocator) void {
+    pub fn deinitLogs(self: *@This(), allocator: std.mem.Allocator) void {
         for (self.logs) |log| {
             allocator.free(log.topics);
             allocator.free(log.data);
@@ -140,7 +146,7 @@ pub const CallResult = struct {
 
     /// Clean up all allocated memory in the CallResult
     /// Call this when the CallResult contains owned data that needs to be freed
-    pub fn deinit(self: *CallResult, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         // Free output buffer if it's allocated
         if (self.output.len > 0) {
             allocator.free(self.output);
@@ -193,12 +199,17 @@ pub const CallResult = struct {
         self.trace = null;
         self.error_info = null;
     }
-};
+    };
+}
 
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+
+// Default configuration for backward compatibility and tests
+const default_config = struct {};
+const DefaultCallResult = CallResult(default_config);
 
 /// Log entry structure for EVM events
 pub const Log = struct {
@@ -286,7 +297,7 @@ pub const ExecutionTrace = struct {
 
 test "call result success creation" {
     const output_data = &[_]u8{ 0x01, 0x02, 0x03, 0x04 };
-    const result = CallResult.success_with_output(15000, output_data);
+    const result = DefaultCallResult.success_with_output(15000, output_data);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(u64, 15000), result.gas_left);
@@ -297,7 +308,7 @@ test "call result success creation" {
 }
 
 test "call result success empty" {
-    const result = CallResult.success_empty(8000);
+    const result = DefaultCallResult.success_empty(8000);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(u64, 8000), result.gas_left);
@@ -308,7 +319,7 @@ test "call result success empty" {
 }
 
 test "call result failure" {
-    const result = CallResult.failure(500);
+    const result = DefaultCallResult.failure(500);
 
     try std.testing.expect(!result.success);
     try std.testing.expectEqual(@as(u64, 500), result.gas_left);
@@ -320,7 +331,7 @@ test "call result failure" {
 
 test "call result revert with data" {
     const revert_data = "Error: insufficient balance";
-    const result = CallResult.revert_with_data(3000, revert_data);
+    const result = DefaultCallResult.revert_with_data(3000, revert_data);
 
     try std.testing.expect(!result.success);
     try std.testing.expectEqual(@as(u64, 3000), result.gas_left);
@@ -334,83 +345,83 @@ test "call result gas consumption calculation" {
     const original_gas: u64 = 21000;
 
     // Successful call that consumed some gas
-    const success_result = CallResult.success_empty(18500);
+    const success_result = DefaultCallResult.success_empty(18500);
     try std.testing.expectEqual(@as(u64, 2500), success_result.gasConsumed(original_gas));
 
     // Failed call that consumed most gas
-    const failed_result = CallResult.failure(100);
+    const failed_result = DefaultCallResult.failure(100);
     try std.testing.expectEqual(@as(u64, 20900), failed_result.gasConsumed(original_gas));
 
     // Edge case: gas_left equals original_gas (no consumption)
-    const no_consumption = CallResult.success_empty(original_gas);
+    const no_consumption = DefaultCallResult.success_empty(original_gas);
     try std.testing.expectEqual(@as(u64, 0), no_consumption.gasConsumed(original_gas));
 
     // Edge case: gas_left > original_gas (invalid state)
-    const invalid_result = CallResult.success_empty(25000);
+    const invalid_result = DefaultCallResult.success_empty(25000);
     try std.testing.expectEqual(@as(u64, 0), invalid_result.gasConsumed(original_gas));
 }
 
 test "call result state checks" {
     // Success cases
-    const success1 = CallResult.success_empty(1000);
+    const success1 = DefaultCallResult.success_empty(1000);
     try std.testing.expect(success1.isSuccess());
     try std.testing.expect(!success1.isFailure());
 
-    const success2 = CallResult.success_with_output(2000, &[_]u8{0xff});
+    const success2 = DefaultCallResult.success_with_output(2000, &[_]u8{0xff});
     try std.testing.expect(success2.isSuccess());
     try std.testing.expect(!success2.isFailure());
 
     // Failure cases
-    const failure1 = CallResult.failure(500);
+    const failure1 = DefaultCallResult.failure(500);
     try std.testing.expect(!failure1.isSuccess());
     try std.testing.expect(failure1.isFailure());
 
-    const failure2 = CallResult.revert_with_data(300, "revert reason");
+    const failure2 = DefaultCallResult.revert_with_data(300, "revert reason");
     try std.testing.expect(!failure2.isSuccess());
     try std.testing.expect(failure2.isFailure());
 }
 
 test "call result output checks" {
     // No output cases
-    const empty1 = CallResult.success_empty(1000);
+    const empty1 = DefaultCallResult.success_empty(1000);
     try std.testing.expect(!empty1.hasOutput());
 
-    const empty2 = CallResult.failure(500);
+    const empty2 = DefaultCallResult.failure(500);
     try std.testing.expect(!empty2.hasOutput());
 
     // With output cases
-    const with_output1 = CallResult.success_with_output(2000, &[_]u8{0x42});
+    const with_output1 = DefaultCallResult.success_with_output(2000, &[_]u8{0x42});
     try std.testing.expect(with_output1.hasOutput());
 
-    const with_output2 = CallResult.revert_with_data(300, "error message");
+    const with_output2 = DefaultCallResult.revert_with_data(300, "error message");
     try std.testing.expect(with_output2.hasOutput());
 }
 
 test "call result edge cases" {
     // Zero gas left
-    const zero_gas = CallResult.success_empty(0);
+    const zero_gas = DefaultCallResult.success_empty(0);
     try std.testing.expect(zero_gas.isSuccess());
     try std.testing.expectEqual(@as(u64, 0), zero_gas.gas_left);
     try std.testing.expectEqual(@as(u64, 21000), zero_gas.gasConsumed(21000));
 
     // Maximum gas left
-    const max_gas = CallResult.success_empty(std.math.maxInt(u64));
+    const max_gas = DefaultCallResult.success_empty(std.math.maxInt(u64));
     try std.testing.expectEqual(std.math.maxInt(u64), max_gas.gas_left);
     try std.testing.expectEqual(@as(u64, 0), max_gas.gasConsumed(std.math.maxInt(u64)));
 
     // Large output data
     const large_output = &[_]u8{0xaa} ** 10000;
-    const large_result = CallResult.success_with_output(5000, large_output);
+    const large_result = DefaultCallResult.success_with_output(5000, large_output);
     try std.testing.expect(large_result.hasOutput());
     try std.testing.expectEqual(@as(usize, 10000), large_result.output.len);
 
     // Empty revert data (still counts as having output)
-    const empty_revert = CallResult.revert_with_data(1000, &[_]u8{});
+    const empty_revert = DefaultCallResult.revert_with_data(1000, &[_]u8{});
     try std.testing.expect(!empty_revert.hasOutput());
     try std.testing.expect(empty_revert.isFailure());
 }
 
-test "CallResult log memory management - proper cleanup" {
+test "DefaultCallResult log memory management - proper cleanup" {
     const testing = std.testing;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
@@ -442,13 +453,13 @@ test "CallResult log memory management - proper cleanup" {
     };
 
     // Create CallResult with logs
-    var call_result = CallResult.success_with_logs(50000, &[_]u8{}, logs);
+    var call_result = DefaultCallResult.success_with_logs(50000, &[_]u8{}, logs);
 
     // This should properly clean up all allocated memory
     call_result.deinitLogs(allocator);
 }
 
-test "CallResult deinitLogsSlice - memory management for takeLogs result" {
+test "DefaultCallResult deinitLogsSlice - memory management for takeLogs result" {
     const testing = std.testing;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
@@ -480,12 +491,12 @@ test "CallResult deinitLogsSlice - memory management for takeLogs result" {
     };
 
     // This should properly clean up all memory including individual log data
-    CallResult.deinitLogsSlice(logs, allocator);
+    DefaultCallResult.deinitLogsSlice(logs, allocator);
 }
 
 test "call result failure with error info" {
     const error_message = "Contract execution reverted";
-    const result = CallResult.failure_with_error(1500, error_message);
+    const result = DefaultCallResult.failure_with_error(1500, error_message);
 
     try std.testing.expect(!result.success);
     try std.testing.expectEqual(@as(u64, 1500), result.gas_left);
@@ -514,7 +525,7 @@ test "call result success with logs" {
     };
 
     const output_data = &[_]u8{ 0xAA, 0xBB, 0xCC };
-    const result = CallResult.success_with_logs(12000, output_data, logs);
+    const result = DefaultCallResult.success_with_logs(12000, output_data, logs);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(u64, 12000), result.gas_left);
@@ -529,7 +540,7 @@ test "call result success with logs" {
 
 test "call result struct field defaults" {
     // Test that default fields are correctly initialized
-    const result = CallResult.success_empty(5000);
+    const result = DefaultCallResult.success_empty(5000);
 
     try std.testing.expectEqual(@as(usize, 0), result.logs.len);
     try std.testing.expectEqual(@as(usize, 0), result.selfdestructs.len);
@@ -551,7 +562,7 @@ test "call result with self destructs" {
         },
     };
 
-    var result = CallResult.success_empty(8000);
+    var result = DefaultCallResult.success_empty(8000);
     result.selfdestructs = &selfdestructs;
 
     try std.testing.expectEqual(@as(usize, 2), result.selfdestructs.len);
@@ -568,7 +579,7 @@ test "call result with accessed addresses" {
         [_]u8{0xCC} ++ [_]u8{0} ** 19,
     };
 
-    var result = CallResult.failure(200);
+    var result = DefaultCallResult.failure(200);
     result.accessed_addresses = &accessed_addresses;
 
     try std.testing.expectEqual(@as(usize, 3), result.accessed_addresses.len);
@@ -589,7 +600,7 @@ test "call result with accessed storage" {
         },
     };
 
-    var result = CallResult.success_empty(9500);
+    var result = DefaultCallResult.success_empty(9500);
     result.accessed_storage = &accessed_storage;
 
     try std.testing.expectEqual(@as(usize, 2), result.accessed_storage.len);
@@ -673,27 +684,27 @@ test "trace step memory management" {
 
 test "call result gas consumption edge cases" {
     // Test integer overflow protection
-    const result1 = CallResult.success_empty(std.math.maxInt(u64));
+    const result1 = DefaultCallResult.success_empty(std.math.maxInt(u64));
     try std.testing.expectEqual(@as(u64, 0), result1.gasConsumed(1000));
 
     // Test maximum possible consumption
-    const result2 = CallResult.success_empty(0);
+    const result2 = DefaultCallResult.success_empty(0);
     try std.testing.expectEqual(std.math.maxInt(u64), result2.gasConsumed(std.math.maxInt(u64)));
 
     // Test exact consumption
-    const result3 = CallResult.failure(12345);
+    const result3 = DefaultCallResult.failure(12345);
     try std.testing.expectEqual(@as(u64, 8655), result3.gasConsumed(21000));
 }
 
 test "call result comprehensive constructor coverage" {
     // Test all constructor methods
-    const constructors = [_]CallResult{
-        CallResult.success_with_output(1000, &[_]u8{0x01}),
-        CallResult.success_empty(2000),
-        CallResult.failure(3000),
-        CallResult.failure_with_error(4000, "test error"),
-        CallResult.revert_with_data(5000, "revert reason"),
-        CallResult.success_with_logs(6000, &[_]u8{0x02}, &[_]Log{}),
+    const constructors = [_]DefaultCallResult{
+        DefaultCallResult.success_with_output(1000, &[_]u8{0x01}),
+        DefaultCallResult.success_empty(2000),
+        DefaultCallResult.failure(3000),
+        DefaultCallResult.failure_with_error(4000, "test error"),
+        DefaultCallResult.revert_with_data(5000, "revert reason"),
+        DefaultCallResult.success_with_logs(6000, &[_]u8{0x02}, &[_]Log{}),
     };
 
     // Verify all constructors work properly
@@ -712,7 +723,7 @@ test "call result empty logs slice cleanup" {
 
     // Test cleanup of empty logs slice
     const empty_logs = try allocator.alloc(Log, 0);
-    CallResult.deinitLogsSlice(empty_logs, allocator);
+    DefaultCallResult.deinitLogsSlice(empty_logs, allocator);
 
     // Should not crash or leak
 }

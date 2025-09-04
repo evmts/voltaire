@@ -14,7 +14,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn pop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = try self.stack.pop();
-            const op_data = dispatch.getOpData(.{ .regular = .POP });
+            const op_data = dispatch.getOpData(.POP);
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 
@@ -22,7 +22,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn push0(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             try self.stack.push(0);
-            const op_data = dispatch.getOpData(.{ .regular = .PUSH0 });
+            const op_data = dispatch.getOpData(.PUSH0);
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 
@@ -33,7 +33,6 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
-                    const Opcode = @import("opcode_data.zig").Opcode;
                     
                     // // Log entry state at error level to be visible
                     // log.err("PUSH{} ENTRY: stack_size={}, stack_ptr={*}", .{
@@ -42,48 +41,44 @@ pub fn Handlers(comptime FrameType: type) type {
                     //     self.stack.stack_ptr
                     // });
                     
-                    // Map push_n to the corresponding PUSH opcode
-                    const push_opcode = comptime blk: {
-                        break :blk switch (push_n) {
-                            1 => Opcode.PUSH1,
-                            2 => Opcode.PUSH2,
-                            3 => Opcode.PUSH3,
-                            4 => Opcode.PUSH4,
-                            5 => Opcode.PUSH5,
-                            6 => Opcode.PUSH6,
-                            7 => Opcode.PUSH7,
-                            8 => Opcode.PUSH8,
-                            9 => Opcode.PUSH9,
-                            10 => Opcode.PUSH10,
-                            11 => Opcode.PUSH11,
-                            12 => Opcode.PUSH12,
-                            13 => Opcode.PUSH13,
-                            14 => Opcode.PUSH14,
-                            15 => Opcode.PUSH15,
-                            16 => Opcode.PUSH16,
-                            17 => Opcode.PUSH17,
-                            18 => Opcode.PUSH18,
-                            19 => Opcode.PUSH19,
-                            20 => Opcode.PUSH20,
-                            21 => Opcode.PUSH21,
-                            22 => Opcode.PUSH22,
-                            23 => Opcode.PUSH23,
-                            24 => Opcode.PUSH24,
-                            25 => Opcode.PUSH25,
-                            26 => Opcode.PUSH26,
-                            27 => Opcode.PUSH27,
-                            28 => Opcode.PUSH28,
-                            29 => Opcode.PUSH29,
-                            30 => Opcode.PUSH30,
-                            31 => Opcode.PUSH31,
-                            32 => Opcode.PUSH32,
-                            else => unreachable,
-                        };
-                    };
                     
                     // For PUSH1-PUSH8, we get push_inline metadata with u64 value
                     // For PUSH9-PUSH32, we get push_pointer metadata with *u256 value
-                    const op_data = dispatch.getOpData(.{ .regular = push_opcode });
+                    const op_data = switch (push_n) {
+                        1 => dispatch.getOpData(.PUSH1),
+                        2 => dispatch.getOpData(.PUSH2),
+                        3 => dispatch.getOpData(.PUSH3),
+                        4 => dispatch.getOpData(.PUSH4),
+                        5 => dispatch.getOpData(.PUSH5),
+                        6 => dispatch.getOpData(.PUSH6),
+                        7 => dispatch.getOpData(.PUSH7),
+                        8 => dispatch.getOpData(.PUSH8),
+                        9 => dispatch.getOpData(.PUSH9),
+                        10 => dispatch.getOpData(.PUSH10),
+                        11 => dispatch.getOpData(.PUSH11),
+                        12 => dispatch.getOpData(.PUSH12),
+                        13 => dispatch.getOpData(.PUSH13),
+                        14 => dispatch.getOpData(.PUSH14),
+                        15 => dispatch.getOpData(.PUSH15),
+                        16 => dispatch.getOpData(.PUSH16),
+                        17 => dispatch.getOpData(.PUSH17),
+                        18 => dispatch.getOpData(.PUSH18),
+                        19 => dispatch.getOpData(.PUSH19),
+                        20 => dispatch.getOpData(.PUSH20),
+                        21 => dispatch.getOpData(.PUSH21),
+                        22 => dispatch.getOpData(.PUSH22),
+                        23 => dispatch.getOpData(.PUSH23),
+                        24 => dispatch.getOpData(.PUSH24),
+                        25 => dispatch.getOpData(.PUSH25),
+                        26 => dispatch.getOpData(.PUSH26),
+                        27 => dispatch.getOpData(.PUSH27),
+                        28 => dispatch.getOpData(.PUSH28),
+                        29 => dispatch.getOpData(.PUSH29),
+                        30 => dispatch.getOpData(.PUSH30),
+                        31 => dispatch.getOpData(.PUSH31),
+                        32 => dispatch.getOpData(.PUSH32),
+                        else => unreachable,
+                    };
                     
                     if (push_n <= 8) {
                         const value = op_data.metadata.value;
@@ -108,11 +103,27 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
-                    const Opcode = @import("opcode_data.zig").Opcode;
                     try self.stack.dup_n(dup_n);
                     // DUP operations don't have metadata, just get next
-                    const dup_opcode = comptime @field(Opcode, std.fmt.comptimePrint("DUP{}", .{dup_n}));
-                    const op_data = dispatch.getOpData(.{ .regular = dup_opcode });
+                    const op_data = switch (dup_n) {
+                        1 => dispatch.getOpData(.DUP1),
+                        2 => dispatch.getOpData(.DUP2),
+                        3 => dispatch.getOpData(.DUP3),
+                        4 => dispatch.getOpData(.DUP4),
+                        5 => dispatch.getOpData(.DUP5),
+                        6 => dispatch.getOpData(.DUP6),
+                        7 => dispatch.getOpData(.DUP7),
+                        8 => dispatch.getOpData(.DUP8),
+                        9 => dispatch.getOpData(.DUP9),
+                        10 => dispatch.getOpData(.DUP10),
+                        11 => dispatch.getOpData(.DUP11),
+                        12 => dispatch.getOpData(.DUP12),
+                        13 => dispatch.getOpData(.DUP13),
+                        14 => dispatch.getOpData(.DUP14),
+                        15 => dispatch.getOpData(.DUP15),
+                        16 => dispatch.getOpData(.DUP16),
+                        else => unreachable,
+                    };
                     return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }
             }.dupHandler;
@@ -124,11 +135,27 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
-                    const Opcode = @import("opcode_data.zig").Opcode;
                     try self.stack.swap_n(swap_n);
                     // SWAP operations don't have metadata, just get next
-                    const swap_opcode = comptime @field(Opcode, std.fmt.comptimePrint("SWAP{}", .{swap_n}));
-                    const op_data = dispatch.getOpData(.{ .regular = swap_opcode });
+                    const op_data = switch (swap_n) {
+                        1 => dispatch.getOpData(.SWAP1),
+                        2 => dispatch.getOpData(.SWAP2),
+                        3 => dispatch.getOpData(.SWAP3),
+                        4 => dispatch.getOpData(.SWAP4),
+                        5 => dispatch.getOpData(.SWAP5),
+                        6 => dispatch.getOpData(.SWAP6),
+                        7 => dispatch.getOpData(.SWAP7),
+                        8 => dispatch.getOpData(.SWAP8),
+                        9 => dispatch.getOpData(.SWAP9),
+                        10 => dispatch.getOpData(.SWAP10),
+                        11 => dispatch.getOpData(.SWAP11),
+                        12 => dispatch.getOpData(.SWAP12),
+                        13 => dispatch.getOpData(.SWAP13),
+                        14 => dispatch.getOpData(.SWAP14),
+                        15 => dispatch.getOpData(.SWAP15),
+                        16 => dispatch.getOpData(.SWAP16),
+                        else => unreachable,
+                    };
                     return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                 }
             }.swapHandler;

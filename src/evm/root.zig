@@ -75,8 +75,12 @@ const block_info_mod = @import("block_info.zig");
 pub const BlockInfo = block_info_mod.DefaultBlockInfo;
 pub const CompactBlockInfo = block_info_mod.CompactBlockInfo;
 pub const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
-pub const CallParams = @import("call_params.zig").CallParams;
-pub const CallResult = @import("call_result.zig").CallResult;
+// Default types for backward compatibility
+const call_params_module = @import("call_params.zig");
+const call_result_module = @import("call_result.zig");
+const default_config = struct {};
+pub const CallParams = call_params_module.CallParams(default_config);
+pub const CallResult = call_result_module.CallResult(default_config);
 pub const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 pub const Database = @import("database.zig").Database;
 pub const Account = @import("database_interface_account.zig").Account;

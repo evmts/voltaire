@@ -103,20 +103,37 @@ pub fn Handlers(comptime FrameType: type) type {
                         .topics = topics_array,
                         .data = data_copy,
                     };
-                    self.appendLog(log_entry) catch return Error.AllocationError;
+                    self.logs.append(self.allocator, log_entry) catch return Error.AllocationError;
 
                     // Map topic_count to the appropriate LOG opcode
-                    const log_opcode = switch (topic_count) {
-                        0 => Opcode.LOG0,
-                        1 => Opcode.LOG1,
-                        2 => Opcode.LOG2,
-                        3 => Opcode.LOG3,
-                        4 => Opcode.LOG4,
+                    switch (topic_count) {
+                        0 => {
+                            const op_data = dispatch.getOpData(.LOG0);
+                            const next = op_data.next;
+                            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                        },
+                        1 => {
+                            const op_data = dispatch.getOpData(.LOG1);
+                            const next = op_data.next;
+                            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                        },
+                        2 => {
+                            const op_data = dispatch.getOpData(.LOG2);
+                            const next = op_data.next;
+                            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                        },
+                        3 => {
+                            const op_data = dispatch.getOpData(.LOG3);
+                            const next = op_data.next;
+                            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                        },
+                        4 => {
+                            const op_data = dispatch.getOpData(.LOG4);
+                            const next = op_data.next;
+                            return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                        },
                         else => unreachable,
-                    };
-                    const op_data = dispatch.getOpData(.{ .regular = log_opcode });
-                    const next = op_data.next;
-                    return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
+                    }
                 }
             }.logHandler;
         }

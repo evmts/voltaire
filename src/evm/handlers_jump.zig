@@ -88,9 +88,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn jumpdest(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Jump table not needed for JUMPDEST itself
             const dispatch = Dispatch{ .cursor = cursor };
-            const Opcode = @import("opcode_data.zig").Opcode;
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.JUMPDEST });
+            const op_data = dispatch.getOpData(.JUMPDEST);
             const gas_cost = op_data.metadata.gas;
 
             // Check and consume gas for the entire basic block
@@ -121,9 +120,8 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // Jump table not needed for PC
             const dispatch = Dispatch{ .cursor = cursor };
-            const Opcode = @import("opcode_data.zig").Opcode;
             // Get PC value from metadata
-            const op_data = dispatch.getOpData(.{ .regular = Opcode.PC });
+            const op_data = dispatch.getOpData(.PC);
 
             try self.stack.push(op_data.metadata.value);
 

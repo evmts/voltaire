@@ -17,6 +17,7 @@
 const std = @import("std");
 const log = @import("log.zig");
 const primitives = @import("primitives");
+const eips = @import("eips.zig");
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo; // Default for backward compatibility
 const Database = @import("database.zig").Database;
 const Account = @import("database_interface_account.zig").Account;
@@ -28,8 +29,8 @@ const precompiles = @import("precompiles.zig");
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
 const Opcode = @import("opcode.zig").Opcode;
-pub const CallResult: type = @import("call_result.zig").CallResult;
-pub const CallParams: type = @import("call_params.zig").CallParams;
+const call_result_module = @import("call_result.zig");
+const call_params_module = @import("call_params.zig");
 
 /// Creates a configured EVM instance type.
 ///
@@ -39,6 +40,10 @@ pub const CallParams: type = @import("call_params.zig").CallParams;
 pub fn Evm(comptime config: EvmConfig) type {
     return struct {
         const Self = @This();
+
+        // Generic types specialized for this configuration
+        pub const CallResult = call_result_module.CallResult(config);
+        pub const CallParams = call_params_module.CallParams(config);
 
         /// Frame type for the evm
         pub const Frame = @import("frame.zig").Frame(config.frame_config());
@@ -102,67 +107,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             BytecodeTooLarge,
         };
 
-        /// EIPs configuration based on hardfork
-        const EipsConfig = struct {
-            eip_2929: bool, // Access list
-            eip_3541: bool, // 0xEF prefix
-            eip_3855: bool, // PUSH0
-            eip_3860: bool, // Initcode size limit
-            eip_4844: bool, // Blob transactions
-            eip_5656: bool, // MCOPY
-            eip_6780: bool, // SELFDESTRUCT changes
-
-            pub fn fromHardfork(fork: Hardfork) EipsConfig {
-                return switch (fork) {
-                    .FRONTIER, .HOMESTEAD, .DAO, .TANGERINE_WHISTLE, .SPURIOUS_DRAGON, .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG, .ISTANBUL, .MUIR_GLACIER => .{
-                        .eip_2929 = false,
-                        .eip_3541 = false,
-                        .eip_3855 = false,
-                        .eip_3860 = false,
-                        .eip_4844 = false,
-                        .eip_5656 = false,
-                        .eip_6780 = false,
-                    },
-                    .BERLIN => .{
-                        .eip_2929 = true, // Access list
-                        .eip_3541 = false,
-                        .eip_3855 = false,
-                        .eip_3860 = false,
-                        .eip_4844 = false,
-                        .eip_5656 = false,
-                        .eip_6780 = false,
-                    },
-                    .LONDON, .ARROW_GLACIER, .GRAY_GLACIER, .MERGE => .{
-                        .eip_2929 = true,
-                        .eip_3541 = true, // 0xEF prefix
-                        .eip_3855 = false,
-                        .eip_3860 = false,
-                        .eip_4844 = false,
-                        .eip_5656 = false,
-                        .eip_6780 = false,
-                    },
-                    .SHANGHAI => .{
-                        .eip_2929 = true,
-                        .eip_3541 = true,
-                        .eip_3855 = true, // PUSH0
-                        .eip_3860 = true, // Initcode size limit
-                        .eip_4844 = false,
-                        .eip_5656 = false,
-                        .eip_6780 = false,
-                    },
-                    .CANCUN, .PRAGUE => .{
-                        .eip_2929 = true,
-                        .eip_3541 = true,
-                        .eip_3855 = true,
-                        .eip_3860 = true,
-                        .eip_4844 = true, // Blob transactions
-                        .eip_5656 = true, // MCOPY
-                        .eip_6780 = true, // SELFDESTRUCT changes
-                        // Prague adds EIP-7702 and others but they need separate implementation
-                    },
-                };
-            }
-        };
 
         // CACHE LINE 1 - HOT PATH (frequently accessed during execution)
         /// Current call depth (0 = root call)
@@ -202,7 +146,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Hardfork configuration
         hardfork_config: Hardfork,
         /// Active EIPs configuration
-        eips: EipsConfig,
+        eips: eips.Eips.EvmConfig,
         /// Disable gas checking (for testing/debugging)
         disable_gas_checking: bool,
 
@@ -265,7 +209,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .gas_price = gas_price,
                 .origin = origin,
                 .hardfork_config = hardfork_config,
-                .eips = EipsConfig.fromHardfork(hardfork_config),
+                .eips = (eips.Eips{ .hardfork = hardfork_config }).get_evm_config(),
                 .disable_gas_checking = false,
                 .current_snapshot_id = 0,
                 .logs = std.ArrayList(@import("call_result.zig").Log){},
@@ -993,7 +937,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             if (result.output.len > 0) {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
-                if (self.eips.eip_3541 and result.output[0] == 0xEF) {
+                if (self.eips.eip_3541_enabled and result.output[0] == 0xEF) {
                     // Free the allocated output memory before returning
                     self.allocator.free(result.output);
                     self.journal.revert_to_snapshot(args.snapshot_id);
@@ -1222,8 +1166,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.return_data = out_buf;
 
             // Transfer logs from frame to EVM's log list
-            const frame_logs = frame.getLogSlice();
-            for (frame_logs) |log_entry| {
+            for (frame.logs.items) |log_entry| {
                 // Create copies of the log data with the EVM's allocator
                 const topics_copy = self.allocator.dupe(u256, log_entry.topics) catch return CallResult.failure(0);
                 const data_copy = self.allocator.dupe(u8, log_entry.data) catch return CallResult.failure(0);
@@ -1279,7 +1222,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         ) !CallResult {
             // Reduce log noise for init code execution
             // Check initcode size limit (EIP-3860)
-            if (self.eips.eip_3860 and code.len > 49152) {
+            if (self.eips.eip_3860_enabled and code.len > 49152) {
                 log.debug("Init code too large: {} > 49152", .{code.len});
                 return CallResult.failure(0);
             }
@@ -1510,7 +1453,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // EIP-6780: SELFDESTRUCT only actually destroys the contract if it was created in the same transaction
             // Otherwise, it only transfers the balance but keeps the code and storage
-            if (self.eips.eip_6780) {
+            if (self.eips.eip_6780_enabled) {
                 // Check if contract was created in the current transaction
                 const created_in_tx = self.created_contracts.was_created_in_tx(contract_address);
                 
@@ -6969,7 +6912,7 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
     log.debug("First 10 bytes: {x}\n", .{init_code[0..10]});
 
     // Create the contract using CREATE (same as benchmark runner)
-    const create_params = CallParams{
+    const create_params = call_params_module.CallParams(.{}){
         .create = .{
             .caller = caller_address,
             .value = 0,
