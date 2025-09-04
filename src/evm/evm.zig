@@ -306,6 +306,32 @@ pub fn Evm(comptime config: EvmConfig) type {
             try self.database.set_account(to.bytes, to_account);
         }
 
+        /// Simulate an EVM operation without committing state changes.
+        ///
+        /// Executes exactly like `call()` but reverts all state changes at the end,
+        /// returning the result as if the call had been executed. Useful for
+        /// gas estimation, testing outcomes, or previewing transaction effects.
+        pub fn simulate(self: *Self, params: CallParams) CallResult {
+            // Create a snapshot before execution
+            const snapshot_id = self.journal.create_snapshot();
+            
+            // For top-level simulations, we need to clear the access list
+            // to ensure consistent gas costs across multiple simulations
+            const is_top_level = self.depth == 0;
+            if (is_top_level) {
+                self.access_list.clear();
+            }
+            
+            // Always revert database state changes
+            defer {
+                self.revert_to_snapshot(snapshot_id);  // Use EVM's revert method, not journal's
+            }
+            
+            // Execute the call normally and return its result
+            // Note: call() will also try to clear for top-level, but that's OK - clearing twice is safe
+            return self.call(params);
+        }
+
         /// Execute an EVM operation.
         ///
         /// This is the main entry point that routes to specific handlers based
@@ -316,19 +342,32 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Only reset state for top-level calls (depth == 0)
             const is_top_level = self.depth == 0;
-            defer if (is_top_level) {
-                self.depth = 0;
-                _ = self.call_arena.reset(.retain_capacity);
-                self.logs.clearRetainingCapacity();
-                // Reset all per-transaction state
+            
+            // Reset per-transaction state at the START of each new transaction
+            if (is_top_level) {
+                // Clear access list for new transaction (EIP-2929)
+                self.access_list.clear();
+                // Clear journal for new transaction
+                self.journal.clear();
+                // Reset gas refund counter
                 self.gas_refund_counter = 0;
+                // Clear logs from previous transaction
+                self.logs.clearRetainingCapacity();
+                // Clear created contracts tracking (EIP-6780)
+                self.created_contracts.clear();
+                // Clear self destruct list
+                self.self_destruct.clear();
+                // Reset arena allocator
+                _ = self.call_arena.reset(.retain_capacity);
+            }
+            
+            defer if (is_top_level) {
+                // Cleanup after transaction completes
+                self.depth = 0;
                 self.current_input = &.{};
                 // Note: return_data is not freed here because it's returned as part of CallResult
                 // and the caller is responsible for the memory
                 self.return_data = &.{};
-                // Clear journal and access list
-                self.journal.clear();
-                self.access_list.clear();
             };
             
             // Pre-warm addresses for top-level calls (EIP-2929)
@@ -1449,12 +1488,14 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Access an address and return the gas cost (EIP-2929)
         pub fn access_address(self: *Self, address: primitives.Address) !u64 {
-            return try self.access_list.access_address(address);
+            const cost = try self.access_list.access_address(address);
+            return cost;
         }
 
         /// Access a storage slot and return the gas cost (EIP-2929)
         pub fn access_storage_slot(self: *Self, contract_address: primitives.Address, slot: u256) !u64 {
-            return try self.access_list.access_storage_slot(contract_address, slot);
+            const cost = try self.access_list.access_storage_slot(contract_address, slot);
+            return cost;
         }
 
         /// Mark a contract for destruction
