@@ -2,19 +2,19 @@
 
 ## Summary
 
-**Test Runs per Case**: 1
+**Test Runs per Case**: 2
 **EVMs Compared**: Guillotine Call2 (Zig with tailcall dispatch), REVM (Rust), Geth (Go), evmone (C++)
-**Timestamp**: 1756939150 (Unix epoch)
+**Timestamp**: 1756944200 (Unix epoch)
 
 ## Overall Performance Summary (Per Run)
 
 | Test Case | Zig-Call2 | REVM | Geth | evmone |
 |-----------|-----------|------|------|--------|
-| erc20-approval-transfer   |  67.76 ms |  24.89 ms |  0.00 μs |  26.15 ms |
-| erc20-mint                |  0.00 μs |  0.00 μs |  0.00 μs |  0.00 μs |
-| erc20-transfer            |  0.00 μs |  0.00 μs |  0.00 μs |  0.00 μs |
-| ten-thousand-hashes       |  40.52 ms |  11.26 ms |  71.85 ms |  70.69 ms |
-| snailtracer               | 611.37 ms | 300.57 ms | 933.88 ms | 223.71 ms |
+| erc20-approval-transfer   |  0.00 μs | 71.95 μs | 164.76 μs | 66.08 μs |
+| erc20-mint                |   3.32 ms |   3.75 ms |   7.72 ms |   2.22 ms |
+| erc20-transfer            |   5.35 ms |   6.10 ms |  11.63 ms |   4.27 ms |
+| ten-thousand-hashes       |   1.67 ms |   1.50 ms |   4.64 ms | 948.16 μs |
+| snailtracer               |  0.00 μs |  31.47 ms |  94.69 ms |  22.26 ms |
 
 ## Detailed Performance Comparison
 
@@ -22,38 +22,44 @@
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| Guillotine (Call2) |       67.76 ms |         67.76 ms |      67.76 ms |      67.76 ms |          0.00 μs |             1 |
-| REVM        |       24.89 ms |         24.89 ms |      24.89 ms |      24.89 ms |          0.00 μs |             1 |
-| Geth        |       0.00 μs |         0.00 μs |      0.00 μs |      0.00 μs |          0.00 μs |             1 |
-| evmone      |       26.15 ms |         26.15 ms |      26.15 ms |      26.15 ms |          0.00 μs |             1 |
+| REVM        |      71.95 μs |        71.95 μs |     71.46 μs |     72.45 μs |          0.70 μs |            20 |
+| Geth        |     164.76 μs |       164.76 μs |    153.55 μs |    175.98 μs |         15.86 μs |            20 |
+| evmone      |      66.08 μs |        66.08 μs |     63.91 μs |     68.25 μs |          3.07 μs |            20 |
 
 ### erc20-mint
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
+| Guillotine (Call2) |        3.32 ms |          3.32 ms |       3.27 ms |       3.36 ms |         59.19 μs |            20 |
+| REVM        |        3.75 ms |          3.75 ms |       3.75 ms |       3.75 ms |          0.47 μs |            20 |
+| Geth        |        7.72 ms |          7.72 ms |       7.53 ms |       7.90 ms |        257.60 μs |            20 |
+| evmone      |        2.22 ms |          2.22 ms |       2.19 ms |       2.25 ms |         42.80 μs |            20 |
 
 ### erc20-transfer
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
+| Guillotine (Call2) |        5.35 ms |          5.35 ms |       5.34 ms |       5.36 ms |         16.32 μs |            20 |
+| REVM        |        6.10 ms |          6.10 ms |       6.06 ms |       6.14 ms |         52.47 μs |            20 |
+| Geth        |       11.63 ms |         11.63 ms |      11.62 ms |      11.64 ms |         14.38 μs |            20 |
+| evmone      |        4.27 ms |          4.27 ms |       4.27 ms |       4.27 ms |          3.88 μs |            20 |
 
 ### ten-thousand-hashes
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| Guillotine (Call2) |       40.52 ms |         40.52 ms |      40.52 ms |      40.52 ms |          0.00 μs |             1 |
-| REVM        |       11.26 ms |         11.26 ms |      11.26 ms |      11.26 ms |          0.00 μs |             1 |
-| Geth        |       71.85 ms |         71.85 ms |      71.85 ms |      71.85 ms |          0.00 μs |             1 |
-| evmone      |       70.69 ms |         70.69 ms |      70.69 ms |      70.69 ms |          0.00 μs |             1 |
+| Guillotine (Call2) |        1.67 ms |          1.67 ms |       1.64 ms |       1.70 ms |         38.03 μs |            20 |
+| REVM        |        1.50 ms |          1.50 ms |       1.49 ms |       1.52 ms |         17.12 μs |            20 |
+| Geth        |        4.64 ms |          4.64 ms |       4.60 ms |       4.69 ms |         57.49 μs |            20 |
+| evmone      |     948.16 μs |       948.16 μs |    947.98 μs |    948.35 μs |          0.26 μs |            20 |
 
 ### snailtracer
 
 | EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |
 |-----|----------------|------------------|---------------|---------------|-------------------|---------------|
-| Guillotine (Call2) |      611.37 ms |        611.37 ms |     611.37 ms |     611.37 ms |          0.00 μs |             1 |
-| REVM        |      300.57 ms |        300.57 ms |     300.57 ms |     300.57 ms |          0.00 μs |             1 |
-| Geth        |      933.88 ms |        933.88 ms |     933.88 ms |     933.88 ms |          0.00 μs |             1 |
-| evmone      |      223.71 ms |        223.71 ms |     223.71 ms |     223.71 ms |          0.00 μs |             1 |
+| REVM        |       31.47 ms |         31.47 ms |      31.38 ms |      31.55 ms |        126.65 μs |             2 |
+| Geth        |       94.69 ms |         94.69 ms |      94.60 ms |      94.78 ms |        123.07 μs |             2 |
+| evmone      |       22.26 ms |         22.26 ms |      22.22 ms |      22.29 ms |         50.44 μs |             2 |
 
 
 ## Notes
