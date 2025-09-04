@@ -1999,6 +1999,241 @@ test "Error handling - nested call depth tracking" {
     try std.testing.expectEqual(@as(u64, 0), result2.gas_left);
 }
 
+test "EVM simulate - reverts state changes but returns results" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    // Set up an account with balance and a contract that stores a value
+    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const contract_address: primitives.Address = [_]u8{0x02} ++ [_]u8{0} ** 19;
+    const initial_balance: u256 = 1000000;
+    const transfer_amount: u256 = 100;
+    
+    // Create caller account
+    try db.set_account(caller_address, Account{
+        .balance = initial_balance,
+        .nonce = 5,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Create contract with SSTORE bytecode that stores value 42 at slot 0
+    const bytecode = [_]u8{
+        0x60, 0x2A, // PUSH1 42
+        0x60, 0x00, // PUSH1 0
+        0x55,       // SSTORE
+        0x00,       // STOP
+    };
+    const code_hash = try db.set_code(&bytecode);
+    try db.set_account(contract_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Set an initial storage value that should remain unchanged
+    const storage_slot: u256 = 0;
+    const initial_storage_value: u256 = 999;
+    try db.set_storage(contract_address, storage_slot, initial_storage_value);
+    
+    // Prepare call parameters with value transfer
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = caller_address,
+            .to = contract_address,
+            .value = transfer_amount,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    // Execute using simulate (should not commit changes)
+    const result = evm.simulate(call_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+    
+    // Verify the call succeeded
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    
+    // Verify state was NOT changed
+    // 1. Check caller balance is unchanged
+    const caller_after = (try db.get_account(caller_address)).?;
+    try std.testing.expectEqual(initial_balance, caller_after.balance);
+    try std.testing.expectEqual(@as(u64, 5), caller_after.nonce); // Nonce unchanged
+    
+    // 2. Check contract balance is unchanged
+    const contract_after = (try db.get_account(contract_address)).?;
+    try std.testing.expectEqual(@as(u256, 0), contract_after.balance);
+    
+    // 3. Check storage value is unchanged
+    const storage_after = try db.get_storage(contract_address, storage_slot);
+    try std.testing.expectEqual(initial_storage_value, storage_after);
+    
+    // Now execute with regular call to verify it DOES change state
+    const result2 = evm.call(call_params);
+    defer if (result2.output.len > 0) evm.allocator.free(result2.output);
+    
+    try std.testing.expect(result2.success);
+    
+    // Verify state WAS changed with regular call
+    const caller_after2 = (try db.get_account(caller_address)).?;
+    try std.testing.expectEqual(initial_balance - transfer_amount, caller_after2.balance);
+    
+    const contract_after2 = (try db.get_account(contract_address)).?;
+    try std.testing.expectEqual(transfer_amount, contract_after2.balance);
+    
+    const storage_after2 = try db.get_storage(contract_address, storage_slot);
+    try std.testing.expectEqual(@as(u256, 42), storage_after2);
+}
+
+test "EVM simulate - works with CREATE operations" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const initial_nonce: u64 = 10;
+    
+    // Create caller account
+    try db.set_account(caller_address, Account{
+        .balance = 1000000,
+        .nonce = initial_nonce,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Simple init code that returns empty contract
+    const init_code = [_]u8{0x00, 0x00, 0xF3}; // STOP STOP RETURN
+    
+    const create_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = caller_address,
+            .value = 0,
+            .init_code = &init_code,
+            .gas = 100000,
+        },
+    };
+    
+    // Simulate CREATE operation
+    const result = evm.simulate(create_params);
+    defer if (result.output.len > 0) evm.allocator.free(result.output);
+    
+    // Verify CREATE succeeded in simulation
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 20), result.output.len); // Address returned
+    
+    // Extract the would-be contract address
+    const simulated_address: primitives.Address = result.output[0..20].*;
+    
+    // Verify state was NOT changed
+    // 1. Contract should not exist
+    const contract_account = try db.get_account(simulated_address);
+    try std.testing.expect(contract_account == null);
+    
+    // 2. Caller nonce should be unchanged
+    const caller_after = (try db.get_account(caller_address)).?;
+    try std.testing.expectEqual(initial_nonce, caller_after.nonce);
+}
+
+test "EVM simulate - handles failures without state changes" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const initial_balance: u256 = 50;
+    
+    // Create caller with insufficient balance
+    try db.set_account(caller_address, Account{
+        .balance = initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Try to transfer more than available balance
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = caller_address,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 100, // More than balance
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    // Simulate should handle the failure gracefully
+    const result = evm.simulate(call_params);
+    
+    // Verify call failed
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(u64, 0), result.gas_left);
+    
+    // Verify balance unchanged
+    const caller_after = (try db.get_account(caller_address)).?;
+    try std.testing.expectEqual(initial_balance, caller_after.balance);
+}
+
 test "Error handling - precompile execution" {
     var db = Database.init(std.testing.allocator);
     defer db.deinit();
