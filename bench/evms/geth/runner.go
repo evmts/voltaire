@@ -89,15 +89,17 @@ func main() {
         BaseFee:     big.NewInt(7),
     }
 
-    // Deploy once if input is initcode; if deployment returns runtime code and address, prefer that
+    // Deploy bytecode using CREATE (no fallback)
     if len(contractCode) > 0 {
-        if ret, createdAddr, _, err := runtime.Create(contractCode, &cfg); err == nil && len(ret) > 0 {
-            // Use created address and runtime code
-            contractAddress = createdAddr
-        } else {
-            // Otherwise, treat as runtime code at fixed address
-            statedb.SetCode(contractAddress, contractCode)
+        ret, createdAddr, _, err := runtime.Create(contractCode, &cfg)
+        if err != nil {
+            panic(fmt.Sprintf("Contract deployment failed: %v", err))
         }
+        if len(ret) == 0 {
+            panic("Contract deployment returned no runtime code")
+        }
+        // Use created address and runtime code
+        contractAddress = createdAddr
     }
 
     // Precompute selector for simple output sanity checks

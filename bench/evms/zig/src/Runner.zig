@@ -78,10 +78,10 @@ pub fn deinit(self: *Runner) void {
 
 pub fn deployContract(self: *Runner, init_code: []const u8) !struct { address: primitives.Address, runtime_code: []const u8 } {
     if (self.verbose) {
-        std.debug.print("Bytecode len={} (attempting CREATE first)\n", .{init_code.len});
+        std.debug.print("Bytecode len={} (deploying with CREATE)\n", .{init_code.len});
     }
     
-    // Try CREATE deployment first
+    // Deploy using CREATE (no fallback)
     var deploy_evm = try evm.Evm(.{}).init(self.allocator, self.database, self.block_info, self.tx_context, 0, self.caller_address, .CANCUN);
     defer deploy_evm.deinit();
     
@@ -105,61 +105,34 @@ pub fn deployContract(self: *Runner, init_code: []const u8) !struct { address: p
         });
     }
     
-    if (deploy_result.success) {
-        // For CREATE, we need to get the code from the created contract
-        const contract_address = primitives.Address.get_contract_address(self.caller_address, 0);
-        const created_account = self.database.get_account(contract_address.bytes) catch null;
-        
-        if (created_account) |acc| {
-            const code = self.database.get_code(acc.code_hash) catch null;
-            if (code) |c| {
-                if (c.len > 0) {
-                    if (self.verbose) {
-                        std.debug.print("Found deployed contract code: len={}, first bytes: ", .{c.len});
-                        const show_len = @min(c.len, 10);
-                        for (c[0..show_len]) |b| {
-                            std.debug.print("{x:0>2} ", .{b});
-                        }
-                        std.debug.print("\n", .{});
-                    }
-                    // Check if this looks like valid code (not all zeros)
-                    // The last byte should be 0x42 for our test case
-                    if (c.len == 32 and c[31] == 0x42) {
-                        // This is the special case where CREATE returned memory contents
-                        // Fall through to install the original as runtime
-                        if (self.verbose) {
-                            std.debug.print("CREATE returned memory contents, not code\n", .{});
-                        }
-                    } else {
-                        return .{ .address = contract_address, .runtime_code = c };
-                    }
-                }
-            }
-        }
-    }
-    
-    // Fallback: treat provided code as runtime and install directly
-    if (self.verbose) {
-        std.debug.print("CREATE failed or returned no code; installing as runtime\n", .{});
-    }
-    
-    // Ensure we have valid code before installing
-    if (init_code.len == 0) {
+    if (!deploy_result.success) {
         return RunnerError.DeploymentFailed;
     }
     
-    const contract_address = primitives.Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
-    const code_hash = try self.database.set_code(init_code);
-    try self.database.set_account(contract_address.bytes, .{
-        .balance = 0,
-        .nonce = 1,
-        .code_hash = code_hash,
-        .storage_root = [_]u8{0} ** 32,
-    });
+    // For CREATE, we need to get the code from the created contract
+    const contract_address = primitives.Address.get_contract_address(self.caller_address, 0);
+    const created_account = self.database.get_account(contract_address.bytes) catch {
+        return RunnerError.DeploymentFailed;
+    } orelse return RunnerError.DeploymentFailed;
     
-    // Retrieve the code from the database to ensure we're using the database's copy
-    const stored_code = try self.database.get_code(code_hash);
-    return .{ .address = contract_address, .runtime_code = stored_code };
+    const code = self.database.get_code(created_account.code_hash) catch {
+        return RunnerError.DeploymentFailed;
+    };
+    
+    if (code.len == 0) {
+        return RunnerError.DeploymentFailed;
+    }
+    
+    if (self.verbose) {
+        std.debug.print("Deployed contract code: len={}, first bytes: ", .{code.len});
+        const show_len = @min(code.len, 10);
+        for (code[0..show_len]) |b| {
+            std.debug.print("{x:0>2} ", .{b});
+        }
+        std.debug.print("\n", .{});
+    }
+    
+    return .{ .address = contract_address, .runtime_code = code };
 }
 
 pub const BenchmarkResult = struct {
