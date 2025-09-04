@@ -51,7 +51,7 @@ pub fn main() !void {
         std.process.exit(1);
     };
     
-    const calldata_hex = res.args.calldata orelse {
+    const calldata_path = res.args.calldata orelse {
         std.debug.print("Error: --calldata is required\n", .{});
         std.process.exit(1);
     };
@@ -71,6 +71,12 @@ pub fn main() !void {
     const init_code = try Runner.hexDecode(allocator, trimmed_init_hex);
     defer allocator.free(init_code);
     
+    // Read calldata from file
+    const calldata_file = try std.fs.cwd().openFile(calldata_path, .{});
+    defer calldata_file.close();
+    const calldata_hex = try calldata_file.readToEndAlloc(allocator, 16 * 1024 * 1024);
+    defer allocator.free(calldata_hex);
+    
     // Decode calldata
     const trimmed_calldata = std.mem.trim(u8, calldata_hex, " \t\n\r");
     const calldata = try Runner.hexDecode(allocator, trimmed_calldata);
@@ -88,11 +94,11 @@ pub fn main() !void {
     var runner = try Runner.init(allocator, verbose);
     defer runner.deinit();
     
-    // Deploy contract
-    const deployment = try runner.deployContract(init_code);
+    // Prepare contract (deploy once)
+    const prepared_contract = try runner.prepare(init_code);
     
     // Verify contract is ready
-    const contract_account = runner.database.get_account(deployment.address.bytes) catch null;
+    const contract_account = runner.database.get_account(prepared_contract.address.bytes) catch null;
     if (contract_account == null) {
         std.debug.print("❌ Contract not found\n", .{});
         return error.ContractSetupFailed;
@@ -106,7 +112,7 @@ pub fn main() !void {
     };
     
     for (0..num_runs) |run_idx| {
-        const result = runner.runBenchmark(deployment.address, calldata, config) catch |err| {
+        const result = runner.runBenchmark(prepared_contract.address, calldata, config) catch |err| {
             if (err == Runner.RunnerError.ExecutionFailed) {
                 std.debug.print("❌ Execution failed\n", .{});
                 std.process.exit(2);

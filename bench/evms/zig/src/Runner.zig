@@ -76,7 +76,7 @@ pub fn deinit(self: *Runner) void {
     self.allocator.destroy(self.database);
 }
 
-pub fn deployContract(self: *Runner, init_code: []const u8) !struct { address: primitives.Address, runtime_code: []const u8 } {
+pub fn prepare(self: *Runner, init_code: []const u8) !PreparedContract {
     if (self.verbose) {
         std.debug.print("Bytecode len={} (deploying with CREATE)\n", .{init_code.len});
     }
@@ -132,7 +132,7 @@ pub fn deployContract(self: *Runner, init_code: []const u8) !struct { address: p
         std.debug.print("\n", .{});
     }
     
-    return .{ .address = contract_address, .runtime_code = code };
+    return PreparedContract{ .address = contract_address, .runtime_code = code };
 }
 
 pub const BenchmarkResult = struct {
@@ -140,6 +140,11 @@ pub const BenchmarkResult = struct {
     duration_ms: f64,
     gas_used: u64,
     output: []const u8,
+};
+
+pub const PreparedContract = struct {
+    address: primitives.Address,
+    runtime_code: []const u8,
 };
 
 pub fn runBenchmark(
@@ -154,7 +159,7 @@ pub fn runBenchmark(
         self.database,
         self.block_info,
         self.tx_context,
-        0,
+        0,  // Nonce will be tracked by database after deployment
         self.caller_address,
         .CANCUN,
     );
@@ -172,9 +177,9 @@ pub fn runBenchmark(
         },
     };
     
-    // Measure execution time
+    // Measure execution time using simulate (no state changes)
     const start = std.time.Instant.now() catch return RunnerError.ExecutionFailed;
-    var result = evm_instance.call(call_params);
+    var result = evm_instance.simulate(call_params);
     defer result.deinit(self.allocator);
     const end = std.time.Instant.now() catch return RunnerError.ExecutionFailed;
     
@@ -200,6 +205,12 @@ pub fn runBenchmark(
         (provided_gas - result.gas_left) 
     else 
         0;
+    
+    if (self.verbose) {
+        std.debug.print("Gas calculation: provided={}, gas_left={}, gas_used={}\n", .{
+            provided_gas, result.gas_left, gas_used
+        });
+    }
     
     // Check expected output if provided
     if (config.expected_output) |expected| {
