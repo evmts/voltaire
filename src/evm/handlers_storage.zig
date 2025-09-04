@@ -89,6 +89,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Calculate SSTORE operation cost (includes cold access cost if applicable)
             const total_gas_cost: u64 = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
 
+
             log.debug(
                 "SSTORE metering: slot={}, original={}, current={}, new={}, is_cold={}, total={}",
                 .{ slot, original_value, current_value, value, is_cold, total_gas_cost },
