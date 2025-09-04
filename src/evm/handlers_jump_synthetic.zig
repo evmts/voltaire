@@ -18,11 +18,11 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = cursor[1].push_inline.value;
 
             // Validate jump destination range
-            if (dest > std.math.maxInt(u32)) {
+            if (dest > std.math.maxInt(FrameType.PcType)) {
                 return Error.InvalidJump;
             }
 
-            const dest_pc: u16 = @intCast(dest);
+            const dest_pc: FrameType.PcType = @intCast(dest);
 
             // Look up the destination in the jump table
             const jump_table = self.jump_table;
@@ -41,11 +41,11 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = cursor[1].push_pointer.value.*;
 
             // Validate jump destination range
-            if (dest > std.math.maxInt(u32)) {
+            if (dest > std.math.maxInt(FrameType.PcType)) {
                 return Error.InvalidJump;
             }
 
-            const dest_pc: u16 = @intCast(dest);
+            const dest_pc: FrameType.PcType = @intCast(dest);
 
             // Look up the destination in the jump table
             const jump_table = self.jump_table;
@@ -69,11 +69,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (condition != 0) {
                 // Take the jump - validate destination range
-                if (dest > std.math.maxInt(u32)) {
+                if (dest > std.math.maxInt(FrameType.PcType)) {
                     return Error.InvalidJump;
                 }
 
-                const dest_pc: u16 = @intCast(dest);
+                const dest_pc: FrameType.PcType = @intCast(dest);
 
                 // Look up the destination in the jump table
                 const jump_table = self.jump_table;
@@ -100,11 +100,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (condition != 0) {
                 // Take the jump - validate destination range
-                if (dest > std.math.maxInt(u32)) {
+                if (dest > std.math.maxInt(FrameType.PcType)) {
                     return Error.InvalidJump;
                 }
 
-                const dest_pc: u16 = @intCast(dest);
+                const dest_pc: FrameType.PcType = @intCast(dest);
 
                 // Look up the destination in the jump table
                 const jump_table = self.jump_table;
