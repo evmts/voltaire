@@ -77,6 +77,7 @@ pub fn Handlers(comptime FrameType: type) type {
             
             const offset = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
+            log.debug("MSTORE: offset={x}, value={x}", .{offset, value});
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {

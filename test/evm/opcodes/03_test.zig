@@ -5,6 +5,7 @@ const revm = @import("revm");
 const common = @import("common.zig");
 
 test "opcode 0x03 differential test" {
+    std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
     
     // Build bytecode for this opcode

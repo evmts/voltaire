@@ -37,6 +37,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const b = try self.stack.peek(); // Second from top (second operand)
             // EVM semantics: top - second = a - b
             const result = a -% b;
+            log.debug("SUB: a(top)={x}, b(second)={x}, result={x}", .{a, b, result});
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
