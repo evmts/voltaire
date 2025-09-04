@@ -497,7 +497,6 @@ test "fusion: Multiple fusions in sequence" {
 
 test "fusion: ten-thousand-hashes bytecode with PUSH+JUMP fusion" {
     std.testing.log_level = .debug;
-    std.log.scoped(.jump_table).level = .debug;  // Enable jump_table debug logs
     log.info("Testing ten-thousand-hashes bytecode with fusion", .{});
     const allocator = testing.allocator;
     
@@ -611,13 +610,13 @@ test "fusion: ten-thousand-hashes bytecode with PUSH+JUMP fusion" {
     
     // Deployment should succeed
     try testing.expect(deploy_result.success);
-    try testing.expect(deploy_result.output.len == 20); // Contract address
-    log.info("Contract deployed successfully with gas_left: {}", .{deploy_result.gas_left});
     
-    // Get the deployed contract address from the output
-    const contract_address = Address{
-        .bytes = deploy_result.output[0..20].*,
+    // Prefer created_address if available; older path used output[0..20]
+    const contract_address = if (deploy_result.created_address) |addr| addr else blk: {
+        try testing.expect(deploy_result.output.len == 20);
+        break :blk Address{ .bytes = deploy_result.output[0..20].* };
     };
+    log.info("Contract deployed successfully with gas_left: {}", .{deploy_result.gas_left});
     log.info("Contract deployed successfully", .{});
     
     // Step 2: Call the deployed contract's function
