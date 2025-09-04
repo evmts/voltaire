@@ -166,7 +166,7 @@ pub fn runBenchmark(
     defer evm_instance.deinit();
     
     // Setup call parameters
-    const provided_gas: u64 = 1_000_000_000;
+    const provided_gas: u64 = 10_000_000_000;
     const call_params = evm.CallParams{
         .call = .{
             .caller = self.caller_address,
@@ -177,7 +177,7 @@ pub fn runBenchmark(
         },
     };
     
-    // Measure execution time using simulate (no state changes)
+    // Measure execution time using simulate (for independent runs)
     const start = std.time.Instant.now() catch return RunnerError.ExecutionFailed;
     var result = evm_instance.simulate(call_params);
     defer result.deinit(self.allocator);

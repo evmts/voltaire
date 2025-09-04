@@ -51,7 +51,7 @@ pub fn main() !void {
         std.process.exit(1);
     };
     
-    const calldata_path = res.args.calldata orelse {
+    const calldata_hex = res.args.calldata orelse {
         std.debug.print("Error: --calldata is required\n", .{});
         std.process.exit(1);
     };
@@ -71,13 +71,7 @@ pub fn main() !void {
     const init_code = try Runner.hexDecode(allocator, trimmed_init_hex);
     defer allocator.free(init_code);
     
-    // Read calldata from file
-    const calldata_file = try std.fs.cwd().openFile(calldata_path, .{});
-    defer calldata_file.close();
-    const calldata_hex = try calldata_file.readToEndAlloc(allocator, 16 * 1024 * 1024);
-    defer allocator.free(calldata_hex);
-    
-    // Decode calldata
+    // Decode calldata directly from hex string argument
     const trimmed_calldata = std.mem.trim(u8, calldata_hex, " \t\n\r");
     const calldata = try Runner.hexDecode(allocator, trimmed_calldata);
     defer allocator.free(calldata);
