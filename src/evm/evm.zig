@@ -324,7 +324,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             // Always revert database state changes
             defer {
-                self.revert_to_snapshot(snapshot_id);  // Use EVM's revert method, not journal's
+                // For simulate, we don't need to apply individual reverts since
+                // we're discarding all state anyway. Just truncate the journal.
+                // This avoids potential stack overflow with large numbers of entries.
+                self.journal.revert_to_snapshot(snapshot_id);
             }
             
             // Execute the call normally and return its result
