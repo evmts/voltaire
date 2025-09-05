@@ -14,6 +14,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Jump directly to a statically known location without binary search.
         /// The cursor[1] should contain a direct pointer to the jump destination dispatch.
         pub fn jump_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cursor[1].jump_static.dispatch)));
             return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
         }
@@ -21,10 +22,14 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Conditionally jump to a statically known location without binary search.
         /// The cursor[1] should contain a direct pointer to the jump destination dispatch.
         pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cursor[1].jump_static.dispatch)));
             std.debug.assert(self.stack.size() >= 1);
             const condition = self.stack.pop_unsafe();
-            if (condition != 0) return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
+            if (condition != 0) {
+                @branchHint(.likely);
+                return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
+            }
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
 
@@ -32,11 +37,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes a destination and immediately jumps to it.
         /// @deprecated Use jump_to_static_location for better performance
         pub fn push_jump_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_inline.value;
 
             // Validate jump destination range
             if (dest > std.math.maxInt(FrameType.PcType)) {
+                @branchHint(.unlikely);
                 return Error.InvalidJump;
             }
 
@@ -45,6 +52,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Look up the destination in the jump table
             const jump_table = self.jump_table;
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
+                @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
@@ -56,11 +64,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_JUMP_POINTER - Fused PUSH+JUMP with pointer destination (>8 bytes).
         /// @deprecated Use jump_to_static_location for better performance
         pub fn push_jump_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_pointer.value.*;
 
             // Validate jump destination range
             if (dest > std.math.maxInt(FrameType.PcType)) {
+                @branchHint(.unlikely);
                 return Error.InvalidJump;
             }
 
@@ -69,6 +79,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Look up the destination in the jump table
             const jump_table = self.jump_table;
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
+                @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
@@ -81,14 +92,17 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes a destination, pops condition, and conditionally jumps.
         /// @deprecated Use jumpi_to_static_location for better performance
         pub fn push_jumpi_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             const dest = cursor[1].push_inline.value;
 
             std.debug.assert(self.stack.size() >= 1);
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
+                @branchHint(.likely);
                 // Take the jump - validate destination range
                 if (dest > std.math.maxInt(FrameType.PcType)) {
+                    @branchHint(.unlikely);
                     return Error.InvalidJump;
                 }
 
@@ -97,6 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Look up the destination in the jump table
                 const jump_table = self.jump_table;
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
@@ -112,6 +127,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_JUMPI_POINTER - Fused PUSH+JUMPI with pointer destination (>8 bytes).
         /// @deprecated Use jumpi_to_static_location for better performance
         pub fn push_jumpi_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_pointer.value.*;
 
@@ -120,8 +136,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
+                @branchHint(.likely);
                 // Take the jump - validate destination range
                 if (dest > std.math.maxInt(FrameType.PcType)) {
+                    @branchHint(.unlikely);
                     return Error.InvalidJump;
                 }
 
@@ -130,6 +148,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Look up the destination in the jump table
                 const jump_table = self.jump_table;
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
