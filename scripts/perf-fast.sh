@@ -69,13 +69,13 @@ if [[ ! -x "${ORCH_BIN}" ]]; then
 fi
 
 log "Running orchestrator with compare mode (fast settings)"
-log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 2 --internal-runs 20 --snailtracer-internal-runs 2 --show-output"
+log "Command: ${ORCH_BIN} --compare --export markdown --num-runs 2 --internal-runs 20 --snailtracer-internal-runs 1 --show-output"
 time "${ORCH_BIN}" \
   --compare \
   --export markdown \
   --num-runs 2 \
   --internal-runs 20 \
-  --snailtracer-internal-runs 2 \
+  --snailtracer-internal-runs 1 \
   --show-output \
   2>&1 | tee -a "${LOG_FILE}"
 
@@ -87,4 +87,4 @@ else
 fi
 
 log "Opening results in browser..."
-npx -y markserv "${RESULTS_MD}"
+npx -y markserv "./bench/official/results.md"

@@ -153,10 +153,11 @@ pub fn runBenchmark(
     calldata: []const u8,
     config: RunnerConfig,
 ) !BenchmarkResult {
-    // Create EVM instance for benchmark execution
+    // Create EVM instance using the shared database
+    // The EVM's call() method now properly resets all state between runs
     var evm_instance = try evm.Evm(.{}).init(
         self.allocator,
-        self.database,
+        self.database,  // Use shared database
         self.block_info,
         self.tx_context,
         0,  // Nonce will be tracked by database after deployment
@@ -177,9 +178,9 @@ pub fn runBenchmark(
         },
     };
     
-    // Measure execution time using simulate (for independent runs)
+    // Measure execution time using call (for independent runs)
     const start = std.time.Instant.now() catch return RunnerError.ExecutionFailed;
-    var result = evm_instance.simulate(call_params);
+    var result = evm_instance.call(call_params);
     defer result.deinit(self.allocator);
     const end = std.time.Instant.now() catch return RunnerError.ExecutionFailed;
     
