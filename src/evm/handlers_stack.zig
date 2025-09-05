@@ -83,6 +83,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     };
                     
                     if (push_n <= 8) {
+                        @branchHint(.likely);
                         const value = op_data.metadata.value;
                         // log.debug("[PUSH{d}] Pushing inline value: {d}", .{ push_n, value });
                         std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push

@@ -953,11 +953,11 @@ pub fn execute_bls12_381_map_fp_to_g1(allocator: std.mem.Allocator, input: []con
 }
 
 fn bytesToU256(bytes: []const u8) u256 {
-    var result: u256 = 0;
-    for (bytes) |byte| {
-        result = std.math.shl(u256, result, 8) | byte;
-    }
-    return result;
+    // Ensure we have exactly 32 bytes, padding with zeros if necessary
+    var padded: [32]u8 = [_]u8{0} ** 32;
+    const copy_len = @min(bytes.len, 32);
+    @memcpy(padded[32 - copy_len..], bytes[0..copy_len]);
+    return std.mem.readInt(u256, &padded, .big);
 }
 
 fn bytesToU32(bytes: []const u8) u32 {
@@ -971,13 +971,12 @@ fn bytesToU32(bytes: []const u8) u32 {
 }
 
 fn u256ToBytes(value: u256, output: []u8) void {
-    var v = value;
-    var i = output.len;
-    while (i > 0) {
-        i -= 1;
-        output[i] = @intCast(v & 0xFF);
-        v = std.math.shr(u256, v, 8);
-    }
+    // Write the u256 as big-endian bytes
+    var temp: [32]u8 = undefined;
+    std.mem.writeInt(u256, &temp, value, .big);
+    // Copy only the required bytes to output (handles output.len < 32)
+    const offset = if (output.len < 32) 32 - output.len else 0;
+    @memcpy(output, temp[offset..][0..output.len]);
 }
 
 test "is_precompile detects valid precompile addresses" {

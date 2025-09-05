@@ -176,8 +176,7 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const database = try MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
-    const block_info = TestFrame.BlockInfo.init();
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, block_info, @ptrFromInt(1), null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, @ptrFromInt(1), null);
     // Initialize empty bytecode
     const empty_code = &[_]u8{};
     frame.bytecode = try TestBytecode.init(allocator, empty_code);

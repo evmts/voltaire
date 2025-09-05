@@ -11,9 +11,11 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
         const Self = @This();
         allocator: std.mem.Allocator,
         /// Warm addresses - addresses that have been accessed
-        addresses: std.AutoHashMap(Address, void),
+        /// Using ArrayHashMap for better cache locality
+        addresses: std.array_hash_map.ArrayHashMap(Address, void, std.array_hash_map.AutoContext(Address), false),
         /// Warm storage slots - storage slots that have been accessed
-        storage_slots: std.HashMap(StorageKey, void, StorageKeyContext, 80),
+        /// Using ArrayHashMap for better cache locality
+        storage_slots: std.array_hash_map.ArrayHashMap(StorageKey, void, StorageKeyContext, false),
 
         // Gas costs from configuration
         pub const COLD_ACCOUNT_ACCESS_COST: u64 = config.cold_account_access_cost;
@@ -27,16 +29,17 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
         };
 
         const StorageKeyContext = struct {
-            pub fn hash(self: @This(), key: StorageKey) u64 {
+            pub fn hash(self: @This(), key: StorageKey) u32 {
                 _ = self;
                 var hasher = std.hash.Wyhash.init(0);
                 hasher.update(&key.address.bytes);
                 hasher.update(std.mem.asBytes(&key.slot));
-                return hasher.final();
+                return @truncate(hasher.final());
             }
 
-            pub fn eql(self: @This(), a: StorageKey, b: StorageKey) bool {
+            pub fn eql(self: @This(), a: StorageKey, b: StorageKey, b_index: usize) bool {
                 _ = self;
+                _ = b_index;
                 return std.mem.eql(u8, &a.address.bytes, &b.address.bytes) and a.slot == b.slot;
             }
         };
@@ -44,8 +47,8 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
         pub fn init(allocator: std.mem.Allocator) Self {
             return Self{
                 .allocator = allocator,
-                .addresses = std.AutoHashMap(Address, void).init(allocator),
-                .storage_slots = std.HashMap(StorageKey, void, StorageKeyContext, 80).init(allocator),
+                .addresses = std.array_hash_map.ArrayHashMap(Address, void, std.array_hash_map.AutoContext(Address), false).init(allocator),
+                .storage_slots = std.array_hash_map.ArrayHashMap(StorageKey, void, StorageKeyContext, false).init(allocator),
             };
         }
 

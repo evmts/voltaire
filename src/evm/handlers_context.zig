@@ -130,7 +130,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            const calldata = self.calldata;
+            const calldata = self.calldata();
             // Load 32 bytes from calldata, zero-padding if needed
             var word: u256 = 0;
             for (0..32) |i| {
@@ -154,7 +154,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [] → [size]
         pub fn calldatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const calldata = self.calldata;
+            const calldata = self.calldata();
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLDATASIZE requires stack space
             self.stack.push_unsafe(calldata_len);
@@ -195,7 +195,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const calldata = self.calldata;
+            const calldata = self.calldata();
 
             // Copy calldata to memory with proper zero-padding
             var i: usize = 0;
@@ -560,7 +560,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
-            const block_info = self.block_info;
+            const block_info = self.getEvm().get_block_info();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // COINBASE requires stack space
@@ -580,7 +580,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
-            const block_info = self.block_info;
+            const block_info = self.getEvm().get_block_info();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // TIMESTAMP requires stack space
             self.stack.push_unsafe(timestamp_word);
@@ -599,7 +599,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
-            const block_info = self.block_info;
+            const block_info = self.getEvm().get_block_info();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // NUMBER requires stack space
             self.stack.push_unsafe(block_number_word);
@@ -618,7 +618,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
-            const block_info = self.block_info;
+            const block_info = self.getEvm().get_block_info();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // DIFFICULTY requires stack space
             self.stack.push_unsafe(difficulty_word);
@@ -637,7 +637,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const block_info = self.block_info;
+            const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // GASLIMIT requires stack space
             self.stack.push_unsafe(gas_limit_word);
@@ -673,7 +673,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const block_info = self.block_info;
+            const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BASEFEE requires stack space
             self.stack.push_unsafe(base_fee_word);
@@ -696,8 +696,9 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const index_usize = @as(usize, @intCast(index));
             // Check if index is within bounds of versioned hashes
-            if (index_usize < self.block_info.blob_versioned_hashes.len) {
-                const hash = self.block_info.blob_versioned_hashes[index_usize];
+            const block_info = self.getEvm().get_block_info();
+            if (index_usize < block_info.blob_versioned_hashes.len) {
+                const hash = block_info.blob_versioned_hashes[index_usize];
                 // Convert [32]u8 to u256
                 var hash_value: u256 = 0;
                 for (hash) |byte| {
@@ -719,7 +720,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const blob_base_fee = self.block_info.blob_base_fee;
+            const block_info = self.getEvm().get_block_info();
+            const blob_base_fee = block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BLOBBASEFEE requires stack space
             self.stack.push_unsafe(blob_base_fee_word);

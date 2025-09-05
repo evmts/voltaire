@@ -92,35 +92,34 @@ pub fn Handlers(comptime FrameType: type) type {
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
             
-            // Determine signs
-            const a_negative = (a & SIGN_BIT) != 0;
-            const b_negative = (b & SIGN_BIT) != 0;
+            // Extract sign bits (1 if negative, 0 if positive)
+            const a_sign = a >> 255;
+            const b_sign = b >> 255;
             
-            // Convert to absolute values using two's complement
-            const a_abs = if (a_negative) blk: {
-                const a_u256 = U256.from_u256_unsafe(a);
-                const negated = U256.ZERO.wrapping_sub(a_u256);
-                break :blk negated.to_u256_unsafe();
-            } else a;
+            // Create masks for branchless absolute value
+            // mask will be all 1s if negative, all 0s if positive
+            const a_mask = @as(u256, 0) -% a_sign;
+            const b_mask = @as(u256, 0) -% b_sign;
             
-            const b_abs = if (b_negative) blk: {
-                const b_u256 = U256.from_u256_unsafe(b);
-                const negated = U256.ZERO.wrapping_sub(b_u256);
-                break :blk negated.to_u256_unsafe();
-            } else b;
+            // Branchless absolute value: if negative, negate; if positive, keep as is
+            // For negative: (a ^ mask) - mask = (a ^ -1) - (-1) = ~a + 1 = -a
+            // For positive: (a ^ 0) - 0 = a
+            const a_abs = (a ^ a_mask) -% a_mask;
+            const b_abs = (b ^ b_mask) -% b_mask;
             
-            // Perform unsigned division
+            // Perform unsigned division using U256 for optimization
             const a_abs_u256 = U256.from_u256_unsafe(a_abs);
             const b_abs_u256 = U256.from_u256_unsafe(b_abs);
             const quotient_u256 = a_abs_u256.wrapping_div(b_abs_u256);
-            var result = quotient_u256.to_u256_unsafe();
+            const quotient = quotient_u256.to_u256_unsafe();
             
-            // Apply sign to result (negative if signs differ)
-            if (a_negative != b_negative) {
-                const result_u256 = U256.from_u256_unsafe(result);
-                const negated = U256.ZERO.wrapping_sub(result_u256);
-                result = negated.to_u256_unsafe();
-            }
+            // Calculate sign of result: negative if signs differ
+            // XOR of signs gives 1 if different, 0 if same
+            const result_sign = a_sign ^ b_sign;
+            const result_mask = @as(u256, 0) -% result_sign;
+            
+            // Branchless conditional negation of result
+            const result = (quotient ^ result_mask) -% result_mask;
             
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
@@ -175,35 +174,27 @@ pub fn Handlers(comptime FrameType: type) type {
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
             
-            // Determine signs
-            const a_negative = (a & SIGN_BIT) != 0;
-            const b_negative = (b & SIGN_BIT) != 0;
+            // Extract sign bit of dividend (result takes sign of dividend)
+            const a_sign = a >> 255;
+            const b_sign = b >> 255;
             
-            // Convert to absolute values using two's complement
-            const a_abs = if (a_negative) blk: {
-                const a_u256 = U256.from_u256_unsafe(a);
-                const negated = U256.ZERO.wrapping_sub(a_u256);
-                break :blk negated.to_u256_unsafe();
-            } else a;
+            // Create masks for branchless absolute value
+            const a_mask = @as(u256, 0) -% a_sign;
+            const b_mask = @as(u256, 0) -% b_sign;
             
-            const b_abs = if (b_negative) blk: {
-                const b_u256 = U256.from_u256_unsafe(b);
-                const negated = U256.ZERO.wrapping_sub(b_u256);
-                break :blk negated.to_u256_unsafe();
-            } else b;
+            // Branchless absolute value
+            const a_abs = (a ^ a_mask) -% a_mask;
+            const b_abs = (b ^ b_mask) -% b_mask;
             
-            // Perform unsigned modulo
+            // Perform unsigned modulo using U256 for optimization
             const a_abs_u256 = U256.from_u256_unsafe(a_abs);
             const b_abs_u256 = U256.from_u256_unsafe(b_abs);
             const remainder_u256 = a_abs_u256.wrapping_rem(b_abs_u256);
-            var result = remainder_u256.to_u256_unsafe();
+            const remainder = remainder_u256.to_u256_unsafe();
             
-            // Apply sign to result (result takes sign of dividend)
-            if (a_negative) {
-                const result_u256 = U256.from_u256_unsafe(result);
-                const negated = U256.ZERO.wrapping_sub(result_u256);
-                result = negated.to_u256_unsafe();
-            }
+            // Result takes sign of dividend (a_sign)
+            // Branchless conditional negation based on dividend sign
+            const result = (remainder ^ a_mask) -% a_mask;
             
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;

@@ -1057,7 +1057,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const self_destruct_param = if (is_static) null else &self.self_destruct;
 
             // log.debug("DEBUG: About to call Frame.init\n", .{});
-            var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
+            var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
             frame.contract_address = address;
             defer frame.deinit(self.allocator);
 

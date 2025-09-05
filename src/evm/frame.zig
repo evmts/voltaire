@@ -35,8 +35,6 @@ const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
 const logs = @import("logs.zig");
 const Log = logs.Log;
-const block_info_mod = @import("block_info.zig");
-const block_info_config_mod = @import("block_info_config.zig");
 // LogList functionality is inlined into Frame for optimal packing
 const dispatch_mod = @import("dispatch.zig");
 
@@ -112,8 +110,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             .max_initcode_size = config.max_initcode_size,
             .fusions_enabled = true,
         });
-        /// The BlockInfo type configured for this frame
-        pub const BlockInfo = block_info_mod.BlockInfo(config.block_info_config);
 
         /// A fixed size array of opcode handlers indexed by opcode number
         pub const opcode_handlers: [256]OpcodeHandler = if (config.TracerType) |TracerType|
@@ -145,8 +141,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         gas_remaining: GasType, // 8B - Gas tracking (i64)
         memory: Memory, // 16B - Memory operations
         database: config.DatabaseType, // 8B - Storage access
-        calldata: []const u8, // 16B - Input data slice
-        // = 64B exactly!
+        length_prefixed_calldata: ?[*]const u8, // 8B - Length-prefixed calldata pointer (first 8 bytes = length)
+        // = 56B (8 bytes saved!)
 
         // CACHE LINE 2 (64-127 bytes) - WARM PATH
         evm_ptr: *anyopaque, // 8B - EVM instance pointer
@@ -160,7 +156,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         jump_table: Dispatch.JumpTable, // 24B - Jump table for JUMP/JUMPI validation (entries slice)
         bytecode: ?Bytecode = null, // Bytecode object (for CODESIZE/CODECOPY/analysis)
         authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
-        block_info: BlockInfo, // ~188B - Block context (spans multiple cache lines)
         self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
         allocator: std.mem.Allocator, // 16B - Memory allocator
 
@@ -173,8 +168,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         ///
         /// EIP-214: For static calls, self_destruct should be null to prevent
         /// SELFDESTRUCT operations which modify blockchain state.
-        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: *const WordType, calldata: []const u8, block_info: BlockInfo, evm_ptr: *anyopaque, self_destruct: ?*SelfDestruct) Error!Self {
-            // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata.len, self_destruct != null });
+        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: *const WordType, calldata_input: []const u8, evm_ptr: *anyopaque, self_destruct: ?*SelfDestruct) Error!Self {
+            // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata_input.len, self_destruct != null });
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
                 log.err("Frame.init: Failed to initialize stack", .{});
@@ -188,6 +183,28 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             errdefer memory.deinit(allocator);
 
+            // Create length-prefixed calldata
+            const length_prefixed = if (calldata_input.len > 0) blk: {
+                // Allocate space for length (8 bytes) + data
+                const total_size = 8 + calldata_input.len;
+                const buffer = allocator.alloc(u8, total_size) catch {
+                    @branchHint(.cold);
+                    log.err("Frame.init: Failed to allocate length-prefixed calldata", .{});
+                    return Error.AllocationError;
+                };
+                errdefer allocator.free(buffer);
+                
+                // Write length as 8 bytes (little-endian)
+                std.mem.writeInt(u64, buffer[0..8], calldata_input.len, .little);
+                // Copy calldata
+                @memcpy(buffer[8..], calldata_input);
+                break :blk buffer.ptr;
+            } else null;
+            errdefer if (length_prefixed) |ptr| {
+                const len = std.mem.readInt(u64, ptr[0..8], .little);
+                allocator.free(ptr[0..8 + len]);
+            };
+            
             // log.debug("Frame.init: Successfully initialized frame components", .{});
             return Self{
                 // Cache line 1
@@ -195,7 +212,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
                 .memory = memory,
                 .database = database,
-                .calldata = calldata,
+                .length_prefixed_calldata = length_prefixed,
                 // Cache line 2
                 .value = value,
                 .contract_address = Address.ZERO_ADDRESS,
@@ -207,7 +224,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .jump_table = .{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Empty jump table
                 .allocator = allocator,
                 .self_destruct = self_destruct,
-                .block_info = block_info,
                 .authorized_address = null,
             };
         }
@@ -224,6 +240,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.logs.deinit(allocator);
             if (self.output.len > 0) {
                 allocator.free(self.output);
+            }
+            // Free length-prefixed calldata
+            if (self.length_prefixed_calldata) |ptr| {
+                const len = std.mem.readInt(u64, ptr[0..8], .little);
+                allocator.free(ptr[0..8 + len]);
             }
             log.debug("Frame.deinit: Cleanup complete", .{});
         }
@@ -242,8 +263,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
-            // Measure dispatch schedule + jump table creation vs. opcode execution
-            var analysis_ns: u64 = 0;
             // log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
 
             if (bytecode_raw.len > config.max_bytecode_size) {
@@ -253,7 +272,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Initialize bytecode analysis
-            const t_analysis_start = std.time.Instant.now() catch unreachable;
             self.bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
@@ -266,8 +284,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                     else => Error.AllocationError,
                 };
             };
-            const t_analysis_end = std.time.Instant.now() catch unreachable;
-            analysis_ns = t_analysis_end.since(t_analysis_start);
             defer if (self.bytecode) |*bc| bc.deinit();
 
             // Use the handlers (traced or non-traced based on TracerType)
@@ -340,15 +356,6 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // log.debug("Frame.interpret_with_tracer: Starting execution, gas={}", .{self.gas_remaining});
 
-            // Measure opcode handler execution time; errdefer ensures it logs when unwinding with Stop/Return/etc.
-            const t_exec_start = std.time.Instant.now() catch unreachable;
-            errdefer {
-                const t_exec_end = std.time.Instant.now() catch unreachable;
-                const exec_ns = t_exec_end.since(t_exec_start);
-                // Debug-level timing to avoid failing tests that treat errors as failures
-                log.debug("timing: analysis_ns={} handlers_ns={}", .{ analysis_ns, exec_ns });
-            }
-
             try cursor.cursor[0].opcode_handler(self, cursor.cursor);
             unreachable; // Handlers never return normally
         }
@@ -411,9 +418,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .value = self.value,
                 .contract_address = self.contract_address,
                 .output = new_output,
-                .calldata = self.calldata,
+                .length_prefixed_calldata = self.length_prefixed_calldata,
                 .allocator = allocator,
-                .block_info = self.block_info,
                 .self_destruct = self.self_destruct,
             };
         }
@@ -460,6 +466,16 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             self.gas_remaining -= amt;
+        }
+
+        /// Get calldata as a slice from the length-prefixed pointer.
+        /// Returns empty slice if no calldata is present.
+        pub inline fn calldata(self: *const Self) []const u8 {
+            const ptr = self.length_prefixed_calldata orelse return &[_]u8{};
+            // Read length from first 8 bytes
+            const len = std.mem.readInt(u64, ptr[0..8], .little);
+            // Return slice starting after length prefix
+            return ptr[8..8 + len];
         }
 
         /// Get the EVM instance from the opaque pointer
@@ -569,14 +585,15 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Calldata preview (if present)
-            if (self.calldata.len > 0) {
-                try writer.print("\n{s}📥 Calldata [{d} bytes]:{s} ", .{ Colors.yellow, self.calldata.len, Colors.reset });
+            const calldata_slice = self.calldata();
+            if (calldata_slice.len > 0) {
+                try writer.print("\n{s}📥 Calldata [{d} bytes]:{s} ", .{ Colors.yellow, calldata_slice.len, Colors.reset });
 
-                const calldata_preview_len = @min(self.calldata.len, 32);
-                for (self.calldata[0..calldata_preview_len]) |byte| {
+                const calldata_preview_len = @min(calldata_slice.len, 32);
+                for (calldata_slice[0..calldata_preview_len]) |byte| {
                     try writer.print("{x:0>2}", .{byte});
                 }
-                if (self.calldata.len > 32) {
+                if (calldata_slice.len > 32) {
                     try writer.print("...");
                 }
                 try writer.print("\n", .{});

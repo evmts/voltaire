@@ -952,7 +952,7 @@ pub fn Handlers(comptime FrameType: type) type {
             message[0] = 0x04; // AUTH magic byte
             
             // Get chain ID and nonce from context
-            const chain_id = self.block_info.chain_id;
+            const chain_id = self.getEvm().get_chain_id();
             const nonce = self.database.get_account(authority.bytes) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTH);
@@ -1240,18 +1240,9 @@ fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {
     const caller = primitives.ZERO_ADDRESS;
     const value: u256 = 0;
     const calldata = &[_]u8{};
-    const block_info = @import("block_info.zig").DefaultBlockInfo{
-        .number = 1,
-        .timestamp = 1000,
-        .difficulty = 100,
-        .gas_limit = 30000000,
-        .coinbase = primitives.ZERO_ADDRESS,
-        .base_fee = 1000000000,
-        .prev_randao = [_]u8{0} ** 32,
-    };
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000)); // Use a dummy pointer for tests without EVM
     const self_destruct = null; // No self-destruct needed for most system tests
-    return try TestFrame.init(allocator, gas_remaining, database, caller, value, calldata, block_info, evm_ptr, self_destruct);
+    return try TestFrame.init(allocator, gas_remaining, database, caller, value, calldata, evm_ptr, self_destruct);
 }
 
 // Mock dispatch that simulates successful execution flow

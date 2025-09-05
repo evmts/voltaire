@@ -21,6 +21,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -53,6 +54,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -92,6 +94,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -127,6 +130,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -163,6 +167,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -198,6 +203,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));

@@ -27,7 +27,7 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 1);
             const condition = self.stack.pop_unsafe();
             if (condition != 0) {
-                @branchHint(.likely);
+                @branchHint(.unlikely);
                 return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
             }
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -99,7 +99,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
-                @branchHint(.likely);
+                @branchHint(.unlikely);
                 // Take the jump - validate destination range
                 if (dest > std.math.maxInt(FrameType.PcType)) {
                     @branchHint(.unlikely);
@@ -136,7 +136,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
-                @branchHint(.likely);
+                @branchHint(.unlikely);
                 // Take the jump - validate destination range
                 if (dest > std.math.maxInt(FrameType.PcType)) {
                     @branchHint(.unlikely);
