@@ -12,6 +12,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// AND opcode (0x16) - Bitwise AND operation.
         pub fn @"and"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // AND requires 2 stack items
             const b = self.stack.pop_unsafe(); // Top of stack - second operand
             const a = self.stack.peek_unsafe(); // Second from top - first operand
             self.stack.set_top_unsafe(a & b);
@@ -21,6 +22,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// OR opcode (0x17) - Bitwise OR operation.
         pub fn @"or"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // OR requires 2 stack items
             const b = self.stack.pop_unsafe(); // Top of stack - second operand
             const a = self.stack.peek_unsafe(); // Second from top - first operand
             self.stack.set_top_unsafe(a | b);
@@ -30,6 +32,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// XOR opcode (0x18) - Bitwise XOR operation.
         pub fn xor(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // XOR requires 2 stack items
             const b = self.stack.pop_unsafe(); // Top of stack - second operand
             const a = self.stack.peek_unsafe(); // Second from top - first operand
             self.stack.set_top_unsafe(a ^ b);
@@ -39,6 +42,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// NOT opcode (0x19) - Bitwise NOT operation.
         pub fn not(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 1); // NOT requires 1 stack item
             const value = self.stack.peek_unsafe();
             self.stack.set_top_unsafe(~value);
             const next_cursor = cursor + 1;
@@ -51,6 +55,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Uses std.math.shr for consistent cross-platform behavior.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shr
         pub fn byte(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // BYTE requires 2 stack items
             const byte_index = self.stack.pop_unsafe(); // Top of stack - byte index
             const value = self.stack.peek_unsafe(); // Second from top - value to extract from
             const result = if (byte_index >= 32) 0 else blk: {
@@ -67,6 +72,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SHL opcode (0x1b) - Shift left operation using std.math.shl for consistent behavior.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shl
         pub fn shl(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // SHL requires 2 stack items
             const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
             const value = self.stack.peek_unsafe(); // Second from top - value to shift
             const result = if (shift >= @bitSizeOf(WordType)) blk: {
@@ -84,6 +90,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SHR opcode (0x1c) - Logical shift right operation using std.math.shr.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shr
         pub fn shr(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // SHR requires 2 stack items
             const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
             const value = self.stack.peek_unsafe(); // Second from top - value to shift
             const result = if (shift >= @bitSizeOf(WordType)) blk: {
@@ -102,6 +109,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Preserves the sign bit during shift.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shr
         pub fn sar(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); // SAR requires 2 stack items
             const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
             const value = self.stack.peek_unsafe(); // Second from top - value to shift
             const word_bits = @bitSizeOf(WordType);

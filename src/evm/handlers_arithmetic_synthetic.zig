@@ -69,7 +69,16 @@ pub fn Handlers(comptime FrameType: type) type {
             const divisor = cursor[1].push_inline.value;
 
             const dividend = self.stack.pop_unsafe();
-            const result = if (divisor == 0) 0 else dividend / divisor;
+            
+            // Convert to U256 for optimized division
+            const Uint = @import("primitives").Uint;
+            const U256 = Uint(256, 4);
+            const dividend_u256 = U256.from_u256(dividend);
+            const divisor_u256 = U256.from_u64(divisor);
+            
+            const result_u256 = if (divisor_u256.is_zero()) U256.ZERO else dividend_u256.wrapping_div(divisor_u256);
+            const result = result_u256.to_u256() orelse unreachable;
+            
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -81,7 +90,16 @@ pub fn Handlers(comptime FrameType: type) type {
             const divisor = cursor[1].push_pointer.value.*;
 
             const dividend = self.stack.pop_unsafe();
-            const result = if (divisor == 0) 0 else dividend / divisor;
+            
+            // Convert to U256 for optimized division
+            const Uint = @import("primitives").Uint;
+            const U256 = Uint(256, 4);
+            const dividend_u256 = U256.from_u256(dividend);
+            const divisor_u256 = U256.from_u256(divisor);
+            
+            const result_u256 = if (divisor_u256.is_zero()) U256.ZERO else dividend_u256.wrapping_div(divisor_u256);
+            const result = result_u256.to_u256() orelse unreachable;
+            
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });

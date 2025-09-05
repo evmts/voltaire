@@ -29,6 +29,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// - For smaller word types, may use different variants or truncate
         pub fn keccak(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
+            std.debug.assert(self.stack.size() >= 2); // KECCAK256 requires 2 stack items
             const offset = self.stack.pop_unsafe();  // Top of stack is offset
             const size = self.stack.pop_unsafe();    // Second is size
 
@@ -67,6 +68,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         break :blk @as(WordType, @truncate(hash));
                     },
                 };
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(empty_hash);
                 const op_data = dispatch.getOpData(.KECCAK256);
                 const next = op_data.next;
@@ -164,6 +166,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
 
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result_word);
 
             const op_data = dispatch.getOpData(.KECCAK256);
