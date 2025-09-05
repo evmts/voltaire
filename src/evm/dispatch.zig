@@ -475,12 +475,6 @@ pub fn Dispatch(comptime FrameType: type) type {
     };
 }
 
-// ============================
-// Test Support
-// ============================
-
-/// Helper type for tests that represents a scheduled element
-/// This is exported for test files to use
 pub fn ScheduleElement(comptime FrameType: type) type {
     const DispatchType = Dispatch(FrameType);
     return DispatchType.Item;

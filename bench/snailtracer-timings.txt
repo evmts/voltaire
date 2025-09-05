@@ -1,0 +1,5 @@
+# Snailtracer Benchmark Results
+Date: Thu Sep  4 17:12:58 PDT 2025
+Runs: 3
+Internal runs per execution: 100
+
