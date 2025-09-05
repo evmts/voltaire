@@ -8,7 +8,6 @@ const dispatch_metadata = @import("dispatch_metadata.zig");
 const dispatch_item = @import("dispatch_item.zig");
 const dispatch_jump_table = @import("dispatch_jump_table.zig");
 const dispatch_jump_table_builder = @import("dispatch_jump_table_builder.zig");
-const dispatch_allocated_memory = @import("dispatch_allocated_memory.zig");
 const dispatch_opcode_data = @import("dispatch_opcode_data.zig");
 const dispatch_pretty_print = @import("dispatch_pretty_print.zig");
 
@@ -30,7 +29,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             first_block_gas: Metadata.FirstBlockMetadata,
         };
 
-        const AllocatedMemory = dispatch_allocated_memory.AllocatedMemory(FrameType.WordType);
 
         fn processRegularOpcode(
             schedule_items: *ArrayList(Self.Item, null),
@@ -52,7 +50,6 @@ pub fn Dispatch(comptime FrameType: type) type {
         fn processPushOpcode(
             schedule_items: anytype,
             allocator: std.mem.Allocator,
-            allocated_memory: *AllocatedMemory,
             opcode_handlers: *const [256]OpcodeHandler,
             data: anytype,
         ) !void {
@@ -65,9 +62,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
             } else {
                 const value_ptr = try allocator.create(FrameType.WordType);
-                errdefer allocator.destroy(value_ptr);
                 value_ptr.* = data.value;
-                try allocated_memory.pointers.append(allocator, value_ptr);
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
             }
         }
@@ -164,8 +159,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
-            var allocated_memory = AllocatedMemory.init();
-            errdefer allocated_memory.deinit(allocator);
 
             var iter = bytecode.createIterator();
 
@@ -186,38 +179,38 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try processRegularOpcode(&schedule_items, allocator, opcode_handlers, data, instr_pc);
                     },
                     .push => |data| {
-                        try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data);
+                        try processPushOpcode(&schedule_items, allocator, opcode_handlers, data);
                     },
                     .jumpdest => |data| {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
                     .push_add_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_add);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_add);
                     },
                     .push_mul_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_mul);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_mul);
                     },
                     .push_sub_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_sub);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_sub);
                     },
                     .push_div_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_div);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_div);
                     },
                     .push_and_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_and);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_and);
                     },
                     .push_or_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_or);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_or);
                     },
                     .push_xor_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_xor);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor);
                     },
                     .push_jump_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_jump);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_jump);
                     },
                     .push_jumpi_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_jumpi);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_jumpi);
                     },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -235,69 +228,11 @@ pub fn Dispatch(comptime FrameType: type) type {
             return final_schedule;
         }
 
-        pub const BuildOwned = struct {
-            items: []Self.Item,
-            push_pointers: []*FrameType.WordType,
-        };
 
-        pub fn initWithOwnership(
-            allocator: std.mem.Allocator,
-            bytecode: anytype,
-            opcode_handlers: *const [256]OpcodeHandler,
-        ) !BuildOwned {
-            const ScheduleList = ArrayList(Self.Item, null);
-            var schedule_items = ScheduleList{};
-            errdefer schedule_items.deinit(allocator);
-
-            var allocated_memory = AllocatedMemory.init();
-            errdefer allocated_memory.deinit(allocator);
-
-            var iter = bytecode.createIterator();
-            const first_block_gas = calculateFirstBlockGas(bytecode);
-            if (first_block_gas > 0) try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
-
-            var opcode_count: usize = 0;
-            while (true) {
-                const instr_pc = iter.pc;
-                const maybe = iter.next();
-                if (maybe == null) break;
-                const op_data = maybe.?;
-                opcode_count += 1;
-
-                switch (op_data) {
-                    .regular => |data| try processRegularOpcode(&schedule_items, allocator, opcode_handlers, data, instr_pc),
-                    .push => |data| try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data),
-                    .jumpdest => |data| {
-                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
-                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
-                    },
-                    .push_add_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_add),
-                    .push_mul_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_mul),
-                    .push_sub_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_sub),
-                    .push_div_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_div),
-                    .push_and_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_and),
-                    .push_or_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_or),
-                    .push_xor_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_xor),
-                    .push_jump_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_jump),
-                    .push_jumpi_fusion => |data| try Self.handleFusionOperation(&schedule_items, allocator, &allocated_memory, data.value, .push_jumpi),
-                    .stop => try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] }),
-                    .invalid => try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.INVALID)] }),
-                }
-            }
-
-            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
-            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
-
-            const items = try schedule_items.toOwnedSlice(allocator);
-            const push_ptrs = try allocated_memory.pointers.toOwnedSlice(allocator);
-            allocated_memory = AllocatedMemory.init();
-            return BuildOwned{ .items = items, .push_pointers = push_ptrs };
-        }
 
         fn handleFusionOperation(
             schedule_items: anytype,
             allocator: std.mem.Allocator,
-            allocated_memory: *AllocatedMemory,
             value: FrameType.WordType,
             fusion_type: FusionType,
         ) !void {
@@ -311,9 +246,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_val } });
             } else {
                 const value_ptr = try allocator.create(FrameType.WordType);
-                errdefer allocator.destroy(value_ptr);
                 value_ptr.* = value;
-                try allocated_memory.pointers.append(allocator, value_ptr);
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
             }
         }
@@ -367,31 +300,20 @@ pub fn Dispatch(comptime FrameType: type) type {
             return jump_table;
         }
 
-        pub fn deinitSchedule(allocator: std.mem.Allocator, schedule: []const Item) void {
-            allocator.free(schedule);
-        }
-
         pub const DispatchSchedule = struct {
             items: []Item,
             allocator: std.mem.Allocator,
-            push_pointers: []const *FrameType.WordType = &.{},
 
             pub fn init(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler) !DispatchSchedule {
-                const owned = try Self.initWithOwnership(allocator, bytecode, opcode_handlers);
+                const items = try Self.init(allocator, bytecode, opcode_handlers);
                 return DispatchSchedule{
-                    .items = owned.items,
+                    .items = items,
                     .allocator = allocator,
-                    .push_pointers = owned.push_pointers,
                 };
             }
 
             pub fn deinit(self: *DispatchSchedule) void {
-                for (self.push_pointers) |ptr| {
-                    self.allocator.destroy(ptr);
-                }
-                if (self.push_pointers.len > 0) self.allocator.free(self.push_pointers);
-
-                Self.deinitSchedule(self.allocator, self.items);
+                self.allocator.free(self.items);
             }
 
             pub fn getDispatch(self: *const DispatchSchedule) Self {
