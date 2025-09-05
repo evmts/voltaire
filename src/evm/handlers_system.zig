@@ -46,6 +46,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Check static context - CALL with non-zero value is not allowed in static context
             // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
+            std.debug.assert(self.stack.size() >= 7); // CALL requires 7 stack items
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
@@ -64,6 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 const next = op_data.next;
@@ -80,6 +82,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 output_offset > std.math.maxInt(usize) or
                 output_size > std.math.maxInt(usize))
             {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 const next = op_data.next;
@@ -179,6 +182,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success status (1 for success, 0 for failure)
             // log.debug("CALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.CALL);
@@ -191,6 +195,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn callcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
+            std.debug.assert(self.stack.size() >= 7); // CALLCODE requires 7 stack items
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
@@ -204,6 +209,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALLCODE);
                 const next = op_data.next;
@@ -301,6 +307,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success (1) or failure (0) onto stack
             // log.debug("CALLCODE result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.CALLCODE);
@@ -313,6 +320,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
+            std.debug.assert(self.stack.size() >= 6); // DELEGATECALL requires 6 stack items
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const input_offset = self.stack.pop_unsafe();
@@ -438,6 +446,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success status (1 for success, 0 for failure)
             // log.debug("DELEGATECALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.DELEGATECALL);
@@ -451,6 +460,7 @@ pub fn Handlers(comptime FrameType: type) type {
             
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
+            std.debug.assert(self.stack.size() >= 6); // STATICCALL requires 6 stack items
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const input_offset = self.stack.pop_unsafe();
@@ -572,6 +582,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_sc));
 
             // Push success status (1 for success, 0 for failure)
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.STATICCALL);
@@ -586,6 +597,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
+            std.debug.assert(self.stack.size() >= 3); // CREATE requires 3 stack items
             const value = self.stack.pop_unsafe();
             const offset = self.stack.pop_unsafe();
             const size = self.stack.pop_unsafe();
@@ -645,8 +657,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(to_u256(result.created_address.?));
             } else {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(0);
             }
 
@@ -663,6 +677,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
             // EVM pop order: value, offset, size, salt (top first)
+            std.debug.assert(self.stack.size() >= 4); // CREATE2 requires 4 stack items
             const value = self.stack.pop_unsafe();
             const offset = self.stack.pop_unsafe();
             const size = self.stack.pop_unsafe();
@@ -727,8 +742,10 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(to_u256(result.created_address.?));
             } else {
+                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                 self.stack.push_unsafe(0);
             }
 
@@ -746,6 +763,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
+            std.debug.assert(self.stack.size() >= 2); // RETURN requires 2 stack items
             const offset = self.stack.pop_unsafe();  // Top of stack
             const size = self.stack.pop_unsafe();    // Second from top
 
@@ -801,6 +819,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn revert(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
+            std.debug.assert(self.stack.size() >= 2); // REVERT requires 2 stack items
             const size = self.stack.pop_unsafe();    // Top of stack
             const offset = self.stack.pop_unsafe();  // Second from top
 
@@ -857,6 +876,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn selfdestruct(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
+            std.debug.assert(self.stack.size() >= 1); // SELFDESTRUCT requires 1 stack item
             const recipient_u256 = self.stack.pop_unsafe();
             const recipient = from_u256(recipient_u256);
             // Reduce log noise
@@ -907,6 +927,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             
             // Pop authorization parameters from stack
+            std.debug.assert(self.stack.size() >= 5); // AUTH requires 5 stack items
             const sig_s = self.stack.pop_unsafe();
             const sig_r = self.stack.pop_unsafe();
             const sig_v = self.stack.pop_unsafe();
@@ -988,6 +1009,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.authorized_address = authority;
             
             // Push success
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(1);
             const op_data = dispatch.getOpData(.AUTHCALL);
             const next = op_data.next;
@@ -1000,6 +1022,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             
             // Pop call parameters from stack
+            std.debug.assert(self.stack.size() >= 8); // AUTHCALL requires 8 stack items
             const auth_flag = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
             const output_offset = self.stack.pop_unsafe();
@@ -1126,6 +1149,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining = @as(@TypeOf(self.gas_remaining), @intCast(result.gas_left));
             
             // Push success status
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(if (result.success) 1 else 0);
             const op_data = dispatch.getOpData(.AUTHCALL);
             const next = op_data.next;

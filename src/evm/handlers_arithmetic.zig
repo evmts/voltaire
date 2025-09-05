@@ -40,7 +40,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const b = self.stack.peek_unsafe(); // Second from top (second operand)
             // EVM semantics: top - second = a - b
             const result = a -% b;
-            log.debug("SUB: a(top)={x}, b(second)={x}, result={x}", .{a, b, result});
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -51,17 +50,17 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 2); // DIV requires 2 stack items
             const a = self.stack.pop_unsafe(); // Top of stack (first operand)
             const b = self.stack.peek_unsafe(); // Second from top (second operand)
-            
+
             // Convert to U256 for optimized division
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const a_u256 = U256.from_u256(a);
-            const b_u256 = U256.from_u256(b);
-            
-            // EVM semantics: top / second = a / b, division by zero returns 0
-            const result_u256 = if (b_u256.is_zero()) U256.ZERO else a_u256.wrapping_div(b_u256);
-            const result = result_u256.to_u256() orelse unreachable;
-            
+            const a_u256 = U256.from_u256_unsafe(a);
+            const b_u256 = U256.from_u256_unsafe(b);
+
+            // EVM semantics: top / second = a / b (wrapping_div returns 0 for division by zero)
+            const result_u256 = a_u256.wrapping_div(b_u256);
+            const result = result_u256.to_u256_unsafe();
+
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -73,45 +72,56 @@ pub fn Handlers(comptime FrameType: type) type {
             const a = self.stack.pop_unsafe(); // Top of stack (first operand)
             const b = self.stack.peek_unsafe(); // Second from top (second operand)
 
-            log.debug("SDIV: first=0x{x}, second=0x{x}", .{ a, b });
-            
-            // Convert to U256 for optimized division
+            // Convert to U256 for arithmetic
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const a_u256 = U256.from_u256(a);
-            const b_u256 = U256.from_u256(b);
             
-            var result: WordType = undefined;
-            if (b_u256.is_zero()) {
-                result = 0;
-                log.debug("SDIV: division by zero, result=0", .{});
-            } else {
-                const first_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-                const second_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-                log.debug("SDIV: first_signed={}, second_signed={}", .{ first_signed, second_signed });
-                const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
-                if (first_signed == min_signed and second_signed == -1) {
-                    // MIN / -1 overflow case
-                    result = a;
-                    log.debug("SDIV: overflow case, result=0x{x}", .{result});
-                } else {
-                    // Use optimized U256 division for absolute values
-                    const abs_first = if (first_signed < 0) U256.from_u256(@bitCast(-first_signed)) else a_u256;
-                    const abs_second = if (second_signed < 0) U256.from_u256(@bitCast(-second_signed)) else b_u256;
-                    const abs_result = abs_first.wrapping_div(abs_second);
-                    const abs_result_u256 = abs_result.to_u256() orelse unreachable;
-                    
-                    // Apply sign
-                    const negative_result = (first_signed < 0) != (second_signed < 0);
-                    if (negative_result and abs_result_u256 != 0) {
-                        const result_signed = -@as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(abs_result_u256));
-                        result = @bitCast(result_signed);
-                    } else {
-                        result = abs_result_u256;
-                    }
-                    log.debug("SDIV: result=0x{x}", .{result});
-                }
+            // Constants for two's complement
+            const SIGN_BIT = @as(u256, 1) << 255;
+            const MIN_SIGNED = SIGN_BIT; // -2^255 in two's complement
+            
+            // Check for MIN / -1 overflow case and division by zero
+            if (b == 0) {
+                self.stack.set_top_unsafe(0);
+                const next_cursor = cursor + 1;
+                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
+            if (a == MIN_SIGNED and b == std.math.maxInt(u256)) { // -1 in two's complement
+                self.stack.set_top_unsafe(MIN_SIGNED);
+                const next_cursor = cursor + 1;
+                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            }
+            
+            // Determine signs
+            const a_negative = (a & SIGN_BIT) != 0;
+            const b_negative = (b & SIGN_BIT) != 0;
+            
+            // Convert to absolute values using two's complement
+            const a_abs = if (a_negative) blk: {
+                const a_u256 = U256.from_u256_unsafe(a);
+                const negated = U256.ZERO.wrapping_sub(a_u256);
+                break :blk negated.to_u256_unsafe();
+            } else a;
+            
+            const b_abs = if (b_negative) blk: {
+                const b_u256 = U256.from_u256_unsafe(b);
+                const negated = U256.ZERO.wrapping_sub(b_u256);
+                break :blk negated.to_u256_unsafe();
+            } else b;
+            
+            // Perform unsigned division
+            const a_abs_u256 = U256.from_u256_unsafe(a_abs);
+            const b_abs_u256 = U256.from_u256_unsafe(b_abs);
+            const quotient_u256 = a_abs_u256.wrapping_div(b_abs_u256);
+            var result = quotient_u256.to_u256_unsafe();
+            
+            // Apply sign to result (negative if signs differ)
+            if (a_negative != b_negative) {
+                const result_u256 = U256.from_u256_unsafe(result);
+                const negated = U256.ZERO.wrapping_sub(result_u256);
+                result = negated.to_u256_unsafe();
+            }
+            
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -122,17 +132,17 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 2); // MOD requires 2 stack items
             const a = self.stack.pop_unsafe(); // Top of stack (first operand)
             const b = self.stack.peek_unsafe(); // Second from top (second operand)
-            
+
             // Convert to U256 for optimized modulo
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const a_u256 = U256.from_u256(a);
-            const b_u256 = U256.from_u256(b);
-            
-            // EVM semantics: top % second = a % b, modulo by zero returns 0
-            const result_u256 = if (b_u256.is_zero()) U256.ZERO else a_u256.wrapping_rem(b_u256);
-            const result = result_u256.to_u256() orelse unreachable;
-            
+            const a_u256 = U256.from_u256_unsafe(a);
+            const b_u256 = U256.from_u256_unsafe(b);
+
+            // EVM semantics: top % second = a % b (wrapping_rem returns 0 for modulo by zero)
+            const result_u256 = a_u256.wrapping_rem(b_u256);
+            const result = result_u256.to_u256_unsafe();
+
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -143,38 +153,58 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 2); // SMOD requires 2 stack items
             const a = self.stack.pop_unsafe(); // Top of stack (first operand)
             const b = self.stack.peek_unsafe(); // Second from top (second operand)
-            
-            // Convert to U256 for optimized modulo
+
+            // Convert to U256 for arithmetic
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const b_u256 = U256.from_u256(b);
             
-            var result: WordType = undefined;
-            if (b_u256.is_zero()) {
-                result = 0;
-            } else {
-                const first_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-                const second_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-                const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
-                // Special case: MIN_INT % -1 = 0 (to avoid overflow)
-                if (first_signed == min_signed and second_signed == -1) {
-                    result = 0;
-                } else {
-                    // Use optimized U256 modulo for absolute values
-                    const abs_first = if (first_signed < 0) U256.from_u256(@bitCast(-first_signed)) else U256.from_u256(a);
-                    const abs_second = if (second_signed < 0) U256.from_u256(@bitCast(-second_signed)) else b_u256;
-                    const abs_result = abs_first.wrapping_rem(abs_second);
-                    const abs_result_u256 = abs_result.to_u256() orelse unreachable;
-                    
-                    // Apply sign (result takes sign of dividend)
-                    if (first_signed < 0 and abs_result_u256 != 0) {
-                        const result_signed = -@as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(abs_result_u256));
-                        result = @bitCast(result_signed);
-                    } else {
-                        result = abs_result_u256;
-                    }
-                }
+            // Constants for two's complement
+            const SIGN_BIT = @as(u256, 1) << 255;
+            const MIN_SIGNED = SIGN_BIT; // -2^255 in two's complement
+            
+            // Special case: modulo by zero returns 0
+            if (b == 0) {
+                self.stack.set_top_unsafe(0);
+                const next_cursor = cursor + 1;
+                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
+            // Special case: MIN_INT % -1 = 0 (to avoid overflow)
+            if (a == MIN_SIGNED and b == std.math.maxInt(u256)) { // -1 in two's complement
+                self.stack.set_top_unsafe(0);
+                const next_cursor = cursor + 1;
+                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            }
+            
+            // Determine signs
+            const a_negative = (a & SIGN_BIT) != 0;
+            const b_negative = (b & SIGN_BIT) != 0;
+            
+            // Convert to absolute values using two's complement
+            const a_abs = if (a_negative) blk: {
+                const a_u256 = U256.from_u256_unsafe(a);
+                const negated = U256.ZERO.wrapping_sub(a_u256);
+                break :blk negated.to_u256_unsafe();
+            } else a;
+            
+            const b_abs = if (b_negative) blk: {
+                const b_u256 = U256.from_u256_unsafe(b);
+                const negated = U256.ZERO.wrapping_sub(b_u256);
+                break :blk negated.to_u256_unsafe();
+            } else b;
+            
+            // Perform unsigned modulo
+            const a_abs_u256 = U256.from_u256_unsafe(a_abs);
+            const b_abs_u256 = U256.from_u256_unsafe(b_abs);
+            const remainder_u256 = a_abs_u256.wrapping_rem(b_abs_u256);
+            var result = remainder_u256.to_u256_unsafe();
+            
+            // Apply sign to result (result takes sign of dividend)
+            if (a_negative) {
+                const result_u256 = U256.from_u256_unsafe(result);
+                const negated = U256.ZERO.wrapping_sub(result_u256);
+                result = negated.to_u256_unsafe();
+            }
+            
             self.stack.set_top_unsafe(result);
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -336,8 +366,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 const ext_usize = @as(usize, @intCast(ext));
                 const bit_index = ext_usize * 8 + 7;
 
-
-
                 // Cast bit_index to the appropriate shift type
                 const shift_amount = @as(u8, @intCast(bit_index));
 
@@ -350,10 +378,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
             }
 
-
-
             self.stack.set_top_unsafe(result);
-
 
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });

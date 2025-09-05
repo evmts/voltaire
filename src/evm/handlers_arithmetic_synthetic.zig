@@ -17,8 +17,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const push_value = cursor[1].push_inline.value;
 
             // Pop top value and add the pushed value
+            std.debug.assert(self.stack.size() >= 1); // PUSH_ADD_INLINE requires 1 stack item
             const top = self.stack.pop_unsafe();
             const result = top +% push_value;
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             // Continue to next operation (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
@@ -31,8 +33,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const push_value = cursor[1].push_pointer.value.*;
 
             // Pop top value and add the pushed value
+            std.debug.assert(self.stack.size() >= 1); // PUSH_ADD_POINTER requires 1 stack item
             const top = self.stack.pop_unsafe();
             const result = top +% push_value;
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             // Continue to next operation (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
@@ -44,8 +48,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_inline.value;
 
+            std.debug.assert(self.stack.size() >= 1); // PUSH_MUL_INLINE requires 1 stack item
             const top = self.stack.pop_unsafe();
             const result = top *% push_value;
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -56,8 +62,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_pointer.value.*;
 
+            std.debug.assert(self.stack.size() >= 1); // PUSH_MUL_POINTER requires 1 stack item
             const top = self.stack.pop_unsafe();
             const result = top *% push_value;
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -68,17 +76,19 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const divisor = cursor[1].push_inline.value;
 
+            std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_INLINE requires 1 stack item
             const dividend = self.stack.pop_unsafe();
             
             // Convert to U256 for optimized division
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const dividend_u256 = U256.from_u256(dividend);
+            const dividend_u256 = U256.from_u256_unsafe(dividend);
             const divisor_u256 = U256.from_u64(divisor);
             
-            const result_u256 = if (divisor_u256.is_zero()) U256.ZERO else dividend_u256.wrapping_div(divisor_u256);
-            const result = result_u256.to_u256() orelse unreachable;
+            const result_u256 = dividend_u256.wrapping_div(divisor_u256);
+            const result = result_u256.to_u256_unsafe();
             
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -89,17 +99,19 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const divisor = cursor[1].push_pointer.value.*;
 
+            std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_POINTER requires 1 stack item
             const dividend = self.stack.pop_unsafe();
             
             // Convert to U256 for optimized division
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const dividend_u256 = U256.from_u256(dividend);
-            const divisor_u256 = U256.from_u256(divisor);
+            const dividend_u256 = U256.from_u256_unsafe(dividend);
+            const divisor_u256 = U256.from_u256_unsafe(divisor);
             
-            const result_u256 = if (divisor_u256.is_zero()) U256.ZERO else dividend_u256.wrapping_div(divisor_u256);
-            const result = result_u256.to_u256() orelse unreachable;
+            const result_u256 = dividend_u256.wrapping_div(divisor_u256);
+            const result = result_u256.to_u256_unsafe();
             
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -110,8 +122,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_inline.value;
 
+            std.debug.assert(self.stack.size() >= 1); // PUSH_SUB_INLINE requires 1 stack item
             const top = self.stack.pop_unsafe();
             const result = top -% push_value;
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -122,8 +136,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_pointer.value.*;
 
+            std.debug.assert(self.stack.size() >= 1); // PUSH_SUB_POINTER requires 1 stack item
             const top = self.stack.pop_unsafe();
             const result = top -% push_value;
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
