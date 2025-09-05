@@ -19,7 +19,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         const OpcodeHandler = *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn;
 
-        pub const Item = union {
+        pub const Item = union(enum) {
             opcode_handler: OpcodeHandler,
             jump_dest: Metadata.JumpDestMetadata,
             push_inline: Metadata.PushInlineMetadata,
@@ -150,6 +150,11 @@ pub fn Dispatch(comptime FrameType: type) type {
             return gas;
         }
 
+        const UnresolvedJump = struct {
+            schedule_index: usize,  // Index in schedule where jump_static metadata is
+            target_pc: FrameType.PcType,  // PC of the jump destination
+        };
+
         pub fn init(
             allocator: std.mem.Allocator,
             bytecode: anytype,
@@ -159,6 +164,9 @@ pub fn Dispatch(comptime FrameType: type) type {
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
+            // Track unresolved forward jumps
+            var unresolved_jumps = ArrayList(UnresolvedJump, null){};
+            defer unresolved_jumps.deinit(allocator);
 
             var iter = bytecode.createIterator();
 
@@ -207,10 +215,10 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor);
                     },
                     .push_jump_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_jump);
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jump);
                     },
                     .push_jumpi_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_jumpi);
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jumpi);
                     },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -225,6 +233,10 @@ pub fn Dispatch(comptime FrameType: type) type {
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
+            
+            // Resolve forward jumps using the jump table
+            try resolveStaticJumps(allocator, final_schedule, bytecode, unresolved_jumps.items);
+            
             return final_schedule;
         }
 
@@ -248,6 +260,60 @@ pub fn Dispatch(comptime FrameType: type) type {
                 const value_ptr = try allocator.create(FrameType.WordType);
                 value_ptr.* = value;
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
+            }
+        }
+
+        fn handleStaticJumpFusion(
+            schedule_items: anytype,
+            unresolved_jumps: *ArrayList(UnresolvedJump, null),
+            allocator: std.mem.Allocator,
+            value: FrameType.WordType,
+            fusion_type: FusionType,
+        ) !void {
+            // Use the new static jump handlers
+            const JumpSyntheticHandlers = @import("handlers_jump_synthetic.zig").Handlers(FrameType);
+            const handler = switch (fusion_type) {
+                .push_jump => &JumpSyntheticHandlers.jump_to_static_location,
+                .push_jumpi => &JumpSyntheticHandlers.jumpi_to_static_location,
+                else => unreachable,
+            };
+            
+            try schedule_items.append(allocator, .{ .opcode_handler = handler });
+            
+            // Add placeholder for jump_static metadata that will be resolved later
+            const metadata_index = schedule_items.items.len;
+            try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
+            
+            // Record this jump for later resolution if within valid PC range
+            if (value <= std.math.maxInt(FrameType.PcType)) {
+                try unresolved_jumps.append(allocator, .{
+                    .schedule_index = metadata_index,
+                    .target_pc = @intCast(value),
+                });
+            }
+        }
+
+        fn resolveStaticJumps(
+            allocator: std.mem.Allocator,
+            schedule: []Item,
+            bytecode: anytype,
+            unresolved_jumps: []const UnresolvedJump,
+        ) !void {
+            // Build jump table to find dispatch locations
+            const jump_table = try createJumpTable(allocator, schedule, bytecode);
+            defer allocator.free(jump_table.entries);
+            
+            // Resolve each unresolved jump
+            for (unresolved_jumps) |unresolved| {
+                if (jump_table.findJumpTarget(unresolved.target_pc)) |target_dispatch| {
+                    // Update the jump_static metadata with the resolved dispatch pointer
+                    schedule[unresolved.schedule_index].jump_static = .{
+                        .dispatch = @as(*const anyopaque, @ptrCast(target_dispatch.cursor)),
+                    };
+                } else {
+                    // Invalid jump destination - leave as undefined, will fail at runtime
+                    // This maintains compatibility with existing error handling
+                }
             }
         }
 

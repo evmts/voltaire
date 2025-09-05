@@ -59,6 +59,10 @@ pub const log = @import("log.zig");
 pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 pub const Bytecode = @import("bytecode.zig").Bytecode;
 pub const BytecodeStats = @import("bytecode_stats.zig").BytecodeStats;
+pub const bytecode = @import("bytecode.zig");
+
+// Dispatch module
+pub const dispatch = @import("dispatch.zig");
 
 // Opcode and instruction data
 pub const Opcode = @import("opcode.zig").Opcode;

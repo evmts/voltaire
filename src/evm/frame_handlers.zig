@@ -206,6 +206,7 @@ pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) Frame
     };
 }
 
+
 /// Returns traced opcode handlers that wrap the base handlers with tracer calls
 pub fn getTracedOpcodeHandlers(
     comptime FrameType: type,
