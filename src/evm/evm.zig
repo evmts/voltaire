@@ -31,6 +31,7 @@ const TransactionContext = @import("transaction_context.zig").TransactionContext
 const Opcode = @import("opcode.zig").Opcode;
 const call_result_module = @import("call_result.zig");
 const call_params_module = @import("call_params.zig");
+const analysis_cache = @import("analysis_cache.zig");
 
 /// Creates a configured EVM instance type.
 ///
@@ -159,6 +160,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         call_arena: std.heap.ArenaAllocator,
         /// Small reusable buffer for fixed-size outputs (e.g., 32-byte address)
         small_output_buf: [64]u8 = undefined,
+        /// Cache for bytecode analysis (dispatch schedules and jump tables)
+        analysis_cache: analysis_cache.AnalysisCache(config.frame_config()),
 
         /// Initialize a new EVM instance.
         ///
@@ -192,6 +195,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
+            
+            // Initialize the analysis cache with a reasonable size
+            var cache = try analysis_cache.AnalysisCache(config.frame_config()).init(allocator, 32);
+            errdefer cache.deinit();
+            
             return Self{
                 .depth = 0,
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
@@ -214,6 +222,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .current_snapshot_id = 0,
                 .logs = std.ArrayList(@import("call_result.zig").Log){},
                 .call_arena = std.heap.ArenaAllocator.init(allocator),
+                .analysis_cache = cache,
             };
         }
 
@@ -229,12 +238,27 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.access_list.deinit();
             self.logs.deinit(self.allocator);
             self.call_arena.deinit();
+            self.analysis_cache.deinit();
         }
 
         /// Get the arena allocator for temporary allocations during the current call.
         /// This allocator is reset after each root call completes.
         pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
             return self.call_arena.allocator();
+        }
+        
+        /// Get bytecode analysis from cache or create new analysis.
+        /// Returns the dispatch schedule and jump table for the given bytecode.
+        /// The returned analysis is owned by the cache and should not be freed by the caller.
+        pub fn getAnalysis(self: *Self, bytecode_raw: []const u8) !analysis_cache.CachedAnalysis(config.frame_config()) {
+            // Use the cache to get or create analysis
+            return self.analysis_cache.getOrCreate(bytecode_raw);
+        }
+        
+        /// Release a reference to cached analysis.
+        /// Called when a frame is done using the analysis.
+        pub fn releaseAnalysis(self: *Self, bytecode_raw: []const u8) void {
+            self.analysis_cache.release(bytecode_raw);
         }
 
         /// Transfer value between accounts with proper balance checks and error handling
