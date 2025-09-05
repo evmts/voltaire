@@ -110,7 +110,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const Bytecode = bytecode_mod.Bytecode(.{
             .max_bytecode_size = config.max_bytecode_size,
             .max_initcode_size = config.max_initcode_size,
-            .fusions_enabled = false,
+            .fusions_enabled = true,
         });
         /// The BlockInfo type configured for this frame
         pub const BlockInfo = block_info_mod.BlockInfo(config.block_info_config);
@@ -149,20 +149,20 @@ pub fn Frame(comptime config: FrameConfig) type {
         // = 64B exactly!
 
         // CACHE LINE 2 (64-127 bytes) - WARM PATH
+        evm_ptr: *anyopaque, // 8B - EVM instance pointer
         value: *const WordType, // 8B - Call value (pointer)
+        logs: std.ArrayListUnmanaged(Log), // 16B - Log array list (unmanaged)
         contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
         caller: Address, // 20B - Calling address
-        logs: std.ArrayListUnmanaged(Log), // 16B - Log array list (unmanaged)
-        evm_ptr: *anyopaque, // 8B - EVM instance pointer
 
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         output: []u8, // 16B - Output data slice (only for RETURN/REVERT)
         jump_table: Dispatch.JumpTable, // 24B - Jump table for JUMP/JUMPI validation (entries slice)
-        allocator: std.mem.Allocator, // 16B - Memory allocator
-        self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
-        block_info: BlockInfo, // ~188B - Block context (spans multiple cache lines)
-        authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
         bytecode: ?Bytecode = null, // Bytecode object (for CODESIZE/CODECOPY/analysis)
+        authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
+        block_info: BlockInfo, // ~188B - Block context (spans multiple cache lines)
+        self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
+        allocator: std.mem.Allocator, // 16B - Memory allocator
 
         //
         /// Initialize a new execution frame.
@@ -254,7 +254,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Get EVM instance to access the cache
             const evm = self.getEvm();
-            
+
             // Get analysis from cache or create new
             const t_analysis_start = std.time.Instant.now() catch unreachable;
             const cached_analysis = evm.getAnalysis(bytecode_raw) catch |e| {
@@ -271,13 +271,13 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             const t_analysis_end = std.time.Instant.now() catch unreachable;
             analysis_ns = t_analysis_end.since(t_analysis_start);
-            
+
             // Release the analysis reference when done
             defer evm.releaseAnalysis(bytecode_raw);
-            
+
             // Store a reference to the bytecode for other frame operations
             self.bytecode = cached_analysis.bytecode.*;
-            
+
             // Get schedule and jump table from cache
             const schedule = cached_analysis.schedule;
             const jump_table = cached_analysis.jump_table;
@@ -289,7 +289,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             } else {
                 // log.debug("Using NON-TRACED handlers", .{});
             }
-            
+
             // Clear tracer at end of function, not at end of if block
             defer {
                 if (TracerType != null) {
@@ -463,7 +463,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub inline fn getEvm(self: *const Self) *DefaultEvm {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
         }
-
 
         /// Pretty print the frame state for debugging and visualization.
         /// Shows stack, memory, gas, and other key state information with ANSI colors.

@@ -55,7 +55,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub const BytecodeFactory = @import("bytecode.zig").Bytecode;
         pub const Bytecode = BytecodeFactory(.{
             .max_bytecode_size = config.max_bytecode_size,
-            .fusions_enabled = false, // Disable fusions for now
+            .fusions_enabled = config.enable_fusion,
         });
         /// Journal handles reverting state when state needs to be reverted
         pub const Journal: type = @import("journal.zig").Journal(.{
@@ -107,7 +107,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             WriteProtection,
             BytecodeTooLarge,
         };
-
 
         // CACHE LINE 1 - HOT PATH (frequently accessed during execution)
         /// Current call depth (0 = root call)
@@ -174,32 +173,32 @@ pub fn Evm(comptime config: EvmConfig) type {
             beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
                 log.warn("Failed to process beacon root update: {}", .{err});
             };
-            
+
             // Process historical block hash update for EIP-2935 if applicable
             const historical_block_hashes = @import("historical_block_hashes.zig");
             historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
                 log.warn("Failed to process historical block hash update: {}", .{err});
             };
-            
+
             // Process validator deposits for EIP-6110 if applicable
             const validator_deposits = @import("validator_deposits.zig");
             validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
                 log.warn("Failed to process validator deposits: {}", .{err});
             };
-            
+
             // Process validator withdrawals for EIP-7002 if applicable
             const validator_withdrawals = @import("validator_withdrawals.zig");
             validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
                 log.warn("Failed to process validator withdrawals: {}", .{err});
             };
-            
+
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
-            
+
             // Initialize the analysis cache with a reasonable size
             var cache = try analysis_cache.AnalysisCache(config.frame_config()).init(allocator, 32);
             errdefer cache.deinit();
-            
+
             return Self{
                 .depth = 0,
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
@@ -246,7 +245,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
             return self.call_arena.allocator();
         }
-        
+
         /// Get bytecode analysis from cache or create new analysis.
         /// Returns the dispatch schedule and jump table for the given bytecode.
         /// The returned analysis is owned by the cache and should not be freed by the caller.
@@ -254,7 +253,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Use the cache to get or create analysis
             return self.analysis_cache.getOrCreate(bytecode_raw);
         }
-        
+
         /// Release a reference to cached analysis.
         /// Called when a frame is done using the analysis.
         pub fn releaseAnalysis(self: *Self, bytecode_raw: []const u8) void {
@@ -282,14 +281,14 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn simulate(self: *Self, params: CallParams) CallResult {
             // Create a snapshot before execution
             const snapshot_id = self.journal.create_snapshot();
-            
+
             // For top-level simulations, we need to clear the access list
             // to ensure consistent gas costs across multiple simulations
             const is_top_level = self.depth == 0;
             if (is_top_level) {
                 self.access_list.clear();
             }
-            
+
             // Always revert database state changes
             defer {
                 // For simulate, we don't need to apply individual reverts since
@@ -297,7 +296,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // This avoids potential stack overflow with large numbers of entries.
                 self.journal.revert_to_snapshot(snapshot_id);
             }
-            
+
             // Execute the call normally and return its result
             // Note: call() will also try to clear for top-level, but that's OK - clearing twice is safe
             return self.call(params);
@@ -310,10 +309,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) CallResult {
             params.validate() catch return CallResult.failure(0);
-            
+
             // Only reset state for top-level calls (depth == 0)
             const is_top_level = self.depth == 0;
-            
+
             // Reset per-transaction state at the START of each new transaction
             if (is_top_level) {
                 // Clear access list for new transaction (EIP-2929)
@@ -331,7 +330,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Reset arena allocator
                 _ = self.call_arena.reset(.retain_capacity);
             }
-            
+
             defer if (is_top_level) {
                 // Cleanup after transaction completes
                 self.depth = 0;
@@ -340,7 +339,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // and the caller is responsible for the memory
                 self.return_data = &.{};
             };
-            
+
             // Pre-warm addresses for top-level calls (EIP-2929)
             if (is_top_level) {
                 // Get the target address from params
@@ -351,28 +350,28 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .staticcall => |p| p.to,
                     .create, .create2 => primitives.Address.ZERO_ADDRESS, // Creates don't have a target
                 };
-                
+
                 // Pre-warm: tx.origin, target, and coinbase (EIP-3651 for Shanghai+)
                 // Build a small array of addresses to warm (max 3: origin, target, coinbase)
                 var warm_addresses: [3]primitives.Address = undefined;
                 var warm_count: usize = 0;
-                
+
                 // Always warm origin
                 warm_addresses[warm_count] = self.origin;
                 warm_count += 1;
-                
-                // Warm target if it's not a create operation  
+
+                // Warm target if it's not a create operation
                 if (!std.mem.eql(u8, &target_address.bytes, &primitives.Address.ZERO_ADDRESS.bytes)) {
                     warm_addresses[warm_count] = target_address;
                     warm_count += 1;
                 }
-                
+
                 // EIP-3651: Warm coinbase for Shanghai+
                 if (self.hardfork_config.isAtLeast(.SHANGHAI)) {
                     warm_addresses[warm_count] = self.block_info.coinbase;
                     warm_count += 1;
                 }
-                
+
                 // Pre-warm all addresses
                 if (warm_count > 0) {
                     self.access_list.pre_warm_addresses(warm_addresses[0..warm_count]) catch {};
@@ -385,10 +384,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             if (!self.disable_gas_checking and gas == 0) return CallResult.failure(0);
             if (self.depth >= config.max_call_depth) return CallResult.failure(0);
-            
+
             // Store initial gas for EIP-3529 calculations
             const initial_gas = gas;
-            
+
             // Deduct intrinsic gas for top-level calls (transactions)
             const execution_gas = if (is_top_level) blk: {
                 const GasConstants = primitives.GasConstants;
@@ -396,13 +395,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .create, .create2 => GasConstants.TxGasContractCreation, // 53000 for contract creation
                     else => GasConstants.TxGas, // 21000 for regular calls
                 };
-                
+
                 // Check if we have enough gas for intrinsic cost
                 if (gas < intrinsic_gas) return CallResult.failure(0);
-                
+
                 break :blk gas - intrinsic_gas;
             } else gas;
-            
+
             // Route to appropriate handler
             var result = switch (params) {
                 .call => |p| blk: {
@@ -418,16 +417,16 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch CallResult.failure(0),
                 .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch CallResult.failure(0),
             };
-            
+
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success and self.depth == 0) {
                 const gas_used = initial_gas - result.gas_left;
                 const eips_instance = @import("eips.zig").Eips{ .hardfork = self.hardfork_config };
                 const capped_refund = eips_instance.eip_3529_gas_refund_cap(gas_used, self.gas_refund_counter);
-                
+
                 // Apply the refund, ensuring we don't exceed the gas used
                 result.gas_left = @min(initial_gas, result.gas_left + capped_refund);
-                
+
                 // Reset refund counter for next transaction
                 self.gas_refund_counter = 0;
             }
@@ -476,13 +475,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (std.mem.eql(u8, &to.bytes, &beacon_roots.BEACON_ROOTS_ADDRESS.bytes)) {
                 var contract = beacon_roots.BeaconRootsContract{ .database = self.database, .allocator = self.allocator };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
-                
+
                 const result = contract.execute(caller, input, gas) catch |err| {
                     log.debug("Beacon roots contract failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
                     return PreflightResult{ .precompile_result = CallResult.failure(0) };
                 };
-                
+
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
                     const out = self.allocator.alloc(u8, result.output.len) catch {
@@ -492,27 +491,25 @@ pub fn Evm(comptime config: EvmConfig) type {
                     @memcpy(out, result.output);
                     break :output out;
                 } else &[_]u8{};
-                
-                return PreflightResult{ 
-                    .precompile_result = CallResult{
-                        .success = true,
-                        .gas_left = gas - result.gas_used,
-                        .output = output,
-                    }
-                };
+
+                return PreflightResult{ .precompile_result = CallResult{
+                    .success = true,
+                    .gas_left = gas - result.gas_used,
+                    .output = output,
+                } };
             }
-            
+
             // Handle EIP-2935 historical block hashes contract
             if (std.mem.eql(u8, &to.bytes, &historical_block_hashes.HISTORY_CONTRACT_ADDRESS.bytes)) {
                 var contract = historical_block_hashes.HistoricalBlockHashesContract{ .database = self.database };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
-                
+
                 const result = contract.execute(caller, input, gas) catch |err| {
                     log.debug("Historical block hashes contract failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
                     return PreflightResult{ .precompile_result = CallResult.failure(0) };
                 };
-                
+
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
                     const out = self.allocator.alloc(u8, result.output.len) catch {
@@ -522,14 +519,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                     @memcpy(out, result.output);
                     break :output out;
                 } else &[_]u8{};
-                
-                return PreflightResult{ 
-                    .precompile_result = CallResult{
-                        .success = true,
-                        .gas_left = gas - result.gas_used,
-                        .output = output,
-                    }
-                };
+
+                return PreflightResult{ .precompile_result = CallResult{
+                    .success = true,
+                    .gas_left = gas - result.gas_used,
+                    .output = output,
+                } };
             }
 
             // Check for EIP-7702 delegation first
@@ -537,7 +532,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 log.debug("Failed to get account for address {x}: {}", .{ to.bytes, err });
                 return PreflightResult{ .precompile_result = CallResult.failure(0) };
             };
-            
+
             // Get the effective code address (handles delegation)
             const code_address = if (account) |acc| blk: {
                 if (acc.get_effective_code_address()) |delegated| {
@@ -546,7 +541,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }
                 break :blk to;
             } else to;
-            
+
             // Get contract code (from delegated address if applicable)
             // log.debug("Attempting to get code for address: {x}", .{code_address.bytes});
             const code = self.database.get_code_by_address(code_address.bytes) catch |err| {
@@ -568,9 +563,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return PreflightResult{ .precompile_result = CallResult.failure_with_error(0, error_str) };
             };
 
-
             // log.debug("Got code for address, length: {}", .{code.len});
-            
+
             if (code.len == 0) {
                 log.debug("Code is empty, returning empty account result", .{});
                 return PreflightResult{ .empty_account = gas };
@@ -823,7 +817,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .snapshot_id = snapshot_id,
                 .existed_before = existed_before,
             }) catch return CallResult.failure(0);
-            
+
             // Add the created contract address to the result
             result.created_address = contract_address;
             return result;
@@ -899,7 +893,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .snapshot_id = snapshot_id,
                 .existed_before = existed_before,
             }) catch return CallResult.failure(0);
-            
+
             // Add the created contract address to the result
             result.created_address = contract_address;
             return result;
@@ -915,7 +909,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             existed_before: bool,
         }) !CallResult {
             // Reduce log noise: omit verbose create trace
-            
+
             // Track created contract for EIP-6780
             try self.created_contracts.mark_created(args.contract_address);
 
@@ -1001,7 +995,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Convert tracer data to ExecutionTrace format
         fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("call_result.zig").ExecutionTrace {
             const call_result = @import("call_result.zig");
-            
+
             // Check if tracer has trace_steps field (only JSONRPCTracer does)
             if (!@hasField(@TypeOf(tracer.*), "trace_steps")) {
                 // Return empty trace for non-tracing tracers
@@ -1010,11 +1004,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .allocator = allocator,
                 };
             }
-            
+
             const tracer_steps = tracer.trace_steps.items;
             var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
             errdefer allocator.free(trace_steps);
-            
+
             var allocated_count: usize = 0;
             errdefer {
                 // Clean up any partially allocated trace steps
@@ -1022,21 +1016,21 @@ pub fn Evm(comptime config: EvmConfig) type {
                     step.deinit(allocator);
                 }
             }
-            
+
             for (tracer_steps, 0..) |tracer_step, i| {
                 trace_steps[i] = call_result.TraceStep{
                     .pc = @intCast(tracer_step.pc),
-                    .opcode = tracer_step.opcode,  // Use the actual opcode byte from tracer
+                    .opcode = tracer_step.opcode, // Use the actual opcode byte from tracer
                     .opcode_name = try allocator.dupe(u8, tracer_step.op),
                     .gas = tracer_step.gas,
                     .stack = try allocator.dupe(u256, tracer_step.stack),
                     .memory = if (tracer_step.memory) |mem| try allocator.dupe(u8, mem) else &.{},
-                    .storage_reads = &.{}, // Empty for now  
+                    .storage_reads = &.{}, // Empty for now
                     .storage_writes = &.{}, // Empty for now
                 };
                 allocated_count += 1;
             }
-            
+
             return call_result.ExecutionTrace{
                 .steps = trace_steps,
                 .allocator = allocator,
@@ -1055,7 +1049,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            // std.debug.print("execute_frame: code_len={}, gas={}, address={any}, depth={}\n", .{ 
+            // std.debug.print("execute_frame: code_len={}, gas={}, address={any}, depth={}\n", .{
             //     code.len, gas, address, self.depth,
             // });
             const prev_snapshot = self.current_snapshot_id;
@@ -1067,14 +1061,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer self.current_input = prev_input;
 
             self.depth += 1;
-            defer if (self.depth > 0) { self.depth -= 1; };
+            defer if (self.depth > 0) {
+                self.depth -= 1;
+            };
 
             self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value, .is_static = is_static };
 
             // Base transaction gas cost (21,000 gas) - only charge for real transactions, not test calls
             // Test calls start at depth 0, real transactions have depth >= 1 with is_transaction flag
             const gas_after_base = gas;
-            
+
             const max_gas = @as(u64, @intCast(std.math.maxInt(Frame.GasType)));
             const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, max_gas)));
 
@@ -1085,12 +1081,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, self.block_info, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
             frame.contract_address = address;
             defer frame.deinit(self.allocator);
-            
+
             // EIP-2929: Warm the contract address being executed
             _ = self.access_list.access_address(address) catch {};
 
             // log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
-            
+
             // DEBUG: Log first few bytes of bytecode for JUMPI test
             // if (code.len == 22) {
             //     log.err("DEBUG: This looks like JUMPI test bytecode, first 8 bytes: {x}", .{code[0..8]});
@@ -1104,69 +1100,69 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Create tracer instance for this execution
                 var tracer = TracerType.init(self.allocator);
                 defer tracer.deinit();
-                
+
                 // log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
-                
+
                 // Frame.interpret_with_tracer returns Error!void and uses errors for success termination
                 // reduce tracer call logging noise
                 frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
-                error.Stop => {
-                    termination_reason = error.Stop;
-                },
-                error.Return => {
-                    termination_reason = error.Return;
-                },
-                error.SelfDestruct => {
-                    log.debug("execute_frame: termination SelfDestruct (traced)", .{});
-                    termination_reason = error.SelfDestruct;
-                },
-                error.REVERT => {
-                    // REVERT is a special case - it's a successful termination but indicates failure
-                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
-                    const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                    // Copy revert data to avoid double-free with frame.deinit
-                    const out_len = frame.output.len;
-                    const out_copy = if (out_len > 0) blk: {
-                        const buf = try self.allocator.alloc(u8, out_len);
-                        @memcpy(buf, frame.output);
-                        break :blk buf;
-                    } else &[_]u8{};
-                    var result = CallResult.revert_with_data(gas_left, out_copy);
-                    result.trace = execution_trace;
-                    return result;
-                },
-                else => {
-                    // Actual errors - but still extract trace for debugging
-                    log.debug("Frame execution with tracer failed: {}", .{err});
-                    // Extract trace even on failure for debugging
-                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
-                    var failure = CallResult.failure(0);
-                    failure.trace = execution_trace;
-                    return failure;
-                },
-            };
-            
-            // Extract trace data before tracer is destroyed (for success cases)
-            execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                    error.Stop => {
+                        termination_reason = error.Stop;
+                    },
+                    error.Return => {
+                        termination_reason = error.Return;
+                    },
+                    error.SelfDestruct => {
+                        log.debug("execute_frame: termination SelfDestruct (traced)", .{});
+                        termination_reason = error.SelfDestruct;
+                    },
+                    error.REVERT => {
+                        // REVERT is a special case - it's a successful termination but indicates failure
+                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                        const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
+                        // Copy revert data to avoid double-free with frame.deinit
+                        const out_len = frame.output.len;
+                        const out_copy = if (out_len > 0) blk: {
+                            const buf = try self.allocator.alloc(u8, out_len);
+                            @memcpy(buf, frame.output);
+                            break :blk buf;
+                        } else &[_]u8{};
+                        var result = CallResult.revert_with_data(gas_left, out_copy);
+                        result.trace = execution_trace;
+                        return result;
+                    },
+                    else => {
+                        // Actual errors - but still extract trace for debugging
+                        log.debug("Frame execution with tracer failed: {}", .{err});
+                        // Extract trace even on failure for debugging
+                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                        var failure = CallResult.failure(0);
+                        failure.trace = execution_trace;
+                        return failure;
+                    },
+                };
+
+                // Extract trace data before tracer is destroyed (for success cases)
+                execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
             } else {
                 // Execute without tracing (original path)
                 frame.interpret(code) catch |err| switch (err) {
-                error.Stop => {
-                    termination_reason = error.Stop;
-                },
-                error.Return => {
-                    termination_reason = error.Return;
-                },
-                error.SelfDestruct => {
-                    log.debug("execute_frame: termination SelfDestruct", .{});
-                    termination_reason = error.SelfDestruct;
-                },
-                else => {
-                    // Actual errors
-                    log.debug("Frame execution failed with error: {}", .{err});
-                    return CallResult.failure(0);
-                },
-            };
+                    error.Stop => {
+                        termination_reason = error.Stop;
+                    },
+                    error.Return => {
+                        termination_reason = error.Return;
+                    },
+                    error.SelfDestruct => {
+                        log.debug("execute_frame: termination SelfDestruct", .{});
+                        termination_reason = error.SelfDestruct;
+                    },
+                    else => {
+                        // Actual errors
+                        log.debug("Frame execution failed with error: {}", .{err});
+                        return CallResult.failure(0);
+                    },
+                };
             }
 
             // Map frame outcome to CallResult
@@ -1182,7 +1178,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 @memcpy(b, out_items);
                 break :blk b;
             } else &.{};
-            
+
             // Free old return_data before setting new one
             if (self.return_data.len > 0) {
                 self.allocator.free(self.return_data);
@@ -1194,7 +1190,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Create copies of the log data with the EVM's allocator
                 const topics_copy = self.allocator.dupe(u256, log_entry.topics) catch return CallResult.failure(0);
                 const data_copy = self.allocator.dupe(u8, log_entry.data) catch return CallResult.failure(0);
-                
+
                 self.logs.append(self.allocator, @import("call_result.zig").Log{
                     .address = log_entry.address,
                     .topics = topics_copy,
@@ -1336,7 +1332,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (self.is_static_context()) {
                 return; // Silently fail in static context
             }
-            
+
             // Allocate copies with the main allocator so tests can free via evm.allocator
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
@@ -1376,7 +1372,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Find first index whose snapshot_id >= target
             var start_index: ?usize = null;
             for (self.journal.entries.items, 0..) |entry, i| {
-                if (entry.snapshot_id >= snapshot_id) { start_index = i; break; }
+                if (entry.snapshot_id >= snapshot_id) {
+                    start_index = i;
+                    break;
+                }
             }
 
             if (start_index) |start| {
@@ -1474,13 +1473,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (self.is_static_context()) {
                 return error.StaticCallViolation;
             }
-            
+
             // EIP-6780: SELFDESTRUCT only actually destroys the contract if it was created in the same transaction
             // Otherwise, it only transfers the balance but keeps the code and storage
             if (self.eips.eip_6780_enabled) {
                 // Check if contract was created in the current transaction
                 const created_in_tx = self.created_contracts.was_created_in_tx(contract_address);
-                
+
                 if (created_in_tx) {
                     // Full destruction: transfer balance and mark for deletion
                     try self.self_destruct.mark_for_destruction(contract_address, recipient);
@@ -1493,12 +1492,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                             // Transfer balance to recipient
                             try self.journal.record_balance_change(self.current_snapshot_id, contract_address, account.balance);
                             try self.journal.record_balance_change(self.current_snapshot_id, recipient, 0);
-                            
+
                             // Update balances
                             var sender_account = account;
                             sender_account.balance = 0;
                             try self.database.set_account(contract_address.bytes, sender_account);
-                            
+
                             var recipient_account = (try self.database.get_account(recipient.bytes)) orelse Account.zero();
                             recipient_account.balance +%= account.balance;
                             try self.database.set_account(recipient.bytes, recipient_account);
@@ -1582,7 +1581,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             return self.return_data;
         }
 
-        /// Get chain ID  
+        /// Get chain ID
         pub fn get_chain_id(self: *Self) u64 {
             return self.block_info.chain_id;
         }
@@ -1601,7 +1600,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             ) catch |err| {
                 log.debug("Failed to get block hash from history contract: {}", .{err});
                 // Fall back to standard behavior on error
-                
+
                 // EVM BLOCKHASH rules:
                 // - Return null for current block and future blocks
                 // - Return null for blocks older than 256 blocks
@@ -1612,25 +1611,25 @@ pub fn Evm(comptime config: EvmConfig) type {
                 {
                     return null;
                 }
-                
+
                 // For testing/simulation purposes, generate a deterministic hash
                 var hash: [32]u8 = undefined;
                 hash[0..8].* = std.mem.toBytes(block_number);
                 hash[8..16].* = std.mem.toBytes(current_block);
-                
+
                 // Fill rest with deterministic pattern based on block number
                 var i: usize = 16;
                 while (i < 32) : (i += 1) {
                     hash[i] = @as(u8, @truncate(block_number +% i));
                 }
-                
+
                 return hash;
             };
-            
+
             if (hash_opt) |hash| {
                 return hash;
             }
-            
+
             // If no hash found in storage, fall back to standard behavior
             // - Return null for current block and future blocks
             // - Return null for blocks older than 256 blocks
@@ -1678,8 +1677,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn add_gas_refund(self: *Self, amount: u64) void {
             self.gas_refund_counter += amount;
         }
-        
-
 
         /// Take all selfdestructs and clear the list
         fn takeSelfDestructs(self: *Self) ![]const @import("call_result.zig").SelfDestructRecord {
@@ -6909,14 +6906,14 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
     defer bytecode_file.close();
     const bytecode_hex = try bytecode_file.readToEndAlloc(std.testing.allocator, 16 * 1024 * 1024);
     defer std.testing.allocator.free(bytecode_hex);
-    
+
     // Hex decode helper
     const hex_decode = struct {
         fn decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
             const clean_hex = if (std.mem.startsWith(u8, hex_str, "0x")) hex_str[2..] else hex_str;
             const trimmed = std.mem.trim(u8, clean_hex, &std.ascii.whitespace);
             if (trimmed.len == 0) return allocator.alloc(u8, 0);
-            
+
             const result = try allocator.alloc(u8, trimmed.len / 2);
             var i: usize = 0;
             while (i < trimmed.len) : (i += 2) {
@@ -6926,7 +6923,7 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
             return result;
         }
     }.decode;
-    
+
     const trimmed_hex = std.mem.trim(u8, bytecode_hex, " \t\n\r");
     const init_code = try hex_decode(std.testing.allocator, trimmed_hex);
     defer std.testing.allocator.free(init_code);
@@ -6947,7 +6944,7 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
 
     // This should reproduce the stack underflow issue
     const result = evm.call(create_params);
-    
+
     // Log the result for debugging
     if (result.success) {
         log.debug("✅ Contract deployment succeeded!\n", .{});

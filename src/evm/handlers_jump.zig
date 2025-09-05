@@ -51,12 +51,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get jump table from frame
             const jump_table = self.jump_table;
 
-            const dest = self.stack.pop_unsafe();       // Top of stack (destination)
-            const condition = self.stack.pop_unsafe();  // Second from top (condition)
+            const dest = self.stack.pop_unsafe(); // Top of stack (destination)
+            const condition = self.stack.pop_unsafe(); // Second from top (condition)
 
             if (condition != 0) {
-                // Take the jump - validate destination range
-
                 if (dest > std.math.maxInt(u32)) {
                     log.warn("JUMPI: Invalid destination out of range: 0x{x}", .{dest});
                     return Error.InvalidJump;
@@ -101,18 +99,6 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
 
-            // Pretty print the frame state when landing on JUMPDEST
-            // TODO: Re-enable when pretty_print is fully working
-            // if (comptime builtin.mode == .Debug) {
-            //     const frame_state = self.pretty_print(self.allocator) catch |err| {
-            //         log.debug("JUMPDEST: Failed to pretty print frame: {}", .{err});
-            //         return err;
-            //     };
-            //     defer self.allocator.free(frame_state);
-            //     log.debug("JUMPDEST: Frame state after landing:\n{s}", .{frame_state});
-            // }
-
-            // Continue to next operation
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }
 

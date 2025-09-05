@@ -59,7 +59,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
 
     return struct {
-        pub const fusions_enabled = cfg.fusions_enabled;
+        pub const fusions_enabled = true;
         pub const ValidationError = error{
             InvalidOpcode,
             TruncatedPush,
@@ -191,13 +191,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // Check if this is deployment bytecode
             const is_deployment = blk: {
                 if (code.len < 4) break :blk false;
-                break :blk (code[0] == 0x60 and code[1] == 0x80 and 
-                           code[2] == 0x60 and code[3] == 0x40);
+                break :blk (code[0] == 0x60 and code[1] == 0x80 and
+                    code[2] == 0x60 and code[3] == 0x40);
             };
-            
+
             // Always try to parse metadata to detect its presence
             const metadata = parseSolidityMetadataFromBytes(code);
-            
+
             // For deployment bytecode with metadata, we need to handle it specially
             // The constructor code needs to execute fully, but we should only validate
             // the actual code portion, not the metadata bytes
@@ -238,9 +238,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             };
             // Build bitmaps and validate
             // For deployment bytecode with metadata, pass the metadata length to avoid validating it
-            const validation_len = if (is_deployment and metadata != null) 
-                code.len - metadata.?.metadata_length 
-            else 
+            const validation_len = if (is_deployment and metadata != null)
+                code.len - metadata.?.metadata_length
+            else
                 runtime_code.len;
             try self.buildBitmapsAndValidateWithLength(validation_len);
             return self;
@@ -277,18 +277,18 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         pub fn deinit(self: *Self) void {
             // Check if we used aligned allocation (same logic as in init)
             const use_aligned = comptime !builtin.is_test;
-            
+
             // Free bitmaps - must match allocation method
             if (use_aligned and self.is_push_data.len > 0) {
                 // For aligned allocations, we need to compute the aligned size
                 const bitmap_bytes = (self.runtime_code.len + 7) / 8;
                 const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
-                
+
                 // Create properly aligned slices for freeing
                 const aligned_push_data: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_push_data[0..aligned_bitmap_bytes]);
                 const aligned_op_start: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_op_start[0..aligned_bitmap_bytes]);
                 const aligned_jumpdest: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_jumpdest[0..aligned_bitmap_bytes]);
-                
+
                 self.allocator.free(aligned_push_data);
                 self.allocator.free(aligned_op_start);
                 self.allocator.free(aligned_jumpdest);
@@ -297,7 +297,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 self.allocator.free(self.is_op_start);
                 self.allocator.free(self.is_jumpdest);
             }
-            
+
             self.allocator.free(self.packed_bitmap);
             self.* = undefined;
         }
@@ -495,13 +495,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
             return self.buildBitmapsAndValidateWithLength(self.runtime_code.len);
         }
-        
+
         /// Build bitmaps and validate bytecode with a specific validation length
         /// This allows validating only the code portion of deployment bytecode, excluding metadata
         fn buildBitmapsAndValidateWithLength(self: *Self, validation_length: usize) ValidationError!void {
             const N = self.runtime_code.len;
             const validate_up_to = @min(validation_length, N);
-            
+
             // Set up cleanup in case of errors
             var cleanup_state: struct {
                 is_push_data_allocated: bool = false,
@@ -509,14 +509,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 is_jumpdest_allocated: bool = false,
                 packed_bitmap_allocated: bool = false,
             } = .{};
-            
+
             errdefer {
                 if (cleanup_state.is_push_data_allocated) self.allocator.free(self.is_push_data);
                 if (cleanup_state.is_op_start_allocated) self.allocator.free(self.is_op_start);
                 if (cleanup_state.is_jumpdest_allocated) self.allocator.free(self.is_jumpdest);
                 if (cleanup_state.packed_bitmap_allocated) self.allocator.free(self.packed_bitmap);
             }
-            
+
             // Empty bytecode is valid, allocate minimal bitmaps
             if (N == 0) {
                 self.is_push_data = try self.allocator.alloc(u8, 1);
@@ -571,11 +571,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // Track state for immediate jump validation
             var last_push_value: ?u256 = null;
             var last_push_end: PcType = 0;
-            
+
             // Collect immediate jumps to validate after first pass
-            var immediate_jumps = std.ArrayList(PcType){};  
+            var immediate_jumps = std.ArrayList(PcType){};
             defer immediate_jumps.deinit(self.allocator);
-            
+
             var i: PcType = 0;
             while (i < validate_up_to) {
                 @branchHint(.likely);
@@ -636,14 +636,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32))
                 {
                     const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
-                    
+
                     // We need to read n bytes after the opcode at position i
                     // So we need positions i+1 through i+n to be valid
                     // This means i+n must be less than the validation length
                     // PUSH32 at position 0 needs to read bytes 1-32, so position 32 must be valid
                     // Therefore i+1+n must be <= validate_up_to, or i+n < validate_up_to
                     if (i + 1 + n > validate_up_to) return error.TruncatedPush;
-                    
+
                     // Extract push value for immediate jump validation (only if fusions enabled)
                     var push_value: u256 = 0;
                     if (comptime fusions_enabled) {
@@ -652,7 +652,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             push_value = std.math.shl(u256, push_value, 8) | self.runtime_code[i + 1 + byte_idx];
                         }
                     }
-                    
+
                     // Mark push data bytes
                     var j: PcType = 0;
                     while (j < n) : (j += 1) {
@@ -660,38 +660,39 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         self.is_push_data[std.math.shr(u32, idx, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(idx & BITMAP_MASK)));
                         self.packed_bitmap[idx].is_push_data = true;
                     }
-                    
+
                     const push_end = i + 1 + n;
-                    
+
                     // ONLY check for immediate jump patterns if fusions are enabled
                     // This is for optimization purposes, not correctness validation
                     if (comptime fusions_enabled) {
                         if (push_end < validate_up_to) {
                             const next_op = self.runtime_code[push_end];
-                            
+
                             // Case 1: PUSH + JUMP (for fusion optimization)
                             if (next_op == @intFromEnum(Opcode.JUMP)) {
-                                            log.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
+                                log.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
                                 // Note: We do NOT validate jump targets here - that happens at runtime
                                 // This is only for marking fusion opportunities
                             }
-                            
+
                             // Case 2: PUSH + JUMPI (check if previous was also a PUSH)
-                            else if (push_end < validate_up_to and next_op == @intFromEnum(Opcode.JUMPI) and 
-                                     last_push_value != null and 
-                                     last_push_end == i) {
+                            else if (push_end < validate_up_to and next_op == @intFromEnum(Opcode.JUMPI) and
+                                last_push_value != null and
+                                last_push_end == i)
+                            {
                                 // We have PUSH(dest) + PUSH(cond) + JUMPI pattern
                                 const jump_dest = last_push_value.?;
-                                            log.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
+                                log.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
                                 // Note: We do NOT validate jump targets here - that happens at runtime
                             }
                         }
-                        
+
                         // Update state for next iteration
                         last_push_value = push_value;
                         last_push_end = push_end;
                     }
-                    
+
                     i = push_end;
                 } else {
                     // Reset state when we see non-PUSH opcodes (unless it's JUMPI)
@@ -763,7 +764,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             return null;
         }
 
-        /// DEPRECATED: No longer needed with integrated validation  
+        /// DEPRECATED: No longer needed with integrated validation
         fn readImmediateJumpiTarget_DEPRECATED(self: *Self, i: PcType) ?PcType {
             // Expect pattern: PUSH(dest) PUSH(cond) JUMPI
             const second_push_end = i;
@@ -893,17 +894,17 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             const map_items = if (metadata[pos] == 0xa1) @as(u8, 1) else @as(u8, 2);
             pos += 1;
 
-            // First entry should be "ipfs" or "bzzr0"/"bzzr1" 
+            // First entry should be "ipfs" or "bzzr0"/"bzzr1"
             if (pos + 6 >= metadata.len) return null;
-            
-            const is_ipfs = metadata[pos] == 0x64 and pos + 4 < metadata.len and 
-                           std.mem.eql(u8, metadata[pos + 1 .. pos + 5], "ipfs");
+
+            const is_ipfs = metadata[pos] == 0x64 and pos + 4 < metadata.len and
+                std.mem.eql(u8, metadata[pos + 1 .. pos + 5], "ipfs");
             const is_swarm = metadata[pos] == 0x65 and pos + 5 < metadata.len and
-                            (std.mem.eql(u8, metadata[pos + 1 .. pos + 6], "bzzr0") or
-                             std.mem.eql(u8, metadata[pos + 1 .. pos + 6], "bzzr1"));
-            
+                (std.mem.eql(u8, metadata[pos + 1 .. pos + 6], "bzzr0") or
+                    std.mem.eql(u8, metadata[pos + 1 .. pos + 6], "bzzr1"));
+
             if (!is_ipfs and !is_swarm) return null;
-            
+
             if (is_ipfs) {
                 pos += 5; // Skip length byte + "ipfs"
             } else {
@@ -926,7 +927,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 if (pos + 32 > metadata.len) return null;
                 pos += 32; // Skip 32-byte Swarm hash
             }
-            
+
             // Create a dummy 34-byte hash for compatibility (we don't actually need the hash content)
             var ipfs_hash: [34]u8 = undefined;
             @memset(&ipfs_hash, 0);
@@ -936,10 +937,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 if (pos + 5 >= metadata.len) return null;
                 if (metadata[pos] != 0x64) return null; // 4-byte string
                 pos += 1;
-                
+
                 if (!std.mem.eql(u8, metadata[pos .. pos + 4], "solc")) return null;
                 pos += 4;
-                
+
                 // Solc version (3 bytes: major, minor, patch)
                 if (pos + 3 > metadata.len) return null;
             }
@@ -1298,17 +1299,15 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     jumpdest_count += 1;
                 }
             }
-            
+
             try output.writer(allocator).print("{s}Jump destinations: {}{s}\n", .{ Colors.dim, jumpdest_count, Colors.reset });
             try output.writer(allocator).print("{s}Total instructions: {}{s}\n", .{ Colors.dim, line_num - 1, Colors.reset });
-            
+
             if (self.metadata) |meta| {
                 try output.writer(allocator).print("{s}Solidity metadata: {} bytes{s}\n", .{ Colors.dim, meta.metadata_length, Colors.reset });
-                try output.writer(allocator).print("{s}Compiler version: {}.{}.{}{s}\n", .{ 
-                    Colors.dim, meta.solc_version[0], meta.solc_version[1], meta.solc_version[2], Colors.reset 
-                });
+                try output.writer(allocator).print("{s}Compiler version: {}.{}.{}{s}\n", .{ Colors.dim, meta.solc_version[0], meta.solc_version[1], meta.solc_version[2], Colors.reset });
             }
-            
+
             return output.toOwnedSlice(allocator);
         }
     };
@@ -1397,7 +1396,7 @@ test "Bytecode validation - undefined opcode treated as INVALID" {
     const code = [_]u8{0x0c};
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
-    
+
     try testing.expectEqual(@as(usize, 1), bytecode.len());
 }
 
@@ -1449,7 +1448,7 @@ test "Jump destination validation - jump to push data" {
 test "Jump destination validation - JUMPI pattern" {
     const allocator = testing.allocator;
 
-    // PUSH1 6, PUSH1 1, JUMPI, STOP, JUMPDEST, STOP  
+    // PUSH1 6, PUSH1 1, JUMPI, STOP, JUMPDEST, STOP
     const code = [_]u8{ 0x60, 0x06, 0x60, 0x01, 0x57, 0x00, 0x5B, 0x00 };
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
@@ -1465,7 +1464,7 @@ test "PUSH instruction handling - all PUSH sizes" {
     var bytecode1 = try BytecodeDefault.init(allocator, &push1_code);
     defer bytecode1.deinit();
 
-    const push2_code = [_]u8{ 0x61, 0x12, 0x34, 0x00 }; // PUSH2 0x1234, STOP  
+    const push2_code = [_]u8{ 0x61, 0x12, 0x34, 0x00 }; // PUSH2 0x1234, STOP
     var bytecode2 = try BytecodeDefault.init(allocator, &push2_code);
     defer bytecode2.deinit();
 
@@ -1513,7 +1512,7 @@ test "Iterator functionality - basic iteration" {
     defer bytecode.deinit();
 
     var iter = bytecode.createIterator();
-    
+
     // First instruction: PUSH1
     var opcode_data = iter.next();
     try testing.expect(opcode_data != null);
@@ -1616,13 +1615,13 @@ test "Large bytecode handling - EIP-170 limit" {
     const max_size = 24576;
     const large_code = try allocator.alloc(u8, max_size);
     defer allocator.free(large_code);
-    
+
     // Fill with STOP opcodes (valid)
     @memset(large_code, 0x00);
-    
+
     var bytecode = try BytecodeDefault.init(allocator, large_code);
     defer bytecode.deinit();
-    
+
     try testing.expectEqual(@as(usize, max_size), bytecode.len());
 }
 
@@ -1634,7 +1633,7 @@ test "Complex jump patterns - multiple JUMPDESTs" {
     var bytecode = try BytecodeDefault.init(allocator, &code);
     defer bytecode.deinit();
 
-    try testing.expect(bytecode.isValidJumpDest(6) == true);  // JUMPDEST at PC 6
+    try testing.expect(bytecode.isValidJumpDest(6) == true); // JUMPDEST at PC 6
     try testing.expect(bytecode.isValidJumpDest(11) == true); // JUMPDEST at PC 11
     try testing.expect(bytecode.isValidJumpDest(0) == false); // PUSH1 is not a JUMPDEST
 }
@@ -1650,7 +1649,7 @@ test "Error resilience - out of bounds jump" {
 test "Bitmap utility functions - countBitsInRange" {
     // Test the bitmap counting utility
     const bitmap = [_]u8{ 0b10101010, 0b11110000, 0b00001111 };
-    
+
     const count1 = BytecodeDefault.countBitsInRange(&bitmap, 0, 8);
     try testing.expectEqual(@as(usize, 4), count1); // First byte has 4 bits set
 
@@ -1664,7 +1663,7 @@ test "Bitmap utility functions - countBitsInRange" {
 test "Bitmap utility functions - findNextSetBit" {
     // Test finding next set bit in bitmap
     const bitmap = [_]u8{ 0b00000000, 0b00010000, 0b10000000 };
-    
+
     const next_bit1 = BytecodeDefault.findNextSetBit(&bitmap, 0);
     try testing.expectEqual(@as(?usize, 12), next_bit1); // Bit 12 (4th bit of second byte)
 
@@ -1755,32 +1754,32 @@ test "Security - malformed jump patterns" {
 
 test "Minimal repro - deployment bytecode with apparent truncated PUSH" {
     const allocator = testing.allocator;
-    
+
     // Minimal case that triggers TruncatedPush
     // This simulates the end of deployment bytecode where a PUSH instruction
     // appears to be truncated but is actually part of the constructor return data
     const code = [_]u8{
         0x60, 0x80, // PUSH1 0x80
-        0x60, 0x40, // PUSH1 0x40  
-        0x52,       // MSTORE
+        0x60, 0x40, // PUSH1 0x40
+        0x52, // MSTORE
         0x60, 0x97, // PUSH1 0x97 (size of runtime code)
-        0x80,       // DUP1
+        0x80, // DUP1
         0x60, 0x1a, // PUSH1 0x1a (offset in memory)
-        0x5f,       // PUSH0
-        0x39,       // CODECOPY
-        0x5f,       // PUSH0  
-        0xf3,       // RETURN
-        0xfe,       // INVALID (start of runtime code)
-        0x60        // PUSH1 without data - this triggers TruncatedPush
+        0x5f, // PUSH0
+        0x39, // CODECOPY
+        0x5f, // PUSH0
+        0xf3, // RETURN
+        0xfe, // INVALID (start of runtime code)
+        0x60, // PUSH1 without data - this triggers TruncatedPush
     };
-    
+
     // This should fail with TruncatedPush because the last byte is PUSH1 without data
     try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
 }
 
 test "Deployment bytecode - actual ten-thousand-hashes fixture" {
     const allocator = testing.allocator;
-    
+
     // First 32 bytes of the actual ten-thousand-hashes bytecode that's failing
     // This is deployment bytecode that ends with what looks like a truncated PUSH
     const code = [_]u8{
@@ -1788,50 +1787,50 @@ test "Deployment bytecode - actual ten-thousand-hashes fixture" {
         0x60, 0x0e, 0x57, 0x5f, 0x5f, 0xfd, 0x5b, 0x50,
         0x60, 0x97, 0x80, 0x60, 0x1a, 0x5f, 0x39, 0x5f,
         0xf3, 0xfe, // RETURN opcode followed by INVALID
-        0x60, 0x80, 0x60, 0x40, 0x52, 0x34, // Start of runtime bytecode
-        0x80, 0x15, 0x60 // This ends with 0x60 (PUSH1) without the data byte
+        0x60, 0x80, 0x60,                                                      0x40, 0x52, 0x34, // Start of runtime bytecode
+        0x80, 0x15, 0x60, // This ends with 0x60 (PUSH1) without the data byte
     };
-    
+
     // This should fail because it ends with an incomplete PUSH1
     try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
 }
 
 test "Iterator should not read past truncated PUSH32" {
     const allocator = testing.allocator;
-    
+
     // PUSH32 with only 31 bytes of data (malformed)
     // Total: 1 byte opcode + 31 bytes data = 32 bytes (should be 33)
     var code = [_]u8{0x7F} ++ [_]u8{0x00} ** 31; // PUSH32 (truncated)
-    
+
     // This should fail validation
     try testing.expectError(BytecodeDefault.ValidationError.TruncatedPush, BytecodeDefault.init(allocator, &code));
 }
 
 test "Deployment vs Runtime bytecode handling" {
     const allocator = testing.allocator;
-    
+
     // Simplified deployment bytecode that deploys a simple runtime code
     // Constructor bytecode that returns runtime bytecode
     const deployment_code = [_]u8{
         // Constructor code
         0x60, 0x04, // PUSH1 0x04 (size of runtime code)
-        0x80,       // DUP1
+        0x80, // DUP1
         0x60, 0x0c, // PUSH1 0x0c (offset of runtime code)
-        0x5f,       // PUSH0 (destination in memory)
-        0x39,       // CODECOPY
-        0x5f,       // PUSH0 (offset in memory)
-        0xf3,       // RETURN
+        0x5f, // PUSH0 (destination in memory)
+        0x39, // CODECOPY
+        0x5f, // PUSH0 (offset in memory)
+        0xf3, // RETURN
         // Runtime code (what gets deployed)
         0x60, 0x42, // PUSH1 0x42
         0x60, 0x00, // PUSH1 0x00
-        0x55,       // SSTORE
-        0x00,       // STOP
+        0x55, // SSTORE
+        0x00, // STOP
     };
-    
+
     // This should work because it's complete deployment bytecode
     var bytecode = try BytecodeDefault.init(allocator, &deployment_code);
     defer bytecode.deinit();
-    
+
     // The bytecode init detects deployment pattern and uses full code
     try testing.expect(bytecode.runtime_code.len == deployment_code.len);
 }
