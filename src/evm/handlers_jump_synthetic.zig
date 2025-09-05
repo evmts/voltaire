@@ -65,6 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = cursor[1].push_inline.value;
 
             // Pop the condition
+            std.debug.assert(self.stack.size() >= 1); // PUSH_JUMPI requires 1 stack item
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
@@ -96,6 +97,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = cursor[1].push_pointer.value.*;
 
             // Pop the condition
+            std.debug.assert(self.stack.size() >= 1); // PUSH_JUMPI requires 1 stack item
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {

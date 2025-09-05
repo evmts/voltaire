@@ -40,6 +40,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(value);
 
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
@@ -71,6 +72,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(value);
 
             // Advance cursor past the synthetic instruction and its metadata (skip 2 items)
@@ -85,6 +87,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
+            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
@@ -119,6 +122,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_pointer.value.*;
 
             // Pop the value to store
+            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
@@ -154,6 +158,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_inline.value;
 
             // Pop the value to store
+            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE8 requires 1 stack item
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
@@ -188,6 +193,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = cursor[1].push_pointer.value.*;
 
             // Pop the value to store
+            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE8 requires 1 stack item
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
