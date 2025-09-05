@@ -531,6 +531,36 @@ pub fn build(b: *std.Build) void {
         erc20_transfer_step.dependOn(&run_erc20_transfer_test.step);
     }
 
+    // Static jumps test
+    {
+        const static_jumps_test = b.addTest(.{
+            .name = "static_jumps_test",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("test/evm/static_jumps.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        
+        static_jumps_test.root_module.addImport("evm", modules.evm_mod);
+        static_jumps_test.root_module.addImport("primitives", modules.primitives_mod);
+        static_jumps_test.root_module.addImport("crypto", modules.crypto_mod);
+        static_jumps_test.root_module.addImport("build_options", config.options_mod);
+        
+        // Link required libraries
+        static_jumps_test.linkLibrary(c_kzg_lib);
+        static_jumps_test.linkLibrary(blst_lib);
+        if (bn254_lib) |bn254| static_jumps_test.linkLibrary(bn254);
+        static_jumps_test.linkLibC();
+        
+        const run_static_jumps_test = b.addRunArtifact(static_jumps_test);
+        const static_jumps_step = b.step("test-static-jumps", "Run static jumps test");
+        static_jumps_step.dependOn(&run_static_jumps_test.step);
+        
+        // Add to main test step
+        test_step.dependOn(&run_static_jumps_test.step);
+    }
+
     // CODECOPY+RETURN test
     {
         const codecopy_test = b.addTest(.{
