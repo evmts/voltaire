@@ -103,7 +103,7 @@ pub fn main() !void {
         }
     } else if (compare_mode) {
         // Compare mode: run benchmarks for all available EVMs
-        const evms = [_][]const u8{ "zig-call2", "revm", "geth", "evmone" };
+        const evms = [_][]const u8{ "geth", "evmone", "revm", "zig-call2" };
 
         var all_results = std.ArrayList(Orchestrator.BenchmarkResult).empty;
         defer all_results.deinit(allocator);

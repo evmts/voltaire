@@ -22,11 +22,11 @@
 
 The fun, ultrafast and configurable way to run the EVM. Guillotine features
 
-* ⚡ **Extreme speed** - Zig-based Guillotine with all optimizations benchmarks as the fastest EVM implementation ever
-* 🌐 **Universal** - Use guillotine on many languages and many platforms including Python, TypeScript, and even in the browser.
-* 📦 **Minimal bundle size** - Size optimized configurations of Guillotine reache sizes under 110kb
-* 💄 **Elegance and modularity** -  Guillotine offers 0-cost abstractions for configuring the EVM at comptime
-* 🎨 **Fun** - Guillotine is a fun way to dive into zig and fun/easy to contribute to. It has extensive documentation for humans and LLMs
+- ⚡ **Extreme speed** - Zig-based Guillotine with all optimizations benchmarks as the fastest EVM implementation ever
+- 🌐 **Universal** - Use guillotine on many languages and many platforms including Python, TypeScript, and even in the browser.
+- 📦 **Minimal bundle size** - Size optimized configurations of Guillotine reache sizes under 110kb
+- 💄 **Elegance and modularity** - Guillotine offers 0-cost abstractions for configuring the EVM at comptime
+- 🎨 **Fun** - Guillotine is a fun way to dive into zig and fun/easy to contribute to. It has extensive documentation for humans and LLMs
 
 ---
 
@@ -40,7 +40,15 @@ Guillotine is not suitable for production use at this time. Any use of guillotin
 
 ## 📊 Benchmarks & Bundle Size
 
-Currently benchmarks are showing Guillotine to be a hair faster than revm on most benchmarks which is extremely promising given most of our optimizations are currently disabled as we productionize the code.  See [bench/official/results.md](./bench/official/results.md) for latest.
+### Overall Performance Summary (Per Run)
+
+| Test Case               | Zig-Call2 | REVM     | EthereumJS | Geth     | evmone    |
+| ----------------------- | --------- | -------- | ---------- | -------- | --------- |
+| erc20-approval-transfer | 54.98 μs  | 4.93 ms  | 390.74 ms  | 9.04 ms  | 3.48 ms   |
+| erc20-mint              | 43.90 μs  | 3.64 ms  | 411.68 ms  | 7.68 ms  | 2.17 ms   |
+| erc20-transfer          | 44.83 μs  | 6.10 ms  | 508.56 ms  | 17.10 ms | 4.41 ms   |
+| ten-thousand-hashes     | 69.05 μs  | 1.49 ms  | 297.77 ms  | 4.53 ms  | 952.88 μs |
+| snailtracer             | 517.47 μs | 31.32 ms | 2.86 s     | 98.09 ms | 23.58 ms  |
 
 ---
 
@@ -49,14 +57,14 @@ Currently benchmarks are showing Guillotine to be a hair faster than revm on mos
 Once stable, **Guillotine’s WASM build** will replace the current JavaScript EVM in [Tevm](https://node.tevm.sh).
 Upgrades include:
 
-* 🚀 **Up to 1000x performance boost**
-* 📉 **300KB (75%) bundle size reduction**
-* 🔧 **Foundry-compatible compiler support**
-* 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the guillotine primitives package
+- 🚀 **Up to 1000x performance boost**
+- 📉 **300KB (75%) bundle size reduction**
+- 🔧 **Foundry-compatible compiler support**
+- 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the guillotine primitives package
 
 ## Using Guillotine in other languages
 
-Unlike other EVM libraries guillotine is built to be accessible on all platforms. Whether you are using writing golang on the server, JavaScript in the browser, swift for the iphone, or python for a desktop app, guillotine ships first class sdks to use with every major platform and language. 
+Unlike other EVM libraries guillotine is built to be accessible on all platforms. Whether you are using writing golang on the server, JavaScript in the browser, swift for the iphone, or python for a desktop app, guillotine ships first class sdks to use with every major platform and language.
 
 Each language has sensible defaults for that language. For example, TypeScript defaults to optimizing for a small binary size and uses the wasm build while zig and rust optimized for maximum native performance.
 
@@ -80,9 +88,10 @@ See our [Contributing Guide](CONTRIBUTING.md) to get started.
 Guillotine stands on the shoulders of giants. We're grateful to:
 
 ### Runtime Dependencies
+
 - **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** – C KZG commitment library for EIP-4844
-- **[arkworks](https://github.com/arkworks-rs)** – Rust lib for elliptic curve operations 
-- **[keccak-asm](https://crates.io/crates/keccak-asm)** – Assembly-optimized Keccak-256 
+- **[arkworks](https://github.com/arkworks-rs)** – Rust lib for elliptic curve operations
+- **[keccak-asm](https://crates.io/crates/keccak-asm)** – Assembly-optimized Keccak-256
 
 ### Tooling dependencies
 
@@ -103,6 +112,6 @@ MIT License. Free for all use. 🌍
 
 ## 🙏 Additional Acknowledgments
 
-* 🏛️ **Ethereum Foundation** — for funding support
-* 💬 [Tevm Telegram](https://t.me/+ANThR9bHDLAwMjUx) — for community feedback and direction and helping brainstorm the name
-* 🧠 [@SamBacha](https://github.com/sambacha) — Winner of the brainstorm who came up with the name **Guillotine**
+- 🏛️ **Ethereum Foundation** — for funding support
+- 💬 [Tevm Telegram](https://t.me/+ANThR9bHDLAwMjUx) — for community feedback and direction and helping brainstorm the name
+- 🧠 [@SamBacha](https://github.com/sambacha) — Winner of the brainstorm who came up with the name **Guillotine**
