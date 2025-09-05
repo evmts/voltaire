@@ -405,7 +405,7 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

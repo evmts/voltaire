@@ -190,7 +190,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Ensure memory capacity
             const new_size = dest_offset_usize + length_usize;
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -202,7 +202,7 @@ pub fn Handlers(comptime FrameType: type) type {
             while (i < length_usize) : (i += 1) {
                 const src_index = offset_usize + i;
                 const byte_val = if (src_index < calldata.len) calldata[src_index] else 0;
-                self.memory.set_byte(self.allocator, @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
+                self.memory.set_byte(self.getAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
             const op_data = dispatch.getOpData(.CALLDATACOPY); const next = op_data.next;
@@ -260,7 +260,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(total_gas);
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -273,7 +273,7 @@ pub fn Handlers(comptime FrameType: type) type {
             while (i < length_usize) : (i += 1) {
                 const src_index = offset_usize + i;
                 const byte_val = if (src_index < code_data.len) code_data[src_index] else 0;
-                self.memory.set_byte(self.allocator, @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
+                self.memory.set_byte(self.getAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
             const next = cursor + 1;
@@ -362,7 +362,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Ensure memory capacity
             const new_size = dest_offset_usize + length_usize;
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -374,7 +374,7 @@ pub fn Handlers(comptime FrameType: type) type {
             while (i < length_usize) : (i += 1) {
                 const src_index = offset_usize + i;
                 const byte_val = if (src_index < code.len) code[src_index] else 0;
-                self.memory.set_byte(self.allocator, @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
+                self.memory.set_byte(self.getAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
             const op_data = dispatch.getOpData(.EXTCODECOPY); const next = op_data.next;
@@ -500,14 +500,14 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(total_gas);
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
 
             // Copy return data to memory (no zero-padding needed since bounds are checked)
             const src_slice = return_data[offset_usize..][0..length_usize];
-            self.memory.set_data(self.allocator, @as(u24, @intCast(dest_offset_usize)), src_slice) catch return Error.OutOfBounds;
+            self.memory.set_data(self.getAllocator(), @as(u24, @intCast(dest_offset_usize)), src_slice) catch return Error.OutOfBounds;
 
             const op_data = dispatch.getOpData(.RETURNDATACOPY); const next = op_data.next;
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
@@ -908,7 +908,7 @@ fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {
     const database = try MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{}; // Empty code by default
     return frame;
 }
@@ -1107,7 +1107,7 @@ test "CODESIZE opcode" {
     const database = try MemoryDatabase.init(testing.allocator);
     const value = try testing.allocator.create(u256);
     value.* = 0;
-    var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     defer frame.deinit(testing.allocator);
     defer testing.allocator.destroy(value);
     frame.code = &code_data;
@@ -1129,7 +1129,7 @@ test "CODECOPY opcode" {
     const database = try MemoryDatabase.init(testing.allocator);
     const value = try testing.allocator.create(u256);
     value.* = 0;
-    var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     defer frame.deinit(testing.allocator);
     defer testing.allocator.destroy(value);
     frame.code = &code_data;
@@ -1717,7 +1717,7 @@ test "CODECOPY opcode - edge cases" {
         const database = try MemoryDatabase.init(testing.allocator);
         const value = try testing.allocator.create(u256);
         value.* = 0;
-        var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host, null);
+        var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host);
         defer frame.deinit(testing.allocator);
         defer testing.allocator.destroy(value);
         frame.code = &code_data;
@@ -1738,7 +1738,7 @@ test "CODECOPY opcode - edge cases" {
         const database = try MemoryDatabase.init(testing.allocator);
         const value = try testing.allocator.create(u256);
         value.* = 0;
-        var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host, null);
+        var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host);
         defer frame.deinit(testing.allocator);
         defer testing.allocator.destroy(value);
         frame.code = &code_data;
@@ -2290,7 +2290,7 @@ test "WordType truncation behavior" {
     const database = try @import("memory_database.zig").MemoryDatabase.init(testing.allocator);
     const value = try testing.allocator.create(u64);
     value.* = 0;
-    var frame = try SmallFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host, null);
+    var frame = try SmallFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host);
     defer frame.deinit(testing.allocator);
     defer testing.allocator.destroy(value);
     frame.code = &[_]u8{};
@@ -2329,7 +2329,7 @@ test "RETURNDATASIZE and RETURNDATACOPY basic functionality" {
     const allocator = testing.allocator;
 
     // Create frame with test config
-    var frame = try createTestFrame(allocator, null);
+    var frame = try createTestFrame(allocator);
     defer frame.deinit(allocator);
 
     // Initially, return data should be empty
@@ -2372,7 +2372,7 @@ test "RETURNDATASIZE and RETURNDATACOPY basic functionality" {
 test "RETURNDATACOPY out of bounds" {
     const allocator = testing.allocator;
 
-    var frame = try createTestFrame(allocator, null);
+    var frame = try createTestFrame(allocator);
     defer frame.deinit(allocator);
 
     // Set small return data - inline setOutput logic

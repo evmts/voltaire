@@ -5015,20 +5015,12 @@ test "Call context tracking - get_caller and get_call_value" {
 
     // Simulate depth 1 call from origin to contract_a with value 123
     evm.depth = 1;
-    evm.call_stack[0] = .{
-        .caller = origin_addr,
-        .value = 123,
-    };
 
     try std.testing.expectEqual(origin_addr, evm.get_caller());
     try std.testing.expectEqual(@as(u256, 123), evm.get_call_value());
 
     // Simulate depth 2 call from contract_a to contract_b with value 456
     evm.depth = 2;
-    evm.call_stack[1] = .{
-        .caller = contract_a,
-        .value = 456,
-    };
 
     try std.testing.expectEqual(contract_a, evm.get_caller());
     try std.testing.expectEqual(@as(u256, 456), evm.get_call_value());

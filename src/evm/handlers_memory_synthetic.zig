@@ -34,7 +34,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Read 32 bytes from memory
-            const value_u256 = self.memory.get_u256_evm(self.allocator, @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -67,7 +67,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Read 32 bytes from memory
-            const value_u256 = self.memory.get_u256_evm(self.allocator, @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -108,7 +108,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.allocator, @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -144,7 +144,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.allocator, @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -181,7 +181,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
-            self.memory.set_byte_evm(self.allocator, @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
+            self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -217,7 +217,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
-            self.memory.set_byte_evm(self.allocator, @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
+            self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -258,7 +258,7 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

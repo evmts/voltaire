@@ -43,7 +43,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Read 32 bytes from memory (EVM-compliant with automatic expansion)
-            const value_u256 = self.memory.get_u256_evm(self.allocator, @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -105,7 +105,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Convert to u256 if necessary and store
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.allocator, @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -160,7 +160,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
-            self.memory.set_byte_evm(self.allocator, @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
+            self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -234,18 +234,18 @@ pub fn Handlers(comptime FrameType: type) type {
             const src_data = self.memory.get_slice(src_u24, size_u24) catch return Error.OutOfBounds;
 
             // Create a temporary buffer to handle overlapping regions correctly
-            const temp_buffer = self.allocator.alloc(u8, size_u24) catch return Error.AllocationError;
+            const temp_buffer = self.getAllocator().alloc(u8, size_u24) catch return Error.AllocationError;
 
             @memcpy(temp_buffer, src_data);
 
             // Write to destination
-            self.memory.set_data_evm(self.allocator, dest_u24, temp_buffer) catch {
-                self.allocator.free(temp_buffer);
+            self.memory.set_data_evm(self.getAllocator(), dest_u24, temp_buffer) catch {
+                self.getAllocator().free(temp_buffer);
                 return Error.AllocationError;
             };
 
             // Free the temporary buffer before tail call
-            self.allocator.free(temp_buffer);
+            self.getAllocator().free(temp_buffer);
 
             const op_data = dispatch.getOpData(.MCOPY);
             const next = op_data.next;
@@ -282,7 +282,7 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

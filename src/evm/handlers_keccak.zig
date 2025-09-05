@@ -92,7 +92,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             // Ensure memory is available
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(end))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(end))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -213,7 +213,7 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }
@@ -223,7 +223,7 @@ fn createTestFrameU64(allocator: std.mem.Allocator) !TestFrameU64 {
     const value = try allocator.create(u64);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrameU64.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrameU64.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }
@@ -233,7 +233,7 @@ fn createTestFrameU32(allocator: std.mem.Allocator) !TestFrameU32 {
     const value = try allocator.create(u32);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrameU32.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrameU32.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

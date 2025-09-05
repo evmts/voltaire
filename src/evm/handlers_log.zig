@@ -70,7 +70,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Ensure memory capacity
                     if (length_usize > 0) {
                         const memory_end = offset_usize + length_usize;
-                        self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
+                        self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
                     }
 
                     // Get data from memory
@@ -80,7 +80,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         &[_]u8{};
 
                     // Create log entry
-                    const allocator = self.allocator;
+                    const allocator = self.getAllocator();
                     const data_copy = if (data.len > 0)
                         allocator.dupe(u8, data) catch return Error.AllocationError
                     else
@@ -88,7 +88,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
                     const topics_array = if (topic_count > 0) blk: {
                         const arr = allocator.alloc(u256, topic_count) catch {
-                            if (data.len > 0) allocator.free(data_copy);
+                            // No need to free with arena allocator
                             return Error.AllocationError;
                         };
                         for (0..topic_count) |j| {
@@ -96,7 +96,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         }
                         break :blk arr;
                     } else allocator.alloc(u256, 0) catch {
-                        if (data.len > 0) allocator.free(data_copy);
+                        // No need to free with arena allocator
                         return Error.AllocationError;
                     };
 
@@ -106,7 +106,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         .topics = topics_array,
                         .data = data_copy,
                     };
-                    self.logs.append(self.allocator, log_entry) catch return Error.AllocationError;
+                    self.logs.append(self.getAllocator(), log_entry) catch return Error.AllocationError;
 
                     // Map topic_count to the appropriate LOG opcode
                     switch (topic_count) {
@@ -196,10 +196,8 @@ const MockHost = struct {
     }
 
     pub fn deinit(self: *MockHost) void {
-        for (self.logs.items) |log_entry| {
-            self.allocator.free(log_entry.data);
-            self.allocator.free(log_entry.topics);
-        }
+        // No need to free arena-allocated data
+        // Just deinit the list structure
         self.logs.deinit();
     }
 
@@ -217,7 +215,7 @@ fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockHost) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

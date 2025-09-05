@@ -154,8 +154,6 @@ pub fn Frame(comptime config: FrameConfig) type {
         code: []const u8 = &[_]u8{}, // Contract code (for CODESIZE/CODECOPY)
         authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
         jump_table: Dispatch.JumpTable, // 24B - Jump table for JUMP/JUMPI validation (entries slice)
-        self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
-        allocator: std.mem.Allocator, // 16B - Memory allocator
 
         //
         /// Initialize a new execution frame.
@@ -164,9 +162,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// resources with proper cleanup on failure. Bytecode validation
         /// and analysis is now handled separately by dispatch initialization.
         ///
-        /// EIP-214: For static calls, self_destruct should be null to prevent
-        /// SELFDESTRUCT operations which modify blockchain state.
-        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: *const WordType, calldata_input: []const u8, evm_ptr: *anyopaque, self_destruct: ?*SelfDestruct) Error!Self {
+        /// Initialize a new execution frame.
+        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: *const WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
             // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata_input.len, self_destruct != null });
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
@@ -220,8 +217,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Cache line 3+
                 .output = &[_]u8{}, // Start with empty output
                 .jump_table = .{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Empty jump table
-                .allocator = allocator,
-                .self_destruct = self_destruct,
                 .authorized_address = null,
             };
         }
@@ -230,20 +225,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             log.debug("Frame.deinit: Starting cleanup, logs_count={}, output_len={}", .{ self.logs.items.len, self.output.len });
             self.stack.deinit(allocator);
             self.memory.deinit(allocator);
-            // Free log data
-            for (self.logs.items) |log_entry| {
-                allocator.free(log_entry.topics);
-                allocator.free(log_entry.data);
-            }
-            self.logs.deinit(allocator);
-            if (self.output.len > 0) {
-                allocator.free(self.output);
-            }
-            // Free length-prefixed calldata
-            if (self.length_prefixed_calldata) |ptr| {
-                const len = std.mem.readInt(u64, ptr[0..8], .little);
-                allocator.free(ptr[0 .. 8 + len]);
-            }
+            // No need to free any arena-allocated data (logs, output, calldata)
+            // The arena allocator will be reset after the call completes
             log.debug("Frame.deinit: Cleanup complete", .{});
         }
 
@@ -273,7 +256,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.code = bytecode_raw;
 
             // Initialize bytecode analysis for dispatch and jump table
-            var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
+            // Use the arena allocator for temporary allocations during execution
+            const allocator = self.getAllocator();
+            var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                 return switch (e) {
@@ -306,7 +291,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Create dispatch schedule with ownership to ensure all allocations are freed
-            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &bytecode, handlers) catch |e| {
+            var schedule_raii = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch |e| {
                 log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                 return Error.AllocationError;
             };
@@ -314,8 +299,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const schedule = schedule_raii.items;
 
             // Create jump table
-            const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &bytecode) catch return Error.AllocationError;
-            defer self.allocator.free(jump_table.entries);
+            const jump_table = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
+            defer allocator.free(jump_table.entries);
 
             // Store jump table in frame for JUMP/JUMPI handlers
             self.jump_table = jump_table;
@@ -420,8 +405,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .contract_address = self.contract_address,
                 .output = new_output,
                 .length_prefixed_calldata = self.length_prefixed_calldata,
-                .allocator = allocator,
-                .self_destruct = self.self_destruct,
+                .jump_table = self.jump_table,
+                .authorized_address = self.authorized_address,
             };
         }
 
@@ -482,6 +467,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Get the EVM instance from the opaque pointer
         pub inline fn getEvm(self: *const Self) *DefaultEvm {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
+        }
+
+        /// Get the arena allocator for temporary allocations during execution
+        pub inline fn getAllocator(self: *const Self) std.mem.Allocator {
+            return self.getEvm().getCallArenaAllocator();
         }
 
         /// Pretty print the frame state for debugging and visualization.

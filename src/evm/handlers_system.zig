@@ -3,7 +3,7 @@ const log = @import("log.zig");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const primitives = @import("primitives");
 const Address = primitives.Address;
-// Access to call params through the call params module  
+// Access to call params through the call params module
 const call_params_mod = @import("call_params.zig");
 const Opcode = @import("opcode_data.zig").Opcode;
 // u256 is now a built-in type in Zig 0.14+
@@ -15,7 +15,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
-        
+
         // Use default configuration for CallParams - this maintains backward compatibility
         const CallParams = call_params_mod.CallParams(.{});
 
@@ -54,14 +54,12 @@ pub fn Handlers(comptime FrameType: type) type {
             const input_size = self.stack.pop_unsafe();
             const output_offset = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
-            
 
             // EIP-214: Static calls with value > 0 will fail in host.inner_call()
             // Data-oriented design: constraint is encoded in host implementation
 
             // Convert address from u256
             const addr = from_u256(address_u256);
-            
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
@@ -97,7 +95,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     const next = op_data.next;
@@ -108,10 +106,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -122,7 +120,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -137,37 +135,33 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
-            
-            
+
             var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
-            
+            defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
 
             // Store return data for future RETURNDATASIZE/RETURNDATACOPY
             // Free previous output if any
-            if (self.output.len > 0) {
-                self.allocator.free(self.output);
-            }
+            // No need to free when using arena allocator - it's reset after each call
             // Allocate new output
-            self.output = self.allocator.alloc(u8, result.output.len) catch {
+            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
                 return Error.AllocationError;
             };
             @memcpy(self.output, result.output);
@@ -178,7 +172,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const caller_gas_call: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const new_gas_call: u64 = if (used_gas_call > caller_gas_call) 0 else caller_gas_call - used_gas_call;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_call));
-            
 
             // Push success status (1 for success, 0 for failure)
             // log.debug("CALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
@@ -240,7 +233,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     const next = op_data.next;
@@ -251,7 +244,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     const next = op_data.next;
@@ -290,12 +283,12 @@ pub fn Handlers(comptime FrameType: type) type {
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
+            defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
+                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
             }
 
             // Update caller gas: subtract only gas actually used by callee
@@ -327,11 +320,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const input_size = self.stack.pop_unsafe();
             const output_offset = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
-            
 
             // Convert address from u256
             const addr = from_u256(address_u256);
-            
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
@@ -365,7 +356,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     const next = op_data.next;
@@ -376,10 +367,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -390,7 +381,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -399,7 +390,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // DELEGATECALL preserves caller and value from current context
             const params = CallParams{
                 .delegatecall = .{
-                    .caller = self.caller,  // Preserve original caller, not contract address!
+                    .caller = self.caller, // Preserve original caller, not contract address!
                     .to = addr,
                     .input = input_data,
                     .gas = gas_u64,
@@ -409,30 +400,28 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
+            defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
 
             // Store return data for future RETURNDATASIZE/RETURNDATACOPY
             // Free previous output if any
-            if (self.output.len > 0) {
-                self.allocator.free(self.output);
-            }
+            // No need to free when using arena allocator - it's reset after each call
             // Allocate new output
-            self.output = self.allocator.alloc(u8, result.output.len) catch {
+            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
                 return Error.AllocationError;
             };
             @memcpy(self.output, result.output);
@@ -457,7 +446,6 @@ pub fn Handlers(comptime FrameType: type) type {
         /// STATICCALL opcode (0xfa) - Static message-call (no state changes allowed).
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn staticcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
             std.debug.assert(self.stack.size() >= 6); // STATICCALL requires 6 stack items
@@ -503,7 +491,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     const next = op_data.next;
@@ -514,10 +502,10 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -528,7 +516,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -546,30 +534,28 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
+            defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
 
             // Store return data for future RETURNDATASIZE/RETURNDATACOPY
             // Free previous output if any
-            if (self.output.len > 0) {
-                self.allocator.free(self.output);
-            }
+            // No need to free when using arena allocator - it's reset after each call
             // Allocate new output
-            self.output = self.allocator.alloc(u8, result.output.len) catch {
+            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
                 return Error.AllocationError;
             };
             @memcpy(self.output, result.output);
@@ -615,7 +601,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Ensure memory capacity
             const memory_end = offset_usize + size_usize;
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE);
                 const next = op_data.next;
@@ -628,7 +614,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 init_code = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CREATE);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -646,11 +632,11 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CREATE);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
+            defer result.deinit(self.getAllocator());
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
@@ -696,7 +682,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Ensure memory capacity
             const memory_end = offset_usize + size_usize;
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch {
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE2);
                 const next = op_data.next;
@@ -709,7 +695,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 init_code = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CREATE2);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
@@ -731,11 +717,11 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CREATE2);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
+            defer result.deinit(self.getAllocator());
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
@@ -759,13 +745,13 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn @"return"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
-            
+
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
             std.debug.assert(self.stack.size() >= 2); // RETURN requires 2 stack items
-            const offset = self.stack.pop_unsafe();  // Top of stack
-            const size = self.stack.pop_unsafe();    // Second from top
+            const offset = self.stack.pop_unsafe(); // Top of stack
+            const size = self.stack.pop_unsafe(); // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -784,29 +770,24 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(memory_expansion_cost);
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
-            
             // Extract return data from memory and store it
             if (size_usize > 0) {
                 const return_data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
                     return Error.OutOfBounds;
                 };
                 // Inline setOutput logic: free existing output if any
-                if (self.output.len > 0) {
-                    self.allocator.free(self.output);
-                }
+                // No need to free when using arena allocator - it's reset after each call
                 // Set new output
-                const new_output = self.allocator.alloc(u8, return_data.len) catch {
+                const new_output = self.getAllocator().alloc(u8, return_data.len) catch {
                     return Error.AllocationError;
                 };
                 @memcpy(new_output, return_data);
                 self.output = new_output;
             } else {
                 // Empty return data - inline setOutput logic
-                if (self.output.len > 0) {
-                    self.allocator.free(self.output);
-                }
+                // No need to free when using arena allocator - it's reset after each call
                 self.output = &.{};
             }
 
@@ -820,8 +801,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
             std.debug.assert(self.stack.size() >= 2); // REVERT requires 2 stack items
-            const size = self.stack.pop_unsafe();    // Top of stack
-            const offset = self.stack.pop_unsafe();  // Second from top
+            const size = self.stack.pop_unsafe(); // Top of stack
+            const offset = self.stack.pop_unsafe(); // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -840,7 +821,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @intCast(memory_expansion_cost);
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
+            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
             // Extract revert data from memory and store it
             if (size_usize > 0) {
@@ -848,24 +829,20 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.OutOfBounds;
                 };
                 // Free previous output if any
-                if (self.output.len > 0) {
-                    self.allocator.free(self.output);
-                }
+                // No need to free when using arena allocator - it's reset after each call
                 // Store the revert data
-                self.output = self.allocator.alloc(u8, revert_data.len) catch {
+                self.output = self.getAllocator().alloc(u8, revert_data.len) catch {
                     return Error.AllocationError;
                 };
                 @memcpy(self.output, revert_data);
             } else {
                 // Empty revert data
-                if (self.output.len > 0) {
-                    self.allocator.free(self.output);
-                }
+                // No need to free when using arena allocator - it's reset after each call
                 self.output = &[_]u8{};
             }
 
             // Reduce log noise: no verbose REVERT logging
-            
+
             // Always return REVERT error for proper handling
             return Error.REVERT;
         }
@@ -874,24 +851,10 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [recipient] → []
         /// EIP-214: STATICCALL prevents SELFDESTRUCT via null self_destruct and static host
         pub fn selfdestruct(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            const dispatch = Dispatch{ .cursor = cursor };
-            _ = dispatch;
+            _ = cursor;
             std.debug.assert(self.stack.size() >= 1); // SELFDESTRUCT requires 1 stack item
             const recipient_u256 = self.stack.pop_unsafe();
             const recipient = from_u256(recipient_u256);
-            // Reduce log noise
-
-            // EIP-214: Data-oriented design - self_destruct is null for static calls
-            if (self.self_destruct == null) {
-                // Reduce log noise
-                return Error.WriteProtection;
-            }
-
-            // Note: Gas consumption for SELFDESTRUCT (5000 gas) is handled automatically
-            // by the dispatch system via first_block_gas calculation
-
-            // Mark contract for destruction via host interface
-            // TODO: Consider if this should use a different pattern for EVM access
             self.getEvm().mark_for_destruction(self.contract_address, recipient) catch |err| switch (err) {
                 error.StaticCallViolation => return Error.WriteProtection,
                 else => {
@@ -900,11 +863,9 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.OutOfGas;
                 },
             };
-
             // According to EIP-6780 (Cancun hardfork), SELFDESTRUCT only actually destroys
             // the contract if it was created in the same transaction. This is handled by the host.
             // SELFDESTRUCT always stops execution
-            // Reduce log noise
             return Error.SelfDestruct;
         }
 
@@ -913,7 +874,6 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn stop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             _ = self;
             _ = cursor;
-            
 
             // EIP-3529 gas refund is applied at the transaction level in evm.zig,
             // not within individual frames. The frame just stops execution.
@@ -925,7 +885,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [authority, commitment, sig_v, sig_r, sig_s] → [success]
         pub fn auth(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            
+
             // Pop authorization parameters from stack
             std.debug.assert(self.stack.size() >= 5); // AUTH requires 5 stack items
             const sig_s = self.stack.pop_unsafe();
@@ -933,10 +893,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const sig_v = self.stack.pop_unsafe();
             const commitment = self.stack.pop_unsafe();
             const authority_u256 = self.stack.pop_unsafe();
-            
+
             // Convert authority to address
             const authority = from_u256(authority_u256);
-            
+
             // Validate signature components
             if (sig_v > 28 or sig_r == 0 or sig_s == 0) {
                 // Invalid signature, push failure
@@ -945,12 +905,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            
+
             // Create authorization message
             // Format: keccak256(0x04 || chainId || nonce || invokerAddress || commitment)
             var message: [1 + 32 + 32 + 20 + 32]u8 = undefined;
             message[0] = 0x04; // AUTH magic byte
-            
+
             // Get chain ID and nonce from context
             const chain_id = self.getEvm().get_chain_id();
             const nonce = self.database.get_account(authority.bytes) catch {
@@ -964,7 +924,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             };
-            
+
             // Encode chain ID (32 bytes, big-endian)
             std.mem.writeInt(u256, message[1..33], chain_id, .big);
             // Encode nonce (32 bytes, big-endian)
@@ -977,26 +937,21 @@ pub fn Handlers(comptime FrameType: type) type {
             } else {
                 std.mem.writeInt(u256, message[85..117], commitment, .big);
             }
-            
+
             // Compute message hash
             const crypto = @import("crypto");
             const message_hash = crypto.Hash.keccak256(&message);
-            
-            // Verify signature  
+
+            // Verify signature
             const recovery_id = @as(u8, @intCast(sig_v - 27));
-            
-            const recovered = crypto.secp256k1.unaudited_recover_address(
-                &message_hash,
-                recovery_id,
-                sig_r,
-                sig_s
-            ) catch {
+
+            const recovered = crypto.secp256k1.unaudited_recover_address(&message_hash, recovery_id, sig_r, sig_s) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTHCALL);
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             };
-            
+
             // Check if recovered address matches authority
             if (!std.mem.eql(u8, &recovered.bytes, &authority.bytes)) {
                 self.stack.push_unsafe(0);
@@ -1004,10 +959,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            
+
             // Store authorized context in frame
             self.authorized_address = authority;
-            
+
             // Push success
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(1);
@@ -1020,7 +975,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [gas, to, value, input_offset, input_size, output_offset, output_size, auth] → [success]
         pub fn authcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            
+
             // Pop call parameters from stack
             std.debug.assert(self.stack.size() >= 8); // AUTHCALL requires 8 stack items
             const auth_flag = self.stack.pop_unsafe();
@@ -1031,7 +986,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = self.stack.pop_unsafe();
             const to_address = self.stack.pop_unsafe();
             const gas_param = self.stack.pop_unsafe();
-            
+
             // Check if we have an authorized context (auth_flag must be 1)
             if (auth_flag != 1 or self.authorized_address == null) {
                 // No authorization, push failure
@@ -1040,10 +995,10 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            
+
             // Convert to address
             const to_addr = from_u256(to_address);
-            
+
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
                 self.stack.push_unsafe(0);
@@ -1052,7 +1007,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
             const gas_u64 = @as(u64, @intCast(gas_param));
-            
+
             // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
                 input_size > std.math.maxInt(usize) or
@@ -1064,45 +1019,45 @@ pub fn Handlers(comptime FrameType: type) type {
                 const next = op_data.next;
                 return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
             }
-            
+
             const input_offset_usize = @as(usize, @intCast(input_offset));
             const input_size_usize = @as(usize, @intCast(input_size));
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
-            
+
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
-            
+
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.allocator, @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
-            
+
             // Extract input data
             var input_data: []const u8 = &.{};
             if (input_size_usize > 0) {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
-            
+
             // Perform the authorized call through the host interface
             // The call is made with the authorized address as the caller
             const params = CallParams{
@@ -1114,40 +1069,38 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
-            
+
             var result = self.getEvm().inner_call(params) catch |err| switch (err) {
                 else => {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 },
             };
-            defer result.deinit(self.allocator);
-            
+            defer result.deinit(self.getAllocator());
+
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.allocator, @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
-                const next = op_data.next;
+                    const next = op_data.next;
                     return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
                 };
             }
-            
+
             // Store return data for future RETURNDATASIZE/RETURNDATACOPY
-            if (self.output.len > 0) {
-                self.allocator.free(self.output);
-            }
-            self.output = self.allocator.alloc(u8, result.output.len) catch {
+            // No need to free when using arena allocator - it's reset after each call
+            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
                 return Error.AllocationError;
             };
             @memcpy(self.output, result.output);
-            
+
             // Update gas remaining
             self.gas_remaining = @as(@TypeOf(self.gas_remaining), @intCast(result.gas_left));
-            
+
             // Push success status
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(if (result.success) 1 else 0);
@@ -1237,7 +1190,7 @@ fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000)); // Use a dummy pointer for tests without EVM
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }
@@ -1262,7 +1215,7 @@ fn createMockDispatch() TestFrame.Dispatch {
 }
 
 test "STOP opcode" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     const dispatch = createMockDispatch();
@@ -1271,7 +1224,7 @@ test "STOP opcode" {
 }
 
 test "RETURN opcode - empty return" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Test: return with offset=0, size=0
@@ -1286,7 +1239,7 @@ test "RETURN opcode - empty return" {
 }
 
 test "RETURN opcode - with data" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Write some data to memory
@@ -1305,7 +1258,7 @@ test "RETURN opcode - with data" {
 }
 
 test "RETURN opcode - 32 bytes with 0x42" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Store 0x42 at offset 0 (as a u256)
@@ -1336,7 +1289,7 @@ test "RETURN opcode - 32 bytes with 0x42" {
 }
 
 test "REVERT opcode - empty revert" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Test: revert with offset=0, size=0
@@ -1351,7 +1304,7 @@ test "REVERT opcode - empty revert" {
 }
 
 test "REVERT opcode - with error data" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Write error message to memory
@@ -1446,7 +1399,7 @@ test "CREATE opcode - static context error" {
 
 // RETURN opcode tests
 test "RETURN opcode - large data" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Write 1KB of data
@@ -1469,7 +1422,7 @@ test "RETURN opcode - large data" {
 }
 
 test "RETURN opcode - offset at memory boundary" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Write data at different offsets
@@ -1488,7 +1441,7 @@ test "RETURN opcode - offset at memory boundary" {
 }
 
 test "RETURN opcode - out of bounds offset" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Try to return from way out of bounds
@@ -1502,7 +1455,7 @@ test "RETURN opcode - out of bounds offset" {
 }
 
 test "RETURN opcode - out of bounds size" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     try frame.stack.push(0); // offset
@@ -1515,7 +1468,7 @@ test "RETURN opcode - out of bounds size" {
 }
 
 test "RETURN opcode - memory expansion" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Return from uninitialized memory (should expand and return zeros)
@@ -1538,7 +1491,7 @@ test "RETURN opcode - memory expansion" {
 
 // REVERT opcode tests
 test "REVERT opcode - patterns" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Test common error patterns
@@ -1568,7 +1521,7 @@ test "REVERT opcode - patterns" {
 }
 
 test "REVERT opcode - max size revert data" {
-    var frame = try createTestFrame(testing.allocator, null);
+    var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
 
     // Create max reasonable revert data (e.g., 10KB)
@@ -2068,54 +2021,54 @@ test "DELEGATECALL - comprehensive tests" {
         evm.call_result.success = true;
         evm.call_result.gas_left = 50000;
         evm.call_result.output = "delegated result";
-        
+
         const input_data = "test input";
         try frame.memory.set_data(frame.allocator, 0, input_data);
-        
-        try frame.stack.push(75000);  // gas
-        try frame.stack.push(0x5678); // address  
-        try frame.stack.push(0);      // input_offset
+
+        try frame.stack.push(75000); // gas
+        try frame.stack.push(0x5678); // address
+        try frame.stack.push(0); // input_offset
         try frame.stack.push(input_data.len); // input_size
-        try frame.stack.push(100);    // output_offset
-        try frame.stack.push(32);     // output_size
-        
+        try frame.stack.push(100); // output_offset
+        try frame.stack.push(32); // output_size
+
         const dispatch = createMockDispatch();
         const result = try TestFrame.SystemHandlers.delegatecall(frame, dispatch);
-        
+
         try testing.expect(result == TestFrame.Success.stop);
         try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
-        
+
         // Check return data was stored
         try testing.expectEqualSlices(u8, "delegated result", frame.output);
-        
+
         // Check gas was updated
         try testing.expectEqual(@as(i64, 50000), frame.gas_remaining);
     }
-    
+
     // Test failed delegatecall
     {
         evm.call_result.success = false;
         evm.call_result.gas_left = 0;
         evm.call_result.output = "failure reason";
-        
+
         // Reset stack
         while (frame.stack.len() > 0) {
             _ = try frame.stack.pop();
         }
-        
-        try frame.stack.push(50000);  // gas
+
+        try frame.stack.push(50000); // gas
         try frame.stack.push(0xDEAD); // address
-        try frame.stack.push(0);      // input_offset
-        try frame.stack.push(0);      // input_size
-        try frame.stack.push(0);      // output_offset
-        try frame.stack.push(0);      // output_size
-        
+        try frame.stack.push(0); // input_offset
+        try frame.stack.push(0); // input_size
+        try frame.stack.push(0); // output_offset
+        try frame.stack.push(0); // output_size
+
         const dispatch = createMockDispatch();
         const result = try TestFrame.SystemHandlers.delegatecall(frame, dispatch);
-        
+
         try testing.expect(result == TestFrame.Success.stop);
         try testing.expectEqual(@as(u256, 0), try frame.stack.pop()); // failure
-        
+
         // Return data should still be stored even on failure
         try testing.expectEqualSlices(u8, "failure reason", frame.output);
     }
@@ -2131,58 +2084,58 @@ test "STATICCALL - comprehensive tests" {
         evm.call_result.success = true;
         evm.call_result.gas_left = 40000;
         evm.call_result.output = "static result";
-        
+
         const input_data = "query data";
         try frame.memory.set_data(frame.allocator, 0, input_data);
-        
-        try frame.stack.push(60000);  // gas
+
+        try frame.stack.push(60000); // gas
         try frame.stack.push(0xABCD); // address
-        try frame.stack.push(0);      // input_offset
+        try frame.stack.push(0); // input_offset
         try frame.stack.push(input_data.len); // input_size
-        try frame.stack.push(50);     // output_offset
-        try frame.stack.push(20);     // output_size
-        
+        try frame.stack.push(50); // output_offset
+        try frame.stack.push(20); // output_size
+
         const dispatch = createMockDispatch();
         const result = try TestFrame.SystemHandlers.staticcall(frame, dispatch);
-        
+
         try testing.expect(result == TestFrame.Success.stop);
         try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
-        
+
         // Check return data was stored
         try testing.expectEqualSlices(u8, "static result", frame.output);
-        
+
         // Check gas was updated
         try testing.expectEqual(@as(i64, 40000), frame.gas_remaining);
-        
+
         // Check output was written to memory (limited to output_size)
         const mem_result = try frame.memory.get_slice(50, "static result".len);
         try testing.expectEqualSlices(u8, "static result", mem_result);
     }
-    
+
     // Test staticcall with no input/output
     {
         evm.call_result.success = true;
         evm.call_result.gas_left = 30000;
         evm.call_result.output = &.{};
-        
+
         // Reset stack
         while (frame.stack.len() > 0) {
             _ = try frame.stack.pop();
         }
-        
-        try frame.stack.push(50000);  // gas
+
+        try frame.stack.push(50000); // gas
         try frame.stack.push(0x1234); // address
-        try frame.stack.push(0);      // input_offset
-        try frame.stack.push(0);      // input_size (no input)
-        try frame.stack.push(0);      // output_offset
-        try frame.stack.push(0);      // output_size (no output)
-        
+        try frame.stack.push(0); // input_offset
+        try frame.stack.push(0); // input_size (no input)
+        try frame.stack.push(0); // output_offset
+        try frame.stack.push(0); // output_size (no output)
+
         const dispatch = createMockDispatch();
         const result = try TestFrame.SystemHandlers.staticcall(frame, dispatch);
-        
+
         try testing.expect(result == TestFrame.Success.stop);
         try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
-        
+
         // Check empty return data
         try testing.expectEqual(@as(usize, 0), frame.output.len);
     }

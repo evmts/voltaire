@@ -192,6 +192,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
+            // Initialize arena allocator with preallocation for typical EVM needs
+            var arena = std.heap.ArenaAllocator.init(allocator);
+            // Preallocate 64KB for typical frame allocations (logs, output, dispatch tables, etc.)
+            // This avoids repeated allocations from the underlying allocator during execution
+            _ = arena.allocator().alloc(u8, 64 * 1024) catch {};
+            _ = arena.reset(.retain_capacity);
 
             return Self{
                 .depth = 0,
@@ -214,7 +220,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .disable_gas_checking = false,
                 .current_snapshot_id = 0,
                 .logs = std.ArrayList(@import("call_result.zig").Log){},
-                .call_arena = std.heap.ArenaAllocator.init(allocator),
+                .call_arena = arena,
             };
         }
 
@@ -237,7 +243,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
             return self.call_arena.allocator();
         }
-
 
         /// Transfer value between accounts with proper balance checks and error handling
         fn doTransfer(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
@@ -306,6 +311,24 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.created_contracts.clear();
                 // Clear self destruct list
                 self.self_destruct.clear();
+                
+                // TEMPORARY: Log arena allocation size before reset
+                const arena_capacity = self.call_arena.queryCapacity();
+                if (arena_capacity > 0) {
+                    const file = std.fs.cwd().createFile("allocation.txt", .{ .truncate = false }) catch |err| {
+                        log.debug("Failed to open allocation.txt: {}", .{err});
+                    } else {
+                        defer file.close();
+                        // Seek to end of file
+                        file.seekFromEnd(0) catch {};
+                        // Write the capacity in bytes
+                        const writer = file.writer();
+                        writer.print("{}\n", .{arena_capacity}) catch |err| {
+                            log.debug("Failed to write to allocation.txt: {}", .{err});
+                        };
+                    }
+                }
+                
                 // Reset arena allocator
                 _ = self.call_arena.reset(.retain_capacity);
             }
@@ -935,15 +958,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (result.output.len > 0) {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
                 if (self.eips.eip_3541_enabled and result.output[0] == 0xEF) {
-                    // Free the allocated output memory before returning
-                    self.allocator.free(result.output);
+                    // No need to free - using arena allocator
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }
                 // Store the code in the database - database will make its own copy
                 const stored_hash = self.database.set_code(result.output) catch {
-                    // Free the allocated output memory before returning
-                    self.allocator.free(result.output);
+                    // No need to free - using arena allocator
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 };
@@ -952,10 +973,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Don't free result.output here - we'll return it
             }
             self.database.set_account(args.contract_address.bytes, contract_account) catch {
-                // Free the allocated output memory before returning if it exists
-                if (result.output.len > 0) {
-                    self.allocator.free(result.output);
-                }
+                // No need to free - using arena allocator
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return CallResult.failure(0);
             };
@@ -1053,13 +1071,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             const max_gas = @as(u64, @intCast(std.math.maxInt(Frame.GasType)));
             const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, max_gas)));
 
-            // EIP-214: encode static constraints; null to prevent SELFDESTRUCT in static context
-            const self_destruct_param = if (is_static) null else &self.self_destruct;
-
             // log.debug("DEBUG: About to call Frame.init\n", .{});
-            var frame = try Frame.init(self.allocator, gas_cast, self.database.*, caller, &value, input, @as(*anyopaque, @ptrCast(self)), self_destruct_param);
+            // Use arena allocator for all frame allocations
+            const arena_allocator = self.getCallArenaAllocator();
+            var frame = try Frame.init(arena_allocator, gas_cast, self.database.*, caller, &value, input, @as(*anyopaque, @ptrCast(self)));
             frame.contract_address = address;
-            defer frame.deinit(self.allocator);
+            defer frame.deinit(arena_allocator);
 
             // EIP-2929: Warm the contract address being executed
             _ = self.access_list.access_address(address) catch {};
