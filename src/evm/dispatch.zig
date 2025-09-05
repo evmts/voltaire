@@ -40,7 +40,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         // Import metadata types from dispatch_metadata module
         const Metadata = dispatch_metadata.DispatchMetadata(FrameType);
-        
+
         /// Define Item inline to avoid circular dependency
         pub const Item = union {
             /// Most items are function pointers to an opcode handler
@@ -52,7 +52,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             pc: Metadata.PcMetadata,
             first_block_gas: Metadata.FirstBlockMetadata,
         };
-        
+
         /// The shared interface of any opcode handler
         const OpcodeHandler = @TypeOf(@as(Item, undefined).opcode_handler);
 
@@ -341,7 +341,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             pub fn fromOpcode(opcode: Opcode) UnifiedOpcode {
                 return @enumFromInt(@intFromEnum(opcode));
             }
-            
+
             /// Alias for fromOpcode for compatibility
             pub fn fromRegular(opcode: Opcode) UnifiedOpcode {
                 return fromOpcode(opcode);
@@ -393,7 +393,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         /// Get opcode data including metadata and next dispatch position.
         /// This is a comptime-optimized method for specific opcodes.
-        pub fn getOpData(self: Self, comptime opcode: UnifiedOpcode) GetOpDataReturnType(opcode) {
+        pub inline fn getOpData(self: Self, comptime opcode: UnifiedOpcode) GetOpDataReturnType(opcode) {
             return switch (opcode) {
                 .PC => .{
                     .metadata = self.cursor[1].pc,
@@ -444,7 +444,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
 
             var op_count: u32 = 0;
-            
+
             while (true) {
                 const maybe = iter.next();
                 if (maybe == null) break;
@@ -497,7 +497,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             if (gas > 10000 or op_count > 100) {
                 // log.warn("calculateFirstBlockGas: First block gas={}, op_count={}, bytecode_len={}", .{ gas, op_count, bytecode.len() });
             }
-            
+
             return gas;
         }
 
@@ -642,7 +642,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             bytecode: anytype,
             opcode_handlers: *const [256]OpcodeHandler,
         ) !BuildOwned {
-
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
