@@ -28,6 +28,7 @@ const Hardfork = @import("hardfork.zig").Hardfork;
 const precompiles = @import("precompiles.zig");
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
+const GrowingArenaAllocator = @import("growing_arena_allocator.zig").GrowingArenaAllocator;
 const Opcode = @import("opcode.zig").Opcode;
 const call_result_module = @import("call_result.zig");
 const call_params_module = @import("call_params.zig");
@@ -112,16 +113,16 @@ pub fn Evm(comptime config: EvmConfig) type {
         depth: config.get_depth_type(),
         /// Current snapshot ID for the active call frame
         current_snapshot_id: Journal.SnapshotIdType,
-        /// Database interface for state storage
-        database: *Database,
+        /// Access list for tracking warm/cold access (EIP-2929)
+        access_list: AccessList,
         /// Journal for tracking state changes and snapshots
         journal: Journal,
         /// Allocator for dynamic memory
         allocator: std.mem.Allocator,
 
         // CACHE LINE 2 - TRANSACTION EXECUTION STATE
-        /// Access list for tracking warm/cold access (EIP-2929)
-        access_list: AccessList,
+        /// Database interface for state storage
+        database: *Database,
         /// Tracks contracts created in current transaction (EIP-6780)
         created_contracts: CreatedContracts,
         /// Contracts marked for self-destruction
@@ -154,8 +155,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         logs: std.ArrayList(@import("call_result.zig").Log),
         /// Call stack - tracks caller and value for each call depth
         call_stack: [config.max_call_depth]CallStackEntry,
-        /// Arena allocator for per-call temporary allocations
-        call_arena: std.heap.ArenaAllocator,
+        /// Growing arena allocator for per-call temporary allocations with 50% growth strategy
+        call_arena: GrowingArenaAllocator,
         /// Small reusable buffer for fixed-size outputs (e.g., 32-byte address)
         small_output_buf: [64]u8 = undefined,
 
@@ -192,12 +193,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
-            // Initialize arena allocator with preallocation for typical EVM needs
-            var arena = std.heap.ArenaAllocator.init(allocator);
-            // Preallocate 64KB for typical frame allocations (logs, output, dispatch tables, etc.)
+            // Initialize growing arena allocator with 1MB initial capacity and 50% growth strategy
             // This avoids repeated allocations from the underlying allocator during execution
-            _ = arena.allocator().alloc(u8, 64 * 1024) catch {};
-            _ = arena.reset(.retain_capacity);
+            const arena = GrowingArenaAllocator.init(allocator, 1024 * 1024, 150);
 
             return Self{
                 .depth = 0,
@@ -311,24 +309,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.created_contracts.clear();
                 // Clear self destruct list
                 self.self_destruct.clear();
-                
-                // TEMPORARY: Log arena allocation size before reset
-                const arena_capacity = self.call_arena.queryCapacity();
-                if (arena_capacity > 0) {
-                    const file = std.fs.cwd().createFile("allocation.txt", .{ .truncate = false }) catch |err| {
-                        log.debug("Failed to open allocation.txt: {}", .{err});
-                    } else {
-                        defer file.close();
-                        // Seek to end of file
-                        file.seekFromEnd(0) catch {};
-                        // Write the capacity in bytes
-                        const writer = file.writer();
-                        writer.print("{}\n", .{arena_capacity}) catch |err| {
-                            log.debug("Failed to write to allocation.txt: {}", .{err});
-                        };
-                    }
-                }
-                
+
                 // Reset arena allocator
                 _ = self.call_arena.reset(.retain_capacity);
             }
