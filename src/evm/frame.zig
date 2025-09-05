@@ -252,14 +252,11 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.BytecodeTooLarge;
             }
 
-            // Get EVM instance to access the cache
-            const evm = self.getEvm();
-
-            // Get analysis from cache or create new
+            // Initialize bytecode analysis
             const t_analysis_start = std.time.Instant.now() catch unreachable;
-            const cached_analysis = evm.getAnalysis(bytecode_raw) catch |e| {
+            self.bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
-                log.err("Frame.interpret_with_tracer: Failed to get analysis: {}", .{e});
+                log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                 return switch (e) {
                     error.BytecodeTooLarge => Error.BytecodeTooLarge,
                     error.InvalidOpcode => Error.InvalidOpcode,
@@ -271,16 +268,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             const t_analysis_end = std.time.Instant.now() catch unreachable;
             analysis_ns = t_analysis_end.since(t_analysis_start);
+            defer if (self.bytecode) |*bc| bc.deinit();
 
-            // Release the analysis reference when done
-            defer evm.releaseAnalysis(bytecode_raw);
-
-            // Store a reference to the bytecode for other frame operations
-            self.bytecode = cached_analysis.bytecode.*;
-
-            // Get schedule and jump table from cache
-            const schedule = cached_analysis.schedule;
-            const jump_table = cached_analysis.jump_table;
+            // Use the handlers (traced or non-traced based on TracerType)
+            const handlers = &Self.opcode_handlers;
 
             // Debug: Check if we're using traced handlers
             if (TracerType) |_| {
@@ -297,12 +288,24 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
+            // Create dispatch schedule with ownership to ensure all allocations are freed
+            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &self.bytecode.?, handlers) catch |e| {
+                log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
+                return Error.AllocationError;
+            };
+            defer schedule_raii.deinit();
+            const schedule = schedule_raii.items;
+
+            // Create jump table
+            const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &self.bytecode.?) catch return Error.AllocationError;
+            defer self.allocator.free(jump_table.entries);
+
             // Store jump table in frame for JUMP/JUMPI handlers
             self.jump_table = jump_table;
 
             // Handle first_block_gas
             var start_index: usize = 0;
-            const first_block_gas = Dispatch.calculateFirstBlockGas(cached_analysis.bytecode.*);
+            const first_block_gas = Dispatch.calculateFirstBlockGas(self.bytecode.?);
             if (first_block_gas > 0 and schedule.len > 0) {
                 const temp_dispatch = Dispatch{ .cursor = schedule.ptr };
                 const meta = temp_dispatch.getFirstBlockGas();
