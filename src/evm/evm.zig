@@ -217,7 +217,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .eips = (eips.Eips{ .hardfork = hardfork_config }).get_evm_config(),
                 .disable_gas_checking = false,
                 .current_snapshot_id = 0,
-                .logs = std.ArrayList(@import("call_result.zig").Log){},
+                .logs = .empty,
                 .call_arena = arena,
             };
         }
@@ -310,8 +310,17 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Clear self destruct list
                 self.self_destruct.clear();
 
-                // Reset arena allocator
-                _ = self.call_arena.reset(.retain_capacity);
+                // Reset call stack to initial state
+                // This is critical when reusing EVM instances across multiple transactions
+                self.call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth;
+                
+                // Reset snapshot ID
+                self.current_snapshot_id = 0;
+
+                // Reset arena allocator to initial capacity
+                // This prevents memory buildup when running complex benchmarks multiple times
+                // while maintaining the pre-allocated 1MB for performance
+                self.call_arena.resetToInitialCapacity();
             }
 
             defer if (is_top_level) {
@@ -418,6 +427,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (is_top_level) {
                 // Transfer logs to result - the CallResult now owns them and will free on deinit
                 result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
+                // IMPORTANT: Reinitialize logs after toOwnedSlice() to maintain allocator reference
+                // toOwnedSlice() takes ownership and leaves the ArrayList in an undefined state
+                self.logs = .empty;
                 result.selfdestructs = &.{};
                 result.accessed_addresses = &.{};
                 result.accessed_storage = &.{};

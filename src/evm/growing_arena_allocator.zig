@@ -58,6 +58,22 @@ pub const GrowingArenaAllocator = struct {
         return self.arena.reset(mode);
     }
 
+    /// Reset the arena to initial capacity
+    /// This frees all memory and then pre-allocates the initial capacity again
+    pub fn resetToInitialCapacity(self: *Self) void {
+        // Free all memory
+        _ = self.arena.reset(.free_all);
+        
+        // Pre-allocate initial capacity again
+        if (self.initial_capacity > 0) {
+            _ = self.arena.allocator().alloc(u8, self.initial_capacity) catch {};
+            _ = self.arena.reset(.retain_capacity);
+        }
+        
+        // Reset current capacity tracker
+        self.current_capacity = self.initial_capacity;
+    }
+
     /// Query the current capacity
     pub fn queryCapacity(self: *const Self) usize {
         return self.arena.queryCapacity();
