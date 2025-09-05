@@ -29,8 +29,7 @@ pub inline fn addWithCarry(a: u64, b: u64, carry: u8) struct { sum: u64, carry: 
             : [a] "0" (a),
               [b] "r" (b),
               [carry] "r" (carry),
-            : .{ .cc = true }
-        );
+            : .{ .cc = true });
         return .{ .sum = sum, .carry = new_carry };
     } else {
         // Fallback implementation
@@ -56,8 +55,7 @@ pub inline fn subWithBorrow(a: u64, b: u64, borrow: u8) struct { diff: u64, borr
             : [a] "0" (a),
               [b] "r" (b),
               [borrow] "r" (borrow),
-            : .{ .cc = true }
-        );
+            : .{ .cc = true });
         return .{ .diff = diff, .borrow = new_borrow };
     } else {
         // Fallback implementation
@@ -157,7 +155,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             return result;
         }
 
-        pub fn is_zero(self: Self) bool {
+        pub inline fn is_zero(self: Self) bool {
             if (bits == 0) return true;
             for (self.limbs) |limb| {
                 if (limb != 0) return false;
@@ -1783,7 +1781,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             }
         }
 
-        pub fn from_u256(value: u256) Self {
+        pub inline fn from_u256(value: u256) Self {
             if (bits == 0) return Self.ZERO;
             if (bits < 256 and value >= (@as(u256, 1) << bits)) {
                 unreachable; // Value too large for this Uint
@@ -1824,7 +1822,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             return result.masked();
         }
 
-        pub fn to_u256(self: Self) ?u256 {
+        pub inline fn to_u256(self: Self) ?u256 {
             // Check if value fits in u256
             if (bits > 256) {
                 // Check if high limbs are zero
