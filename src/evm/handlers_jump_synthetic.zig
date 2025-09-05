@@ -11,8 +11,26 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
 
+        /// Jump directly to a statically known location without binary search.
+        /// The cursor[1] should contain a direct pointer to the jump destination dispatch.
+        pub fn jump_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cursor[1].jump_static.dispatch)));
+            return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
+        }
+
+        /// Conditionally jump to a statically known location without binary search.
+        /// The cursor[1] should contain a direct pointer to the jump destination dispatch.
+        pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cursor[1].jump_static.dispatch)));
+            std.debug.assert(self.stack.size() >= 1);
+            const condition = self.stack.pop_unsafe();
+            if (condition != 0) return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
+            return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
+        }
+
         /// PUSH_JUMP_INLINE - Fused PUSH+JUMP with inline destination (≤8 bytes).
         /// Pushes a destination and immediately jumps to it.
+        /// @deprecated Use jump_to_static_location for better performance
         pub fn push_jump_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_inline.value;
@@ -36,6 +54,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// PUSH_JUMP_POINTER - Fused PUSH+JUMP with pointer destination (>8 bytes).
+        /// @deprecated Use jump_to_static_location for better performance
         pub fn push_jump_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_pointer.value.*;
@@ -60,12 +79,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_JUMPI_INLINE - Fused PUSH+JUMPI with inline destination (≤8 bytes).
         /// Pushes a destination, pops condition, and conditionally jumps.
+        /// @deprecated Use jumpi_to_static_location for better performance
         pub fn push_jumpi_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_inline.value;
 
-            // Pop the condition
-            std.debug.assert(self.stack.size() >= 1); // PUSH_JUMPI requires 1 stack item
+            std.debug.assert(self.stack.size() >= 1);
             const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
@@ -92,6 +110,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// PUSH_JUMPI_POINTER - Fused PUSH+JUMPI with pointer destination (>8 bytes).
+        /// @deprecated Use jumpi_to_static_location for better performance
         pub fn push_jumpi_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const dest = cursor[1].push_pointer.value.*;
@@ -197,6 +216,98 @@ fn createPointerDispatch(value: *const u256) TestFrame.Dispatch {
     };
 }
 
+test "jump_to_static_location - direct jump without search" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Create a target dispatch location
+    const stop_handler = struct {
+        fn handler(f: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = f;
+            _ = cursor;
+            return TestFrame.Error.STOP;
+        }
+    }.handler;
+
+    var target_cursor: [1]TestFrame.Dispatch.Item = undefined;
+    target_cursor[0] = .{ .opcode_handler = &stop_handler };
+
+    // Create jump dispatch pointing to target
+    var cursor: [3]TestFrame.Dispatch.Item = undefined;
+    cursor[0] = .{ .opcode_handler = &TestFrame.JumpSyntheticHandlers.jump_to_static_location };
+    cursor[1] = .{ .jump_static = .{ .dispatch = @as(*const anyopaque, @ptrCast(&target_cursor)) } };
+    cursor[2] = .{ .opcode_handler = &stop_handler };
+
+    const result = TestFrame.JumpSyntheticHandlers.jump_to_static_location(&frame, &cursor);
+
+    // Should jump directly and return STOP
+    try testing.expectError(TestFrame.Error.STOP, result);
+}
+
+test "jumpi_to_static_location - conditional jump taken" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push condition (non-zero = jump)
+    try frame.stack.push(1);
+
+    // Create a target dispatch location
+    const stop_handler = struct {
+        fn handler(f: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = f;
+            _ = cursor;
+            return TestFrame.Error.STOP;
+        }
+    }.handler;
+
+    var target_cursor: [1]TestFrame.Dispatch.Item = undefined;
+    target_cursor[0] = .{ .opcode_handler = &stop_handler };
+
+    // Create jumpi dispatch pointing to target
+    var cursor: [3]TestFrame.Dispatch.Item = undefined;
+    cursor[0] = .{ .opcode_handler = &TestFrame.JumpSyntheticHandlers.jumpi_to_static_location };
+    cursor[1] = .{ .jump_static = .{ .dispatch = @as(*const anyopaque, @ptrCast(&target_cursor)) } };
+    cursor[2] = .{ .opcode_handler = &stop_handler };
+
+    const result = TestFrame.JumpSyntheticHandlers.jumpi_to_static_location(&frame, &cursor);
+
+    // Should take the jump and return STOP
+    try testing.expectError(TestFrame.Error.STOP, result);
+    try testing.expectEqual(@as(usize, 0), frame.stack.len());
+}
+
+test "jumpi_to_static_location - conditional jump not taken" {
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // Push condition (zero = no jump)
+    try frame.stack.push(0);
+
+    // Create a target dispatch location (won't be used)
+    const stop_handler = struct {
+        fn handler(f: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = f;
+            _ = cursor;
+            return TestFrame.Error.STOP;
+        }
+    }.handler;
+
+    var target_cursor: [1]TestFrame.Dispatch.Item = undefined;
+    target_cursor[0] = .{ .opcode_handler = &stop_handler };
+
+    // Create jumpi dispatch with next instruction handler
+    var cursor: [3]TestFrame.Dispatch.Item = undefined;
+    cursor[0] = .{ .opcode_handler = &TestFrame.JumpSyntheticHandlers.jumpi_to_static_location };
+    cursor[1] = .{ .jump_static = .{ .dispatch = @as(*const anyopaque, @ptrCast(&target_cursor)) } };
+    cursor[2] = .{ .opcode_handler = &stop_handler };
+
+    const result = TestFrame.JumpSyntheticHandlers.jumpi_to_static_location(&frame, &cursor);
+
+    // Should continue to next instruction and return STOP
+    try testing.expectError(TestFrame.Error.STOP, result);
+    try testing.expectEqual(@as(usize, 0), frame.stack.len());
+}
+
 test "PUSH_JUMP_INLINE - unconditional jump" {
     var frame = try createTestFrame(testing.allocator);
     defer frame.deinit(testing.allocator);
@@ -299,6 +410,38 @@ test "PUSH_JUMPI - various conditions" {
             try testing.expectEqual(TestFrame.Success.stop, try result);
         }
     }
+}
+
+test "jump_to_static_location - performance comparison" {
+    // This test demonstrates the benefit of jump_to_static_location over push_jump_inline
+    // The new handler avoids the binary search in findJumpTarget, jumping directly
+    var frame = try createTestFrame(testing.allocator);
+    defer frame.deinit(testing.allocator);
+
+    // With jump_to_static_location, we directly store the dispatch pointer
+    // This eliminates the need for:
+    // 1. Converting the destination to a PC value
+    // 2. Binary searching the jump table
+    // 3. Validation of jump destination range
+
+    const stop_handler = struct {
+        fn handler(f: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = f;
+            _ = cursor;
+            return TestFrame.Error.STOP;
+        }
+    }.handler;
+
+    var target_cursor: [1]TestFrame.Dispatch.Item = undefined;
+    target_cursor[0] = .{ .opcode_handler = &stop_handler };
+
+    var cursor: [3]TestFrame.Dispatch.Item = undefined;
+    cursor[0] = .{ .opcode_handler = &TestFrame.JumpSyntheticHandlers.jump_to_static_location };
+    cursor[1] = .{ .jump_static = .{ .dispatch = @as(*const anyopaque, @ptrCast(&target_cursor)) } };
+    cursor[2] = .{ .opcode_handler = &stop_handler };
+
+    const result = TestFrame.JumpSyntheticHandlers.jump_to_static_location(&frame, &cursor);
+    try testing.expectError(TestFrame.Error.STOP, result);
 }
 
 test "synthetic jump - stack underflow" {

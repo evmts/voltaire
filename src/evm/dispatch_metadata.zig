@@ -36,6 +36,10 @@ pub fn DispatchMetadata(comptime FrameType: type) type {
         pub const PushPointerMetadata = packed struct(u64) { value: *u256 };
 
         /// Metadata for PC opcode containing the program counter value.
+        /// Metadata for static jump locations - contains a direct pointer to the jump destination dispatch
+        /// This avoids the binary search in findJumpTarget
+        pub const JumpStaticMetadata = packed struct(u64) { dispatch: *const anyopaque };
+
         /// Our instruction set does not match the actual bytecode 1 to 1 if we do fusions so we don't actually track pc during execution
         /// Thus we must provide as metadata to avoid the expensive process of mapping back our instruction index to what pc it came from
         pub const PcMetadata = packed struct { value: FrameType.PcType };

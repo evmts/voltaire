@@ -8,12 +8,6 @@ const dispatch_item = @import("dispatch_item.zig");
 const dispatch_jump_table = @import("dispatch_jump_table.zig");
 const dispatch_jump_table_builder = @import("dispatch_jump_table_builder.zig");
 
-// TODO: Low priority TODO
-// Currently our architecture assumes 64 byte cpu. It will still be functional for 32 byte cpu or 128 byte cpu but potentially not optimal
-// In future we should consider benchmarking other cpu architectures. It's possible we want our metadata to be dynamic based on usize
-// For example, we might want to only store 32 byte inline values on a 32 byte machines rather than 64
-// THis can easily be done by just using the comptime FrameType
-
 /// Dispatch manages the execution flow of EVM opcodes through an optimized instruction stream.
 /// It converts bytecode into a cache-efficient array of function pointers and metadata,
 /// enabling high-performance execution with minimal branch misprediction.
@@ -38,25 +32,22 @@ pub fn Dispatch(comptime FrameType: type) type {
     return struct {
         const Self = @This();
 
-        // Import metadata types from dispatch_metadata module
         const Metadata = dispatch_metadata.DispatchMetadata(FrameType);
 
-        /// Define Item inline to avoid circular dependency
+        /// The shared interface of any opcode handler
+        const OpcodeHandler = *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn;
+
+        /// TODO: Defining Item inline to avoid circular dependency we should clean up
         pub const Item = union {
-            /// Most items are function pointers to an opcode handler
-            opcode_handler: *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn,
-            /// Some opcode handlers are followed by metadata specific to that opcode
+            opcode_handler: OpcodeHandler,
             jump_dest: Metadata.JumpDestMetadata,
             push_inline: Metadata.PushInlineMetadata,
             push_pointer: Metadata.PushPointerMetadata,
             pc: Metadata.PcMetadata,
+            jump_static: Metadata.JumpStaticMetadata,
             first_block_gas: Metadata.FirstBlockMetadata,
         };
 
-        /// The shared interface of any opcode handler
-        const OpcodeHandler = @TypeOf(@as(Item, undefined).opcode_handler);
-
-        /// Structure to track memory allocations during schedule creation
         const AllocatedMemory = struct {
             pointers: ArrayList(*FrameType.WordType, null),
 
@@ -137,6 +128,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub const PushInlineMetadata = Metadata.PushInlineMetadata;
         pub const PushPointerMetadata = Metadata.PushPointerMetadata;
         pub const PcMetadata = Metadata.PcMetadata;
+        pub const JumpStaticMetadata = Metadata.JumpStaticMetadata;
 
         // Performance note: JumpTable is a compact array of structs rather than a sparse bitmap. A sparse bitmap would provide O(1) lookups
         // But at the cost of cpu cache utilization. For the scale of how many jump destinations contracts have it is more performant to
@@ -493,11 +485,6 @@ pub fn Dispatch(comptime FrameType: type) type {
                 }
             }
 
-            // Log if gas consumption seems excessive
-            if (gas > 10000 or op_count > 100) {
-                // log.warn("calculateFirstBlockGas: First block gas={}, op_count={}, bytecode_len={}", .{ gas, op_count, bytecode.len() });
-            }
-
             return gas;
         }
 
@@ -521,66 +508,35 @@ pub fn Dispatch(comptime FrameType: type) type {
             bytecode: anytype,
             opcode_handlers: *const [256]OpcodeHandler,
         ) ![]Self.Item {
-            // log.debug("Starting to parse bytecode with {} bytes", .{bytecode.runtime_code.len});
-
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
-            // Track allocated memory for cleanup
             var allocated_memory = AllocatedMemory.init();
             errdefer allocated_memory.deinit(allocator);
 
-            // Create iterator to traverse bytecode
             var iter = bytecode.createIterator();
 
-            // Calculate gas cost for first basic block
             const first_block_gas = calculateFirstBlockGas(bytecode);
 
-            // Add first_block_gas entry if there's any gas to charge
-            if (first_block_gas > 0) {
-                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
-                // log.debug("Added first_block_gas: {d}", .{first_block_gas});
-                // TEMPORARY DEBUG: Log expected gas for our test bytecode
-                if (bytecode.runtime_code.len == 38) { // Our specific test case
-                    // log.warn("DEBUG: This looks like PUSH32+PUSH1+SDIV bytecode, first_block_gas={}", .{first_block_gas});
-                }
-            }
+            if (first_block_gas > 0) try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
 
             var opcode_count: usize = 0;
             while (true) {
                 const instr_pc = iter.pc;
                 const maybe = iter.next();
-                if (maybe == null) {
-                    break;
-                }
+                if (maybe == null) break;
                 const op_data = maybe.?;
                 opcode_count += 1;
 
-                // DEBUG: Log all opcodes being parsed
-                // Commented out for performance
-
                 switch (op_data) {
                     .regular => |data| {
-                        // DEBUG: Log specific opcodes we're interested in
-                        if (data.opcode == 0x08) {
-                            // log.debug("DISPATCH DEBUG: Found ADDMOD (0x08) at PC {d}, adding handler", .{instr_pc});
-                        } else if (data.opcode == 0x09) {
-                            // log.debug("DISPATCH DEBUG: Found MULMOD (0x09) at PC {d}, adding handler", .{instr_pc});
-                        } else if (data.opcode == 0x0a) {
-                            // log.debug("DISPATCH DEBUG: Found EXP (0x0a) at PC {d}, adding handler", .{instr_pc});
-                        }
-
-                        // Also log ALL opcodes to see what we're parsing
-                        // log.debug("DISPATCH DEBUG: Parsing opcode 0x{x:0>2} at PC {d}", .{ data.opcode, instr_pc });
-
                         try processRegularOpcode(&schedule_items, allocator, opcode_handlers, data, instr_pc);
                     },
                     .push => |data| {
                         try processPushOpcode(&schedule_items, allocator, &allocated_memory, opcode_handlers, data);
                     },
                     .jumpdest => |data| {
-                        // JUMPDEST - add handler first, then metadata
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
@@ -651,10 +607,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             var iter = bytecode.createIterator();
             const first_block_gas = calculateFirstBlockGas(bytecode);
-            if (first_block_gas > 0) {
-                try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
-                // log.debug("Added first_block_gas: {d}", .{first_block_gas});
-            }
+            if (first_block_gas > 0) try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
 
             var opcode_count: usize = 0;
             while (true) {
@@ -690,8 +643,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             const items = try schedule_items.toOwnedSlice(allocator);
             const push_ptrs = try allocated_memory.pointers.toOwnedSlice(allocator);
-            // allocated_memory's arrays are now owned by slices; prevent double free
-            allocated_memory = AllocatedMemory.init();
+            allocated_memory = AllocatedMemory.iit();
             return BuildOwned{ .items = items, .push_pointers = push_ptrs };
         }
 
