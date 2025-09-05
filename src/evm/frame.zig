@@ -105,7 +105,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// The type used to validate and analyze bytecode
         /// Bytecode in a single pass validates the bytecode and produces an iterator
         /// Dispatch can use to produce the Dispatch stream
-        pub const Bytecode = bytecode_mod.Bytecode(.{
+        /// Note: Now used internally in interpret_with_tracer, not stored on frame
+        const Bytecode = bytecode_mod.Bytecode(.{
             .max_bytecode_size = config.max_bytecode_size,
             .max_initcode_size = config.max_initcode_size,
             .fusions_enabled = true,
@@ -142,20 +143,17 @@ pub fn Frame(comptime config: FrameConfig) type {
         memory: Memory, // 16B - Memory operations
         database: config.DatabaseType, // 8B - Storage access
         length_prefixed_calldata: ?[*]const u8, // 8B - Length-prefixed calldata pointer (first 8 bytes = length)
-        // = 56B (8 bytes saved!)
-
-        // CACHE LINE 2 (64-127 bytes) - WARM PATH
         evm_ptr: *anyopaque, // 8B - EVM instance pointer
+        // CACHE LINE 2 (64-124 bytes) - WARM PATH
         value: *const WordType, // 8B - Call value (pointer)
         logs: std.ArrayListUnmanaged(Log), // 16B - Log array list (unmanaged)
         contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
         caller: Address, // 20B - Calling address
-
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         output: []u8, // 16B - Output data slice (only for RETURN/REVERT)
-        jump_table: Dispatch.JumpTable, // 24B - Jump table for JUMP/JUMPI validation (entries slice)
-        bytecode: ?Bytecode = null, // Bytecode object (for CODESIZE/CODECOPY/analysis)
+        code: []const u8 = &[_]u8{}, // Contract code (for CODESIZE/CODECOPY)
         authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
+        jump_table: Dispatch.JumpTable, // 24B - Jump table for JUMP/JUMPI validation (entries slice)
         self_destruct: ?*SelfDestruct = null, // 8B - Self destruct list
         allocator: std.mem.Allocator, // 16B - Memory allocator
 
@@ -193,7 +191,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     return Error.AllocationError;
                 };
                 errdefer allocator.free(buffer);
-                
+
                 // Write length as 8 bytes (little-endian)
                 std.mem.writeInt(u64, buffer[0..8], calldata_input.len, .little);
                 // Copy calldata
@@ -202,9 +200,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             } else null;
             errdefer if (length_prefixed) |ptr| {
                 const len = std.mem.readInt(u64, ptr[0..8], .little);
-                allocator.free(ptr[0..8 + len]);
+                allocator.free(ptr[0 .. 8 + len]);
             };
-            
+
             // log.debug("Frame.init: Successfully initialized frame components", .{});
             return Self{
                 // Cache line 1
@@ -244,7 +242,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Free length-prefixed calldata
             if (self.length_prefixed_calldata) |ptr| {
                 const len = std.mem.readInt(u64, ptr[0..8], .little);
-                allocator.free(ptr[0..8 + len]);
+                allocator.free(ptr[0 .. 8 + len]);
             }
             log.debug("Frame.deinit: Cleanup complete", .{});
         }
@@ -271,8 +269,11 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.BytecodeTooLarge;
             }
 
-            // Initialize bytecode analysis
-            self.bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
+            // Store the raw code in the frame
+            self.code = bytecode_raw;
+
+            // Initialize bytecode analysis for dispatch and jump table
+            var bytecode = Bytecode.init(self.allocator, bytecode_raw) catch |e| {
                 @branchHint(.unlikely);
                 log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                 return switch (e) {
@@ -284,7 +285,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     else => Error.AllocationError,
                 };
             };
-            defer if (self.bytecode) |*bc| bc.deinit();
+            defer bytecode.deinit();
 
             // Use the handlers (traced or non-traced based on TracerType)
             const handlers = &Self.opcode_handlers;
@@ -305,7 +306,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Create dispatch schedule with ownership to ensure all allocations are freed
-            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &self.bytecode.?, handlers) catch |e| {
+            var schedule_raii = Dispatch.DispatchSchedule.init(self.allocator, &bytecode, handlers) catch |e| {
                 log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                 return Error.AllocationError;
             };
@@ -313,7 +314,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const schedule = schedule_raii.items;
 
             // Create jump table
-            const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &self.bytecode.?) catch return Error.AllocationError;
+            const jump_table = Dispatch.createJumpTable(self.allocator, schedule, &bytecode) catch return Error.AllocationError;
             defer self.allocator.free(jump_table.entries);
 
             // Store jump table in frame for JUMP/JUMPI handlers
@@ -321,7 +322,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Handle first_block_gas
             var start_index: usize = 0;
-            const first_block_gas = Dispatch.calculateFirstBlockGas(self.bytecode.?);
+            const first_block_gas = Dispatch.calculateFirstBlockGas(bytecode);
             if (first_block_gas > 0 and schedule.len > 0) {
                 const temp_dispatch = Dispatch{ .cursor = schedule.ptr };
                 const meta = temp_dispatch.getFirstBlockGas();
@@ -475,7 +476,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Read length from first 8 bytes
             const len = std.mem.readInt(u64, ptr[0..8], .little);
             // Return slice starting after length prefix
-            return ptr[8..8 + len];
+            return ptr[8 .. 8 + len];
         }
 
         /// Get the EVM instance from the opaque pointer

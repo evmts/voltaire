@@ -168,6 +168,10 @@ pub fn Dispatch(comptime FrameType: type) type {
             var unresolved_jumps = ArrayList(UnresolvedJump, null){};
             defer unresolved_jumps.deinit(allocator);
 
+            // NEW: Track JUMPDEST locations during first pass
+            var jumpdest_map = std.AutoHashMap(FrameType.PcType, usize).init(allocator);
+            defer jumpdest_map.deinit();
+
             var iter = bytecode.createIterator();
 
             const first_block_gas = calculateFirstBlockGas(bytecode);
@@ -190,6 +194,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try processPushOpcode(&schedule_items, allocator, opcode_handlers, data);
                     },
                     .jumpdest => |data| {
+                        // Record this JUMPDEST's location in schedule for single-pass resolution
+                        try jumpdest_map.put(@intCast(instr_pc), schedule_items.items.len);
+                        
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
@@ -215,10 +222,10 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor);
                     },
                     .push_jump_fusion => |data| {
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jump);
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, &jumpdest_map, allocator, data.value, .push_jump);
                     },
                     .push_jumpi_fusion => |data| {
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jumpi);
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, &jumpdest_map, allocator, data.value, .push_jumpi);
                     },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -234,8 +241,8 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             const final_schedule = try schedule_items.toOwnedSlice(allocator);
             
-            // Resolve forward jumps using the jump table
-            try resolveStaticJumps(allocator, final_schedule, bytecode, unresolved_jumps.items);
+            // Resolve all jumps using our map (no second bytecode iteration!)
+            try resolveStaticJumpsWithMap(allocator, final_schedule, &jumpdest_map, unresolved_jumps.items);
             
             return final_schedule;
         }
@@ -266,6 +273,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         fn handleStaticJumpFusion(
             schedule_items: anytype,
             unresolved_jumps: *ArrayList(UnresolvedJump, null),
+            jumpdest_map: *std.AutoHashMap(FrameType.PcType, usize),
             allocator: std.mem.Allocator,
             value: FrameType.WordType,
             fusion_type: FusionType,
@@ -280,35 +288,50 @@ pub fn Dispatch(comptime FrameType: type) type {
             
             try schedule_items.append(allocator, .{ .opcode_handler = handler });
             
-            // Add placeholder for jump_static metadata that will be resolved later
-            const metadata_index = schedule_items.items.len;
-            try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-            
-            // Record this jump for later resolution if within valid PC range
+            // Check if within valid PC range
             if (value <= std.math.maxInt(FrameType.PcType)) {
-                try unresolved_jumps.append(allocator, .{
-                    .schedule_index = metadata_index,
-                    .target_pc = @intCast(value),
-                });
+                const target_pc: FrameType.PcType = @intCast(value);
+                
+                // Check if we've already seen this JUMPDEST (backward jump)
+                if (jumpdest_map.get(target_pc)) |_| {
+                    // Backward jump - we've seen this JUMPDEST already
+                    // Note: We need to use the final schedule pointer, which we don't have yet
+                    // So we still need to track it for resolution after toOwnedSlice
+                    const metadata_index = schedule_items.items.len;
+                    try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
+                    try unresolved_jumps.append(allocator, .{
+                        .schedule_index = metadata_index,
+                        .target_pc = target_pc,
+                    });
+                } else {
+                    // Forward jump - record for later resolution
+                    const metadata_index = schedule_items.items.len;
+                    try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
+                    try unresolved_jumps.append(allocator, .{
+                        .schedule_index = metadata_index,
+                        .target_pc = target_pc,
+                    });
+                }
+            } else {
+                // Invalid jump destination - add undefined metadata
+                try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
             }
         }
 
-        fn resolveStaticJumps(
+        fn resolveStaticJumpsWithMap(
             allocator: std.mem.Allocator,
             schedule: []Item,
-            bytecode: anytype,
+            jumpdest_map: *std.AutoHashMap(FrameType.PcType, usize),
             unresolved_jumps: []const UnresolvedJump,
         ) !void {
-            // Build jump table to find dispatch locations
-            const jump_table = try createJumpTable(allocator, schedule, bytecode);
-            defer allocator.free(jump_table.entries);
+            _ = allocator;
             
-            // Resolve each unresolved jump
+            // Resolve each unresolved jump using the map we built during the first pass
             for (unresolved_jumps) |unresolved| {
-                if (jump_table.findJumpTarget(unresolved.target_pc)) |target_dispatch| {
+                if (jumpdest_map.get(unresolved.target_pc)) |target_schedule_idx| {
                     // Update the jump_static metadata with the resolved dispatch pointer
                     schedule[unresolved.schedule_index].jump_static = .{
-                        .dispatch = @as(*const anyopaque, @ptrCast(target_dispatch.cursor)),
+                        .dispatch = @as(*const anyopaque, @ptrCast(schedule.ptr + target_schedule_idx)),
                     };
                 } else {
                     // Invalid jump destination - leave as undefined, will fail at runtime
@@ -348,22 +371,97 @@ pub fn Dispatch(comptime FrameType: type) type {
             schedule: []const Item,
             bytecode: anytype,
         ) !JumpTable {
-            var builder = JumpTableBuilder.init(allocator);
-            defer builder.deinit();
-
-            try builder.buildFromSchedule(schedule, bytecode);
-
-            const jump_table = try builder.finalizeWithSchedule(schedule);
-
-            if (std.debug.runtime_safety and jump_table.entries.len > 1) {
-                for (jump_table.entries[0..jump_table.entries.len -| 1], jump_table.entries[1..]) |current, next| {
+            // First, we need to build the jumpdest map by iterating bytecode
+            // This is still needed for the public API, but init() now does this in one pass
+            var jumpdest_map = std.AutoHashMap(FrameType.PcType, usize).init(allocator);
+            defer jumpdest_map.deinit();
+            
+            // Build map from bytecode
+            var iter = bytecode.createIterator();
+            var schedule_index: usize = 0;
+            
+            // Skip first_block_gas if present
+            const first_block_gas = Self.calculateFirstBlockGas(bytecode);
+            if (first_block_gas > 0 and schedule.len > 0) {
+                schedule_index = 1;
+            }
+            
+            while (true) {
+                const instr_pc = iter.pc;
+                const maybe = iter.next();
+                if (maybe == null) break;
+                const op_data = maybe.?;
+                
+                switch (op_data) {
+                    .jumpdest => {
+                        try jumpdest_map.put(@intCast(instr_pc), schedule_index);
+                        schedule_index += 2; // Handler + metadata
+                    },
+                    .regular => |data| {
+                        schedule_index += 1; // Handler
+                        if (data.opcode == @intFromEnum(Opcode.PC) or
+                            data.opcode == @intFromEnum(Opcode.JUMP) or
+                            data.opcode == @intFromEnum(Opcode.JUMPI))
+                        {
+                            schedule_index += 1; // Extra metadata
+                        }
+                    },
+                    .push => {
+                        schedule_index += 2; // Handler + metadata  
+                    },
+                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion,
+                    .push_and_fusion, .push_or_fusion, .push_xor_fusion,
+                    .push_jump_fusion, .push_jumpi_fusion => {
+                        schedule_index += 2; // Handler + metadata
+                    },
+                    .stop, .invalid => {
+                        schedule_index += 1; // Handler
+                    },
+                }
+            }
+            
+            // Now build jump table from the map
+            return try createJumpTableFromMap(allocator, schedule, &jumpdest_map);
+        }
+        
+        fn createJumpTableFromMap(
+            allocator: std.mem.Allocator,
+            schedule: []const Item,
+            jumpdest_map: *std.AutoHashMap(FrameType.PcType, usize),
+        ) !JumpTable {
+            // Create sorted array of jump table entries
+            const entries = try allocator.alloc(JumpTable.JumpTableEntry, jumpdest_map.count());
+            errdefer allocator.free(entries);
+            
+            var i: usize = 0;
+            var map_iter = jumpdest_map.iterator();
+            while (map_iter.next()) |entry| {
+                entries[i] = .{
+                    .pc = entry.key_ptr.*,
+                    .dispatch = Self{
+                        .cursor = schedule.ptr + entry.value_ptr.*,
+                    },
+                };
+                i += 1;
+            }
+            
+            // Sort entries by PC
+            std.sort.block(JumpTable.JumpTableEntry, entries, {}, struct {
+                pub fn lessThan(context: void, a: JumpTable.JumpTableEntry, b: JumpTable.JumpTableEntry) bool {
+                    _ = context;
+                    return a.pc < b.pc;
+                }
+            }.lessThan);
+            
+            if (std.debug.runtime_safety and entries.len > 1) {
+                for (entries[0..entries.len -| 1], entries[1..]) |current, next| {
                     if (current.pc >= next.pc) {
                         std.debug.panic("JumpTable not properly sorted: PC {} >= {}", .{ current.pc, next.pc });
                     }
                 }
             }
-
-            return jump_table;
+            
+            return JumpTable{ .entries = entries };
         }
 
         pub const DispatchSchedule = struct {

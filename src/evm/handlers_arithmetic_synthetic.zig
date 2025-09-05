@@ -177,14 +177,12 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     const value = try allocator.create(u256);
     value.* = 0;
     var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, @ptrFromInt(1), null);
-    // Initialize empty bytecode
-    const empty_code = &[_]u8{};
-    frame.bytecode = try TestBytecode.init(allocator, empty_code);
+    // Initialize empty code
+    frame.code = &[_]u8{};
     return frame;
 }
 
 fn destroyTestFrame(frame: *TestFrame, allocator: std.mem.Allocator) void {
-    if (frame.bytecode) |*bc| bc.deinit();
     frame.database.deinit();
     allocator.destroy(@ptrCast(@alignCast(frame.value)));
     frame.deinit(allocator);

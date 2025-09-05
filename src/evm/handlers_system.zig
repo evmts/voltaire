@@ -1164,7 +1164,6 @@ const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const bytecode_mod = @import("bytecode.zig");
 // const host_mod = @import("host.zig");
 
 // Test configuration
@@ -1180,7 +1179,6 @@ const test_config = FrameConfig{
 };
 
 const TestFrame = Frame(test_config);
-const TestBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config.max_bytecode_size });
 
 // Mock host for testing
 const MockEvm = struct {
@@ -1235,14 +1233,13 @@ const MockEvm = struct {
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {
-    const gas_remaining: TestFrame.GasType = 1_000_000;
-    const database = null; // No database needed for these tests
-    const caller = primitives.ZERO_ADDRESS;
-    const value: u256 = 0;
-    const calldata = &[_]u8{};
+    const database = try @import("memory_database.zig").MemoryDatabase.init(allocator);
+    const value = try allocator.create(u256);
+    value.* = 0;
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000)); // Use a dummy pointer for tests without EVM
-    const self_destruct = null; // No self-destruct needed for most system tests
-    return try TestFrame.init(allocator, gas_remaining, database, caller, value, calldata, evm_ptr, self_destruct);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    frame.code = &[_]u8{};
+    return frame;
 }
 
 // Mock dispatch that simulates successful execution flow

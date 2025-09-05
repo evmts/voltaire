@@ -212,8 +212,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODESIZE opcode (0x38) - Get size of code running in current environment.
         /// Stack: [] → [size]
         pub fn codesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // Get codesize from frame's bytecode object
-            const bytecode_len = if (self.bytecode) |bc| @as(WordType, @intCast(bc.full_code.len)) else 0;
+            // Get codesize from frame's code
+            const bytecode_len = @as(WordType, @intCast(self.code.len));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CODESIZE requires stack space
             self.stack.push_unsafe(bytecode_len);
             const next = cursor + 1;
@@ -266,7 +266,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             // Get bytecode from frame
-            const code_data = if (self.bytecode) |bc| bc.full_code else &[_]u8{};
+            const code_data = self.code;
 
             // Copy code to memory with proper zero-padding
             var i: usize = 0;
@@ -762,7 +762,6 @@ const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const bytecode_mod = @import("bytecode.zig");
 const block_info_mod = @import("block_info.zig");
 
 // Test configuration
@@ -778,7 +777,7 @@ const test_config = FrameConfig{
 };
 
 const TestFrame = Frame(test_config);
-const TestBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config.max_bytecode_size });
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 
 // Mock host for testing
 const MockEvm = struct {
@@ -905,9 +904,13 @@ const MockEvm = struct {
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {
-    const bytecode = TestBytecode.initEmpty();
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000)); // Use a dummy pointer for tests without EVM
-    return try TestFrame.init(allocator, bytecode, 1_000_000, null, evm_ptr);
+    const database = try MemoryDatabase.init(allocator);
+    const value = try allocator.create(u256);
+    value.* = 0;
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    frame.code = &[_]u8{}; // Empty code by default
+    return frame;
 }
 
 // Mock dispatch that simulates successful execution flow
@@ -1098,13 +1101,16 @@ test "CODESIZE opcode" {
     var evm = MockEvm.init(testing.allocator);
     defer evm.deinit();
 
-    // Create bytecode with some data
-    var bytecode = TestBytecode.initEmpty();
-    try bytecode.appendSlice(&[_]u8{ 0x60, 0x00, 0x60, 0x00 });
-
+    // Create frame with code
+    const code_data = [_]u8{ 0x60, 0x00, 0x60, 0x00 };
     const evm_ptr = @as(*anyopaque, @ptrCast(&evm));
-    var frame = try TestFrame.init(testing.allocator, bytecode, 1_000_000, null, evm_ptr);
+    const database = try MemoryDatabase.init(testing.allocator);
+    const value = try testing.allocator.create(u256);
+    value.* = 0;
+    var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
     defer frame.deinit(testing.allocator);
+    defer testing.allocator.destroy(value);
+    frame.code = &code_data;
 
     const dispatch = createMockDispatch();
     _ = try TestFrame.ContextHandlers.codesize(frame, dispatch);
@@ -1117,14 +1123,16 @@ test "CODECOPY opcode" {
     var evm = MockEvm.init(testing.allocator);
     defer evm.deinit();
 
-    // Create bytecode with some data
-    var bytecode = TestBytecode.initEmpty();
+    // Create frame with code
     const code_data = [_]u8{ 0x60, 0x40, 0x60, 0x80 };
-    try bytecode.appendSlice(&code_data);
-
     const evm_ptr = @as(*anyopaque, @ptrCast(&evm));
-    var frame = try TestFrame.init(testing.allocator, bytecode, 1_000_000, null, evm_ptr);
+    const database = try MemoryDatabase.init(testing.allocator);
+    const value = try testing.allocator.create(u256);
+    value.* = 0;
+    var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
     defer frame.deinit(testing.allocator);
+    defer testing.allocator.destroy(value);
+    frame.code = &code_data;
 
     // Copy all 4 bytes to memory offset 0
     try frame.stack.push(0); // destOffset
@@ -1701,15 +1709,18 @@ test "CODECOPY opcode - edge cases" {
     defer evm.deinit();
     const host = evm.to_host();
 
-    // Create bytecode
-    var bytecode = TestBytecode.initEmpty();
+    // Create code data
     const code_data = [_]u8{ 0x60, 0x40, 0x60, 0x80, 0x50 };
-    try bytecode.appendSlice(&code_data);
 
     // Test copy beyond code length (should zero-pad)
     {
-        var frame = try TestFrame.init(testing.allocator, bytecode, 1_000_000, null, host);
+        const database = try MemoryDatabase.init(testing.allocator);
+        const value = try testing.allocator.create(u256);
+        value.* = 0;
+        var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host, null);
         defer frame.deinit(testing.allocator);
+        defer testing.allocator.destroy(value);
+        frame.code = &code_data;
 
         try frame.stack.push(0); // destOffset
         try frame.stack.push(3); // offset
@@ -1724,8 +1735,13 @@ test "CODECOPY opcode - edge cases" {
 
     // Test large offset (past code end)
     {
-        var frame = try TestFrame.init(testing.allocator, bytecode, 1_000_000, null, host);
+        const database = try MemoryDatabase.init(testing.allocator);
+        const value = try testing.allocator.create(u256);
+        value.* = 0;
+        var frame = try TestFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host, null);
         defer frame.deinit(testing.allocator);
+        defer testing.allocator.destroy(value);
+        frame.code = &code_data;
 
         try frame.stack.push(0); // destOffset
         try frame.stack.push(1000); // offset (way past code end)
@@ -2262,7 +2278,6 @@ test "WordType truncation behavior" {
     };
 
     const SmallFrame = Frame(SmallWordConfig);
-    const SmallBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = SmallWordConfig.max_bytecode_size });
 
     var evm = MockEvm.init(testing.allocator);
     defer evm.deinit();
@@ -2272,9 +2287,13 @@ test "WordType truncation behavior" {
     evm.block_info.base_fee = std.math.maxInt(u256);
 
     const host = evm.to_host();
-    const bytecode = SmallBytecode.initEmpty();
-    var frame = try SmallFrame.init(testing.allocator, bytecode, 1_000_000, null, host);
+    const database = try @import("memory_database.zig").MemoryDatabase.init(testing.allocator);
+    const value = try testing.allocator.create(u64);
+    value.* = 0;
+    var frame = try SmallFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host, null);
     defer frame.deinit(testing.allocator);
+    defer testing.allocator.destroy(value);
+    frame.code = &[_]u8{};
 
     // Mock dispatch for SmallFrame
     const mock_handler = struct {

@@ -163,8 +163,9 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
-const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const bytecode_mod = @import("bytecode.zig");
+const NoOpTracer = @import("tracer.zig").NoOpTracer;
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 // const host_mod = @import("host.zig");
 
 // Test configuration
@@ -173,13 +174,12 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("database.zig").Database,
+    .DatabaseType = MemoryDatabase,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
 
 const TestFrame = Frame(test_config);
-const TestBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config.max_bytecode_size });
 
 // Mock host for testing
 const MockHost = struct {
@@ -213,9 +213,13 @@ const MockHost = struct {
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockHost) !TestFrame {
-    const bytecode = TestBytecode.initEmpty();
+    const database = try MemoryDatabase.init(allocator);
+    const value = try allocator.create(u256);
+    value.* = 0;
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000));
-    return try TestFrame.init(allocator, bytecode, 1_000_000, null, evm_ptr);
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    frame.code = &[_]u8{};
+    return frame;
 }
 
 // Mock dispatch that simulates successful execution flow
@@ -874,7 +878,7 @@ test "LOG opcodes - WordType smaller than u256" {
         .WordType = u64,
         .max_bytecode_size = 1024,
         .block_gas_limit = 30_000_000,
-        .DatabaseType = @import("database.zig").Database,
+        .DatabaseType = MemoryDatabase,
         .memory_initial_capacity = 4096,
         .memory_limit = 0xFFFFFF,
     };

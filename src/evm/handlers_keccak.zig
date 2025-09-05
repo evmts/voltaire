@@ -111,10 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         else => return Error.AllocationError,
                     };
 
-                    var hash_u256: u256 = 0;
-                    for (hash_bytes) |b| {
-                        hash_u256 = std.math.shl(u256, hash_u256, 8) | @as(u256, b);
-                    }
+                    const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
                     break :blk @as(WordType, hash_u256);
                 },
                 64 => blk: {
@@ -127,10 +124,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     };
 
                     // Take first 8 bytes for u64
-                    var hash_u64: u64 = 0;
-                    for (hash_bytes[0..8]) |b| {
-                        hash_u64 = std.math.shl(u64, hash_u64, 8) | @as(u64, b);
-                    }
+                    const hash_u64 = std.mem.readInt(u64, hash_bytes[0..8], .big);
                     break :blk @as(WordType, hash_u64);
                 },
                 32 => blk: {
@@ -143,10 +137,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     };
 
                     // Take first 4 bytes for u32
-                    var hash_u32: u32 = 0;
-                    for (hash_bytes[0..4]) |b| {
-                        hash_u32 = std.math.shl(u32, hash_u32, 8) | @as(u32, b);
-                    }
+                    const hash_u32 = std.mem.readInt(u32, hash_bytes[0..4], .big);
                     break :blk @as(WordType, hash_u32);
                 },
                 else => blk: {
@@ -158,10 +149,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         else => return Error.AllocationError,
                     };
 
-                    var hash_u256: u256 = 0;
-                    for (hash_bytes) |b| {
-                        hash_u256 = std.math.shl(u256, hash_u256, 8) | @as(u256, b);
-                    }
+                    const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
                     break :blk @as(WordType, @truncate(hash_u256));
                 },
             };
@@ -182,7 +170,8 @@ const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const bytecode_mod = @import("bytecode.zig");
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const Address = @import("primitives").Address;
 
 // Test configurations for different word sizes
 const test_config_u256 = FrameConfig{
@@ -190,7 +179,7 @@ const test_config_u256 = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("database.zig").Database,
+    .DatabaseType = MemoryDatabase,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -200,7 +189,7 @@ const test_config_u64 = FrameConfig{
     .WordType = u64,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("database.zig").Database,
+    .DatabaseType = MemoryDatabase,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -210,33 +199,43 @@ const test_config_u32 = FrameConfig{
     .WordType = u32,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("database.zig").Database,
+    .DatabaseType = MemoryDatabase,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
 
 const TestFrame = Frame(test_config_u256);
-const TestBytecode = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config_u256.max_bytecode_size });
-
 const TestFrameU64 = Frame(test_config_u64);
-const TestBytecodeU64 = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config_u64.max_bytecode_size });
-
 const TestFrameU32 = Frame(test_config_u32);
-const TestBytecodeU32 = bytecode_mod.Bytecode(.{ .max_bytecode_size = test_config_u32.max_bytecode_size });
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const bytecode = TestBytecode.initEmpty();
-    return try TestFrame.init(allocator, bytecode, 1_000_000, null, null);
+    const database = try MemoryDatabase.init(allocator);
+    const value = try allocator.create(u256);
+    value.* = 0;
+    const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
+    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    frame.code = &[_]u8{};
+    return frame;
 }
 
 fn createTestFrameU64(allocator: std.mem.Allocator) !TestFrameU64 {
-    const bytecode = TestBytecodeU64.initEmpty();
-    return try TestFrameU64.init(allocator, bytecode, 1_000_000, null, null);
+    const database = try MemoryDatabase.init(allocator);
+    const value = try allocator.create(u64);
+    value.* = 0;
+    const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
+    var frame = try TestFrameU64.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    frame.code = &[_]u8{};
+    return frame;
 }
 
 fn createTestFrameU32(allocator: std.mem.Allocator) !TestFrameU32 {
-    const bytecode = TestBytecodeU32.initEmpty();
-    return try TestFrameU32.init(allocator, bytecode, 1_000_000, null, null);
+    const database = try MemoryDatabase.init(allocator);
+    const value = try allocator.create(u32);
+    value.* = 0;
+    const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
+    var frame = try TestFrameU32.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr, null);
+    frame.code = &[_]u8{};
+    return frame;
 }
 
 // Mock dispatch that simulates successful execution flow
