@@ -29,82 +29,88 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// Generate a push handler for PUSH1-PUSH32
+        /// Optimized with comptime specialization to eliminate runtime branches
         pub fn generatePushHandler(comptime push_n: u8) FrameType.OpcodeHandler {
             if (push_n > 32) @compileError("Only PUSH1 to PUSH32 is supported");
             if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
-            return &struct {
-                pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-                    const dispatch = Dispatch{ .cursor = cursor };
-                    
-                    // // Log entry state at error level to be visible
-                    // log.err("PUSH{} ENTRY: stack_size={}, stack_ptr={*}", .{
-                    //     push_n,
-                    //     self.stack.size(),
-                    //     self.stack.stack_ptr
-                    // });
-                    
-                    
-                    // For PUSH1-PUSH8, we get push_inline metadata with u64 value
-                    // For PUSH9-PUSH32, we get push_pointer metadata with *u256 value
-                    const op_data = switch (push_n) {
-                        1 => dispatch.getOpData(.PUSH1),
-                        2 => dispatch.getOpData(.PUSH2),
-                        3 => dispatch.getOpData(.PUSH3),
-                        4 => dispatch.getOpData(.PUSH4),
-                        5 => dispatch.getOpData(.PUSH5),
-                        6 => dispatch.getOpData(.PUSH6),
-                        7 => dispatch.getOpData(.PUSH7),
-                        8 => dispatch.getOpData(.PUSH8),
-                        9 => dispatch.getOpData(.PUSH9),
-                        10 => dispatch.getOpData(.PUSH10),
-                        11 => dispatch.getOpData(.PUSH11),
-                        12 => dispatch.getOpData(.PUSH12),
-                        13 => dispatch.getOpData(.PUSH13),
-                        14 => dispatch.getOpData(.PUSH14),
-                        15 => dispatch.getOpData(.PUSH15),
-                        16 => dispatch.getOpData(.PUSH16),
-                        17 => dispatch.getOpData(.PUSH17),
-                        18 => dispatch.getOpData(.PUSH18),
-                        19 => dispatch.getOpData(.PUSH19),
-                        20 => dispatch.getOpData(.PUSH20),
-                        21 => dispatch.getOpData(.PUSH21),
-                        22 => dispatch.getOpData(.PUSH22),
-                        23 => dispatch.getOpData(.PUSH23),
-                        24 => dispatch.getOpData(.PUSH24),
-                        25 => dispatch.getOpData(.PUSH25),
-                        26 => dispatch.getOpData(.PUSH26),
-                        27 => dispatch.getOpData(.PUSH27),
-                        28 => dispatch.getOpData(.PUSH28),
-                        29 => dispatch.getOpData(.PUSH29),
-                        30 => dispatch.getOpData(.PUSH30),
-                        31 => dispatch.getOpData(.PUSH31),
-                        32 => dispatch.getOpData(.PUSH32),
-                        else => unreachable,
-                    };
-                    
-                    if (push_n <= 8) {
-                        @branchHint(.likely);
+            
+            // Specialize handler based on inline vs pointer metadata
+            if (push_n <= 8) {
+                // Inline value handler (PUSH1-PUSH8)
+                return &struct {
+                    pub fn pushHandlerInline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+                        const dispatch = Dispatch{ .cursor = cursor };
+                        // Direct opcode selection at comptime
+                        const op_data = switch (push_n) {
+                            1 => dispatch.getOpData(.PUSH1),
+                            2 => dispatch.getOpData(.PUSH2),
+                            3 => dispatch.getOpData(.PUSH3),
+                            4 => dispatch.getOpData(.PUSH4),
+                            5 => dispatch.getOpData(.PUSH5),
+                            6 => dispatch.getOpData(.PUSH6),
+                            7 => dispatch.getOpData(.PUSH7),
+                            8 => dispatch.getOpData(.PUSH8),
+                            else => unreachable,
+                        };
+                        
+                        // Direct inline value access - no branching
                         const value = op_data.metadata.value;
-                        // log.debug("[PUSH{d}] Pushing inline value: {d}", .{ push_n, value });
-                        std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
+                        std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity);
                         self.stack.push_unsafe(value);
-                    } else {
-                        const value = op_data.metadata.value.*;
-                        // log.debug("[PUSH{d}] Pushing pointer value: {d}", .{ push_n, value });
-                        std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-                        self.stack.push_unsafe(value);
+                        
+                        return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
                     }
-                    
-                    // log.debug("[PUSH{d}] Stack after: {any}", .{ push_n, self.stack.get_slice() });
-                    
-                    return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
-                }
-            }.pushHandler;
+                }.pushHandlerInline;
+            } else {
+                // Pointer value handler (PUSH9-PUSH32)
+                return &struct {
+                    pub fn pushHandlerPointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+                        const dispatch = Dispatch{ .cursor = cursor };
+                        // Direct opcode selection at comptime
+                        const op_data = switch (push_n) {
+                            9 => dispatch.getOpData(.PUSH9),
+                            10 => dispatch.getOpData(.PUSH10),
+                            11 => dispatch.getOpData(.PUSH11),
+                            12 => dispatch.getOpData(.PUSH12),
+                            13 => dispatch.getOpData(.PUSH13),
+                            14 => dispatch.getOpData(.PUSH14),
+                            15 => dispatch.getOpData(.PUSH15),
+                            16 => dispatch.getOpData(.PUSH16),
+                            17 => dispatch.getOpData(.PUSH17),
+                            18 => dispatch.getOpData(.PUSH18),
+                            19 => dispatch.getOpData(.PUSH19),
+                            20 => dispatch.getOpData(.PUSH20),
+                            21 => dispatch.getOpData(.PUSH21),
+                            22 => dispatch.getOpData(.PUSH22),
+                            23 => dispatch.getOpData(.PUSH23),
+                            24 => dispatch.getOpData(.PUSH24),
+                            25 => dispatch.getOpData(.PUSH25),
+                            26 => dispatch.getOpData(.PUSH26),
+                            27 => dispatch.getOpData(.PUSH27),
+                            28 => dispatch.getOpData(.PUSH28),
+                            29 => dispatch.getOpData(.PUSH29),
+                            30 => dispatch.getOpData(.PUSH30),
+                            31 => dispatch.getOpData(.PUSH31),
+                            32 => dispatch.getOpData(.PUSH32),
+                            else => unreachable,
+                        };
+                        
+                        // Direct pointer value access - no branching
+                        const value = op_data.metadata.value.*;
+                        std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity);
+                        self.stack.push_unsafe(value);
+                        
+                        return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
+                    }
+                }.pushHandlerPointer;
+            }
         }
 
         /// Generate a dup handler for DUP1-DUP16
+        /// Optimized with comptime specialization
         pub fn generateDupHandler(comptime dup_n: u8) FrameType.OpcodeHandler {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
+            
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
@@ -112,6 +118,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                     self.stack.dup_n_unsafe(dup_n);
                     // DUP operations don't have metadata, just get next
+                    // Direct opcode selection at comptime
                     const op_data = switch (dup_n) {
                         1 => dispatch.getOpData(.DUP1),
                         2 => dispatch.getOpData(.DUP2),
@@ -137,14 +144,17 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// Generate a swap handler for SWAP1-SWAP16
+        /// Optimized with comptime specialization
         pub fn generateSwapHandler(comptime swap_n: u8) FrameType.OpcodeHandler {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
+            
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
                     std.debug.assert(self.stack.size() >= swap_n + 1); // SWAP{d} requires {d}+1 stack items
                     self.stack.swap_n_unsafe(swap_n);
                     // SWAP operations don't have metadata, just get next
+                    // Direct opcode selection at comptime
                     const op_data = switch (swap_n) {
                         1 => dispatch.getOpData(.SWAP1),
                         2 => dispatch.getOpData(.SWAP2),
