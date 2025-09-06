@@ -28,10 +28,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Read 32 bytes from memory
             const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
@@ -61,10 +62,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Read 32 bytes from memory
             const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
@@ -101,10 +103,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
@@ -137,10 +140,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
@@ -174,10 +178,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 1)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
@@ -210,10 +215,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 1)));
-            if (self.gas_remaining < GasConstants.GasFastestStep + memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));

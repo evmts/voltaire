@@ -65,10 +65,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             
             // Charge gas for address access
-            if (self.gas_remaining < access_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(access_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(access_cost);
 
             const bal = evm.get_balance(addr);
             const balance_word = @as(WordType, @truncate(bal));
@@ -254,10 +255,11 @@ pub fn Handlers(comptime FrameType: type) type {
             const copy_cost = (length_usize + 31) / 32 * 3;
             const total_gas = memory_expansion_cost + copy_cost;
 
-            if (self.gas_remaining < total_gas) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(total_gas);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(total_gas);
 
             // Ensure memory capacity
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
@@ -307,10 +309,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             
             // Charge gas for address access
-            if (self.gas_remaining < access_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(access_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(access_cost);
             
             const code = evm.get_code(addr);
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
@@ -347,10 +350,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             
             // Charge gas for address access
-            if (self.gas_remaining < access_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(access_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(access_cost);
             const dest_offset_usize = @as(usize, @intCast(dest_offset));
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
@@ -396,10 +400,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
             
             // Charge gas for address access
-            if (self.gas_remaining < access_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(access_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(access_cost);
 
             if (!evm.account_exists(addr)) {
                 // Non-existent account returns 0 per EIP-1052
@@ -494,10 +499,11 @@ pub fn Handlers(comptime FrameType: type) type {
             const copy_cost = (length_usize + 31) / 32 * 3;
             const total_gas = memory_expansion_cost + copy_cost;
 
-            if (self.gas_remaining < total_gas) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(total_gas);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(total_gas);
 
             // Ensure memory capacity
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
@@ -518,10 +524,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn blockhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // BLOCKHASH costs 20 gas
             const gas_cost = 20;
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // BLOCKHASH requires 1 stack item
@@ -554,10 +561,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn coinbase(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // COINBASE costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
@@ -574,10 +582,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn timestamp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // TIMESTAMP costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
@@ -593,10 +602,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn number(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // NUMBER costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
@@ -612,10 +622,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn difficulty(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // DIFFICULTY costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();

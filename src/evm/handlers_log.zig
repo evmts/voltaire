@@ -60,11 +60,10 @@ pub fn Handlers(comptime FrameType: type) type {
                     const total_dynamic_gas = data_gas_cost + memory_expansion_cost;
                     
                     // Check gas and consume dynamic gas
-                    if (total_dynamic_gas > 0) {
-                        if (self.gas_remaining < total_dynamic_gas) {
-                            return Error.OutOfGas;
-                        }
-                        self.gas_remaining -= @intCast(total_dynamic_gas);
+                    // Use negative gas pattern for single-branch out-of-gas detection
+                    self.gas_remaining -= @intCast(total_dynamic_gas);
+                    if (self.gas_remaining < 0) {
+                        return Error.OutOfGas;
                     }
 
                     // Ensure memory capacity

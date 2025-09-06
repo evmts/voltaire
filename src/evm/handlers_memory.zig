@@ -35,11 +35,10 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
             // Only check and consume dynamic gas (memory expansion), static gas is handled by JUMPDEST
-            if (memory_expansion_cost > 0) {
-                if (self.gas_remaining < memory_expansion_cost) {
-                    return Error.OutOfGas;
-                }
-                self.gas_remaining -= @intCast(memory_expansion_cost);
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(memory_expansion_cost);
+            if (self.gas_remaining < 0) {
+                return Error.OutOfGas;
             }
 
             // Read 32 bytes from memory (EVM-compliant with automatic expansion)
@@ -96,11 +95,10 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
             // Only check and consume dynamic gas (memory expansion), static gas is handled by JUMPDEST
-            if (memory_expansion_cost > 0) {
-                if (self.gas_remaining < memory_expansion_cost) {
-                    return Error.OutOfGas;
-                }
-                self.gas_remaining -= @intCast(memory_expansion_cost);
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(memory_expansion_cost);
+            if (self.gas_remaining < 0) {
+                return Error.OutOfGas;
             }
 
             // Convert to u256 if necessary and store
@@ -151,11 +149,10 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
             // Only check and consume dynamic gas (memory expansion), static gas is handled by JUMPDEST
-            if (memory_expansion_cost > 0) {
-                if (self.gas_remaining < memory_expansion_cost) {
-                    return Error.OutOfGas;
-                }
-                self.gas_remaining -= @intCast(memory_expansion_cost);
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(memory_expansion_cost);
+            if (self.gas_remaining < 0) {
+                return Error.OutOfGas;
             }
 
             // Store the least significant byte

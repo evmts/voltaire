@@ -321,10 +321,11 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             const gas_cost = 10 + 50 * exp_bytes;
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             // Calculate base^exponent with wrapping multiplication (mod 2^256)
             var result: WordType = 1;

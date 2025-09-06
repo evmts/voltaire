@@ -93,11 +93,12 @@ pub fn Handlers(comptime FrameType: type) type {
             const gas_cost = op_data.metadata.gas;
 
             // Check and consume gas for the entire basic block
-            if (self.gas_remaining < gas_cost) {
-                log.warn("JUMPDEST: Out of gas - required={}, available={}", .{ gas_cost, self.gas_remaining });
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
+            if (self.gas_remaining < 0) {
+                log.warn("JUMPDEST: Out of gas - required={}, available={}", .{ gas_cost, self.gas_remaining + @as(FrameType.GasType, @intCast(gas_cost)) });
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
 
             return @call(FrameType.getTailCallModifier(), op_data.next.cursor[0].opcode_handler, .{ self, op_data.next.cursor });
         }

@@ -764,10 +764,11 @@ pub fn Handlers(comptime FrameType: type) type {
             // Calculate gas cost for memory expansion
             const memory_end = offset_usize + size_usize;
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(memory_end)));
-            if (self.gas_remaining < memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(memory_expansion_cost);
 
             // Ensure memory capacity
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
@@ -815,10 +816,11 @@ pub fn Handlers(comptime FrameType: type) type {
             // Calculate gas cost for memory expansion
             const memory_end = offset_usize + size_usize;
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(memory_end)));
-            if (self.gas_remaining < memory_expansion_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(memory_expansion_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(memory_expansion_cost);
 
             // Ensure memory capacity
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;

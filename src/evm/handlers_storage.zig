@@ -32,10 +32,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             // Charge gas for storage access
-            if (self.gas_remaining < access_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(access_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(access_cost);
 
             // Load value from storage directly from frame's database
             const value = self.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
@@ -98,10 +99,11 @@ pub fn Handlers(comptime FrameType: type) type {
                 .{ slot, original_value, current_value, value, is_cold, total_gas_cost },
             );
 
-            if (self.gas_remaining < total_gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(total_gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(total_gas_cost);
 
             // Record original value for journal on first write in this transaction
             if (original_opt == null) {
@@ -166,10 +168,11 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Transient storage has fixed gas cost
             const gas_cost = GasConstants.WarmStorageReadCost; // 100 gas
-            if (self.gas_remaining < gas_cost) {
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @intCast(gas_cost);
 
             // Store the value in transient storage directly in frame's database
             self.database.set_transient_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
