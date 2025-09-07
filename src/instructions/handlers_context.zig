@@ -773,7 +773,7 @@ const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
 const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
-const block_info_mod = @import("../evm/block_info.zig");
+const block_info_mod = @import("../block/block_info.zig");
 
 // Test configuration
 const test_config = FrameConfig{

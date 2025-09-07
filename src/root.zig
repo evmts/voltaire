@@ -25,9 +25,9 @@ pub const Evm = @import("evm.zig").Evm;
 pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 
 // Fixtures for testing
-pub const FixtureContract = @import("evm/fixtures/popular_contracts.zig").FixtureContract;
-pub const ContractName = @import("evm/fixtures/popular_contracts.zig").ContractName;
-pub const FixtureRunner = @import("evm/fixture_runner.zig").FixtureRunner;
+pub const FixtureContract = @import("_test_utils/fixtures/popular_contracts.zig").FixtureContract;
+pub const ContractName = @import("_test_utils/fixtures/popular_contracts.zig").ContractName;
+pub const FixtureRunner = @import("_test_utils/fixture_runner.zig").FixtureRunner;
 
 // Default EVM types
 pub const DefaultEvm = Evm(.{});
@@ -42,8 +42,8 @@ pub const LoggingTracer = @import("evm/tracer.zig").LoggingTracer;
 pub const FileTracer = @import("evm/tracer.zig").FileTracer;
 pub const NoOpTracer = @import("evm/tracer.zig").NoOpTracer;
 pub const DebuggingTracer = @import("evm/tracer.zig").DebuggingTracer;
-pub const differential_tracer = @import("evm/differential_tracer.zig");
-pub const trace_comparer = @import("evm/trace_comparer.zig");
+pub const differential_tracer = @import("_test_utils/differential_tracer.zig");
+pub const trace_comparer = @import("_test_utils/trace_comparer.zig");
 pub const JSONRPCTracer = @import("evm/tracer.zig").JSONRPCTracer;
 
 // Logging
