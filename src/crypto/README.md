@@ -1,14 +1,14 @@
-# Crypto - Cryptographic Utilities
+# Crypto - Cryptographic Utilities and Implementations
 
 ## Overview
 
-This directory contains comprehensive cryptographic implementations used throughout Guillotine. It provides high-performance, EVM-compatible cryptographic functions including hashing algorithms, elliptic curve operations, digital signatures, and specialized cryptographic constructs required for Ethereum execution.
+This directory provides comprehensive cryptographic implementations used throughout Guillotine, including hash functions, digital signatures, elliptic curve operations, and specialized cryptographic constructs required for Ethereum Virtual Machine (EVM) execution. The implementation prioritizes performance, security, and EVM compatibility.
 
 ## Components
 
 ### Core Cryptographic Files
+- **`crypto.zig`** - Central cryptographic utilities and high-level operations interface
 - **`root.zig`** - Main module exports and public API
-- **`crypto.zig`** - Central cryptographic utilities and high-level operations
 - **`hash.zig`** - Hash function interface and common utilities
 - **`hash_utils.zig`** - Advanced hashing utilities and helper functions
 - **`hash_algorithms.zig`** - Collection of hash algorithm implementations
@@ -21,164 +21,187 @@ This directory contains comprehensive cryptographic implementations used through
 - **`ripemd160.zig`** - RIPEMD-160 hash function implementation
 
 ### Elliptic Curve Cryptography
-- **`secp256k1.zig`** - secp256k1 elliptic curve operations
-- **`bn254.zig`** - BN254 curve utilities and interface
-- **`bn254/`** - Dedicated BN254 implementation directory
+- **`secp256k1.zig`** - secp256k1 curve operations for ECDSA signatures
+- **`bn254/`** - Complete BN254 curve implementation for zkSNARKs and precompiles
+- **`bn254.zig`** - BN254 curve module exports
 
-### Advanced Cryptographic Constructs
-- **`modexp.zig`** - Modular exponentiation (EIP-198 precompile)
-- **`eip712.zig`** - EIP-712 typed structured data hashing
-- **`c_kzg.zig`** - KZG commitment scheme integration
+### Advanced Cryptographic Operations
+- **`modexp.zig`** - Modular exponentiation implementation
+- **`eip712.zig`** - EIP-712 structured data signing
+- **`c_kzg.zig`** - KZG commitment scheme bindings
 
-### Hardware Acceleration and Optimization
-- **`cpu_features.zig`** - CPU feature detection for optimization
-- **`hardware_accel_benchmarks.zig`** - Performance benchmarks for accelerated implementations
+### Performance and Testing
+- **`cpu_features.zig`** - CPU feature detection for acceleration
+- **`hardware_accel_benchmarks.zig`** - Performance benchmarks for accelerated functions
 
 ## Key Features
 
-### High-Performance Hashing
-- **Keccak-256** - Primary hash function used by Ethereum
-  - Assembly-optimized implementation for maximum performance
-  - Hardware acceleration support (AVX2, SHA extensions)
-  - Streaming interface for large data processing
-  - Constant-time implementation for security-critical operations
+### Hash Functions
+- **Keccak-256**: Primary Ethereum hash function with optimized implementations
+- **SHA-256**: Standard cryptographic hash with hardware acceleration
+- **BLAKE2**: High-performance hash function for specific use cases
+- **RIPEMD-160**: Legacy hash function for Bitcoin compatibility
 
-- **SHA-256** - Used in various precompiles and cryptographic operations
-  - Hardware-accelerated implementation using CPU instructions
-  - Optimized for both single-shot and streaming operations
+### Digital Signatures
+- **ECDSA**: Elliptic Curve Digital Signature Algorithm
+- **secp256k1**: Bitcoin/Ethereum curve for transaction signatures
+- **Public key recovery**: Recover public keys from signatures
+- **EIP-712**: Structured data signing for typed messages
 
-- **BLAKE2** - High-speed cryptographic hash function
-  - Used in specific precompiles (e.g., BLAKE2f)
-  - Parameterizable output length and personalization
-
-### Elliptic Curve Operations
-- **secp256k1** - Bitcoin/Ethereum signature curve
-  - Digital signature generation and verification (ECDSA)
-  - Public key recovery from signatures
-  - Point operations and scalar multiplication
-  - Batch verification for improved performance
-
-- **BN254 (alt_bn128)** - Pairing-friendly curve for zkSNARKs
-  - Group operations in G1 and G2
-  - Pairing computations for cryptographic protocols
-  - Used in precompiles 0x06, 0x07, and 0x08
-
-### EVM-Specific Cryptographic Functions
-- **Address Derivation** - Contract and account address calculation
-- **Signature Recovery** - ecrecover precompile implementation
-- **Structured Data Hashing** - EIP-712 message formatting and hashing
-- **Merkle Tree Operations** - Efficient proof generation and verification
+### Performance Optimizations
+- **Hardware acceleration**: Utilize CPU-specific instructions (AES-NI, AVX2)
+- **Assembly implementations**: Hand-optimized critical paths
+- **Constant-time operations**: Side-channel attack resistance
+- **Memory-efficient algorithms**: Minimize allocations
 
 ## Architecture
 
-### Modular Design
+### Cryptographic Interface
 ```zig
-// High-level crypto operations
-pub const Crypto = @import("crypto.zig");
+const crypto = @import("crypto");
 
-// Specific algorithms
-pub const Keccak256 = @import("keccak_asm.zig");
-pub const Secp256k1 = @import("secp256k1.zig");
-pub const BN254 = @import("bn254.zig");
+// Hash functions
+const hash = crypto.keccak256(data);
+const sha_hash = crypto.sha256(data);
+
+// Digital signatures
+const signature = try crypto.sign(private_key, message);
+const public_key = try crypto.recover(signature, message);
+
+// Address derivation
+const address = crypto.publicKeyToAddress(public_key);
 ```
 
-### Hardware Acceleration Framework
-The crypto module includes a comprehensive hardware acceleration framework:
-
-1. **CPU Feature Detection** - Runtime detection of available CPU extensions
-2. **Algorithm Selection** - Automatic selection of optimal implementation
-3. **Fallback Support** - Pure software fallbacks for compatibility
-4. **Performance Monitoring** - Built-in benchmarking and profiling
-
-### Memory Safety
-All cryptographic implementations prioritize memory safety:
-- Secure memory clearing for sensitive data
-- Bounds checking for all array operations
-- Protection against side-channel attacks
-- Proper error handling and resource cleanup
-
-## Usage Patterns
-
-### Basic Hashing
+### Hardware Acceleration
 ```zig
-const hash = try Keccak256.hash(data);
-const sha_hash = try SHA256.hash(data);
+// Detect available CPU features
+const features = crypto.detectCpuFeatures();
+if (features.has_aes_ni) {
+    // Use accelerated implementations
+}
 ```
-
-### Digital Signatures
-```zig
-// Sign message
-const signature = try Secp256k1.sign(private_key, message_hash);
-
-// Verify signature
-const valid = try Secp256k1.verify(public_key, message_hash, signature);
-
-// Recover public key
-const recovered_pubkey = try Secp256k1.recover(message_hash, signature);
-```
-
-### Advanced Cryptographic Operations
-```zig
-// EIP-712 structured data hashing
-const typed_hash = try EIP712.hashTypedData(domain, message);
-
-// Modular exponentiation
-const result = try ModExp.compute(base, exponent, modulus);
-```
-
-## Performance Considerations
-
-### Optimization Strategies
-- **Assembly Implementations** - Hand-optimized assembly for critical paths
-- **SIMD Instructions** - Vectorized operations using AVX/AVX2
-- **Hardware Instructions** - Utilize SHA/AES CPU extensions when available
-- **Batch Processing** - Optimize for multiple operations in sequence
-
-### Benchmarking
-The module includes comprehensive benchmarks for:
-- Individual cryptographic operations
-- Hardware vs. software implementations
-- Batch vs. single operation performance
-- Memory usage and allocation patterns
 
 ## Security Considerations
 
-### Constant-Time Operations
-Critical operations are implemented to resist timing attacks:
-- Signature verification
-- Hash comparisons
-- Private key operations
+### Constant-Time Implementation
+All cryptographic operations are designed to be constant-time:
+- **No secret-dependent branches**: Eliminate timing variations
+- **Consistent memory access patterns**: Prevent cache-based attacks
+- **Uniform arithmetic operations**: Consistent execution time
 
 ### Side-Channel Protection
-- Memory access patterns are designed to be data-independent
-- Intermediate values are properly cleared
-- Error conditions don't leak information about private data
+- **Power analysis resistance**: Consistent power consumption patterns
+- **Timing attack mitigation**: Data-independent execution paths
+- **Cache attack prevention**: Predictable memory access patterns
 
-### Cryptographic Standards Compliance
-All implementations follow established cryptographic standards:
-- FIPS 180-4 (SHA-256)
-- FIPS 202 (Keccak)
-- RFC 6979 (Deterministic ECDSA)
-- EIP specifications for Ethereum-specific functions
+### Input Validation
+- **Range checks**: All inputs validated within expected bounds
+- **Curve point validation**: Elliptic curve points verified on-curve
+- **Hash length verification**: Output buffers sized correctly
+
+## Usage Examples
+
+### Basic Hash Operations
+```zig
+const crypto = @import("crypto");
+
+// Keccak-256 (most common in Ethereum)
+const data = "Hello, Ethereum!";
+const hash = crypto.keccak256(data);
+
+// SHA-256 (for precompiles)
+const sha_hash = crypto.sha256(data);
+
+// BLAKE2 (high performance)
+const blake_hash = crypto.blake2b(data);
+```
+
+### Digital Signature Operations
+```zig
+// Generate key pair
+const private_key = crypto.generatePrivateKey();
+const public_key = try crypto.derivePublicKey(private_key);
+
+// Sign message
+const message = "Transaction data";
+const signature = try crypto.sign(private_key, message);
+
+// Verify signature
+const is_valid = try crypto.verify(public_key, signature, message);
+
+// Recover public key from signature
+const recovered_key = try crypto.ecRecover(signature, message);
+```
+
+### EIP-712 Structured Data Signing
+```zig
+const domain = crypto.EIP712Domain{
+    .name = "MyDApp",
+    .version = "1",
+    .chainId = 1,
+    .verifyingContract = contract_address,
+};
+
+const message = MyMessage{
+    .from = sender_address,
+    .to = recipient_address,
+    .amount = 1000,
+};
+
+const signature = try crypto.signTypedData(private_key, domain, message);
+```
+
+### Address Derivation
+```zig
+// Derive Ethereum address from public key
+const address = crypto.publicKeyToAddress(public_key);
+
+// Create contract address
+const contract_addr = crypto.createContractAddress(sender_address, nonce);
+
+// Create CREATE2 address
+const create2_addr = crypto.create2Address(
+    deployer_address,
+    salt,
+    bytecode_hash
+);
+```
+
+## Integration with Guillotine
+
+The crypto module integrates with:
+
+### EVM Core
+- **Transaction signing**: ECDSA signature verification
+- **Address derivation**: Account and contract address generation
+- **Hash operations**: State root calculation, transaction hashing
+
+### Precompiled Contracts
+- **ecRecover (0x01)**: ECDSA signature recovery
+- **sha256 (0x02)**: SHA-256 hash computation
+- **ripemd160 (0x03)**: RIPEMD-160 hash computation
+- **modexp (0x05)**: Modular exponentiation
+- **BN254 operations (0x06-0x08)**: Elliptic curve operations
+
+### State Management
+- **Merkle trees**: Keccak-256 for tree node hashing
+- **Storage keys**: Hash-based storage addressing
+- **Bloom filters**: Efficient event filtering
 
 ## Testing and Validation
 
-### Test Vectors
-Comprehensive test suites include:
-- Known answer tests from official test vectors
-- Cross-verification with reference implementations
-- Edge case and boundary condition testing
-- Fuzzing for robustness validation
+### Test Coverage
+- **Unit tests**: Individual function correctness
+- **Cross-validation**: Comparison with reference implementations
+- **Edge cases**: Boundary conditions and error handling
+- **Performance tests**: Benchmark critical operations
 
 ### Compliance Testing
-- EVM test suite compatibility
-- Ethereum consensus test compliance
-- Cross-client verification of results
+- **Ethereum test suite**: Official test vector validation
+- **EIP compliance**: Implementation matches specifications
+- **Interoperability**: Compatible with other EVM implementations
 
-## Integration Points
-
-The crypto module integrates with:
-- **EVM Precompiles** - Cryptographic precompiled contracts
-- **Transaction Processing** - Signature verification and address derivation
-- **State Management** - Hash computations for state trees
-- **Network Layer** - Node identity and secure communication
+### Fuzzing and Robustness
+- **Random input testing**: Handle arbitrary inputs gracefully
+- **Boundary condition testing**: Edge cases and overflow conditions
+- **Property-based testing**: Cryptographic properties maintained
