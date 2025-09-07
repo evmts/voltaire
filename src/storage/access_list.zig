@@ -693,7 +693,7 @@ const Database = @import("database.zig").Database;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const BlockInfo = @import("../evm/block_info.zig").DefaultBlockInfo;
 const TransactionContext = @import("../evm/transaction_context.zig").TransactionContext;
-const Hardfork = @import("../evm/hardfork.zig").Hardfork;
+const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
 // const FrameInterpreter = @import("../evm/frame_interpreter.zig").FrameInterpreter;
 
 test "EIP-2929 - SLOAD multiple slots warm/cold pattern" {
