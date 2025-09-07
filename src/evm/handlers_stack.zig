@@ -177,7 +177,7 @@ const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
 // Test configuration
@@ -186,7 +186,7 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("memory_database.zig").MemoryDatabase,
+    .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
     .TracerType = NoOpTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,

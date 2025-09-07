@@ -6,8 +6,8 @@ const FrameConfig = @import("frame_config.zig").FrameConfig;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const primitives = @import("primitives");
 const Address = primitives.Address;
-const Database = @import("database.zig").Database;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const Database = @import("../storage/database.zig").Database;
+const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const evm_mod = @import("evm");
 const Host = evm_mod.Host;
 const Revm = @import("revm").Revm;
@@ -285,7 +285,7 @@ fn initBytecodes(allocator: std.mem.Allocator) !void {
 
 // Benchmark functions for Frame
 fn benchmarkFrameERC20(allocator: std.mem.Allocator) void {
-    const F = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
+    const F = Frame(.{ .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase });
 
     const host = createBenchHost();
     var memory_db = MemoryDatabase.init(allocator);
@@ -300,7 +300,7 @@ fn benchmarkFrameERC20(allocator: std.mem.Allocator) void {
 }
 
 fn benchmarkFrameSnailtracer(allocator: std.mem.Allocator) void {
-    const F = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
+    const F = Frame(.{ .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase });
 
     const host = createBenchHost();
     var memory_db = MemoryDatabase.init(allocator);

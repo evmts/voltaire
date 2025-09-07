@@ -41,7 +41,7 @@ pub const EvmConfig = struct {
     memory_initial_capacity: usize = 4096,
     memory_limit: u64 = 0xFFFFFF,
     /// Database implementation type for storage operations (always required)
-    DatabaseType: type = @import("database.zig").Database,
+    DatabaseType: type = @import("../storage/database.zig").Database,
     /// Tracer type for execution tracing (default: null for no tracing)
     /// Set to a tracer type (e.g., JSONRPCTracer) to enable execution tracing
     TracerType: ?type = null,

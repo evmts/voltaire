@@ -92,7 +92,7 @@ const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
 // Test configuration

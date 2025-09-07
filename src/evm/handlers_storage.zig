@@ -201,7 +201,7 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("memory_database.zig").MemoryDatabase, // Always provide database type
+    .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase, // Always provide database type
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -267,7 +267,7 @@ const MockEvm = struct {
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: *MockEvm) !TestFrame {
-    const database = try @import("memory_database.zig").MemoryDatabase.init(allocator);
+    const database = try @import("../storage/memory_database.zig").MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrCast(evm));

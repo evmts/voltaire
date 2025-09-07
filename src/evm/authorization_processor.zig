@@ -9,8 +9,8 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Authorization = primitives.Authorization.Authorization;
 const EMPTY_CODE_HASH = primitives.EMPTY_CODE_HASH;
-const Database = @import("database.zig").Database;
-const Account = @import("database_interface_account.zig").Account;
+const Database = @import("../storage/database.zig").Database;
+const Account = @import("../storage/database_interface_account.zig").Account;
 const log = @import("../log.zig");
 const Eips = @import("eips.zig").Eips;
 
@@ -297,7 +297,7 @@ pub const AuthorizationProcessor = struct {
 test "Authorization processor - basic delegation" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    const MemoryDatabase = @import("memory_database.zig");
+    const MemoryDatabase = @import("../storage/memory_database.zig");
     
     // Create database
     var db = MemoryDatabase.init(allocator);
@@ -343,7 +343,7 @@ test "Authorization processor - basic delegation" {
 test "Authorization processor - wrong nonce rejected" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    const MemoryDatabase = @import("memory_database.zig");
+    const MemoryDatabase = @import("../storage/memory_database.zig");
     
     var db = MemoryDatabase.init(allocator);
     defer db.deinit();

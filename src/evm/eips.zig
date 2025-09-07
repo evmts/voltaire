@@ -1,5 +1,5 @@
 const primitives = @import("primitives");
-const AccessList = @import("access_list.zig").AccessList;
+const AccessList = @import("../storage/access_list.zig").AccessList;
 const Hardfork = @import("hardfork.zig").Hardfork;
 
 // EIPs is a comptime known configuration of Eip and hardfork specific behavior

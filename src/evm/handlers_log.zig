@@ -164,7 +164,7 @@ const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const bytecode_mod = @import("../bytecode/bytecode.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 // const host_mod = @import("host.zig");
 
 // Test configuration

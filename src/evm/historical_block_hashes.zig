@@ -9,7 +9,7 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const Database = @import("database.zig").Database;
+const Database = @import("../storage/database.zig").Database;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
 const log = @import("../log.zig");
 

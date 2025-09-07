@@ -19,11 +19,11 @@ const log = @import("../log.zig");
 const primitives = @import("primitives");
 const eips = @import("eips.zig");
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo; // Default for backward compatibility
-const Database = @import("database.zig").Database;
-const Account = @import("database_interface_account.zig").Account;
-const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
-const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
-const AccessList = @import("access_list.zig").AccessList;
+const Database = @import("../storage/database.zig").Database;
+const Account = @import("../storage/database_interface_account.zig").Account;
+const SelfDestruct = @import("../storage/self_destruct.zig").SelfDestruct;
+const CreatedContracts = @import("../storage/created_contracts.zig").CreatedContracts;
+const AccessList = @import("../storage/access_list.zig").AccessList;
 const Hardfork = @import("hardfork.zig").Hardfork;
 const precompiles = @import("precompiles.zig");
 const EvmConfig = @import("evm_config.zig").EvmConfig;
@@ -58,7 +58,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             .fusions_enabled = config.enable_fusion,
         });
         /// Journal handles reverting state when state needs to be reverted
-        pub const Journal: type = @import("journal.zig").Journal(.{
+        pub const Journal: type = @import("../storage/journal.zig").Journal(.{
             .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,
             .WordType = config.WordType,
             .NonceType = u64,
@@ -2360,7 +2360,7 @@ test "call method handles gas limit properly" {
 }
 
 test "Journal - snapshot creation and management" {
-    const journal_mod = @import("journal.zig");
+    const journal_mod = @import("../storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -2381,7 +2381,7 @@ test "Journal - snapshot creation and management" {
 }
 
 test "Journal - storage change recording" {
-    const journal_mod = @import("journal.zig");
+    const journal_mod = @import("../storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -2416,7 +2416,7 @@ test "Journal - storage change recording" {
 }
 
 test "Journal - revert to snapshot" {
-    const journal_mod = @import("journal.zig");
+    const journal_mod = @import("../storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -2445,7 +2445,7 @@ test "Journal - revert to snapshot" {
 }
 
 test "Journal - multiple entry types" {
-    const journal_mod = @import("journal.zig");
+    const journal_mod = @import("../storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -2486,7 +2486,7 @@ test "Journal - multiple entry types" {
 }
 
 test "Journal - empty revert" {
-    const journal_mod = @import("journal.zig");
+    const journal_mod = @import("../storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -2637,7 +2637,7 @@ test "Host interface - get_balance functionality" {
     const balance: u256 = 1000000000000000000; // 1 ETH
 
     // Set account balance in database
-    const account = @import("database_interface_account.zig").Account{
+    const account = @import("../storage/database_interface_account.zig").Account{
         .balance = balance,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -2722,7 +2722,7 @@ test "Host interface - account_exists functionality" {
     defer evm.deinit();
 
     const address = primitives.ZERO_ADDRESS;
-    const account = @import("database_interface_account.zig").Account{
+    const account = @import("../storage/database_interface_account.zig").Account{
         .balance = 1000,
         .nonce = 1,
         .code_hash = [_]u8{0} ** 32,

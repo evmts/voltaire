@@ -781,14 +781,14 @@ const test_config = FrameConfig{
     .WordType = u256,
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
-    .DatabaseType = @import("memory_database.zig").MemoryDatabase,
+    .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
     .TracerType = NoOpTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
 
 const TestFrame = Frame(test_config);
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 
 // Mock host for testing
 const MockEvm = struct {
@@ -2282,7 +2282,7 @@ test "WordType truncation behavior" {
         .WordType = u64, // Smaller than u256
         .max_bytecode_size = 1024,
         .block_gas_limit = 30_000_000,
-        .DatabaseType = @import("memory_database.zig").MemoryDatabase,
+        .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
         .TracerType = NoOpTracer,
         .memory_initial_capacity = 4096,
         .memory_limit = 0xFFFFFF,
@@ -2298,7 +2298,7 @@ test "WordType truncation behavior" {
     evm.block_info.base_fee = std.math.maxInt(u256);
 
     const host = evm.to_host();
-    const database = try @import("memory_database.zig").MemoryDatabase.init(testing.allocator);
+    const database = try @import("../storage/memory_database.zig").MemoryDatabase.init(testing.allocator);
     const value = try testing.allocator.create(u64);
     value.* = 0;
     var frame = try SmallFrame.init(testing.allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, host);

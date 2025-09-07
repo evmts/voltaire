@@ -386,7 +386,7 @@ const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const Address = @import("primitives").Address;
 
-const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 
 // Test configuration
 const test_config = FrameConfig{

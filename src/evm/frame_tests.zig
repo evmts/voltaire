@@ -11,7 +11,7 @@ const call_result_mod = @import("call_result.zig");
 const hardfork_mod = @import("hardfork.zig");
 const frame_config = @import("frame_config.zig");
 const FrameConfig = frame_config.FrameConfig;
-const Database = @import("database.zig").Database;
+const Database = @import("../storage/database.zig").Database;
 const GasConstants = primitives.GasConstants;
 const DefaultEvm = @import("evm.zig").Evm(.{});
 const log_mod = @import("logs.zig");
@@ -2128,9 +2128,9 @@ fn createTestHandlerChain(comptime FrameType: type) *const fn (*FrameType, *cons
         test "Frame storage operations with database" {
             const allocator = std.testing.allocator;
             // Create a frame with database support
-            const FrameWithDb = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
+            const FrameWithDb = Frame(.{ .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase });
             // Create a test database
-            var db = @import("database.zig").Database.init(allocator);
+            var db = @import("../storage/database.zig").Database.init(allocator);
             defer db.deinit();
             const bytecode = [_]u8{ 0x54, 0x00 }; // SLOAD STOP
             var frame = try FrameWithDb.init(allocator, &bytecode, 1000000, &db, createTestHost());
@@ -2166,9 +2166,9 @@ fn createTestHandlerChain(comptime FrameType: type) *const fn (*FrameType, *cons
         test "Frame transient storage operations with database" {
             const allocator = std.testing.allocator;
             // Create a frame with database support
-            const FrameWithDb = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
+            const FrameWithDb = Frame(.{ .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase });
             // Create a test database
-            var db = @import("database.zig").Database.init(allocator);
+            var db = @import("../storage/database.zig").Database.init(allocator);
             defer db.deinit();
             const bytecode = [_]u8{ 0x5c, 0x00 }; // TLOAD STOP
             var frame = try FrameWithDb.init(allocator, &bytecode, 1000000, &db, createTestHost());
@@ -3268,7 +3268,7 @@ fn createTestHandlerChain(comptime FrameType: type) *const fn (*FrameType, *cons
         // Test all fixture contracts
         test "Frame with ERC20 transfer bytecode" {
             const allocator = std.testing.allocator;
-            const F = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
+            const F = Frame(.{ .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase });
 
             const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/erc20-transfer/bytecode.txt");
             defer allocator.free(bytecode);
@@ -3297,7 +3297,7 @@ fn createTestHandlerChain(comptime FrameType: type) *const fn (*FrameType, *cons
 
         test "Frame with snailtracer bytecode" {
             const allocator = std.testing.allocator;
-            const F = Frame(.{ .DatabaseType = @import("memory_database.zig").MemoryDatabase });
+            const F = Frame(.{ .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase });
 
             const bytecode = try loadFixtureBytecode(allocator, "src/evm/fixtures/snailtracer/bytecode.txt");
             defer allocator.free(bytecode);
