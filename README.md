@@ -89,11 +89,11 @@ We welcome contributions of all kinds!
 
 See our [Contributing Guide](CONTRIBUTING.md) to get started.
 
-## Team
+## Contributors
 
-- [Will Cory (fucory)](https://github.com/roninjin10) - Project Lead
-- [polarzero](https://github.com/0xpolarzero) - Core Developer
-- [Vlad](https://github.com/vladfdp) - Core Developer
+- [Will Cory (fucory)](https://github.com/roninjin10) - Project Lead, CEO of Tevm
+- [polarzero](https://github.com/0xpolarzero) - Core Developer, CLI/App Lead
+- [Vlad](https://github.com/vladfdp) - Core Developer, Cryptography Lead
 
 ## 🙏 Dependencies & Acknowledgments
 
