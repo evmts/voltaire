@@ -427,7 +427,7 @@ test "DefaultCallResult log memory management - proper cleanup" {
     defer {
         const deinit_status = gpa.deinit();
         if (deinit_status == .leak) {
-            const log = @import("log.zig");
+            const log = @import("../log.zig");
             log.warn("Memory leak detected in CallResult log cleanup test!", .{});
             testing.expect(false) catch {};
         }
@@ -465,7 +465,7 @@ test "DefaultCallResult deinitLogsSlice - memory management for takeLogs result"
     defer {
         const deinit_status = gpa.deinit();
         if (deinit_status == .leak) {
-            const log = @import("log.zig");
+            const log = @import("../log.zig");
             log.warn("Memory leak detected in deinitLogsSlice test!", .{});
             testing.expect(false) catch {};
         }

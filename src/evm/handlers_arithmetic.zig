@@ -1,6 +1,6 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const GasConstants = @import("primitives").GasConstants;
 
 /// Arithmetic opcode handlers for the EVM stack frame.

@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const evm = @import("root.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;

@@ -1,9 +1,9 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const memory_mod = @import("memory.zig");
 const keccak_asm = @import("keccak_asm.zig");
-const Opcode = @import("opcode_data.zig").Opcode;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 const GasConstants = @import("primitives").GasConstants;
 
 /// Keccak hash opcode handler for the EVM stack frame.

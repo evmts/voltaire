@@ -13,7 +13,7 @@
 //! all functionality needed for EVM execution without vtable overhead.
 
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 pub const Account = @import("database_interface_account.zig").Account;
 
 /// High-performance in-memory database for EVM state

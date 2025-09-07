@@ -1,8 +1,8 @@
 const std = @import("std");
-const opcode_mod = @import("opcode.zig");
-const Opcode = @import("opcode_data.zig").Opcode;
-const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
-const bytecode_mod = @import("bytecode.zig");
+const opcode_mod = @import("../opcodes/opcode.zig");
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
+const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
+const bytecode_mod = @import("../bytecode/bytecode.zig");
 const ArrayList = std.ArrayListAligned;
 const dispatch_metadata = @import("dispatch_metadata.zig");
 const dispatch_item = @import("dispatch_item.zig");
@@ -102,7 +102,7 @@ pub fn Dispatch(comptime FrameType: type) type {
         pub fn calculateFirstBlockGas(bytecode: anytype) u64 {
             var gas: u64 = 0;
             var iter = bytecode.createIterator();
-            const opcode_info = @import("opcode_data.zig").OPCODE_INFO;
+            const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
 
             var op_count: u32 = 0;
 

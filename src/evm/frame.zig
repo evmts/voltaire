@@ -10,18 +10,18 @@
 //! components for stack size, memory limits, and gas tracking.
 const std = @import("std");
 const builtin = @import("builtin");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const memory_mod = @import("memory.zig");
 const stack_mod = @import("stack.zig");
-const opcode_data = @import("opcode_data.zig");
+const opcode_data = @import("../opcodes/opcode_data.zig");
 const Opcode = opcode_data.Opcode;
-const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
+const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 const Database = @import("database.zig").Database;
 const Account = @import("database.zig").Account;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const bytecode_mod = @import("bytecode.zig");
-const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
+const bytecode_mod = @import("../bytecode/bytecode.zig");
+const BytecodeConfig = @import("../bytecode/bytecode_config.zig").BytecodeConfig;
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;

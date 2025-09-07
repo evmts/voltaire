@@ -1,5 +1,5 @@
 const std = @import("std");
-const Opcode = @import("opcode_data.zig").Opcode;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
 /// Pretty print functionality for the dispatch instruction stream.
 /// Provides human-readable visualization of both original bytecode and optimized dispatch arrays.

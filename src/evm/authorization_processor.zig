@@ -11,7 +11,7 @@ const Authorization = primitives.Authorization.Authorization;
 const EMPTY_CODE_HASH = primitives.EMPTY_CODE_HASH;
 const Database = @import("database.zig").Database;
 const Account = @import("database_interface_account.zig").Account;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const Eips = @import("eips.zig").Eips;
 
 pub const AuthorizationError = error{

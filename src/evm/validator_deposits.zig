@@ -11,7 +11,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Database = @import("database.zig").Database;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// EIP-6110 deposit contract address
 /// Deployed at 0x00000000219ab540356cBB839Cbe05303d7705Fa (mainnet deposit contract)

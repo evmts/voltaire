@@ -15,7 +15,7 @@
 //! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
 //! EVM passes itself as an *anyopaque pointer to Frame for accessing external data and executing inner calls
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const primitives = @import("primitives");
 const eips = @import("eips.zig");
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo; // Default for backward compatibility
@@ -29,7 +29,7 @@ const precompiles = @import("precompiles.zig");
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
 const GrowingArenaAllocator = @import("growing_arena_allocator.zig").GrowingArenaAllocator;
-const Opcode = @import("opcode.zig").Opcode;
+const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const call_result_module = @import("call_result.zig");
 const call_params_module = @import("call_params.zig");
 
@@ -52,7 +52,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         const static_wrappers = @import("static_wrappers.zig");
         const StaticDatabase = static_wrappers.StaticDatabase;
         /// Bytecode type for bytecode analysis
-        pub const BytecodeFactory = @import("bytecode.zig").Bytecode;
+        pub const BytecodeFactory = @import("../bytecode/bytecode.zig").Bytecode;
         pub const Bytecode = BytecodeFactory(.{
             .max_bytecode_size = config.max_bytecode_size,
             .fusions_enabled = config.enable_fusion,
@@ -5216,7 +5216,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
         }
     } else {
         // BN254 operations disabled - this is expected behavior
-        const logger = @import("log.zig");
+        const logger = @import("../log.zig");
         logger.warn("BN254 operations are disabled (no_bn254 build option)", .{});
     }
 }

@@ -1,6 +1,6 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// Comparison opcode handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.

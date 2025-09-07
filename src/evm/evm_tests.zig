@@ -1,7 +1,7 @@
 //! Tests for EVM transaction-level execution and state management.
 
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const primitives = @import("primitives");
 const Evm = @import("evm.zig").Evm;
 const DefaultEvm = @import("evm.zig").DefaultEvm;
@@ -10,7 +10,7 @@ const Database = @import("database.zig").Database;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const Account = @import("database_interface_account.zig").Account;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Opcode = @import("opcode.zig").Opcode;
+const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const Hardfork = @import("hardfork.zig").Hardfork;
 

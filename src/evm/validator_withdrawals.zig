@@ -10,7 +10,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Database = @import("database.zig").Database;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// EIP-7002 withdrawal request contract address
 /// Deployed at 0x00A3ca265EBcb825B45F985A16CEFB49958cE017

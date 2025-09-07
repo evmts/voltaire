@@ -53,23 +53,23 @@ pub const trace_comparer = @import("trace_comparer.zig");
 pub const JSONRPCTracer = @import("tracer.zig").JSONRPCTracer;
 
 // Logging facade for modules outside evm/ to use standardized logging
-pub const log = @import("log.zig");
+pub const log = @import("../log.zig");
 
 // Bytecode modules
-pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
-pub const Bytecode = @import("bytecode.zig").Bytecode;
-pub const BytecodeStats = @import("bytecode_stats.zig").BytecodeStats;
-pub const bytecode = @import("bytecode.zig");
+pub const BytecodeConfig = @import("../bytecode/bytecode_config.zig").BytecodeConfig;
+pub const Bytecode = @import("../bytecode/bytecode.zig").Bytecode;
+pub const BytecodeStats = @import("../bytecode/bytecode_stats.zig").BytecodeStats;
+pub const bytecode = @import("../bytecode/bytecode.zig");
 
 // Dispatch module
 pub const dispatch = @import("dispatch.zig");
 
 // Opcode and instruction data
-pub const Opcode = @import("opcode.zig").Opcode;
-pub const OpcodeData = @import("opcode_data.zig");
-pub const OpcodeSynthetic = @import("opcode_synthetic.zig");
-pub const opcode_synthetic = @import("opcode_synthetic.zig");
-pub const opcode_data = @import("opcode_data.zig");
+pub const Opcode = @import("../opcodes/opcode.zig").Opcode;
+pub const OpcodeData = @import("../opcodes/opcode_data.zig");
+pub const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig");
+pub const opcode_synthetic = @import("../opcodes/opcode_synthetic.zig");
+pub const opcode_data = @import("../opcodes/opcode_data.zig");
 
 // Precompiles module
 pub const precompiles = @import("precompiles.zig");
@@ -178,7 +178,7 @@ test {
 // test-only context and do not affect normal builds.
 test "Include C API tests" {
     const frame_c = @import("frame_c.zig");
-    const bytecode_c = @import("bytecode_c.zig");
+    const bytecode_c = @import("../bytecode/bytecode_c.zig");
     const memory_c = @import("memory_c.zig");
     const stack_c = @import("stack_c.zig");
     const precompiles_c = @import("precompiles_c.zig");
@@ -199,8 +199,8 @@ test "Include fusion tests" {
 
 test "Include dedicated test modules" {
     _ = @import("evm_tests.zig");
-    _ = @import("bytecode_tests.zig");
-    _ = @import("bytecode_jump_validation_tests.zig");
+    _ = @import("../bytecode/bytecode_tests.zig");
+    _ = @import("../bytecode/bytecode_jump_validation_tests.zig");
     // TODO: Update frame_tests.zig to work without Host
     // _ = @import("frame_tests.zig");
 }

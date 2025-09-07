@@ -1,7 +1,7 @@
 const std = @import("std");
 const evm = @import("root.zig");
 const primitives = @import("primitives");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// Step-by-step trace comparer for debugging EVM differences
 pub const TraceComparer = struct {

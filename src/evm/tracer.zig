@@ -10,7 +10,7 @@
 /// Tracers are selected at compile time for zero-cost abstractions.
 /// Enable tracing by configuring the Frame with a specific TracerType.
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const frame_mod = @import("frame_c.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;

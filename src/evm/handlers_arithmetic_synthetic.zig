@@ -1,6 +1,6 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// Synthetic arithmetic opcode handlers for the EVM stack frame.
 /// These handle fused PUSH+arithmetic operations for optimization.
@@ -153,7 +153,7 @@ const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
-const bytecode_mod = @import("bytecode.zig");
+const bytecode_mod = @import("../bytecode/bytecode.zig");
 
 // Test configuration
 const test_config = FrameConfig{

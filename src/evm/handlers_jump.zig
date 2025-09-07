@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// Jump operation handlers for the EVM stack frame.
 /// These handle control flow operations including JUMP, JUMPI, JUMPDEST, and PC.
@@ -128,8 +128,8 @@ const dispatch_mod = @import("dispatch.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
-const bytecode_mod = @import("bytecode.zig");
-const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
+const bytecode_mod = @import("../bytecode/bytecode.zig");
+const BytecodeConfig = @import("../bytecode/bytecode_config.zig").BytecodeConfig;
 
 // Test configuration
 const test_config = FrameConfig{

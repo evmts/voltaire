@@ -1,5 +1,5 @@
 const std = @import("std");
-const opcode_mod = @import("opcode.zig");
+const opcode_mod = @import("../opcodes/opcode.zig");
 const UnifiedOpcode = opcode_mod.UnifiedOpcode;
 
 /// Generic functions for handling opcode data retrieval from the dispatch instruction stream.

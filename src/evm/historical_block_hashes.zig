@@ -11,7 +11,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Database = @import("database.zig").Database;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// EIP-2935 historical block hashes contract address
 /// Deployed at 0x0b

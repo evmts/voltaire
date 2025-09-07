@@ -1,12 +1,12 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const GasConstants = primitives.GasConstants;
 const logs = @import("logs.zig");
 const Log = logs.Log;
-const Opcode = @import("opcode_data.zig").Opcode;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
 /// Log opcode handlers for the EVM stack frame.
 /// These handle event emission (LOG0-LOG4).
@@ -162,7 +162,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("frame.zig").Frame;
 const dispatch_mod = @import("dispatch.zig");
-const bytecode_mod = @import("bytecode.zig");
+const bytecode_mod = @import("../bytecode/bytecode.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 // const host_mod = @import("host.zig");

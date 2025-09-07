@@ -10,7 +10,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Database = @import("database.zig").Database;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 
 /// EIP-4788 beacon roots contract address
 /// Deployed at 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02

@@ -1,9 +1,9 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const memory_mod = @import("memory.zig");
 const GasConstants = @import("primitives").GasConstants;
-const Opcode = @import("opcode_data.zig").Opcode;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
 /// Memory operation handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.

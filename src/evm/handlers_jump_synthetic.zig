@@ -1,7 +1,7 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
-const log = @import("log.zig");
-const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
+const log = @import("../log.zig");
+const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
 
 /// Synthetic jump opcode handlers for the EVM stack frame.
 /// These handle fused PUSH+jump operations for optimization.

@@ -1,11 +1,11 @@
 const std = @import("std");
-const log = @import("log.zig");
+const log = @import("../log.zig");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const primitives = @import("primitives");
 const Address = primitives.Address;
 // Access to call params through the call params module
 const call_params_mod = @import("call_params.zig");
-const Opcode = @import("opcode_data.zig").Opcode;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 // u256 is now a built-in type in Zig 0.14+
 
 /// System opcode handlers for the EVM stack frame.

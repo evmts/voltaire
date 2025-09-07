@@ -1,8 +1,8 @@
 const std = @import("std");
-const bytecode_mod = @import("bytecode.zig");
-const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
-const Opcode = @import("opcode_data.zig").Opcode;
-const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
+const bytecode_mod = @import("../bytecode/bytecode.zig");
+const BytecodeConfig = @import("../bytecode/bytecode_config.zig").BytecodeConfig;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
+const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
 const testing = std.testing;
 
 /// Test infrastructure for dispatch operations
@@ -12,7 +12,7 @@ pub fn DispatchTest() type {
     const TestFrameBase = struct {
         pub const WordType = u256;
         pub const PcType = u32;
-        pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig{
+        pub const BytecodeConfig = @import("../bytecode/bytecode_config.zig").BytecodeConfig{
             .max_bytecode_size = 1024,
             .max_initcode_size = 49152,
         };
@@ -30,7 +30,7 @@ pub fn DispatchTest() type {
     const TestFrameComplete = struct {
         pub const WordType = u256;
         pub const PcType = u32;
-        pub const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig{
+        pub const BytecodeConfig = @import("../bytecode/bytecode_config.zig").BytecodeConfig{
             .max_bytecode_size = 1024,
             .max_initcode_size = 49152,
         };

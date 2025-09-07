@@ -1,5 +1,5 @@
 const std = @import("std");
-const Opcode = @import("opcode_data.zig").Opcode;
+const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 const ArrayList = std.ArrayListAligned;
 
 /// Jump table builder functionality for dispatch operations
@@ -152,7 +152,7 @@ pub fn JumpTableBuilder(comptime FrameType: type, comptime DispatchType: type) t
             }
 
             // Debug: Log final jump table entries if needed
-            // const log = @import("log.zig");
+            // const log = @import("../log.zig");
             // log.debug("Final jump table has {} entries", .{entries.len});
 
             return Self.JumpTable{ .entries = entries };
