@@ -9,7 +9,7 @@ const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Database = @import("../storage/database.zig").Database;
-const BlockInfo = @import("../evm/block_info.zig").DefaultBlockInfo;
+const BlockInfo = @import("../block/block_info.zig").DefaultBlockInfo;
 const log = @import("../log.zig");
 
 /// EIP-4788 beacon roots contract address
