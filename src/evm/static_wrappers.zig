@@ -18,8 +18,8 @@ const Database = @import("../storage/database.zig").Database;
 const Account = @import("../storage/database.zig").Account;
 const logs = @import("logs.zig");
 const Log = logs.Log;
-const CallParams = @import("call_params.zig").CallParams;
-const CallResult = @import("call_result.zig").CallResult;
+const CallParams = @import("../frame/call_params.zig").CallParams;
+const CallResult = @import("../frame/call_result.zig").CallResult;
 const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
 
 /// Static database wrapper that throws PermissionDenied errors for state modifications.

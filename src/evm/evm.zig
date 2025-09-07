@@ -30,8 +30,8 @@ const EvmConfig = @import("evm_config.zig").EvmConfig;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
 const GrowingArenaAllocator = @import("growing_arena_allocator.zig").GrowingArenaAllocator;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
-const call_result_module = @import("call_result.zig");
-const call_params_module = @import("call_params.zig");
+const call_result_module = @import("../frame/call_result.zig");
+const call_params_module = @import("../frame/call_params.zig");
 
 /// Creates a configured EVM instance type.
 ///
@@ -47,7 +47,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub const CallParams = call_params_module.CallParams(config);
 
         /// Frame type for the evm
-        pub const Frame = @import("frame.zig").Frame(config.frame_config());
+        pub const Frame = @import("../frame/frame.zig").Frame(config.frame_config());
         /// Static wrappers for EIP-214 (STATICCALL) constraint enforcement
         const static_wrappers = @import("static_wrappers.zig");
         const StaticDatabase = static_wrappers.StaticDatabase;
@@ -152,7 +152,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         // CACHE LINE 4+ - COLD PATH (less frequently accessed)
         /// Logs emitted during the current call
-        logs: std.ArrayList(@import("call_result.zig").Log),
+        logs: std.ArrayList(@import("../frame/call_result.zig").Log),
         /// Call stack - tracks caller and value for each call depth
         call_stack: [config.max_call_depth]CallStackEntry,
         /// Growing arena allocator for per-call temporary allocations with 50% growth strategy
@@ -983,8 +983,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Convert tracer data to ExecutionTrace format
-        fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("call_result.zig").ExecutionTrace {
-            const call_result = @import("call_result.zig");
+        fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("../frame/call_result.zig").ExecutionTrace {
+            const call_result = @import("../frame/call_result.zig");
 
             // Check if tracer has trace_steps field (only JSONRPCTracer does)
             if (!@hasField(@TypeOf(tracer.*), "trace_steps")) {
@@ -1082,7 +1082,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // }
 
             // Execute with tracing if tracer type is configured
-            var execution_trace: ?@import("call_result.zig").ExecutionTrace = null;
+            var execution_trace: ?@import("../frame/call_result.zig").ExecutionTrace = null;
             const Termination = error{ Stop, Return, SelfDestruct };
             var termination_reason: ?Termination = null;
             if (config.TracerType) |TracerType| {
@@ -1180,7 +1180,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 const topics_copy = self.allocator.dupe(u256, log_entry.topics) catch return CallResult.failure(0);
                 const data_copy = self.allocator.dupe(u8, log_entry.data) catch return CallResult.failure(0);
 
-                self.logs.append(self.allocator, @import("call_result.zig").Log{
+                self.logs.append(self.allocator, @import("../frame/call_result.zig").Log{
                     .address = log_entry.address,
                     .topics = topics_copy,
                     .data = data_copy,
@@ -1326,7 +1326,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
 
-            self.logs.append(self.allocator, @import("call_result.zig").Log{
+            self.logs.append(self.allocator, @import("../frame/call_result.zig").Log{
                 .address = contract_address,
                 .topics = topics_copy,
                 .data = data_copy,
@@ -1668,8 +1668,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Take all selfdestructs and clear the list
-        fn takeSelfDestructs(self: *Self) ![]const @import("call_result.zig").SelfDestructRecord {
-            var records = try std.ArrayList(@import("call_result.zig").SelfDestructRecord).initCapacity(self.allocator, 0);
+        fn takeSelfDestructs(self: *Self) ![]const @import("../frame/call_result.zig").SelfDestructRecord {
+            var records = try std.ArrayList(@import("../frame/call_result.zig").SelfDestructRecord).initCapacity(self.allocator, 0);
             defer records.deinit(self.allocator);
 
             var iter = self.self_destruct.iterator();
@@ -1701,8 +1701,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Take all accessed storage slots
-        fn takeAccessedStorage(self: *Self) ![]const @import("call_result.zig").StorageAccess {
-            var storage = try std.ArrayList(@import("call_result.zig").StorageAccess).initCapacity(self.allocator, 0);
+        fn takeAccessedStorage(self: *Self) ![]const @import("../frame/call_result.zig").StorageAccess {
+            var storage = try std.ArrayList(@import("../frame/call_result.zig").StorageAccess).initCapacity(self.allocator, 0);
             errdefer storage.deinit(self.allocator);
 
             // Get storage slots from access list

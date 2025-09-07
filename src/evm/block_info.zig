@@ -11,7 +11,7 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
+const BlockInfoConfig = @import("../frame/block_info_config.zig").BlockInfoConfig;
 
 /// Create a BlockInfo type with the given configuration
 pub fn BlockInfo(comptime config: BlockInfoConfig) type {

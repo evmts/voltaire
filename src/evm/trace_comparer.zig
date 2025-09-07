@@ -231,7 +231,7 @@ pub const TraceComparer = struct {
     /// Parse Guillotine trace into our format
     pub fn parseGuillotineTrace(
         self: *TraceComparer,
-        trace: @import("call_result.zig").ExecutionTrace,
+        trace: @import("../frame/call_result.zig").ExecutionTrace,
     ) ![]TraceStep {
         var steps = try self.allocator.alloc(TraceStep, trace.steps.len);
         

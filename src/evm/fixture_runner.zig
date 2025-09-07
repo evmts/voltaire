@@ -3,7 +3,7 @@ const log = @import("../log.zig");
 const evm = @import("../root.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const Log = @import("call_result.zig").Log;
+const Log = @import("../frame/call_result.zig").Log;
 
 pub const FixtureRunner = struct {
     allocator: std.mem.Allocator,

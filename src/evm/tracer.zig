@@ -11,13 +11,13 @@
 /// Enable tracing by configuring the Frame with a specific TracerType.
 const std = @import("std");
 const log = @import("../log.zig");
-const frame_mod = @import("frame_c.zig");
+const frame_mod = @import("../frame/frame_c.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const block_info_mod = @import("block_info.zig");
-const call_params_mod = @import("call_params.zig");
-const call_result_mod = @import("call_result.zig");
+const call_params_mod = @import("../frame/call_params.zig");
+const call_result_mod = @import("../frame/call_result.zig");
 const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 // const Host = @import("host.zig").Host; // Only needed for tests which are commented out
 

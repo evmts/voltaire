@@ -256,7 +256,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             fusion_type: FusionType,
         ) !void {
             const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
-            const frame_handlers = @import("frame_handlers.zig");
+            const frame_handlers = @import("../frame/frame_handlers.zig");
             const synthetic_handler = frame_handlers.getSyntheticHandler(FrameType, synthetic_opcode);
             try schedule_items.append(allocator, .{ .opcode_handler = synthetic_handler });
 
@@ -279,7 +279,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             fusion_type: FusionType,
         ) !void {
             // Use the new static jump handlers
-            const JumpSyntheticHandlers = @import("handlers_jump_synthetic.zig").Handlers(FrameType);
+            const JumpSyntheticHandlers = @import("../instructions/handlers_jump_synthetic.zig").Handlers(FrameType);
             const handler = switch (fusion_type) {
                 .push_jump => &JumpSyntheticHandlers.jump_to_static_location,
                 .push_jumpi => &JumpSyntheticHandlers.jumpi_to_static_location,

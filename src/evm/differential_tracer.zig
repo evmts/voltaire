@@ -2,8 +2,8 @@ const std = @import("std");
 const evm = @import("../root.zig");
 const primitives = @import("primitives");
 const log = @import("../log.zig");
-const CallParams = @import("call_params.zig").CallParams({});
-const CallResult = @import("call_result.zig").CallResult({});
+const CallParams = @import("../frame/call_params.zig").CallParams({});
+const CallResult = @import("../frame/call_result.zig").CallResult({});
 const revm = @import("revm");
 
 /// Configuration for differential testing
@@ -349,7 +349,7 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
         fn compareTraces(
             self: *@This(),
             revm_result: ?revm_module.CallResult,
-            guillotine_trace: @import("call_result.zig").ExecutionTrace,
+            guillotine_trace: @import("../frame/call_result.zig").ExecutionTrace,
             errors: *std.ArrayList([]const u8),
             allocator: std.mem.Allocator,
         ) !void {
