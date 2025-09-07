@@ -502,7 +502,7 @@ fn to_u256(addr: [20]u8) u256 {
 
 // Helper to create test EVM
 const TestEvm = struct {
-    evm: *@import("evm.zig").DefaultEvm,
+    evm: *@import("../evm/evm.zig").DefaultEvm,
     memory_db: *MemoryDatabase,
 };
 
@@ -511,14 +511,14 @@ fn createTestEvm(allocator: std.mem.Allocator) !TestEvm {
     memory_db.* = MemoryDatabase.init(allocator);
     
     // Using database directly now
-    const evm_ptr = try allocator.create(@import("evm.zig").DefaultEvm);
-    const block_info = @import("block_info.zig").DefaultBlockInfo.init();
-    const tx_context = @import("transaction_context.zig").TransactionContext{
+    const evm_ptr = try allocator.create(@import("../evm/evm.zig").DefaultEvm);
+    const block_info = @import("../evm/block_info.zig").DefaultBlockInfo.init();
+    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
     };
-    evm_ptr.* = try @import("evm.zig").DefaultEvm.init(allocator, memory_db, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    evm_ptr.* = try @import("../evm/evm.zig").DefaultEvm.init(allocator, memory_db, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
     
     return TestEvm{ .evm = evm_ptr, .memory_db = memory_db };
 }
@@ -584,7 +584,7 @@ test "CREATE stores code and retrieves via get_code_by_address" {
     
     //     const creator_address = to_address(0x1000);
     //     const host = evm.to_host();
-    //     const FrameInterpreterType = @import("frame_interpreter.zig").FrameInterpreter(.{ .has_database = true });
+    //     const FrameInterpreterType = @import("../evm/frame_interpreter.zig").FrameInterpreter(.{ .has_database = true });
     
     //     // Set up creator account with balance
     //     var creator_account = Account.zero();
@@ -679,7 +679,7 @@ test "CREATE2 stores code with deterministic address" {
     //     const expected_address = try calculateCreate2Address(creator_address, salt, &CONSTRUCTOR_CONTRACT);
     
     //     const host = evm.to_host();
-    //     const FrameInterpreterType = @import("frame_interpreter.zig").FrameInterpreter(.{ .has_database = true });
+    //     const FrameInterpreterType = @import("../evm/frame_interpreter.zig").FrameInterpreter(.{ .has_database = true });
     
     //     // Prepare CREATE2 bytecode
     //     var create2_bytecode = std.ArrayList(u8).init(allocator);

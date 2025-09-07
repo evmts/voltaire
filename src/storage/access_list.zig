@@ -240,7 +240,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../evm/block_info.zig").DefaultBlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -250,7 +250,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("transaction_context.zig").TransactionContext{
+    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -258,7 +258,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Set up test accounts with balances
@@ -285,7 +285,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../evm/block_info.zig").DefaultBlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -295,7 +295,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("transaction_context.zig").TransactionContext{
+    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -303,7 +303,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     const slot: u256 = 42;
@@ -323,7 +323,7 @@ test "EIP-2929: transaction pre-warming" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../evm/block_info.zig").DefaultBlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -333,7 +333,7 @@ test "EIP-2929: transaction pre-warming" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("transaction_context.zig").TransactionContext{
+    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -341,7 +341,7 @@ test "EIP-2929: transaction pre-warming" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Pre-warm addresses as per EIP-2929
@@ -368,7 +368,7 @@ test "EIP-2929: SELFBALANCE always warm" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../evm/block_info.zig").DefaultBlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -378,7 +378,7 @@ test "EIP-2929: SELFBALANCE always warm" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("transaction_context.zig").TransactionContext{
+    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -386,7 +386,7 @@ test "EIP-2929: SELFBALANCE always warm" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Deploy contract
@@ -416,7 +416,7 @@ test "EIP-2929: access list cleared between transactions" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../evm/block_info.zig").DefaultBlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -426,7 +426,7 @@ test "EIP-2929: access list cleared between transactions" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("transaction_context.zig").TransactionContext{
+    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -434,7 +434,7 @@ test "EIP-2929: access list cleared between transactions" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Access an address to warm it
@@ -688,13 +688,13 @@ test "AccessList - empty pre-warm list" {
 }
 
 // Tests from eip_2929_test.zig
-const Evm = @import("evm.zig").Evm;
+const Evm = @import("../evm/evm.zig").Evm;
 const Database = @import("database.zig").Database;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Hardfork = @import("hardfork.zig").Hardfork;
-// const FrameInterpreter = @import("frame_interpreter.zig").FrameInterpreter;
+const BlockInfo = @import("../evm/block_info.zig").DefaultBlockInfo;
+const TransactionContext = @import("../evm/transaction_context.zig").TransactionContext;
+const Hardfork = @import("../evm/hardfork.zig").Hardfork;
+// const FrameInterpreter = @import("../evm/frame_interpreter.zig").FrameInterpreter;
 
 test "EIP-2929 - SLOAD multiple slots warm/cold pattern" {
     return error.SkipZigTest; // TODO: Update to use new architecture
