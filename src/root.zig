@@ -33,18 +33,18 @@ pub const FixtureRunner = @import("_test_utils/fixture_runner.zig").FixtureRunne
 pub const DefaultEvm = Evm(.{});
 
 // Tracer modules
-pub const tracer = @import("evm/tracer.zig");
-pub const Tracer = @import("evm/tracer.zig").Tracer;
-pub const DetailedStructLog = @import("evm/tracer.zig").DetailedStructLog;
-pub const TracerConfig = @import("evm/tracer.zig").TracerConfig;
-pub const MemoryCaptureMode = @import("evm/tracer.zig").MemoryCaptureMode;
-pub const LoggingTracer = @import("evm/tracer.zig").LoggingTracer;
-pub const FileTracer = @import("evm/tracer.zig").FileTracer;
-pub const NoOpTracer = @import("evm/tracer.zig").NoOpTracer;
-pub const DebuggingTracer = @import("evm/tracer.zig").DebuggingTracer;
+pub const tracer = @import("tracer/tracer.zig");
+pub const Tracer = @import("tracer/tracer.zig").Tracer;
+pub const DetailedStructLog = @import("tracer/tracer.zig").DetailedStructLog;
+pub const TracerConfig = @import("tracer/tracer.zig").TracerConfig;
+pub const MemoryCaptureMode = @import("tracer/tracer.zig").MemoryCaptureMode;
+pub const LoggingTracer = @import("tracer/tracer.zig").LoggingTracer;
+pub const FileTracer = @import("tracer/tracer.zig").FileTracer;
+pub const NoOpTracer = @import("tracer/tracer.zig").NoOpTracer;
+pub const DebuggingTracer = @import("tracer/tracer.zig").DebuggingTracer;
 pub const differential_tracer = @import("_test_utils/differential_tracer.zig");
 pub const trace_comparer = @import("_test_utils/trace_comparer.zig");
-pub const JSONRPCTracer = @import("evm/tracer.zig").JSONRPCTracer;
+pub const JSONRPCTracer = @import("tracer/tracer.zig").JSONRPCTracer;
 
 // Logging
 pub const log = @import("log.zig");
@@ -82,8 +82,8 @@ pub const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
 pub const Eips = @import("eips_and_hardforks/eips.zig").Eips;
 pub const MemoryDatabase = @import("storage/memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("storage/self_destruct.zig").SelfDestruct;
-pub const Log = @import("evm/logs.zig").Log;
-pub const TransactionContext = @import("evm/transaction_context.zig").TransactionContext;
+pub const Log = @import("primitives").logs.Log;
+pub const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
 pub const AuthorizationProcessor = @import("eips_and_hardforks/authorization_processor.zig").AuthorizationProcessor;
 pub const AuthorizationError = @import("eips_and_hardforks/authorization_processor.zig").AuthorizationError;
 pub const kzg_setup = @import("precompiles/kzg_setup.zig");

@@ -121,6 +121,9 @@ pub const Blob = @import("blob.zig");
 // Contract utilities
 pub const EventLog = @import("event_log.zig");
 
+// Logging
+pub const logs = @import("logs.zig");
+
 // Standards
 pub const Siwe = @import("siwe.zig");
 

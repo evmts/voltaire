@@ -5,7 +5,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address;
 const GasConstants = primitives.GasConstants;
 // u256 is a built-in type in Zig 0.14+
-const keccak_asm = @import("../evm/keccak_asm.zig");
+const keccak_asm = @import("crypto").keccak_asm;
 const memory_mod = @import("../memory/memory.zig");
 const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
@@ -772,7 +772,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
+const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
 const block_info_mod = @import("../block/block_info.zig");
 
 // Test configuration

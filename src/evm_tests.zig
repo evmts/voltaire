@@ -9,7 +9,7 @@ const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo;
 const Database = @import("storage/database.zig").Database;
 const MemoryDatabase = @import("storage/memory_database.zig").MemoryDatabase;
 const Account = @import("storage/database_interface_account.zig").Account;
-const TransactionContext = @import("evm/transaction_context.zig").TransactionContext;
+const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
 const Opcode = @import("opcodes/opcode.zig").Opcode;
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
@@ -1357,7 +1357,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
     try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
 
     // Calculate expected address using CREATE2 formula
-    const keccak_asm = @import("evm/keccak_asm.zig");
+    const keccak_asm = @import("crypto").keccak_asm;
     var init_code_hash: [32]u8 = undefined;
     try keccak_asm.keccak256(&init_code, &init_code_hash);
     const salt_bytes = @as([32]u8, @bitCast(salt));
@@ -1396,7 +1396,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
     const salt: u256 = 0xDEADBEEF;
 
     // Calculate expected address
-    const keccak_asm = @import("evm/keccak_asm.zig");
+    const keccak_asm = @import("crypto").keccak_asm;
     var init_code_hash: [32]u8 = undefined;
     try keccak_asm.keccak256(&init_code, &init_code_hash);
     const salt_bytes = @as([32]u8, @bitCast(salt));

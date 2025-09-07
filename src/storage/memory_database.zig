@@ -513,7 +513,7 @@ fn createTestEvm(allocator: std.mem.Allocator) !TestEvm {
     // Using database directly now
     const evm_ptr = try allocator.create(@import("../evm.zig").DefaultEvm);
     const block_info = @import("../block/block_info.zig").DefaultBlockInfo.init();
-    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
+    const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,

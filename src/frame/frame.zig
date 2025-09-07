@@ -27,17 +27,17 @@ const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
-const keccak_asm = @import("../evm/keccak_asm.zig");
+const keccak_asm = @import("crypto").keccak_asm;
 const frame_handlers = @import("frame_handlers.zig");
 const SelfDestruct = @import("../storage/self_destruct.zig").SelfDestruct;
 const DefaultEvm = @import("../evm.zig").DefaultEvm;
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
-const logs = @import("../evm/logs.zig");
+const logs = @import("primitives").logs;
 const Log = logs.Log;
 // LogList functionality is inlined into Frame for optimal packing
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const keccak256 = @import("../evm/keccak_asm.zig").keccak256;
+const keccak256 = @import("crypto").keccak_asm.keccak256;
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode
 const DispatchCacheEntry = struct {

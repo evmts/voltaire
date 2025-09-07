@@ -250,7 +250,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
+    const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -295,7 +295,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
+    const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -333,7 +333,7 @@ test "EIP-2929: transaction pre-warming" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
+    const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -378,7 +378,7 @@ test "EIP-2929: SELFBALANCE always warm" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
+    const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -426,7 +426,7 @@ test "EIP-2929: access list cleared between transactions" {
         .prev_randao = [_]u8{1} ** 32,
     };
 
-    const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
+    const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -692,7 +692,7 @@ const Evm = @import("../evm.zig").Evm;
 const Database = @import("database.zig").Database;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const BlockInfo = @import("../block/block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("../evm/transaction_context.zig").TransactionContext;
+const TransactionContext = @import("../block/transaction_context.zig").TransactionContext;
 const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
 // const FrameInterpreter = @import("../evm/frame_interpreter.zig").FrameInterpreter;
 

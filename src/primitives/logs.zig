@@ -1,6 +1,5 @@
 const std = @import("std");
-const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = @import("address.zig").Address;
 
 /// Simple log structure for Frame
 pub const Log = struct {

@@ -27,8 +27,8 @@ const AccessList = @import("storage/access_list.zig").AccessList;
 const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
 const precompiles = @import("precompiles/precompiles.zig");
 const EvmConfig = @import("evm_config.zig").EvmConfig;
-const TransactionContext = @import("evm/transaction_context.zig").TransactionContext;
-const GrowingArenaAllocator = @import("evm/growing_arena_allocator.zig").GrowingArenaAllocator;
+const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
+const GrowingArenaAllocator = @import("evm_arena_allocator.zig").GrowingArenaAllocator;
 const Opcode = @import("opcodes/opcode.zig").Opcode;
 const call_result_module = @import("frame/call_result.zig");
 const call_params_module = @import("frame/call_params.zig");
@@ -49,7 +49,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Frame type for the evm
         pub const Frame = @import("frame/frame.zig").Frame(config.frame_config());
         /// Static wrappers for EIP-214 (STATICCALL) constraint enforcement
-        const static_wrappers = @import("evm/static_wrappers.zig");
+        const static_wrappers = @import("storage/static_wrappers.zig");
         const StaticDatabase = static_wrappers.StaticDatabase;
         /// Bytecode type for bytecode analysis
         pub const BytecodeFactory = @import("bytecode/bytecode.zig").Bytecode;
@@ -850,7 +850,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Calculate contract address from sender, salt, and init code hash
-            const keccak_asm = @import("evm/keccak_asm.zig");
+            const keccak_asm = @import("crypto").keccak_asm;
             var init_code_hash_bytes: [32]u8 = undefined;
             try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
             var salt_bytes: [32]u8 = undefined;
@@ -3062,7 +3062,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
     try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
 
     // Calculate expected address using CREATE2 formula
-    const keccak_asm = @import("evm/keccak_asm.zig");
+    const keccak_asm = @import("crypto").keccak_asm;
     var init_code_hash: [32]u8 = undefined;
     try keccak_asm.keccak256(&init_code, &init_code_hash);
     const salt_bytes = @as([32]u8, @bitCast(salt));
@@ -3101,7 +3101,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
     const salt: u256 = 0xDEADBEEF;
 
     // Calculate expected address
-    const keccak_asm = @import("evm/keccak_asm.zig");
+    const keccak_asm = @import("crypto").keccak_asm;
     var init_code_hash: [32]u8 = undefined;
     try keccak_asm.keccak256(&init_code, &init_code_hash);
     const salt_bytes = @as([32]u8, @bitCast(salt));

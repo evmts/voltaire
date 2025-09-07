@@ -2,7 +2,7 @@ const std = @import("std");
 const FrameConfig = @import("../frame/frame_config.zig").FrameConfig;
 const log = @import("../log.zig");
 const memory_mod = @import("../memory/memory.zig");
-const keccak_asm = @import("../evm/keccak_asm.zig");
+const keccak_asm = @import("crypto").keccak_asm;
 const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 const GasConstants = @import("primitives").GasConstants;
 
@@ -169,7 +169,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
+const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 

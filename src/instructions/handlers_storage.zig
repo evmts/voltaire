@@ -192,7 +192,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
+const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
 // const Host = @import("evm.zig").Host;
 
 // Test configuration with database enabled

@@ -14,7 +14,7 @@ const FrameConfig = frame_config.FrameConfig;
 const Database = @import("../storage/database.zig").Database;
 const GasConstants = primitives.GasConstants;
 const DefaultEvm = @import("../evm.zig").Evm(.{});
-const log_mod = @import("../evm/logs.zig");
+const log_mod = @import("primitives").logs;
 const StorageKey = @import("../storage/database_interface.zig").StorageKey;
 
 fn to_u256(val: anytype) u256 {
