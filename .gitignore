@@ -1,12 +1,6 @@
 .env
 .vercel
 dist/
-tree/
-intx/
-uint/
-
-revm/
-evmone/
 
 .crush/
 
