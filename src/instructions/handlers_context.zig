@@ -771,7 +771,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
-const dispatch_mod = @import("../evm/dispatch.zig");
+const dispatch_mod = @import("../preprocessor/dispatch.zig");
 const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
 const block_info_mod = @import("../evm/block_info.zig");
 

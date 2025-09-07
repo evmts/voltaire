@@ -36,7 +36,7 @@ const call_result_mod = @import("call_result.zig");
 const logs = @import("../evm/logs.zig");
 const Log = logs.Log;
 // LogList functionality is inlined into Frame for optimal packing
-const dispatch_mod = @import("../evm/dispatch.zig");
+const dispatch_mod = @import("../preprocessor/dispatch.zig");
 const keccak256 = @import("../evm/keccak_asm.zig").keccak256;
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode

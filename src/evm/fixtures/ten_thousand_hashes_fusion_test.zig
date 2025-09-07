@@ -2,11 +2,11 @@ const std = @import("std");
 const testing = std.testing;
 const log = std.log.scoped(.ten_thousand_hashes_fusion_test);
 
-const dispatch_mod = @import("../dispatch.zig");
-const frame_config_mod = @import("../frame_config.zig");
-const frame_mod = @import("../frame.zig");
-const Opcode = @import("../opcode.zig").Opcode;
-const OpcodeSynthetic = @import("../opcode_synthetic.zig").OpcodeSynthetic;
+const dispatch_mod = @import("../../preprocessor/dispatch.zig");
+const frame_config_mod = @import("../../frame/frame_config.zig");
+const frame_mod = @import("../../frame/frame.zig");
+const Opcode = @import("../../opcodes/opcode.zig").Opcode;
+const OpcodeSynthetic = @import("../../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
 
 // Ten-thousand-hashes bytecode from bench/official/cases/ten-thousand-hashes/bytecode.txt
 const TEN_THOUSAND_HASHES_BYTECODE = "6080604052348015600e575f5ffd5b50609780601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106026575f3560e01c806330627b7c14602a575b5f5ffd5b60306032565b005b5f5b614e20811015605e5760408051602081018390520160408051601f19818403019052526001016034565b5056fea26469706673582212202c247f39d615d7f66942cd6ed505d8ea34fbfcbe16ac875ed08c4a9c229325f364736f6c634300081e0033";
