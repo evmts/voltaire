@@ -47,6 +47,23 @@ Guillotine is not suitable for production use at this time. Any use of guillotin
 
 ## 📊 Benchmarks & Bundle Size
 
+Guillotine is fast.
+
+Benchmarks so far are looking very promising with Guillotine showing measurable performance gains over Revm and performance on par with Evmone. Based on past benchmarks for optimizations currently not included, we expect these benchmarks to continue to improve.
+
+## Why is guillotine fast
+
+Guillotine was built using data-oriented design with an emphasis on minimizing branch-prediction misses in the CPU. We studied every EVM implementation as well as Wasm, Lua, and Python interpreter implementations for the state of the art. Optimizations include from most impactful to least impactful:
+
+- An extremely optimized StackFrame and opcode dispatch datastructure
+- Indirect threading via tailcall recursion
+- Highly microoptimized opcode instruction handlers
+- Highly microoptimized evm stack implementation
+- Opcode fusions turning common opcode patterns into a single dispatch
+- Batching calculation of static gas costs and stack analysis
+
+There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register based EVM, a common technique used by Wasm and Python interpreters that can get up to 30% performance increases.
+
 ### Overall Performance Summary (Per Run)
 
 | Test Case               | Zig-Call2 | REVM     | Geth     | evmone   |
@@ -59,14 +76,27 @@ Guillotine is not suitable for production use at this time. Any use of guillotin
 
 ---
 
-## 🔁 Relationship to Tevm
+### Customizablility
 
-Once stable, **Guillotine’s WASM build** will replace the current JavaScript EVM in [Tevm](https://node.tevm.sh).
-Upgrades include:
+Guillotine follows in the footsteps of Revm providing an even more highly customizable EVM SDK implementation.
 
-- 🚀 **Up to 1000x performance boost**
-- 📉 **300KB (75%) bundle size reduction**
-- 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the guillotine primitives package
+**With Guillotine you can easily create your own EVM implementation!**
+
+Utilizing zig comptime, the Guillotine customizations are much simpler abstractions than the revm abstractions. No need to learn complex generics or configuring feature flags.
+
+Available customizations include
+
+- Powerful EVM configuration options all with defaults
+- This config object can even configure the default Word size from u256 to larger or smaller uint values
+- Datatypes are dynamically lowered based on configuration such as max code size to maximize performance by using only the smallest datatype necessary for types like bytecode PC
+- Powerful comptime checks make sure your configuration is valid
+- Configure any hardfork or EIP
+- Add or override any new opcodes or precompiles to the EVM
+- A powerful but simple Tracer interface for introspecting the EVM
+
+All customizations are offered as 0 cost compiletime abstractions using the powerful but simple Zig comptime so customizatiosn never sacrifice runtime performance and your bundle size will only include the features you choose to use.
+
+For most users who don't need customizations we offer default options for all hardforks.
 
 ## Using Guillotine in other languages
 
@@ -82,6 +112,15 @@ COMING SOON
 - TypeScript
 - Rust
 - Swift
+
+## 🔁 Relationship to Tevm
+
+Once stable, **Guillotine’s WASM build** will replace the current JavaScript EVM in [Tevm](https://node.tevm.sh).
+Upgrades include:
+
+- 🚀 **Up to 1000x performance boost**
+- 📉 **300KB (75%) bundle size reduction**
+- 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the guillotine primitives package
 
 ## 🤝 Contributing
 
