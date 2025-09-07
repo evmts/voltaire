@@ -1,7 +1,46 @@
 const std = @import("std");
 const build_pkg = @import("build/main.zig");
 
+fn checkSubmodules() void {
+    // Check if critical submodules are initialized
+    const submodules = [_]struct {
+        path: []const u8,
+        name: []const u8,
+    }{
+        .{ .path = "lib/c-kzg-4844/.git", .name = "c-kzg-4844" },
+    };
+
+    var has_error = false;
+    
+    for (submodules) |submodule| {
+        std.fs.cwd().access(submodule.path, .{}) catch {
+            if (!has_error) {
+                std.debug.print("\n", .{});
+                std.debug.print("❌ ERROR: Git submodules are not initialized!\n", .{});
+                std.debug.print("\n", .{});
+                std.debug.print("The following required submodules are missing:\n", .{});
+                has_error = true;
+            }
+            std.debug.print("  • {s}\n", .{submodule.name});
+        };
+    }
+
+    if (has_error) {
+        std.debug.print("\n", .{});
+        std.debug.print("To fix this, run the following commands:\n", .{});
+        std.debug.print("\n", .{});
+        std.debug.print("  git submodule update --init --recursive\n", .{});
+        std.debug.print("\n", .{});
+        std.debug.print("This will download and initialize all required dependencies.\n", .{});
+        std.debug.print("\n", .{});
+        std.process.exit(1);
+    }
+}
+
 pub fn build(b: *std.Build) void {
+    // Check submodules first
+    checkSubmodules();
+
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -222,7 +261,7 @@ pub fn build(b: *std.Build) void {
         erc20_deployment_test.root_module.addImport("revm", revm_mod);
         if (revm_lib) |revm| {
             erc20_deployment_test.linkLibrary(revm);
-            erc20_deployment_test.addIncludePath(b.path("src/revm_wrapper"));
+            erc20_deployment_test.addIncludePath(b.path("lib/revm"));
             
             const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
             const revm_dylib_path_test = if (rust_target) |target_triple|
@@ -275,7 +314,7 @@ pub fn build(b: *std.Build) void {
         fixtures_differential_test.root_module.addImport("revm", revm_mod);
         if (revm_lib) |revm| {
             fixtures_differential_test.linkLibrary(revm);
-            fixtures_differential_test.addIncludePath(b.path("src/revm_wrapper"));
+            fixtures_differential_test.addIncludePath(b.path("lib/revm"));
             
             const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
             const revm_dylib_path_test = if (rust_target) |target_triple|
@@ -328,7 +367,7 @@ pub fn build(b: *std.Build) void {
         snailtracer_test.root_module.addImport("revm", revm_mod);
         if (revm_lib) |revm| {
             snailtracer_test.linkLibrary(revm);
-            snailtracer_test.addIncludePath(b.path("src/revm_wrapper"));
+            snailtracer_test.addIncludePath(b.path("lib/revm"));
             
             const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
             const revm_dylib_path_test = if (rust_target) |target_triple|
@@ -427,7 +466,7 @@ pub fn build(b: *std.Build) void {
                 t.root_module.addImport("revm", revm_mod);
                 if (revm_lib) |revm| {
                     t.linkLibrary(revm);
-                    t.addIncludePath(b.path("src/revm_wrapper"));
+                    t.addIncludePath(b.path("lib/revm"));
                     const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
                     const revm_dylib_path_test = if (rust_target) |target_triple|
                         b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
@@ -481,7 +520,7 @@ pub fn build(b: *std.Build) void {
             erc20_mint_test.root_module.addImport("revm", revm_mod);
             if (revm_lib) |revm| {
                 erc20_mint_test.linkLibrary(revm);
-                erc20_mint_test.addIncludePath(b.path("src/revm_wrapper"));
+                erc20_mint_test.addIncludePath(b.path("lib/revm"));
                 
                 const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
                 const revm_dylib_path_test = if (rust_target) |target_triple|
@@ -686,7 +725,7 @@ pub fn build(b: *std.Build) void {
             fusions_diff_toggle.root_module.addImport("revm", revm_mod);
             if (revm_lib) |revm| {
                 fusions_diff_toggle.linkLibrary(revm);
-                fusions_diff_toggle.addIncludePath(b.path("src/revm_wrapper"));
+                fusions_diff_toggle.addIncludePath(b.path("lib/revm"));
                 const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
                 const revm_dylib_path_test = if (rust_target) |target_triple|
                     b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })

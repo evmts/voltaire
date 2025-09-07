@@ -25,7 +25,7 @@ pub fn createRevmLibrary(
 
     lib.addObjectFile(b.path(lib_path));
     lib.linkLibC();
-    lib.addIncludePath(b.path("src/revm_wrapper"));
+    lib.addIncludePath(b.path("lib/revm"));
 
     if (workspace_build_step) |build_step| {
         lib.step.dependOn(build_step);

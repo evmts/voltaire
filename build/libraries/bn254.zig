@@ -27,7 +27,7 @@ pub fn createBn254Library(
 
     lib.addObjectFile(b.path(lib_path));
     lib.linkLibC();
-    lib.addIncludePath(b.path("src/bn254_wrapper"));
+    lib.addIncludePath(b.path("lib/ark"));
 
     if (workspace_build_step) |build_step| {
         lib.step.dependOn(build_step);

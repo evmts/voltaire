@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["src/compilers", "src/bn254_wrapper", "src/revm_wrapper"]
+members = ["lib/foundry-compilers", "lib/ark", "lib/revm"]
 exclude = ["bench/evm-bench"]
 
 [workspace.package]

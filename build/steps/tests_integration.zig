@@ -34,7 +34,7 @@ pub fn createIntegrationTests(
         integration_tests.root_module.addImport("revm", revm_mod);
         if (revm_lib) |revm| {
             integration_tests.linkLibrary(revm);
-            integration_tests.addIncludePath(b.path("src/revm_wrapper"));
+            integration_tests.addIncludePath(b.path("lib/revm"));
             integration_tests.linkLibC();
             
             const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
@@ -61,7 +61,7 @@ pub fn createIntegrationTests(
     
     if (bn254_lib) |bn254| {
         integration_tests.linkLibrary(bn254);
-        integration_tests.addIncludePath(b.path("src/bn254_wrapper"));
+        integration_tests.addIncludePath(b.path("lib/ark"));
     }
     
     integration_tests.linkLibrary(c_kzg_lib);

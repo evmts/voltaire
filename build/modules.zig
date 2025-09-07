@@ -87,17 +87,17 @@ pub fn createModules(
     evm_mod.addImport("crypto", crypto_mod);
     evm_mod.addImport("build_options", build_options_mod);
     evm_mod.addImport("zbench", zbench_dep.module("zbench"));
-    evm_mod.addIncludePath(b.path("src/revm_wrapper"));
+    evm_mod.addIncludePath(b.path("lib/revm"));
 
     if (bn254_lib) |bn254| {
         evm_mod.linkLibrary(bn254);
-        evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
+        evm_mod.addIncludePath(b.path("lib/ark"));
     }
 
     // REVM module (optional)
     const revm_mod = if (revm_lib != null) blk: {
         const mod = b.createModule(.{
-            .root_source_file = b.path("src/revm_wrapper/revm.zig"),
+            .root_source_file = b.path("lib/revm/revm.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -105,7 +105,7 @@ pub fn createModules(
 
         if (revm_lib) |revm| {
             mod.linkLibrary(revm);
-            mod.addIncludePath(b.path("src/revm_wrapper"));
+            mod.addIncludePath(b.path("lib/revm"));
         }
 
         break :blk mod;
@@ -113,7 +113,7 @@ pub fn createModules(
 
     // Compilers module
     const compilers_mod = b.createModule(.{
-        .root_source_file = b.path("src/compilers/package.zig"),
+        .root_source_file = b.path("lib/foundry-compilers/package.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -126,7 +126,7 @@ pub fn createModules(
         .target = target,
         .optimize = optimize,
     });
-    lib_mod.addIncludePath(b.path("src/bn254_wrapper"));
+    lib_mod.addIncludePath(b.path("lib/ark"));
     lib_mod.addImport("build_options", build_options_mod);
     lib_mod.addImport("primitives", primitives_mod);
     lib_mod.addImport("crypto", crypto_mod);

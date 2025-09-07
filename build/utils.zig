@@ -14,7 +14,7 @@ pub fn createLibraries(
 
     if (bn254_lib) |bn254| {
         lib.linkLibrary(bn254);
-        lib.addIncludePath(b.path("src/bn254_wrapper"));
+        lib.addIncludePath(b.path("lib/ark"));
     }
 
     b.installArtifact(lib);
@@ -28,7 +28,7 @@ pub fn createLibraries(
 
     if (bn254_lib) |bn254| {
         shared_lib.linkLibrary(bn254);
-        shared_lib.addIncludePath(b.path("src/bn254_wrapper"));
+        shared_lib.addIncludePath(b.path("lib/ark"));
     }
 
     b.installArtifact(shared_lib);
@@ -70,7 +70,7 @@ pub fn createOpcodeTestLib(
 
     if (bn254_lib) |bn254| {
         lib.linkLibrary(bn254);
-        lib.addIncludePath(b.path("src/bn254_wrapper"));
+        lib.addIncludePath(b.path("lib/ark"));
     }
 
     b.installArtifact(lib);

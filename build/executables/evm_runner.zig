@@ -29,7 +29,7 @@ pub fn createEvmRunner(
     
     if (bn254_lib) |bn254| {
         exe.linkLibrary(bn254);
-        exe.addIncludePath(b.path("src/bn254_wrapper"));
+        exe.addIncludePath(b.path("lib/ark"));
     }
 
     b.installArtifact(exe);
@@ -65,7 +65,7 @@ pub fn createEvmRunnerSmall(
     
     if (bn254_lib) |bn254| {
         exe.linkLibrary(bn254);
-        exe.addIncludePath(b.path("src/bn254_wrapper"));
+        exe.addIncludePath(b.path("lib/ark"));
     }
 
     b.installArtifact(exe);
@@ -107,7 +107,7 @@ pub fn createTestStep(
     
     if (bn254_lib) |bn254| {
         test_exe.linkLibrary(bn254);
-        test_exe.addIncludePath(b.path("src/bn254_wrapper"));
+        test_exe.addIncludePath(b.path("lib/ark"));
     }
     
     const test_step = b.step("test-runner", "Run EVM runner tests");
