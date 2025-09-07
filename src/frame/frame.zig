@@ -27,17 +27,17 @@ const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
-const keccak_asm = @import("keccak_asm.zig");
+const keccak_asm = @import("../evm/keccak_asm.zig");
 const frame_handlers = @import("frame_handlers.zig");
 const SelfDestruct = @import("../storage/self_destruct.zig").SelfDestruct;
-const DefaultEvm = @import("evm.zig").DefaultEvm;
+const DefaultEvm = @import("../evm/evm.zig").DefaultEvm;
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
-const logs = @import("logs.zig");
+const logs = @import("../evm/logs.zig");
 const Log = logs.Log;
 // LogList functionality is inlined into Frame for optimal packing
-const dispatch_mod = @import("dispatch.zig");
-const keccak256 = @import("keccak_asm.zig").keccak256;
+const dispatch_mod = @import("../evm/dispatch.zig");
+const keccak256 = @import("../evm/keccak_asm.zig").keccak256;
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode
 const DispatchCacheEntry = struct {
@@ -343,23 +343,23 @@ pub fn Frame(comptime config: FrameConfig) type {
             frame_handlers.getOpcodeHandlers(Self);
 
         // Individual handler groups for testing and direct access
-        pub const ArithmeticHandlers = @import("handlers_arithmetic.zig").Handlers(Self);
-        pub const BitwiseHandlers = @import("handlers_bitwise.zig").Handlers(Self);
-        pub const ComparisonHandlers = @import("handlers_comparison.zig").Handlers(Self);
-        pub const ContextHandlers = @import("handlers_context.zig").Handlers(Self);
-        pub const JumpHandlers = @import("handlers_jump.zig").Handlers(Self);
-        pub const KeccakHandlers = @import("handlers_keccak.zig").Handlers(Self);
-        pub const LogHandlers = @import("handlers_log.zig").Handlers(Self);
-        pub const MemoryHandlers = @import("handlers_memory.zig").Handlers(Self);
-        pub const StackHandlers = @import("handlers_stack.zig").Handlers(Self);
-        pub const StorageHandlers = @import("handlers_storage.zig").Handlers(Self);
-        pub const SystemHandlers = @import("handlers_system.zig").Handlers(Self);
+        pub const ArithmeticHandlers = @import("../instructions/handlers_arithmetic.zig").Handlers(Self);
+        pub const BitwiseHandlers = @import("../instructions/handlers_bitwise.zig").Handlers(Self);
+        pub const ComparisonHandlers = @import("../instructions/handlers_comparison.zig").Handlers(Self);
+        pub const ContextHandlers = @import("../instructions/handlers_context.zig").Handlers(Self);
+        pub const JumpHandlers = @import("../instructions/handlers_jump.zig").Handlers(Self);
+        pub const KeccakHandlers = @import("../instructions/handlers_keccak.zig").Handlers(Self);
+        pub const LogHandlers = @import("../instructions/handlers_log.zig").Handlers(Self);
+        pub const MemoryHandlers = @import("../instructions/handlers_memory.zig").Handlers(Self);
+        pub const StackHandlers = @import("../instructions/handlers_stack.zig").Handlers(Self);
+        pub const StorageHandlers = @import("../instructions/handlers_storage.zig").Handlers(Self);
+        pub const SystemHandlers = @import("../instructions/handlers_system.zig").Handlers(Self);
 
         // Synthetic handler groups for optimized opcode fusion
-        pub const ArithmeticSyntheticHandlers = @import("handlers_arithmetic_synthetic.zig").Handlers(Self);
-        pub const BitwiseSyntheticHandlers = @import("handlers_bitwise_synthetic.zig").Handlers(Self);
-        pub const MemorySyntheticHandlers = @import("handlers_memory_synthetic.zig").Handlers(Self);
-        pub const JumpSyntheticHandlers = @import("handlers_jump_synthetic.zig").Handlers(Self);
+        pub const ArithmeticSyntheticHandlers = @import("../instructions/handlers_arithmetic_synthetic.zig").Handlers(Self);
+        pub const BitwiseSyntheticHandlers = @import("../instructions/handlers_bitwise_synthetic.zig").Handlers(Self);
+        pub const MemorySyntheticHandlers = @import("../instructions/handlers_memory_synthetic.zig").Handlers(Self);
+        pub const JumpSyntheticHandlers = @import("../instructions/handlers_jump_synthetic.zig").Handlers(Self);
 
         // CACHE LINE 1 (0-63 bytes) - ULTRA HOT PATH
         stack: Stack, // 16B - Stack operations

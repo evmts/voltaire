@@ -1,11 +1,11 @@
 const std = @import("std");
 const log = @import("../log.zig");
-const stack_frame_mod = @import("stack_frame.zig");
+const stack_frame_mod = @import("../evm/stack_frame.zig");
 const Frame = stack_frame_mod.Frame;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const block_info_mod = @import("block_info.zig");
+const block_info_mod = @import("../evm/block_info.zig");
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
 const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
@@ -13,9 +13,9 @@ const frame_config = @import("frame_config.zig");
 const FrameConfig = frame_config.FrameConfig;
 const Database = @import("../storage/database.zig").Database;
 const GasConstants = primitives.GasConstants;
-const DefaultEvm = @import("evm.zig").Evm(.{});
-const log_mod = @import("logs.zig");
-const StorageKey = @import("database_interface.zig").StorageKey;
+const DefaultEvm = @import("../evm/evm.zig").Evm(.{});
+const log_mod = @import("../evm/logs.zig");
+const StorageKey = @import("../storage/database_interface.zig").StorageKey;
 
 fn to_u256(val: anytype) u256 {
     return switch (@TypeOf(val)) {

@@ -2,22 +2,22 @@ const std = @import("std");
 const opcode_data = @import("../opcodes/opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
-const stack_frame_arithmetic = @import("handlers_arithmetic.zig");
-const stack_frame_comparison = @import("handlers_comparison.zig");
-const stack_frame_bitwise = @import("handlers_bitwise.zig");
-const stack_frame_stack = @import("handlers_stack.zig");
-const stack_frame_memory = @import("handlers_memory.zig");
-const stack_frame_storage = @import("handlers_storage.zig");
-const stack_frame_jump = @import("handlers_jump.zig");
-const stack_frame_system = @import("handlers_system.zig");
-const stack_frame_context = @import("handlers_context.zig");
-const stack_frame_keccak = @import("handlers_keccak.zig");
-const stack_frame_log = @import("handlers_log.zig");
+const stack_frame_arithmetic = @import("../instructions/handlers_arithmetic.zig");
+const stack_frame_comparison = @import("../instructions/handlers_comparison.zig");
+const stack_frame_bitwise = @import("../instructions/handlers_bitwise.zig");
+const stack_frame_stack = @import("../instructions/handlers_stack.zig");
+const stack_frame_memory = @import("../instructions/handlers_memory.zig");
+const stack_frame_storage = @import("../instructions/handlers_storage.zig");
+const stack_frame_jump = @import("../instructions/handlers_jump.zig");
+const stack_frame_system = @import("../instructions/handlers_system.zig");
+const stack_frame_context = @import("../instructions/handlers_context.zig");
+const stack_frame_keccak = @import("../instructions/handlers_keccak.zig");
+const stack_frame_log = @import("../instructions/handlers_log.zig");
 // Synthetic handler modules
-const stack_frame_arithmetic_synthetic = @import("handlers_arithmetic_synthetic.zig");
-const stack_frame_bitwise_synthetic = @import("handlers_bitwise_synthetic.zig");
-const stack_frame_memory_synthetic = @import("handlers_memory_synthetic.zig");
-const stack_frame_jump_synthetic = @import("handlers_jump_synthetic.zig");
+const stack_frame_arithmetic_synthetic = @import("../instructions/handlers_arithmetic_synthetic.zig");
+const stack_frame_bitwise_synthetic = @import("../instructions/handlers_bitwise_synthetic.zig");
+const stack_frame_memory_synthetic = @import("../instructions/handlers_memory_synthetic.zig");
+const stack_frame_jump_synthetic = @import("../instructions/handlers_jump_synthetic.zig");
 
 /// Thread-local storage for the tracer instance and its type info
 threadlocal var tracer_instance: ?*anyopaque = null;

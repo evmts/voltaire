@@ -1,5 +1,5 @@
 const std = @import("std");
-const evm = @import("evm");
+const evm = @import("../root.zig");
 const frame_mod = evm;
 const tracer_mod = evm;
 const Host = evm.Host;
