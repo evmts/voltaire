@@ -12,7 +12,7 @@
 // The generated library can be used from C, Python, JavaScript, Go, Rust, etc.
 
 const std = @import("std");
-const frame_c = @import("evm/frame_c.zig");
+const frame_c = @import("frame/frame_c.zig");
 const bytecode_c = @import("bytecode/bytecode_c.zig");
 const memory_c = @import("memory/memory_c.zig");
 const stack_c = @import("stack/stack_c.zig");

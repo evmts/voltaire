@@ -6,12 +6,12 @@
 const std = @import("std");
 
 // Re-export everything from evm/root.zig
-pub const Frame = @import("evm/frame.zig").Frame;
-pub const FrameConfig = @import("evm/frame_config.zig").FrameConfig;
+pub const Frame = @import("frame/frame.zig").Frame;
+pub const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
 pub const FrameDispatch = @import("evm/dispatch.zig").Dispatch;
-pub const frame_mod = @import("evm/frame.zig");
-pub const frame = @import("evm/frame.zig");
-pub const frame_handlers = @import("evm/frame_handlers.zig");
+pub const frame_mod = @import("frame/frame.zig");
+pub const frame = @import("frame/frame.zig");
+pub const frame_handlers = @import("frame/frame_handlers.zig");
 
 // Stack and memory modules
 pub const StackConfig = @import("stack/stack_config.zig").StackConfig;
@@ -71,9 +71,9 @@ pub const precompiles = @import("precompiles/precompiles.zig");
 // Database and state modules
 pub const BlockInfo = @import("evm/block_info.zig").DefaultBlockInfo;
 pub const CompactBlockInfo = @import("evm/block_info.zig").CompactBlockInfo;
-pub const BlockInfoConfig = @import("evm/block_info_config.zig").BlockInfoConfig;
-pub const CallParams = @import("evm/call_params.zig").CallParams({});
-pub const CallResult = @import("evm/call_result.zig").CallResult({});
+pub const BlockInfoConfig = @import("frame/block_info_config.zig").BlockInfoConfig;
+pub const CallParams = @import("frame/call_params.zig").CallParams({});
+pub const CallResult = @import("frame/call_result.zig").CallResult({});
 pub const CreatedContracts = @import("storage/created_contracts.zig").CreatedContracts;
 pub const Database = @import("storage/database.zig").Database;
 pub const Account = @import("storage/database_interface_account.zig").Account;
@@ -97,17 +97,17 @@ test {
     // Test EVM modules
     _ = @import("evm/evm_tests.zig");
     _ = @import("evm/dispatch.zig");
-    _ = @import("evm/handlers_arithmetic.zig");
-    _ = @import("evm/handlers_bitwise.zig");
-    _ = @import("evm/handlers_comparison.zig");
-    _ = @import("evm/handlers_context.zig");
-    _ = @import("evm/handlers_jump.zig");
-    _ = @import("evm/handlers_keccak.zig");
-    _ = @import("evm/handlers_log.zig");
-    _ = @import("evm/handlers_memory.zig");
-    _ = @import("evm/handlers_stack.zig");
-    _ = @import("evm/handlers_storage.zig");
-    _ = @import("evm/handlers_system.zig");
+    _ = @import("instructions/handlers_arithmetic.zig");
+    _ = @import("instructions/handlers_bitwise.zig");
+    _ = @import("instructions/handlers_comparison.zig");
+    _ = @import("instructions/handlers_context.zig");
+    _ = @import("instructions/handlers_jump.zig");
+    _ = @import("instructions/handlers_keccak.zig");
+    _ = @import("instructions/handlers_log.zig");
+    _ = @import("instructions/handlers_memory.zig");
+    _ = @import("instructions/handlers_stack.zig");
+    _ = @import("instructions/handlers_storage.zig");
+    _ = @import("instructions/handlers_system.zig");
     
     // Test bytecode modules
     _ = @import("bytecode/bytecode_tests.zig");
