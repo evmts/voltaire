@@ -77,9 +77,9 @@ pub fn createModules(
     });
     provider_mod.addImport("primitives", primitives_mod);
 
-    // EVM module
+    // EVM module - unified src module
     const evm_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm/root.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -130,7 +130,7 @@ pub fn createModules(
     lib_mod.addImport("build_options", build_options_mod);
     lib_mod.addImport("primitives", primitives_mod);
     lib_mod.addImport("crypto", crypto_mod);
-    lib_mod.addImport("evm", evm_mod);
+    // evm_mod is not needed since lib_mod IS the evm module now
     lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("compilers", compilers_mod);
     lib_mod.addImport("trie", trie_mod);

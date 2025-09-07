@@ -5,7 +5,7 @@ const std = @import("std");
 
 pub fn main() !void {
     // Prints to log
-    const log = @import("log.zig");
+    const log = @import("Guillotine_lib").log;
     log.info("All your {s} are belong to us.", .{"codebase"});
 
     // stdout is for the actual output of your application, for example if you
