@@ -1,5 +1,5 @@
 const std = @import("std");
-const evm = @import("root.zig");
+const evm = @import("../root.zig");
 const primitives = @import("primitives");
 const log = @import("../log.zig");
 

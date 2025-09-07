@@ -2,8 +2,8 @@ const std = @import("std");
 // const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("block_info_config.zig").BlockInfoConfig;
-const Eips = @import("eips.zig").Eips;
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Eips = @import("../eips_and_hardforks/eips.zig").Eips;
+const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
 
 pub const EvmConfig = struct {
     // TODO update enum to support latest hardfork

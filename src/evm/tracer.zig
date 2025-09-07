@@ -18,7 +18,7 @@ const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const block_info_mod = @import("block_info.zig");
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
-const hardfork_mod = @import("hardfork.zig");
+const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 // const Host = @import("host.zig").Host; // Only needed for tests which are commented out
 
 // ============================================================================

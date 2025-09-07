@@ -15,7 +15,7 @@ const RevmSettings = @import("revm").RevmSettings;
 const block_info_mod = @import("block_info.zig");
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
-const hardfork_mod = @import("hardfork.zig");
+const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 
 /// Load bytecode from a fixture file

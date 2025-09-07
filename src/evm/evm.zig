@@ -17,14 +17,14 @@
 const std = @import("std");
 const log = @import("../log.zig");
 const primitives = @import("primitives");
-const eips = @import("eips.zig");
+const eips = @import("../eips_and_hardforks/eips.zig");
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo; // Default for backward compatibility
 const Database = @import("../storage/database.zig").Database;
 const Account = @import("../storage/database_interface_account.zig").Account;
 const SelfDestruct = @import("../storage/self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("../storage/created_contracts.zig").CreatedContracts;
 const AccessList = @import("../storage/access_list.zig").AccessList;
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
 const precompiles = @import("precompiles.zig");
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
@@ -167,25 +167,25 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// a default size for bytecode optimization.
         pub fn init(allocator: std.mem.Allocator, database: *Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
             // Process beacon root update for EIP-4788 if applicable
-            const beacon_roots = @import("beacon_roots.zig");
+            const beacon_roots = @import("../eips_and_hardforks/beacon_roots.zig");
             beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
                 log.warn("Failed to process beacon root update: {}", .{err});
             };
 
             // Process historical block hash update for EIP-2935 if applicable
-            const historical_block_hashes = @import("historical_block_hashes.zig");
+            const historical_block_hashes = @import("../eips_and_hardforks/historical_block_hashes.zig");
             historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
                 log.warn("Failed to process historical block hash update: {}", .{err});
             };
 
             // Process validator deposits for EIP-6110 if applicable
-            const validator_deposits = @import("validator_deposits.zig");
+            const validator_deposits = @import("../eips_and_hardforks/validator_deposits.zig");
             validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
                 log.warn("Failed to process validator deposits: {}", .{err});
             };
 
             // Process validator withdrawals for EIP-7002 if applicable
-            const validator_withdrawals = @import("validator_withdrawals.zig");
+            const validator_withdrawals = @import("../eips_and_hardforks/validator_withdrawals.zig");
             validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
                 log.warn("Failed to process validator withdrawals: {}", .{err});
             };
@@ -413,7 +413,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success and self.depth == 0) {
                 const gas_used = initial_gas - result.gas_left;
-                const eips_instance = @import("eips.zig").Eips{ .hardfork = self.hardfork_config };
+                const eips_instance = @import("../eips_and_hardforks/eips.zig").Eips{ .hardfork = self.hardfork_config };
                 const capped_refund = eips_instance.eip_3529_gas_refund_cap(gas_used, self.gas_refund_counter);
 
                 // Apply the refund, ensuring we don't exceed the gas used
@@ -465,8 +465,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Handle EIP-4788 beacon roots contract
-            const beacon_roots = @import("beacon_roots.zig");
-            const historical_block_hashes = @import("historical_block_hashes.zig");
+            const beacon_roots = @import("../eips_and_hardforks/beacon_roots.zig");
+            const historical_block_hashes = @import("../eips_and_hardforks/historical_block_hashes.zig");
             if (std.mem.eql(u8, &to.bytes, &beacon_roots.BEACON_ROOTS_ADDRESS.bytes)) {
                 var contract = beacon_roots.BeaconRootsContract{ .database = self.database, .allocator = self.allocator };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
@@ -1581,7 +1581,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Use EIP-2935 historical block hashes if available
             // This provides access to older block hashes via system contract
-            const historical_block_hashes = @import("historical_block_hashes.zig");
+            const historical_block_hashes = @import("../eips_and_hardforks/historical_block_hashes.zig");
             const hash_opt = historical_block_hashes.HistoricalBlockHashesContract.getBlockHash(
                 self.database,
                 block_number,
