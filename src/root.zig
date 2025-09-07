@@ -78,14 +78,14 @@ pub const CreatedContracts = @import("storage/created_contracts.zig").CreatedCon
 pub const Database = @import("storage/database.zig").Database;
 pub const Account = @import("storage/database_interface_account.zig").Account;
 pub const AccessList = @import("storage/access_list.zig").AccessList;
-pub const Hardfork = @import("evm/hardfork.zig").Hardfork;
-pub const Eips = @import("evm/eips.zig").Eips;
+pub const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
+pub const Eips = @import("eips_and_hardforks/eips.zig").Eips;
 pub const MemoryDatabase = @import("storage/memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("storage/self_destruct.zig").SelfDestruct;
 pub const Log = @import("evm/logs.zig").Log;
 pub const TransactionContext = @import("evm/transaction_context.zig").TransactionContext;
-pub const AuthorizationProcessor = @import("evm/authorization_processor.zig").AuthorizationProcessor;
-pub const AuthorizationError = @import("evm/authorization_processor.zig").AuthorizationError;
+pub const AuthorizationProcessor = @import("eips_and_hardforks/authorization_processor.zig").AuthorizationProcessor;
+pub const AuthorizationError = @import("eips_and_hardforks/authorization_processor.zig").AuthorizationError;
 pub const kzg_setup = @import("evm/kzg_setup.zig");
 
 // Re-export from evm module for compatibility
@@ -94,5 +94,25 @@ pub const Provider = @import("provider");
 
 // Run tests
 test {
-    _ = @import("evm/root.zig");
+    // Test EVM modules
+    _ = @import("evm/evm_tests.zig");
+    _ = @import("evm/dispatch.zig");
+    _ = @import("evm/handlers_arithmetic.zig");
+    _ = @import("evm/handlers_bitwise.zig");
+    _ = @import("evm/handlers_comparison.zig");
+    _ = @import("evm/handlers_context.zig");
+    _ = @import("evm/handlers_jump.zig");
+    _ = @import("evm/handlers_keccak.zig");
+    _ = @import("evm/handlers_log.zig");
+    _ = @import("evm/handlers_memory.zig");
+    _ = @import("evm/handlers_stack.zig");
+    _ = @import("evm/handlers_storage.zig");
+    _ = @import("evm/handlers_system.zig");
+    
+    // Test bytecode modules
+    _ = @import("bytecode/bytecode_tests.zig");
+    _ = @import("bytecode/bytecode_jump_validation_tests.zig");
+    
+    // Test C API modules
+    _ = @import("root_c.zig");
 }
