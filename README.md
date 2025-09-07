@@ -49,13 +49,13 @@ Guillotine is not suitable for production use at this time. Any use of guillotin
 
 ### Overall Performance Summary (Per Run)
 
-| Test Case               | Zig-Call2 | REVM     | EthereumJS | Geth     | evmone    |
-| ----------------------- | --------- | -------- | ---------- | -------- | --------- |
-| erc20-approval-transfer | 54.98 μs  | 4.93 ms  | 390.74 ms  | 9.04 ms  | 3.48 ms   |
-| erc20-mint              | 43.90 μs  | 3.64 ms  | 411.68 ms  | 7.68 ms  | 2.17 ms   |
-| erc20-transfer          | 44.83 μs  | 6.10 ms  | 508.56 ms  | 17.10 ms | 4.41 ms   |
-| ten-thousand-hashes     | 69.05 μs  | 1.49 ms  | 297.77 ms  | 4.53 ms  | 952.88 μs |
-| snailtracer             | 517.47 μs | 31.32 ms | 2.86 s     | 98.09 ms | 23.58 ms  |
+| Test Case               | Zig-Call2 | REVM     | Geth     | evmone   |
+| ----------------------- | --------- | -------- | -------- | -------- |
+| erc20-approval-transfer | 1.59 ms   | 1.67 ms  | 3.65 ms  | 1.56 ms  |
+| erc20-mint              | 4.28 ms   | 5.76 ms  | 12.84 ms | 4.26 ms  |
+| erc20-transfer          | 6.65 ms   | 8.30 ms  | 17.50 ms | 6.01 ms  |
+| ten-thousand-hashes     | 2.46 ms   | 3.31 ms  | 9.36 ms  | 2.90 ms  |
+| snailtracer             | 26.41 ms  | 39.01 ms | 86.02 ms | 27.15 ms |
 
 ---
 
