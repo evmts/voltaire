@@ -978,9 +978,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             jump_destinations: std.ArrayList(JumpDestInfo),
             push_data: std.ArrayList(PushInfo),
 
-            pub fn deinit(self: *@This()) void {
-                self.jump_destinations.deinit();
-                self.push_data.deinit();
+            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+                self.jump_destinations.deinit(allocator);
+                self.push_data.deinit(allocator);
             }
         };
 
@@ -1000,8 +1000,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// This moves the complex analysis logic from planner.zig here
         pub fn analyze(self: Self, allocator: std.mem.Allocator) !Analysis {
             var analysis = Analysis{
-                .jump_destinations = std.ArrayList(JumpDestInfo).init(allocator),
-                .push_data = std.ArrayList(PushInfo).init(allocator),
+                .jump_destinations = try std.ArrayList(JumpDestInfo).initCapacity(allocator, 0),
+                .push_data = try std.ArrayList(PushInfo).initCapacity(allocator, 0),
             };
             errdefer analysis.deinit();
 
@@ -1021,7 +1021,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 switch (opcode) {
                     .JUMPDEST => {
-                        try analysis.jump_destinations.append(.{
+                        try analysis.jump_destinations.append(allocator, .{
                             .pc = pc,
                             .gas_cost = 1,
                         });
@@ -1029,7 +1029,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     },
                     .PUSH0 => {
                         // EIP-3855: PUSH0 pushes zero onto the stack
-                        try analysis.push_data.append(.{
+                        try analysis.push_data.append(allocator, .{
                             .pc = pc,
                             .size = 0,
                             .value = 0,
@@ -1051,7 +1051,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             }
                         }
 
-                        try analysis.push_data.append(.{
+                        try analysis.push_data.append(allocator, .{
                             .pc = pc,
                             .size = push_size,
                             .value = value,

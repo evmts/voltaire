@@ -31,14 +31,14 @@ pub const BytecodeStats = struct {
     /// Analyze bytecode and return statistics
     pub fn analyze(allocator: std.mem.Allocator, bytecode: []const u8) !BytecodeStats {
         var opcode_counts = [_]u32{0} ** 256;
-        var push_values = std.ArrayList(PushValue).init(allocator);
-        errdefer push_values.deinit();
-        var potential_fusions = std.ArrayList(Fusion).init(allocator);
-        errdefer potential_fusions.deinit();
-        var jumpdests = std.ArrayList(usize).init(allocator);
-        errdefer jumpdests.deinit();
-        var jumps = std.ArrayList(Jump).init(allocator);
-        errdefer jumps.deinit();
+        var push_values = try std.ArrayList(PushValue).initCapacity(allocator, 0);
+        errdefer push_values.deinit(allocator);
+        var potential_fusions = try std.ArrayList(Fusion).initCapacity(allocator, 0);
+        errdefer potential_fusions.deinit(allocator);
+        var jumpdests = try std.ArrayList(usize).initCapacity(allocator, 0);
+        errdefer jumpdests.deinit(allocator);
+        var jumps = try std.ArrayList(Jump).initCapacity(allocator, 0);
+        errdefer jumps.deinit(allocator);
         var backwards_jumps: usize = 0;
         
         var pc: usize = 0;
@@ -54,7 +54,7 @@ pub const BytecodeStats = struct {
             
             // Track JUMPDEST locations
             if (opcode == .JUMPDEST) {
-                try jumpdests.append(pc);
+                try jumpdests.append(allocator, pc);
             }
             
             // Check for PUSH opcodes
@@ -70,7 +70,7 @@ pub const BytecodeStats = struct {
                             value = (value << 8) | bytecode[pc + i];
                         }
                     }
-                    try push_values.append(.{ .pc = pc, .value = value });
+                    try push_values.append(allocator, .{ .pc = pc, .value = value });
                     
                     // Check for potential fusion with next opcode
                     const next_pc = pc + 1 + push_size;
@@ -83,7 +83,7 @@ pub const BytecodeStats = struct {
                         // Common fusion patterns
                         switch (next_opcode) {
                             .ADD, .MUL, .SUB, .DIV, .JUMP, .JUMPI, .GT, .LT, .EQ => {
-                                try potential_fusions.append(.{ .pc = pc, .second_opcode = next_opcode });
+                                try potential_fusions.append(allocator, .{ .pc = pc, .second_opcode = next_opcode });
                             },
                             else => {},
                         }
@@ -120,7 +120,7 @@ pub const BytecodeStats = struct {
                     }
                     
                     if (found_push) {
-                        try jumps.append(.{ .pc = pc, .target = jump_target });
+                        try jumps.append(allocator, .{ .pc = pc, .target = jump_target });
                         if (jump_target < pc) {
                             backwards_jumps += 1;
                         }
@@ -153,9 +153,9 @@ pub const BytecodeStats = struct {
     
     pub fn formatStats(self: BytecodeStats, allocator: std.mem.Allocator) ![]const u8 {
         // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
-        var list = std.ArrayList(u8).init(allocator);
-        defer list.deinit();
-        const writer = list.writer();
+        var list = try std.ArrayList(u8).initCapacity(allocator, 0);
+        defer list.deinit(allocator);
+        const writer = list.writer(allocator);
         
         try writer.writeAll("\n=== Bytecode Statistics ===\n");
         try writer.writeAll("Opcode counts:\n");

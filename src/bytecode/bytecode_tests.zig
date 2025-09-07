@@ -119,11 +119,11 @@ test "Bytecode.analyzeJumpDests" {
         // https://ziglang.org/documentation/master/std/#std.array_list.Aligned
         jumpdests: std.ArrayList(BytecodeDefault.PcType),
         fn callback(self: *@This(), pc: BytecodeDefault.PcType) void {
-            self.jumpdests.append(pc) catch unreachable;
+            self.jumpdests.append(std.testing.allocator, pc) catch unreachable;
         }
     };
-    var jumpdests_list = std.ArrayList(BytecodeDefault.PcType).init(std.testing.allocator);
-    defer jumpdests_list.deinit();
+    var jumpdests_list = try std.ArrayList(BytecodeDefault.PcType).initCapacity(std.testing.allocator, 0);
+    defer jumpdests_list.deinit(std.testing.allocator);
     var context = Context{ .jumpdests = jumpdests_list };
     bytecode.analyzeJumpDests(&context, Context.callback);
     try std.testing.expectEqual(@as(usize, 2), context.jumpdests.items.len);

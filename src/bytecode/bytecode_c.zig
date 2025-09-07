@@ -3,8 +3,7 @@
 // ============================================================================
 
 const std = @import("std");
-const evm = @import("evm");
-const Opcode = evm.Opcode;
+const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 const BytecodeType = @import("bytecode.zig").Bytecode(BytecodeConfig{});
 
@@ -267,7 +266,7 @@ pub export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: 
     var total_instr: u32 = 0;
     for (zstats.opcode_counts, 0..) |count, op| {
         total_instr +%= count;
-        const maybe = std.meta.intToEnum(Opcode, @intCast(op)) catch continue;
+        const maybe = std.meta.intToEnum(Opcode, @as(u8, @intCast(op))) catch continue;
         const opcode = maybe;
         switch (opcode) {
             .JUMPDEST => stats_out.jump_dest_count +%= count,
@@ -454,6 +453,8 @@ pub export fn evm_bytecode_opcode_name(opcode_value: u8) [*:0]const u8 {
         .SELFDESTRUCT => "SELFDESTRUCT",
         .BLOBHASH => "BLOBHASH",
         .BLOBBASEFEE => "BLOBBASEFEE",
+        .AUTH => "AUTH",
+        .AUTHCALL => "AUTHCALL",
     };
 }
 

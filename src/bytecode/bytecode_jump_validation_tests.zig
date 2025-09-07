@@ -230,8 +230,8 @@ test "dispatch uses pre-analyzed data" {
     defer bytecode.deinit();
     
     // The analyze function provides structured data
-    const analysis = try bytecode.analyze(allocator);
-    defer analysis.deinit();
+    var analysis = try bytecode.analyze(allocator);
+    defer analysis.deinit(allocator);
     
     // Analysis should have found the JUMPDEST and PUSH instructions
     try std.testing.expect(analysis.jump_destinations.items.len == 1);
