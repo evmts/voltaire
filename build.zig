@@ -5,6 +5,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Download KZG trusted setup if it doesn't exist
+    const kzg_path = "src/kzg/trusted_setup.txt";
+    std.fs.cwd().access(kzg_path, .{}) catch {
+        const download_kzg = b.addSystemCommand(&[_][]const u8{
+            "curl",
+            "-L",
+            "-o",
+            kzg_path,
+            "https://github.com/ethereum/c-kzg-4844/raw/main/src/trusted_setup.txt",
+        });
+        b.getInstallStep().dependOn(&download_kzg.step);
+    };
+
     // Build configuration
     const config = build_pkg.Config.createBuildOptions(b, target);
     const rust_target = build_pkg.Config.getRustTarget(target);

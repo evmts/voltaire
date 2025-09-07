@@ -211,3 +211,4 @@ test_hyperfine
 # KZG trusted setup file (large binary file)
 data/kzg/trusted_setup.txt
 trace*.json
+src/kzg/trusted_setup.txt
