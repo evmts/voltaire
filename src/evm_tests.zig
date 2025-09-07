@@ -1,18 +1,18 @@
 //! Tests for EVM transaction-level execution and state management.
 
 const std = @import("std");
-const log = @import("../log.zig");
+const log = @import("log.zig");
 const primitives = @import("primitives");
 const Evm = @import("evm.zig").Evm;
 const DefaultEvm = @import("evm.zig").DefaultEvm;
-const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
-const Database = @import("../storage/database.zig").Database;
-const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
-const Account = @import("../storage/database_interface_account.zig").Account;
-const TransactionContext = @import("transaction_context.zig").TransactionContext;
-const Opcode = @import("../opcodes/opcode.zig").Opcode;
+const BlockInfo = @import("evm/block_info.zig").DefaultBlockInfo;
+const Database = @import("storage/database.zig").Database;
+const MemoryDatabase = @import("storage/memory_database.zig").MemoryDatabase;
+const Account = @import("storage/database_interface_account.zig").Account;
+const TransactionContext = @import("evm/transaction_context.zig").TransactionContext;
+const Opcode = @import("opcodes/opcode.zig").Opcode;
 const EvmConfig = @import("evm_config.zig").EvmConfig;
-const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
+const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
 
 test "CallParams and CallResult structures" {
     const call_params = DefaultEvm.CallParams{
@@ -656,7 +656,7 @@ test "call method handles gas limit properly" {
 }
 
 test "Journal - snapshot creation and management" {
-    const journal_mod = @import("../storage/journal.zig");
+    const journal_mod = @import("storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -677,7 +677,7 @@ test "Journal - snapshot creation and management" {
 }
 
 test "Journal - storage change recording" {
-    const journal_mod = @import("../storage/journal.zig");
+    const journal_mod = @import("storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -712,7 +712,7 @@ test "Journal - storage change recording" {
 }
 
 test "Journal - revert to snapshot" {
-    const journal_mod = @import("../storage/journal.zig");
+    const journal_mod = @import("storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -741,7 +741,7 @@ test "Journal - revert to snapshot" {
 }
 
 test "Journal - multiple entry types" {
-    const journal_mod = @import("../storage/journal.zig");
+    const journal_mod = @import("storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -782,7 +782,7 @@ test "Journal - multiple entry types" {
 }
 
 test "Journal - empty revert" {
-    const journal_mod = @import("../storage/journal.zig");
+    const journal_mod = @import("storage/journal.zig");
     const JournalType = journal_mod.Journal(.{});
 
     var journal = JournalType.init(std.testing.allocator);
@@ -932,7 +932,7 @@ test "Host interface - get_balance functionality" {
     const balance: u256 = 1000000000000000000; // 1 ETH
 
     // Set account balance in database
-    const account = @import("../storage/database_interface_account.zig").Account{
+    const account = @import("storage/database_interface_account.zig").Account{
         .balance = balance,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -1017,7 +1017,7 @@ test "Host interface - account_exists functionality" {
     defer evm.deinit();
 
     const address = primitives.ZERO_ADDRESS;
-    const account = @import("../storage/database_interface_account.zig").Account{
+    const account = @import("storage/database_interface_account.zig").Account{
         .balance = 1000,
         .nonce = 1,
         .code_hash = [_]u8{0} ** 32,
@@ -1357,7 +1357,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
     try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
 
     // Calculate expected address using CREATE2 formula
-    const keccak_asm = @import("keccak_asm.zig");
+    const keccak_asm = @import("evm/keccak_asm.zig");
     var init_code_hash: [32]u8 = undefined;
     try keccak_asm.keccak256(&init_code, &init_code_hash);
     const salt_bytes = @as([32]u8, @bitCast(salt));
@@ -1396,7 +1396,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
     const salt: u256 = 0xDEADBEEF;
 
     // Calculate expected address
-    const keccak_asm = @import("keccak_asm.zig");
+    const keccak_asm = @import("evm/keccak_asm.zig");
     var init_code_hash: [32]u8 = undefined;
     try keccak_asm.keccak256(&init_code, &init_code_hash);
     const salt_bytes = @as([32]u8, @bitCast(salt));
