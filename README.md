@@ -14,27 +14,34 @@
 
 <img width="833" height="444" alt="Guillotine Logo" src="https://github.com/user-attachments/assets/1effa677-d931-4453-8e98-2a70372efd91" />
 
-**An ultrafast EVM for all languages**
+**The ultrafast EVM for every language and platform**
 
 ---
 
 ## 🧭 Overview
 
-The fun, ultrafast and configurable way to run the EVM. Guillotine features
+The robust, ultrafast and configurable way to run the EVM. Guillotine features
 
 - ⚡ **Extreme speed** - Zig-based Guillotine with all optimizations benchmarks as the fastest EVM implementation ever
-- 🌐 **Universal** - Use guillotine on many languages and many platforms including Python, TypeScript, and even in the browser.
-- 📦 **Minimal bundle size** - Size optimized configurations of Guillotine reache sizes under 110kb
+- 🌐 **Universal** - 🚧 Coming soon 🚧 Guillotine is built from ground up to support many languages and many platforms including Python, TypeScript, Golang, Rust, and even in the browser!
+- 📦 **Minimal bundle size** - Early benchmarks on size-optimized configurations of Guillotine reach sizes under 110kb
 - 💄 **Elegance and modularity** - Guillotine offers 0-cost abstractions for configuring the EVM at comptime
 - 🎨 **Fun** - Guillotine is a fun way to dive into zig and fun/easy to contribute to. It has extensive documentation for humans and LLMs
+- 🧪 **Robust** - Guillotine takes testing and architecture very seriously with full unit tests for all files, a robust e2e test suite, fuzz testing, differential testing vs revm, and benchmark testing
+- ✨ **Useful** - 🚧 Coming soon 🚧 Guillotine is building a powerful CLI and native app that you can think of as a local-first tenderly
 
 ---
+
+## Full Client
+
+Guillotine is a VM implementation (like revm) not a full node (like reth).
+However, Tevm (the team behind Guillotine) plans on breaking ground on a highly-performant zig-based full client soon. This client will leverage some of guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
 
 ## 🚧 Development Status
 
 **Current Status**: DO NOT USE IN PRODUCTION
 
-Guillotine is not suitable for production use at this time. Any use of guillotine should be considered purely experimental.
+Guillotine is not suitable for production use at this time. Any use of guillotine should be considered purely experimental. There are known bugs and TODOs. Follow issue tab which contains all features we want for Beta.
 
 ---
 
@@ -59,7 +66,6 @@ Upgrades include:
 
 - 🚀 **Up to 1000x performance boost**
 - 📉 **300KB (75%) bundle size reduction**
-- 🔧 **Foundry-compatible compiler support**
 - 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the guillotine primitives package
 
 ## Using Guillotine in other languages
@@ -83,6 +89,12 @@ We welcome contributions of all kinds!
 
 See our [Contributing Guide](CONTRIBUTING.md) to get started.
 
+## Team
+
+- [Will Cory (fucory)](https://github.com/roninjin10) - Project Lead
+- [polarzero](https://github.com/0xpolarzero) - Core Developer
+- [Vlad](https://github.com/vladfdp) - Core Developer
+
 ## 🙏 Dependencies & Acknowledgments
 
 Guillotine stands on the shoulders of giants. We're grateful to:
@@ -96,11 +108,8 @@ Guillotine stands on the shoulders of giants. We're grateful to:
 ### Tooling dependencies
 
 - **[Zig](https://ziglang.org)** – The best tool for the job for building a highly customizable ultrafast EVM
-- **[revm](https://github.com/bluealloy/revm)** – Rust EVM implementation used for differential testing
-- **[hyperfine](https://github.com/sharkdp/hyperfine)** – Benchmarking framework for performance testing
-- **[zbench](https://github.com/hendriknielaender/zBench)** – Zig specific Benchmarking framework for performance testing
-- **[zig-clap](https://github.com/Hejsil/zig-clap)** – Command line argument parsing
-- **[webui](https://github.com/webui-dev/webui)** – For future devtool UI
+- **[zbench](https://github.com/hendriknielaender/zBench)** – Zig specific Benchmarking framework for performance regression testing
+- **[foundry-compilers](https://github.com/foundry-rs/compilers)** – Rust solc wrapper wrapped in zig and used internally as a zig library for building contracts.
 
 ---
 

@@ -1,18 +1,10 @@
 # Contributing to Guillotine
 
+Thank you so much for you interest in contributing to Guillotine!
+
 We welcome contributions to Guillotine! This document provides guidelines and instructions for contributing to the project.
 
-## Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Coding Standards](#coding-standards)
-- [Testing Philosophy](#testing-philosophy)
-- [Memory Management](#memory-management)
-- [Submitting Changes](#submitting-changes)
-- [Issue Guidelines](#issue-guidelines)
-- [Review Process](#review-process)
+If your contribution is large please open a discussion to chat about the change before doing the work.
 
 ## Code of Conduct
 
@@ -22,6 +14,58 @@ We are committed to providing a welcoming and inclusive environment. All contrib
 - Welcome newcomers and help them get started
 - Focus on constructive criticism and collaborative problem-solving
 - Respect differing viewpoints and experiences
+- **Do not provide purely AI generated code without disclosing it's AI and how you generated it**
+
+## Project structure
+
+### Source Directory Structure
+
+```
+src/
+├── _test_utils/         # Testing utilities and fixtures
+├── block/               # Block data structures and validation
+├── bytecode/            # Bytecode analysis and optimization
+├── cli/                 # Command-line interface
+├── crypto/              # Cryptographic operations (Keccak, BN254, etc.)
+│   └── bn254/          # BN254 elliptic curve operations
+├── devtool/            # Development tools and web UI
+├── eips_and_hardforks/ # EIP implementations and hardfork configurations
+├── frame/              # Execution frame and context management
+├── instructions/       # EVM opcode implementations
+├── kzg/                # KZG commitment scheme support
+├── memory/             # EVM memory management
+├── opcodes/            # Opcode definitions and tables
+├── precompiles/        # Precompiled contract implementations
+├── preprocessor/       # Bytecode preprocessing and optimization
+├── primitives/         # Core types (Address, U256, Bytes32, etc.)
+├── provider/           # RPC provider interfaces
+├── solidity/           # Solidity compiler integration
+├── stack/              # EVM stack implementation
+├── storage/            # State storage and database interfaces
+├── tracer/             # Transaction tracing and debugging
+└── trie/               # Merkle Patricia Trie implementation
+```
+
+### Build System
+
+```
+build/
+├── bindings/           # Language bindings generation
+├── config.zig          # Build configuration
+├── executables/        # Executable targets
+├── libraries/          # Library dependencies (BN254, REVM)
+├── modules.zig         # Module definitions
+├── steps/              # Build step definitions
+└── utils.zig           # Build utilities
+```
+
+### Key Files
+
+- `src/evm.zig` - Core EVM implementation
+- `src/frame/frame.zig` - The most important datastructure in the evm
+- `src/instructions/*.zig` - Individual opcode handlers for the evm
+- `src/root.zig` - Module root exports
+- `build.zig` - Main build configuration
 
 ## Getting Started
 
@@ -44,10 +88,10 @@ We are committed to providing a welcoming and inclusive environment. All contrib
 
 ### Prerequisites
 
-- Zig 0.14.1 or later
+- Zig 0.15.1 or later
 - Git
-- Rust toolchain (required for BN254 and REVM dependencies)
-- Cargo for building Rust dependencies
+- Rust toolchain (required for ark and revm dependencies)
+- Golang and node.js if working with the cli and native app
 
 ### Building the Project
 
@@ -76,15 +120,6 @@ zig build
 
 # Run tests
 zig build test
-
-# Run EVM comparison benchmarks
-zig build bench-compare
-
-# Run official EVM benchmarks (hyperfine required)
-zig build build-evm-runner  # Build the benchmark runner
-# Then use hyperfine to benchmark specific test cases:
-hyperfine --runs 10 \
-  "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
 ```
 
 ### Development Workflow
@@ -93,291 +128,9 @@ hyperfine --runs 10 \
    ```bash
    zig build && zig build test
    ```
-   
 2. **Enable debug logging** in tests when needed:
    ```zig
    test {
-       std.testing.log_level = .warn;
+       std.testing.log_level = .debug;
    }
    ```
-
-## Coding Standards
-
-### Core Principles
-
-1. **Single Responsibility**: Keep functions focused on one task
-2. **Minimal else statements**: Avoid else statements unless necessary
-3. **Single word variables**: Prefer concise names (`n` over `number`, `i` over `index`)
-4. **camelCase naming**: Use camelCase for all identifiers
-5. **Tests in source files**: Include tests in the same file as the implementation
-
-### Code Style Examples
-
-```zig
-// Good - single responsibility, no else
-pub fn validate(n: u256) !void {
-    if (n > MAX_VALUE) return error.Overflow;
-    if (n == 0) return error.Zero;
-}
-
-// Bad - unnecessary else
-pub fn validate(number: u256) !void {
-    if (number > MAX_VALUE) {
-        return error.Overflow;
-    } else {
-        // unnecessary else
-    }
-}
-```
-
-### Import Rules
-
-- Use module imports from `build.zig`
-- No relative imports with `../`
-- Direct imports without aliases:
-  ```zig
-  // Good
-  const Address = @import("primitives").Address;
-  
-  // Bad
-  const addr = @import("primitives").Address;
-  ```
-
-## Testing Philosophy
-
-### No Abstractions in Tests
-
-Tests should be self-contained with zero abstractions:
-
-- **No test helper functions** - Copy setup code directly
-- **No shared utilities** - Each test is independent
-- **Explicit over DRY** - Clarity trumps reusability in tests
-
-### Test Structure Example
-
-```zig
-test "ADD opcode adds two values" {
-    const allocator = std.testing.allocator;
-    
-    // Complete setup inline
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface, null, null);
-    defer vm.deinit();
-
-    // Test implementation...
-}
-```
-
-### Testing Requirements
-
-- All new code must include tests
-- Tests must pass before submitting PR
-- Use descriptive test names
-- Test edge cases and error conditions
-
-## Memory Management
-
-### Critical Rules
-
-1. **Every allocation needs deallocation**:
-   ```zig
-   const thing = try allocator.create(Thing);
-   defer allocator.destroy(thing);
-   ```
-
-2. **Use defer patterns**:
-   ```zig
-   // Pattern 1: Same scope cleanup
-   const data = try allocator.alloc(u8, size);
-   defer allocator.free(data);
-   
-   // Pattern 2: Error handling before ownership transfer
-   const thing = try allocator.create(Thing);
-   errdefer allocator.destroy(thing);
-   ```
-
-3. **Think about ownership**: Always be clear about who owns allocated memory
-
-### EVM-Specific Patterns
-
-```zig
-// Always use defer after init
-var vm = try Evm.init(allocator, db_interface);
-defer vm.deinit();
-
-var frame = try Frame.init(allocator, &vm, gas, contract, caller, input);
-defer frame.deinit();
-```
-
-## Submitting Changes
-
-### Commit Messages
-
-Write clear, descriptive commit messages:
-- Start with a verb (add, fix, update, refactor)
-- Keep the first line under 72 characters
-- Reference issue numbers when applicable
-
-Examples:
-```
-fix: correct gas calculation for SSTORE opcode
-
-add: implement PUSH0 opcode for Shanghai fork
-
-refactor: simplify stack validation logic
-```
-
-### Pull Request Process
-
-1. **Update your fork**:
-   ```bash
-   git fetch upstream
-   git rebase upstream/main
-   ```
-
-2. **Ensure all tests pass**:
-   ```bash
-   zig build && zig build test
-   ```
-
-3. **Create pull request**:
-   - Use a descriptive title
-   - Reference related issues
-   - Describe what changes were made and why
-   - Include test results
-
-### PR Checklist
-
-Before submitting:
-- [ ] Code follows project style guidelines
-- [ ] All tests pass
-- [ ] New code includes tests
-- [ ] Memory is properly managed
-- [ ] Documentation is updated if needed
-- [ ] Commit messages are clear
-
-## Issue Guidelines
-
-### Reporting Bugs
-
-Include:
-- Zig version
-- Operating system
-- Steps to reproduce
-- Expected vs actual behavior
-- Error messages or logs
-
-### Feature Requests
-
-Describe:
-- The problem you're trying to solve
-- Your proposed solution
-- Alternative approaches considered
-- Impact on existing functionality
-
-## Benchmarking
-
-### Official EVM Benchmarks
-
-The `bench/official` directory contains standardized EVM benchmarks for performance testing:
-
-#### Available Test Cases
-- `erc20-approval-transfer` - ERC20 approval and transfer operations
-- `erc20-mint` - ERC20 token minting
-- `erc20-transfer` - Basic ERC20 transfers
-- `snailtracer` - Complex computation benchmark
-- `ten-thousand-hashes` - Hash-intensive operations (keccak256)
-
-#### Running Benchmarks
-
-1. **Install hyperfine** (required for statistical benchmarking):
-   ```bash
-   # macOS
-   brew install hyperfine
-   
-   # Linux/WSL
-   cargo install hyperfine
-   ```
-
-2. **Build the benchmark runners**:
-   ```bash
-   # Build Zig benchmark runners
-   zig build build-evm-runner
-   zig build build-orchestrator
-   
-   # Build comparison EVM runners (optional, for cross-EVM benchmarks)
-   # EthereumJS (JavaScript/Bun)
-   cd bench/official/evms/ethereumjs && bun install && cd ../../../..
-   
-   # REVM (should already be built during zig build)
-   # Geth (should already be built)  
-   # evmone (should already be built)
-   ```
-
-3. **Run individual benchmarks**:
-   ```bash
-   # Example: ten-thousand-hashes benchmark
-   hyperfine --runs 10 --warmup 3 \
-     "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
-   ```
-
-4. **Run comparison benchmarks across all EVMs**:
-   ```bash
-   # Compare all EVM implementations and export results
-   ./zig-out/bin/orchestrator --compare --export markdown
-   
-   # Single EVM benchmark
-   ./zig-out/bin/orchestrator -e zig -n 50 --export markdown
-   ./zig-out/bin/orchestrator -e revm -n 50
-   ./zig-out/bin/orchestrator -e ethereumjs -n 10  # Use fewer runs for JS
-   ./zig-out/bin/orchestrator -e geth -n 50
-   ./zig-out/bin/orchestrator -e evmone -n 50
-   ```
-
-#### Benchmark Structure
-- Test cases are in `bench/official/cases/`
-- Each case contains:
-  - `bytecode.txt` - Contract bytecode in hex format
-  - `calldata.txt` - Input data for contract calls
-- The runner deploys the contract and executes it with the provided calldata
-
-## Review Process
-
-### What to Expect
-
-- Constructive feedback on code quality
-- Suggestions for improvements
-- Questions about design decisions
-- Request for additional tests or documentation
-
-### Review Timeline
-
-- Initial review within 3-5 days
-- Follow-up responses within 24-48 hours
-- PRs are typically merged within a week of approval
-
-### After Approval
-
-Once approved:
-1. Squash commits if requested
-2. Ensure branch is up to date with main
-3. Wait for maintainer to merge
-
-## Getting Help
-
-- Open an issue for questions
-- Join community discussions
-- Review existing PRs for examples
-- Check CLAUDE.md for AI-assisted development guidelines
-
-## Recognition
-
-Contributors are recognized in:
-- GitHub contributors page
-- Release notes for significant contributions
-- Project documentation where appropriate
-
-Thank you for contributing to Guillotine!
