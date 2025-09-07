@@ -18,7 +18,7 @@ const memory_c = @import("memory/memory_c.zig");
 const stack_c = @import("stack/stack_c.zig");
 // const plan_c = @import("evm/plan_c.zig");  // TODO: These files don't exist yet
 // const planner_c = @import("evm/planner_c.zig");
-const precompiles_c = @import("evm/precompiles_c.zig");
+const precompiles_c = @import("precompiles/precompiles_c.zig");
 const hardfork_c = @import("eips_and_hardforks/hardfork_c.zig");
 
 // Export all C API modules
