@@ -13,7 +13,7 @@ const frame_config = @import("frame_config.zig");
 const FrameConfig = frame_config.FrameConfig;
 const Database = @import("../storage/database.zig").Database;
 const GasConstants = primitives.GasConstants;
-const DefaultEvm = @import("../evm/evm.zig").Evm(.{});
+const DefaultEvm = @import("../evm.zig").Evm(.{});
 const log_mod = @import("../evm/logs.zig");
 const StorageKey = @import("../storage/database_interface.zig").StorageKey;
 

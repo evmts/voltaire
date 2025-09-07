@@ -21,8 +21,8 @@ pub const Memory = @import("memory/memory.zig").Memory;
 pub const MemoryError = @import("memory/memory.zig").MemoryError;
 
 // EVM main module and configuration
-pub const Evm = @import("evm/evm.zig").Evm;
-pub const EvmConfig = @import("evm/evm_config.zig").EvmConfig;
+pub const Evm = @import("evm.zig").Evm;
+pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 
 // Fixtures for testing
 pub const FixtureContract = @import("evm/fixtures/popular_contracts.zig").FixtureContract;
@@ -69,8 +69,8 @@ pub const opcode_data = @import("opcodes/opcode_data.zig");
 pub const precompiles = @import("precompiles/precompiles.zig");
 
 // Database and state modules
-pub const BlockInfo = @import("evm/block_info.zig").DefaultBlockInfo;
-pub const CompactBlockInfo = @import("evm/block_info.zig").CompactBlockInfo;
+pub const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo;
+pub const CompactBlockInfo = @import("block/block_info.zig").CompactBlockInfo;
 pub const BlockInfoConfig = @import("frame/block_info_config.zig").BlockInfoConfig;
 pub const CallParams = @import("frame/call_params.zig").CallParams({});
 pub const CallResult = @import("frame/call_result.zig").CallResult({});
@@ -95,7 +95,7 @@ pub const Provider = @import("provider");
 // Run tests
 test {
     // Test EVM modules
-    _ = @import("evm/evm_tests.zig");
+    _ = @import("evm_tests.zig");
     _ = @import("preprocessor/dispatch.zig");
     _ = @import("instructions/handlers_arithmetic.zig");
     _ = @import("instructions/handlers_bitwise.zig");

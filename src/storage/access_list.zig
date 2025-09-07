@@ -258,7 +258,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Set up test accounts with balances
@@ -303,7 +303,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     const slot: u256 = 42;
@@ -341,7 +341,7 @@ test "EIP-2929: transaction pre-warming" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Pre-warm addresses as per EIP-2929
@@ -386,7 +386,7 @@ test "EIP-2929: SELFBALANCE always warm" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Deploy contract
@@ -434,7 +434,7 @@ test "EIP-2929: access list cleared between transactions" {
         .blob_base_fee = 0,
     };
 
-    var evm = try @import("../evm/evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
+    var evm = try @import("../evm.zig").Evm(.{}).init(allocator, &db, block_info, tx_context, 20, TEST_ADDRESS_1, .BERLIN);
     defer evm.deinit();
 
     // Access an address to warm it
@@ -688,7 +688,7 @@ test "AccessList - empty pre-warm list" {
 }
 
 // Tests from eip_2929_test.zig
-const Evm = @import("../evm/evm.zig").Evm;
+const Evm = @import("../evm.zig").Evm;
 const Database = @import("database.zig").Database;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const BlockInfo = @import("../evm/block_info.zig").DefaultBlockInfo;

@@ -502,7 +502,7 @@ fn to_u256(addr: [20]u8) u256 {
 
 // Helper to create test EVM
 const TestEvm = struct {
-    evm: *@import("../evm/evm.zig").DefaultEvm,
+    evm: *@import("../evm.zig").DefaultEvm,
     memory_db: *MemoryDatabase,
 };
 
@@ -511,14 +511,14 @@ fn createTestEvm(allocator: std.mem.Allocator) !TestEvm {
     memory_db.* = MemoryDatabase.init(allocator);
     
     // Using database directly now
-    const evm_ptr = try allocator.create(@import("../evm/evm.zig").DefaultEvm);
+    const evm_ptr = try allocator.create(@import("../evm.zig").DefaultEvm);
     const block_info = @import("../evm/block_info.zig").DefaultBlockInfo.init();
     const tx_context = @import("../evm/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
     };
-    evm_ptr.* = try @import("../evm/evm.zig").DefaultEvm.init(allocator, memory_db, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    evm_ptr.* = try @import("../evm.zig").DefaultEvm.init(allocator, memory_db, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
     
     return TestEvm{ .evm = evm_ptr, .memory_db = memory_db };
 }
