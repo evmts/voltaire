@@ -1,4 +1,0 @@
-module GuillotineC {
-    header "guillotine.h"
-    export *
-}
