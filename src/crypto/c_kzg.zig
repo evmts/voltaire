@@ -56,7 +56,7 @@ test "c_kzg basic functionality" {
     const testing = std.testing;
     
     // This test requires the trusted setup file to be present
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
+    const trusted_setup_path = "src/kzg/trusted_setup.txt";
     std.fs.cwd().access(trusted_setup_path, .{}) catch {
         // File doesn't exist, skip test
         return;

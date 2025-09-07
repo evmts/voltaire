@@ -1,13 +1,31 @@
 /// KZG trusted setup management for EIP-4844 support
 const std = @import("std");
 const crypto = @import("crypto");
+const ckzg = crypto.c_kzg;
+
+/// Embedded trusted setup data
+const trusted_setup_data = @embedFile("../kzg/trusted_setup.txt");
 
 /// Global initialization state
 var initialized = false;
 
-/// Initialize the KZG trusted setup from a file
+/// Initialize the KZG trusted setup from embedded data
 /// This should be called once during application startup
-pub fn init(_allocator: std.mem.Allocator, trusted_setup_path: []const u8) !void {
+pub fn init() !void {
+    if (initialized) return;
+    
+    // Load the trusted setup using the embedded data
+    const precompute: u64 = 0;
+    ckzg.loadTrustedSetupFromText(trusted_setup_data, precompute) catch {
+        return error.TrustedSetupLoadFailed;
+    };
+    
+    initialized = true;
+}
+
+/// Initialize the KZG trusted setup from a file (kept for compatibility)
+/// This should be called once during application startup
+pub fn initFromFile(_allocator: std.mem.Allocator, trusted_setup_path: []const u8) !void {
     if (initialized) return;
     _ = _allocator;
     
@@ -40,15 +58,8 @@ pub fn isInitialized() bool {
 test "KZG setup initialization" {
     const testing = std.testing;
     
-    // This test requires the trusted setup file to be present
-    // Skip if file doesn't exist
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
-    std.fs.cwd().access(trusted_setup_path, .{}) catch {
-        // File doesn't exist, skip test
-        return;
-    };
-    
-    try init(testing.allocator, trusted_setup_path);
+    // Test the embedded initialization
+    try init();
     defer deinit(testing.allocator);
     
     try testing.expect(isInitialized());
@@ -70,22 +81,16 @@ test "KZG setup - initial state" {
 test "KZG setup - multiple initializations" {
     const testing = std.testing;
     
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
-    std.fs.cwd().access(trusted_setup_path, .{}) catch {
-        // File doesn't exist, skip test
-        return;
-    };
-    
     // First initialization
-    try init(testing.allocator, trusted_setup_path);
+    try init();
     try testing.expect(isInitialized());
     
     // Second initialization should not error (idempotent)
-    try init(testing.allocator, trusted_setup_path);
+    try init();
     try testing.expect(isInitialized());
     
-    // Third initialization with same path
-    try init(testing.allocator, trusted_setup_path);
+    // Third initialization
+    try init();
     try testing.expect(isInitialized());
     
     deinit(testing.allocator);
@@ -97,7 +102,7 @@ test "KZG setup - initialization with invalid path" {
     const invalid_path = "nonexistent/path/to/trusted_setup.txt";
     
     // This should fail
-    const result = init(testing.allocator, invalid_path);
+    const result = initFromFile(testing.allocator, invalid_path);
     try testing.expectError(error.TrustedSetupLoadFailed, result);
 }
 
@@ -107,7 +112,7 @@ test "KZG setup - initialization with empty path" {
     const empty_path = "";
     
     // This should fail
-    const result = init(testing.allocator, empty_path);
+    const result = initFromFile(testing.allocator, empty_path);
     try testing.expectError(error.TrustedSetupLoadFailed, result);
 }
 
@@ -127,13 +132,7 @@ test "KZG setup - deinitialization without initialization" {
 test "KZG setup - multiple deinitializations" {
     const testing = std.testing;
     
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
-    std.fs.cwd().access(trusted_setup_path, .{}) catch {
-        // File doesn't exist, skip test
-        return;
-    };
-    
-    try init(testing.allocator, trusted_setup_path);
+    try init();
     try testing.expect(isInitialized());
     
     // First deinit
@@ -152,15 +151,9 @@ test "KZG setup - multiple deinitializations" {
 test "KZG setup - init/deinit cycle" {
     const testing = std.testing;
     
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
-    std.fs.cwd().access(trusted_setup_path, .{}) catch {
-        // File doesn't exist, skip test
-        return;
-    };
-    
     // Multiple init/deinit cycles
     for (0..5) |_| {
-        try init(testing.allocator, trusted_setup_path);
+        try init();
         try testing.expect(isInitialized());
         
         deinit(testing.allocator);
@@ -196,7 +189,7 @@ test "KZG setup - path edge cases" {
     };
     
     for (test_cases) |path| {
-        const result = init(testing.allocator, path);
+        const result = initFromFile(testing.allocator, path);
         // All these should fail since they're not valid trusted setup files
         try testing.expectError(error.TrustedSetupLoadFailed, result);
         
@@ -217,7 +210,7 @@ test "KZG setup - very long path" {
         char.* = 'a';
     }
     
-    const result = init(testing.allocator, long_path);
+    const result = initFromFile(testing.allocator, long_path);
     try testing.expectError(error.TrustedSetupLoadFailed, result);
 }
 
@@ -231,7 +224,7 @@ test "KZG setup - null termination handling" {
     };
     
     for (tricky_paths) |path| {
-        const result = init(testing.allocator, path);
+        const result = initFromFile(testing.allocator, path);
         try testing.expectError(error.TrustedSetupLoadFailed, result);
     }
 }
@@ -255,18 +248,12 @@ test "KZG setup - concurrent safety" {
 test "KZG setup - memory allocation edge cases" {
     const testing = std.testing;
     
-    // Test with different allocator states
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
-    std.fs.cwd().access(trusted_setup_path, .{}) catch {
-        return; // Skip if file doesn't exist
-    };
-    
     // Test with a failing allocator (this would require a custom allocator implementation)
     // For now, just test with the standard allocator
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     
-    try init(arena.allocator(), trusted_setup_path);
+    try init();
     try testing.expect(isInitialized());
     
     deinit(arena.allocator());
@@ -276,15 +263,10 @@ test "KZG setup - memory allocation edge cases" {
 test "KZG setup - initialization state transitions" {
     const testing = std.testing;
     
-    const trusted_setup_path = "data/kzg/trusted_setup.txt";
-    std.fs.cwd().access(trusted_setup_path, .{}) catch {
-        return; // Skip if file doesn't exist  
-    };
-    
     // Test state transitions: uninitialized -> initialized -> uninitialized
     try testing.expect(!isInitialized() or isInitialized()); // Initial state might vary
     
-    try init(testing.allocator, trusted_setup_path);
+    try init();
     try testing.expect(isInitialized()); // Should be initialized after init
     
     deinit(testing.allocator);

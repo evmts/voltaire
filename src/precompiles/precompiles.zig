@@ -725,7 +725,7 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
 /// 0x0A: pointEvaluation - KZG point evaluation (EIP-4844)
 /// Input: 192 bytes (versioned_hash + z + y + commitment + proof)
 /// Output: 64 bytes (FIELD_ELEMENTS_PER_BLOB + BLS_MODULUS)
-pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
+pub fn execute_point_evaluation(_: std.mem.Allocator, input: []const u8, gas_limit: u64) PrecompileError!PrecompileOutput {
     const required_gas = GasCosts.POINT_EVALUATION;
     if (gas_limit < required_gas) {
         return PrecompileOutput{ .output = &.{}, .gas_used = gas_limit, .success = false };
@@ -755,10 +755,10 @@ pub fn execute_point_evaluation(allocator: std.mem.Allocator, input: []const u8,
         return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
     }
 
-    // Ensure KZG settings are initialized; try lazy init from default path if not
+    // Ensure KZG settings are initialized; try lazy init from embedded data if not
     const kzg_setup = @import("kzg_setup.zig");
     if (!kzg_setup.isInitialized()) {
-        kzg_setup.init(allocator, "data/kzg/trusted_setup.txt") catch {
+        kzg_setup.init() catch {
             return PrecompileOutput{ .output = &.{}, .gas_used = required_gas, .success = false };
         };
     }
