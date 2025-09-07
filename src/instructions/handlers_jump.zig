@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const FrameConfig = @import("frame_config.zig").FrameConfig;
+const FrameConfig = @import("../frame/frame_config.zig").FrameConfig;
 const log = @import("../log.zig");
 
 /// Jump operation handlers for the EVM stack frame.
@@ -32,7 +32,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use binary search to find valid jump destination
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 // Found valid JUMPDEST - update thread-local PC for tracing
-                const frame_handlers = @import("frame_handlers.zig");
+                const frame_handlers = @import("../frame/frame_handlers.zig");
                 frame_handlers.setCurrentPc(dest_pc);
 
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
@@ -65,7 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Use binary search to find valid jump destination
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     // Found valid JUMPDEST - update thread-local PC for tracing
-                    const frame_handlers = @import("frame_handlers.zig");
+                    const frame_handlers = @import("../frame/frame_handlers.zig");
                     frame_handlers.setCurrentPc(dest_pc);
 
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
@@ -123,9 +123,9 @@ pub fn Handlers(comptime FrameType: type) type {
 // ====== TESTS ======
 
 const testing = std.testing;
-const Frame = @import("frame.zig").Frame;
-const dispatch_mod = @import("dispatch.zig");
-const NoOpTracer = @import("tracer.zig").NoOpTracer;
+const Frame = @import("../frame/frame.zig").Frame;
+const dispatch_mod = @import("../evm/dispatch.zig");
+const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 const bytecode_mod = @import("../bytecode/bytecode.zig");

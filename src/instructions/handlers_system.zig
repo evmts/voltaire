@@ -1,10 +1,10 @@
 const std = @import("std");
 const log = @import("../log.zig");
-const FrameConfig = @import("frame_config.zig").FrameConfig;
+const FrameConfig = @import("../frame/frame_config.zig").FrameConfig;
 const primitives = @import("primitives");
 const Address = primitives.Address;
 // Access to call params through the call params module
-const call_params_mod = @import("call_params.zig");
+const call_params_mod = @import("../frame/call_params.zig");
 const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 // u256 is now a built-in type in Zig 0.14+
 
@@ -1116,9 +1116,9 @@ pub fn Handlers(comptime FrameType: type) type {
 // ====== TESTS ======
 
 const testing = std.testing;
-const Frame = @import("frame.zig").Frame;
-const dispatch_mod = @import("dispatch.zig");
-const NoOpTracer = @import("tracer.zig").NoOpTracer;
+const Frame = @import("../frame/frame.zig").Frame;
+const dispatch_mod = @import("../evm/dispatch.zig");
+const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
 // const host_mod = @import("host.zig");
 
 // Test configuration

@@ -1,5 +1,5 @@
 const std = @import("std");
-const FrameConfig = @import("frame_config.zig").FrameConfig;
+const FrameConfig = @import("../frame/frame_config.zig").FrameConfig;
 const log = @import("../log.zig");
 const memory_mod = @import("../memory/memory.zig");
 const GasConstants = @import("primitives").GasConstants;
@@ -239,9 +239,9 @@ pub fn Handlers(comptime FrameType: type) type {
 // ====== TESTS ======
 
 const testing = std.testing;
-const Frame = @import("frame.zig").Frame;
-const dispatch_mod = @import("dispatch.zig");
-const NoOpTracer = @import("tracer.zig").NoOpTracer;
+const Frame = @import("../frame/frame.zig").Frame;
+const dispatch_mod = @import("../evm/dispatch.zig");
+const NoOpTracer = @import("../evm/tracer.zig").NoOpTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
