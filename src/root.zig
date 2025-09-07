@@ -8,7 +8,7 @@ const std = @import("std");
 // Re-export everything from evm/root.zig
 pub const Frame = @import("frame/frame.zig").Frame;
 pub const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
-pub const FrameDispatch = @import("evm/dispatch.zig").Dispatch;
+pub const FrameDispatch = @import("preprocessor/dispatch.zig").Dispatch;
 pub const frame_mod = @import("frame/frame.zig");
 pub const frame = @import("frame/frame.zig");
 pub const frame_handlers = @import("frame/frame_handlers.zig");
@@ -56,7 +56,7 @@ pub const BytecodeStats = @import("bytecode/bytecode_stats.zig").BytecodeStats;
 pub const bytecode = @import("bytecode/bytecode.zig");
 
 // Dispatch module
-pub const dispatch = @import("evm/dispatch.zig");
+pub const dispatch = @import("preprocessor/dispatch.zig");
 
 // Opcode and instruction data
 pub const Opcode = @import("opcodes/opcode.zig").Opcode;
@@ -96,7 +96,7 @@ pub const Provider = @import("provider");
 test {
     // Test EVM modules
     _ = @import("evm/evm_tests.zig");
-    _ = @import("evm/dispatch.zig");
+    _ = @import("preprocessor/dispatch.zig");
     _ = @import("instructions/handlers_arithmetic.zig");
     _ = @import("instructions/handlers_bitwise.zig");
     _ = @import("instructions/handlers_comparison.zig");
