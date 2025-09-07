@@ -6,7 +6,7 @@ const Address = primitives.Address;
 const GasConstants = primitives.GasConstants;
 // u256 is a built-in type in Zig 0.14+
 const keccak_asm = @import("keccak_asm.zig");
-const memory_mod = @import("memory.zig");
+const memory_mod = @import("../memory/memory.zig");
 const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
 /// Context opcode handlers for the EVM stack frame.

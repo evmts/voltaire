@@ -14,11 +14,11 @@ pub const frame = @import("evm/frame.zig");
 pub const frame_handlers = @import("evm/frame_handlers.zig");
 
 // Stack and memory modules
-pub const StackConfig = @import("evm/stack_config.zig").StackConfig;
-pub const Stack = @import("evm/stack.zig").Stack;
-pub const MemoryConfig = @import("evm/memory_config.zig").MemoryConfig;
-pub const Memory = @import("evm/memory.zig").Memory;
-pub const MemoryError = @import("evm/memory.zig").MemoryError;
+pub const StackConfig = @import("stack/stack_config.zig").StackConfig;
+pub const Stack = @import("stack/stack.zig").Stack;
+pub const MemoryConfig = @import("memory/memory_config.zig").MemoryConfig;
+pub const Memory = @import("memory/memory.zig").Memory;
+pub const MemoryError = @import("memory/memory.zig").MemoryError;
 
 // EVM main module and configuration
 pub const Evm = @import("evm/evm.zig").Evm;

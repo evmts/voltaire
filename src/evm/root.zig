@@ -20,11 +20,11 @@ pub const frame = @import("frame.zig");
 pub const frame_handlers = @import("frame_handlers.zig");
 
 // Stack and memory modules
-pub const StackConfig = @import("stack_config.zig").StackConfig;
-pub const Stack = @import("stack.zig").Stack;
-pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
-pub const Memory = @import("memory.zig").Memory;
-pub const MemoryError = @import("memory.zig").MemoryError;
+pub const StackConfig = @import("../stack/stack_config.zig").StackConfig;
+pub const Stack = @import("../stack/stack.zig").Stack;
+pub const MemoryConfig = @import("../memory/memory_config.zig").MemoryConfig;
+pub const Memory = @import("../memory/memory.zig").Memory;
+pub const MemoryError = @import("../memory/memory.zig").MemoryError;
 
 // EVM main module and configuration
 pub const Evm = @import("evm.zig").Evm;
@@ -179,8 +179,8 @@ test {
 test "Include C API tests" {
     const frame_c = @import("frame_c.zig");
     const bytecode_c = @import("../bytecode/bytecode_c.zig");
-    const memory_c = @import("memory_c.zig");
-    const stack_c = @import("stack_c.zig");
+    const memory_c = @import("../memory/memory_c.zig");
+    const stack_c = @import("../stack/stack_c.zig");
     const precompiles_c = @import("precompiles_c.zig");
     const hardfork_c = @import("hardfork_c.zig");
 

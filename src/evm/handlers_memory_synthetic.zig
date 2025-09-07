@@ -1,7 +1,7 @@
 const std = @import("std");
 const FrameConfig = @import("frame_config.zig").FrameConfig;
 const log = @import("../log.zig");
-const memory_mod = @import("memory.zig");
+const memory_mod = @import("../memory/memory.zig");
 const GasConstants = @import("primitives").GasConstants;
 const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
 
