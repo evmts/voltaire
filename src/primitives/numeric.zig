@@ -213,7 +213,7 @@ fn parseDecimal(decimal_str: []const u8, unit: Unit) !u256 {
 }
 
 fn formatDecimalPart(allocator: std.mem.Allocator, remainder: u256, multiplier: u256, max_decimals: u8) ![]u8 {
-    var decimal_chars = std.ArrayList(u8).init(allocator);
+    var decimal_chars = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer decimal_chars.deinit();
 
     var current_remainder = remainder;

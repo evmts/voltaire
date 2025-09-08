@@ -1249,7 +1249,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 return result;
             }
 
-            var digits = std.ArrayList(u8).init(allocator);
+            var digits = std.array_list.AlignedManaged(u8, null).init(allocator);
             defer digits.deinit();
 
             var n = self;

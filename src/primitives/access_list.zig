@@ -74,7 +74,7 @@ pub fn is_storage_key_in_access_list(
 // RLP encode access list
 pub fn encode_access_list(allocator: Allocator, accessList: AccessList) ![]u8 {
     // First, encode each entry as a list of [address, [storageKeys...]]
-    var entries = std.ArrayList([]const u8).init(allocator);
+    var entries = std.array_list.AlignedManaged([]const u8, null).init(allocator);
     defer {
         for (entries.items) |item| {
             allocator.free(item);
@@ -88,7 +88,7 @@ pub fn encode_access_list(allocator: Allocator, accessList: AccessList) ![]u8 {
         defer allocator.free(encodedAddress);
 
         // Encode storage keys
-        var encodedKeys = std.ArrayList([]const u8).init(allocator);
+        var encodedKeys = std.array_list.AlignedManaged([]const u8, null).init(allocator);
         defer {
             for (encodedKeys.items) |item| {
                 allocator.free(item);
@@ -137,7 +137,7 @@ pub fn deduplicate_access_list(
     allocator: Allocator,
     accessList: AccessList,
 ) ![]AccessListEntry {
-    var result = std.ArrayList(AccessListEntry).init(allocator);
+    var result = std.array_list.AlignedManaged(AccessListEntry, null).init(allocator);
     defer result.deinit();
 
     for (accessList) |entry| {
@@ -146,7 +146,7 @@ pub fn deduplicate_access_list(
         for (result.items) |*existing| {
             if (existing.address.eql(entry.address)) {
                 // Merge storage keys
-                var keys = std.ArrayList(Hash).init(allocator);
+                var keys = std.array_list.AlignedManaged(Hash, null).init(allocator);
                 defer keys.deinit();
 
                 // Add existing keys

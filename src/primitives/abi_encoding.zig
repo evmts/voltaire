@@ -242,7 +242,7 @@ pub fn compute_selector(signature: []const u8) Selector {
 }
 
 pub fn create_function_signature(allocator: std.mem.Allocator, name: []const u8, types: []const AbiType) ![]u8 {
-    var signature = std.ArrayList(u8).init(allocator);
+    var signature = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer signature.deinit();
 
     try signature.appendSlice(name);
@@ -720,7 +720,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 pub fn encode_abi_parameters(allocator: std.mem.Allocator, values: []const AbiValue) ![]u8 {
     if (values.len == 0) return try allocator.alloc(u8, 0);
 
-    var static_parts = std.ArrayList([]u8).init(allocator);
+    var static_parts = std.array_list.AlignedManaged([]u8, null).init(allocator);
     defer {
         for (static_parts.items) |part| {
             allocator.free(part);
@@ -728,7 +728,7 @@ pub fn encode_abi_parameters(allocator: std.mem.Allocator, values: []const AbiVa
         static_parts.deinit();
     }
 
-    var dynamic_parts = std.ArrayList([]u8).init(allocator);
+    var dynamic_parts = std.array_list.AlignedManaged([]u8, null).init(allocator);
     defer {
         for (dynamic_parts.items) |part| {
             allocator.free(part);
@@ -816,7 +816,7 @@ pub fn encode_function_data(allocator: std.mem.Allocator, selector: Selector, pa
 }
 
 pub fn encode_event_topics(allocator: std.mem.Allocator, event_signature: []const u8, indexed_values: []const AbiValue) ![][]u8 {
-    var topics = std.ArrayList([]u8).init(allocator);
+    var topics = std.array_list.AlignedManaged([]u8, null).init(allocator);
     defer topics.deinit();
 
     // First topic is the event signature hash
@@ -853,7 +853,7 @@ pub fn encode_event_topics(allocator: std.mem.Allocator, event_signature: []cons
 
 // Simple packed encoding
 pub fn encode_packed(allocator: std.mem.Allocator, values: []const AbiValue) ![]u8 {
-    var result = std.ArrayList(u8).init(allocator);
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer result.deinit();
 
     for (values) |value| {

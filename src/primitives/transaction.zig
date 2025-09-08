@@ -172,7 +172,7 @@ pub const AccessListItem = struct {
 
 // Encode legacy transaction for signing
 pub fn encode_legacy_for_signing(allocator: Allocator, tx: LegacyTransaction, chain_id: u64) ![]u8 {
-    var list = std.ArrayList(u8).init(allocator);
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
     // Encode fields for signing (EIP-155)
@@ -203,7 +203,7 @@ pub fn encode_legacy_for_signing(allocator: Allocator, tx: LegacyTransaction, ch
     }
 
     // Wrap in RLP list
-    var result = std.ArrayList(u8).init(allocator);
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
@@ -218,7 +218,7 @@ pub fn encode_legacy_for_signing(allocator: Allocator, tx: LegacyTransaction, ch
 
 // Encode EIP-1559 transaction for signing
 pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) ![]u8 {
-    var list = std.ArrayList(u8).init(allocator);
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
     // Encode fields
@@ -252,7 +252,7 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
     }
 
     // Wrap in RLP list
-    var rlp_wrapped = std.ArrayList(u8).init(allocator);
+    var rlp_wrapped = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer rlp_wrapped.deinit();
 
     if (list.items.len <= 55) {
@@ -265,7 +265,7 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
     try rlp_wrapped.appendSlice(list.items);
 
     // Prepend transaction type
-    var result = std.ArrayList(u8).init(allocator);
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
     try result.append(@intFromEnum(TransactionType.eip1559));
     try result.appendSlice(rlp_wrapped.items);
 
@@ -274,7 +274,7 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
 
 // Encode access list (public wrapper for external use)
 pub fn encode_access_list(allocator: Allocator, access_list: []const AccessListItem) ![]u8 {
-    var output = std.ArrayList(u8).init(allocator);
+    var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
     
     try encode_access_list_internal(allocator, access_list, &output);
@@ -283,18 +283,18 @@ pub fn encode_access_list(allocator: Allocator, access_list: []const AccessListI
 
 // Encode access list (internal version that writes to output)
 fn encode_access_list_internal(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
-    var list = std.ArrayList(u8).init(allocator);
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
     for (access_list) |item| {
-        var item_list = std.ArrayList(u8).init(allocator);
+        var item_list = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer item_list.deinit();
 
         // Encode address
         try rlp.encodeBytes(allocator, &item.address.bytes, &item_list);
 
         // Encode storage keys
-        var keys_list = std.ArrayList(u8).init(allocator);
+        var keys_list = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer keys_list.deinit();
 
         for (item.storage_keys) |key| {

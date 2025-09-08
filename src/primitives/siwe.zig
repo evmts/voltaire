@@ -38,7 +38,7 @@ pub const SiweMessage = struct {
     resources: ?[]const []const u8,
 
     pub fn format(self: *const SiweMessage, allocator: Allocator) ![]u8 {
-        var result = std.ArrayList(u8).init(allocator);
+        var result = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer result.deinit();
 
         // Header

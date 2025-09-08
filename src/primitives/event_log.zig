@@ -40,11 +40,11 @@ pub const EventInput = struct {
 
 // Helper function to parse event log
 pub fn parse_event_log(allocator: Allocator, log: EventLog, sig: EventSignature) ![]abi_encoding.AbiValue {
-    var result = std.ArrayList(abi_encoding.AbiValue).init(allocator);
+    var result = std.array_list.AlignedManaged(abi_encoding.AbiValue, null).init(allocator);
     defer result.deinit();
 
     var topic_index: usize = 1; // Skip topic0 (event signature)
-    var data_types = std.ArrayList(abi_encoding.AbiType).init(allocator);
+    var data_types = std.array_list.AlignedManaged(abi_encoding.AbiType, null).init(allocator);
     defer data_types.deinit();
 
     // Process each input
@@ -107,7 +107,7 @@ pub fn parse_event_log(allocator: Allocator, log: EventLog, sig: EventSignature)
 
 // Helper function to filter logs by topics
 pub fn filter_logs_by_topics(logs: []const EventLog, filter_topics: []const ?Hash) []const EventLog {
-    var matches = std.ArrayList(EventLog).init(std.heap.page_allocator);
+    var matches = std.array_list.AlignedManaged(EventLog, null).init(std.heap.page_allocator);
     defer matches.deinit();
 
     for (logs) |log| {

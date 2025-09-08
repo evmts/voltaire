@@ -331,7 +331,7 @@ pub fn calculate_create2_address(allocator: std.mem.Allocator, creator: Address,
     Keccak256.hash(init_code, &code_hash, .{});
 
     // Create the data to hash: 0xff ++ creator ++ salt ++ keccak256(init_code)
-    var data = std.ArrayList(u8).init(allocator);
+    var data = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer data.deinit();
 
     // Add 0xff prefix
