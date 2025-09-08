@@ -2375,7 +2375,7 @@ test "Precompiles - disabled configuration" {
     defer evm.deinit();
 
     // Try to call IDENTITY precompile - should be treated as regular call
-    const identity_address = [_]u8{0} ** 19 ++ [_]u8{4}; // 0x0000...0004
+    const identity_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{4} }; // 0x0000...0004
     const test_data = "Hello, World!";
 
     const call_params = NoPrecompileEvm.CallParams{
@@ -3064,9 +3064,9 @@ test "EVM revert_to_snapshot uses no allocation and fully reverts" {
     });
 
     // Sanity: confirm changes applied
-    try std.testing.expectEqual(@as(u256, 0xAAAA), (try db.get_storage(addr, storage_key1)));
-    try std.testing.expectEqual(@as(u256, 0xBBBB), (try db.get_storage(addr, storage_key2)));
-    const pre_revert_acc = (try db.get_account(addr)).?;
+    try std.testing.expectEqual(@as(u256, 0xAAAA), (try db.get_storage(addr.bytes, storage_key1)));
+    try std.testing.expectEqual(@as(u256, 0xBBBB), (try db.get_storage(addr.bytes, storage_key2)));
+    const pre_revert_acc = (try db.get_account(addr.bytes)).?;
     try std.testing.expectEqual(@as(u256, 999999), pre_revert_acc.balance);
     try std.testing.expectEqual(@as(u64, 9), pre_revert_acc.nonce);
 
@@ -3077,9 +3077,9 @@ test "EVM revert_to_snapshot uses no allocation and fully reverts" {
     evm.allocator = prev_alloc;
 
     // Verify state fully reverted (no allocations needed during revert)
-    try std.testing.expectEqual(@as(u256, 0x1111), (try db.get_storage(addr, storage_key1)));
-    try std.testing.expectEqual(@as(u256, 0x2222), (try db.get_storage(addr, storage_key2)));
-    const reverted_acc = (try db.get_account(addr)).?;
+    try std.testing.expectEqual(@as(u256, 0x1111), (try db.get_storage(addr.bytes, storage_key1)));
+    try std.testing.expectEqual(@as(u256, 0x2222), (try db.get_storage(addr.bytes, storage_key2)));
+    const reverted_acc = (try db.get_account(addr.bytes)).?;
     try std.testing.expectEqual(@as(u256, 123456), reverted_acc.balance);
     try std.testing.expectEqual(@as(u64, 7), reverted_acc.nonce);
 
@@ -3119,7 +3119,7 @@ test "journal state application - balance change rollback" {
     // Set initial account balance
     var original_account = Account.zero();
     original_account.balance = original_balance;
-    try evm.database.set_account(test_address.bytes, original_account);
+    try evm.database.set_account(test_address, original_account);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -3127,7 +3127,7 @@ test "journal state application - balance change rollback" {
     // Modify balance and record in journal
     var modified_account = original_account;
     modified_account.balance = new_balance;
-    try evm.database.set_account(test_address.bytes, modified_account);
+    try evm.database.set_account(test_address, modified_account);
     try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{
@@ -3295,7 +3295,7 @@ test "journal state application - multiple changes rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0x9A} ++ [_]u8{0} ** 19;
+    const test_address: primitives.Address = .{ .bytes = [_]u8{0x9A} ++ [_]u8{0} ** 19 };
     const storage_key: u256 = 0xABC;
 
     // Original state
@@ -3316,7 +3316,7 @@ test "journal state application - multiple changes rollback" {
     original_account.nonce = original_nonce;
     original_account.code_hash = original_code_hash;
     try evm.database.set_account(test_address.bytes, original_account);
-    try evm.database.set_storage(test_address, storage_key, original_storage);
+    try evm.database.set_storage(test_address.bytes, storage_key, original_storage);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -3327,7 +3327,7 @@ test "journal state application - multiple changes rollback" {
     modified_account.nonce = new_nonce;
     modified_account.code_hash = new_code_hash;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.database.set_storage(test_address, storage_key, new_storage);
+    try evm.database.set_storage(test_address.bytes, storage_key, new_storage);
 
     // Add journal entries for all changes
     try evm.journal.entries.append(evm.allocator, .{
@@ -3413,14 +3413,14 @@ test "journal state application - nested snapshots rollback" {
     // Set initial state
     var account = Account.zero();
     account.balance = original_balance;
-    try evm.database.set_account(test_address.bytes, account);
+    try evm.database.set_account(test_address, account);
 
     // Create first snapshot
     const snapshot1 = evm.create_snapshot();
 
     // First change
     account.balance = middle_balance;
-    try evm.database.set_account(test_address.bytes, account);
+    try evm.database.set_account(test_address, account);
     try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot1,
         .data = .{ .balance_change = .{
@@ -3924,15 +3924,14 @@ test "EVM benchmark scenario - reproduces segfault" {
     const allocator = std.testing.allocator;
 
     // Create test database
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.database();
+    var db_interface = Database.init(allocator);
+    defer db_interface.deinit();
 
     // Deploy contract first (ERC20 approval bytecode snippet)
     const stop_bytecode = [_]u8{0x00}; // Simple STOP for now
     const deploy_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
     const code_hash = try db_interface.set_code(&stop_bytecode);
-    try db_interface.set_account(deploy_address, Account{
+    try db_interface.set_account(deploy_address.bytes, Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -4017,7 +4016,7 @@ test "CREATE interaction - deployed contract can be called" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4055,7 +4054,7 @@ test "CREATE interaction - deployed contract can be called" {
     // Deploy the contract
     const create_result = try evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = init_code.items,
             .gas = 1_000_000,
@@ -4068,12 +4067,12 @@ test "CREATE interaction - deployed contract can be called" {
 
     // Get deployed contract address
     var contract_address: primitives.Address = undefined;
-    @memcpy(&contract_address, create_result.output[0..20]);
+    @memcpy(&contract_address.bytes, create_result.output[0..20]);
 
     // Step 2: Call the deployed contract
     const call_result = try evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = contract_address,
             .value = 0,
             .input = &[_]u8{}, // No input data
@@ -4119,7 +4118,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4214,7 +4213,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
 
     const factory_result = try evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = deploy_data.items,
             .gas = 5_000_000,
@@ -4231,7 +4230,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     // Call child contract to verify initialization
     const verify_result = try evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = child_address,
             .value = 0,
             .input = &[_]u8{},
@@ -4276,7 +4275,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4389,7 +4388,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     // Execute level 1
     const result1 = try evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = level1_code.items,
             .gas = 10_000_000,
@@ -4400,7 +4399,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try std.testing.expect(result1.success);
 
     // Get level 2 address from storage
-    const level2_addr_u256 = evm_instance.get_storage([_]u8{0x01} ** 20, 0);
+    const level2_addr_u256 = evm_instance.get_storage(.{ .bytes = [_]u8{0x01} ** 20 }, 0);
     var level2_addr: primitives.Address = undefined;
     const bytes = std.mem.toBytes(level2_addr_u256);
     @memcpy(&level2_addr, bytes[12..32]);
@@ -4408,7 +4407,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     // Call level 2 to get level 3 address
     const result2 = try evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = level2_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -4426,7 +4425,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     // Call level 3 to verify it returns 99
     const result3 = try evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = level3_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -4470,7 +4469,7 @@ test "CREATE interaction - created contract modifies parent storage" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4562,7 +4561,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     // Deploy parent contract
     const deploy_result = try evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = parent_code.items,
             .gas = 5_000_000,
@@ -4573,7 +4572,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     try std.testing.expect(deploy_result.success);
 
     // Get parent address (deterministic based on sender nonce)
-    const parent_addr = [_]u8{0x01} ** 20; // Simplified for test
+    const parent_addr: primitives.Address = .{ .bytes = [_]u8{0x01} ** 20 }; // Simplified for test
 
     // Get child address from parent's storage
     const child_addr_u256 = evm_instance.get_storage(parent_addr, 1);
@@ -4719,9 +4718,9 @@ test "Arena allocator - handles multiple logs efficiently" {
     }
     bytecode[500] = 0x00; // STOP
 
-    const contract_addr = [_]u8{0x02} ** 20;
+    const contract_addr: primitives.Address = .{ .bytes = [_]u8{0x02} ** 20 };
     const code_hash = try db.set_code(&bytecode);
-    try db.set_account(contract_addr, .{
+    try db.set_account(contract_addr.bytes, .{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -4892,9 +4891,9 @@ test "Arena allocator - memory efficiency with nested calls" {
     parent_bytecode[idx] = 0x00;
     idx += 1;
 
-    const parent_addr = [_]u8{0x04} ** 20;
+    const parent_addr: primitives.Address = .{ .bytes = [_]u8{0x04} ** 20 };
     const parent_code_hash = try db.set_code(parent_bytecode[0..idx]);
-    try db.set_account(parent_addr, .{
+    try db.set_account(parent_addr.bytes, .{
         .balance = 0,
         .nonce = 0,
         .code_hash = parent_code_hash,
@@ -4904,7 +4903,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     // Child contract that also emits log
     const child_bytecode = [_]u8{ 0x60, 0x10, 0x60, 0x00, 0xA0, 0x00 }; // PUSH1 0x10 PUSH1 0x00 LOG0 STOP
     const child_code_hash = try db.set_code(&child_bytecode);
-    try db.set_account(child_addr, .{
+    try db.set_account(child_addr.bytes, .{
         .balance = 0,
         .nonce = 0,
         .code_hash = child_code_hash,
@@ -5027,7 +5026,7 @@ test "CREATE stores deployed code bytes" {
 
     // Give creator account some balance
     const creator_address: primitives.Address = .{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -5106,7 +5105,7 @@ test "CREATE stores deployed code bytes" {
 
     // Deploy creator contract
     const creator_code_hash = try db.set_code(creator_bytecode.items);
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = creator_code_hash,
@@ -5129,10 +5128,10 @@ test "CREATE stores deployed code bytes" {
 
     // Extract created contract address from output
     var created_address: primitives.Address = undefined;
-    @memcpy(&created_address, result.output[0..20]);
+    @memcpy(&created_address.bytes, result.output[0..20]);
 
     // Verify the deployed contract exists and has the correct code
-    const deployed_code = try db.get_code_by_address(created_address);
+    const deployed_code = try db.get_code_by_address(created_address.bytes);
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
 
     // Call the deployed contract to verify it works
@@ -5188,7 +5187,7 @@ test "CREATE2 stores deployed code bytes" {
 
     // Give creator account some balance
     const creator_address: primitives.Address = .{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 };
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -5352,7 +5351,7 @@ test "EVM bytecode iterator execution - simple STOP" {
     // Add contract with STOP bytecode
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&stop_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -5414,7 +5413,7 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
     // Add contract
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x43} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&return_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -5481,7 +5480,7 @@ test "EVM bytecode iterator execution - handles jumps" {
     // Add contract
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x44} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&jump_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -5510,7 +5509,7 @@ test "EIP-4788: beacon block root storage and retrieval" {
     const allocator = gpa.allocator();
 
     // Setup database and EVM
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
 
     // EIP-4788 beacon roots contract address
@@ -5668,7 +5667,7 @@ test "E2E STATICCALL - read-only enforcement" {
 
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&state_modifying_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
