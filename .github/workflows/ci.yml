@@ -9,14 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install Zig 0.14.1
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.14.1
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.2.19
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -30,23 +28,3 @@ jobs:
         run: zig build
       - name: Test
         run: zig build test
-
-  release-binaries:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Zig 0.14.1
-        uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: 0.14.1
-      - name: Build release artifacts
-        run: zig build release
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: guillotine-binaries
-          path: |
-            zig-out/bin/orchestrator
-            zig-out/bin/evm-runner
-            zig-out/bin/evm-runner-small
