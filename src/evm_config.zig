@@ -181,7 +181,7 @@ test "EvmConfig - hardfork variations" {
         EvmConfig{ .eips = Eips{ .hardfork = Hardfork.CANCUN } },
     };
     
-    for (configs) |config| {
+    inline for (configs) |config| {
         // All should have same default non-hardfork settings
         try testing.expectEqual(@as(u11, 1024), config.max_call_depth);
         try testing.expectEqual(true, config.enable_precompiles);
@@ -192,8 +192,9 @@ test "EvmConfig - max input size variations" {
     const small_config = EvmConfig{ .max_input_size = 1024 };
     try testing.expectEqual(@as(u18, 1024), small_config.max_input_size);
     
-    const large_config = EvmConfig{ .max_input_size = 262144 }; // 256 KB
-    try testing.expectEqual(@as(u18, 262144), large_config.max_input_size);
+    // u18 cannot represent 262144 (2^18); use max-1 instead
+    const large_config = EvmConfig{ .max_input_size = 262143 }; // 2^18 - 1
+    try testing.expectEqual(@as(u18, 262143), large_config.max_input_size);
     
     // Test maximum value for u18
     const max_config = EvmConfig{ .max_input_size = 262143 }; // 2^18 - 1
