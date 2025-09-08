@@ -80,7 +80,7 @@ Benchmarks so far look very promising.
 
 These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/evm-bench) test cases with `hyperfine`. 
 
-- Benchmarking infra can be seen in previous commits but is currently being moved to its own dedicated repo. 
+- Benchmarking infra can be seen in previous commits but is currently being moved to its own dedicated repo: https://github.com/evmts/evm-bench (WIP). 
 - Looking for contributors to help set up easily reproducible benchmarks
 
 | Test Case               | Guillotine | REVM     | Geth     | evmone   |
