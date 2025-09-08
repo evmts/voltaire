@@ -110,16 +110,20 @@ pub fn build(b: *std.Build) void {
     build_pkg.Utils.createExternalBuildSteps(b);
     
     // Shared library for FFI bindings
-    const shared_lib = b.addSharedLibrary(.{
-        .name = "guillotine",
+    const shared_lib_mod = b.createModule(.{
         .root_source_file = b.path("src/evm_c_api.zig"),
         .target = target,
         .optimize = optimize,
     });
-    shared_lib.root_module.addImport("evm", modules.evm_mod);
-    shared_lib.root_module.addImport("primitives", modules.primitives_mod);
-    shared_lib.root_module.addImport("crypto", modules.crypto_mod);
-    shared_lib.root_module.addImport("build_options", config.options_mod);
+    shared_lib_mod.addImport("evm", modules.evm_mod);
+    shared_lib_mod.addImport("primitives", modules.primitives_mod);
+    shared_lib_mod.addImport("crypto", modules.crypto_mod);
+    shared_lib_mod.addImport("build_options", config.options_mod);
+    
+    const shared_lib = b.addSharedLibrary(.{
+        .name = "guillotine",
+        .root_module = shared_lib_mod,
+    });
     shared_lib.linkLibrary(c_kzg_lib);
     shared_lib.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| shared_lib.linkLibrary(bn254);
