@@ -204,7 +204,7 @@ test "validator withdrawal request" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     var contract = ValidatorWithdrawalsContract.init(allocator, &database);
@@ -248,7 +248,7 @@ test "withdrawal authorization check" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     var contract = ValidatorWithdrawalsContract.init(allocator, &database);
@@ -284,7 +284,7 @@ test "max withdrawals per block" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     var contract = ValidatorWithdrawalsContract.init(allocator, &database);

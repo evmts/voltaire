@@ -191,7 +191,7 @@ test "historical block hashes ring buffer storage" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     // Test storing and retrieving block hashes
@@ -223,7 +223,7 @@ test "historical block hashes contract execution" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     var contract = HistoricalBlockHashesContract{ .database = &database };
@@ -256,7 +256,7 @@ test "block hash retrieval with overflow" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     // Test that ring buffer correctly wraps around

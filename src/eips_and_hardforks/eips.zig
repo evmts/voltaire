@@ -289,7 +289,7 @@ pub const Eips = struct {
     }
     
     /// Get SSTORE gas costs based on hardfork and state
-    pub fn sstore_gas_cost(self: Self, current: primitives.U256, new: primitives.U256, original: primitives.U256) SstoreGasCost {
+    pub fn sstore_gas_cost(self: Self, current: u256, new: u256, original: u256) SstoreGasCost {
         _ = original; // Will be used for EIP-2200
         
         // Pre-Constantinople: Simple model
@@ -368,10 +368,10 @@ test "eip_3651_warm_coinbase_address" {
     const post_shanghai = Eips{ .hardfork = Hardfork.SHANGHAI };
     
     const allocator = std.testing.allocator;
-    var access_list = AccessList.init(allocator, .{});
+    var access_list = AccessList.init(allocator);
     defer access_list.deinit();
     
-    const coinbase = primitives.Address.Address.fromHex("0x1234567890123456789012345678901234567890") catch unreachable;
+    const coinbase = primitives.Address.from_hex("0x1234567890123456789012345678901234567890") catch unreachable;
     
     // Pre-Shanghai: should not warm coinbase (no-op)
     try pre_shanghai.eip_3651_warm_coinbase_address(&access_list, coinbase);

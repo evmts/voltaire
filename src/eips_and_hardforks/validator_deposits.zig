@@ -222,7 +222,7 @@ test "validator deposit processing" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     var contract = ValidatorDepositsContract.init(allocator, &database);
@@ -274,7 +274,7 @@ test "deposit validation" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
     
     var contract = ValidatorDepositsContract.init(allocator, &database);
