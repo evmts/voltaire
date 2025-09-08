@@ -57,9 +57,8 @@ test "EVM call() entry point method" {
     const allocator = std.testing.allocator;
 
     // Create test database
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.database();
+    var db = Database.init(allocator);
+    defer db.deinit();
 
     // Create EVM instance
     const block_info = BlockInfo{
@@ -79,7 +78,7 @@ test "EVM call() entry point method" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(allocator, &db_interface, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
 
     // Test that call method exists and has correct signature
@@ -93,26 +92,17 @@ test "EVM call() entry point method" {
         },
     };
 
-    // This should return Error!CallResult
+    // Call returns CallResult
     const result = evm.call(call_params);
-
-    // Test that method returns expected error type
-    comptime {
-        const ReturnType = @TypeOf(result);
-        const expected_type = DefaultEvm.Error!DefaultEvm.CallResult;
-        _ = ReturnType;
-        _ = expected_type;
-        // We can't directly compare error union types, but this ensures it compiles
-    }
+    _ = result;
 }
 
 test "EVM call() method routes to different handlers" {
     const allocator = std.testing.allocator;
 
     // Create test database
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.database();
+    var db = Database.init(allocator);
+    defer db.deinit();
 
     // Create EVM instance
     const block_info = BlockInfo{
@@ -132,7 +122,7 @@ test "EVM call() method routes to different handlers" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(allocator, &db_interface, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
 
     // Test CALL routing
@@ -145,7 +135,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(call_params) catch {};
+    _ = evm.call(call_params);
 
     // Test DELEGATECALL routing
     const delegatecall_params = DefaultEvm.CallParams{
@@ -156,7 +146,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(delegatecall_params) catch {};
+    _ = evm.inner_call(delegatecall_params) catch {};
 
     // Test STATICCALL routing
     const staticcall_params = DefaultEvm.CallParams{
@@ -167,7 +157,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(staticcall_params) catch {};
+    _ = evm.inner_call(staticcall_params) catch {};
 
     // Test CREATE routing
     const create_params = DefaultEvm.CallParams{
@@ -178,7 +168,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(create_params) catch {};
+    _ = evm.inner_call(create_params) catch {};
 
     // Test CREATE2 routing
     const create2_params = DefaultEvm.CallParams{
@@ -190,90 +180,21 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(create2_params) catch {};
+    _ = evm.inner_call(create2_params) catch {};
 }
 
 test "EVM call_handler basic functionality" {
     const allocator = std.testing.allocator;
 
     // Create test database
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.database();
-
-    // Add a simple contract that just STOPs
-    const stop_bytecode = [_]u8{0x00}; // STOP opcode
-    const contract_address: primitives.Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
-    const code_hash = try db_interface.set_code(&stop_bytecode);
-    try db_interface.set_account(contract_address, Account{
-        .balance = 0,
-        .nonce = 0,
-        .code_hash = code_hash,
-        .storage_root = [_]u8{0} ** 32,
-    });
-
-    // Create EVM instance
-    const block_info = BlockInfo{
-        .chain_id = 1,
-        .number = 1,
-        .timestamp = 1000,
-        .difficulty = 100,
-        .gas_limit = 30000000,
-        .coinbase = primitives.ZERO_ADDRESS,
-        .base_fee = 0,
-        .prev_randao = [_]u8{0} ** 32,
-    };
-
-    const tx_context = TransactionContext{
-        .gas_limit = 1000000,
-        .coinbase = primitives.ZERO_ADDRESS,
-        .chain_id = 1,
-    };
-
-    var evm = try DefaultEvm.init(allocator, &db_interface, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
-    defer evm.deinit();
-
-    // Test call_handler directly (once it's implemented)
-    const params = struct {
-        caller: primitives.Address,
-        to: primitives.Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    }{
-        .caller = primitives.ZERO_ADDRESS,
-        .to = contract_address,
-        .value = 0,
-        .input = &.{},
-        .gas = 1000000,
-    };
-
-    // This should now work with the implemented handler
-    const result = try evm.call_handler(params);
-
-    // The implemented handler should work correctly
-    try std.testing.expect(result.success);
-    try std.testing.expect(result.gas_left > 0);
-    try std.testing.expectEqual(@as(usize, 0), result.output.len);
-}
-
-test "EVM staticcall handler prevents state changes" {
-    const allocator = std.testing.allocator;
-
-    // Create test database with initial state
     var db = Database.init(allocator);
     defer db.deinit();
 
-    // Add a contract that tries to modify storage (should fail in staticcall)
-    const sstore_bytecode = [_]u8{
-        0x60, 0x01, // PUSH1 1
-        0x60, 0x00, // PUSH1 0
-        0x55, // SSTORE (should fail in static context)
-        0x00, // STOP
-    };
-    const contract_address: primitives.Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
-    const code_hash = try db.set_code(&sstore_bytecode);
-    try db.set_account(contract_address, Account{
+    // Add a simple contract that just STOPs
+    const stop_bytecode = [_]u8{0x00}; // STOP opcode
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
+    const code_hash = try db.set_code(&stop_bytecode);
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -301,21 +222,77 @@ test "EVM staticcall handler prevents state changes" {
     var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
 
-    // Test staticcall directly
-    const params = struct {
-        caller: primitives.Address,
-        to: primitives.Address,
-        input: []const u8,
-        gas: u64,
-    }{
-        .caller = primitives.ZERO_ADDRESS,
-        .to = contract_address,
-        .input = &.{},
-        .gas = 1000000,
+    // Test call_handler directly (once it's implemented)
+    // Execute a simple CALL to STOP
+    const result = try evm.inner_call(DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = contract_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    });
+
+    // The implemented handler should work correctly
+    try std.testing.expect(result.success);
+    try std.testing.expect(result.gas_left > 0);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "EVM staticcall handler prevents state changes" {
+    const allocator = std.testing.allocator;
+
+    // Create test database with initial state
+    var db = Database.init(allocator);
+    defer db.deinit();
+
+    // Add a contract that tries to modify storage (should fail in staticcall)
+    const sstore_bytecode = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE (should fail in static context)
+        0x00, // STOP
+    };
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
+    const code_hash = try db.set_code(&sstore_bytecode);
+    try db.set_account(contract_address.bytes, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
 
-    // This should now work with the implemented handler
-    const result = try evm.staticcall_handler(params);
+    const tx_context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
+    defer evm.deinit();
+
+    // Execute STATICCALL to code that attempts SSTORE
+    const result = try evm.inner_call(DefaultEvm.CallParams{
+        .staticcall = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = contract_address,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    });
 
     // Staticcall with SSTORE should fail due to static context restrictions
     try std.testing.expect(!result.success);
@@ -325,13 +302,12 @@ test "EVM delegatecall handler preserves caller context" {
     const allocator = std.testing.allocator;
 
     // Create test database
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.database();
+    var db = Database.init(allocator);
+    defer db.deinit();
 
     // Add a contract that returns the caller address
     // CALLER opcode pushes msg.sender to stack
-    _ = [_]u8{
+    const caller_bytecode = [_]u8{
         0x33, // CALLER
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE - store caller at memory[0]
@@ -339,11 +315,12 @@ test "EVM delegatecall handler preserves caller context" {
         0x60, 0x00, // PUSH1 0
         0xF3, // RETURN - return 32 bytes from memory[0]
     };
-    const contract_address: primitives.Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
-    try db_interface.set_account(contract_address, Account{
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
+    const code_hash2 = try db.set_code(&caller_bytecode);
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
-        .code_hash = [_]u8{0} ** 32,
+        .code_hash = code_hash2,
         .storage_root = [_]u8{0} ** 32,
     });
 
@@ -366,24 +343,18 @@ test "EVM delegatecall handler preserves caller context" {
         .chain_id = 1,
     };
 
-    var evm = try DefaultEvm.init(allocator, &db_interface, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
 
-    // Test delegatecall - should preserve original caller
-    const params = struct {
-        caller: primitives.Address,
-        to: primitives.Address,
-        input: []const u8,
-        gas: u64,
-    }{
-        .caller = original_caller, // This should be preserved in delegatecall
-        .to = contract_address,
-        .input = &.{},
-        .gas = 1000000,
-    };
-
     // This should now work with the implemented handler
-    const result = try evm.delegatecall_handler(params);
+    const result = try evm.inner_call(DefaultEvm.CallParams{
+        .delegatecall = .{
+            .caller = original_caller,
+            .to = contract_address,
+            .input = &.{},
+            .gas = 1000000,
+        },
+    });
 
     // Delegatecall with empty code should succeed
     try std.testing.expect(result.success);
@@ -393,10 +364,8 @@ test "Evm creation with custom config" {
     const CustomEvm = Evm(.{
         .max_call_depth = 512,
         .max_input_size = 65536, // 64KB
-        .frame_config = .{
-            .stack_size = 512,
-            .max_bytecode_size = 16384,
-        },
+        .stack_size = 512,
+        .max_bytecode_size = 16384,
     });
 
     // Create test database
