@@ -6,7 +6,7 @@
 
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 const JournalConfig = @import("journal_config.zig").JournalConfig;
 const journal_entry = @import("journal_entry.zig");
 
@@ -128,7 +128,7 @@ pub fn Journal(comptime config: JournalConfig) type {
                 const entry = self.entries.items[i - 1];
                 switch (entry.data) {
                     .balance_change => |bc| {
-                        if (std.mem.eql(u8, &address, &bc.address)) {
+                        if (std.mem.eql(u8, &address.bytes, &bc.address.bytes)) {
                             return bc.original_balance;
                         }
                     },
@@ -176,7 +176,7 @@ test "Journal - basic operations" {
 
 test "Journal - storage change recording" {
     const testing = std.testing;
-    const zero_addr = [_]u8{0} ** 20;
+    const zero_addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -214,7 +214,7 @@ test "Journal - storage change recording" {
 
 test "Journal - revert to snapshot" {
     const testing = std.testing;
-    const zero_addr = [_]u8{0} ** 20;
+    const zero_addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -243,8 +243,8 @@ test "Journal - revert to snapshot" {
 
 test "Journal - all entry types" {
     const testing = std.testing;
-    const addr1 = [_]u8{1} ** 20;
-    const addr2 = [_]u8{2} ** 20;
+    const addr1: Address = .{ .bytes = [_]u8{1} ** 20 };
+    const addr2: Address = .{ .bytes = [_]u8{2} ** 20 };
     const code_hash = [_]u8{0xAB} ** 32;
     
     var journal = DefaultJournal.init(testing.allocator);
@@ -291,7 +291,7 @@ test "Journal - all entry types" {
 
 test "Journal - get_snapshot_entries" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -326,7 +326,7 @@ test "Journal - get_snapshot_entries" {
 
 test "Journal - clear operation" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -362,7 +362,7 @@ test "Journal - minimal configuration" {
     var journal = MinimalJournal.init(testing.allocator);
     defer journal.deinit();
     
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     // Test with minimal types
     const snapshot: u8 = journal.create_snapshot();
@@ -380,8 +380,8 @@ test "Journal - minimal configuration" {
 
 test "Journal - get_original_balance" {
     const testing = std.testing;
-    const addr1 = [_]u8{1} ** 20;
-    const addr2 = [_]u8{2} ** 20;
+    const addr1: Address = .{ .bytes = [_]u8{1} ** 20 };
+    const addr2: Address = .{ .bytes = [_]u8{2} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -402,7 +402,7 @@ test "Journal - get_original_balance" {
     try testing.expectEqual(@as(u256, 2000), balance2.?);
     
     // Test non-existent address
-    const addr3 = [_]u8{3} ** 20;
+    const addr3: Address = .{ .bytes = [_]u8{3} ** 20 };
     const balance3 = journal.get_original_balance(addr3);
     try testing.expect(balance3 == null);
 }
@@ -418,7 +418,7 @@ test "Journal - memory efficiency" {
     try testing.expect(initial_capacity >= 128); // Default initial_capacity
     
     // Add entries up to initial capacity
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     const snapshot = journal.create_snapshot();
     
     var i: usize = 0;
@@ -432,7 +432,7 @@ test "Journal - memory efficiency" {
 
 test "Journal - complex revert scenario" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -471,7 +471,7 @@ test "Journal - complex revert scenario" {
 
 test "Journal - duplicate storage changes" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -494,9 +494,9 @@ test "Journal - duplicate storage changes" {
 
 test "Journal - multiple addresses same slot" {
     const testing = std.testing;
-    const addr1 = [_]u8{1} ** 20;
-    const addr2 = [_]u8{2} ** 20;
-    const addr3 = [_]u8{3} ** 20;
+    const addr1: Address = .{ .bytes = [_]u8{1} ** 20 };
+    const addr2: Address = .{ .bytes = [_]u8{2} ** 20 };
+    const addr3: Address = .{ .bytes = [_]u8{3} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -545,7 +545,7 @@ test "Journal - snapshot ID overflow behavior" {
 
 test "Journal - empty journal operations" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -573,7 +573,7 @@ test "Journal - empty journal operations" {
 
 test "Journal - boundary value testing" {
     const testing = std.testing;
-    const addr = [_]u8{0xFF} ** 20; // Max address
+    const addr: Address = .{ .bytes = [_]u8{0xFF} ** 20 }; // Max address
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -604,9 +604,10 @@ test "Journal - boundary value testing" {
 
 test "Journal - account lifecycle tracking" {
     const testing = std.testing;
-    const addr1 = [_]u8{1} ** 20;
-    _ = [_]u8{2} ** 20;
-    const beneficiary = [_]u8{0xBE} ++ [_]u8{0} ** 19;
+    const addr1: Address = .{ .bytes = [_]u8{1} ** 20 };
+    const _unused_addr: Address = .{ .bytes = [_]u8{2} ** 20 };
+    _ = _unused_addr;
+    const beneficiary: Address = .{ .bytes = [_]u8{0xBE} ++ [_]u8{0} ** 19 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -638,7 +639,7 @@ test "Journal - account lifecycle tracking" {
 
 test "Journal - interleaved snapshots" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -683,8 +684,8 @@ test "Journal - large scale operations" {
     
     // Record many changes
     for (0..num_addresses) |addr_idx| {
-        var addr: [20]u8 = [_]u8{0} ** 20;
-        addr[19] = @intCast(addr_idx);
+        var addr: Address = .{ .bytes = [_]u8{0} ** 20 };
+        addr.bytes[19] = @intCast(addr_idx);
         
         const snapshot = if (addr_idx % 2 == 0) snapshot1 else snapshot2;
         
@@ -700,9 +701,9 @@ test "Journal - large scale operations" {
     try testing.expectEqual(expected_entries, journal.entry_count());
     
     // Test retrieval of some values
-    const addr_0: [20]u8 = [_]u8{0} ** 20;
-    var addr_99: [20]u8 = [_]u8{0} ** 20;
-    addr_99[19] = 99;
+    const addr_0: Address = .{ .bytes = [_]u8{0} ** 20 };
+    var addr_99: Address = .{ .bytes = [_]u8{0} ** 20 };
+    addr_99.bytes[19] = 99;
     
     const balance_0 = journal.get_original_balance(addr_0);
     try testing.expectEqual(@as(u256, 0), balance_0.?);
@@ -721,7 +722,7 @@ test "Journal - large scale operations" {
 
 test "Journal - zero value storage" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
@@ -753,16 +754,16 @@ test "Journal - address comparison edge cases" {
     const snapshot = journal.create_snapshot();
     
     // Very similar addresses
-    var addr1: [20]u8 = [_]u8{0} ** 20;
-    var addr2: [20]u8 = [_]u8{0} ** 20;
-    addr1[0] = 1;
-    addr2[0] = 2;
+    var addr1: Address = .{ .bytes = [_]u8{0} ** 20 };
+    var addr2: Address = .{ .bytes = [_]u8{0} ** 20 };
+    addr1.bytes[0] = 1;
+    addr2.bytes[0] = 2;
     
     // Another pair differing in last byte
-    var addr3: [20]u8 = [_]u8{0xFF} ** 20;
-    var addr4: [20]u8 = [_]u8{0xFF} ** 20;
-    addr3[19] = 0xFE;
-    addr4[19] = 0xFF;
+    var addr3: Address = .{ .bytes = [_]u8{0xFF} ** 20 };
+    var addr4: Address = .{ .bytes = [_]u8{0xFF} ** 20 };
+    addr3.bytes[19] = 0xFE;
+    addr4.bytes[19] = 0xFF;
     
     try journal.record_storage_change(snapshot, addr1, 1, 11);
     try journal.record_storage_change(snapshot, addr2, 1, 22);
@@ -794,7 +795,7 @@ test "Journal - custom configuration comprehensive" {
     var journal = CustomJournal.init(testing.allocator);
     defer journal.deinit();
     
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     // Test custom types
     const snapshot: u16 = journal.create_snapshot();
@@ -831,8 +832,8 @@ test "Journal - memory management stress" {
         const snapshot = journal.create_snapshot();
         try snapshots.append(snapshot);
         
-        var addr: [20]u8 = [_]u8{0} ** 20;
-        addr[19] = @intCast(cycle);
+        var addr: Address = .{ .bytes = [_]u8{0} ** 20 };
+        addr.bytes[19] = @intCast(cycle);
         
         for (0..entries_per_cycle) |entry_idx| {
             try journal.record_storage_change(snapshot, addr, entry_idx, cycle * 1000 + entry_idx);
@@ -857,7 +858,7 @@ test "Journal - memory management stress" {
 
 test "Journal - entry ordering preservation" {
     const testing = std.testing;
-    const addr = [_]u8{0} ** 20;
+    const addr: Address = .{ .bytes = [_]u8{0} ** 20 };
     
     var journal = DefaultJournal.init(testing.allocator);
     defer journal.deinit();
