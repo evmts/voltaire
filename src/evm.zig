@@ -2695,10 +2695,10 @@ test "EVM CREATE operation - with value transfer" {
     const contract_address: primitives.Address = .{ .bytes = result.output[0..20].* };
 
     // Verify balances
-    const caller_after = (try db.get_account(caller_address)).?;
+    const caller_after = (try db.get_account(caller_address.bytes)).?;
     try std.testing.expectEqual(initial_balance - transfer_value, caller_after.balance);
 
-    const contract_account = (try db.get_account(contract_address)).?;
+    const contract_account = (try db.get_account(contract_address.bytes)).?;
     try std.testing.expectEqual(transfer_value, contract_account.balance);
 }
 
@@ -2733,7 +2733,7 @@ test "EVM CREATE operation - insufficient balance fails" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     const create_params = DefaultEvm.CallParams{
         .create = .{
@@ -2744,7 +2744,7 @@ test "EVM CREATE operation - insufficient balance fails" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
 
     // Should fail due to insufficient balance
     try std.testing.expect(!result.success);
@@ -2812,10 +2812,10 @@ test "EVM CREATE2 operation - deterministic address creation" {
     try std.testing.expectEqual(@as(usize, 20), result.output.len);
 
     // Extract contract address
-    const contract_address: primitives.Address = result.output[0..20].*;
+    const contract_address: primitives.Address = .{ .bytes = result.output[0..20].* };
 
     // Verify contract was created
-    const created_account = (try db.get_account(contract_address)).?;
+    const created_account = (try db.get_account(contract_address.bytes)).?;
     try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
 
     // Calculate expected address using CREATE2 formula
@@ -2826,7 +2826,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
     const expected_address = primitives.Address.get_create2_address(caller_address, salt_bytes, init_code_hash);
 
     // Verify the address matches the expected CREATE2 address
-    try std.testing.expectEqualSlices(u8, &expected_address, &contract_address);
+    try std.testing.expectEqual(expected_address, contract_address);
 }
 
 test "EVM CREATE2 operation - same parameters produce same address" {
@@ -2871,7 +2871,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     const create2_params = DefaultEvm.CallParams{
         .create2 = .{
@@ -2883,13 +2883,13 @@ test "EVM CREATE2 operation - same parameters produce same address" {
         },
     };
 
-    const result = try evm.call(create2_params);
+    const result = evm.call(create2_params);
     defer if (result.output.len > 0) evm.allocator.free(result.output);
 
     try std.testing.expect(result.success);
 
-    const actual_address: primitives.Address = result.output[0..20].*;
-    try std.testing.expectEqualSlices(u8, &expected_address, &actual_address);
+    const actual_address: primitives.Address = .{ .bytes = result.output[0..20].* };
+    try std.testing.expectEqual(expected_address, actual_address);
 }
 
 test "EVM CREATE operation - collision detection" {
@@ -2916,7 +2916,7 @@ test "EVM CREATE operation - collision detection" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
 
     // Calculate what the contract address will be
     const expected_address = primitives.Address.get_contract_address(caller_address, 0);
@@ -2930,7 +2930,7 @@ test "EVM CREATE operation - collision detection" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(expected_address, existing_account);
+    try db.set_account(expected_address.bytes, existing_account);
 
     // Create caller account
     const caller_account = Account{
@@ -2939,7 +2939,7 @@ test "EVM CREATE operation - collision detection" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     const create_params = DefaultEvm.CallParams{
         .create = .{
@@ -2950,7 +2950,7 @@ test "EVM CREATE operation - collision detection" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
 
     // Should fail due to collision
     try std.testing.expect(!result.success);
@@ -2981,14 +2981,14 @@ test "EVM CREATE operation - init code execution and storage" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
     const caller_account = Account{
         .balance = 1000000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     // Init code that stores a value and returns code with PUSH1 and ADD
     // This tests that init code can access storage and return runtime code
@@ -3018,19 +3018,19 @@ test "EVM CREATE operation - init code execution and storage" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
     defer if (result.output.len > 0) evm.allocator.free(result.output);
 
     try std.testing.expect(result.success);
 
-    const contract_address: primitives.Address = result.output[0..20].*;
+    const contract_address: primitives.Address = .{ .bytes = result.output[0..20].* };
 
     // Verify the storage was set during init
-    const stored_value = try db.get_storage(contract_address, 0);
+    const stored_value = try db.get_storage(contract_address.bytes, 0);
     try std.testing.expectEqual(@as(u256, 42), stored_value);
 
     // Verify the runtime code was stored
-    const runtime_code = try db.get_code_by_address(contract_address);
+    const runtime_code = try db.get_code_by_address(contract_address.bytes);
     try std.testing.expectEqual(@as(usize, 4), runtime_code.len);
     try std.testing.expectEqual(@as(u8, 0x60), runtime_code[0]); // PUSH1
     try std.testing.expectEqual(@as(u8, 0x01), runtime_code[1]); // 1
@@ -3395,7 +3395,7 @@ test "Call types - CREATE2 with salt" {
         },
     };
 
-    const result = try evm.call(create2_params);
+    const result = evm.call(create2_params);
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
 }
@@ -3490,7 +3490,7 @@ test "Error handling - precompile execution" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     // ECRECOVER should handle invalid input gracefully
     try std.testing.expect(result.gas_left < 100000); // Some gas should be consumed
 }
@@ -3533,7 +3533,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
@@ -3583,7 +3583,7 @@ test "Precompiles - SHA256 precompile (0x02)" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     defer if (result.success and result.output.len > 0) std.testing.allocator.free(result.output);
 
     try std.testing.expect(result.success);
@@ -3632,7 +3632,7 @@ test "Precompiles - disabled configuration" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Should succeed but not execute as precompile (no special precompile behavior)
     try std.testing.expect(result.success);
@@ -3677,7 +3677,7 @@ test "Precompiles - invalid precompile addresses" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Should succeed as regular call (not precompile)
     try std.testing.expect(result.success);
@@ -3719,7 +3719,7 @@ test "Debug - Gas limit affects execution" {
     const loop_bytecode = [_]u8{ 0x5b, 0x60, 0x00, 0x56 };
     const deploy_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
     const code_hash = try db.set_code(&loop_bytecode);
-    try db.set_account(deploy_address, Account{
+    try db.set_account(deploy_address.bytes, Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -3729,7 +3729,7 @@ test "Debug - Gas limit affects execution" {
     // Test 1: Very low gas limit - should fail quickly
     {
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = deploy_address,
@@ -3748,7 +3748,7 @@ test "Debug - Gas limit affects execution" {
     // Test 2: Medium gas limit
     {
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = deploy_address,
@@ -3833,9 +3833,9 @@ test "Debug - Contract deployment and execution" {
     // Test 2: Simple contract that returns immediately (STOP opcode)
     {
         const stop_bytecode = [_]u8{0x00}; // STOP
-        const stop_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+        const stop_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{2} };
         const code_hash = try db.set_code(&stop_bytecode);
-        try db.set_account(stop_address, Account{
+        try db.set_account(stop_address.bytes, Account{
             .nonce = 0,
             .balance = 0,
             .code_hash = code_hash,
@@ -3843,7 +3843,7 @@ test "Debug - Contract deployment and execution" {
         });
 
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = stop_address,
@@ -3866,9 +3866,9 @@ test "Debug - Contract deployment and execution" {
         // PUSH1 0x05, PUSH1 0x03, ADD, PUSH1 0x00, MSTORE, STOP
         // Adds 3 + 5 and stores in memory
         const add_bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x00, 0x52, 0x00 };
-        const add_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{3};
+        const add_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{3} };
         const code_hash = try db.set_code(&add_bytecode);
-        try db.set_account(add_address, Account{
+        try db.set_account(add_address.bytes, Account{
             .nonce = 0,
             .balance = 0,
             .code_hash = code_hash,
@@ -3876,7 +3876,7 @@ test "Debug - Contract deployment and execution" {
         });
 
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = add_address,
@@ -3933,9 +3933,9 @@ test "Debug - Bytecode size affects execution time" {
     }
     try large_bytecode.append(std.testing.allocator, 0x00); // STOP
 
-    const large_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{4};
+    const large_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{4} };
     const code_hash = try db.set_code(large_bytecode.items);
-    try db.set_account(large_address, Account{
+    try db.set_account(large_address.bytes, Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -3947,7 +3947,7 @@ test "Debug - Bytecode size affects execution time" {
 
     for (gas_limits) |gas_limit| {
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = large_address,
@@ -4008,11 +4008,11 @@ test "Security - bounds checking and edge cases" {
         },
     };
 
-    const max_gas_result = try evm.call(max_gas_params);
+    const max_gas_result = evm.call(max_gas_params);
     try std.testing.expect(max_gas_result.gas_left <= std.math.maxInt(u64));
 
     // Test invalid address operations
-    const invalid_address = [_]u8{0xFF} ** 20;
+    const invalid_address: primitives.Address = .{ .bytes = [_]u8{0xFF} ** 20 };
     const balance = evm.get_balance(invalid_address);
     try std.testing.expectEqual(@as(u256, 0), balance);
 
@@ -4030,9 +4030,7 @@ test "Security - bounds checking and edge cases" {
 
 test "EVM with minimal planner strategy" {
     // Define EVM config with minimal planner strategy
-    const MinimalEvmConfig = EvmConfig{
-        .planner_strategy = .minimal,
-    };
+    const MinimalEvmConfig = EvmConfig{};
     const MinimalEvm = Evm(MinimalEvmConfig);
 
     // Create test database
@@ -4077,15 +4075,13 @@ test "EVM with minimal planner strategy" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     try std.testing.expect(result.success);
 }
 
 test "EVM with advanced planner strategy" {
     // Define EVM config with advanced planner strategy
-    const AdvancedEvmConfig = EvmConfig{
-        .planner_strategy = .advanced,
-    };
+    const AdvancedEvmConfig = EvmConfig{};
     const AdvancedEvm = Evm(AdvancedEvmConfig);
 
     // Create test database
