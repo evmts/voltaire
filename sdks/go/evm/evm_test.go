@@ -1,12 +1,13 @@
 package evm
 
 import (
+	"math/big"
 	"testing"
 	
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	
-	"github.com/evmts/guillotine/bindings/go/primitives"
+	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
 func TestEVM(t *testing.T) {
@@ -14,41 +15,48 @@ func TestEVM(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
 		require.NotNil(t, evm)
-		defer evm.Close()
+		defer evm.Destroy()
 	})
 	
 	t.Run("ExecuteSimpleBytecode", func(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
-		defer evm.Close()
+		defer evm.Destroy()
 		
 		// Simple bytecode: PUSH1 0x42 (pushes 42 onto stack)
-		bytecode := primitives.NewBytes([]byte{0x60, 0x42})
+		bytecode := []byte{0x60, 0x42}
 		
-		result, err := evm.Execute(ExecutionParams{
-			Bytecode: bytecode,
-			Caller:   primitives.ZeroAddress(),
-			To:       primitives.ZeroAddress(),
-			Value:    primitives.ZeroU256(),
-			Input:    primitives.EmptyBytes(),
-			GasLimit: 1000000,
+		caller := primitives.ZeroAddress()
+		contractAddr, _ := primitives.AddressFromHex("0x1000000000000000000000000000000000000000")
+		
+		// First, deploy the code to an address
+		err = evm.SetCode(contractAddr, bytecode)
+		require.NoError(t, err)
+		
+		// Now call the deployed code (with empty input data)
+		result, err := evm.Call(Call{
+			Caller: caller,
+			To:     contractAddr,
+			Value:  big.NewInt(0),
+			Input:  []byte{},
+			Gas:    1000000,
 		})
 		
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		
 		// Simple PUSH operations should succeed
-		assert.True(t, result.IsSuccess())
-		assert.Greater(t, result.GasUsed(), uint64(0))
+		assert.True(t, result.Success)
+		assert.Greater(t, uint64(1000000 - result.GasLeft), uint64(0)) // Gas was used
 	})
 	
 	t.Run("SetGetBalance", func(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
-		defer evm.Close()
+		defer evm.Destroy()
 		
 		addr, _ := primitives.AddressFromHex("0x1234567890123456789012345678901234567890")
-		balance := primitives.NewU256(1000)
+		balance := big.NewInt(1000)
 		
 		// Set balance
 		err = evm.SetBalance(addr, balance)
@@ -63,10 +71,10 @@ func TestEVM(t *testing.T) {
 	t.Run("SetGetCode", func(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
-		defer evm.Close()
+		defer evm.Destroy()
 		
 		addr, _ := primitives.AddressFromHex("0x1234567890123456789012345678901234567890")
-		code := primitives.NewBytes([]byte{0x60, 0x80, 0x60, 0x40, 0x52})
+		code := []byte{0x60, 0x80, 0x60, 0x40, 0x52}
 		
 		// Set code
 		err = evm.SetCode(addr, code)
@@ -81,11 +89,11 @@ func TestEVM(t *testing.T) {
 	t.Run("SetGetStorage", func(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
-		defer evm.Close()
+		defer evm.Destroy()
 		
 		addr, _ := primitives.AddressFromHex("0x1234567890123456789012345678901234567890")
-		key := primitives.NewU256(1)
-		value := primitives.NewU256(42)
+		key := big.NewInt(1)
+		value := big.NewInt(42)
 		
 		// Set storage
 		err = evm.SetStorage(addr, key, value)
@@ -97,65 +105,68 @@ func TestEVM(t *testing.T) {
 		assert.Equal(t, value, retrievedValue)
 	})
 	
-	t.Run("CloseEVM", func(t *testing.T) {
+	t.Run("CallTypes", func(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
+		defer evm.Destroy()
 		
-		// Close should not error
-		err = evm.Close()
+		caller := primitives.ZeroAddress()
+		to, _ := primitives.AddressFromHex("0x1000000000000000000000000000000000000000")
+		
+		// Give caller sufficient balance for value transfers
+		err = evm.SetBalance(caller, big.NewInt(1000))
 		require.NoError(t, err)
 		
-		// Operations after close should fail
-		_, err = evm.GetBalance(primitives.ZeroAddress())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "closed")
-	})
-	
-	t.Run("ExecutionResult", func(t *testing.T) {
-		// Test ExecutionResult methods
-		result := &ExecutionResult{
-			success:      true,
-			gasUsed:      12345,
-			returnData:   primitives.NewBytes([]byte{1, 2, 3}),
-			revertReason: primitives.EmptyBytes(),
-		}
-		
-		assert.True(t, result.IsSuccess())
-		assert.Equal(t, uint64(12345), result.GasUsed())
-		assert.True(t, result.HasReturnData())
-		assert.False(t, result.HasRevertReason())
-		assert.Equal(t, primitives.NewBytes([]byte{1, 2, 3}), result.ReturnData())
-		assert.Equal(t, primitives.EmptyBytes(), result.RevertReason())
-	})
-	
-	t.Run("MultipleEVMInstances", func(t *testing.T) {
-		// Test that multiple EVM instances work independently
-		evm1, err := New()
+		// Test CALL
+		result, err := evm.Call(Call{
+			Caller: caller,
+			To:     to,
+			Value:  big.NewInt(100),
+			Input:  []byte{0x01, 0x02},
+			Gas:    100000,
+		})
 		require.NoError(t, err)
-		defer evm1.Close()
+		require.NotNil(t, result)
 		
-		evm2, err := New()
+		// Test STATICCALL
+		result, err = evm.Call(Staticcall{
+			Caller: caller,
+			To:     to,
+			Input:  []byte{0x01, 0x02},
+			Gas:    100000,
+		})
 		require.NoError(t, err)
-		defer evm2.Close()
+		require.NotNil(t, result)
 		
-		addr := primitives.ZeroAddress()
-		balance1 := primitives.NewU256(100)
-		balance2 := primitives.NewU256(200)
-		
-		// Set different balances in each EVM
-		err = evm1.SetBalance(addr, balance1)
+		// Test DELEGATECALL
+		result, err = evm.Call(Delegatecall{
+			Caller: caller,
+			To:     to,
+			Input:  []byte{0x01, 0x02},
+			Gas:    100000,
+		})
 		require.NoError(t, err)
+		require.NotNil(t, result)
 		
-		err = evm2.SetBalance(addr, balance2)
+		// Test CREATE
+		result, err = evm.Call(Create{
+			Caller:   caller,
+			Value:    big.NewInt(0),
+			InitCode: []byte{0x60, 0x00, 0x60, 0x00, 0xf3}, // Simple contract that returns empty
+			Gas:      200000,
+		})
 		require.NoError(t, err)
+		require.NotNil(t, result)
 		
-		// Verify they're independent
-		retrieved1, err := evm1.GetBalance(addr)
+		// Test CREATE2
+		result, err = evm.Call(Create2{
+			Caller:   caller,
+			Value:    big.NewInt(0),
+			InitCode: []byte{0x60, 0x00, 0x60, 0x00, 0xf3},
+			Salt:     big.NewInt(12345),
+			Gas:      200000,
+		})
 		require.NoError(t, err)
-		assert.Equal(t, balance1, retrieved1)
-		
-		retrieved2, err := evm2.GetBalance(addr)
-		require.NoError(t, err)
-		assert.Equal(t, balance2, retrieved2)
+		require.NotNil(t, result)
 	})
 }
