@@ -67,6 +67,8 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// SDIV opcode (0x05) - Signed integer division.
+        // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
+        // The current approach might be slower if the sign of operands is predictable.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); // SDIV requires 2 stack items
             const a = self.stack.pop_unsafe(); // Top of stack (first operand)
@@ -92,33 +94,32 @@ pub fn Handlers(comptime FrameType: type) type {
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
             
-            // Extract sign bits (1 if negative, 0 if positive)
+            // This section implements branchless two's complement arithmetic.
+            // 1. Extract sign bits (1 for negative, 0 for positive).
+            // 2. Create a mask that is all 1s for negative numbers and all 0s for positive.
+            // 3. Compute the absolute value by XORing with the mask and subtracting the mask.
+            //    - For negative `a`: `(a ^ 0xFF..FF) - 0xFF..FF` is equivalent to `~a + 1`, which is `-a`.
+            //    - For positive `a`: `(a ^ 0) - 0` is `a`.
+            // 4. Perform unsigned division on the absolute values.
+            // 5. Determine the result's sign by XORing the operand signs.
+            // 6. Conditionally negate the result using the same mask trick.
             const a_sign = a >> 255;
             const b_sign = b >> 255;
             
-            // Create masks for branchless absolute value
-            // mask will be all 1s if negative, all 0s if positive
             const a_mask = @as(u256, 0) -% a_sign;
             const b_mask = @as(u256, 0) -% b_sign;
             
-            // Branchless absolute value: if negative, negate; if positive, keep as is
-            // For negative: (a ^ mask) - mask = (a ^ -1) - (-1) = ~a + 1 = -a
-            // For positive: (a ^ 0) - 0 = a
             const a_abs = (a ^ a_mask) -% a_mask;
             const b_abs = (b ^ b_mask) -% b_mask;
             
-            // Perform unsigned division using U256 for optimization
             const a_abs_u256 = U256.from_u256_unsafe(a_abs);
             const b_abs_u256 = U256.from_u256_unsafe(b_abs);
             const quotient_u256 = a_abs_u256.wrapping_div(b_abs_u256);
             const quotient = quotient_u256.to_u256_unsafe();
             
-            // Calculate sign of result: negative if signs differ
-            // XOR of signs gives 1 if different, 0 if same
             const result_sign = a_sign ^ b_sign;
             const result_mask = @as(u256, 0) -% result_sign;
             
-            // Branchless conditional negation of result
             const result = (quotient ^ result_mask) -% result_mask;
             
             self.stack.set_top_unsafe(result);
@@ -148,6 +149,8 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// SMOD opcode (0x07) - Signed modulo operation.
+        // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
+        // The current approach might be slower if the sign of operands is predictable.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); // SMOD requires 2 stack items
             const a = self.stack.pop_unsafe(); // Top of stack (first operand)
@@ -174,26 +177,23 @@ pub fn Handlers(comptime FrameType: type) type {
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
             
-            // Extract sign bit of dividend (result takes sign of dividend)
+            // This section implements branchless two's complement arithmetic.
+            // The result of a % n takes the sign of the dividend `a`.
             const a_sign = a >> 255;
             const b_sign = b >> 255;
             
-            // Create masks for branchless absolute value
             const a_mask = @as(u256, 0) -% a_sign;
             const b_mask = @as(u256, 0) -% b_sign;
             
-            // Branchless absolute value
             const a_abs = (a ^ a_mask) -% a_mask;
             const b_abs = (b ^ b_mask) -% b_mask;
             
-            // Perform unsigned modulo using U256 for optimization
             const a_abs_u256 = U256.from_u256_unsafe(a_abs);
             const b_abs_u256 = U256.from_u256_unsafe(b_abs);
             const remainder_u256 = a_abs_u256.wrapping_rem(b_abs_u256);
             const remainder = remainder_u256.to_u256_unsafe();
             
             // Result takes sign of dividend (a_sign)
-            // Branchless conditional negation based on dividend sign
             const result = (remainder ^ a_mask) -% a_mask;
             
             self.stack.set_top_unsafe(result);
@@ -211,6 +211,12 @@ pub fn Handlers(comptime FrameType: type) type {
             if (modulus == 0) {
                 result = 0;
             } else {
+                // This implementation correctly handles modular addition with potential u256 overflow.
+                // It first reduces the addends modulo N, then performs a wrapping addition.
+                // The `if (sum[1] == 1 or r >= modulus)` check handles two cases:
+                // 1. `sum[1] == 1`: The addition of the reduced addends overflowed u256.
+                // 2. `r >= modulus`: The sum is valid but still needs to be wrapped by the modulus.
+                // In both cases, a single subtraction of the modulus yields the correct result.
                 const addend1_reduced = addend1 % modulus;
                 const addend2_reduced = addend2 % modulus;
                 const sum = @addWithOverflow(addend1_reduced, addend2_reduced);

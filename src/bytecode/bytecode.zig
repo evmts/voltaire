@@ -177,92 +177,24 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         full_code: []const u8,
         // Runtime bytecode (excludes trailing metadata)
         runtime_code: []const u8,
-        // Optional metadata if found
-        metadata: ?SolidityMetadata,
         allocator: std.mem.Allocator,
-        // Original bitmaps (kept for backward compatibility)
-        is_push_data: []u8,
-        is_op_start: []u8,
-        is_jumpdest: []u8,
         // Packed bitmap (4 bits per byte position) for efficient storage
         packed_bitmap: []PackedBits,
 
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
-            // Check if this is deployment bytecode
-            const is_deployment = blk: {
-                if (code.len < 4) break :blk false;
-                break :blk (code[0] == 0x60 and code[1] == 0x80 and
-                    code[2] == 0x60 and code[3] == 0x40);
-            };
-
-            // Always try to parse metadata to detect its presence
-            const metadata = parseSolidityMetadataFromBytes(code);
-
-            // For deployment bytecode with metadata, we need to handle it specially
-            // The constructor code needs to execute fully, but we should only validate
-            // the actual code portion, not the metadata bytes
-            const runtime_code = if (is_deployment and metadata != null) blk: {
-                // For deployment bytecode with metadata, we keep the full code
-                // but we'll handle validation specially
-                // log.debug("Bytecode: Deployment bytecode with metadata detected, length={}, metadata_len={}", .{code.len, metadata.?.metadata_length});
-                break :blk code;
-            } else if (metadata) |m| blk: {
-                // For runtime bytecode with metadata, strip it
-                // log.debug("Bytecode: Found Solidity metadata in runtime code, stripping {} bytes from end (full={}, runtime={})", .{
-                //     m.metadata_length, code.len, code.len - m.metadata_length
-                // });
-                break :blk code[0 .. code.len - m.metadata_length];
-            } else blk: {
-                if (is_deployment) {
-                    // log.debug("Bytecode: Deployment bytecode detected without metadata, length={}", .{code.len});
-                } else {
-                    // log.debug("Bytecode: No metadata found, using full code length={}", .{code.len});
-                }
-                break :blk code;
-            };
-
             // Enforce EIP-170: maximum runtime bytecode size
-            if (runtime_code.len > cfg.max_bytecode_size) {
+            if (code.len > cfg.max_bytecode_size) {
                 return error.BytecodeTooLarge;
             }
 
             var self = Self{
                 .full_code = code,
-                .runtime_code = runtime_code,
-                .metadata = metadata,
+                .runtime_code = code,
                 .allocator = allocator,
-                .is_push_data = &.{},
-                .is_op_start = &.{},
-                .is_jumpdest = &.{},
                 .packed_bitmap = &.{},
             };
             // Build bitmaps and validate
-            // For deployment bytecode with metadata, pass the metadata length to avoid validating it
-            const validation_len = if (is_deployment and metadata != null)
-                code.len - metadata.?.metadata_length
-            else
-                runtime_code.len;
-            try self.buildBitmapsAndValidateWithLength(validation_len);
-            return self;
-        }
-
-        /// Initialize bytecode from initcode (EIP-3860)
-        /// Validates that initcode size doesn't exceed the maximum allowed
-        pub fn initFromInitcode(allocator: std.mem.Allocator, initcode: []const u8) ValidationError!Self {
-            if (initcode.len > cfg.max_initcode_size) {
-                return error.InitcodeTooLarge;
-            }
-            var self = Self{
-                .full_code = initcode,
-                .runtime_code = initcode, // initcode has no Solidity metadata suffix
-                .metadata = null,
-                .allocator = allocator,
-                .is_push_data = &.{},
-                .is_op_start = &.{},
-                .is_jumpdest = &.{},
-                .packed_bitmap = &.{},
-            };
-            try self.buildBitmapsAndValidate();
+            try self.buildBitmapsAndValidateWithLength(code.len);
             return self;
         }
 
@@ -275,29 +207,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         }
 
         pub fn deinit(self: *Self) void {
-            // Check if we used aligned allocation (same logic as in init)
-            const use_aligned = comptime !builtin.is_test;
-
-            // Free bitmaps - must match allocation method
-            if (use_aligned and self.is_push_data.len > 0) {
-                // For aligned allocations, we need to compute the aligned size
-                const bitmap_bytes = (self.runtime_code.len + 7) / 8;
-                const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
-
-                // Create properly aligned slices for freeing
-                const aligned_push_data: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_push_data[0..aligned_bitmap_bytes]);
-                const aligned_op_start: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_op_start[0..aligned_bitmap_bytes]);
-                const aligned_jumpdest: []align(CACHE_LINE_SIZE) u8 = @alignCast(self.is_jumpdest[0..aligned_bitmap_bytes]);
-
-                self.allocator.free(aligned_push_data);
-                self.allocator.free(aligned_op_start);
-                self.allocator.free(aligned_jumpdest);
-            } else {
-                self.allocator.free(self.is_push_data);
-                self.allocator.free(self.is_op_start);
-                self.allocator.free(self.is_jumpdest);
-            }
-
             self.allocator.free(self.packed_bitmap);
             self.* = undefined;
         }
@@ -396,70 +305,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// Uses precomputed bitmap for O(1) lookup
         pub fn isValidJumpDest(self: Self, pc: PcType) bool {
             if (pc >= self.len()) return false;
-            // https://ziglang.org/documentation/master/#as
-            // @as performs type coercion, ensuring the value fits the target type
-            return (self.is_jumpdest[std.math.shr(PcType, pc, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(pc & BITMAP_MASK)))) != 0;
-        }
-
-        /// Count the number of set bits in a byte range of a bitmap
-        /// Uses hardware popcount instruction when available
-        pub fn countBitsInRange(bitmap: []const u8, start_bit: usize, end_bit: usize) usize {
-            if (start_bit >= end_bit) return 0;
-            const start_byte = std.math.shr(usize, start_bit, BITMAP_SHIFT);
-            const end_byte_inclusive = std.math.shr(usize, end_bit - 1, BITMAP_SHIFT);
-            const start_offset: u3 = @intCast(start_bit & BITMAP_MASK);
-            const end_offset: u3 = @intCast((end_bit - 1) & BITMAP_MASK);
-
-            var count: usize = 0;
-            if (start_byte >= bitmap.len) return 0;
-
-            if (start_byte == end_byte_inclusive) {
-                const mask = std.math.shl(u8, @as(u8, 0xFF), start_offset) & std.math.shr(u8, @as(u8, 0xFF), 7 - end_offset);
-                return @popCount(bitmap[start_byte] & mask);
-            }
-
-            // First partial byte
-            count += @popCount(bitmap[start_byte] & std.math.shl(u8, @as(u8, 0xFF), start_offset));
-
-            // Middle full bytes
-            var i = start_byte + 1;
-            while (i < end_byte_inclusive and i < bitmap.len) : (i += 1) {
-                count += @popCount(bitmap[i]);
-            }
-
-            // Last partial byte
-            if (i < bitmap.len) {
-                const mask_last = std.math.shr(u8, @as(u8, 0xFF), 7 - end_offset);
-                count += @popCount(bitmap[i] & mask_last);
-            }
-
-            return count;
-        }
-
-        /// Find the next set bit in a bitmap starting from a given position
-        /// Uses hardware ctz (count trailing zeros) when available
-        pub fn findNextSetBit(bitmap: []const u8, start_bit: usize) ?usize {
-            const start_byte = std.math.shr(usize, start_bit, BITMAP_SHIFT);
-            if (start_byte >= bitmap.len) return null;
-
-            // Check the starting byte (with offset)
-            const start_offset = start_bit & BITMAP_MASK;
-            const first_byte = bitmap[start_byte] & std.math.shl(u8, @as(u8, 0xFF), @as(u3, @intCast(start_offset)));
-            if (first_byte != 0) {
-                const bit_pos = @ctz(first_byte);
-                return std.math.shl(usize, start_byte, BITMAP_SHIFT) + bit_pos;
-            }
-
-            // Check subsequent bytes
-            var i = start_byte + 1;
-            while (i < bitmap.len) : (i += 1) {
-                if (bitmap[i] != 0) {
-                    const bit_pos = @ctz(bitmap[i]);
-                    return std.math.shl(usize, i, BITMAP_SHIFT) + bit_pos;
-                }
-            }
-
-            return null;
+            return self.packed_bitmap[pc].is_jumpdest;
         }
 
         /// Analyze bytecode and call callbacks for jump destinations
@@ -504,60 +350,20 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
             // Set up cleanup in case of errors
             var cleanup_state: struct {
-                is_push_data_allocated: bool = false,
-                is_op_start_allocated: bool = false,
-                is_jumpdest_allocated: bool = false,
                 packed_bitmap_allocated: bool = false,
             } = .{};
 
             errdefer {
-                if (cleanup_state.is_push_data_allocated) self.allocator.free(self.is_push_data);
-                if (cleanup_state.is_op_start_allocated) self.allocator.free(self.is_op_start);
-                if (cleanup_state.is_jumpdest_allocated) self.allocator.free(self.is_jumpdest);
                 if (cleanup_state.packed_bitmap_allocated) self.allocator.free(self.packed_bitmap);
             }
 
             // Empty bytecode is valid, allocate minimal bitmaps
             if (N == 0) {
-                self.is_push_data = try self.allocator.alloc(u8, 1);
-                cleanup_state.is_push_data_allocated = true;
-                self.is_op_start = try self.allocator.alloc(u8, 1);
-                cleanup_state.is_op_start_allocated = true;
-                self.is_jumpdest = try self.allocator.alloc(u8, 1);
-                cleanup_state.is_jumpdest_allocated = true;
-                self.is_push_data[0] = 0;
-                self.is_op_start[0] = 0;
-                self.is_jumpdest[0] = 0;
-                // NEW: Also allocate packed bitmap for empty bytecode
                 self.packed_bitmap = try self.allocator.alloc(PackedBits, 1);
                 cleanup_state.packed_bitmap_allocated = true;
                 self.packed_bitmap[0] = PackedBits{ .is_push_data = false, .is_op_start = false, .is_jumpdest = false, .is_fusion_candidate = false };
                 return;
             }
-
-            const bitmap_bytes = (N + BITMAP_MASK) >> BITMAP_SHIFT;
-
-            // Allocate bitmaps upfront for single-pass population
-            const use_aligned = comptime !builtin.is_test;
-            if (use_aligned) {
-                const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
-                self.is_push_data = self.allocator.alignedAlloc(u8, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, CACHE_LINE_SIZE))), aligned_bitmap_bytes) catch return error.OutOfMemory;
-                cleanup_state.is_push_data_allocated = true;
-                self.is_op_start = self.allocator.alignedAlloc(u8, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, CACHE_LINE_SIZE))), aligned_bitmap_bytes) catch return error.OutOfMemory;
-                cleanup_state.is_op_start_allocated = true;
-                self.is_jumpdest = self.allocator.alignedAlloc(u8, @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, CACHE_LINE_SIZE))), aligned_bitmap_bytes) catch return error.OutOfMemory;
-                cleanup_state.is_jumpdest_allocated = true;
-            } else {
-                self.is_push_data = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
-                cleanup_state.is_push_data_allocated = true;
-                self.is_op_start = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
-                cleanup_state.is_op_start_allocated = true;
-                self.is_jumpdest = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
-                cleanup_state.is_jumpdest_allocated = true;
-            }
-            @memset(self.is_push_data, 0);
-            @memset(self.is_op_start, 0);
-            @memset(self.is_jumpdest, 0);
 
             // NEW: Allocate packed bitmap (4 bits per byte, so N packed bits)
             self.packed_bitmap = self.allocator.alloc(PackedBits, N) catch return error.OutOfMemory;
@@ -590,7 +396,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
 
                 // Mark operation start
-                self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)));
                 self.packed_bitmap[i].is_op_start = true;
 
                 const op = self.runtime_code[i];
@@ -604,7 +409,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Check if it's a JUMPDEST (and not push data)
                 if (op == @intFromEnum(Opcode.JUMPDEST)) {
-                    self.is_jumpdest[std.math.shr(u32, i, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)));
                     self.packed_bitmap[i].is_jumpdest = true;
                 }
 
@@ -657,7 +461,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     var j: PcType = 0;
                     while (j < n) : (j += 1) {
                         const idx = i + 1 + j;
-                        self.is_push_data[std.math.shr(u32, idx, BITMAP_SHIFT)] |= std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(idx & BITMAP_MASK)));
                         self.packed_bitmap[idx].is_push_data = true;
                     }
 
@@ -757,7 +560,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var pc: PcType = 0;
             while (pc < self.runtime_code.len) {
                 // Skip if not an opcode start
-                if ((self.is_op_start[pc >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(pc & BITMAP_MASK))) == 0) {
+                if (!self.packed_bitmap[pc].is_op_start) {
                     pc += 1;
                     continue;
                 }
@@ -854,7 +657,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     });
                 }
 
-                if ((self.is_op_start[std.math.shr(u32, i, BITMAP_SHIFT)] & std.math.shl(u8, @as(u8, 1), @as(u3, @intCast(i & BITMAP_MASK)))) == 0) {
+                if (!self.packed_bitmap[i].is_op_start) {
                     i += 1;
                     continue;
                 }
