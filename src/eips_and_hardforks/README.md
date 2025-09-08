@@ -1,10 +1,10 @@
 # EIPs and Hardforks
 
-Ethereum Improvement Proposals (EIPs) and hardfork configurations for the Guillotine EVM implementation.
+Feature flags and hardfork configuration for the EVM.
 
 ## Overview
 
-This module provides comprehensive support for Ethereum's evolution through hardforks and EIP implementations. It consolidates all protocol upgrade logic, feature flags, and hardfork-specific behavior into a unified system that enables the EVM to correctly handle different network configurations and protocol versions.
+This module centralizes protocol evolution: hardfork selection, EIP feature gating, and fork‑specific behavior that other components (opcodes, gas, storage) consult at compile time or runtime.
 
 ## Components and Architecture
 
@@ -14,18 +14,15 @@ This module provides comprehensive support for Ethereum's evolution through hard
 - **`hardfork.zig`** - Hardfork enumeration and version management  
 - **`hardfork_c.zig`** - C-compatible hardfork interface for FFI
 
-### EIP Implementations
+### EIP Modules
 
-#### State Management EIPs
-- **`beacon_roots.zig`** - EIP-4788: Beacon block root in EVM (Cancun)
-- **`historical_block_hashes.zig`** - EIP-2935: Historical block hashes from state (Prague)
-
-#### Validator Operations
-- **`validator_deposits.zig`** - EIP-6110: Supply validator deposits on chain (Prague)
-- **`validator_withdrawals.zig`** - EIP-7002: Execution layer triggerable exits (Prague)
-
-#### Account Authorization
-- **`authorization_processor.zig`** - EIP-7702: Set EOA account code (Prague)
+- `eips.zig` — feature checks and fork‑aware helpers (e.g., gas rules)
+- `hardfork.zig` and `hardfork_c.zig` — fork enum + C bindings
+- `beacon_roots.zig` — EIP‑4788 (Cancun)
+- `historical_block_hashes.zig` — EIP‑2935 (Prague)
+- `validator_deposits.zig` — EIP‑6110 (Prague)
+- `validator_withdrawals.zig` — EIP‑7002 (Prague)
+- `authorization_processor.zig` — EIP‑7702
 
 ## Key Features
 
@@ -41,19 +38,16 @@ This module provides comprehensive support for Ethereum's evolution through hard
 - **Validation Logic**: Comprehensive validation for new protocol features
 - **Integration Points**: Clean interfaces with the main EVM execution engine
 
-### Configuration System
+### Configuration
 ```zig
-// Example: Configure EVM for specific hardfork
-const eips = Eips{ .hardfork = .CANCUN };
+const eips_mod = @import("eips.zig");
+const Eips = eips_mod.Eips;
 
-// Check feature availability
-if (eips.eip_4788_beacon_roots_enabled()) {
-    // Handle beacon root operations
-}
+// Select a fork
+const cfg = Eips{ .hardfork = .CANCUN };
 
-// Apply hardfork-specific behavior
-if (eips.hardfork.isAtLeast(.SHANGHAI)) {
-    try eips.eip_3651_warm_coinbase_address(access_list, coinbase);
+if (cfg.eip_4788_beacon_roots_enabled()) {
+    // use beacon_roots helpers
 }
 ```
 
@@ -95,37 +89,26 @@ if (eips.eip_4788_beacon_roots_enabled()) {
 
 ### Historical Data Access
 ```zig
-// EIP-2935: Access historical block hashes
-if (eips.eip_2935_historical_block_hashes_enabled()) {
-    const historical_hash = try eips_and_hardforks.historical_block_hashes
-        .get_block_hash(host, block_number);
+if (cfg.eip_2935_historical_block_hashes_enabled()) {
+    const hash = try historical_block_hashes.get_block_hash(host, block_number);
 }
 ```
 
 ### Validator Operations
 ```zig
-// EIP-6110: Process validator deposits
-if (eips.eip_6110_validator_deposits_enabled()) {
-    try eips_and_hardforks.validator_deposits.process_deposits(
-        host, deposit_data
-    );
+if (cfg.eip_6110_validator_deposits_enabled()) {
+    try validator_deposits.process_deposits(host, deposit_data);
 }
 
-// EIP-7002: Handle validator exits
-if (eips.eip_7002_validator_exits_enabled()) {
-    try eips_and_hardforks.validator_withdrawals.process_exit_request(
-        host, validator_index
-    );
+if (cfg.eip_7002_validator_exits_enabled()) {
+    try validator_withdrawals.process_exit_request(host, validator_index);
 }
 ```
 
-### Account Authorization (EIP-7702)
+### Account Authorization (EIP‑7702)
 ```zig
-// Configure EOA with contract code
-if (eips.eip_7702_eoa_code_enabled()) {
-    try eips_and_hardforks.authorization_processor.set_eoa_code(
-        host, eoa_address, contract_code, authorization_list
-    );
+if (cfg.eip_7702_eoa_code_enabled()) {
+    try authorization_processor.set_eoa_code(host, eoa, code, auth_list);
 }
 ```
 

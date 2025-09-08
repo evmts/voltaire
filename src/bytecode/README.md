@@ -1,69 +1,80 @@
-# Bytecode Module
+# Bytecode
 
-EVM bytecode parsing, analysis, and optimization.
+Validated EVM bytecode representation with fast iteration, metadata parsing, and fusion hints.
 
 ## Overview
 
-This module provides comprehensive bytecode handling including parsing, validation, jump destination analysis, and optimization passes.
+`bytecode.zig` exposes a `Bytecode(comptime cfg)` factory that builds a strongly-typed bytecode object with:
+- Safe validation and bitmap generation in a single pass
+- JUMPDEST lookups in O(1) via bitmaps
+- Optional PUSH+OP fusion hints for dispatch optimization
+- Solidity metadata parsing/stripping (runtime code only)
+- EIP-170 code size enforcement and EIP-3860 initcode gas helpers
 
-## Components
+EOF (EIP-3540/3670/4750/5450) is not supported yet.
 
-### Core Files
-- **bytecode.zig** - Main bytecode structure and operations
-- **parser.zig** - Bytecode parsing and validation
-- **analyzer.zig** - Static analysis and jump destination mapping
-- **optimizer.zig** - Bytecode optimization passes
+## Files
 
-## Key Features
+- `bytecode.zig` — Core type, iterator, validation, fusion hints, metadata parsing
+- `bytecode_analyze.zig` — Standalone analyzer used by tooling/benchmarks
+- `bytecode_stats.zig` — Opcode statistics and fusion opportunity reporting
 
-### Bytecode Analysis
-- Jump destination validation
-- Stack depth tracking
-- Gas cost pre-calculation
-- Invalid opcode detection
-- Code section identification
+## Validation Model
 
-### Optimization
-- Dead code elimination
-- Jump table construction
-- Constant folding
-- Pattern matching optimizations
+During `init(...)` we treat input as untrusted and build three bitmaps plus a packed per-byte view:
+- `is_op_start`, `is_push_data`, `is_jumpdest` (byte-addressed bitmaps)
+- `packed_bitmap` (4 bits/byte): op-start, push-data, jumpdest, fusion-candidate
 
-### Validation
-- Opcode validity checking
-- Stack underflow/overflow detection
-- Jump destination verification
-- Code size limits enforcement
+Rules enforced:
+- Truncated PUSH detection (no read past end of code)
+- Invalid opcodes are treated as `INVALID (0xFE)` for safety
+- Jumpdest bits are set only for true opcode starts
+- EIP-170: runtime bytecode must not exceed configured max
 
-## Data Structures
+For deployment bytecode with Solidity metadata, validation excludes the metadata suffix while preserving the full input slice for consumers that need it.
 
-### Bytecode
-- Raw bytecode bytes
-- Jump destination bitmap
-- Code sections map
-- Metadata cache
+## Iterator and Queries
 
-### Analysis Results
-- Valid jump destinations
-- Maximum stack depth
-- Gas cost estimates
-- Optimization hints
+The `Iterator` walks instructions efficiently and yields a compact tagged union:
+- PUSH (value + size), regular opcode, JUMPDEST, STOP, INVALID
+- When fusion hints are enabled, the iterator can emit fused PUSH+OP forms (e.g., PUSH+ADD/JUMP/JUMPI) with the decoded immediate value.
 
-## Usage
+Common helpers:
+- `len()` — runtime code length
+- `raw()` / `rawWithoutMetadata()` — underlying slices
+- `isValidJumpDest(pc)` — O(1) validity check
+- `calculateInitcodeGas(len)` — EIP-3860 cost
+
+## Stats
+
+`getStats()` collects:
+- Opcode histogram
+- PUSH immediates and simple PUSH+OP fusion candidates
+- JUMP/JUMPI targets and backwards-jump count
+- Heuristics like “looks like create code” (e.g., presence of CODECOPY)
+
+## Example
 
 ```zig
-const bytecode = @import("bytecode");
-const Bytecode = bytecode.Bytecode;
+const Bytecode = @import("bytecode.zig").Bytecode(.{});
 
-const code = try Bytecode.parse(allocator, raw_bytes);
-defer code.deinit();
+const bc = try Bytecode.init(allocator, raw);
+defer bc.deinit();
 
-const is_valid_jump = code.isValidJumpDest(pc);
+var it = bc.createIterator();
+while (it.next()) |op| switch (op) {
+    .push => |p| { _ = p.value; },
+    .jumpdest => {},
+    .regular => |r| { _ = r.opcode; },
+    else => {},
+} 
+
+const ok = bc.isValidJumpDest(0x42);
 ```
 
-## Performance Considerations
+## Performance Notes
 
-- Lazy analysis on first execution
-- Cached jump destinations
-- Pre-computed gas costs
-- Optimized for interpreter loop
+- Single-pass validation builds all bitmaps with cache-friendly writes
+- Packed per-byte metadata avoids re-scanning for common queries
+- Iterator prefetches ahead on large bytecode to improve locality
+- Fusion hints are purely optional; correctness never depends on them

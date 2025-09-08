@@ -1,10 +1,10 @@
 # Trie
 
-High-performance Merkle Patricia Trie implementation for Ethereum state storage and verification.
+Merkle Patricia Trie and helpers for Ethereum state storage and proofs.
 
 ## Overview
 
-The trie module provides a complete implementation of Ethereum's Merkle Patricia Trie data structure, which is fundamental to Ethereum's state management system. It supports efficient storage, retrieval, and verification of key-value pairs while maintaining cryptographic integrity through Merkle tree properties. The implementation is optimized for performance with cache-conscious data structures and minimal memory allocations.
+Implements Patricia trie nodes, RLP encoding, hashing (Keccak256), and proof tooling. Emphasis is on cache‑friendly layouts and minimal allocations.
 
 ## Components and Architecture
 

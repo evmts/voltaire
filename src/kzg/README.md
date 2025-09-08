@@ -41,7 +41,7 @@ The `trusted_setup.txt` file contains the results of the Ethereum KZG Ceremony:
 
 ### Setup Structure
 ```
-# G1 elements (BN254 curve points)
+# G1 elements (BLS12-381 curve points)
 G1_0 = g^(tau^0)
 G1_1 = g^(tau^1)
 G1_2 = g^(tau^2)

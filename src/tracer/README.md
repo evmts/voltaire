@@ -1,10 +1,14 @@
 # Tracer
 
-Configurable execution tracing system for EVM debugging, analysis, and performance monitoring.
+Configurable execution tracing for debugging, analysis, and perf monitoring.
 
 ## Overview
 
-The tracer module provides a comprehensive, high-performance execution tracing system for the Guillotine EVM. It offers multiple tracer implementations with compile-time selection to enable zero-cost abstractions in production while providing powerful debugging and analysis capabilities during development and testing.
+Multiple tracer implementations are available and selected at compile time for zero‑overhead when disabled:
+- `NoOpTracer` — production default, compiled away
+- `DebuggingTracer` — step snapshots and breakpoints
+- `LoggingTracer` — structured logs to stdout
+- `FileTracer` — high‑throughput JSON/binary file writer
 
 ## Components and Architecture
 
@@ -78,20 +82,16 @@ The tracer module provides a comprehensive, high-performance execution tracing s
 
 ## Usage Examples
 
-### Basic Tracer Configuration
+### Basic Configuration
 ```zig
 const tracer = @import("tracer");
 const evm = @import("evm");
 
-// Production configuration with zero overhead
-const ProductionEvm = evm.Evm(tracer.NoOpTracer);
+const EvmProd = evm.Evm(tracer.NoOpTracer);
+const EvmDebug = evm.Evm(tracer.LoggingTracer);
 
-// Development configuration with full tracing
-const DebugEvm = evm.Evm(tracer.DebuggingTracer);
-
-// Create EVM instance with tracer
-var production_evm = ProductionEvm.init(allocator, host);
-var debug_evm = DebugEvm.init(allocator, host);
+var prod = EvmProd.init(allocator, host);
+var dbg = EvmDebug.init(allocator, host);
 ```
 
 ### Debugging Tracer Usage
@@ -132,7 +132,7 @@ for (debug_tracer.steps.items) |step| {
 }
 ```
 
-### Logging Tracer Usage
+### Logging Tracer
 ```zig
 // Configure logging tracer
 var logging_tracer = tracer.LoggingTracer.init(allocator);
@@ -156,7 +156,7 @@ const result = try logging_evm.execute(bytecode);
 // Logs are automatically written to stdout in JSON format
 ```
 
-### File Tracer Usage
+### File Tracer
 ```zig
 // Configure file tracer for batch processing
 var file_tracer = try tracer.FileTracer.init(

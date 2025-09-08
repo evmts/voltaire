@@ -1,28 +1,28 @@
-# CLI Config - CLI Configuration Management
+# CLI Config
 
-## Overview
+Small set of constants and helpers used by the Bubble Tea demo.
 
-This directory contains the configuration management system for the Guillotine CLI. It handles loading, parsing, validating, and managing configuration from multiple sources including command-line arguments, environment variables, and configuration files.
+## Files
 
-## Components
+- `keys.go` — well-known keys/flags/env names used around the CLI
+- `messages.go` — user-facing strings and prompts
+- `theme.go` — color palette and layout constants
 
-### Core Files
-- **`keys.go`** - Configuration key definitions and constants
-- **`messages.go`** - User-facing configuration messages and help text
-- **`theme.go`** - UI theming and display configuration options
+## Usage
 
-## Key Features
+These packages are imported by `internal/app` and `internal/ui` to keep copy in one place:
 
-### Configuration Sources
-The configuration system supports multiple sources in order of precedence:
-1. **Command-line flags** - Highest priority, override all other sources
-2. **Environment variables** - Medium priority, useful for containerized deployments
-3. **Configuration files** - JSON, YAML, or TOML format support
-4. **Default values** - Lowest priority, sensible defaults for all options
+```go
+import (
+    cfg "guillotine-cli/internal/config"
+)
 
-### Configuration Categories
+// Example usage
+view := lipgloss.NewStyle().Foreground(cfg.ThemeAccent)
+fmt.Println(cfg.MsgWelcome)
+```
 
-#### Connection Settings
+This layer intentionally avoids any dynamic file I/O or env parsing. If the CLI grows beyond demos, add a proper configuration loader (flags > env > file) in a new package rather than expanding these constants.
 - RPC endpoint URLs for Ethereum nodes
 - API keys for external services
 - Timeout and retry configurations

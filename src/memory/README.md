@@ -1,203 +1,69 @@
-# Memory Module
+# Memory
+
+EVM‑compliant memory with lazy growth, word alignment, and nested context isolation.
 
 ## Overview
 
-The Memory module provides EVM-compliant memory management with byte-addressable storage, lazy expansion, and hierarchical isolation for nested execution contexts. Memory expands to 32-byte word boundaries as per EVM specification and supports checkpoint-based isolation for CALL operations.
+The `Memory(comptime config)` type implements byte‑addressable memory that grows on demand and always expands to 32‑byte word boundaries as required by the EVM. Child contexts (e.g., CALL frames) can share the same backing buffer using checkpoints, avoiding copies.
 
-Key features include lazy allocation on first access, zero-initialization guarantees, cached gas cost calculations, and configurable memory limits for different execution environments.
+Defaults (see `memory_config.zig`):
+- `initial_capacity = 4096`
+- `memory_limit = 0xFFFFFF` (~16 MiB, typical EVM limit)
+- `owned = true`
 
-## Core Components
+## Files
 
-### Primary Files
+- `memory.zig` — Core implementation and EVM‑style helpers
+- `memory_config.zig` — Compile‑time configuration and validation
+- `memory_c.zig`, `memory_bench.zig` — FFI and benchmarks
 
-- **`memory.zig`** - Core memory implementation with lazy expansion and word-aligned operations  
-- **`memory_config.zig`** - Configuration options for initial capacity, memory limits, and ownership
-- **`memory_c.zig`** - C interface bindings for external integration
-- **`memory_bench.zig`** - Performance benchmarks for memory operations
+## API Highlights
 
-## Key Data Structures
+- `init(allocator)` / `deinit(allocator)` — create/destroy owned memory
+- `init_child()` — borrow the same buffer with a new checkpoint
+- `ensure_capacity(allocator, new_size: u24)` — zero‑extends up to size
+- `set_data(allocator, off, bytes)` / `get_slice(off, len)` — raw ops
+- `set_data_evm(allocator, off, bytes)` — expands to next 32‑byte word
+- `get_u256(off)` / `set_u256(allocator, off, value)` — word helpers
+- `get_u256_evm(allocator, off)` — read with EVM expansion semantics
+- `get_expansion_cost(new_size)` — EVM gas delta for memory growth
 
-### Memory Structure
+## Examples
+
 ```zig
-pub fn Memory(comptime config: MemoryConfig) type {
-    return struct {
-        const Self = @This();
-        
-        pub const INITIAL_CAPACITY = config.initial_capacity;
-        pub const MEMORY_LIMIT = config.memory_limit;
-        pub const is_owned = config.owned;
-        
-        checkpoint: u24,
-        buffer_ptr: *std.ArrayList(u8),
-        
-        // Core operations
-        pub fn init(allocator: std.mem.Allocator) !Self
-        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void
-        pub fn expand_to(self: *Self, offset: u64) !void
-        pub fn load_word(self: *const Self, offset: u64) MemoryError!u256
-        pub fn store_word(self: *Self, offset: u64, value: u256) MemoryError!void
-    };
-}
+const Memory = @import("memory.zig").Memory(.{ .owned = true });
+var mem = try Memory.init(allocator);
+defer mem.deinit(allocator);
+
+// Write a u256 at offset 0 (no implicit EVM expansion)
+try mem.set_u256(allocator, 0, 1234);
+try std.testing.expectEqual(@as(u256, 1234), try mem.get_u256(0));
+
+// EVM‑compliant write grows to next 32‑byte boundary
+const data = [_]u8{0xAA} ** 20;
+try mem.set_data_evm(allocator, 40, &data);
 ```
 
-### Memory Configuration
+Checkpointed child memory:
+
 ```zig
-pub const MemoryConfig = struct {
-    initial_capacity: u32 = 0,
-    memory_limit: u64 = 0x100000000, // 4GB default
-    owned: bool = true,
-    
-    pub fn validate(self: MemoryConfig) void {
-        std.debug.assert(self.memory_limit > 0);
-        std.debug.assert(self.memory_limit <= 0x100000000);
-    }
-};
+var child = try mem.init_child();
+defer child.deinit(allocator); // no‑op for borrowed
+try child.set_data(allocator, 0, &[_]u8{1,2,3});
 ```
 
-### Error Types
+Gas cost (EVM formula):
+
 ```zig
-pub const MemoryError = error{
-    OutOfMemory,
-    MemoryOverflow,
-    OutOfBounds,
-};
+const before = mem.get_expansion_cost(0);   // 0
+const after  = mem.get_expansion_cost(256); // 3*8 + 8*8/512
 ```
 
-## Performance Considerations
+## Notes
 
-### Lazy Expansion
-Memory is allocated only when accessed, minimizing overhead for contracts with small memory usage:
-```zig
-pub fn expand_to(self: *Self, offset: u64) !void {
-    const required_size = offset + 32; // Always expand to word boundary
-    if (required_size > self.buffer_ptr.capacity) {
-        try self.buffer_ptr.ensureTotalCapacity(required_size);
-        // Zero-initialize new memory
-        @memset(self.buffer_ptr.items[self.buffer_ptr.items.len..required_size], 0);
-    }
-}
-```
-
-### Word-Aligned Operations
-All memory operations align to 32-byte boundaries for optimal performance:
-```zig
-const WORD_SIZE = 32;
-const WORD_SHIFT = 5; // log2(32)
-const WORD_MASK = 31;  // 32 - 1
-
-pub inline fn word_offset(offset: u64) u64 {
-    return offset & ~WORD_MASK; // Align to word boundary
-}
-```
-
-### Fast Path Optimization
-Common operations use optimized paths for small offsets:
-```zig
-const FAST_PATH_THRESHOLD = 32;
-
-pub fn load_byte(self: *const Self, offset: u64) MemoryError!u8 {
-    if (offset < FAST_PATH_THRESHOLD and offset < self.buffer_ptr.items.len) {
-        return self.buffer_ptr.items[offset]; // Fast path
-    }
-    return self.load_byte_slow(offset); // Bounds checking path
-}
-```
-
-### Memory Layout
-Memory buffer uses ArrayList for dynamic growth with efficient resizing strategies:
-- Initial capacity configurable per use case
-- Exponential growth for large expansions
-- Zero-initialization of new regions
-
-## Usage Examples
-
-### Basic Memory Operations
-```zig
-const MemoryConfig = @import("memory_config.zig").MemoryConfig;
-const Memory = @import("memory.zig").Memory;
-
-// Configure memory with limits
-const config = MemoryConfig{
-    .initial_capacity = 1024,
-    .memory_limit = 1024 * 1024, // 1MB limit
-    .owned = true,
-};
-
-const MemoryType = Memory(config);
-var memory = try MemoryType.init(allocator);
-defer memory.deinit(allocator);
-
-// Store a 256-bit word at offset 0
-const value: u256 = 0x123456789ABCDEF;
-try memory.store_word(0, value);
-
-// Load the word back
-const loaded = try memory.load_word(0);
-std.debug.assert(loaded == value);
-```
-
-### Memory Expansion
-```zig
-// Expand memory to accommodate offset
-const offset = 1024;
-try memory.expand_to(offset);
-
-// Check memory size
-const size = memory.size();
-std.debug.assert(size >= offset + 32); // Word boundary expansion
-```
-
-### Byte Operations
-```zig
-// Store individual bytes
-try memory.store_byte(10, 0xFF);
-try memory.store_byte(11, 0xAB);
-
-// Load individual bytes
-const byte1 = try memory.load_byte(10);
-const byte2 = try memory.load_byte(11);
-std.debug.assert(byte1 == 0xFF);
-std.debug.assert(byte2 == 0xAB);
-```
-
-### Bulk Data Operations
-```zig
-// Copy data to memory
-const data = [_]u8{1, 2, 3, 4, 5, 6, 7, 8};
-try memory.copy_from_slice(100, &data);
-
-// Copy data from memory  
-var output: [8]u8 = undefined;
-memory.copy_to_slice(100, &output);
-std.debug.assert(std.mem.eql(u8, &data, &output));
-```
-
-### Checkpoint Operations
-```zig
-// Create checkpoint for nested context
-const checkpoint = memory.create_checkpoint();
-
-// Modify memory in nested context
-try memory.store_word(0, 0xDEADBEEF);
-
-// Revert to checkpoint
-memory.revert_to_checkpoint(checkpoint);
-
-// Memory reverted to original state
-const reverted_value = try memory.load_word(0);
-std.debug.assert(reverted_value == 0); // Zero-initialized
-```
-
-## Gas Cost Integration
-
-Memory expansion follows EVM gas cost rules:
-
-### Gas Calculation
-```zig
-pub fn expansion_gas_cost(old_size: u64, new_size: u64) u64 {
-    if (new_size <= old_size) return 0;
-    
-    const old_cost = memory_gas_cost(old_size);
+- All newly allocated bytes are zero‑initialized.
+- Owned and borrowed variants have identical layout; ownership only affects init/deinit.
+- The public API requires an allocator for any operation that may grow memory.
     const new_cost = memory_gas_cost(new_size);
     return new_cost - old_cost;
 }

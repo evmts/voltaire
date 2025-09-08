@@ -156,13 +156,13 @@ pub const DatabasePool = struct {
 const Database = @import("database.zig").Database;
 const Account = @import("database_interface_account.zig").Account;
 
-var db = try Database.init(allocator);
+var db = Database.init(allocator);
 defer db.deinit();
 
 // Create account
 const address = [_]u8{1} ++ [_]u8{0} ** 19; // 0x01...
 var account = Account{
-    .balance = 1000000000000000000, // 1 ETH in wei
+    .balance = 1_000_000_000_000_000_000, // 1 ETH in wei
     .nonce = 0,
 };
 
@@ -170,8 +170,8 @@ var account = Account{
 try db.set_account(address, account);
 
 // Retrieve account
-const stored_account = db.get_account(address);
-std.debug.assert(stored_account.?.balance == 1000000000000000000);
+const stored = db.get_account(address) orelse unreachable;
+std.debug.assert(stored.balance == 1_000_000_000_000_000_000);
 ```
 
 ### Storage Operations
@@ -184,8 +184,8 @@ const storage_value: u256 = 0xDEADBEEF;
 try db.set_storage(contract_address, storage_slot, storage_value);
 
 // Get contract storage  
-const retrieved_value = db.get_storage(contract_address, storage_slot);
-std.debug.assert(retrieved_value == 0xDEADBEEF);
+const retrieved = db.get_storage(contract_address, storage_slot);
+std.debug.assert(retrieved == 0xDEADBEEF);
 ```
 
 ### Transient Storage (EIP-1153)
