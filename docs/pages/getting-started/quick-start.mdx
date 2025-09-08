@@ -1,155 +1,309 @@
 ---
 title: Quick Start
-description: Run your first EVM execution with Guillotine
+description: Get up and running with Guillotine in 5 minutes
 ---
+
+import { Callout, Steps, Step } from 'vocs/components'
 
 # Quick Start
 
-Get up and running with Guillotine in under 5 minutes.
+This guide will have you executing EVM bytecode with Guillotine in under 5 minutes. We'll start with a simple "Hello EVM" example, then progressively build more complex programs.
 
-:::info[Prerequisites]
-Make sure you've [installed Guillotine](/getting-started/installation) first.
-:::
+<Callout type="info">
+  **Prerequisites**: Make sure you've [installed Guillotine](/getting-started/installation) and have Zig 0.14.1+ installed.
+</Callout>
 
-## Your First EVM Execution
+## 🚀 Hello EVM
 
-Create a simple program that executes EVM bytecode:
+Let's start by executing the simplest possible EVM program - pushing a number onto the stack.
 
 ::::steps
-### Create a new Zig project
+### Create a new project
 
 ```bash
-mkdir my-evm-app
-cd my-evm-app
+# Create and enter project directory
+mkdir guillotine-quickstart
+cd guillotine-quickstart
+
+# Initialize a new Zig project
 zig init
 ```
 
-### Add Guillotine dependency
+### Configure dependencies
 
-Edit `build.zig.zon`:
+Edit `build.zig.zon` to add Guillotine:
 
-```zig
+```zig filename="build.zig.zon"
 .{
-    .name = "my-evm-app",
+    .name = "guillotine-quickstart",
     .version = "0.0.1",
     .dependencies = .{
         .guillotine = .{
-            .path = "../Guillotine", // Adjust path to your Guillotine clone
+            .path = "../Guillotine", // Adjust to your Guillotine path
         },
     },
+    .paths = .{""},
+}
+```
+
+### Update build configuration
+
+Edit `build.zig` to import Guillotine:
+
+```zig filename="build.zig" {13-16}
+const std = @import("std");
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const exe = b.addExecutable(.{
+        .name = "guillotine-quickstart",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Add Guillotine module
+    const guillotine = b.dependency("guillotine", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("guillotine", guillotine.module("guillotine"));
+
+    b.installArtifact(exe);
+
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+
+    const run_step = b.step("run", "Run the app");
+    run_step.dependOn(&run_cmd.step);
 }
 ```
 
 ### Write your first EVM program
 
-Create `src/main.zig`:
+Replace `src/main.zig` with:
 
-```zig
+```zig filename="src/main.zig" twoslash
 const std = @import("std");
 const guillotine = @import("guillotine");
 
 pub fn main() !void {
-    // Create allocator
+    // Setup allocator
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Initialize EVM with default config
+    // Initialize EVM with default configuration
     const Evm = guillotine.Evm(.{});
     var evm = try Evm.init(allocator);
     defer evm.deinit();
 
-    // Simple bytecode: PUSH1 0x2A (push 42 to stack)
+    // Simple bytecode: PUSH1 0x2A (push 42 onto stack)
     const bytecode = [_]u8{ 0x60, 0x2A };
     
-    // Execute
+    // Execute the bytecode
     const result = try evm.execute(&bytecode);
     
-    // Print result
-    std.debug.print("Execution successful!\n", .{});
-    std.debug.print("Stack top: {}\n", .{result.stack_top});
+    // Print results
+    std.debug.print("🎉 Execution successful!\n", .{});
+    std.debug.print("📊 Gas used: {}\n", .{result.gas_used});
+    std.debug.print("🔢 Stack top: {}\n", .{result.stack_top});
 }
 ```
 
-### Run the program
+### Run it!
 
 ```bash
 zig build run
 ```
 
-Expected output:
+You should see:
 ```
-Execution successful!
-Stack top: 42
+🎉 Execution successful!
+📊 Gas used: 3
+🔢 Stack top: 42
 ```
+
+**Congratulations!** 🎊 You've just executed your first EVM bytecode with Guillotine.
 ::::
 
-## Understanding the Code
+## 📖 Understanding the Code
 
-Let's break down what just happened:
+Let's break down what each part does:
 
-| Step | Description |
-|------|-------------|
-| **1. Allocator** | Zig requires explicit memory management. We use a general-purpose allocator. |
-| **2. EVM Config** | `Evm(.{})` creates an EVM with default settings (Cancun hardfork, all features enabled) |
-| **3. Bytecode** | `0x60 0x2A` means `PUSH1 42` - push the value 42 onto the stack |
-| **4. Execute** | Runs the bytecode and returns the result |
-| **5. Result** | Contains the final stack state, gas used, and any return data |
+<div style={{ 
+  background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.05), rgba(220, 38, 38, 0.02))',
+  border: '1px solid rgba(234, 88, 12, 0.2)',
+  borderRadius: '12px',
+  padding: '1.5rem',
+  marginBottom: '2rem'
+}}>
 
-## Common Operations
+### Key Components
 
-### Addition Example
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| **Allocator** | Memory management | Zig requires explicit memory management. The `GeneralPurposeAllocator` handles all allocations. |
+| **EVM Config** | VM configuration | `Evm(.{})` creates an EVM with default settings (latest hardfork, all features). |
+| **Bytecode** | EVM instructions | `[0x60, 0x2A]` = `PUSH1 42` - pushes the value 42 onto the stack. |
+| **Execute** | Run the program | Processes the bytecode and returns execution results. |
+| **Result** | Execution output | Contains gas used, stack state, return data, and logs. |
 
-```zig
-// Bytecode: 1 + 2
+</div>
+
+## 🎯 Interactive Examples
+
+### Example 1: Basic Arithmetic
+
+Let's perform a simple addition: `3 + 5`
+
+```zig filename="arithmetic.zig" showLineNumbers
 const bytecode = [_]u8{
-    0x60, 0x01,  // PUSH1 1
-    0x60, 0x02,  // PUSH1 2  
+    0x60, 0x03,  // PUSH1 3
+    0x60, 0x05,  // PUSH1 5
     0x01,        // ADD
 };
 
 const result = try evm.execute(&bytecode);
-std.debug.print("1 + 2 = {}\n", .{result.stack_top}); // Output: 3
+std.debug.print("3 + 5 = {}\n", .{result.stack_top}); // Output: 8
 ```
 
-### Storage Example
+<Callout type="tip">
+  **Pro tip**: The EVM is a stack machine - operations pop values from the stack and push results back.
+</Callout>
 
-```zig
-// Store and load a value
+### Example 2: Storage Operations
+
+Store and retrieve a value from contract storage:
+
+```zig filename="storage.zig" showLineNumbers
 const bytecode = [_]u8{
-    0x60, 0x42,  // PUSH1 66 (value)
+    // Store value 100 at key 0
+    0x60, 0x64,  // PUSH1 100 (value)
     0x60, 0x00,  // PUSH1 0 (key)
     0x55,        // SSTORE
+    
+    // Load value from key 0
     0x60, 0x00,  // PUSH1 0 (key)
     0x54,        // SLOAD
 };
 
 const result = try evm.execute(&bytecode);
-std.debug.print("Loaded value: {}\n", .{result.stack_top}); // Output: 66
+std.debug.print("Stored value: {}\n", .{result.stack_top}); // Output: 100
 ```
 
-## Working with C
+### Example 3: Memory Operations
 
-If you prefer C, here's the same example:
+Work with EVM memory:
 
-```c
+```zig filename="memory.zig" showLineNumbers
+const bytecode = [_]u8{
+    // Store 0xFF at memory position 0
+    0x60, 0xFF,  // PUSH1 255
+    0x60, 0x00,  // PUSH1 0 (memory position)
+    0x52,        // MSTORE
+    
+    // Load from memory position 0
+    0x60, 0x00,  // PUSH1 0
+    0x51,        // MLOAD
+};
+
+const result = try evm.execute(&bytecode);
+std.debug.print("Memory value: {x}\n", .{result.stack_top});
+```
+
+## 🔧 Advanced Usage
+
+### Custom Configuration
+
+Configure the EVM for specific needs:
+
+```zig filename="custom_config.zig" twoslash
+const config = guillotine.EvmConfig{
+    .hardfork = .SHANGHAI,      // Use Shanghai hardfork rules
+    .enable_trace = true,        // Enable execution tracing
+    .max_call_depth = 512,       // Custom call depth limit
+    .max_code_size = 0x6000,     // 24KB max contract size
+};
+
+const CustomEvm = guillotine.Evm(config);
+var evm = try CustomEvm.init(allocator);
+defer evm.deinit();
+```
+
+### Error Handling
+
+Properly handle execution errors:
+
+```zig filename="error_handling.zig"
+const result = evm.execute(&bytecode) catch |err| {
+    switch (err) {
+        error.OutOfGas => {
+            std.debug.print("⛽ Out of gas!\n", .{});
+            return;
+        },
+        error.StackUnderflow => {
+            std.debug.print("📉 Stack underflow!\n", .{});
+            return;
+        },
+        error.InvalidOpcode => {
+            std.debug.print("❌ Invalid opcode!\n", .{});
+            return;
+        },
+        else => return err,
+    }
+};
+```
+
+### With Gas Limit
+
+Execute with specific gas limit:
+
+```zig filename="gas_limit.zig"
+var tx_context = guillotine.TxContext{
+    .gas_limit = 30000,
+    .gas_price = 20_000_000_000, // 20 gwei
+    .origin = guillotine.Address.zero(),
+    .block_number = 18_500_000,
+};
+
+const result = try evm.execute_with_context(&bytecode, &tx_context);
+std.debug.print("Gas remaining: {}\n", .{tx_context.gas_limit - result.gas_used});
+```
+
+## 🌍 Language Bindings
+
+### C Example
+
+Using Guillotine from C:
+
+```c filename="main.c" showLineNumbers
 #include <stdio.h>
 #include "guillotine.h"
 
 int main() {
-    // Initialize EVM
+    // Create EVM instance
     guillotine_evm_t* evm = guillotine_evm_create();
+    if (!evm) {
+        fprintf(stderr, "Failed to create EVM\n");
+        return 1;
+    }
     
-    // Simple bytecode: PUSH1 42
+    // Bytecode: PUSH1 42
     uint8_t bytecode[] = {0x60, 0x2A};
     
     // Execute
-    guillotine_result_t result;
-    guillotine_execute(evm, bytecode, sizeof(bytecode), &result);
+    guillotine_result_t result = {0};
+    int status = guillotine_execute(evm, bytecode, sizeof(bytecode), &result);
     
-    // Print result
-    printf("Execution successful!\n");
-    printf("Stack top: %llu\n", result.stack_top);
+    if (status == 0) {
+        printf("Success! Stack top: %llu\n", result.stack_top);
+        printf("Gas used: %llu\n", result.gas_used);
+    } else {
+        printf("Execution failed with error: %d\n", status);
+    }
     
     // Cleanup
     guillotine_evm_destroy(evm);
@@ -159,59 +313,188 @@ int main() {
 
 Compile and run:
 ```bash
-gcc -o my_evm main.c -lguillotine -L/path/to/guillotine/lib -I/path/to/guillotine/include
+# Build Guillotine C library
+cd Guillotine && zig build c-api
+
+# Compile your program
+gcc -o my_evm main.c \
+    -L./zig-out/lib -lguillotine \
+    -I./zig-out/include
+
+# Run
 ./my_evm
 ```
 
-## What's Next?
+## 📊 Performance Tips
 
-Now that you've run your first EVM execution:
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+  <div style={{
+    padding: '1rem',
+    background: 'var(--vocs-color_background2)',
+    border: '1px solid var(--vocs-color_border)',
+    borderRadius: '8px'
+  }}>
+    <h4 style={{ marginTop: 0, color: '#10B981' }}>✅ Do</h4>
+    <ul style={{ margin: 0 }}>
+      <li>Pre-validate bytecode when possible</li>
+      <li>Reuse EVM instances for multiple executions</li>
+      <li>Use arena allocators for batch operations</li>
+      <li>Profile with ReleaseFast mode</li>
+    </ul>
+  </div>
+  
+  <div style={{
+    padding: '1rem',
+    background: 'var(--vocs-color_background2)',
+    border: '1px solid var(--vocs-color_border)',
+    borderRadius: '8px'
+  }}>
+    <h4 style={{ marginTop: 0, color: '#EF4444' }}>❌ Don't</h4>
+    <ul style={{ margin: 0 }}>
+      <li>Create new EVM for each execution</li>
+      <li>Forget to call deinit()</li>
+      <li>Use Debug mode in production</li>
+      <li>Ignore error handling</li>
+    </ul>
+  </div>
+</div>
 
-:::tip[Explore Further]
-- **[Basic Example](/getting-started/basic-example)** - A complete contract execution example
-- **[Basic Execution](/usage/basic-execution)** - Learn about different execution modes
-- **[Configuration](/usage/configuration)** - Customize the EVM for your needs
-- **[API Reference](/api/evm)** - Complete API documentation
-:::
+## 🎮 Interactive Playground
 
-:::info[Advanced Topics]
-Once comfortable with basics, explore:
-- [Performance optimization](/advanced/performance/optimization)
-- [Custom opcodes](/advanced/customization/opcodes)
-- [Differential testing](/advanced/testing/differential)
-:::
+Try these bytecode snippets in your program:
 
-## Quick Reference
+:::code-group
 
-### Essential Opcodes
-
-| Opcode | Hex | Description | Example |
-|--------|-----|-------------|---------|
-| `PUSH1` | `0x60` | Push 1 byte | `0x60 0x42` (push 66) |
-| `ADD` | `0x01` | Addition | `a + b` |
-| `MUL` | `0x02` | Multiplication | `a * b` |
-| `SSTORE` | `0x55` | Store to storage | `storage[key] = value` |
-| `SLOAD` | `0x54` | Load from storage | `storage[key]` |
-| `RETURN` | `0xF3` | Return data | Return and halt |
-
-### Error Handling
-
-```zig
-const result = evm.execute(&bytecode) catch |err| switch (err) {
-    error.OutOfGas => {
-        std.debug.print("Not enough gas!\n", .{});
-        return;
-    },
-    error.InvalidOpcode => {
-        std.debug.print("Invalid opcode encountered!\n", .{});
-        return;
-    },
-    else => return err,
+```zig [Multiplication]
+// Calculate: 7 * 8
+const bytecode = [_]u8{
+    0x60, 0x07,  // PUSH1 7
+    0x60, 0x08,  // PUSH1 8
+    0x02,        // MUL
 };
+// Result: 56
 ```
 
-## Need Help?
+```zig [Comparison]
+// Check if 10 > 5
+const bytecode = [_]u8{
+    0x60, 0x05,  // PUSH1 5
+    0x60, 0x0A,  // PUSH1 10
+    0x11,        // GT (greater than)
+};
+// Result: 1 (true)
+```
 
-- **Examples**: Check the [examples directory](https://github.com/williamcory/Guillotine/tree/main/examples)
-- **Issues**: Report bugs on [GitHub](https://github.com/williamcory/Guillotine/issues)
-- **Community**: Join our [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
+```zig [Bitwise]
+// Calculate: 0xFF AND 0x0F
+const bytecode = [_]u8{
+    0x60, 0xFF,  // PUSH1 255
+    0x60, 0x0F,  // PUSH1 15
+    0x16,        // AND
+};
+// Result: 15 (0x0F)
+```
+
+:::
+
+## 📚 Quick Reference
+
+### Common Opcodes
+
+| Opcode | Hex | Gas | Stack | Description |
+|--------|-----|-----|-------|-------------|
+| `STOP` | `0x00` | 0 | 0 → 0 | Halt execution |
+| `ADD` | `0x01` | 3 | 2 → 1 | Addition |
+| `MUL` | `0x02` | 5 | 2 → 1 | Multiplication |
+| `SUB` | `0x03` | 3 | 2 → 1 | Subtraction |
+| `DIV` | `0x04` | 5 | 2 → 1 | Division |
+| `LT` | `0x10` | 3 | 2 → 1 | Less than |
+| `GT` | `0x11` | 3 | 2 → 1 | Greater than |
+| `EQ` | `0x14` | 3 | 2 → 1 | Equality |
+| `AND` | `0x16` | 3 | 2 → 1 | Bitwise AND |
+| `OR` | `0x17` | 3 | 2 → 1 | Bitwise OR |
+| `PUSH1` | `0x60` | 3 | 0 → 1 | Push 1 byte |
+| `DUP1` | `0x80` | 3 | 1 → 2 | Duplicate top |
+| `SWAP1` | `0x90` | 3 | 2 → 2 | Swap top two |
+
+### Error Codes
+
+| Error | Description | Common Cause |
+|-------|-------------|--------------|
+| `OutOfGas` | Insufficient gas | Gas limit too low |
+| `StackUnderflow` | Pop from empty stack | Missing PUSH operation |
+| `StackOverflow` | Stack exceeds 1024 | Too many values pushed |
+| `InvalidOpcode` | Unknown instruction | Corrupted bytecode |
+| `InvalidJump` | Jump to non-JUMPDEST | Incorrect jump target |
+
+## 🚀 Next Steps
+
+Now that you're executing EVM bytecode:
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '2rem' }}>
+  <a href="/getting-started/basic-example" style={{
+    display: 'block',
+    padding: '1.5rem',
+    background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.1), rgba(220, 38, 38, 0.05))',
+    border: '1px solid rgba(234, 88, 12, 0.3)',
+    borderRadius: '12px',
+    textDecoration: 'none'
+  }}>
+    <h3 style={{ margin: '0 0 0.5rem 0' }}>📘 Basic Example</h3>
+    <p style={{ margin: 0, color: 'var(--vocs-color_text2)' }}>
+      Complete contract execution with deployment and calls
+    </p>
+  </a>
+  
+  <a href="/usage/basic-execution" style={{
+    display: 'block',
+    padding: '1.5rem',
+    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05))',
+    border: '1px solid rgba(59, 130, 246, 0.3)',
+    borderRadius: '12px',
+    textDecoration: 'none'
+  }}>
+    <h3 style={{ margin: '0 0 0.5rem 0' }}>⚙️ Execution Modes</h3>
+    <p style={{ margin: 0, color: 'var(--vocs-color_text2)' }}>
+      Learn about different execution contexts and modes
+    </p>
+  </a>
+  
+  <a href="/api/evm" style={{
+    display: 'block',
+    padding: '1.5rem',
+    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    borderRadius: '12px',
+    textDecoration: 'none'
+  }}>
+    <h3 style={{ margin: '0 0 0.5rem 0' }}>📚 API Reference</h3>
+    <p style={{ margin: 0, color: 'var(--vocs-color_text2)' }}>
+      Complete API documentation with examples
+    </p>
+  </a>
+  
+  <a href="/advanced/performance/optimization" style={{
+    display: 'block',
+    padding: '1.5rem',
+    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(139, 92, 246, 0.05))',
+    border: '1px solid rgba(168, 85, 247, 0.3)',
+    borderRadius: '12px',
+    textDecoration: 'none'
+  }}>
+    <h3 style={{ margin: '0 0 0.5rem 0' }}>🚀 Optimization</h3>
+    <p style={{ margin: 0, color: 'var(--vocs-color_text2)' }}>
+      Advanced performance tuning techniques
+    </p>
+  </a>
+</div>
+
+## 💬 Get Help
+
+<Callout type="info">
+  **Need assistance?** 
+  - 📖 Browse [examples](https://github.com/evmts/Guillotine/tree/main/examples)
+  - 💬 Join our [Telegram community](https://t.me/+ANThR9bHDLAwMjUx)
+  - 🐛 Report [issues on GitHub](https://github.com/evmts/Guillotine/issues)
+  - 🎮 Chat on [Discord](https://discord.gg/guillotine)
+</Callout>
