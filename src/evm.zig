@@ -1332,6 +1332,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             }) catch return;
         }
 
+        /// Take ownership of the accumulated logs and clear internal storage
+        pub fn takeLogs(self: *Self) []@import("frame/call_result.zig").Log {
+            return self.logs.toOwnedSlice(self.allocator) catch &.{};
+        }
+
         /// Execute nested EVM call - for Host interface
         pub fn host_inner_call(self: *Self, params: CallParams) !CallResult {
             return self.inner_call(params);
@@ -2480,7 +2485,7 @@ test "Host interface - account_exists functionality" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(address, account);
+    try db.set_account(address.bytes, account);
 
     const exists = evm.account_exists(address);
     try std.testing.expect(exists);
@@ -2622,7 +2627,7 @@ test "EVM CREATE operation - basic contract creation" {
     try std.testing.expectEqual(@as(usize, 20), result.output.len);
 
     // Extract contract address from output
-    const contract_address: primitives.Address = result.output[0..20].*;
+    const contract_address: primitives.Address = .{ .bytes = result.output[0..20].* };
 
     // Verify contract was created
     const created_account = (try db.get_account(contract_address.bytes)).?;
@@ -2687,7 +2692,7 @@ test "EVM CREATE operation - with value transfer" {
     try std.testing.expect(result.success);
 
     // Extract contract address
-    const contract_address: primitives.Address = result.output[0..20].*;
+    const contract_address: primitives.Address = .{ .bytes = result.output[0..20].* };
 
     // Verify balances
     const caller_after = (try db.get_account(caller_address)).?;
@@ -2721,7 +2726,7 @@ test "EVM CREATE operation - insufficient balance fails" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
     const caller_account = Account{
         .balance = 100,
         .nonce = 0,
@@ -2770,7 +2775,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
     const caller_account = Account{
         .balance = 1000000,
         .nonce = 0,
@@ -2798,7 +2803,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
         },
     };
 
-    const result = try evm.call(create2_params);
+    const result = evm.call(create2_params);
     defer if (result.output.len > 0) evm.allocator.free(result.output);
 
     // Verify successful creation
@@ -2848,7 +2853,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
     const init_code = [_]u8{ 0x00, 0x00, 0xF3 }; // STOP STOP RETURN
     const salt: u256 = 0xDEADBEEF;
 
@@ -3111,7 +3116,7 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
     try std.testing.expectEqual(@as(usize, 20), result.output.len);
 
     // The output should contain the address of the created child contract
-    const child_address: primitives.Address = result.output[0..20].*;
+    const child_address: primitives.Address = .{ .bytes = result.output[0..20].* };
 
     // Verify child contract exists
     const child_account = try db.get_account(child_address.bytes);
@@ -3478,7 +3483,7 @@ test "Error handling - precompile execution" {
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = ecrecover_address,
+            .to = .{ .bytes = ecrecover_address },
             .value = 0,
             .input = &input_data,
             .gas = 100000,
@@ -3521,7 +3526,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = identity_address,
+            .to = .{ .bytes = identity_address },
             .value = 0,
             .input = test_data,
             .gas = 100000,
@@ -3571,7 +3576,7 @@ test "Precompiles - SHA256 precompile (0x02)" {
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = sha256_address,
+            .to = .{ .bytes = sha256_address },
             .value = 0,
             .input = test_input,
             .gas = 100000,
@@ -3620,7 +3625,7 @@ test "Precompiles - disabled configuration" {
     const call_params = NoPrecompileEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = identity_address,
+            .to = .{ .bytes = identity_address },
             .value = 0,
             .input = test_data,
             .gas = 100000,
@@ -3665,7 +3670,7 @@ test "Precompiles - invalid precompile addresses" {
     const call_params = DefaultEvm.CallParams{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = invalid_address,
+            .to = .{ .bytes = invalid_address },
             .value = 0,
             .input = &.{},
             .gas = 100000,
@@ -3712,7 +3717,7 @@ test "Debug - Gas limit affects execution" {
     // Deploy a simple infinite loop contract
     // JUMPDEST (0x5b) PUSH1 0x00 (0x6000) JUMP (0x56)
     const loop_bytecode = [_]u8{ 0x5b, 0x60, 0x00, 0x56 };
-    const deploy_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const deploy_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
     const code_hash = try db.set_code(&loop_bytecode);
     try db.set_account(deploy_address, Account{
         .nonce = 0,
@@ -3807,7 +3812,7 @@ test "Debug - Contract deployment and execution" {
 
     // Test 1: Call to non-existent contract
     {
-        const empty_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{99};
+        const empty_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{99} };
         const start_time = std.time.nanoTimestamp();
         const result = try evm.call(.{
             .call = .{
@@ -3918,7 +3923,7 @@ test "Debug - Bytecode size affects execution time" {
 
     // Create a large contract that does simple operations
     var large_bytecode = std.ArrayList(u8){};
-    defer large_bytecode.deinit();
+    defer large_bytecode.deinit(std.testing.allocator);
 
     // Add many PUSH1/POP pairs (each costs gas but doesn't loop)
     for (0..1000) |_| {
