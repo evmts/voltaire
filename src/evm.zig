@@ -2782,7 +2782,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     // Simple init code
     const init_code = [_]u8{
@@ -3767,7 +3767,7 @@ test "Debug - Gas limit affects execution" {
     // Test 3: High gas limit
     {
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = deploy_address,
@@ -3814,7 +3814,7 @@ test "Debug - Contract deployment and execution" {
     {
         const empty_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{99} };
         const start_time = std.time.nanoTimestamp();
-        const result = try evm.call(.{
+        const result = evm.call(.{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
                 .to = empty_address,
@@ -4126,7 +4126,7 @@ test "EVM with advanced planner strategy" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     try std.testing.expect(result.success);
 }
 
@@ -4165,14 +4165,14 @@ test "journal state application - storage change rollback" {
     const new_value: u256 = 0x789;
 
     // Set initial storage value
-    try evm.database.set_storage(test_address, storage_key, original_value);
+    try evm.database.set_storage(test_address.bytes, storage_key, original_value);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
 
     // Modify storage value and record in journal
-    try evm.database.set_storage(test_address, storage_key, new_value);
-    try evm.journal.entries.append(.{
+    try evm.database.set_storage(test_address.bytes, storage_key, new_value);
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .storage_change = .{
             .address = test_address,
@@ -4182,14 +4182,14 @@ test "journal state application - storage change rollback" {
     });
 
     // Verify new value is set
-    const current_value = try evm.database.get_storage(test_address, storage_key);
+    const current_value = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(new_value, current_value);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify storage value was reverted
-    const reverted_value = try evm.database.get_storage(test_address, storage_key);
+    const reverted_value = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(original_value, reverted_value);
 }
 
@@ -4234,7 +4234,7 @@ test "journal state application - balance change rollback" {
     var modified_account = original_account;
     modified_account.balance = new_balance;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{
             .address = test_address,
@@ -4295,7 +4295,7 @@ test "journal state application - nonce change rollback" {
     var modified_account = original_account;
     modified_account.nonce = new_nonce;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .nonce_change = .{
             .address = test_address,
@@ -4636,11 +4636,11 @@ test "EVM contract execution - minimal benchmark reproduction" {
     };
 
     // Deploy the contract first
-    const deploy_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{1}; // Address 0x000...001
+    const deploy_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} }; // Address 0x000...001
 
     // Store contract code in database
     const code_hash = try db.set_code(&test_bytecode);
-    try db.set_account(deploy_address, Account{
+    try db.set_account(deploy_address.bytes, Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -4658,7 +4658,7 @@ test "EVM contract execution - minimal benchmark reproduction" {
     };
 
     // Execute the contract - this should reproduce the benchmark scenario
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Verify execution succeeded
     try std.testing.expect(result.success);
@@ -4692,7 +4692,7 @@ test "Precompile - IDENTITY (0x04) basic functionality" {
     defer evm.deinit();
 
     // Test calling IDENTITY precompile (0x04) - should return input as-is
-    const precompile_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{4}; // Address 0x000...004
+    const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{4} }; // Address 0x000...004
     const input_data = "Hello, World!";
 
     const call_params = DefaultEvm.CallParams{
@@ -4706,7 +4706,7 @@ test "Precompile - IDENTITY (0x04) basic functionality" {
     };
 
     // Execute the precompile
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Verify execution succeeded
     try std.testing.expect(result.success);
@@ -4740,7 +4740,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
     defer evm.deinit();
 
     // Test calling SHA256 precompile (0x02)
-    const precompile_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{2}; // Address 0x000...002
+    const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{2} }; // Address 0x000...002
     const input_data = "abc";
 
     const call_params = DefaultEvm.CallParams{
@@ -4754,7 +4754,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
     };
 
     // Execute the precompile
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Verify execution succeeded
     try std.testing.expect(result.success);
@@ -4794,7 +4794,7 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
     defer evm.deinit();
 
     // Test ECRECOVER with invalid signature (all zeros)
-    const precompile_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
     const input_data = [_]u8{0} ** 128; // Invalid signature
 
     const call_params = DefaultEvm.CallParams{
@@ -4807,7 +4807,7 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 32), result.output.len);
@@ -4842,7 +4842,7 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const precompile_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{3};
+    const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{3} };
     const input_data = "test data";
 
     const call_params = DefaultEvm.CallParams{
@@ -4855,7 +4855,7 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // RIPEMD160 is a placeholder implementation (returns zeros)
     try std.testing.expect(result.success);
@@ -4891,7 +4891,7 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const precompile_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{5};
+    const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{5} };
 
     // 3^4 mod 5 = 81 mod 5 = 1
     var input: [99]u8 = [_]u8{0} ** 99;
@@ -4912,7 +4912,7 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 1), result.output.len);
@@ -4944,7 +4944,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
     defer evm.deinit();
 
     // Test ECADD (0x06)
-    const ecadd_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{6};
+    const ecadd_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{6} };
     const ecadd_input = [_]u8{0} ** 128; // Two zero points
 
     const ecadd_params = DefaultEvm.CallParams{
@@ -4957,7 +4957,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
         },
     };
 
-    const ecadd_result = try evm.call(ecadd_params);
+    const ecadd_result = evm.call(ecadd_params);
 
     // BN254 operations might be disabled (check build_options.no_bn254)
     // The precompile will either succeed with placeholder output or fail
@@ -5011,7 +5011,7 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(usize, 64), result.output.len);
@@ -5741,7 +5741,7 @@ test "Arena allocator - resets between calls" {
     const initial_arena_bytes = evm.internal_arena.queryCapacity();
 
     // First call - should allocate in arena
-    const result1 = try evm.call(.{
+    const result1 = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = contract_addr,
@@ -5760,7 +5760,7 @@ test "Arena allocator - resets between calls" {
     try std.testing.expect(after_first_call >= initial_arena_bytes);
 
     // Second call - arena should be reset
-    const result2 = try evm.call(.{
+    const result2 = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = contract_addr,
@@ -5826,7 +5826,7 @@ test "Arena allocator - handles multiple logs efficiently" {
     });
 
     // Execute contract
-    const result = try evm.call(.{
+    const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = contract_addr,
@@ -5875,7 +5875,7 @@ test "Arena allocator - precompile outputs use arena" {
     const precompile_addr = primitives.Address.from_u256(2);
     const input = "Hello, World!";
 
-    const result = try evm.call(.{
+    const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = precompile_addr,
@@ -5890,7 +5890,7 @@ test "Arena allocator - precompile outputs use arena" {
     try std.testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 output is 32 bytes
 
     // Multiple precompile calls should reuse arena
-    const result2 = try evm.call(.{
+    const result2 = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = precompile_addr,
@@ -6012,7 +6012,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     const initial_capacity = evm.internal_arena.queryCapacity();
 
     // Execute parent contract
-    const result = try evm.call(.{
+        const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = parent_addr,
@@ -6031,7 +6031,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     try std.testing.expect(final_capacity >= initial_capacity);
 
     // Second call should reuse arena capacity
-    const result2 = try evm.call(.{
+    const result2 = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = parent_addr,
@@ -6218,7 +6218,7 @@ test "CREATE stores deployed code bytes" {
     });
 
     // Execute CREATE
-    const result = try evm.call(.{
+        const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = creator_address,
@@ -6240,7 +6240,7 @@ test "CREATE stores deployed code bytes" {
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
 
     // Call the deployed contract to verify it works
-    const call_result = try evm.call(.{
+    const call_result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = created_address,
@@ -6381,7 +6381,7 @@ test "CREATE2 stores deployed code bytes" {
     });
 
     // Execute CREATE2
-    const result = try evm.call(.{
+    const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = creator_address,
@@ -6403,7 +6403,7 @@ test "CREATE2 stores deployed code bytes" {
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
 
     // Call the deployed contract to verify it works
-    const call_result = try evm.call(.{
+    const call_result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = created_address,
