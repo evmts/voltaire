@@ -200,6 +200,10 @@ const MockHost = struct {
         self.logs.deinit(self.allocator);
     }
 
+    pub fn to_host(self: *MockHost) *MockHost {
+        return self;
+    }
+
     pub fn get_is_static(self: *const MockHost) bool {
         return self.is_static;
     }
@@ -210,7 +214,7 @@ const MockHost = struct {
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockHost) !TestFrame {
-    const database = try MemoryDatabase.init(allocator);
+    const database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000));
