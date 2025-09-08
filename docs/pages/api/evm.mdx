@@ -5,238 +5,122 @@ description: Complete API reference for the Guillotine EVM
 
 # EVM API Reference
 
-The Guillotine EVM provides a comprehensive API for executing Ethereum transactions and managing state.
+Guillotine exposes a strongly typed API centered around two types: `Evm` (the engine) and `Database` (state). This page documents how to construct the EVM, execute calls, and interpret results.
 
-## Creating an EVM Instance
-
-### Basic Configuration
+## Constructing an EVM
 
 ```zig
-const std = @import("std");
-const Evm = @import("evm").Evm;
-const EvmConfig = @import("evm").EvmConfig;
+const g = @import("guillotine");
 
-// Create with default configuration
-const config = EvmConfig{};
-const MyEvm = Evm(config);
+// Compile-time config
+const config = g.EvmConfig{};
+const Evm = g.Evm(config);
 
-// Initialize instance
-var evm = try MyEvm.init(allocator);
+// Runtime context
+var db = g.Database.init(allocator);
+defer db.deinit();
+var block = g.BlockInfo.init();
+const tx = g.TransactionContext{ .gas_limit = 3_000_000, .coinbase = g.Primitives.ZERO_ADDRESS, .chain_id = 1 };
+const origin = g.Primitives.ZERO_ADDRESS;
+
+// Initialize
+var evm = try Evm.init(allocator, &db, block, tx, /*gas_price=*/0, origin, config.eips.hardfork);
 defer evm.deinit();
 ```
 
-### Custom Configuration
+## Executing calls
+
+All execution goes through `call` (or `simulate` for dry-runs). The parameter type is specialized per EVM config: `Evm.CallParams`.
 
 ```zig
-const config = EvmConfig{
-    // Hardfork selection
-    .eips = Eips{ .hardfork = Hardfork.CANCUN },
-    
-    // Execution limits
-    .max_call_depth = 1024,
-    .max_input_size = 131072,
-    
-    // Features
-    .enable_precompiles = true,
-    .enable_fusion = true,
-    
-    // Stack configuration
-    .stack_size = 1024,
-    .WordType = u256,
-    
-    // Memory limits
-    .memory_initial_capacity = 4096,
-    .memory_limit = 0xFFFFFF,
-    
-    // Gas limits
-    .block_gas_limit = 30_000_000,
-};
+const CallParams = Evm.CallParams;
 
-const CustomEvm = Evm(config);
-```
+// CALL
+const call_params = CallParams{ .call = .{ .caller = origin, .to = target, .value = 0, .input = calldata, .gas = 500_000 } };
+const call_result = evm.call(call_params);
 
-## Configuration Options
+// STATICCALL
+const static_params = CallParams{ .staticcall = .{ .caller = origin, .to = target, .input = calldata, .gas = 200_000 } };
+const static_result = evm.call(static_params);
 
-### Core Options
+// DELEGATECALL
+const delegate_params = CallParams{ .delegatecall = .{ .caller = origin, .to = implementation, .input = calldata, .gas = 300_000 } };
+const delegate_result = evm.call(delegate_params);
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `eips.hardfork` | `Hardfork` | `CANCUN` | Ethereum hardfork to use |
-| `max_call_depth` | `u11` | `1024` | Maximum nested call depth |
-| `max_input_size` | `u18` | `131072` | Maximum input data size (bytes) |
-| `enable_precompiles` | `bool` | `true` | Enable precompiled contracts |
-| `enable_fusion` | `bool` | `true` | Enable opcode fusion optimization |
-
-### Stack Configuration
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `stack_size` | `u12` | `1024` | Maximum stack depth |
-| `WordType` | `type` | `u256` | Word size for stack operations |
-
-### Memory Configuration
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `memory_initial_capacity` | `usize` | `4096` | Initial memory allocation |
-| `memory_limit` | `u64` | `0xFFFFFF` | Maximum memory size (~16MB) |
-
-### Code Size Limits
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `max_bytecode_size` | `u32` | `24576` | Maximum contract code size |
-| `max_initcode_size` | `u32` | `49152` | Maximum deployment code size |
-
-## Executing Transactions
-
-### Simple Execution
-
-```zig
-// Execute bytecode
-const bytecode = [_]u8{0x60, 0x01, 0x60, 0x02, 0x01}; // PUSH1 1 PUSH1 2 ADD
-const result = try evm.execute(&bytecode);
-
-switch (result) {
-    .success => |data| {
-        // Handle successful execution
-        std.debug.print("Result: {any}\n", .{data});
-    },
-    .revert => |reason| {
-        // Handle revert
-        std.debug.print("Reverted: {s}\n", .{reason});
-    },
-    .error => |err| {
-        // Handle error
-        std.debug.print("Error: {}\n", .{err});
-    },
+// CREATE / CREATE2
+const create_params = CallParams{ .create = .{ .caller = origin, .value = 0, .init_code = init_code, .gas = 1_000_000 } };
+const create_result = evm.call(create_params);
+if (create_result.success and create_result.created_address) |addr| {
+  // new contract address
 }
+
+// Dry-run with no state changes
+const preview = evm.simulate(call_params);
 ```
 
-### Transaction Context
+## Parameters and results
+
+### CallParams (union)
 
 ```zig
-const TransactionContext = struct {
-    origin: Address,          // Transaction origin
-    gas_price: u256,         // Gas price
-    block_number: u64,       // Current block number
-    timestamp: u64,          // Block timestamp
-    gas_limit: u64,          // Gas limit
-    difficulty: u256,        // Block difficulty
-    chain_id: u64,           // Chain ID
-    base_fee: ?u256,         // EIP-1559 base fee
-};
+const CallParams = Evm.CallParams; // union(enum) with these tags:
+// .call        { caller, to, value, input, gas }
+// .callcode    { caller, to, value, input, gas }
+// .delegatecall{ caller, to, input, gas }
+// .staticcall  { caller, to, input, gas }
+// .create      { caller, value, init_code, gas }
+// .create2     { caller, value, init_code, salt, gas }
 
-// Set transaction context
-evm.setTransactionContext(context);
+// Helpers
+_ = CallParams.getGas;     // returns u64
+_ = CallParams.getCaller;  // returns Address
+_ = CallParams.getInput;   // returns []const u8
 ```
 
-### Contract Calls
+### CallResult (struct)
 
 ```zig
-const CallParams = struct {
-    caller: Address,         // Calling address
-    target: Address,         // Contract address
-    value: u256,            // ETH value
-    data: []const u8,       // Call data
-    gas: u64,               // Gas limit
-    is_static: bool,        // Static call flag
-};
+const CallResult = Evm.CallResult;
+// Fields (subset):
+// success: bool
+// gas_left: u64
+// output: []const u8      // return or revert data
+// created_address: ?Address
+// logs, selfdestructs, accessed_addresses, accessed_storage, trace, error_info
 
-const result = try evm.call(params);
+// Convenience constructors exist internally; you consume the fields above.
 ```
 
-## State Management
+## State access
 
-### Account Operations
+Use the `Database` you passed to `Evm.init` for accounts, storage, and code:
 
 ```zig
-// Get account
-const account = try evm.getAccount(address);
+// Accounts
+const maybe_acc = try db.get_account(addr.bytes);
+var acc = maybe_acc orelse g.Account.zero();
+try db.set_account(addr.bytes, acc);
 
-// Check balance
-const balance = try evm.getBalance(address);
+// Storage
+try db.set_storage(contract.bytes, key, value);
+const val = try db.get_storage(contract.bytes, key);
 
-// Transfer value
-try evm.transfer(from, to, amount);
+// Code
+const code_hash = try db.set_code(&bytecode);
+const code = try db.get_code_by_address(contract.bytes);
 ```
 
-### Storage Operations
+## EVM lifecycle
 
-```zig
-// Read storage
-const value = try evm.getStorage(address, key);
+- `init` creates an instance; call `deinit` to free internal resources
+- Top-level `call` resets per-tx state (journal, access list, logs)
+- `simulate` runs the same logic but always rolls back state changes
 
-// Write storage
-try evm.setStorage(address, key, value);
+## Notes
 
-// Check storage slot
-const exists = try evm.hasStorage(address, key);
-```
-
-### Code Operations
-
-```zig
-// Get contract code
-const code = try evm.getCode(address);
-
-// Get code size
-const size = try evm.getCodeSize(address);
-
-// Get code hash
-const hash = try evm.getCodeHash(address);
-```
-
-## Contract Deployment
-
-### CREATE
-
-```zig
-const create_params = CallParams{
-    .caller = deployer,
-    .target = Address.zero(),
-    .value = 0,
-    .data = init_code,
-    .gas = gas_limit,
-    .is_static = false,
-};
-
-const address = try evm.create(create_params);
-```
-
-### CREATE2
-
-```zig
-const salt = [32]u8{...}; // Salt value
-
-const address = try evm.create2(create_params, salt);
-```
-
-## Error Handling
-
-### Error Types
-
-```zig
-pub const Error = error{
-    InvalidJump,         // Invalid JUMP destination
-    OutOfGas,           // Insufficient gas
-    StackUnderflow,     // Stack underflow
-    StackOverflow,      // Stack overflow
-    ContractNotFound,   // Contract doesn't exist
-    PrecompileError,    // Precompile execution failed
-    MemoryError,        // Memory operation failed
-    StorageError,       // Storage operation failed
-    CallDepthExceeded,  // Max call depth reached
-    InsufficientBalance,// Insufficient balance
-    ContractCollision,  // Contract already exists
-    InvalidBytecode,    // Invalid bytecode
-    StaticCallViolation,// State change in static call
-    InvalidOpcode,      // Unknown opcode
-    RevertExecution,    // Explicit revert
-    OutOfMemory,        // Memory limit exceeded
-    AllocationError,    // Allocation failed
-};
-```
+- Errors from allocator/database APIs still use Zig error unions and must be handled with `try`
+- Execution failures use `CallResult` with `success=false`
+- Gas usage can be derived as `params.getGas() - result.gas_left`
 
 ### Error Handling Patterns
 
