@@ -204,7 +204,7 @@ pub fn CallResult(comptime config: anytype) type {
 
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 
 // Default configuration for backward compatibility and tests
@@ -519,7 +519,7 @@ test "call result success with logs" {
     const logs = try allocator.alloc(Log, 1);
     defer allocator.free(logs);
     logs[0] = Log{
-        .address = [_]u8{0x42} ++ [_]u8{0} ** 19,
+        .address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 },
         .topics = topics,
         .data = data,
     };
@@ -531,7 +531,7 @@ test "call result success with logs" {
     try std.testing.expectEqual(@as(u64, 12000), result.gas_left);
     try std.testing.expectEqualSlices(u8, output_data, result.output);
     try std.testing.expectEqual(@as(usize, 1), result.logs.len);
-    try std.testing.expectEqual([_]u8{0x42} ++ [_]u8{0} ** 19, result.logs[0].address);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 }, result.logs[0].address);
     try std.testing.expectEqual(@as(usize, 2), result.logs[0].topics.len);
     try std.testing.expectEqual(@as(u256, 0x1234567890ABCDEF), result.logs[0].topics[0]);
     try std.testing.expectEqual(@as(u256, 0xFEDCBA0987654321), result.logs[0].topics[1]);
@@ -553,12 +553,12 @@ test "call result struct field defaults" {
 test "call result with self destructs" {
     var selfdestructs = [_]SelfDestructRecord{
         SelfDestructRecord{
-            .contract = [_]u8{0x11} ++ [_]u8{0} ** 19,
-            .beneficiary = [_]u8{0x22} ++ [_]u8{0} ** 19,
+            .contract = .{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 },
+            .beneficiary = .{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 },
         },
         SelfDestructRecord{
-            .contract = [_]u8{0x33} ++ [_]u8{0} ** 19,
-            .beneficiary = [_]u8{0x44} ++ [_]u8{0} ** 19,
+            .contract = .{ .bytes = [_]u8{0x33} ++ [_]u8{0} ** 19 },
+            .beneficiary = .{ .bytes = [_]u8{0x44} ++ [_]u8{0} ** 19 },
         },
     };
 
@@ -566,36 +566,36 @@ test "call result with self destructs" {
     result.selfdestructs = &selfdestructs;
 
     try std.testing.expectEqual(@as(usize, 2), result.selfdestructs.len);
-    try std.testing.expectEqual([_]u8{0x11} ++ [_]u8{0} ** 19, result.selfdestructs[0].contract);
-    try std.testing.expectEqual([_]u8{0x22} ++ [_]u8{0} ** 19, result.selfdestructs[0].beneficiary);
-    try std.testing.expectEqual([_]u8{0x33} ++ [_]u8{0} ** 19, result.selfdestructs[1].contract);
-    try std.testing.expectEqual([_]u8{0x44} ++ [_]u8{0} ** 19, result.selfdestructs[1].beneficiary);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 }, result.selfdestructs[0].contract);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 }, result.selfdestructs[0].beneficiary);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x33} ++ [_]u8{0} ** 19 }, result.selfdestructs[1].contract);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x44} ++ [_]u8{0} ** 19 }, result.selfdestructs[1].beneficiary);
 }
 
 test "call result with accessed addresses" {
     var accessed_addresses = [_]Address{
-        [_]u8{0xAA} ++ [_]u8{0} ** 19,
-        [_]u8{0xBB} ++ [_]u8{0} ** 19,
-        [_]u8{0xCC} ++ [_]u8{0} ** 19,
+        .{ .bytes = [_]u8{0xAA} ++ [_]u8{0} ** 19 },
+        .{ .bytes = [_]u8{0xBB} ++ [_]u8{0} ** 19 },
+        .{ .bytes = [_]u8{0xCC} ++ [_]u8{0} ** 19 },
     };
 
     var result = DefaultCallResult.failure(200);
     result.accessed_addresses = &accessed_addresses;
 
     try std.testing.expectEqual(@as(usize, 3), result.accessed_addresses.len);
-    try std.testing.expectEqual([_]u8{0xAA} ++ [_]u8{0} ** 19, result.accessed_addresses[0]);
-    try std.testing.expectEqual([_]u8{0xBB} ++ [_]u8{0} ** 19, result.accessed_addresses[1]);
-    try std.testing.expectEqual([_]u8{0xCC} ++ [_]u8{0} ** 19, result.accessed_addresses[2]);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0xAA} ++ [_]u8{0} ** 19 }, result.accessed_addresses[0]);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0xBB} ++ [_]u8{0} ** 19 }, result.accessed_addresses[1]);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0xCC} ++ [_]u8{0} ** 19 }, result.accessed_addresses[2]);
 }
 
 test "call result with accessed storage" {
     var accessed_storage = [_]StorageAccess{
         StorageAccess{
-            .address = [_]u8{0x11} ++ [_]u8{0} ** 19,
+            .address = .{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 },
             .slot = 0x1234,
         },
         StorageAccess{
-            .address = [_]u8{0x22} ++ [_]u8{0} ** 19,
+            .address = .{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 },
             .slot = 0xABCDEF,
         },
     };
@@ -604,9 +604,9 @@ test "call result with accessed storage" {
     result.accessed_storage = &accessed_storage;
 
     try std.testing.expectEqual(@as(usize, 2), result.accessed_storage.len);
-    try std.testing.expectEqual([_]u8{0x11} ++ [_]u8{0} ** 19, result.accessed_storage[0].address);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 }, result.accessed_storage[0].address);
     try std.testing.expectEqual(@as(u256, 0x1234), result.accessed_storage[0].slot);
-    try std.testing.expectEqual([_]u8{0x22} ++ [_]u8{0} ** 19, result.accessed_storage[1].address);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 }, result.accessed_storage[1].address);
     try std.testing.expectEqual(@as(u256, 0xABCDEF), result.accessed_storage[1].slot);
 }
 
@@ -638,22 +638,15 @@ test "trace step memory management" {
         .gas = 21000,
         .stack = try allocator.dupe(u256, &[_]u256{ 0x123, 0x456 }),
         .memory = try allocator.dupe(u8, &[_]u8{ 0xAA, 0xBB, 0xCC }),
-        .storage_reads = try allocator.alloc(TraceStep.StorageRead, 1),
-        .storage_writes = try allocator.alloc(TraceStep.StorageWrite, 1),
+        .storage_reads = &.{},
+        .storage_writes = &.{},
     };
-
-    step.storage_reads[0] = TraceStep.StorageRead{
-        .address = ZERO_ADDRESS,
-        .slot = 0x100,
-        .value = 0x200,
-    };
-
-    step.storage_writes[0] = TraceStep.StorageWrite{
-        .address = [_]u8{0x11} ++ [_]u8{0} ** 19,
-        .slot = 0x300,
-        .old_value = 0x400,
-        .new_value = 0x500,
-    };
+    var reads = try allocator.alloc(TraceStep.StorageRead, 1);
+    reads[0] = TraceStep.StorageRead{ .address = ZERO_ADDRESS, .slot = 0x100, .value = 0x200 };
+    var writes = try allocator.alloc(TraceStep.StorageWrite, 1);
+    writes[0] = TraceStep.StorageWrite{ .address = .{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 }, .slot = 0x300, .old_value = 0x400, .new_value = 0x500 };
+    step.storage_reads = reads;
+    step.storage_writes = writes;
 
     // Verify step contents
     try std.testing.expectEqual(@as(u32, 42), step.pc);
@@ -673,7 +666,7 @@ test "trace step memory management" {
     try std.testing.expectEqual(@as(u256, 0x200), step.storage_reads[0].value);
 
     try std.testing.expectEqual(@as(usize, 1), step.storage_writes.len);
-    try std.testing.expectEqual([_]u8{0x11} ++ [_]u8{0} ** 19, step.storage_writes[0].address);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 }, step.storage_writes[0].address);
     try std.testing.expectEqual(@as(u256, 0x300), step.storage_writes[0].slot);
     try std.testing.expectEqual(@as(u256, 0x400), step.storage_writes[0].old_value);
     try std.testing.expectEqual(@as(u256, 0x500), step.storage_writes[0].new_value);
@@ -746,7 +739,7 @@ test "log struct comprehensive" {
     defer allocator.free(data);
 
     const log = Log{
-        .address = [_]u8{0xDE, 0xAD, 0xBE, 0xEF} ++ [_]u8{0xCA, 0xFE, 0xBA, 0xBE} ++ [_]u8{0x12, 0x34, 0x56, 0x78} ++ [_]u8{0x9A, 0xBC, 0xDE, 0xF0} ++ [_]u8{0x11, 0x22, 0x33, 0x44},
+        .address = Address{ .bytes = [_]u8{0xDE, 0xAD, 0xBE, 0xEF} ++ [_]u8{0xCA, 0xFE, 0xBA, 0xBE} ++ [_]u8{0x12, 0x34, 0x56, 0x78} ++ [_]u8{0x9A, 0xBC, 0xDE, 0xF0} ++ [_]u8{0x11, 0x22, 0x33, 0x44} },
         .topics = topics,
         .data = data,
     };
@@ -763,13 +756,13 @@ test "storage access and self destruct comprehensive" {
         .slot = 0,
     };
     const storage2 = StorageAccess{
-        .address = [_]u8{0xFF} ** 20,
+        .address = .{ .bytes = [_]u8{0xFF} ** 20 },
         .slot = std.math.maxInt(u256),
     };
 
     try std.testing.expectEqual(ZERO_ADDRESS, storage1.address);
     try std.testing.expectEqual(@as(u256, 0), storage1.slot);
-    try std.testing.expectEqual([_]u8{0xFF} ** 20, storage2.address);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0xFF} ** 20 }, storage2.address);
     try std.testing.expectEqual(std.math.maxInt(u256), storage2.slot);
 
     // Test boundary values for SelfDestructRecord
@@ -778,12 +771,12 @@ test "storage access and self destruct comprehensive" {
         .beneficiary = ZERO_ADDRESS,
     };
     const selfdestruct2 = SelfDestructRecord{
-        .contract = [_]u8{0xFF} ** 20,
-        .beneficiary = [_]u8{0xAA} ** 20,
+        .contract = Address{ .bytes = [_]u8{0xFF} ** 20 },
+        .beneficiary = Address{ .bytes = [_]u8{0xAA} ** 20 },
     };
 
     try std.testing.expectEqual(ZERO_ADDRESS, selfdestruct1.contract);
     try std.testing.expectEqual(ZERO_ADDRESS, selfdestruct1.beneficiary);
-    try std.testing.expectEqual([_]u8{0xFF} ** 20, selfdestruct2.contract);
-    try std.testing.expectEqual([_]u8{0xAA} ** 20, selfdestruct2.beneficiary);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0xFF} ** 20 }, selfdestruct2.contract);
+    try std.testing.expectEqual(Address{ .bytes = [_]u8{0xAA} ** 20 }, selfdestruct2.beneficiary);
 }

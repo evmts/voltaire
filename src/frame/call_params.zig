@@ -56,7 +56,7 @@ pub fn CallParams(comptime config: anytype) type {
         gas: u64,
     },
 
-    const ValidationError = error{
+    pub const ValidationError = error{
         GasZeroError,
     };
 
@@ -139,7 +139,7 @@ const DefaultCallParams = CallParams(default_config);
 
 test "call params gas access" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{0x42};
 
     const call_op = DefaultCallParams{ .call = .{
@@ -161,8 +161,8 @@ test "call params gas access" {
 }
 
 test "call params caller access" {
-    const caller: Address = [_]u8{0xaa} ++ [_]u8{0} ** 19;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const caller: Address = .{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
 
     const call_op = DefaultCallParams{ .call = .{
         .caller = caller,
@@ -184,7 +184,7 @@ test "call params caller access" {
 
 test "call params input access" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input_data = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb }; // transfer(address,uint256) selector
 
     const call_op = DefaultCallParams{ .call = .{
@@ -208,7 +208,7 @@ test "call params input access" {
 
 test "call params has value checks" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{};
 
     // CALL with value
@@ -261,7 +261,7 @@ test "call params has value checks" {
 
 test "call params read only checks" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{};
 
     // Only STATICCALL is read-only
@@ -295,7 +295,7 @@ test "call params read only checks" {
 
 test "call params create checks" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const init_code = &[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xf3 };
 
     // CREATE operations
@@ -328,8 +328,8 @@ test "call params create checks" {
 }
 
 test "call params edge cases" {
-    const caller: Address = [_]u8{0xff} ** 20; // Maximum address
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const caller: Address = .{ .bytes = [_]u8{0xff} ** 20 }; // Maximum address
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
 
     // Maximum gas
     const max_gas_call = DefaultCallParams{ .call = .{
@@ -354,7 +354,7 @@ test "call params edge cases" {
     try std.testing.expect(!create2_max_salt.hasValue());
 
     // Empty input data
-    const call_empty_input = CallParams{
+    const call_empty_input = DefaultCallParams{
         .call = .{
             .caller = caller,
             .to = to,
@@ -368,7 +368,7 @@ test "call params edge cases" {
 
 test "call params validation - zero gas error" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
 
     // CALL with zero gas should fail validation
     const call_zero_gas = DefaultCallParams{ .call = .{
@@ -411,10 +411,10 @@ test "call params validation - zero gas error" {
 
 test "call params validation - non-zero gas success" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
 
     // All operations with non-zero gas should pass validation
-    const operations = [_]CallParams{
+    const operations = [_]DefaultCallParams{
         DefaultCallParams{ .call = .{
             .caller = caller,
             .to = to,
@@ -462,8 +462,8 @@ test "call params validation - non-zero gas success" {
 }
 
 test "call params callcode operation" {
-    const caller: Address = [_]u8{0xaa} ++ [_]u8{0} ** 19;
-    const to: Address = [_]u8{0xbb} ++ [_]u8{0} ** 19;
+    const caller: Address = .{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
+    const to: Address = .{ .bytes = [_]u8{0xbb} ++ [_]u8{0} ** 19 };
     const input_data = &[_]u8{ 0x12, 0x34, 0x56, 0x78 };
 
     const callcode_op = DefaultCallParams{ .callcode = .{
@@ -517,7 +517,7 @@ test "call params create2 salt handling" {
 
 test "call params large input data" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
 
     // Test with large input data
     var large_input: [1024]u8 = undefined;
@@ -539,7 +539,7 @@ test "call params large input data" {
 
 test "call params address boundary values" {
     const zero_address = primitives.ZERO_ADDRESS;
-    const max_address: Address = [_]u8{0xFF} ** 20;
+    const max_address: Address = .{ .bytes = [_]u8{0xFF} ** 20 };
 
     // Test with zero address as caller and target
     const zero_call = DefaultCallParams{ .call = .{
@@ -564,7 +564,7 @@ test "call params address boundary values" {
 
 test "call params value edge cases" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const init_code = &[_]u8{0x00};
 
     // Test minimum positive value
@@ -611,7 +611,7 @@ test "call params value edge cases" {
 
 test "call params gas limit edge cases" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const init_code = &[_]u8{0x00};
 
     // Test minimum gas (1)
@@ -628,7 +628,7 @@ test "call params gas limit edge cases" {
     const typical_gas_values = [_]u64{ 21000, 100000, 1000000, 10000000 };
 
     for (typical_gas_values) |gas_val| {
-        const ops = [_]CallParams{
+        const ops = [_]DefaultCallParams{
             DefaultCallParams{ .call = .{
                 .caller = caller,
                 .to = to,
@@ -663,13 +663,13 @@ test "call params gas limit edge cases" {
 }
 
 test "call params all operation types coverage" {
-    const caller: Address = [_]u8{0xaa} ++ [_]u8{0} ** 19;
-    const to: Address = [_]u8{0xbb} ++ [_]u8{0} ** 19;
+    const caller: Address = .{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
+    const to: Address = .{ .bytes = [_]u8{0xbb} ++ [_]u8{0} ** 19 };
     const input_data = &[_]u8{ 0x42, 0x24 };
     const init_code = &[_]u8{ 0x60, 0x00, 0xf3 };
 
     // Test all operation types exist and work
-    const operations = [_]CallParams{
+    const operations = [_]DefaultCallParams{
         // CALL
         DefaultCallParams{ .call = .{
             .caller = caller,
@@ -730,8 +730,8 @@ test "call params all operation types coverage" {
 }
 
 test "call params method consistency" {
-    const caller: Address = [_]u8{0xaa} ++ [_]u8{0} ** 19;
-    const to: Address = [_]u8{0xbb} ++ [_]u8{0} ** 19;
+    const caller: Address = .{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
+    const to: Address = .{ .bytes = [_]u8{0xbb} ++ [_]u8{0} ** 19 };
     const input_data = &[_]u8{0x12};
 
     // Test that delegatecall correctly reports no value transfer
@@ -761,7 +761,7 @@ test "call params method consistency" {
 
 test "call params input vs init code consistency" {
     const caller = primitives.ZERO_ADDRESS;
-    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const call_input = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
     const init_code = &[_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
 
