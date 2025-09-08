@@ -44,9 +44,9 @@ const DispatchCacheEntry = struct {
     /// Hash of the bytecode (first 32 bytes of keccak256)
     bytecode_hash: [32]u8,
     /// Cached dispatch schedule (owned by cache)
-    schedule: []const u8,  // Store as raw bytes
-    /// Cached jump table (owned by cache)  
-    jump_table_entries: []const u8,  // Store as raw bytes
+    schedule: []const u8, // Store as raw bytes
+    /// Cached jump table (owned by cache)
+    jump_table_entries: []const u8, // Store as raw bytes
     /// Last access timestamp for LRU eviction
     last_access: u64,
     /// Reference count for concurrent usage
@@ -55,24 +55,24 @@ const DispatchCacheEntry = struct {
 
 const DispatchCache = struct {
     const CACHE_SIZE = 256; // Number of cached contracts
-    
+
     entries: [CACHE_SIZE]?DispatchCacheEntry = [_]?DispatchCacheEntry{null} ** CACHE_SIZE,
     allocator: std.mem.Allocator,
     access_counter: u64 = 0,
     hits: u64 = 0,
     misses: u64 = 0,
     mutex: std.Thread.Mutex = .{},
-    
+
     fn init(allocator: std.mem.Allocator) DispatchCache {
         return .{
             .allocator = allocator,
         };
     }
-    
+
     fn deinit(self: *DispatchCache) void {
         self.mutex.lock();
         defer self.mutex.unlock();
-        
+
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
                 self.allocator.free(entry.schedule);
@@ -81,7 +81,7 @@ const DispatchCache = struct {
             }
         }
     }
-    
+
     fn computeHash(bytecode: []const u8) [32]u8 {
         var hash: [32]u8 = undefined;
         keccak256(bytecode, &hash) catch {
@@ -90,15 +90,15 @@ const DispatchCache = struct {
         };
         return hash;
     }
-    
+
     fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
         const hash = computeHash(bytecode);
-        
+
         self.mutex.lock();
         defer self.mutex.unlock();
-        
+
         self.access_counter += 1;
-        
+
         // Search for matching entry
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
@@ -114,22 +114,22 @@ const DispatchCache = struct {
                 }
             }
         }
-        
+
         self.misses += 1;
         return null;
     }
-    
+
     fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
         const hash = computeHash(bytecode);
-        
+
         self.mutex.lock();
         defer self.mutex.unlock();
-        
+
         // Find slot to insert (either empty or LRU)
         var lru_idx: usize = 0;
         var lru_access: u64 = std.math.maxInt(u64);
         var empty_idx: ?usize = null;
-        
+
         for (&self.entries, 0..) |*entry_opt, i| {
             if (entry_opt.* == null) {
                 empty_idx = i;
@@ -139,9 +139,9 @@ const DispatchCache = struct {
                 lru_access = entry_opt.*.?.last_access;
             }
         }
-        
+
         const target_idx = empty_idx orelse lru_idx;
-        
+
         // Free old entry if replacing
         if (self.entries[target_idx]) |*old_entry| {
             if (old_entry.ref_count > 0) {
@@ -151,13 +151,13 @@ const DispatchCache = struct {
             self.allocator.free(old_entry.schedule);
             self.allocator.free(old_entry.jump_table_entries);
         }
-        
+
         // Copy schedule and jump table
         const schedule_copy = try self.allocator.dupe(u8, schedule);
         errdefer self.allocator.free(schedule_copy);
-        
+
         const jump_table_copy = try self.allocator.dupe(u8, jump_table);
-        
+
         // Insert new entry
         self.entries[target_idx] = DispatchCacheEntry{
             .bytecode_hash = hash,
@@ -167,13 +167,13 @@ const DispatchCache = struct {
             .ref_count = 0,
         };
     }
-    
+
     fn release(self: *DispatchCache, bytecode: []const u8) void {
         const hash = computeHash(bytecode);
-        
+
         self.mutex.lock();
         defer self.mutex.unlock();
-        
+
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
                 if (std.mem.eql(u8, &entry.bytecode_hash, &hash)) {
@@ -185,7 +185,7 @@ const DispatchCache = struct {
             }
         }
     }
-    
+
     fn getStatistics(self: *const DispatchCache) struct { hits: u64, misses: u64, hit_rate: f64 } {
         const total = self.hits + self.misses;
         const hit_rate = if (total > 0) @as(f64, @floatFromInt(self.hits)) / @as(f64, @floatFromInt(total)) else 0.0;
@@ -195,11 +195,11 @@ const DispatchCache = struct {
             .hit_rate = hit_rate,
         };
     }
-    
+
     fn clear(self: *DispatchCache) void {
         self.mutex.lock();
         defer self.mutex.unlock();
-        
+
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
                 if (entry.ref_count == 0) {
@@ -209,7 +209,7 @@ const DispatchCache = struct {
                 }
             }
         }
-        
+
         self.hits = 0;
         self.misses = 0;
         self.access_counter = 0;
@@ -224,7 +224,7 @@ var cache_mutex: std.Thread.Mutex = .{};
 pub fn initGlobalCache(allocator: std.mem.Allocator) void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-    
+
     if (global_dispatch_cache == null) {
         global_dispatch_cache = DispatchCache.init(allocator);
     }
@@ -234,7 +234,7 @@ pub fn initGlobalCache(allocator: std.mem.Allocator) void {
 pub fn deinitGlobalCache() void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-    
+
     if (global_dispatch_cache) |*cache| {
         cache.deinit();
         global_dispatch_cache = null;
@@ -245,7 +245,7 @@ pub fn deinitGlobalCache() void {
 pub fn getCacheStatistics() ?struct { hits: u64, misses: u64, hit_rate: f64 } {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-    
+
     if (global_dispatch_cache) |*cache| {
         return cache.getStatistics();
     }
@@ -256,7 +256,7 @@ pub fn getCacheStatistics() ?struct { hits: u64, misses: u64, hit_rate: f64 } {
 pub fn clearGlobalCache() void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-    
+
     if (global_dispatch_cache) |*cache| {
         cache.clear();
     }
@@ -480,21 +480,21 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.code = bytecode_raw;
 
             const allocator = self.getAllocator();
-            
+
             // Either get from cache or create new dispatch
             var schedule: []const Dispatch.Item = undefined;
             var jump_table: Dispatch.JumpTable = undefined;
             var owned_schedule: ?Dispatch.DispatchSchedule = null;
             var owned_jump_table_entries: ?[]const Dispatch.JumpTable.JumpTableEntry = null;
-            
+
             // Check cache first
             if (global_dispatch_cache) |*cache| {
                 if (cache.lookup(bytecode_raw)) |cached_data| {
                     // Use cached data
-                    schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0..cached_data.schedule.len / @sizeOf(Dispatch.Item)];
-                    const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0..cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
+                    schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0 .. cached_data.schedule.len / @sizeOf(Dispatch.Item)];
+                    const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0 .. cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
                     jump_table = .{ .entries = jump_table_entries };
-                    
+
                     // Release cache entry when done
                     defer cache.release(bytecode_raw);
                 } else {
@@ -512,21 +512,21 @@ pub fn Frame(comptime config: FrameConfig) type {
                         };
                     };
                     defer bytecode.deinit();
-                    
+
                     const handlers = &Self.opcode_handlers;
-                    
+
                     // Create dispatch schedule
                     owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch |e| {
                         log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                         return Error.AllocationError;
                     };
                     schedule = owned_schedule.?.items;
-                    
+
                     // Create jump table
                     const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
                     owned_jump_table_entries = jt.entries;
                     jump_table = jt;
-                    
+
                     // Try to cache it
                     const schedule_bytes = std.mem.sliceAsBytes(schedule);
                     const jump_table_bytes = std.mem.sliceAsBytes(jump_table.entries);
@@ -550,28 +550,28 @@ pub fn Frame(comptime config: FrameConfig) type {
                     };
                 };
                 defer bytecode.deinit();
-                
+
                 const handlers = &Self.opcode_handlers;
-                
+
                 // Create dispatch schedule
                 owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch |e| {
                     log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
                     return Error.AllocationError;
                 };
                 schedule = owned_schedule.?.items;
-                
+
                 // Create jump table
                 const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
                 owned_jump_table_entries = jt.entries;
                 jump_table = jt;
             }
-            
+
             // Clean up owned resources when done
             defer {
                 if (owned_schedule) |*s| s.deinit();
                 if (owned_jump_table_entries) |entries| allocator.free(entries);
             }
-            
+
             // Setup tracer if needed
             if (TracerType) |_| {
                 frame_handlers.setTracerInstance(tracer_instance);
@@ -620,8 +620,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                     return Error.InvalidOpcode;
                 }
             }
-
-            // log.debug("Frame.interpret_with_tracer: Starting execution, gas={}", .{self.gas_remaining});
 
             try cursor.cursor[0].opcode_handler(self, cursor.cursor);
             unreachable; // Handlers never return normally
