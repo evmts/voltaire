@@ -108,6 +108,26 @@ pub fn build(b: *std.Build) void {
     build_pkg.Utils.createDocsStep(b, lib);
     _ = build_pkg.Utils.createOpcodeTestLib(b, target, optimize, modules.evm_mod, modules.primitives_mod, modules.crypto_mod, config.options_mod, bn254_lib);
     build_pkg.Utils.createExternalBuildSteps(b);
+    
+    // Shared library for FFI bindings
+    const shared_lib = b.addSharedLibrary(.{
+        .name = "guillotine",
+        .root_source_file = b.path("src/evm_c_api.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    shared_lib.root_module.addImport("evm", modules.evm_mod);
+    shared_lib.root_module.addImport("primitives", modules.primitives_mod);
+    shared_lib.root_module.addImport("crypto", modules.crypto_mod);
+    shared_lib.root_module.addImport("build_options", config.options_mod);
+    shared_lib.linkLibrary(c_kzg_lib);
+    shared_lib.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| shared_lib.linkLibrary(bn254);
+    shared_lib.linkLibC();
+    b.installArtifact(shared_lib);
+    
+    const shared_lib_step = b.step("shared", "Build shared library for FFI");
+    shared_lib_step.dependOn(&shared_lib.step);
 
     // Tests
     const tests_pkg = build_pkg.Tests;
