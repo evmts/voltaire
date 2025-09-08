@@ -4356,13 +4356,7 @@ test "journal state application - code change rollback" {
     var modified_account = original_account;
     modified_account.code_hash = new_code_hash;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot_id,
-        .data = .{ .code_change = .{
-            .address = test_address,
-            .original_code_hash = original_code_hash,
-        } },
-    });
+    try evm.journal.record_code_change(snapshot_id, test_address, original_code_hash);
 
     // Verify new code hash is set
     const current_account = (try evm.database.get_account(test_address.bytes)).?;
@@ -4401,7 +4395,7 @@ test "journal state application - multiple changes rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0x9A} ++ [_]u8{0} ** 19;
+    const test_address: primitives.Address = .{ .bytes = [_]u8{0x9A} ++ [_]u8{0} ** 19 };
     const storage_key: u256 = 0xABC;
 
     // Original state
@@ -4422,7 +4416,7 @@ test "journal state application - multiple changes rollback" {
     original_account.nonce = original_nonce;
     original_account.code_hash = original_code_hash;
     try evm.database.set_account(test_address.bytes, original_account);
-    try evm.database.set_storage(test_address, storage_key, original_storage);
+    try evm.database.set_storage(test_address.bytes, storage_key, original_storage);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -4433,45 +4427,20 @@ test "journal state application - multiple changes rollback" {
     modified_account.nonce = new_nonce;
     modified_account.code_hash = new_code_hash;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.database.set_storage(test_address, storage_key, new_storage);
+    try evm.database.set_storage(test_address.bytes, storage_key, new_storage);
 
     // Add journal entries for all changes
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot_id,
-        .data = .{ .balance_change = .{
-            .address = test_address,
-            .original_balance = original_balance,
-        } },
-    });
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot_id,
-        .data = .{ .nonce_change = .{
-            .address = test_address,
-            .original_nonce = original_nonce,
-        } },
-    });
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot_id,
-        .data = .{ .code_change = .{
-            .address = test_address,
-            .original_code_hash = original_code_hash,
-        } },
-    });
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot_id,
-        .data = .{ .storage_change = .{
-            .address = test_address,
-            .key = storage_key,
-            .original_value = original_storage,
-        } },
-    });
+    try evm.journal.record_balance_change(snapshot_id, test_address, original_balance);
+    try evm.journal.record_nonce_change(snapshot_id, test_address, original_nonce);
+    try evm.journal.record_code_change(snapshot_id, test_address, original_code_hash);
+    try evm.journal.record_storage_change(snapshot_id, test_address, storage_key, original_storage);
 
     // Verify all new values are set
     const current_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqual(new_balance, current_account.balance);
     try std.testing.expectEqual(new_nonce, current_account.nonce);
     try std.testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
-    const current_storage = try evm.database.get_storage(test_address, storage_key);
+    const current_storage = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(new_storage, current_storage);
 
     // Revert to snapshot
@@ -4482,7 +4451,7 @@ test "journal state application - multiple changes rollback" {
     try std.testing.expectEqual(original_balance, reverted_account.balance);
     try std.testing.expectEqual(original_nonce, reverted_account.nonce);
     try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
-    const reverted_storage = try evm.database.get_storage(test_address, storage_key);
+    const reverted_storage = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(original_storage, reverted_storage);
 }
 
@@ -4527,13 +4496,7 @@ test "journal state application - nested snapshots rollback" {
     // First change
     account.balance = middle_balance;
     try evm.database.set_account(test_address.bytes, account);
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot1,
-        .data = .{ .balance_change = .{
-            .address = test_address,
-            .original_balance = original_balance,
-        } },
-    });
+    try evm.journal.record_balance_change(snapshot1, test_address, original_balance);
 
     // Create second snapshot
     const snapshot2 = evm.create_snapshot();
@@ -4541,13 +4504,7 @@ test "journal state application - nested snapshots rollback" {
     // Second change
     account.balance = final_balance;
     try evm.database.set_account(test_address.bytes, account);
-    try evm.journal.entries.append(.{
-        .snapshot_id = snapshot2,
-        .data = .{ .balance_change = .{
-            .address = test_address,
-            .original_balance = middle_balance,
-        } },
-    });
+    try evm.journal.record_balance_change(snapshot2, test_address, middle_balance);
 
     // Verify final state
     var current_account = (try evm.database.get_account(test_address.bytes)).?;
@@ -4998,7 +4955,7 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const precompile_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{9};
+    const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{9} };
     const input = [_]u8{0} ** 213; // Valid BLAKE2F input length
 
     const call_params = DefaultEvm.CallParams{
@@ -5032,7 +4989,7 @@ test "EVM benchmark scenario - reproduces segfault" {
 
     // Deploy contract first (ERC20 approval bytecode snippet)
     const stop_bytecode = [_]u8{0x00}; // Simple STOP for now
-    const deploy_address: primitives.Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const deploy_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
     const code_hash = try db.set_code(&stop_bytecode);
     try db.set_account(deploy_address, Account{
         .nonce = 0,
@@ -5738,7 +5695,7 @@ test "Arena allocator - resets between calls" {
     });
 
     // Track arena bytes allocated before first call
-    const initial_arena_bytes = evm.internal_arena.queryCapacity();
+    const initial_arena_bytes = evm.call_arena.queryCapacity();
 
     // First call - should allocate in arena
     const result1 = evm.call(.{
@@ -6009,7 +5966,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     });
 
     // Track arena capacity before call
-    const initial_capacity = evm.internal_arena.queryCapacity();
+    const initial_capacity = evm.call_arena.queryCapacity();
 
     // Execute parent contract
         const result = evm.call(.{
@@ -6085,6 +6042,7 @@ test "Call context tracking - get_caller and get_call_value" {
     evm.call_stack[0] = .{
         .caller = origin_addr,
         .value = 123,
+        .is_static = false,
     };
 
     try std.testing.expectEqual(origin_addr, evm.get_caller());
@@ -6095,6 +6053,7 @@ test "Call context tracking - get_caller and get_call_value" {
     evm.call_stack[1] = .{
         .caller = contract_a,
         .value = 456,
+        .is_static = false,
     };
 
     try std.testing.expectEqual(contract_a, evm.get_caller());
@@ -6130,7 +6089,7 @@ test "CREATE stores deployed code bytes" {
     defer evm.deinit();
 
     // Give creator account some balance
-    const creator_address: primitives.Address = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    const creator_address: primitives.Address = .{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
     try db.set_account(creator_address, Account{
         .balance = 1_000_000,
         .nonce = 0,
@@ -6290,7 +6249,7 @@ test "CREATE2 stores deployed code bytes" {
     defer evm.deinit();
 
     // Give creator account some balance
-    const creator_address: primitives.Address = [_]u8{0x22} ++ [_]u8{0} ** 19;
+    const creator_address: primitives.Address = .{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 };
     try db.set_account(creator_address, Account{
         .balance = 1_000_000,
         .nonce = 0,
@@ -6453,7 +6412,7 @@ test "EVM bytecode iterator execution - simple STOP" {
     const stop_bytecode = [_]u8{0x00}; // STOP opcode
 
     // Add contract with STOP bytecode
-    const contract_address: primitives.Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&stop_bytecode);
     try db.set_account(contract_address, Account{
         .balance = 0,
@@ -6515,7 +6474,7 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
     };
 
     // Add contract
-    const contract_address: primitives.Address = [_]u8{0x43} ++ [_]u8{0} ** 19;
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x43} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&return_bytecode);
     try db.set_account(contract_address, Account{
         .balance = 0,
@@ -6582,7 +6541,7 @@ test "EVM bytecode iterator execution - handles jumps" {
     };
 
     // Add contract
-    const contract_address: primitives.Address = [_]u8{0x44} ++ [_]u8{0} ** 19;
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x44} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&jump_bytecode);
     try db.set_account(contract_address, Account{
         .balance = 0,
