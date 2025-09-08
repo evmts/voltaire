@@ -24,6 +24,10 @@
 
 Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
+**Network Support**: Currently only **Ethereum Mainnet** is supported. Planned for Beta:
+- **OP Stack** support (Optimism, Base, etc.)
+- **Arbitrum Nitro** support
+
 ---
 
 ## ✨ Features
