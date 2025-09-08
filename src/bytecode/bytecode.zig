@@ -82,6 +82,31 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             is_fusion_candidate: bool, // This byte can be part of fusion
         };
 
+        /// Simple bytecode analysis for Schedule generation
+        /// This replaces complex planner logic with straightforward analysis
+        pub const Analysis = struct {
+            jump_destinations: std.ArrayList(JumpDestInfo),
+            push_data: std.ArrayList(PushInfo),
+
+            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+                self.jump_destinations.deinit(allocator);
+                self.push_data.deinit(allocator);
+            }
+        };
+
+        pub const JumpDestInfo = struct {
+            pc: PcType,
+            gas_cost: u32 = 1, // Static gas cost for JUMPDEST
+        };
+
+        pub const PushInfo = struct {
+            pc: PcType,
+            size: u8, // 1-32 bytes
+            value: u256, // The actual pushed value
+            is_inline: bool, // true if <= 8 bytes (can inline)
+        };
+
+
         // Iterator for efficient bytecode traversal
         pub const Iterator = struct {
             bytecode: *const Self,
@@ -513,43 +538,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // The immediate jump detection above is ONLY for fusion optimization, not correctness validation.
         }
 
-        /// Get the parsed Solidity metadata if it exists
-        pub fn getSolidityMetadata(self: Self) ?SolidityMetadata {
-            return self.metadata;
-        }
-
-        /// Parse Solidity metadata from the end of bytecode (for backwards compatibility)
-        /// Returns null if no valid metadata is found
-        pub fn parseSolidityMetadata(self: Self) ?SolidityMetadata {
-            return parseSolidityMetadataFromBytes(self.full_code);
-        }
-
-        /// Simple bytecode analysis for Schedule generation
-        /// This replaces complex planner logic with straightforward analysis
-        pub const Analysis = struct {
-            jump_destinations: std.ArrayList(JumpDestInfo),
-            push_data: std.ArrayList(PushInfo),
-
-            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-                self.jump_destinations.deinit(allocator);
-                self.push_data.deinit(allocator);
-            }
-        };
-
-        pub const JumpDestInfo = struct {
-            pc: PcType,
-            gas_cost: u32 = 1, // Static gas cost for JUMPDEST
-        };
-
-        pub const PushInfo = struct {
-            pc: PcType,
-            size: u8, // 1-32 bytes
-            value: u256, // The actual pushed value
-            is_inline: bool, // true if <= 8 bytes (can inline)
-        };
-
-        /// Analyze bytecode to extract information needed for Schedule generation
-        /// This moves the complex analysis logic from planner.zig here
         pub fn analyze(self: Self, allocator: std.mem.Allocator) !Analysis {
             var analysis = Analysis{
                 .jump_destinations = try std.ArrayList(JumpDestInfo).initCapacity(allocator, 0),
@@ -854,11 +842,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
             try output.writer(allocator).print("{s}Jump destinations: {}{s}\n", .{ Colors.dim, jumpdest_count, Colors.reset });
             try output.writer(allocator).print("{s}Total instructions: {}{s}\n", .{ Colors.dim, line_num - 1, Colors.reset });
-
-            if (self.metadata) |meta| {
-                try output.writer(allocator).print("{s}Solidity metadata: {} bytes{s}\n", .{ Colors.dim, meta.metadata_length, Colors.reset });
-                try output.writer(allocator).print("{s}Compiler version: {}.{}.{}{s}\n", .{ Colors.dim, meta.solc_version[0], meta.solc_version[1], meta.solc_version[2], Colors.reset });
-            }
 
             return output.toOwnedSlice(allocator);
         }
