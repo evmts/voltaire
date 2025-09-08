@@ -29,44 +29,42 @@ pub const GenerateAssetsStep = struct {
         var file = try std.fs.cwd().createFile(self.out_path, .{});
         defer file.close();
 
-        const writer = file.writer();
+        try file.writeAll("// This file is auto-generated. Do not edit manually.\n");
+        try file.writeAll("const std = @import(\"std\");\n\n");
+        try file.writeAll("const Self = @This();\n\n");
+        try file.writeAll("path: []const u8,\n");
+        try file.writeAll("content: []const u8,\n");
+        try file.writeAll("mime_type: []const u8,\n");
+        try file.writeAll("response: [:0]const u8,\n\n");
 
-        try writer.writeAll("// This file is auto-generated. Do not edit manually.\n");
-        try writer.writeAll("const std = @import(\"std\");\n\n");
-        try writer.writeAll("const Self = @This();\n\n");
-        try writer.writeAll("path: []const u8,\n");
-        try writer.writeAll("content: []const u8,\n");
-        try writer.writeAll("mime_type: []const u8,\n");
-        try writer.writeAll("response: [:0]const u8,\n\n");
+        try file.writeAll("pub fn init(\n");
+        try file.writeAll("    comptime path: []const u8,\n");
+        try file.writeAll("    comptime content: []const u8,\n");
+        try file.writeAll("    comptime mime_type: []const u8,\n");
+        try file.writeAll(") Self {\n");
+        try file.writeAll("    var buf: [20]u8 = undefined;\n");
+        try file.writeAll("    const n = std.fmt.bufPrint(&buf, \"{d}\", .{content.len}) catch unreachable;\n");
+        try file.writeAll("    const content_length = buf[0..n.len];\n");
+        try file.writeAll("    const response = \"HTTP/1.1 200 OK\\n\" ++\n");
+        try file.writeAll("        \"Content-Type: \" ++ mime_type ++ \"\\n\" ++\n");
+        try file.writeAll("        \"Content-Length: \" ++ content_length ++ \"\\n\" ++\n");
+        try file.writeAll("        \"\\n\" ++\n");
+        try file.writeAll("        content;\n");
+        try file.writeAll("    return Self{\n");
+        try file.writeAll("        .path = path,\n");
+        try file.writeAll("        .content = content,\n");
+        try file.writeAll("        .mime_type = mime_type,\n");
+        try file.writeAll("        .response = response,\n");
+        try file.writeAll("    };\n");
+        try file.writeAll("}\n\n");
 
-        try writer.writeAll("pub fn init(\n");
-        try writer.writeAll("    comptime path: []const u8,\n");
-        try writer.writeAll("    comptime content: []const u8,\n");
-        try writer.writeAll("    comptime mime_type: []const u8,\n");
-        try writer.writeAll(") Self {\n");
-        try writer.writeAll("    var buf: [20]u8 = undefined;\n");
-        try writer.writeAll("    const n = std.fmt.bufPrint(&buf, \"{d}\", .{content.len}) catch unreachable;\n");
-        try writer.writeAll("    const content_length = buf[0..n.len];\n");
-        try writer.writeAll("    const response = \"HTTP/1.1 200 OK\\n\" ++\n");
-        try writer.writeAll("        \"Content-Type: \" ++ mime_type ++ \"\\n\" ++\n");
-        try writer.writeAll("        \"Content-Length: \" ++ content_length ++ \"\\n\" ++\n");
-        try writer.writeAll("        \"\\n\" ++\n");
-        try writer.writeAll("        content;\n");
-        try writer.writeAll("    return Self{\n");
-        try writer.writeAll("        .path = path,\n");
-        try writer.writeAll("        .content = content,\n");
-        try writer.writeAll("        .mime_type = mime_type,\n");
-        try writer.writeAll("        .response = response,\n");
-        try writer.writeAll("    };\n");
-        try writer.writeAll("}\n\n");
+        try file.writeAll("pub const not_found_asset = Self.init(\n");
+        try file.writeAll("    \"/notfound.html\",\n");
+        try file.writeAll("    \"<div>Page not found</div>\",\n");
+        try file.writeAll("    \"text/html\",\n");
+        try file.writeAll(");\n\n");
 
-        try writer.writeAll("pub const not_found_asset = Self.init(\n");
-        try writer.writeAll("    \"/notfound.html\",\n");
-        try writer.writeAll("    \"<div>Page not found</div>\",\n");
-        try writer.writeAll("    \"text/html\",\n");
-        try writer.writeAll(");\n\n");
-
-        try writer.writeAll("pub const assets = [_]Self{\n");
+        try file.writeAll("pub const assets = [_]Self{\n");
 
         // Helper function to get MIME type from file extension
         const getMimeType = struct {
@@ -96,23 +94,31 @@ pub const GenerateAssetsStep = struct {
             const embed_path = try std.fmt.allocPrint(b.allocator, "dist/{s}", .{entry.path});
             const mime_type = getMimeType(entry.path);
             
-            try writer.print("    Self.init(\n", .{});
-            try writer.print("        \"{s}\",\n", .{web_path});
-            try writer.print("        @embedFile(\"{s}\"),\n", .{embed_path});
-            try writer.print("        \"{s}\",\n", .{mime_type});
-            try writer.print("    ),\n", .{});
+            var s = try std.fmt.allocPrint(b.allocator, "    Self.init(\n", .{});
+            defer b.allocator.free(s);
+            try file.writeAll(s);
+            s = try std.fmt.allocPrint(b.allocator, "        \"{s}\",\n", .{web_path});
+            try file.writeAll(s);
+            b.allocator.free(s);
+            s = try std.fmt.allocPrint(b.allocator, "        @embedFile(\"{s}\"),\n", .{embed_path});
+            try file.writeAll(s);
+            b.allocator.free(s);
+            s = try std.fmt.allocPrint(b.allocator, "        \"{s}\",\n", .{mime_type});
+            try file.writeAll(s);
+            b.allocator.free(s);
+            try file.writeAll("    ),\n");
         }
 
-        try writer.writeAll("};\n\n");
+        try file.writeAll("};\n\n");
 
-        try writer.writeAll("pub fn get_asset(path: []const u8) Self {\n");
-        try writer.writeAll("    for (assets) |asset| {\n");
-        try writer.writeAll("        if (std.mem.eql(u8, asset.path, path)) {\n");
-        try writer.writeAll("            return asset;\n");
-        try writer.writeAll("        }\n");
-        try writer.writeAll("    }\n");
-        try writer.writeAll("    return not_found_asset;\n");
-        try writer.writeAll("}\n");
+        try file.writeAll("pub fn get_asset(path: []const u8) Self {\n");
+        try file.writeAll("    for (assets) |asset| {\n");
+        try file.writeAll("        if (std.mem.eql(u8, asset.path, path)) {\n");
+        try file.writeAll("            return asset;\n");
+        try file.writeAll("        }\n");
+        try file.writeAll("    }\n");
+        try file.writeAll("    return not_found_asset;\n");
+        try file.writeAll("}\n");
         
         // File writer auto-flushes on close
     }
