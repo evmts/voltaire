@@ -48,11 +48,6 @@ pub fn zero() Address {
 
 pub const ZERO = ZERO_ADDRESS;
 
-/// Construct an Address from raw 20-byte array
-pub fn fromBytes(bytes: [20]u8) Address {
-    return Address{ .bytes = bytes };
-}
-
 /// Construct an Address from a 42-byte hex string (alias)
 pub fn fromHex(hex_str: []const u8) !Address {
     return from_hex(hex_str);
