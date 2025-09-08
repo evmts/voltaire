@@ -202,17 +202,11 @@ export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: 
 }
 
 // Execute a call
-export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResult {
+export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) ?*EvmResult {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
     const allocator = ffi_allocator orelse {
         setError("FFI not initialized", .{});
-        return EvmResult{
-            .success = false,
-            .gas_left = 0,
-            .output = undefined,
-            .output_len = 0,
-            .error_message = @ptrCast(&last_error_z),
-        };
+        return null;
     };
     
     // Convert input slice
@@ -267,45 +261,39 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResu
         },
         else => {
             setError("Invalid call type: {}", .{params.call_type});
-            return EvmResult{
-                .success = false,
-                .gas_left = 0,
-                .output = undefined,
-                .output_len = 0,
-                .error_message = @ptrCast(&last_error_z),
-            };
+            return null;
         },
     };
     
     // Execute the call
     const result = evm_ptr.call(call_params);
     
+    // Allocate result structure on heap
+    const evm_result = allocator.create(EvmResult) catch {
+        setError("Failed to allocate result", .{});
+        return null;
+    };
+    
     // Copy output if present (caller must free)
-    var output_ptr: [*]const u8 = undefined;
-    var output_len: usize = 0;
     if (result.output.len > 0) {
         const output_copy = allocator.alloc(u8, result.output.len) catch {
             setError("Failed to allocate output buffer", .{});
-            return EvmResult{
-                .success = false,
-                .gas_left = 0,
-                .output = undefined,
-                .output_len = 0,
-                .error_message = @ptrCast(&last_error_z),
-            };
+            allocator.destroy(evm_result);
+            return null;
         };
         @memcpy(output_copy, result.output);
-        output_ptr = output_copy.ptr;
-        output_len = output_copy.len;
+        evm_result.output = output_copy.ptr;
+        evm_result.output_len = output_copy.len;
+    } else {
+        evm_result.output = undefined;
+        evm_result.output_len = 0;
     }
     
-    return EvmResult{
-        .success = result.success,
-        .gas_left = result.gas_left,
-        .output = output_ptr,
-        .output_len = output_len,
-        .error_message = if (result.success) undefined else @ptrCast(&last_error_z),
-    };
+    evm_result.success = result.success;
+    evm_result.gas_left = result.gas_left;
+    evm_result.error_message = if (result.success) undefined else @ptrCast(&last_error_z);
+    
+    return evm_result;
 }
 
 // Free output buffer
@@ -320,17 +308,11 @@ export fn guillotine_get_last_error() [*:0]const u8 {
 }
 
 // Simulate a call (doesn't commit state)
-export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) EvmResult {
+export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) ?*EvmResult {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
     const allocator = ffi_allocator orelse {
         setError("FFI not initialized", .{});
-        return EvmResult{
-            .success = false,
-            .gas_left = 0,
-            .output = undefined,
-            .output_len = 0,
-            .error_message = @ptrCast(&last_error_z),
-        };
+        return null;
     };
     
     // Convert input slice
