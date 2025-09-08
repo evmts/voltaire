@@ -1,5 +1,13 @@
 # Guillotine EVM C SDK
 
+> Experimental/PoC: This SDK is a vibecoded proof-of-concept. APIs are unstable and may change. We’re looking for early users to try it and tell us what APIs you want — please open an issue or ping us on Telegram.
+
+## Status
+
+- Maturity: Experimental proof‑of‑concept
+- API stability: Unstable; breaking changes expected
+- Feedback: https://github.com/evmts/Guillotine/issues or Telegram https://t.me/+ANThR9bHDLAwMjUx
+
 C bindings for the Guillotine Ethereum Virtual Machine implementation in Zig.
 
 ## Overview

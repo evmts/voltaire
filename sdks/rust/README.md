@@ -1,5 +1,13 @@
 # guillotine-rs
 
+> Experimental/PoC: This SDK is a vibecoded proof-of-concept. APIs are unstable and may change. We’re looking for early users to try it and tell us what APIs you want — please open an issue or ping us on Telegram.
+
+## Status
+
+- Maturity: Experimental proof‑of‑concept
+- API stability: Unstable; breaking changes expected
+- Feedback: https://github.com/evmts/Guillotine/issues or Telegram https://t.me/+ANThR9bHDLAwMjUx
+
 A safe Rust wrapper around the Guillotine EVM - a high-performance Ethereum Virtual Machine implementation written in Zig.
 
 ## Overview
