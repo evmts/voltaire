@@ -510,7 +510,7 @@ test "call method loads contract code from state" {
     defer evm.deinit();
 
     // Set up contract with bytecode [0x00] (STOP)
-    const contract_address: primitives.Address = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90 };
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90 } };
     const bytecode = [_]u8{0x00};
     const code_hash = try db.set_code(&bytecode);
 
@@ -521,7 +521,7 @@ test "call method loads contract code from state" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(contract_address, account);
+    try db.set_account(contract_address.bytes, account);
 
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -576,7 +576,7 @@ test "call method handles CREATE operation" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
 
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
@@ -618,7 +618,7 @@ test "call method handles gas limit properly" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Should either fail or consume most/all gas
     try std.testing.expect(result.gas_left <= 10);
@@ -785,10 +785,8 @@ test "EvmConfig - custom configurations" {
     const custom_config = EvmConfig{
         .max_call_depth = 512,
         .max_input_size = 65536,
-        .frame_config = .{
-            .stack_size = 256,
-            .max_bytecode_size = 12288,
-        },
+        .stack_size = 256,
+        .max_bytecode_size = 12288,
     };
 
     const CustomEvm = Evm(custom_config);
@@ -817,7 +815,7 @@ test "EvmConfig - custom configurations" {
     var evm = try CustomEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    try std.testing.expectEqual(@as(u10, 0), evm.depth); // Should be u10 for 512 max depth
+    try std.testing.expectEqual(@as(@TypeOf(evm.depth), 0), evm.depth);
 }
 
 test "TransactionContext creation and fields" {
@@ -907,7 +905,7 @@ test "Host interface - get_balance functionality" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(address, account);
+    try db.set_account(address.bytes, account);
 
     const retrieved_balance = evm.get_balance(address);
     try std.testing.expectEqual(balance, retrieved_balance);
@@ -992,7 +990,7 @@ test "Host interface - account_exists functionality" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(address, account);
+    try db.set_account(address.bytes, account);
 
     const exists = evm.account_exists(address);
     try std.testing.expect(exists);
