@@ -259,7 +259,7 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
 
     const frame = self.current_frame.?;
     // Serialize storage changes
-    var storage_entries = std.ArrayList(debug_state.StorageEntry).init(self.allocator);
+    var storage_entries = std.array_list.AlignedManaged(debug_state.StorageEntry, null).init(self.allocator);
     defer storage_entries.deinit();
 
     var storage_iter = self.storage_changes.iterator();
@@ -273,7 +273,7 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
     }
 
     // Build block list from analysis
-    var blocks = std.ArrayList(debug_state.BlockJson).init(self.allocator);
+    var blocks = std.array_list.AlignedManaged(debug_state.BlockJson, null).init(self.allocator);
     defer {
         // moved later into state
     }
@@ -299,12 +299,12 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
                 // Collect a 1:1 list of analysis-visible instructions within this block.
                 // We intentionally avoid expanding to raw PCs; rows align strictly with
                 // instruction indices to make stepping foolproof.
-                var pcs = std.ArrayList(u32).init(self.allocator);
-                var opcodes = std.ArrayList([]const u8).init(self.allocator);
-                var hexes = std.ArrayList([]const u8).init(self.allocator);
-                var datas = std.ArrayList([]const u8).init(self.allocator);
-                var dbg_inst_indices = std.ArrayList(u32).init(self.allocator);
-                var dbg_inst_mapped_pcs = std.ArrayList(u32).init(self.allocator);
+                var pcs = std.array_list.AlignedManaged(u32, null).init(self.allocator);
+                var opcodes = std.array_list.AlignedManaged([]const u8, null).init(self.allocator);
+                var hexes = std.array_list.AlignedManaged([]const u8, null).init(self.allocator);
+                var datas = std.array_list.AlignedManaged([]const u8, null).init(self.allocator);
+                var dbg_inst_indices = std.array_list.AlignedManaged(u32, null).init(self.allocator);
+                var dbg_inst_mapped_pcs = std.array_list.AlignedManaged(u32, null).init(self.allocator);
                 defer pcs.deinit();
                 defer opcodes.deinit();
                 defer hexes.deinit();

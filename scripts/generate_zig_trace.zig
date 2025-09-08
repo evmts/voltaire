@@ -30,7 +30,7 @@ pub fn main() !void {
     const db_interface = memory_db.to_database_interface();
     
     // Create trace output
-    var trace_buffer = std.ArrayList(u8).init(allocator);
+    var trace_buffer = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer trace_buffer.deinit();
     
     var vm = try Evm.Evm.init(
