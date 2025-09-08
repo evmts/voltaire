@@ -146,7 +146,7 @@ const TestFrame = Frame(test_config);
 const TestBytecode = bytecode_mod.Bytecode(BytecodeConfig{});
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const database = try MemoryDatabase.init(allocator);
+    var database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));

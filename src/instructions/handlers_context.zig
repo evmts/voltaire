@@ -916,7 +916,7 @@ const MockEvm = struct {
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {
     const evm_ptr = if (evm) |e| @as(*anyopaque, @ptrCast(e)) else @as(*anyopaque, @ptrFromInt(0x1000)); // Use a dummy pointer for tests without EVM
-    const database = try MemoryDatabase.init(allocator);
+    var database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);

@@ -275,7 +275,7 @@ const test_config = FrameConfig{
 const TestFrame = Frame(test_config);
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const database = try MemoryDatabase.init(allocator);
+    var database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
