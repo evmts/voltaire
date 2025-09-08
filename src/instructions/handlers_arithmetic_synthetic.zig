@@ -173,7 +173,7 @@ const Address = @import("primitives").Address.Address;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const database = try MemoryDatabase.init(allocator);
+    const database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, @ptrFromInt(1));

@@ -209,7 +209,7 @@ const TestFrameU64 = Frame(test_config_u64);
 const TestFrameU32 = Frame(test_config_u32);
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const database = try MemoryDatabase.init(allocator);
+    const database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
@@ -219,7 +219,7 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
 }
 
 fn createTestFrameU64(allocator: std.mem.Allocator) !TestFrameU64 {
-    const database = try MemoryDatabase.init(allocator);
+    const database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u64);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
@@ -229,7 +229,7 @@ fn createTestFrameU64(allocator: std.mem.Allocator) !TestFrameU64 {
 }
 
 fn createTestFrameU32(allocator: std.mem.Allocator) !TestFrameU32 {
-    const database = try MemoryDatabase.init(allocator);
+    const database = MemoryDatabase.init(allocator);
     const value = try allocator.create(u32);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
