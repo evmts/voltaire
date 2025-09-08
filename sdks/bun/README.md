@@ -165,6 +165,73 @@ The Guillotine EVM is optimized for performance:
 - Native Zig performance for EVM execution
 - Minimal JavaScript overhead
 
+## Benchmarks
+
+Bun SDK timings on local machine using official fixtures:
+
+- erc20-mint: 0.60 ms (gasUsed: 65,703, outputLen: 2,317)
+- ten-thousand-hashes: 0.23 ms (gasUsed: 21,058, outputLen: 151)
+- snailtracer: 0.80 ms (gasUsed: 24,928, outputLen: 17,608)
+
+Notes:
+- Bytecode and calldata are loaded from `src/_test_utils/fixtures/<case>/{bytecode,calldata}.txt`.
+- Gas limits used: erc20-mint: `5_000_000`, ten-thousand-hashes: `10_000_000`, snailtracer: `10_000_000`.
+- Each case executes once; results are indicative and will vary by hardware and OS.
+
+Reproduce locally:
+
+1) Build the shared library
+
+```bash
+zig build shared -Doptimize=ReleaseFast
+```
+
+2) Save this as `sdks/bun/bench.ts` (adjust repo path if needed), then run it:
+
+```ts
+import { createEVM, CallType, hexToBytes } from "./src/index";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+function loadHexFile(p: string) {
+  return hexToBytes(readFileSync(p, "utf8").trim().replace(/^0x/, ""));
+}
+
+function bench(name: string, bc: string, cd: string, gas: bigint) {
+  const evm = createEVM({
+    number: 1n,
+    timestamp: BigInt(Math.floor(Date.now() / 1000)),
+    gasLimit: 30_000_000n,
+    coinbase: "0x0000000000000000000000000000000000000000",
+    baseFee: 1_000_000_000n,
+    chainId: 1n,
+    difficulty: 0n,
+  });
+  try {
+    const caller = "0x1234567890123456789012345678901234567890";
+    const to = "0x2222222222222222222222222222222222222222";
+    evm.setBalance(caller, 10n ** 18n);
+    evm.setCode(to, loadHexFile(bc));
+    const calldata = loadHexFile(cd);
+    const t0 = performance.now();
+    const r = evm.call({ caller, to, value: 0n, input: calldata, gas, callType: CallType.CALL });
+    const t1 = performance.now();
+    console.log(`[${name}]`, `${(t1 - t0).toFixed(2)} ms`, `success=${r.success}`, `gasUsed=${Number(gas - r.gasLeft)}`);
+  } finally { evm.destroy(); }
+}
+
+const root = process.cwd();
+bench("erc20-mint", join(root, "src/_test_utils/fixtures/erc20-mint/bytecode.txt"), join(root, "src/_test_utils/fixtures/erc20-mint/calldata.txt"), 5_000_000n);
+bench("ten-thousand-hashes", join(root, "src/_test_utils/fixtures/ten-thousand-hashes/bytecode.txt"), join(root, "src/_test_utils/fixtures/ten-thousand-hashes/calldata.txt"), 10_000_000n);
+bench("snailtracer", join(root, "src/_test_utils/fixtures/snailtracer/bytecode.txt"), join(root, "src/_test_utils/fixtures/snailtracer/calldata.txt"), 10_000_000n);
+```
+
+Then run:
+
+```bash
+bun run sdks/bun/bench.ts
+```
+
 ## License
 
 MIT
