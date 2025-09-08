@@ -2938,14 +2938,14 @@ test "journal state application - storage change rollback" {
     });
 
     // Verify new value is set
-    const current_value = try evm.database.get_storage(test_address, storage_key);
+    const current_value = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(new_value, current_value);
 
     // Revert to snapshot
     evm.revert_to_snapshot(snapshot_id);
 
     // Verify storage value was reverted
-    const reverted_value = try evm.database.get_storage(test_address, storage_key);
+    const reverted_value = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(original_value, reverted_value);
 }
 
@@ -3119,7 +3119,7 @@ test "journal state application - balance change rollback" {
     // Set initial account balance
     var original_account = Account.zero();
     original_account.balance = original_balance;
-    try evm.database.set_account(test_address, original_account);
+    try evm.database.set_account(test_address.bytes, original_account);
 
     // Create snapshot
     const snapshot_id = evm.create_snapshot();
@@ -3127,7 +3127,7 @@ test "journal state application - balance change rollback" {
     // Modify balance and record in journal
     var modified_account = original_account;
     modified_account.balance = new_balance;
-    try evm.database.set_account(test_address, modified_account);
+    try evm.database.set_account(test_address.bytes, modified_account);
     try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{
@@ -3365,7 +3365,7 @@ test "journal state application - multiple changes rollback" {
     try std.testing.expectEqual(new_balance, current_account.balance);
     try std.testing.expectEqual(new_nonce, current_account.nonce);
     try std.testing.expectEqualSlices(u8, &new_code_hash, &current_account.code_hash);
-    const current_storage = try evm.database.get_storage(test_address, storage_key);
+    const current_storage = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(new_storage, current_storage);
 
     // Revert to snapshot
@@ -3376,7 +3376,7 @@ test "journal state application - multiple changes rollback" {
     try std.testing.expectEqual(original_balance, reverted_account.balance);
     try std.testing.expectEqual(original_nonce, reverted_account.nonce);
     try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
-    const reverted_storage = try evm.database.get_storage(test_address, storage_key);
+    const reverted_storage = try evm.database.get_storage(test_address.bytes, storage_key);
     try std.testing.expectEqual(original_storage, reverted_storage);
 }
 
@@ -3405,7 +3405,7 @@ test "journal state application - nested snapshots rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0xBE} ++ [_]u8{0} ** 19;
+    const test_address: primitives.Address = .{ .bytes = [_]u8{0xBE} ++ [_]u8{0} ** 19 };
     const original_balance: u256 = 100;
     const middle_balance: u256 = 200;
     const final_balance: u256 = 300;
@@ -3413,14 +3413,14 @@ test "journal state application - nested snapshots rollback" {
     // Set initial state
     var account = Account.zero();
     account.balance = original_balance;
-    try evm.database.set_account(test_address, account);
+    try evm.database.set_account(test_address.bytes, account);
 
     // Create first snapshot
     const snapshot1 = evm.create_snapshot();
 
     // First change
     account.balance = middle_balance;
-    try evm.database.set_account(test_address, account);
+    try evm.database.set_account(test_address.bytes, account);
     try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot1,
         .data = .{ .balance_change = .{
@@ -3973,14 +3973,14 @@ test "EVM benchmark scenario - reproduces segfault" {
         },
     };
 
-    const result = try evm_instance.call(call_params);
+    const result = evm_instance.call(call_params);
     try std.testing.expect(result.success);
 
     // The segfault happens in deinit, so let's explicitly test that
     // by creating and destroying multiple times
     for (0..3) |_| {
         var temp_evm = try DefaultEvm.init(allocator, &db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
-        const temp_result = try temp_evm.call(call_params);
+        const temp_result = temp_evm.call(call_params);
         try std.testing.expect(temp_result.success);
         temp_evm.deinit(); // This is where the segfault happens
     }
@@ -4052,7 +4052,7 @@ test "CREATE interaction - deployed contract can be called" {
     try init_code.append(0xF3); // RETURN
 
     // Deploy the contract
-    const create_result = try evm_instance.call(.{
+    const create_result = evm_instance.call(.{
         .create = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
@@ -4070,7 +4070,7 @@ test "CREATE interaction - deployed contract can be called" {
     @memcpy(&contract_address.bytes, create_result.output[0..20]);
 
     // Step 2: Call the deployed contract
-    const call_result = try evm_instance.call(.{
+    const call_result = evm_instance.call(.{
         .call = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = contract_address,
@@ -4211,7 +4211,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     const init_value = [_]u8{0} ** 31 ++ [_]u8{123}; // 123 as uint256
     try deploy_data.appendSlice(&init_value);
 
-    const factory_result = try evm_instance.call(.{
+    const factory_result = evm_instance.call(.{
         .create = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
@@ -4225,10 +4225,10 @@ test "CREATE interaction - factory creates and initializes child contracts" {
 
     // Extract child contract address from output
     var child_address: primitives.Address = undefined;
-    @memcpy(&child_address, factory_result.output[0..20]); // Contract address
+    @memcpy(&child_address.bytes, factory_result.output[0..20]); // Contract address
 
     // Call child contract to verify initialization
-    const verify_result = try evm_instance.call(.{
+    const verify_result = evm_instance.call(.{
         .call = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = child_address,
@@ -4364,7 +4364,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
         try level1_code.append(0x60); // PUSH1
         try level1_code.append(byte);
         try level1_code.append(0x61); // PUSH2
-        try level1_code.append(@as(u8, @truncate(std.math.shr(u32, i, 8))));
+        try level1_code.append(@as(u8, @truncate(std.math.shr(u32, @as(u32, @intCast(i)), 8))));
         try level1_code.append(@as(u8, @truncate(i & 0xFF)));
         try level1_code.append(0x53); // MSTORE8
     }
@@ -4386,7 +4386,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level1_code.append(0x00); // STOP
 
     // Execute level 1
-    const result1 = try evm_instance.call(.{
+    const result1 = evm_instance.call(.{
         .create = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
@@ -4402,10 +4402,10 @@ test "CREATE interaction - contract creates contract that creates contract" {
     const level2_addr_u256 = evm_instance.get_storage(.{ .bytes = [_]u8{0x01} ** 20 }, 0);
     var level2_addr: primitives.Address = undefined;
     const bytes = std.mem.toBytes(level2_addr_u256);
-    @memcpy(&level2_addr, bytes[12..32]);
+    @memcpy(&level2_addr.bytes, bytes[12..32]);
 
     // Call level 2 to get level 3 address
-    const result2 = try evm_instance.call(.{
+    const result2 = evm_instance.call(.{
         .call = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = level2_addr,
@@ -4420,10 +4420,10 @@ test "CREATE interaction - contract creates contract that creates contract" {
 
     // Get level 3 address
     var level3_addr: primitives.Address = undefined;
-    @memcpy(&level3_addr, result2.output[12..32]);
+    @memcpy(&level3_addr.bytes, result2.output[12..32]);
 
     // Call level 3 to verify it returns 99
-    const result3 = try evm_instance.call(.{
+    const result3 = evm_instance.call(.{
         .call = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = level3_addr,
@@ -4559,7 +4559,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     try parent_code.append(0x00); // STOP
 
     // Deploy parent contract
-    const deploy_result = try evm_instance.call(.{
+    const deploy_result = evm_instance.call(.{
         .create = .{
             .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
@@ -4578,16 +4578,16 @@ test "CREATE interaction - created contract modifies parent storage" {
     const child_addr_u256 = evm_instance.get_storage(parent_addr, 1);
     var child_addr: primitives.Address = undefined;
     const bytes = std.mem.toBytes(child_addr_u256);
-    @memcpy(&child_addr, bytes[12..32]);
+    @memcpy(&child_addr.bytes, bytes[12..32]);
 
     // Verify parent's value storage is initially 0
     const initial_value = evm_instance.get_storage(parent_addr, 0);
     try std.testing.expectEqual(@as(u256, 0), initial_value);
 
     // Call child contract, which should call back to parent
-    const call_result = try evm_instance.call(.{
+    const call_result = evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x02} ** 20,
+            .caller = .{ .bytes = [_]u8{0x02} ** 20 },
             .to = child_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -4903,7 +4903,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     // Child contract that also emits log
     const child_bytecode = [_]u8{ 0x60, 0x10, 0x60, 0x00, 0xA0, 0x00 }; // PUSH1 0x10 PUSH1 0x00 LOG0 STOP
     const child_code_hash = try db.set_code(&child_bytecode);
-    try db.set_account(child_addr.bytes, .{
+    try db.set_account(child_addr, .{
         .balance = 0,
         .nonce = 0,
         .code_hash = child_code_hash,
@@ -5269,7 +5269,7 @@ test "CREATE2 stores deployed code bytes" {
 
     // Deploy creator contract
     const creator_code_hash = try db.set_code(creator_bytecode.items);
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = creator_code_hash,
@@ -5292,10 +5292,10 @@ test "CREATE2 stores deployed code bytes" {
 
     // Extract created contract address from output
     var created_address: primitives.Address = undefined;
-    @memcpy(&created_address, result.output[0..20]);
+    @memcpy(&created_address.bytes, result.output[0..20]);
 
     // Verify the deployed contract exists and has the correct code
-    const deployed_code = try db.get_code_by_address(created_address);
+    const deployed_code = try db.get_code_by_address(created_address.bytes);
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
 
     // Call the deployed contract to verify it works
@@ -5568,7 +5568,7 @@ test "EIP-2935: historical block hashes via system contract" {
     const allocator = gpa.allocator();
 
     // Setup database and EVM
-    var database = try Database.init(allocator);
+    var database = Database.init(allocator);
     defer database.deinit();
 
     // EIP-2935 block hash history contract address (0x0aae40965e6800cd9b1f4b05ff21581047e3f91e)
@@ -5689,7 +5689,7 @@ test "E2E STATICCALL - read-only enforcement" {
 
     const reader_address: primitives.Address = .{ .bytes = [_]u8{0x20} ++ [_]u8{0} ** 19 };
     const reader_code_hash = try db.set_code(&read_only_bytecode);
-    try db.set_account(reader_address, Account{
+    try db.set_account(reader_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = reader_code_hash,
@@ -5716,7 +5716,7 @@ test "E2E STATICCALL - read-only enforcement" {
     // Test 2: STATICCALL to read-only contract should succeed
     {
         // First set a value to read
-        try db.set_storage(reader_address, 0, 0x1234);
+        try db.set_storage(reader_address.bytes, 0, 0x1234);
 
         const staticcall_params = DefaultEvm.CallParams{
             .staticcall = .{
@@ -5743,7 +5743,7 @@ test "E2E STATICCALL - read-only enforcement" {
     {
         // Set up caller with balance
         const caller_address: primitives.Address = .{ .bytes = [_]u8{0x30} ++ [_]u8{0} ** 19 };
-        try db.set_account(caller_address, Account{
+        try db.set_account(caller_address.bytes, Account{
             .balance = 1000000,
             .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
@@ -5760,13 +5760,13 @@ test "E2E STATICCALL - read-only enforcement" {
             },
         };
 
-        const initial_balance = (try db.get_account(reader_address)).?.balance;
+        const initial_balance = (try db.get_account(reader_address.bytes)).?.balance;
     const result = evm.call(staticcall_params);
 
         try std.testing.expect(result.success);
 
         // Balance should not change
-        const final_balance = (try db.get_account(reader_address)).?.balance;
+        const final_balance = (try db.get_account(reader_address.bytes)).?.balance;
         try std.testing.expectEqual(initial_balance, final_balance);
     }
 }
@@ -5824,7 +5824,7 @@ test "E2E DELEGATECALL - context preservation" {
 
     const implementation_address: primitives.Address = .{ .bytes = [_]u8{0x40} ++ [_]u8{0} ** 19 };
     const impl_code_hash = try db.set_code(&implementation_bytecode);
-    try db.set_account(implementation_address, Account{
+    try db.set_account(implementation_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = impl_code_hash,
@@ -5837,7 +5837,7 @@ test "E2E DELEGATECALL - context preservation" {
         // gas, to, in_offset, in_size, out_offset, out_size
         0x5A, // GAS
         0x73, // PUSH20
-    } ++ implementation_address ++ [_]u8{
+    } ++ implementation_address.bytes ++ [_]u8{
         0x60, 0x00, // PUSH1 0 (in_offset)
         0x60, 0x20, // PUSH1 32 (in_size)
         0x60, 0x00, // PUSH1 0 (out_offset)
@@ -5851,7 +5851,7 @@ test "E2E DELEGATECALL - context preservation" {
 
     const proxy_address: primitives.Address = .{ .bytes = [_]u8{0x50} ++ [_]u8{0} ** 19 };
     const proxy_code_hash = try db.set_code(&proxy_bytecode);
-    try db.set_account(proxy_address, Account{
+    try db.set_account(proxy_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = proxy_code_hash,
@@ -5882,7 +5882,7 @@ test "E2E DELEGATECALL - context preservation" {
 
     // Verify storage was written to PROXY's storage, not implementation's
     // Slot 0: Should contain original_caller (preserved through DELEGATECALL)
-    const stored_caller = try db.get_storage(proxy_address, 0);
+    const stored_caller = try db.get_storage(proxy_address.bytes, 0);
     const caller_bytes = @as([32]u8, @bitCast(stored_caller));
     try std.testing.expectEqualSlices(u8, &original_caller, caller_bytes[12..32]);
 
@@ -5949,7 +5949,7 @@ test "E2E CALL with value transfer" {
 
     const receiver_address: primitives.Address = .{ .bytes = [_]u8{0xA0} ++ [_]u8{0} ** 19 };
     const receiver_code_hash = try db.set_code(&receiver_bytecode);
-    try db.set_account(receiver_address, Account{
+    try db.set_account(receiver_address.bytes, Account{
         .balance = 1000, // Initial balance
         .nonce = 0,
         .code_hash = receiver_code_hash,
@@ -5958,7 +5958,7 @@ test "E2E CALL with value transfer" {
 
     const sender_address: primitives.Address = .{ .bytes = [_]u8{0xB0} ++ [_]u8{0} ** 19 };
     const sender_initial_balance: u256 = 10000000;
-    try db.set_account(sender_address, Account{
+    try db.set_account(sender_address.bytes, Account{
         .balance = sender_initial_balance,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -5984,19 +5984,19 @@ test "E2E CALL with value transfer" {
     try std.testing.expect(result.success);
 
     // Verify value was transferred
-    const sender_final = (try db.get_account(sender_address)).?;
-    const receiver_final = (try db.get_account(receiver_address)).?;
+    const sender_final = (try db.get_account(sender_address.bytes)).?;
+    const receiver_final = (try db.get_account(receiver_address.bytes)).?;
 
     try std.testing.expectEqual(sender_initial_balance - transfer_amount, sender_final.balance);
     try std.testing.expectEqual(1000 + transfer_amount, receiver_final.balance);
 
     // Verify contract recorded the transfer
-    const stored_value = try db.get_storage(receiver_address, 0);
+    const stored_value = try db.get_storage(receiver_address.bytes, 0);
     try std.testing.expectEqual(transfer_amount, stored_value);
 
-    const stored_sender = try db.get_storage(receiver_address, 1);
+    const stored_sender = try db.get_storage(receiver_address.bytes, 1);
     const sender_bytes = @as([32]u8, @bitCast(stored_sender));
-    try std.testing.expectEqualSlices(u8, &sender_address, sender_bytes[12..32]);
+    try std.testing.expectEqualSlices(u8, &sender_address.bytes, sender_bytes[12..32]);
 }
 
 test "E2E nested calls - CALL -> DELEGATECALL -> STATICCALL" {
@@ -6035,7 +6035,7 @@ test "E2E nested calls - CALL -> DELEGATECALL -> STATICCALL" {
 
     const final_address: primitives.Address = .{ .bytes = [_]u8{0x03} ++ [_]u8{0} ** 19 };
     const final_code_hash = try db.set_code(&final_bytecode);
-    try db.set_account(final_address, Account{
+    try db.set_account(final_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = final_code_hash,
@@ -6047,7 +6047,7 @@ test "E2E nested calls - CALL -> DELEGATECALL -> STATICCALL" {
         // STATICCALL to final contract
         0x5A, // GAS
         0x73, // PUSH20
-    } ++ final_address ++ [_]u8{
+    } ++ final_address.bytes ++ [_]u8{
         0x60, 0x00, // PUSH1 0 (in_offset)
         0x60, 0x00, // PUSH1 0 (in_size)
         0x60, 0x00, // PUSH1 0 (out_offset)
@@ -6061,7 +6061,7 @@ test "E2E nested calls - CALL -> DELEGATECALL -> STATICCALL" {
 
     const middle_address: primitives.Address = .{ .bytes = [_]u8{0x02} ++ [_]u8{0} ** 19 };
     const middle_code_hash = try db.set_code(&middle_bytecode);
-    try db.set_account(middle_address, Account{
+    try db.set_account(middle_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = middle_code_hash,
@@ -6166,7 +6166,7 @@ test "E2E call types - gas consumption differences" {
 
     const target_address: primitives.Address = .{ .bytes = [_]u8{0x90} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&simple_bytecode);
-    try db.set_account(target_address, Account{
+    try db.set_account(target_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -6174,7 +6174,7 @@ test "E2E call types - gas consumption differences" {
     });
 
     const caller_address: primitives.Address = .{ .bytes = [_]u8{0x91} ++ [_]u8{0} ** 19 };
-    try db.set_account(caller_address, Account{
+    try db.set_account(caller_address.bytes, Account{
         .balance = 10000000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -6281,7 +6281,7 @@ test "E2E CALL failure scenarios" {
 
     const reverting_address: primitives.Address = .{ .bytes = [_]u8{0xC0} ++ [_]u8{0} ** 19 };
     const reverting_code_hash = try db.set_code(&reverting_bytecode);
-    try db.set_account(reverting_address, Account{
+    try db.set_account(reverting_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = reverting_code_hash,
@@ -6311,7 +6311,7 @@ test "E2E CALL failure scenarios" {
     // Test 2: Call with insufficient balance for value transfer
     {
         const poor_sender: primitives.Address = .{ .bytes = [_]u8{0xD0} ++ [_]u8{0} ** 19 };
-        try db.set_account(poor_sender, Account{
+        try db.set_account(poor_sender.bytes, Account{
             .balance = 100, // Only 100 wei
             .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
