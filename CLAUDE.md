@@ -10,6 +10,7 @@
 ### Mandatory Build Verification
 
 **EVERY code change**: `zig build && zig build test` - NO EXCEPTIONS
+**Exception**: Changes to .md (markdown) files do not require running build or test commands
 
 Follow TDD to add any features or fix any bugs
 
