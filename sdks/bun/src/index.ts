@@ -2,7 +2,7 @@ import { dlopen, FFIType, suffix, ptr, CString } from "bun:ffi";
 import { join } from "path";
 
 // Library path - assumes shared library is built in zig-out/lib
-const libPath = join(__dirname, "../../../zig-out/lib", `libguillotine.${suffix}`);
+const libPath = join(__dirname, "../../../zig-out/lib", `libguillotine_ffi.${suffix}`);
 
 // FFI type definitions matching the C ABI
 const EvmResultType = {

@@ -120,8 +120,9 @@ pub fn build(b: *std.Build) void {
     shared_lib_mod.addImport("crypto", modules.crypto_mod);
     shared_lib_mod.addImport("build_options", config.options_mod);
     
-    const shared_lib = b.addSharedLibrary(.{
-        .name = "guillotine",
+    const shared_lib = b.addLibrary(.{
+        .name = "guillotine_ffi",
+        .linkage = .dynamic,
         .root_module = shared_lib_mod,
     });
     shared_lib.linkLibrary(c_kzg_lib);
@@ -131,7 +132,7 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(shared_lib);
     
     const shared_lib_step = b.step("shared", "Build shared library for FFI");
-    shared_lib_step.dependOn(&shared_lib.step);
+    shared_lib_step.dependOn(&b.addInstallArtifact(shared_lib, .{}).step);
 
     // Tests
     const tests_pkg = build_pkg.Tests;
