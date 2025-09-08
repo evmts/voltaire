@@ -55,7 +55,7 @@ pub inline fn subWithBorrow(a: u64, b: u64, borrow: u8) struct { diff: u64, borr
             : [a] "0" (a),
               [b] "r" (b),
               [borrow] "r" (borrow),
-            : .{ .cc = true });
+            : "cc");
         return .{ .diff = diff, .borrow = new_borrow };
     } else {
         // Fallback implementation
