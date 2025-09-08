@@ -1,6 +1,8 @@
 # Guillotine EVM Python Bindings
 
-> Experimental/PoC: This SDK is a vibecoded proof-of-concept. APIs are unstable and may change. We’re looking for early users to try it and tell us what APIs you want — please open an issue or ping us on Telegram.
+> Experimental/PoC: This SDK is a vibecoded proof-of-concept. APIs are unstable and may change. We're looking for early users to try it and tell us what APIs you want — please open an issue or ping us on Telegram.
+
+📚 **[View Full Documentation](https://guillotine.dev/sdks/python)**
 
 ## Status
 
