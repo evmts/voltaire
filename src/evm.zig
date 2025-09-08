@@ -1853,10 +1853,8 @@ test "Evm creation with custom config" {
     const CustomEvm = Evm(.{
         .max_call_depth = 512,
         .max_input_size = 65536, // 64KB
-        .frame_config = .{
-            .stack_size = 512,
-            .max_bytecode_size = 16384,
-        },
+        .stack_size = 512,
+        .max_bytecode_size = 16384,
     });
 
     // Create test database
@@ -2276,10 +2274,8 @@ test "EvmConfig - custom configurations" {
     const custom_config = EvmConfig{
         .max_call_depth = 512,
         .max_input_size = 65536,
-        .frame_config = .{
-            .stack_size = 256,
-            .max_bytecode_size = 12288,
-        },
+        .stack_size = 256,
+        .max_bytecode_size = 12288,
     };
 
     const CustomEvm = Evm(custom_config);
