@@ -65,7 +65,7 @@ test "CREATE edge case - maximum init code size (48KB)" {
     init_code[max_init_size - 1] = 0xF3; // RETURN
     
     // Bytecode: Store init code in memory, then CREATE
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // PUSH32 <size>
@@ -144,7 +144,7 @@ test "CREATE edge case - init code size exceeds 48KB" {
     defer evm_instance.deinit();
     
     // Bytecode: PUSH32 49153 (1 byte over limit), PUSH1 0, PUSH1 0, CREATE
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // PUSH32 49153 (size - 1 byte over 48KB limit)
@@ -251,7 +251,7 @@ test "CREATE edge case - memory expansion overflow" {
     const db_interface = memory_db.to_database_interface();
     
     // Bytecode: PUSH32 <small_size>, PUSH32 <huge_offset>, PUSH1 0, CREATE
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // PUSH32 100 (size)
@@ -330,7 +330,7 @@ test "CREATE edge case - all gas consumed by subcall" {
     };
     
     // Bytecode to CREATE with this init code
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // Store init code at memory[0]
@@ -426,7 +426,7 @@ test "CREATE edge case - nested CREATE depth limit" {
     };
     
     // Store init code and CREATE
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // Store nested init code in memory
@@ -532,7 +532,7 @@ test "CREATE real scenario - deploy ERC20 token contract" {
     };
     
     // Deploy the ERC20 contract
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // Store init code in memory
@@ -638,7 +638,7 @@ test "CREATE real scenario - factory pattern deployment" {
     };
     
     // Deploy 3 instances
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // Loop 3 times

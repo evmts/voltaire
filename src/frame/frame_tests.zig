@@ -84,7 +84,7 @@ const MockEvm = struct {
             .storage = std.AutoHashMap(StorageKey, u256).init(allocator),
             .transient_storage = std.AutoHashMap(StorageKey, u256).init(allocator),
             .accessed_slots = std.AutoHashMap(StorageKey, void).init(allocator),
-            .logs = std.ArrayList(log_mod.Log).init(allocator),
+            .logs = .empty,
             .balances = std.AutoHashMap(Address, u256).init(allocator),
             .code_sizes = std.AutoHashMap(Address, usize).init(allocator),
             .code_hashes = std.AutoHashMap(Address, [32]u8).init(allocator),
@@ -96,7 +96,7 @@ const MockEvm = struct {
         self.storage.deinit();
         self.transient_storage.deinit();
         self.accessed_slots.deinit();
-        self.logs.deinit();
+        self.logs.deinit(self.allocator);
         self.balances.deinit();
         self.code_sizes.deinit();
         self.code_hashes.deinit();
@@ -126,7 +126,7 @@ const MockEvm = struct {
             .topics = self.allocator.dupe(u256, topics) catch return,
             .data = self.allocator.dupe(u8, data) catch return,
         };
-        self.logs.append(log) catch return;
+        self.logs.append(self.allocator, log) catch return;
     }
 
     pub fn inner_call(self: *Self, params: call_params_mod.CallParams) !call_params_mod.CallResult {

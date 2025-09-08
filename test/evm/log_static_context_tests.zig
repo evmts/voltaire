@@ -25,7 +25,7 @@ const MockHostWithStaticContext = struct {
     pub fn init(allocator: std.mem.Allocator) MockHostWithStaticContext {
         return MockHostWithStaticContext{
             .is_static = false,
-            .emitted_logs = std.ArrayList(Log).init(allocator),
+            .emitted_logs = .empty,
             .allocator = allocator,
         };
     }

@@ -210,7 +210,7 @@ test "BALANCE opcode with host - successful execution" {
     
     // Bytecode: PUSH20 address, BALANCE
     const test_address = [_]u8{0} ** 12 ++ [_]u8{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef};
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     try bytecode.append(0x73); // PUSH20

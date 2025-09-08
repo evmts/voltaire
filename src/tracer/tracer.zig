@@ -1938,7 +1938,7 @@ test "GenericTracer with enhanced features" {
     var test_frame = TestFrame{};
     
     // Test with ArrayList writer (memory buffer)
-    var output = std.ArrayList(u8).init(allocator);
+    var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
     
     var tracer = GenericTracer(std.ArrayList(u8).Writer).initWithConfig(
@@ -2074,7 +2074,7 @@ test "JSONRPCTracer with enhanced output" {
     tracer.afterOp(10, 0x01, TestFrame, &test_frame);
     
     // Export to JSON and verify enhanced format
-    var output = std.ArrayList(u8).init(allocator);
+    var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
     
     try tracer.toJSON(output.writer());

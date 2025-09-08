@@ -350,7 +350,7 @@ test "Journal snapshot - stress test with many snapshots" {
     defer journal.deinit();
     
     const num_snapshots = 100;
-    var snapshots = std.ArrayList(u32).init(testing.allocator);
+    var snapshots = std.array_list.AlignedManaged(u32, null).init(testing.allocator);
     defer snapshots.deinit();
     
     // Create many snapshots and add entries

@@ -93,4 +93,5 @@ test {
     
     // Opcode differential tests
     _ = @import("evm/opcodes/all_opcodes.zig");
+
 }

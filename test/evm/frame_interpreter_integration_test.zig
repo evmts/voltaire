@@ -28,12 +28,12 @@ const TestHost = struct {
         return .{
             .allocator = allocator,
             .evm = evm_instance,
-            .created_addresses = std.ArrayList(Address).init(allocator),
+            .created_addresses = .empty,
         };
     }
     
     pub fn deinit(self: *TestHost) void {
-        self.created_addresses.deinit();
+        self.created_addresses.deinit(self.allocator);
     }
     
     pub fn get_balance(self: *TestHost, address: Address) u256 {
@@ -71,7 +71,7 @@ const TestHost = struct {
             var new_address = NEW_CONTRACT_ADDRESS;
             new_address[19] = @intCast(self.create_count);
             
-            try self.created_addresses.append(new_address);
+            try self.created_addresses.append(self.allocator, new_address);
             
             // Deploy empty contract for testing
             try self.evm.database.set_account(new_address, .{

@@ -29,7 +29,7 @@ fn read_file_lines(allocator: std.mem.Allocator, path: []const u8) ![][]const u8
     defer file.close();
     const buf = try file.readToEndAlloc(allocator, 10 * 1024 * 1024);
     errdefer allocator.free(buf);
-    var lines = std.ArrayList([]const u8).init(allocator);
+    var lines = std.array_list.AlignedManaged([]const u8, null).init(allocator);
     errdefer lines.deinit();
     var it = std.mem.splitScalar(u8, buf, '\n');
     while (it.next()) |line| {
@@ -54,7 +54,7 @@ fn parse_trace_line(allocator: std.mem.Allocator, line: []const u8) !TraceStep {
     var gas: u64 = 0;
     var depth: u32 = 0;
     var mem_size: usize = 0;
-    var stack_vals = std.ArrayList(u256).init(allocator);
+    var stack_vals = std.array_list.AlignedManaged(u256, null).init(allocator);
     errdefer stack_vals.deinit();
 
     while (true) {
@@ -115,7 +115,7 @@ fn parse_trace_line(allocator: std.mem.Allocator, line: []const u8) !TraceStep {
 fn parse_trace_file(allocator: std.mem.Allocator, path: []const u8) ![]TraceStep {
     const lines = try read_file_lines(allocator, path);
     errdefer allocator.free(lines);
-    var steps = std.ArrayList(TraceStep).init(allocator);
+    var steps = std.array_list.AlignedManaged(TraceStep, null).init(allocator);
     errdefer {
         for (steps.items) |s| allocator.free(s.stack);
         steps.deinit();

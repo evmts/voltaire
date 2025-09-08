@@ -99,7 +99,7 @@ test "CODECOPY and RETURN differential test" {
             .chain_id = 1,
         },
         .journaled_state = try evm.JournaledState.init(allocator, &database),
-        .logs = std.ArrayList(evm.call_result.Log).init(allocator),
+        .logs = .empty,
         .return_data = &.{},
         .created_contracts = evm.CreatedContracts.init(allocator),
     };

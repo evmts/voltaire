@@ -49,7 +49,7 @@ test "warm/cold access - multiple addresses in single transaction" {
     
     // Test bytecode: Multiple BALANCE calls to different addresses
     // PUSH20 addr2, BALANCE, PUSH20 addr3, BALANCE, PUSH20 addr2, BALANCE, STOP
-    var bytecode = std.ArrayList(u8).init(allocator);
+    var bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer bytecode.deinit();
     
     // First BALANCE - addr2 (cold)

@@ -336,7 +336,7 @@ test "EVM delegatecall handler preserves caller context" {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const original_caller: primitives.Address = [_]u8{0xAA} ++ [_]u8{0} ** 19;
+    const original_caller: primitives.Address = .{ .bytes = [_]u8{0xAA} ++ [_]u8{0} ** 19 };
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = primitives.ZERO_ADDRESS,
@@ -478,7 +478,7 @@ test "call method basic functionality - simple STOP" {
     };
 
     // This should work when call method is properly implemented
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
@@ -2927,7 +2927,7 @@ test "journal state application - storage change rollback" {
 
     // Modify storage value and record in journal
     try evm.database.set_storage(test_address, storage_key, new_value);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .storage_change = .{
             .address = test_address,
@@ -3038,12 +3038,12 @@ test "EVM revert_to_snapshot uses no allocation and fully reverts" {
 
     // Change storage values and record journal entries
     try db.set_storage(addr, storage_key1, 0xAAAA);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .storage_change = .{ .address = addr, .key = storage_key1, .original_value = 0x1111 } },
     });
     try db.set_storage(addr, storage_key2, 0xBBBB);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .storage_change = .{ .address = addr, .key = storage_key2, .original_value = 0x2222 } },
     });
@@ -3053,11 +3053,11 @@ test "EVM revert_to_snapshot uses no allocation and fully reverts" {
     acc2.balance = 999999;
     acc2.nonce = 9;
     try db.set_account(addr, acc2);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{ .address = addr, .original_balance = acc.balance } },
     });
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .nonce_change = .{ .address = addr, .original_nonce = acc.nonce } },
     });
@@ -3127,7 +3127,7 @@ test "journal state application - balance change rollback" {
     var modified_account = original_account;
     modified_account.balance = new_balance;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{
             .address = test_address,
@@ -3188,7 +3188,7 @@ test "journal state application - nonce change rollback" {
     var modified_account = original_account;
     modified_account.nonce = new_nonce;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .nonce_change = .{
             .address = test_address,
@@ -3249,7 +3249,7 @@ test "journal state application - code change rollback" {
     var modified_account = original_account;
     modified_account.code_hash = new_code_hash;
     try evm.database.set_account(test_address.bytes, modified_account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .code_change = .{
             .address = test_address,
@@ -3329,28 +3329,28 @@ test "journal state application - multiple changes rollback" {
     try evm.database.set_storage(test_address, storage_key, new_storage);
 
     // Add journal entries for all changes
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .balance_change = .{
             .address = test_address,
             .original_balance = original_balance,
         } },
     });
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .nonce_change = .{
             .address = test_address,
             .original_nonce = original_nonce,
         } },
     });
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .code_change = .{
             .address = test_address,
             .original_code_hash = original_code_hash,
         } },
     });
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot_id,
         .data = .{ .storage_change = .{
             .address = test_address,
@@ -3420,7 +3420,7 @@ test "journal state application - nested snapshots rollback" {
     // First change
     account.balance = middle_balance;
     try evm.database.set_account(test_address.bytes, account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot1,
         .data = .{ .balance_change = .{
             .address = test_address,
@@ -3434,7 +3434,7 @@ test "journal state application - nested snapshots rollback" {
     // Second change
     account.balance = final_balance;
     try evm.database.set_account(test_address.bytes, account);
-    try evm.journal.entries.append(.{
+    try evm.journal.entries.append(evm.allocator, .{
         .snapshot_id = snapshot2,
         .data = .{ .balance_change = .{
             .address = test_address,
@@ -4032,7 +4032,7 @@ test "CREATE interaction - deployed contract can be called" {
         0xF3, // RETURN
     };
 
-    var init_code = std.ArrayList(u8).init(allocator);
+    var init_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer init_code.deinit();
 
     // Store runtime code in memory
@@ -4135,7 +4135,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     };
 
     // Child init code: stores constructor argument in slot 0
-    var child_init = std.ArrayList(u8).init(allocator);
+    var child_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer child_init.deinit();
 
     // Store caller-provided value in slot 0
@@ -4163,7 +4163,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try child_init.append(0xF3); // RETURN
 
     // Factory contract: creates child with initialization value
-    var factory_code = std.ArrayList(u8).init(allocator);
+    var factory_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer factory_code.deinit();
 
     // Load initialization value from calldata
@@ -4206,7 +4206,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try factory_code.append(0xF3); // RETURN
 
     // Deploy factory with initialization value 123
-    var deploy_data = std.ArrayList(u8).init(allocator);
+    var deploy_data = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer deploy_data.deinit();
     const init_value = [_]u8{0} ** 31 ++ [_]u8{123}; // 123 as uint256
     try deploy_data.appendSlice(&init_value);
@@ -4291,7 +4291,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     };
 
     // Level 3 init code
-    var level3_init = std.ArrayList(u8).init(allocator);
+    var level3_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level3_init.deinit();
     for (level3_runtime, 0..) |byte, i| {
         try level3_init.append(0x60); // PUSH1
@@ -4307,7 +4307,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level3_init.append(0xF3); // RETURN
 
     // Level 2 contract (child): creates level 3 and returns its address
-    var level2_runtime = std.ArrayList(u8).init(allocator);
+    var level2_runtime = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level2_runtime.deinit();
 
     // Store level 3 init code
@@ -4339,7 +4339,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_runtime.append(0xF3); // RETURN
 
     // Level 2 init code
-    var level2_init = std.ArrayList(u8).init(allocator);
+    var level2_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level2_init.deinit();
     for (level2_runtime.items, 0..) |byte, i| {
         try level2_init.append(0x60); // PUSH1
@@ -4356,7 +4356,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_init.append(0xF3); // RETURN
 
     // Level 1 contract (parent): creates level 2
-    var level1_code = std.ArrayList(u8).init(allocator);
+    var level1_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level1_code.deinit();
 
     // Store level 2 init code
@@ -4498,7 +4498,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     };
 
     // Child init code
-    var child_init = std.ArrayList(u8).init(allocator);
+    var child_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer child_init.deinit();
     for (child_runtime, 0..) |byte, i| {
         try child_init.append(0x60); // PUSH1
@@ -4514,7 +4514,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     try child_init.append(0xF3); // RETURN
 
     // Parent contract with setValue function
-    var parent_code = std.ArrayList(u8).init(allocator);
+    var parent_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer parent_code.deinit();
 
     // Check if being called (calldata size > 0)
@@ -5045,7 +5045,7 @@ test "CREATE stores deployed code bytes" {
     };
 
     // Init code that deploys the runtime code
-    var init_code = std.ArrayList(u8).init(allocator);
+    var init_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer init_code.deinit();
 
     // Store runtime code length
@@ -5072,7 +5072,7 @@ test "CREATE stores deployed code bytes" {
     try init_code.append(0xF3); // RETURN
 
     // Contract that calls CREATE with the init code
-    var creator_bytecode = std.ArrayList(u8).init(allocator);
+    var creator_bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer creator_bytecode.deinit();
 
     // Push init code to memory
@@ -5206,7 +5206,7 @@ test "CREATE2 stores deployed code bytes" {
     };
 
     // Init code that deploys the runtime code
-    var init_code = std.ArrayList(u8).init(allocator);
+    var init_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer init_code.deinit();
 
     // Store runtime code length
@@ -5233,7 +5233,7 @@ test "CREATE2 stores deployed code bytes" {
     try init_code.append(0xF3); // RETURN
 
     // Contract that calls CREATE2 with the init code
-    var creator_bytecode = std.ArrayList(u8).init(allocator);
+    var creator_bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer creator_bytecode.deinit();
 
     // Push init code to memory

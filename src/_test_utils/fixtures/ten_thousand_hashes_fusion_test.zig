@@ -40,7 +40,7 @@ test "ten-thousand-hashes dispatch creation with fusion" {
     // Now let's verify the dispatch instruction stream
     var cursor = dispatch.cursor;
     var index: usize = 0;
-    var expectations = std.ArrayList(Expectation).init(allocator);
+    var expectations = std.array_list.AlignedManaged(Expectation, null).init(allocator);
     defer expectations.deinit();
     
     // Define our expectations based on the bytecode analysis
