@@ -34,14 +34,14 @@ The robust, ultrafast and configurable way to run the EVM. Guillotine features
 
 ## Full Client
 
-Guillotine is a VM implementation (like revm) not a full node (like reth).
-However, Tevm (the team behind Guillotine) plans on breaking ground on a highly-performant zig-based full client soon. This client will leverage some of guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
+Guillotine is a VM implementation (like [revm](https://github.com/bluealloy/revm)) not a full node (like [reth](https://github.com/paradigmxyz/reth)).
+However, [Tevm](https://github.com/evmts/tevm-monorepo) (the team behind Guillotine) plans on breaking ground on a highly-performant zig-based full client soon. This client will leverage some of guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
 
 ## 🚧 Development Status
 
 **Current Status**: DO NOT USE IN PRODUCTION
 
-Guillotine is not suitable for production use at this time. Any use of guillotine should be considered purely experimental. There are known bugs and TODOs. Follow issue tab which contains all features we want for Beta.
+Guillotine is not suitable for production use at this time. Any use of guillotine should be considered purely experimental. There are known bugs and TODOs. Follow [issue tab](https://github.com/evmts/Guillotine/issues) which contains all features we want for Beta.
 
 ---
 
@@ -49,20 +49,20 @@ Guillotine is not suitable for production use at this time. Any use of guillotin
 
 Guillotine is fast.
 
-Benchmarks so far are looking very promising with Guillotine showing measurable performance gains over Revm and performance on par with Evmone. Based on past benchmarks for optimizations currently not included, we expect these benchmarks to continue to improve.
+Benchmarks so far are looking very promising with Guillotine showing measurable performance gains over [Revm](https://github.com/bluealloy/revm) and performance on par with [Evmone](https://github.com/ethereum/evmone). Based on past benchmarks for optimizations currently not included, we expect these benchmarks to continue to improve.
 
 ## Why is guillotine fast
 
-Guillotine was built using data-oriented design with an emphasis on minimizing branch-prediction misses in the CPU. We studied every EVM implementation as well as Wasm, Lua, and Python interpreter implementations for the state of the art. Optimizations include from most impactful to least impactful:
+Guillotine was built using [data-oriented design](https://www.youtube.com/watch?v=rX0ItVEVjHc) with an emphasis on minimizing branch-prediction misses in the CPU. We studied every EVM implementation as well as [Wasm](https://webassembly.org/), [Lua](https://www.lua.org/), and [Python](https://www.python.org/) interpreter implementations for the state of the art. Optimizations include from most impactful to least impactful:
 
 - An extremely optimized StackFrame and opcode dispatch datastructure
-- Indirect threading via tailcall recursion
+- [Indirect threading via tailcall recursion](https://news.ycombinator.com/item?id=43317592) (for excellent CPU branch prediction)
 - Highly microoptimized opcode instruction handlers
 - Highly microoptimized evm stack implementation
 - Opcode fusions turning common opcode patterns into a single dispatch
 - Batching calculation of static gas costs and stack analysis
 
-There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register based EVM, a common technique used by Wasm and Python interpreters that can get up to 30% performance increases.
+There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register based EVM, a common technique used by [Wasm](https://webassembly.org/) and [Python](https://www.python.org/) interpreters that can get up to 30% performance increases.
 
 ### Overall Performance Summary (Per Run)
 
@@ -78,11 +78,11 @@ There are many more optimizations that have not been implemented yet. The bigges
 
 ### Customizablility
 
-Guillotine follows in the footsteps of Revm providing an even more highly customizable EVM SDK implementation.
+Guillotine follows in the footsteps of [Revm](https://github.com/bluealloy/revm) providing an even more highly customizable EVM SDK implementation.
 
 **With Guillotine you can easily create your own EVM implementation!**
 
-Utilizing zig comptime, the Guillotine customizations are much simpler abstractions than the revm abstractions. No need to learn complex generics or configuring feature flags.
+Utilizing [Zig](https://ziglang.org/) comptime, the Guillotine customizations are much simpler abstractions than the [revm](https://github.com/bluealloy/revm) abstractions. No need to learn complex generics or configuring feature flags.
 
 Available customizations include
 
@@ -94,7 +94,7 @@ Available customizations include
 - Add or override any new opcodes or precompiles to the EVM
 - A powerful but simple Tracer interface for introspecting the EVM
 
-All customizations are offered as 0 cost compiletime abstractions using the powerful but simple Zig comptime so customizatiosn never sacrifice runtime performance and your bundle size will only include the features you choose to use.
+All customizations are offered as 0 cost compiletime abstractions using the powerful but simple [Zig](https://ziglang.org/) comptime so customizatiosn never sacrifice runtime performance and your bundle size will only include the features you choose to use.
 
 For most users who don't need customizations we offer default options for all hardforks.
 
@@ -102,7 +102,7 @@ For most users who don't need customizations we offer default options for all ha
 
 Unlike other EVM libraries guillotine is built to be accessible on all platforms. Whether you are using writing golang on the server, JavaScript in the browser, swift for the iphone, or python for a desktop app, guillotine ships first class sdks to use with every major platform and language.
 
-Each language has sensible defaults for that language. For example, TypeScript defaults to optimizing for a small binary size and uses the wasm build while zig and rust optimized for maximum native performance.
+Each language has sensible defaults for that language. For example, TypeScript defaults to optimizing for a small binary size and uses the wasm build while Zig and Rust optimized for maximum native performance.
 
 COMING SOON
 
@@ -126,11 +126,11 @@ Upgrades include:
 
 We welcome contributions of all kinds, including AI-assisted contributions (with proper disclosure)!
 
-See our [Contributing Guide](CONTRIBUTING.md) to get started.
+See our [Contributing Guide](./CONTRIBUTING.md) to get started.
 
 ## Contributors
 
-- [Will Cory (fucory)](https://github.com/roninjin10) - Project Lead, CEO of Tevm
+- [Will Cory (fucory)](https://github.com/roninjin10) - Project Lead, CEO of [Tevm](https://github.com/evmts/tevm-monorepo)
 - [polarzero](https://github.com/0xpolarzero) - Core Developer, CLI/App Lead
 - [Vlad](https://github.com/vladfdp) - Core Developer, Cryptography Lead
 
