@@ -1,56 +1,43 @@
 ---
 title: Quick Start
-description: Get up and running with Guillotine in 5 minutes
+description: Run your first EVM call with Guillotine using the real API
 ---
 
-import { Callout, Steps, Step } from 'vocs/components'
+import { Callout } from 'vocs/components'
 
 # Quick Start
 
-This guide will have you executing EVM bytecode with Guillotine in under 5 minutes. We'll start with a simple "Hello EVM" example, then progressively build more complex programs.
+This guide uses the actual Guillotine EVM API. You will initialize the EVM, load code into state, and execute a call.
 
 <Callout type="info">
-  **Prerequisites**: Make sure you've [installed Guillotine](/getting-started/installation) and have Zig 0.14.1+ installed.
+  Prerequisites: Zig 0.14.1+ and [Guillotine installed](/getting-started/installation).
 </Callout>
 
-## 🚀 Hello EVM
-
-Let's start by executing the simplest possible EVM program - pushing a number onto the stack.
-
-::::steps
-### Create a new project
+## 1) Create a new Zig project
 
 ```bash
-# Create and enter project directory
 mkdir guillotine-quickstart
 cd guillotine-quickstart
-
-# Initialize a new Zig project
 zig init
 ```
 
-### Configure dependencies
+## 2) Add Guillotine as a dependency
 
-Edit `build.zig.zon` to add Guillotine:
+Edit `build.zig.zon` and add a local dependency:
 
 ```zig filename="build.zig.zon"
 .{
     .name = "guillotine-quickstart",
     .version = "0.0.1",
     .dependencies = .{
-        .guillotine = .{
-            .path = "../Guillotine", // Adjust to your Guillotine path
-        },
+        .guillotine = .{ .path = "../Guillotine" }, // adjust path
     },
-    .paths = .{""},
 }
 ```
 
-### Update build configuration
+Then wire it up in `build.zig`:
 
-Edit `build.zig` to import Guillotine:
-
-```zig filename="build.zig" {13-16}
+```zig filename="build.zig"
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
@@ -63,140 +50,97 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    
-    // Add Guillotine module
-    const guillotine = b.dependency("guillotine", .{
-        .target = target,
-        .optimize = optimize,
-    });
+
+    const guillotine = b.dependency("guillotine", .{ .target = target, .optimize = optimize });
     exe.root_module.addImport("guillotine", guillotine.module("guillotine"));
 
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 }
 ```
 
-### Write your first EVM program
+## 3) Write your first EVM call
 
 Replace `src/main.zig` with:
 
-```zig filename="src/main.zig" twoslash
+```zig filename="src/main.zig"
 const std = @import("std");
-const guillotine = @import("guillotine");
+const g = @import("guillotine");
 
 pub fn main() !void {
-    // Setup allocator
+    // Allocator
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Initialize EVM with default configuration
-    const Evm = guillotine.Evm(.{});
-    var evm = try Evm.init(allocator);
+    // In-memory state database
+    var db = g.Database.init(allocator);
+    defer db.deinit();
+
+    // Minimal block + tx context
+    var block = g.BlockInfo.init();
+    block.number = 18_000_000;
+    block.timestamp = 1_700_000_000;
+    const tx = g.TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = g.Primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    // Create EVM instance type and initialize
+    const config = g.EvmConfig{};
+    const Evm = g.Evm(config);
+    const origin = g.Primitives.ZERO_ADDRESS;
+    var evm = try Evm.init(allocator, &db, block, tx, 0, origin, config.eips.hardfork);
     defer evm.deinit();
 
-    // Simple bytecode: PUSH1 0x2A (push 42 onto stack)
-    const bytecode = [_]u8{ 0x60, 0x2A };
-    
-    // Execute the bytecode
-    const result = try evm.execute(&bytecode);
-    
-    // Print results
-    std.debug.print("🎉 Execution successful!\n", .{});
-    std.debug.print("📊 Gas used: {}\n", .{result.gas_used});
-    std.debug.print("🔢 Stack top: {}\n", .{result.stack_top});
+    // Install a small program that returns 32-byte value 42
+    const code = [_]u8{ 0x60, 0x2A, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3 };
+    const code_hash = try db.set_code(&code);
+    const contract = g.Primitives.Address.from_u256(0xC0FFEE);
+    var account = g.Account.zero();
+    account.code_hash = code_hash;
+    try db.set_account(contract.bytes, account);
+
+    // Call the contract
+    const CallParams = Evm.CallParams;
+    const params = CallParams{ .call = .{
+        .caller = origin,
+        .to = contract,
+        .value = 0,
+        .input = &.{},
+        .gas = 100_000,
+    } };
+
+    const result = evm.call(params);
+    if (result.success and result.output.len >= 32) {
+        const value = std.mem.readInt(u256, result.output[0..32], .big);
+        std.debug.print("Success. Returned: {}\n", .{value});
+        std.debug.print("Gas left: {}\n", .{result.gas_left});
+    } else {
+        std.debug.print("Call failed. Gas left: {}\n", .{result.gas_left});
+    }
 }
 ```
 
-### Run it!
+## 4) Run it
 
 ```bash
 zig build run
 ```
 
-You should see:
+You should see output similar to:
+
 ```
-🎉 Execution successful!
-📊 Gas used: 3
-🔢 Stack top: 42
-```
-
-**Congratulations!** 🎊 You've just executed your first EVM bytecode with Guillotine.
-::::
-
-## 📖 Understanding the Code
-
-Let's break down what each part does:
-
-<div style={{ 
-  background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.05), rgba(220, 38, 38, 0.02))',
-  border: '1px solid rgba(234, 88, 12, 0.2)',
-  borderRadius: '12px',
-  padding: '1.5rem',
-  marginBottom: '2rem'
-}}>
-
-### Key Components
-
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| **Allocator** | Memory management | Zig requires explicit memory management. The `GeneralPurposeAllocator` handles all allocations. |
-| **EVM Config** | VM configuration | `Evm(.{})` creates an EVM with default settings (latest hardfork, all features). |
-| **Bytecode** | EVM instructions | `[0x60, 0x2A]` = `PUSH1 42` - pushes the value 42 onto the stack. |
-| **Execute** | Run the program | Processes the bytecode and returns execution results. |
-| **Result** | Execution output | Contains gas used, stack state, return data, and logs. |
-
-</div>
-
-## 🎯 Interactive Examples
-
-### Example 1: Basic Arithmetic
-
-Let's perform a simple addition: `3 + 5`
-
-```zig filename="arithmetic.zig" showLineNumbers
-const bytecode = [_]u8{
-    0x60, 0x03,  // PUSH1 3
-    0x60, 0x05,  // PUSH1 5
-    0x01,        // ADD
-};
-
-const result = try evm.execute(&bytecode);
-std.debug.print("3 + 5 = {}\n", .{result.stack_top}); // Output: 8
+Success. Returned: 42
+Gas left: 999xx
 ```
 
-<Callout type="tip">
-  **Pro tip**: The EVM is a stack machine - operations pop values from the stack and push results back.
-</Callout>
-
-### Example 2: Storage Operations
-
-Store and retrieve a value from contract storage:
-
-```zig filename="storage.zig" showLineNumbers
-const bytecode = [_]u8{
-    // Store value 100 at key 0
-    0x60, 0x64,  // PUSH1 100 (value)
-    0x60, 0x00,  // PUSH1 0 (key)
-    0x55,        // SSTORE
-    
-    // Load value from key 0
-    0x60, 0x00,  // PUSH1 0 (key)
-    0x54,        // SLOAD
-};
-
-const result = try evm.execute(&bytecode);
-std.debug.print("Stored value: {}\n", .{result.stack_top}); // Output: 100
-```
-
-### Example 3: Memory Operations
-
-Work with EVM memory:
+That’s it! You’ve initialized the EVM, installed code into state, and executed a call using the real API.
 
 ```zig filename="memory.zig" showLineNumbers
 const bytecode = [_]u8{
