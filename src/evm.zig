@@ -1801,7 +1801,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(call_params) catch {};
+    _ = evm.call(call_params);
 
     // Test DELEGATECALL routing
     const delegatecall_params = DefaultEvm.CallParams{
@@ -1812,7 +1812,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(delegatecall_params) catch {};
+    _ = evm.call(delegatecall_params);
 
     // Test STATICCALL routing
     const staticcall_params = DefaultEvm.CallParams{
@@ -1823,7 +1823,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(staticcall_params) catch {};
+    _ = evm.call(staticcall_params);
 
     // Test CREATE routing
     const create_params = DefaultEvm.CallParams{
@@ -1834,7 +1834,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(create_params) catch {};
+    _ = evm.call(create_params);
 
     // Test CREATE2 routing
     const create2_params = DefaultEvm.CallParams{
@@ -1846,7 +1846,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(create2_params) catch {};
+    _ = evm.call(create2_params);
 }
 
 test "Evm creation with custom config" {
@@ -1967,7 +1967,7 @@ test "call method basic functionality - simple STOP" {
     };
 
     // This should work when call method is properly implemented
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
@@ -1999,7 +1999,7 @@ test "call method loads contract code from state" {
     defer evm.deinit();
 
     // Set up contract with bytecode [0x00] (STOP)
-    const contract_address: primitives.Address = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90 };
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90 } };
     const bytecode = [_]u8{0x00};
     const code_hash = try db.set_code(&bytecode);
 
@@ -2010,7 +2010,7 @@ test "call method loads contract code from state" {
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(contract_address, account);
+    try db.set_account(contract_address.bytes, account);
 
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -2022,7 +2022,7 @@ test "call method loads contract code from state" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
@@ -2065,7 +2065,7 @@ test "call method handles CREATE operation" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
 
     try std.testing.expect(result.success);
     try std.testing.expect(result.gas_left > 0);
@@ -2107,7 +2107,7 @@ test "call method handles gas limit properly" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Should either fail or consume most/all gas
     try std.testing.expect(result.gas_left <= 10);
@@ -2395,12 +2395,12 @@ test "Host interface - get_balance functionality" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(address, account);
+    try db.set_account(address.bytes, account);
 
     const retrieved_balance = evm.get_balance(address);
     try std.testing.expectEqual(balance, retrieved_balance);
 
-    const zero_address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const zero_address: primitives.Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const zero_balance = evm.get_balance(zero_address);
     try std.testing.expectEqual(@as(u256, 0), zero_balance);
 }
@@ -2485,7 +2485,7 @@ test "Host interface - account_exists functionality" {
     const exists = evm.account_exists(address);
     try std.testing.expect(exists);
 
-    const non_existing = [_]u8{1} ++ [_]u8{0} ** 19;
+    const non_existing: primitives.Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const does_not_exist = evm.account_exists(non_existing);
     try std.testing.expect(!does_not_exist);
 }
@@ -2524,7 +2524,7 @@ test "Host interface - call type differentiation" {
         },
     };
 
-    const call_result = try evm.call(call_params);
+    const call_result = evm.call(call_params);
     try std.testing.expect(call_result.success);
 
     // Test STATICCALL operation (no value transfer allowed)
@@ -2537,7 +2537,7 @@ test "Host interface - call type differentiation" {
         },
     };
 
-    const static_result = try evm.call(static_params);
+    const static_result = evm.call(static_params);
     try std.testing.expect(static_result.success);
 
     // Test DELEGATECALL operation (preserves caller context)
@@ -2550,7 +2550,7 @@ test "Host interface - call type differentiation" {
         },
     };
 
-    const delegate_result = try evm.call(delegate_params);
+    const delegate_result = evm.call(delegate_params);
     try std.testing.expect(delegate_result.success);
 }
 
@@ -2579,14 +2579,14 @@ test "EVM CREATE operation - basic contract creation" {
     defer evm.deinit();
 
     // Set up caller with balance
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
     const caller_account = Account{
         .balance = 1000000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     // Simple init code that returns a contract with STOP opcode
     // PUSH1 0x01 (size)
@@ -2613,7 +2613,7 @@ test "EVM CREATE operation - basic contract creation" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
     defer if (result.output.len > 0) evm.allocator.free(result.output);
 
     // Verify successful creation
@@ -2625,11 +2625,11 @@ test "EVM CREATE operation - basic contract creation" {
     const contract_address: primitives.Address = result.output[0..20].*;
 
     // Verify contract was created
-    const created_account = (try db.get_account(contract_address)).?;
+    const created_account = (try db.get_account(contract_address.bytes)).?;
     try std.testing.expectEqual(@as(u64, 1), created_account.nonce);
 
     // Verify caller nonce was incremented
-    const updated_caller = (try db.get_account(caller_address)).?;
+    const updated_caller = (try db.get_account(caller_address.bytes)).?;
     try std.testing.expectEqual(@as(u64, 1), updated_caller.nonce);
 }
 
@@ -2658,7 +2658,7 @@ test "EVM CREATE operation - with value transfer" {
     defer evm.deinit();
 
     // Set up caller with balance
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
     const initial_balance: u256 = 1000000;
     const transfer_value: u256 = 12345;
     const caller_account = Account{
@@ -2667,7 +2667,7 @@ test "EVM CREATE operation - with value transfer" {
         .code_hash = [_]u8{0} ** 32,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(caller_address, caller_account);
+    try db.set_account(caller_address.bytes, caller_account);
 
     // Init code that returns empty contract
     const init_code = [_]u8{ 0x00, 0x00, 0xF3 }; // STOP STOP RETURN
@@ -2681,7 +2681,7 @@ test "EVM CREATE operation - with value transfer" {
         },
     };
 
-    const result = try evm.call(create_params);
+    const result = evm.call(create_params);
     defer if (result.output.len > 0) evm.allocator.free(result.output);
 
     try std.testing.expect(result.success);
@@ -3076,17 +3076,17 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
         0xF3, // RETURN
     };
 
-    const factory_address: primitives.Address = [_]u8{0x02} ++ [_]u8{0} ** 19;
+    const factory_address: primitives.Address = .{ .bytes = [_]u8{0x02} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&factory_bytecode);
-    try db.set_account(factory_address, Account{
+    try db.set_account(factory_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     });
 
-    const caller_address: primitives.Address = [_]u8{0x01} ++ [_]u8{0} ** 19;
-    try db.set_account(caller_address, Account{
+    const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
+    try db.set_account(caller_address.bytes, Account{
         .balance = 1000000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -3104,7 +3104,7 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     defer if (result.output.len > 0) evm.allocator.free(result.output);
 
     try std.testing.expect(result.success);
@@ -3114,7 +3114,7 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
     const child_address: primitives.Address = result.output[0..20].*;
 
     // Verify child contract exists
-    const child_account = try db.get_account(child_address);
+    const child_account = try db.get_account(child_address.bytes);
     try std.testing.expect(child_account != null);
     try std.testing.expectEqual(@as(u64, 1), child_account.?.nonce);
 }
@@ -3198,14 +3198,14 @@ test "EVM logs - included in CallResult" {
     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x00, 0xA0, 0x00 }; // Last 0x00 is STOP
     const code_hash = try db.set_code(&bytecode);
 
-    const contract_address: primitives.Address = [_]u8{0x12} ++ [_]u8{0} ** 19;
+    const contract_address: primitives.Address = .{ .bytes = [_]u8{0x12} ++ [_]u8{0} ** 19 };
     const account = Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
         .storage_root = [_]u8{0} ** 32,
     };
-    try db.set_account(contract_address, account);
+    try db.set_account(contract_address.bytes, account);
 
     const call_params = DefaultEvm.CallParams{
         .call = .{
@@ -3217,7 +3217,7 @@ test "EVM logs - included in CallResult" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
     defer {
         // Clean up logs
         for (result.logs) |event_log| {
@@ -3346,7 +3346,7 @@ test "Host interface - input size validation" {
         },
     };
 
-    const result = try evm.call(call_params);
+    const result = evm.call(call_params);
 
     // Should fail due to input size limit
     try std.testing.expect(!result.success);
