@@ -6073,7 +6073,7 @@ test "E2E nested calls - CALL -> DELEGATECALL -> STATICCALL" {
         // DELEGATECALL to middle contract
         0x5A, // GAS
         0x73, // PUSH20
-    } ++ middle_address ++ [_]u8{
+    } ++ middle_address.bytes ++ [_]u8{
         0x60, 0x00, // PUSH1 0 (in_offset)
         0x60, 0x00, // PUSH1 0 (in_size)
         0x60, 0x00, // PUSH1 0 (out_offset)
