@@ -126,9 +126,7 @@ class EVM:
 
     def set_code(self, address: Union[str, Address], code: Union[bytes, Bytes]) -> None:
         addr20 = _addr_to20(address)
-        data = code.to_bytes() if isinstance(code, Bytes) else code
-        if not isinstance(data, (bytes, bytearray)):
-            raise TypeError("code must be bytes")
+        data = code.to_bytes() if hasattr(code, "to_bytes") else bytes(code)
         buf = ffi.new("unsigned char[]", data)
         ok = lib.guillotine_set_code(self._handle, addr20, buf, len(data))
         if not ok:
@@ -189,4 +187,3 @@ class EVM:
 
     def simulate(self, params: CallParams) -> EvmResult:
         return self._do_call(params, simulate=True)
-

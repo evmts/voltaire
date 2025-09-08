@@ -9,7 +9,10 @@ __author__ = "EVMts Contributors"
 __email__ = "noreply@evmts.dev"
 
 from .primitives_enhanced import Address, U256, Hash, Bytes
-from .evm_enhanced import EVM, ExecutionResult, DeployResult, Log, HardFork
+from .evm_ffi import EVM as EVM, CallType, BlockInfo, CallParams, EvmResult
+# Legacy/advanced types still available from previous modules
+# (kept for compatibility with earlier examples)
+from .evm_enhanced import DeployResult, Log, HardFork
 from .bytecode import Bytecode, Opcode, Instruction, BytecodeStats
 from .planner import Planner, Plan, CacheStats
 from .precompiles import (
@@ -27,7 +30,10 @@ from .exceptions import (
 __all__ = [
     # Core EVM
     "EVM",
-    "ExecutionResult",
+    "CallType",
+    "BlockInfo",
+    "CallParams",
+    "EvmResult",
     "DeployResult",
     "Log",
     "HardFork",
