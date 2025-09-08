@@ -1,8 +1,6 @@
-# CLI Internal - Internal CLI Components
+# CLI Internal
 
-## Overview
-
-This directory contains the internal implementation components for the Guillotine CLI. These packages are not intended for external use and contain the core business logic, configuration management, and user interface components that power the CLI application.
+Internal packages for the Go CLI demo. Not for external import.
 
 ## Components
 
@@ -13,12 +11,10 @@ This directory contains the internal implementation components for the Guillotin
 
 ## Architecture
 
-The internal components follow a clean architecture pattern:
-
-1. **Separation of Concerns** - Each package has a specific responsibility
-2. **Dependency Injection** - Components depend on interfaces, not implementations
-3. **Testability** - All components are designed to be easily testable
-4. **Modularity** - Each package can be developed and tested independently
+Simple separation of concerns for a small demo:
+1. app — model/state and orchestration
+2. config — constants and theming
+3. ui — views and layout
 
 ## Package Responsibilities
 

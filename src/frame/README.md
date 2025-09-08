@@ -21,11 +21,10 @@ The Frame is designed with clear separation of concerns:
 - **`call_result.zig`** - Result structures for EVM call returns
 - **`block_info_config.zig`** - Block-level configuration and environment data
 
-### Testing and Benchmarking
+### Testing and Integration
 
-- **`frame_tests.zig`** - Comprehensive test suite covering all frame operations
-- **`frame_bench.zig`** - Performance benchmarks for critical paths
-- **`frame_c.zig`** - C interface bindings for external integration
+- `frame_tests.zig` — Comprehensive test suite covering frame operations
+- `frame_c.zig` — C interface bindings for external integration
 
 ## Key Data Structures
 
@@ -69,9 +68,9 @@ Standardized result structures capturing:
 ## Performance Considerations
 
 ### Dispatch Optimization
-- **LRU Cache**: Maintains compiled dispatch schedules for frequently executed bytecode
-- **Jump Table Caching**: Pre-computed jump destinations for efficient branch handling
-- **Tail Call Optimization**: Uses Zig's tail call features for zero-cost opcode chaining
+- Global LRU cache for dispatch schedules
+- Jump table generation for fast JUMP/JUMPI validation
+- Tail‑call chaining via `getTailCallModifier()`
 
 ### Memory Layout
 - **Cache-conscious Design**: Components arranged for optimal CPU cache utilization

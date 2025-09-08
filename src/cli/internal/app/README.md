@@ -1,13 +1,10 @@
-# CLI App - CLI Application Logic
+# CLI App
 
-## Overview
-
-This directory contains the core application logic for the Guillotine CLI. It defines the data models, business rules, and orchestration logic that powers the various CLI commands and operations.
+Application model and orchestration for the Bubble Tea demo.
 
 ## Components
 
-### Core Files
-- **`model.go`** - Core data structures and models used throughout the application
+- `model.go` — TUI model/state, update/view functions
 
 ## Key Features
 
@@ -39,11 +36,9 @@ The application defines structured data models for:
 
 ## Architecture
 
-### Model-Driven Design
-The application follows a model-driven approach where:
-- All data is represented by well-defined Go structs
-- Business logic operates on these typed models
-- Serialization and deserialization is handled consistently
+Model‑driven Bubble Tea design:
+- State as Go structs
+- Pure update/view functions
 
 ### Error Handling Strategy
 ```go
@@ -63,24 +58,7 @@ The app package provides services that:
 
 ## Usage Patterns
 
-### Command Execution
-```go
-type Command interface {
-    Execute(ctx context.Context, args Args) (*Result, error)
-    Validate(args Args) error
-    Help() string
-}
-```
-
-### Result Processing
-```go
-type Result struct {
-    Success bool
-    Data    interface{}
-    Metrics ExecutionMetrics
-    Errors  []error
-}
-```
+The demo wires a simple Bubble Tea program in `src/cli/main.go`; `internal/app` owns the tea.Model.
 
 ## Integration Points
 

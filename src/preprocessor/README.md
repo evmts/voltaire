@@ -41,17 +41,16 @@ The preprocessor module transforms raw EVM bytecode into highly optimized dispat
 
 ### Dispatch Optimization
 
-- **O(1) dispatch** - Constant-time opcode handler lookup
-- **Inline constants** - Embed small constants directly in dispatch
-- **Pointer optimization** - Use pointers for large constants
-- **Cache-friendly layout** - Optimize memory layout for CPU cache
+- O(1) dispatch via prebuilt schedule
+- Inline constants for small immediates
+- Pointer metadata for large immediates
+- Cache‑friendly layout and prefetching
 
 ### Jump Table Generation
 
-- **Binary search** - Efficient jump destination lookup
-- **Static resolution** - Resolve jump targets at preprocessing time
-- **Forward reference handling** - Proper handling of forward jumps
-- **Validation** - Comprehensive jump destination validation
+- Static resolution when possible
+- Validation against bytecode bitmaps
+- Compact entries with fast lookup used by handlers
 
 ## Usage Examples
 

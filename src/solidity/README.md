@@ -1,6 +1,6 @@
 # Solidity Test Contracts
 
-A comprehensive collection of Solidity smart contracts designed for testing, benchmarking, and validating EVM implementations across diverse use cases and edge conditions.
+Solidity contracts and compiled bytecode used by tests and demos.
 
 ## Overview
 
@@ -23,9 +23,9 @@ The solidity module provides an extensive suite of test contracts that cover the
 
 ### Bytecode Resources
 
-- **`erc20_bytecode.hex`** - Compiled ERC-20 token contract bytecode
-- **`erc20_bytecode.txt`** - Human-readable ERC-20 bytecode
-- **`erc20_mint_bytecode.txt`** - ERC-20 token minting function bytecode
+- `erc20_bytecode.hex` — ERC‑20 contract bytecode (hex)
+- `erc20_bytecode.txt` — ERC‑20 bytecode (alt format)
+- `erc20_mint_bytecode.txt` — ERC‑20 mint function bytecode
 
 ### Test Integration
 
@@ -33,13 +33,11 @@ The solidity module provides an extensive suite of test contracts that cover the
 
 ## Features
 
-### Comprehensive EVM Coverage
+### EVM Coverage
 
-- **Arithmetic operations** - All mathematical operations including overflow/underflow
-- **Memory management** - Memory expansion, copying, and access patterns
-- **Storage operations** - SSTORE/SLOAD with gas cost variations
-- **Call operations** - CALL, DELEGATECALL, STATICCALL with various scenarios
-- **Create operations** - Contract creation with CREATE and CREATE2
+- Arithmetic, memory, storage, call/create paths
+- Error handling (revert/invalid/oog), stack edge cases
+- Cryptographic and precompile integrations
 
 ### Error Testing
 
@@ -234,9 +232,7 @@ contract EdgeCaseTester {
 
 ## Benchmark Contracts
 
-### SnailShellBenchmark
-
-Computational intensity benchmark:
+Benchmarks have been moved to a separate repository; the Solidity sources remain for reference.
 
 - **Purpose**: Measure computational performance
 - **Operations**: Nested loops, arithmetic operations
