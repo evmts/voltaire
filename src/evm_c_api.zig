@@ -302,6 +302,17 @@ export fn guillotine_free_output(output: [*]u8, len: usize) void {
     allocator.free(output[0..len]);
 }
 
+// Free result structure
+export fn guillotine_free_result(result: ?*EvmResult) void {
+    const allocator = ffi_allocator orelse return;
+    if (result) |r| {
+        if (r.output_len > 0) {
+            allocator.free(r.output[0..r.output_len]);
+        }
+        allocator.destroy(r);
+    }
+}
+
 // Get last error message
 export fn guillotine_get_last_error() [*:0]const u8 {
     return @ptrCast(&last_error_z);
@@ -334,43 +345,37 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) ?*E
         },
         else => {
             setError("Simulate only supports CALL type", .{});
-            return EvmResult{
-                .success = false,
-                .gas_left = 0,
-                .output = undefined,
-                .output_len = 0,
-                .error_message = @ptrCast(&last_error_z),
-            };
+            return null;
         },
     };
     
     // Simulate the call
     const result = evm_ptr.simulate(call_params);
     
+    // Allocate result structure on heap
+    const evm_result = allocator.create(EvmResult) catch {
+        setError("Failed to allocate result", .{});
+        return null;
+    };
+    
     // Copy output if present
-    var output_ptr: [*]const u8 = undefined;
-    var output_len: usize = 0;
     if (result.output.len > 0) {
         const output_copy = allocator.alloc(u8, result.output.len) catch {
             setError("Failed to allocate output buffer", .{});
-            return EvmResult{
-                .success = false,
-                .gas_left = 0,
-                .output = undefined,
-                .output_len = 0,
-                .error_message = @ptrCast(&last_error_z),
-            };
+            allocator.destroy(evm_result);
+            return null;
         };
         @memcpy(output_copy, result.output);
-        output_ptr = output_copy.ptr;
-        output_len = output_copy.len;
+        evm_result.output = output_copy.ptr;
+        evm_result.output_len = output_copy.len;
+    } else {
+        evm_result.output = undefined;
+        evm_result.output_len = 0;
     }
     
-    return EvmResult{
-        .success = result.success,
-        .gas_left = result.gas_left,
-        .output = output_ptr,
-        .output_len = output_len,
-        .error_message = if (result.success) undefined else @ptrCast(&last_error_z),
-    };
+    evm_result.success = result.success;
+    evm_result.gas_left = result.gas_left;
+    evm_result.error_message = if (result.success) undefined else @ptrCast(&last_error_z);
+    
+    return evm_result;
 }

@@ -1,4 +1,4 @@
-import { dlopen, FFIType, suffix, ptr, CString } from "bun:ffi";
+import { dlopen, FFIType, suffix, ptr, CString, read } from "bun:ffi";
 import { join } from "path";
 
 // Library path - assumes shared library is built in zig-out/lib
@@ -71,6 +71,10 @@ const lib = dlopen(libPath, {
   },
   guillotine_free_output: {
     args: [FFIType.ptr, FFIType.usize], // u8*, usize
+    returns: FFIType.void,
+  },
+  guillotine_free_result: {
+    args: [FFIType.ptr], // EvmResult*
     returns: FFIType.void,
   },
   guillotine_get_last_error: {
@@ -272,38 +276,116 @@ export class GuillotineEVM {
       throw new Error(`Call failed: ${error}`);
     }
     
-    // Read result structure
-    const resultView = new DataView(resultPtr.buffer, resultPtr.byteOffset, 32);
-    const success = resultView.getUint8(0) !== 0;
-    const gasLeft = resultView.getBigUint64(8, true);
-    const outputPtr = resultView.getBigUint64(16, true);
-    const outputLen = resultView.getBigUint64(24, true);
+    // Read result structure using Bun's read API
+    // EvmResult layout:
+    // - success: bool (1 byte, aligned to 8)
+    // - gas_left: u64 (8 bytes)
+    // - output: [*]const u8 (8 bytes pointer)
+    // - output_len: usize (8 bytes)
+    // - error_message: [*:0]const u8 (8 bytes pointer)
+    const success = read.u8(resultPtr, 0) !== 0;
+    const gasLeft = read.u64(resultPtr, 8);
+    const outputPtr = read.ptr(resultPtr, 16);
+    const outputLen = Number(read.u64(resultPtr, 24));
     
     // Copy output data
     let output = new Uint8Array(0);
-    if (outputLen > 0n && outputPtr !== 0n) {
-      output = new Uint8Array(Number(outputLen));
-      // Note: In real implementation, we'd need to properly read from the pointer
-      // This is simplified for the example
+    if (outputLen > 0 && outputPtr) {
+      output = new Uint8Array(outputLen);
+      // Read bytes from the output pointer
+      for (let i = 0; i < outputLen; i++) {
+        output[i] = read.u8(outputPtr, i);
+      }
     }
     
-    // Free output buffer if allocated
-    if (outputLen > 0n && outputPtr !== 0n) {
-      lib.symbols.guillotine_free_output(Number(outputPtr), Number(outputLen));
+    // Get error message if failed
+    let error: string | undefined;
+    if (!success) {
+      const errorPtr = read.ptr(resultPtr, 32);
+      if (errorPtr) {
+        error = new CString(errorPtr).toString();
+      }
     }
+    
+    // Free the result structure (which also frees the output buffer)
+    lib.symbols.guillotine_free_result(resultPtr);
     
     return {
       success,
       gasLeft,
       output,
-      error: success ? undefined : lib.symbols.guillotine_get_last_error(),
+      error,
     };
   }
 
   simulate(params: CallParams): EvmResult {
-    // Similar to call but uses guillotine_simulate
-    // Implementation would be nearly identical to call()
-    return this.call(params); // Simplified for now
+    // Create call params structure
+    const paramsBuffer = new ArrayBuffer(104);
+    const paramsView = new DataView(paramsBuffer);
+    
+    // Set caller (20 bytes at offset 0)
+    const callerBytes = addressToBytes(params.caller);
+    new Uint8Array(paramsBuffer, 0, 20).set(callerBytes);
+    
+    // Set to (20 bytes at offset 20)
+    const toBytes = addressToBytes(params.to);
+    new Uint8Array(paramsBuffer, 20, 20).set(toBytes);
+    
+    // Set value (32 bytes at offset 40)
+    const valueBytes = u256ToBytes(params.value);
+    new Uint8Array(paramsBuffer, 40, 32).set(valueBytes);
+    
+    // Set input pointer and length (at offset 72)
+    const inputPtr = params.input.length > 0 ? ptr(params.input) : 0;
+    paramsView.setBigUint64(72, BigInt(inputPtr), true);
+    paramsView.setBigUint64(80, BigInt(params.input.length), true);
+    
+    // Set gas (at offset 88)
+    paramsView.setBigUint64(88, params.gas, true);
+    
+    // Set call type (at offset 96)
+    paramsView.setUint8(96, params.callType);
+    
+    // Call the EVM simulate function
+    const resultPtr = lib.symbols.guillotine_simulate(this.handle, ptr(paramsBuffer));
+    if (!resultPtr) {
+      const error = lib.symbols.guillotine_get_last_error();
+      throw new Error(`Simulate failed: ${error}`);
+    }
+    
+    // Read result structure
+    const success = read.u8(resultPtr, 0) !== 0;
+    const gasLeft = read.u64(resultPtr, 8);
+    const outputPtr = read.ptr(resultPtr, 16);
+    const outputLen = Number(read.u64(resultPtr, 24));
+    
+    // Copy output data
+    let output = new Uint8Array(0);
+    if (outputLen > 0 && outputPtr) {
+      output = new Uint8Array(outputLen);
+      for (let i = 0; i < outputLen; i++) {
+        output[i] = read.u8(outputPtr, i);
+      }
+    }
+    
+    // Get error message if failed
+    let error: string | undefined;
+    if (!success) {
+      const errorPtr = read.ptr(resultPtr, 32);
+      if (errorPtr) {
+        error = new CString(errorPtr).toString();
+      }
+    }
+    
+    // Free the result structure
+    lib.symbols.guillotine_free_result(resultPtr);
+    
+    return {
+      success,
+      gasLeft,
+      output,
+      error,
+    };
   }
 }
 
