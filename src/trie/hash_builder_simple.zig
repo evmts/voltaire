@@ -30,8 +30,8 @@ pub const HashBuilder = struct {
     pub fn init(allocator: Allocator) HashBuilder {
         return HashBuilder{
             .allocator = allocator,
-            .keys = std.ArrayList([]u8).init(allocator),
-            .values = std.ArrayList([]u8).init(allocator),
+            .keys = .empty,
+            .values = .empty,
             .root_hash = null,
             .nodes = FakeNodes.init(allocator),
         };
@@ -45,8 +45,8 @@ pub const HashBuilder = struct {
         for (self.values.items) |value| {
             self.allocator.free(value);
         }
-        self.keys.deinit();
-        self.values.deinit();
+        self.keys.deinit(self.allocator);
+        self.values.deinit(self.allocator);
     }
 
     pub fn reset(self: *HashBuilder) void {
@@ -82,8 +82,8 @@ pub const HashBuilder = struct {
         const value_copy = try self.allocator.dupe(u8, value);
         errdefer self.allocator.free(value_copy);
 
-        try self.keys.append(key_copy);
-        try self.values.append(value_copy);
+        try self.keys.append(self.allocator, key_copy);
+        try self.values.append(self.allocator, value_copy);
         self.update_root_hash();
     }
 

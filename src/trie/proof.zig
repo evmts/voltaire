@@ -59,7 +59,7 @@ pub const ProofNodes = struct {
 
     /// Convert to a list of RLP-encoded nodes for external use
     pub fn to_node_list(self: *const ProofNodes, allocator: Allocator) ![]const []const u8 {
-        var node_list = std.ArrayList([]const u8).init(allocator);
+        var node_list = std.array_list.AlignedManaged([]const u8, null).init(allocator);
         errdefer {
             for (node_list.items) |item| {
                 allocator.free(item);

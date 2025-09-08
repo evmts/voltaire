@@ -9,6 +9,7 @@ const HashValue = trie.HashValue;
 /// More memory-efficient branch node implementation with compact storage
 /// This is a performance enhancement from the Alloy implementation
 pub const CompactBranchNode = struct {
+    allocator: Allocator,
     /// Mask indicating which child positions have values
     children_mask: TrieMask = TrieMask.init(),
     /// Mask indicating which child positions have "tree" nodes (vs direct values)
@@ -22,17 +23,18 @@ pub const CompactBranchNode = struct {
 
     pub fn init(allocator: Allocator) CompactBranchNode {
         return CompactBranchNode{
-            .children = std.ArrayList(HashValue).init(allocator),
+            .allocator = allocator,
+            .children = .empty,
         };
     }
 
     pub fn deinit(self: *CompactBranchNode) void {
         for (self.children.items) |value| {
-            value.deinit(self.children.allocator);
+            value.deinit(self.allocator);
         }
-        self.children.deinit();
+        self.children.deinit(self.allocator);
         if (self.value) |value| {
-            value.deinit(self.children.allocator);
+            value.deinit(self.allocator);
         }
     }
 
@@ -51,7 +53,7 @@ pub const CompactBranchNode = struct {
             }
 
             // Free the old value
-            self.children.items[idx].deinit(self.children.allocator);
+            self.children.items[idx].deinit(self.allocator);
 
             // Replace with the new value
             self.children.items[idx] = value;
@@ -66,7 +68,7 @@ pub const CompactBranchNode = struct {
             }
 
             // Insert at the correct position
-            try self.children.insert(count, value);
+            try self.children.insert(self.allocator, count, value);
 
             // Update the mask
             self.children_mask.set(index);
@@ -114,7 +116,7 @@ pub const CompactBranchNode = struct {
         }
 
         // Free the value
-        self.children.items[count].deinit(self.children.allocator);
+        self.children.items[count].deinit(self.allocator);
 
         // Remove from the array
         _ = self.children.orderedRemove(count);
@@ -179,7 +181,7 @@ pub const CompactBranchNode = struct {
 
     /// RLP encode the branch node
     pub fn encode(self: *const CompactBranchNode, allocator: Allocator) ![]u8 {
-        var encoded_children = std.ArrayList([]u8).init(allocator);
+        var encoded_children = std.array_list.AlignedManaged([]u8, null).init(allocator);
         defer {
             for (encoded_children.items) |item| {
                 allocator.free(item);

@@ -160,7 +160,7 @@ pub const BranchNode = struct {
     }
 
     pub fn encode(self: BranchNode, allocator: Allocator) ![]u8 {
-        var encoded_children = std.ArrayList([]u8).init(allocator);
+        var encoded_children = std.array_list.AlignedManaged([]u8, null).init(allocator);
         defer {
             for (encoded_children.items) |item| {
                 allocator.free(item);
@@ -228,7 +228,7 @@ pub const ExtensionNode = struct {
     }
 
     pub fn encode(self: ExtensionNode, allocator: Allocator) ![]u8 {
-        var items = std.ArrayList([]u8).init(allocator);
+        var items = std.array_list.AlignedManaged([]u8, null).init(allocator);
         defer {
             for (items.items) |item| {
                 allocator.free(item);
@@ -271,7 +271,7 @@ pub const LeafNode = struct {
     }
 
     pub fn encode(self: LeafNode, allocator: Allocator) ![]u8 {
-        var items = std.ArrayList([]u8).init(allocator);
+        var items = std.array_list.AlignedManaged([]u8, null).init(allocator);
         defer {
             for (items.items) |item| {
                 allocator.free(item);
