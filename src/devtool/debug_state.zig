@@ -240,7 +240,7 @@ pub fn formatBytesHex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
 
 /// Serialize stack contents to hex string array
 pub fn serializeStack(allocator: std.mem.Allocator, stack: *const Stack) ![][]const u8 {
-    var stack_array = std.ArrayList([]const u8).init(allocator);
+    var stack_array = std.array_list.AlignedManaged([]const u8, null).init(allocator);
     defer stack_array.deinit();
 
     // Get stack items (top to bottom for debugging visibility)
@@ -271,13 +271,13 @@ pub fn serializeMemory(allocator: std.mem.Allocator, memory: *const Memory) ![]u
 
 /// Create empty EVM state JSON for initial state
 pub fn createEmptyEvmStateJson(allocator: std.mem.Allocator) !EvmStateJson {
-    var empty_stack = std.ArrayList([]const u8).init(allocator);
-    defer empty_stack.deinit(std.testing.allocator);
+    var empty_stack = std.array_list.AlignedManaged([]const u8, null).init(allocator);
+    defer empty_stack.deinit();
 
-    var empty_storage = std.ArrayList(StorageEntry).init(allocator);
+    var empty_storage = std.array_list.AlignedManaged(StorageEntry, null).init(allocator);
     defer empty_storage.deinit();
 
-    var empty_logs = std.ArrayList([]const u8).init(allocator);
+    var empty_logs = std.array_list.AlignedManaged([]const u8, null).init(allocator);
     defer empty_logs.deinit();
 
     return EvmStateJson{
