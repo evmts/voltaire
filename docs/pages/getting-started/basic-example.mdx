@@ -1,410 +1,71 @@
 ---
 title: Basic Example
-description: Complete example of executing a smart contract with Guillotine
+description: "End-to-end example: load code, call with calldata, inspect results"
 ---
 
 # Basic Example
 
-This example demonstrates executing a simple ERC-20 token transfer using Guillotine.
+This example shows how to deploy simple code, send calldata, and interpret the result.
 
 :::info[What you'll learn]
-- Setting up transaction context
-- Executing contract calls
-- Handling state changes
-- Error handling
-- Gas management
+- Initialize EVM with context
+- Install code and attach it to an account
+- Build calldata and call
+- Inspect success, output, and gas
 :::
 
-## Complete Example
-
-Here's a full example that simulates an ERC-20 transfer:
-
-:::code-group
-
-```zig [main.zig]
+```zig filename="src/main.zig"
 const std = @import("std");
-const guillotine = @import("guillotine");
-const primitives = @import("primitives");
+const g = @import("guillotine");
 
 pub fn main() !void {
-    // Setup allocator with arena for efficient memory management
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    
-    var arena = guillotine.GrowingArenaAllocator.init(
-        gpa.allocator(),
-        32 * 1024,  // 32KB initial capacity
-        150,        // 50% growth factor
-    );
-    defer arena.deinit();
-    
-    // Initialize EVM with production-ready settings
-    const config = guillotine.EvmConfig{
-        .eips = .{ .hardfork = .CANCUN },
-        .enable_precompiles = true,
-        .enable_fusion = true,
-    };
-    const Evm = guillotine.Evm(config);
-    
-    var evm = try Evm.init(arena.allocator());
+    const allocator = gpa.allocator();
+
+    // State and context
+    var db = g.Database.init(allocator);
+    defer db.deinit();
+
+    var block = g.BlockInfo.init();
+    const tx = g.TransactionContext{ .gas_limit = 2_000_000, .coinbase = g.Primitives.ZERO_ADDRESS, .chain_id = 1 };
+    const origin = g.Primitives.ZERO_ADDRESS;
+
+    // EVM
+    const config = g.EvmConfig{};
+    const Evm = g.Evm(config);
+    var evm = try Evm.init(allocator, &db, block, tx, 0, origin, config.eips.hardfork);
     defer evm.deinit();
-    
-    // Set up accounts
-    const sender = primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7");
-    const receiver = primitives.Address.fromHex("0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed");
-    const token_contract = primitives.Address.fromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-    
-    // Initialize database with account balances
-    var database = try guillotine.MemoryDatabase.init(arena.allocator());
-    try database.set_account(sender, .{
-        .balance = 1000000000000000000, // 1 ETH
-        .nonce = 0,
-    });
-    
-    // ERC-20 transfer bytecode
-    // transfer(address to, uint256 amount)
-    const transfer_bytecode = try buildTransferBytecode(
-        receiver,
-        1000000, // 1 USDC (6 decimals)
-    );
-    
-    // Set transaction context
-    evm.setTransactionContext(.{
-        .origin = sender,
-        .gas_price = 20_000_000_000, // 20 gwei
-        .block_number = 18_000_000,
-        .timestamp = 1700000000,
-        .gas_limit = 100_000,
-        .chain_id = 1, // Mainnet
-        .base_fee = 15_000_000_000,
-    });
-    
-    // Execute the transfer
-    const result = try evm.call(.{
-        .caller = sender,
-        .target = token_contract,
-        .value = 0, // No ETH sent
-        .data = transfer_bytecode,
-        .gas = 50_000,
-        .is_static = false,
-    });
-    
-    // Handle result
-    switch (result) {
-        .success => |data| {
-            std.debug.print("✅ Transfer successful!\n", .{});
-            std.debug.print("   Gas used: {}\n", .{evm.getGasUsed()});
-            std.debug.print("   Return data: {x}\n", .{data});
-        },
-        .revert => |reason| {
-            std.debug.print("❌ Transfer reverted: {s}\n", .{reason});
-        },
-    }
-}
 
-fn buildTransferBytecode(to: primitives.Address, amount: u256) ![]u8 {
-    var bytecode = std.ArrayList(u8).init(allocator);
-    
-    // Function selector for transfer(address,uint256)
-    try bytecode.appendSlice(&[_]u8{ 0xa9, 0x05, 0x9c, 0xbb });
-    
-    // Encode address (32 bytes, padded)
-    try bytecode.appendSlice(&[_]u8{0} ** 12);
-    try bytecode.appendSlice(&to.bytes);
-    
-    // Encode amount (32 bytes)
-    var amount_bytes: [32]u8 = undefined;
-    std.mem.writeInt(u256, &amount_bytes, amount, .big);
-    try bytecode.appendSlice(&amount_bytes);
-    
-    return bytecode.toOwnedSlice();
-}
-```
+    // Deploy tiny program that echoes first 32 bytes of input
+    const code = [_]u8{ 0x36, 0x60, 0x20, 0x10, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3 };
+    const code_hash = try db.set_code(&code);
+    const contract = g.Primitives.Address.from_u256(0xBEE);
+    var acc = g.Account.zero();
+    acc.code_hash = code_hash;
+    try db.set_account(contract.bytes, acc);
 
-```c [main.c]
-#include <stdio.h>
-#include <string.h>
-#include "guillotine.h"
+    // Build calldata (32-byte big-endian value 123)
+    var buf: [32]u8 = .{0} ** 32;
+    std.mem.writeInt(u256, &buf, 123, .big);
 
-int main() {
-    // Initialize EVM
-    guillotine_config_t config = {
-        .hardfork = GUILLOTINE_HARDFORK_CANCUN,
-        .enable_precompiles = true,
-        .enable_fusion = true,
-        .gas_limit = 100000,
-    };
-    
-    guillotine_evm_t* evm = guillotine_evm_create_with_config(&config);
-    
-    // Set up addresses
-    uint8_t sender[20] = {0x74, 0x2d, 0x35, 0xCc, /* ... */};
-    uint8_t receiver[20] = {0x5a, 0xAe, 0xb6, 0x05, /* ... */};
-    uint8_t token[20] = {0xA0, 0xb8, 0x69, 0x91, /* ... */};
-    
-    // Build transfer call data
-    uint8_t calldata[68];
-    
-    // transfer(address,uint256) selector
-    calldata[0] = 0xa9;
-    calldata[1] = 0x05;
-    calldata[2] = 0x9c;
-    calldata[3] = 0xbb;
-    
-    // Encode recipient address (padded to 32 bytes)
-    memset(&calldata[4], 0, 12);
-    memcpy(&calldata[16], receiver, 20);
-    
-    // Encode amount (1 USDC = 1000000)
-    memset(&calldata[36], 0, 32);
-    calldata[67] = 0x0F;
-    calldata[66] = 0x42;
-    calldata[65] = 0x40;
-    
-    // Set transaction context
-    guillotine_tx_context_t ctx = {
-        .origin = sender,
-        .gas_price = 20000000000ULL,
-        .block_number = 18000000,
-        .timestamp = 1700000000,
-        .gas_limit = 100000,
-        .chain_id = 1,
-    };
-    guillotine_set_tx_context(evm, &ctx);
-    
-    // Execute call
-    guillotine_call_params_t params = {
-        .caller = sender,
-        .target = token,
-        .value = 0,
-        .data = calldata,
-        .data_len = sizeof(calldata),
-        .gas = 50000,
-        .is_static = false,
-    };
-    
-    guillotine_result_t result;
-    int status = guillotine_call(evm, &params, &result);
-    
-    // Handle result
-    if (status == GUILLOTINE_SUCCESS) {
-        printf("✅ Transfer successful!\n");
-        printf("   Gas used: %llu\n", result.gas_used);
-    } else if (status == GUILLOTINE_REVERT) {
-        printf("❌ Transfer reverted: %s\n", result.revert_reason);
+    // Call
+    const CallParams = Evm.CallParams;
+    const params = CallParams{ .call = .{ .caller = origin, .to = contract, .value = 0, .input = &buf, .gas = 200_000 } };
+    const result = evm.call(params);
+
+    if (result.success and result.output.len >= 32) {
+        const value = std.mem.readInt(u256, result.output[0..32], .big);
+        const used = params.getGas() -| result.gas_left;
+        std.debug.print("ok value={} gas_used={}\n", .{ value, used });
     } else {
-        printf("❌ Error: %s\n", guillotine_error_string(status));
+        std.debug.print("failed gas_left={} bytes={}\n", .{ result.gas_left, result.output.len });
     }
-    
-    // Cleanup
-    guillotine_evm_destroy(evm);
-    return 0;
 }
 ```
 
-:::
+### Notes
 
-## Step-by-Step Breakdown
-
-::::steps
-### Initialize the EVM
-
-Set up memory management and create an EVM instance:
-
-```zig
-// Use arena allocator for efficient memory management
-var arena = guillotine.GrowingArenaAllocator.init(
-    allocator,
-    32 * 1024,  // Start with 32KB
-    150,        // Grow by 50% when needed
-);
-
-// Create EVM with specific configuration
-const Evm = guillotine.Evm(.{
-    .eips = .{ .hardfork = .CANCUN },
-    .enable_precompiles = true,
-});
-```
-
-### Set Up State
-
-Initialize accounts and balances:
-
-```zig
-var database = try guillotine.MemoryDatabase.init(allocator);
-
-// Create sender account with ETH
-try database.set_account(sender, .{
-    .balance = 1_000_000_000_000_000_000, // 1 ETH
-    .nonce = 0,
-});
-
-// Deploy token contract (simplified)
-try database.set_code(token_contract, token_bytecode);
-```
-
-### Prepare Transaction
-
-Build the call data for the ERC-20 transfer:
-
-```zig
-// transfer(address,uint256) = 0xa9059cbb
-const selector = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
-
-// Encode parameters (address + amount)
-const calldata = selector ++ encode_address(receiver) ++ encode_uint256(amount);
-```
-
-### Execute
-
-Run the transaction:
-
-```zig
-const result = try evm.call(.{
-    .caller = sender,
-    .target = token_contract,
-    .value = 0,
-    .data = calldata,
-    .gas = 50_000,
-});
-```
-
-### Handle Results
-
-Process success or failure:
-
-```zig
-switch (result) {
-    .success => {
-        // Transaction succeeded
-        const gas_used = evm.getGasUsed();
-    },
-    .revert => |reason| {
-        // Transaction reverted with reason
-    },
-}
-```
-::::
-
-## Key Concepts
-
-### Memory Management
-
-Guillotine uses arena allocation for efficiency:
-
-| Strategy | Benefits |
-|----------|----------|
-| **Arena Allocator** | All memory freed at once after transaction |
-| **Pre-allocation** | Reduces allocation overhead |
-| **Growth Factor** | Controlled memory expansion |
-
-### Gas Management
-
-```zig
-// Set gas limit for transaction
-const gas_limit = 100_000;
-
-// Check gas consumption
-const gas_used = evm.getGasUsed();
-const gas_remaining = evm.getGasLeft();
-
-// Gas costs are automatically calculated
-// - 21,000 base transaction cost
-// - Additional for data and operations
-```
-
-### Error Handling
-
-```zig
-// Comprehensive error handling
-const result = evm.execute(bytecode) catch |err| switch (err) {
-    error.OutOfGas => handleOutOfGas(),
-    error.InvalidOpcode => handleInvalidOpcode(),
-    error.StackUnderflow => handleStackError(),
-    error.StaticCallViolation => handleStaticViolation(),
-    else => return err,
-};
-```
-
-## Common Patterns
-
-### Contract Deployment
-
-```zig
-// Deploy a new contract
-const init_code = contract_bytecode ++ constructor_args;
-
-const address = try evm.create(.{
-    .caller = deployer,
-    .value = 0,
-    .data = init_code,
-    .gas = 1_000_000,
-});
-```
-
-### Reading State
-
-```zig
-// Read storage value
-const value = try evm.getStorage(contract_address, storage_key);
-
-// Get account balance
-const balance = try evm.getBalance(account_address);
-
-// Check contract code
-const code = try evm.getCode(contract_address);
-```
-
-### Batch Operations
-
-```zig
-// Execute multiple operations efficiently
-var batch = std.ArrayList(Operation).init(allocator);
-
-try batch.append(.{ .transfer = .{ .to = addr1, .value = 100 } });
-try batch.append(.{ .call = .{ .target = contract, .data = data } });
-
-for (batch.items) |op| {
-    try evm.execute_operation(op);
-}
-```
-
-## Testing Your Code
-
-```zig
-test "ERC-20 transfer" {
-    // ... setup code ...
-    
-    const initial_balance = try getBalance(sender);
-    
-    // Execute transfer
-    try executeTransfer(sender, receiver, amount);
-    
-    const final_balance = try getBalance(sender);
-    
-    // Verify state changes
-    try testing.expect(final_balance < initial_balance);
-}
-```
-
-## Performance Tips
-
-:::tip[Optimization]
-1. **Pre-allocate memory** - Set initial arena size based on expected usage
-2. **Reuse EVM instances** - Reset instead of recreating
-3. **Batch operations** - Group related calls
-4. **Enable fusion** - Allows opcode optimization
-:::
-
-## Next Steps
-
-Now that you understand the basics:
-
-- **[Basic Execution](/usage/basic-execution)** - Deep dive into execution modes
-- **[Configuration](/usage/configuration)** - Customize for your use case
-- **[Error Handling](/usage/error-handling)** - Robust error management
-- **[C API](/advanced/bindings/c-api)** - Using Guillotine from C
-
-## Full Source
-
-The complete example is available in the [GitHub repository](https://github.com/williamcory/Guillotine/tree/main/examples/erc20-transfer).
+- Examples use the in-memory `Database` provided by Guillotine
+- For real-world usage, hydrate state from your own source of truth
+- Use `simulate` to preview effects and gas without committing changes
