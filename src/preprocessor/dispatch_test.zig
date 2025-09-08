@@ -993,6 +993,70 @@ test "Dispatch - calculateFirstBlockGas helper function" {
     }
 }
 
+test "JumpTable dispatch pointers reference provided schedule buffer" {
+    const allocator = testing.allocator;
+    const handlers = createTestHandlers();
+
+    // Bytecode with a single JUMPDEST
+    const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+    var bytecode = try Bytecode.init(allocator, &[_]u8{ @intFromEnum(Opcode.JUMPDEST) });
+    defer bytecode.deinit();
+
+    // Build initial schedule
+    const sched1 = try TestDispatch.init(allocator, &bytecode, &handlers);
+    defer allocator.free(sched1);
+
+    // Build jump table from schedule 1
+    const jt1 = try TestDispatch.createJumpTable(allocator, sched1, &bytecode);
+    defer allocator.free(jt1.entries);
+    try testing.expect(jt1.entries.len == 1);
+
+    // Expect the first entry to point into sched1 at index 0
+    const expected_ptr1 = sched1.ptr; // JUMPDEST is first (index 0)
+    try testing.expect(@intFromPtr(jt1.entries[0].dispatch.cursor) == @intFromPtr(expected_ptr1));
+
+    // Create a second schedule buffer at a (likely) different address
+    var sched2 = try allocator.alloc(TestDispatch.Item, sched1.len);
+    defer allocator.free(sched2);
+    for (sched1, 0..) |it, i| sched2[i] = it; // Copy items
+
+    // Build jump table from schedule 2
+    const jt2 = try TestDispatch.createJumpTable(allocator, sched2, &bytecode);
+    defer allocator.free(jt2.entries);
+    try testing.expect(jt2.entries.len == 1);
+
+    // Pointer should now point into sched2
+    const expected_ptr2 = sched2.ptr;
+    try testing.expect(@intFromPtr(jt2.entries[0].dispatch.cursor) == @intFromPtr(expected_ptr2));
+}
+
+test "Aligned bytes can be safely reinterpreted as schedule" {
+    const allocator = testing.allocator;
+    const handlers = createTestHandlers();
+
+    // Small bytecode to produce a short schedule
+    const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
+    var bytecode = try Bytecode.init(allocator, &[_]u8{ @intFromEnum(Opcode.STOP) });
+    defer bytecode.deinit();
+
+    const sched = try TestDispatch.init(allocator, &bytecode, &handlers);
+    defer allocator.free(sched);
+
+    // Slice as bytes, allocate an aligned u8 buffer, copy, then reinterpret
+    const bytes = std.mem.sliceAsBytes(sched);
+    const item_alignment: std.mem.Alignment = @as(std.mem.Alignment, @enumFromInt(std.math.log2_int(usize, @alignOf(TestDispatch.Item))));
+    const buf = try allocator.alignedAlloc(u8, item_alignment, bytes.len);
+    defer allocator.free(buf);
+    @memcpy(buf, bytes);
+
+    // Reinterpret aligned bytes as typed schedule
+    const typed: []const TestDispatch.Item = @as([*]const TestDispatch.Item, @ptrCast(@alignCast(buf.ptr)))[0 .. buf.len / @sizeOf(TestDispatch.Item)];
+
+    // Basic sanity: lengths match and pointer is aligned
+    try testing.expect(typed.len == sched.len);
+    try testing.expect(@intFromPtr(typed.ptr) % @alignOf(TestDispatch.Item) == 0);
+}
+
 test "Dispatch - RAII DispatchSchedule for automatic cleanup" {
     const allocator = testing.allocator;
     const handlers = createTestHandlers();

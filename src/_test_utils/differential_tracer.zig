@@ -295,19 +295,14 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
                 ));
             }
 
-            // TODO: Re-enable gas comparison once gas pricing is fixed
-            // Currently disabled to focus on functional correctness
-            // The issue is that MSTORE gas calculation differs - REVM charges 12 gas
-            // (3 base + 9 memory expansion) while Guillotine charges only 9 gas
-            // 
-            // // Compare gas usage (both now have gas_left)
-            // if (revm_res.gas_left != guillotine_result.gas_left) {
-            //     try errors.append(allocator, try std.fmt.allocPrint(
-            //         allocator,
-            //         "GAS MISMATCH: REVM gas_left={}, Guillotine gas_left={}",
-            //         .{ revm_res.gas_left, guillotine_result.gas_left },
-            //     ));
-            // }
+            // Compare gas usage (both now have gas_left)
+            if (revm_res.gas_left != guillotine_result.gas_left) {
+                try errors.append(allocator, try std.fmt.allocPrint(
+                    allocator,
+                    "GAS MISMATCH: REVM gas_left={}, Guillotine gas_left={}",
+                    .{ revm_res.gas_left, guillotine_result.gas_left },
+                ));
+            }
 
             // Compare output
             if (!std.mem.eql(u8, revm_res.output, guillotine_result.output)) {
