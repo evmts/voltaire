@@ -62,21 +62,21 @@ pub fn addWasmSizeReportStep(
     wasm_files: []const []const u8,
     dependencies: []const *std.Build.Step,
 ) *std.Build.Step.Run {
-    var cmd = std.ArrayList([]const u8){};
-    cmd.append(b.allocator, "sh") catch @panic("OOM");
-    cmd.append(b.allocator, "-c") catch @panic("OOM");
+    var cmd = std.ArrayList([]const u8).init(b.allocator);
+    cmd.append("sh") catch @panic("OOM");
+    cmd.append("-c") catch @panic("OOM");
     
-    var script = std.ArrayList(u8){};
-    script.appendSlice(b.allocator, "echo '\\n=== WASM Bundle Size Report ===' && ") catch @panic("OOM");
+    var script = std.ArrayList(u8).init(b.allocator);
+    script.appendSlice("echo '\\n=== WASM Bundle Size Report ===' && ") catch @panic("OOM");
     
     for (wasm_files) |file| {
         const name = std.fs.path.stem(file);
-        script.writer(b.allocator).print("echo '{s} WASM build:' && ", .{name}) catch @panic("OOM");
-        script.writer(b.allocator).print("ls -lh zig-out/bin/{s} | awk '{{print \"  Size: \" $5}}' && ", .{file}) catch @panic("OOM");
+        script.writer().print("echo '{s} WASM build:' && ", .{name}) catch @panic("OOM");
+        script.writer().print("ls -lh zig-out/bin/{s} | awk '{{print \"  Size: \" $5}}' && ", .{file}) catch @panic("OOM");
     }
     
-    script.appendSlice(b.allocator, "echo '=== End Report ===\\n'") catch @panic("OOM");
-    cmd.append(b.allocator, script.items) catch @panic("OOM");
+    script.appendSlice("echo '=== End Report ===\\n'") catch @panic("OOM");
+    cmd.append(script.items) catch @panic("OOM");
     
     const size_step = b.addSystemCommand(cmd.items);
     for (dependencies) |dep| {

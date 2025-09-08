@@ -29,9 +29,7 @@ pub const GenerateAssetsStep = struct {
         var file = try std.fs.cwd().createFile(self.out_path, .{});
         defer file.close();
 
-        var buffer: [4096]u8 = undefined;
-        var file_writer = file.writer(&buffer);
-        const writer = &file_writer.interface;
+        const writer = file.writer();
 
         try writer.writeAll("// This file is auto-generated. Do not edit manually.\n");
         try writer.writeAll("const std = @import(\"std\");\n\n");
@@ -116,7 +114,7 @@ pub const GenerateAssetsStep = struct {
         try writer.writeAll("    return not_found_asset;\n");
         try writer.writeAll("}\n");
         
-        try writer.flush();
+        // File writer auto-flushes on close
     }
 
     fn get_mime_type(filename: []const u8) []const u8 {
