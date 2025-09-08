@@ -200,44 +200,44 @@ pub fn EvmBuilder(comptime config: EvmConfig) type {
         
         /// Set the hardfork
         pub fn with_hardfork(self: Self, hardfork: Hardfork) Self {
-            var new = self;
-            new.hardfork = hardfork;
-            return new;
+            var result = self;
+            result.hardfork = hardfork;
+            return result;
         }
         
         /// Set block information
         pub fn with_block(self: Self, block_info: BlockInfo) Self {
-            var new = self;
-            new.block_info = block_info;
-            return new;
+            var result = self;
+            result.block_info = block_info;
+            return result;
         }
         
         /// Set transaction context
         pub fn with_tx_context(self: Self, context: TransactionContext) Self {
-            var new = self;
-            new.tx_context = context;
-            return new;
+            var result = self;
+            result.tx_context = context;
+            return result;
         }
         
         /// Set gas price
         pub fn with_gas_price(self: Self, price: u256) Self {
-            var new = self;
-            new.gas_price = price;
-            return new;
+            var result = self;
+            result.gas_price = price;
+            return result;
         }
         
         /// Set transaction origin
         pub fn with_origin(self: Self, origin: primitives.Address) Self {
-            var new = self;
-            new.origin = origin;
-            return new;
+            var result = self;
+            result.origin = origin;
+            return result;
         }
         
         /// Set inspector for tracing
         pub fn with_inspector(self: Self, inspector: Inspector) Self {
-            var new = self;
-            new.inspector = inspector;
-            return new;
+            var result = self;
+            result.inspector = inspector;
+            return result;
         }
         
         /// Build the EVM instance
@@ -479,102 +479,21 @@ pub const NoOpInspector = struct {
     fn log(_: *anyopaque, _: primitives.Address, _: []const u256, _: []const u8) void {}
 };
 
-// Tests
-test "Result type" {
-    const ok_result = Result(i32, []const u8){ .ok = 42 };
-    try std.testing.expect(ok_result.is_ok());
-    try std.testing.expect(!ok_result.is_err());
-    try std.testing.expectEqual(@as(i32, 42), ok_result.unwrap());
-    
-    const err_result = Result(i32, []const u8){ .err = "error" };
-    try std.testing.expect(!err_result.is_ok());
-    try std.testing.expect(err_result.is_err());
-    try std.testing.expectEqualStrings("error", err_result.unwrap_err());
-}
-
-test "EvmBuilder pattern" {
+// Basic smoke tests - comprehensive tests are in rust_api_tests.zig
+test "rust_api basic smoke test" {
     var db = Database.init(std.testing.allocator);
     defer db.deinit();
-    
-    const builder = EvmBuilder(EvmConfig{})
-        .new(std.testing.allocator, &db)
-        .with_hardfork(.BERLIN)
-        .with_gas_price(1000000000)
-        .with_origin(primitives.ZERO_ADDRESS);
-    
-    const evm = try builder.build();
-    defer evm.deinit();
-    
-    try std.testing.expectEqual(Hardfork.BERLIN, evm.evm.hardfork_config);
-    try std.testing.expectEqual(@as(u256, 1000000000), evm.evm.gas_price);
-}
-
-test "Transaction execution" {
-    var db = Database.init(std.testing.allocator);
-    defer db.deinit();
-    
-    // Set up a test account with balance
-    const from_addr = primitives.Address.fromHex("0x1000000000000000000000000000000000000001") catch unreachable;
-    try db.set_account(from_addr.bytes, Account{
-        .balance = 1000000000000000000,
-        .nonce = 0,
-        .code_hash = [_]u8{0} ** 32,
-        .storage_root = [_]u8{0} ** 32,
-    });
-    
-    const evm = try EvmBuilder(EvmConfig{})
-        .new(std.testing.allocator, &db)
-        .build_mainnet();
-    defer evm.deinit();
-    
-    const tx = Transaction{
-        .from = from_addr,
-        .to = primitives.ZERO_ADDRESS,
-        .value = 1000,
-        .data = &.{},
-        .gas_limit = 21000,
-        .gas_price = 1000000000,
-        .nonce = 0,
-    };
-    
-    const result = evm.transact(tx);
-    try std.testing.expect(result.is_ok());
-}
-
-test "Simulate transaction" {
-    var db = Database.init(std.testing.allocator);
-    defer db.deinit();
-    
-    // Set up test account
-    const from_addr = primitives.Address.fromHex("0x1000000000000000000000000000000000000001") catch unreachable;
-    try db.set_account(from_addr.bytes, Account{
-        .balance = 1000000000000000000,
-        .nonce = 0,
-        .code_hash = [_]u8{0} ** 32,
-        .storage_root = [_]u8{0} ** 32,
-    });
     
     const evm = try EvmBuilder(EvmConfig{})
         .new(std.testing.allocator, &db)
         .build();
     defer evm.deinit();
     
-    const tx = Transaction{
-        .from = from_addr,
-        .to = primitives.ZERO_ADDRESS,
-        .value = 1000,
-        .data = &.{},
-        .gas_limit = 21000,
-        .gas_price = 1000000000,
-        .nonce = 0,
-    };
-    
-    // Simulate should not modify state
-    const result = evm.simulate(tx);
-    try std.testing.expect(result.is_ok());
-    
-    // Check that balance wasn't changed
-    const account = evm.get_account(from_addr);
-    try std.testing.expect(account != null);
-    try std.testing.expectEqual(@as(u256, 1000000000000000000), account.?.balance);
+    // Just verify the API compiles and initializes
+    try std.testing.expect(evm.evm.depth == 0);
+}
+
+// Import comprehensive tests
+test {
+    _ = @import("rust_api_tests.zig");
 }
