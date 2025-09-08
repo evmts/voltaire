@@ -29,7 +29,7 @@ pub inline fn addWithCarry(a: u64, b: u64, carry: u8) struct { sum: u64, carry: 
             : [a] "0" (a),
               [b] "r" (b),
               [carry] "r" (carry),
-            : .{ .cc = true });
+            : "cc");
         return .{ .sum = sum, .carry = new_carry };
     } else {
         // Fallback implementation
