@@ -1,413 +1,402 @@
 import Foundation
-import GuillotineC
-import GuillotinePrimitives
+import GuillotineFFI
 
-/// High-performance Ethereum Virtual Machine execution engine
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-public actor GuillotineEVM {
-    private var vmPtr: OpaquePointer?
-    private var isInitialized: Bool = false
+/// Ethereum address type (20 bytes)
+public struct Address: Equatable, Hashable {
+    public let bytes: Data
     
-    /// Initialize the EVM instance using lazy initialization pattern
-    public init() throws {
-        // LAZY INITIALIZATION: Ensure C library is initialized only when needed
-        try GuillotineLazyInit.shared.ensureInitialized()
-        
-        guard let vm = guillotine_vm_create() else {
-            throw ExecutionError.internalError("Failed to create VM instance")
+    public init?(hex: String) {
+        var cleanHex = hex
+        if cleanHex.hasPrefix("0x") || cleanHex.hasPrefix("0X") {
+            cleanHex = String(cleanHex.dropFirst(2))
         }
         
-        self.vmPtr = vm
-        self.isInitialized = true
+        guard cleanHex.count == 40,
+              let data = Data(hexString: cleanHex),
+              data.count == 20 else {
+            return nil
+        }
+        
+        self.bytes = data
+    }
+    
+    public init(bytes: Data) {
+        precondition(bytes.count == 20, "Address must be exactly 20 bytes")
+        self.bytes = bytes
+    }
+    
+    public var hexString: String {
+        "0x" + bytes.map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+/// 256-bit unsigned integer type
+public struct U256: Equatable {
+    public let data: Data
+    
+    public init(_ value: UInt64) {
+        var data = Data(repeating: 0, count: 32)
+        var temp = value
+        for i in (24..<32).reversed() {
+            data[i] = UInt8(temp & 0xFF)
+            temp >>= 8
+        }
+        self.data = data
+    }
+    
+    public init(data: Data) {
+        precondition(data.count <= 32, "U256 cannot exceed 32 bytes")
+        if data.count < 32 {
+            var padded = Data(repeating: 0, count: 32 - data.count)
+            padded.append(data)
+            self.data = padded
+        } else {
+            self.data = data
+        }
+    }
+    
+    public static let zero = U256(0)
+}
+
+/// Block information for EVM execution context
+public struct BlockInfo {
+    public let number: UInt64
+    public let timestamp: UInt64
+    public let gasLimit: UInt64
+    public let coinbase: Address
+    public let baseFee: UInt64
+    public let chainId: UInt64
+    public let difficulty: UInt64
+    public let prevRandao: Data
+    
+    public init(
+        number: UInt64,
+        timestamp: UInt64,
+        gasLimit: UInt64,
+        coinbase: Address,
+        baseFee: UInt64,
+        chainId: UInt64,
+        difficulty: UInt64 = 0,
+        prevRandao: Data = Data(repeating: 0, count: 32)
+    ) {
+        self.number = number
+        self.timestamp = timestamp
+        self.gasLimit = gasLimit
+        self.coinbase = coinbase
+        self.baseFee = baseFee
+        self.chainId = chainId
+        self.difficulty = difficulty
+        self.prevRandao = prevRandao.count == 32 ? prevRandao : Data(repeating: 0, count: 32)
+    }
+}
+
+/// Call type enumeration
+public enum CallType: UInt8 {
+    case call = 0
+    case delegateCall = 1
+    case staticCall = 2
+    case create = 3
+    case create2 = 4
+}
+
+/// Parameters for EVM call execution
+public struct CallParameters {
+    public let caller: Address
+    public let to: Address
+    public let value: U256
+    public let input: Data
+    public let gas: UInt64
+    public let callType: CallType
+    public let salt: U256?
+    
+    public init(
+        caller: Address,
+        to: Address,
+        value: U256 = .zero,
+        input: Data = Data(),
+        gas: UInt64,
+        callType: CallType = .call,
+        salt: U256? = nil
+    ) {
+        self.caller = caller
+        self.to = to
+        self.value = value
+        self.input = input
+        self.gas = gas
+        self.callType = callType
+        self.salt = salt
+    }
+}
+
+/// Result of EVM execution
+public struct ExecutionResult {
+    public let success: Bool
+    public let gasLeft: UInt64
+    public let output: Data
+    public let error: String?
+    
+    public var gasUsed: UInt64 {
+        // This would need the initial gas to calculate properly
+        return 0
+    }
+}
+
+/// Main EVM class for interacting with Guillotine
+public class GuillotineEVM {
+    private let handle: EvmHandle
+    private let blockInfo: BlockInfo
+    
+    /// Global initialization (call once per process)
+    public static func initialize() {
+        guillotine_init()
+    }
+    
+    /// Global cleanup (call once per process at exit)
+    public static func cleanup() {
+        guillotine_cleanup()
+    }
+    
+    /// Create a new EVM instance with the given block information
+    public init(blockInfo: BlockInfo) throws {
+        // Ensure FFI is initialized
+        Self.initialize()
+        
+        self.blockInfo = blockInfo
+        
+        // Create BlockInfoFFI structure
+        var blockInfoFFI = BlockInfoFFI()
+        blockInfoFFI.number = blockInfo.number
+        blockInfoFFI.timestamp = blockInfo.timestamp
+        blockInfoFFI.gas_limit = blockInfo.gasLimit
+        blockInfoFFI.base_fee = blockInfo.baseFee
+        blockInfoFFI.chain_id = blockInfo.chainId
+        blockInfoFFI.difficulty = blockInfo.difficulty
+        
+        // Copy address and prevRandao bytes
+        blockInfo.coinbase.bytes.withUnsafeBytes { bytes in
+            memcpy(&blockInfoFFI.coinbase, bytes.baseAddress!, 20)
+        }
+        blockInfo.prevRandao.withUnsafeBytes { bytes in
+            memcpy(&blockInfoFFI.prev_randao, bytes.baseAddress!, 32)
+        }
+        
+        guard let handle = guillotine_evm_create(&blockInfoFFI) else {
+            let error = String(cString: guillotine_get_last_error())
+            throw EVMError.initializationFailed(error)
+        }
+        
+        self.handle = handle
     }
     
     deinit {
-        if let vmPtr = vmPtr {
-            guillotine_vm_destroy(vmPtr)
-        }
-        if isInitialized {
-            guillotine_deinit()
+        guillotine_evm_destroy(handle)
+    }
+    
+    /// Set the balance of an account
+    public func setBalance(address: Address, balance: U256) throws {
+        var addressBytes = [UInt8](repeating: 0, count: 20)
+        address.bytes.copyBytes(to: &addressBytes, count: 20)
+        
+        var balanceBytes = [UInt8](repeating: 0, count: 32)
+        balance.data.copyBytes(to: &balanceBytes, count: 32)
+        
+        let success = guillotine_set_balance(handle, addressBytes, balanceBytes)
+        if !success {
+            let error = String(cString: guillotine_get_last_error())
+            throw EVMError.operationFailed(error)
         }
     }
     
-    /// Execute bytecode with simple parameters
-    public func execute(
-        bytecode: Bytes,
-        gasLimit: UInt64 = 1_000_000
-    ) async throws -> ExecutionResult {
-        guard let vmPtr = vmPtr else {
-            throw ExecutionError.internalError("VM not initialized")
+    /// Set the code for a contract
+    public func setCode(address: Address, code: Data) throws {
+        var addressBytes = [UInt8](repeating: 0, count: 20)
+        address.bytes.copyBytes(to: &addressBytes, count: 20)
+        
+        let success = code.withUnsafeBytes { codeBytes in
+            guillotine_set_code(handle, addressBytes, codeBytes.bindMemory(to: UInt8.self).baseAddress!, code.count)
         }
         
-        return try await executeInternal(
-            bytecode: bytecode,
-            caller: .zero,
-            to: .zero,
-            value: .zero,
-            input: .empty,
-            gasLimit: gasLimit,
-            vm: vmPtr
-        )
-    }
-    
-    /// Execute a contract call
-    public func call(
-        to address: Address,
-        input: Bytes = .empty,
-        value: U256 = .zero,
-        from: Address = .zero,
-        gasLimit: UInt64 = 1_000_000,
-        context: ExecutionContext = .default
-    ) async throws -> CallResult {
-        guard let vmPtr = vmPtr else {
-            throw ExecutionError.internalError("VM not initialized")
-        }
-        
-        // Get the contract code first
-        let vm = vmPtr
-        
-        // For now, we'll execute using the provided parameters
-        // In a full implementation, we'd retrieve the code from state
-        let executionResult = try await executeCallInternal(
-            to: address,
-            input: input,
-            value: value,
-            from: from,
-            gasLimit: gasLimit,
-            vm: vm
-        )
-        
-        return CallResult(
-            success: executionResult.success,
-            gasUsed: executionResult.gasUsed,
-            returnData: executionResult.returnData,
-            logs: [], // TODO: Extract logs from execution
-            revertReason: executionResult.revertReason,
-            error: executionResult.error
-        )
-    }
-    
-    /// Deploy a new contract
-    public func deploy(
-        bytecode: Bytes,
-        constructor: Bytes = .empty,
-        value: U256 = .zero,
-        from: Address = .zero,
-        gasLimit: UInt64 = 1_000_000,
-        context: ExecutionContext = .default
-    ) async throws -> DeploymentResult {
-        guard let vmPtr = vmPtr else {
-            throw ExecutionError.internalError("VM not initialized")
-        }
-        
-        // Combine bytecode and constructor data
-        var deploymentCode = bytecode
-        if !constructor.isEmpty {
-            deploymentCode.append(constructor)
-        }
-        
-        // Generate contract address (simplified - should use proper CREATE address calculation)
-        let contractAddress = Address.contractAddress(from: from, nonce: 0)
-        
-        let executionResult = try await executeInternal(
-            bytecode: deploymentCode,
-            caller: from,
-            to: contractAddress,
-            value: value,
-            input: .empty,
-            gasLimit: gasLimit,
-            vm: vmPtr
-        )
-        
-        return DeploymentResult(
-            success: executionResult.success,
-            gasUsed: executionResult.gasUsed,
-            contractAddress: executionResult.success ? contractAddress : nil,
-            logs: [], // TODO: Extract logs
-            revertReason: executionResult.revertReason,
-            error: executionResult.error
-        )
-    }
-    
-    /// Static call (read-only)
-    public func staticCall(
-        to address: Address,
-        input: Bytes = .empty,
-        from: Address = .zero,
-        gasLimit: UInt64 = 1_000_000,
-        context: ExecutionContext = .default
-    ) async throws -> CallResult {
-        // For static calls, we ensure no state changes occur
-        return try await call(
-            to: address,
-            input: input,
-            value: .zero, // Static calls cannot transfer value
-            from: from,
-            gasLimit: gasLimit,
-            context: context
-        )
-    }
-    
-    /// Execute a full transaction
-    public func executeTransaction(
-        _ transaction: Transaction
-    ) async throws -> TransactionResult {
-        if transaction.isContractCreation {
-            let deployResult = try await deploy(
-                bytecode: transaction.input,
-                value: transaction.value,
-                from: transaction.from,
-                gasLimit: transaction.gasLimit
-            )
-            
-            return TransactionResult(
-                success: deployResult.success,
-                gasUsed: deployResult.gasUsed,
-                returnData: .empty,
-                logs: deployResult.logs,
-                contractAddress: deployResult.contractAddress,
-                revertReason: deployResult.revertReason,
-                error: deployResult.error,
-                stateChanges: []
-            )
-        } else {
-            guard let to = transaction.to else {
-                throw ExecutionError.invalidTransaction("Transaction missing 'to' address")
-            }
-            
-            let callResult = try await call(
-                to: to,
-                input: transaction.input,
-                value: transaction.value,
-                from: transaction.from,
-                gasLimit: transaction.gasLimit
-            )
-            
-            return TransactionResult(
-                success: callResult.success,
-                gasUsed: callResult.gasUsed,
-                returnData: callResult.returnData,
-                logs: callResult.logs,
-                contractAddress: nil,
-                revertReason: callResult.revertReason,
-                error: callResult.error,
-                stateChanges: []
-            )
+        if !success {
+            let error = String(cString: guillotine_get_last_error())
+            throw EVMError.operationFailed(error)
         }
     }
     
-    /// Set account balance
-    public func setBalance(_ address: Address, balance: U256) async throws {
-        guard let vmPtr = vmPtr else {
-            throw ExecutionError.internalError("VM not initialized")
-        }
+    /// Execute a call
+    public func call(_ params: CallParameters) throws -> ExecutionResult {
+        var callParams = CallParams()
         
-        let vm = vmPtr
-        var cAddress = address.toCAddress()
-        var cBalance = balance.toCU256()
+        // Copy caller address
+        params.caller.bytes.copyBytes(to: &callParams.caller, count: 20)
         
-        let success = guillotine_set_balance(vm, &cAddress, &cBalance)
-        guard success else {
-            throw ExecutionError.internalError("Failed to set balance")
-        }
-    }
-    
-    /// Set contract code
-    public func setCode(_ address: Address, code: Bytes) async throws {
-        guard let vmPtr = vmPtr else {
-            throw ExecutionError.internalError("VM not initialized")
-        }
+        // Copy to address
+        params.to.bytes.copyBytes(to: &callParams.to, count: 20)
         
-        let vm = vmPtr
-        var cAddress = address.toCAddress()
-        let codeBytes = code.bytes
+        // Copy value
+        params.value.data.copyBytes(to: &callParams.value, count: 32)
         
-        let success = codeBytes.withUnsafeBufferPointer { codePtr in
-            guillotine_set_code(vm, &cAddress, codePtr.baseAddress, codeBytes.count)
-        }
-        
-        guard success else {
-            throw ExecutionError.internalError("Failed to set code")
-        }
-    }
-    
-    /// Get Guillotine version (safe to call without initialization)
-    public static var version: String {
-        return GuillotineLazyInit.shared.version
-    }
-    
-    /// Check if EVM is initialized
-    public static var isInitialized: Bool {
-        return GuillotineLazyInit.shared.isInitialized
-    }
-}
-
-// MARK: - Internal Implementation
-
-@available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-extension GuillotineEVM {
-    
-    private func executeInternal(
-        bytecode: Bytes,
-        caller: Address,
-        to: Address,
-        value: U256,
-        input: Bytes,
-        gasLimit: UInt64,
-        vm: OpaquePointer
-    ) async throws -> ExecutionResult {
-        let vmPtr = vm
-        
-        // Convert Swift types to C types
-        var cCaller = caller.toCAddress()
-        var cTo = to.toCAddress()
-        var cValue = value.toCU256()
-        
-        // Set the bytecode in the VM
-        let bytecodeBytes = bytecode.bytes
-        let success = bytecodeBytes.withUnsafeBufferPointer { bytecodePtr in
-            guillotine_set_code(vmPtr, &cTo, bytecodePtr.baseAddress, bytecodeBytes.count)
-        }
-        
-        guard success else {
-            throw ExecutionError.internalError("Failed to set bytecode")
-        }
-        
-        // Execute the bytecode
-        let inputBytes = input.bytes
-        let result = inputBytes.withUnsafeBufferPointer { inputPtr in
-            guillotine_vm_execute(
-                vmPtr,
-                &cCaller,
-                &cTo,
-                &cValue,
-                inputPtr.baseAddress,
-                inputBytes.count,
-                gasLimit
-            )
-        }
-        
-        // Convert result
-        let returnData: Bytes
-        if result.output != nil && result.output_len > 0 {
-            let data = Data(bytes: result.output, count: result.output_len)
-            returnData = Bytes(data)
-        } else {
-            returnData = .empty
-        }
-        
-        let revertReason: String?
-        let error: ExecutionError?
-        
-        if result.success {
-            revertReason = nil
-            error = nil
-        } else if let errorPtr = result.error_message {
-            let errorMsg = String(cString: errorPtr)
-            if errorMsg.hasPrefix("revert") {
-                revertReason = errorMsg
-                error = nil
-            } else {
-                revertReason = nil
-                error = ExecutionError.internalError(errorMsg)
+        // Set input data
+        callParams.input_len = params.input.count
+        if params.input.count > 0 {
+            callParams.input = params.input.withUnsafeBytes { bytes in
+                bytes.bindMemory(to: UInt8.self).baseAddress!
             }
         } else {
-            revertReason = nil
-            error = ExecutionError.internalError("Unknown execution failure")
+            callParams.input = nil
         }
         
-        return ExecutionResult(
-            success: result.success,
-            gasUsed: result.gas_used,
-            returnData: returnData,
-            revertReason: revertReason,
-            error: error
-        )
-    }
-    
-    private func executeCallInternal(
-        to address: Address,
-        input: Bytes,
-        value: U256,
-        from: Address,
-        gasLimit: UInt64,
-        vm: OpaquePointer
-    ) async throws -> ExecutionResult {
-        // Convert Swift types to C types
-        var cCaller = from.toCAddress()
-        var cTo = address.toCAddress()
-        var cValue = value.toCU256()
+        // Set gas and call type
+        callParams.gas = params.gas
+        callParams.call_type = params.callType.rawValue
+        
+        // Set salt for CREATE2
+        if let salt = params.salt {
+            salt.data.copyBytes(to: &callParams.salt, count: 32)
+        }
         
         // Execute the call
-        let inputBytes = input.bytes
-        let result = inputBytes.withUnsafeBufferPointer { inputPtr in
-            guillotine_vm_execute(
-                vm,
-                &cCaller,
-                &cTo,
-                &cValue,
-                inputPtr.baseAddress,
-                inputBytes.count,
-                gasLimit
-            )
+        guard let resultPtr = guillotine_call(handle, &callParams) else {
+            let error = String(cString: guillotine_get_last_error())
+            throw EVMError.callFailed(error)
         }
         
-        // Convert result (same logic as executeInternal)
-        let returnData: Bytes
-        if result.output != nil && result.output_len > 0 {
-            let data = Data(bytes: result.output, count: result.output_len)
-            returnData = Bytes(data)
-        } else {
-            returnData = .empty
+        defer {
+            guillotine_free_result(resultPtr)
         }
         
-        let revertReason: String?
-        let error: ExecutionError?
+        // Extract result data
+        let result = resultPtr.pointee
+        let success = result.success
+        let gasLeft = result.gas_left
         
-        if result.success {
-            revertReason = nil
-            error = nil
-        } else if let errorPtr = result.error_message {
-            let errorMsg = String(cString: errorPtr)
-            if errorMsg.hasPrefix("revert") {
-                revertReason = errorMsg
-                error = nil
-            } else {
-                revertReason = nil
-                error = ExecutionError.internalError(errorMsg)
-            }
-        } else {
-            revertReason = nil
-            error = ExecutionError.internalError("Unknown execution failure")
+        var outputData = Data()
+        if result.output_len > 0 && result.output != nil {
+            outputData = Data(bytes: result.output, count: result.output_len)
+        }
+        
+        var errorMessage: String? = nil
+        if !success && result.error_message != nil {
+            errorMessage = String(cString: result.error_message)
         }
         
         return ExecutionResult(
-            success: result.success,
-            gasUsed: result.gas_used,
-            returnData: returnData,
-            revertReason: revertReason,
-            error: error
+            success: success,
+            gasLeft: gasLeft,
+            output: outputData,
+            error: errorMessage
+        )
+    }
+    
+    /// Simulate a call (doesn't commit state changes)
+    public func simulate(_ params: CallParameters) throws -> ExecutionResult {
+        var callParams = CallParams()
+        
+        // Copy caller address
+        params.caller.bytes.copyBytes(to: &callParams.caller, count: 20)
+        
+        // Copy to address
+        params.to.bytes.copyBytes(to: &callParams.to, count: 20)
+        
+        // Copy value
+        params.value.data.copyBytes(to: &callParams.value, count: 32)
+        
+        // Set input data
+        callParams.input_len = params.input.count
+        if params.input.count > 0 {
+            callParams.input = params.input.withUnsafeBytes { bytes in
+                bytes.bindMemory(to: UInt8.self).baseAddress!
+            }
+        } else {
+            callParams.input = nil
+        }
+        
+        // Set gas and call type
+        callParams.gas = params.gas
+        callParams.call_type = params.callType.rawValue
+        
+        // Set salt for CREATE2
+        if let salt = params.salt {
+            salt.data.copyBytes(to: &callParams.salt, count: 32)
+        }
+        
+        // Execute the simulation
+        guard let resultPtr = guillotine_simulate(handle, &callParams) else {
+            let error = String(cString: guillotine_get_last_error())
+            throw EVMError.simulationFailed(error)
+        }
+        
+        defer {
+            guillotine_free_result(resultPtr)
+        }
+        
+        // Extract result data
+        let result = resultPtr.pointee
+        let success = result.success
+        let gasLeft = result.gas_left
+        
+        var outputData = Data()
+        if result.output_len > 0 && result.output != nil {
+            outputData = Data(bytes: result.output, count: result.output_len)
+        }
+        
+        var errorMessage: String? = nil
+        if !success && result.error_message != nil {
+            errorMessage = String(cString: result.error_message)
+        }
+        
+        return ExecutionResult(
+            success: success,
+            gasLeft: gasLeft,
+            output: outputData,
+            error: errorMessage
         )
     }
 }
 
-// MARK: - Error Mapping
+/// EVM errors
+public enum EVMError: Error, LocalizedError {
+    case initializationFailed(String)
+    case operationFailed(String)
+    case callFailed(String)
+    case simulationFailed(String)
+    case invalidAddress
+    case invalidData
+    
+    public var errorDescription: String? {
+        switch self {
+        case .initializationFailed(let message):
+            return "EVM initialization failed: \(message)"
+        case .operationFailed(let message):
+            return "Operation failed: \(message)"
+        case .callFailed(let message):
+            return "Call failed: \(message)"
+        case .simulationFailed(let message):
+            return "Simulation failed: \(message)"
+        case .invalidAddress:
+            return "Invalid address format"
+        case .invalidData:
+            return "Invalid data format"
+        }
+    }
+}
 
-private func mapCErrorToExecutionError(_ errorCode: Int32) -> ExecutionError {
-    switch errorCode {
-    case Int32(GUILLOTINE_ERROR_MEMORY.rawValue):
-        return .outOfMemory
-    case Int32(GUILLOTINE_ERROR_INVALID_PARAM.rawValue):
-        return .invalidTransaction("Invalid parameter")
-    case Int32(GUILLOTINE_ERROR_VM_NOT_INITIALIZED.rawValue):
-        return .internalError("VM not initialized")
-    case Int32(GUILLOTINE_ERROR_EXECUTION_FAILED.rawValue):
-        return .internalError("Execution failed")
-    case Int32(GUILLOTINE_ERROR_INVALID_ADDRESS.rawValue):
-        return .invalidTransaction("Invalid address")
-    case Int32(GUILLOTINE_ERROR_INVALID_BYTECODE.rawValue):
-        return .invalidTransaction("Invalid bytecode")
-    default:
-        return .internalError("Unknown error code: \(errorCode)")
+// MARK: - Helper Extensions
+
+extension Data {
+    init?(hexString: String) {
+        let len = hexString.count / 2
+        var data = Data(capacity: len)
+        var index = hexString.startIndex
+        
+        for _ in 0..<len {
+            let nextIndex = hexString.index(index, offsetBy: 2)
+            guard let byte = UInt8(hexString[index..<nextIndex], radix: 16) else {
+                return nil
+            }
+            data.append(byte)
+            index = nextIndex
+        }
+        
+        self = data
     }
 }

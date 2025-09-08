@@ -1,0 +1,5 @@
+module GuillotineFFI {
+    header "guillotine_ffi.h"
+    link "guillotine_ffi"
+    export *
+}

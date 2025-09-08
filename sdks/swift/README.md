@@ -1,178 +1,194 @@
-# GuillotineEVM Swift Bindings
+# Guillotine EVM Swift SDK
 
-> Experimental/PoC: This SDK is a vibecoded proof-of-concept. APIs are unstable and may change. We’re looking for early users to try it and tell us what APIs you want — please open an issue or ping us on Telegram.
+Swift bindings for the Guillotine EVM implementation.
 
-## Status
+## Requirements
 
-- Maturity: Experimental proof‑of‑concept
-- API stability: Unstable; breaking changes expected
-- Feedback: https://github.com/evmts/Guillotine/issues or Telegram https://t.me/+ANThR9bHDLAwMjUx
+- Swift 5.9+
+- macOS 12.0+ / iOS 15.0+
+- Guillotine shared library built (`libguillotine_ffi.dylib`)
 
-Swift bindings for the Guillotine EVM, providing a comprehensive, performant, and developer-friendly interface to the Ethereum Virtual Machine.
+## Building the Shared Library
 
-## Features
+Before using the Swift SDK, you need to build the Guillotine shared library:
 
-- **Complete EVM Implementation**: Full Ethereum Virtual Machine with gas accounting, state management, and precompiles
-- **Swift-First Design**: Leverages Swift's type system, async/await, and error handling
-- **Cross-Platform**: Supports macOS, iOS, watchOS, and tvOS
-- **High Performance**: Direct C interop with the native Zig implementation
-- **Memory Safe**: Automatic resource management using Swift's ARC
-- **Comprehensive Testing**: Full test suite with XCTest
+```bash
+cd ../..  # Navigate to Guillotine root
+zig build
+```
+
+This will create `libguillotine_ffi.dylib` in `zig-out/lib/`.
 
 ## Installation
 
 ### Swift Package Manager
 
-Add the following to your `Package.swift` file:
+Add this package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(path: "../guillotine-swift")
+    .package(path: "path/to/Guillotine/sdks/swift")
 ]
 ```
 
-Or add it through Xcode by going to File → Add Package Dependencies and entering the path to this directory.
+## Usage
 
-## Quick Start
+### Basic Example
 
 ```swift
 import GuillotineEVM
-import GuillotinePrimitives
+
+// Create block context
+let coinbase = Address(hex: "0x0000000000000000000000000000000000000000")!
+let blockInfo = BlockInfo(
+    number: 1,
+    timestamp: 1000,
+    gasLimit: 30_000_000,
+    coinbase: coinbase,
+    baseFee: 1_000_000_000,
+    chainId: 1
+)
 
 // Create EVM instance
-let evm = try EVM()
+let evm = try GuillotineEVM(blockInfo: blockInfo)
 
-// Execute bytecode
-let bytecode = Bytes([0x60, 0x42]) // PUSH1 0x42
-let result = try await evm.execute(bytecode: bytecode)
+// Set up an account with balance
+let account = Address(hex: "0x0000000000000000000000000000000000000010")!
+let balance = U256(1_000_000_000_000_000_000) // 1 ETH
+try evm.setBalance(address: account, balance: balance)
 
-print("Execution successful: \(result.isSuccess)")
-print("Gas used: \(result.gasUsed)")
+// Deploy a contract
+let contractAddress = Address(hex: "0x0000000000000000000000000000000000000020")!
+let bytecode = Data([
+    0x60, 0x2a,  // PUSH1 42
+    0x60, 0x00,  // PUSH1 0
+    0x52,        // MSTORE
+    0x60, 0x20,  // PUSH1 32
+    0x60, 0x00,  // PUSH1 0
+    0xf3         // RETURN
+])
+try evm.setCode(address: contractAddress, code: bytecode)
+
+// Call the contract
+let params = CallParameters(
+    caller: account,
+    to: contractAddress,
+    value: .zero,
+    input: Data(),
+    gas: 100_000,
+    callType: .call
+)
+
+let result = try evm.call(params)
+print("Success: \(result.success)")
+print("Gas left: \(result.gasLeft)")
+print("Output: \(result.output.map { String(format: "%02x", $0) }.joined())")
 ```
 
-## Core Types
-
-### Primitives
-
-- **`Address`**: 20-byte Ethereum address with hex string support
-- **`U256`**: 256-bit unsigned integer with arithmetic operations
-- **`Hash`**: 32-byte hash value for blockchain data
-- **`Bytes`**: Variable-length byte arrays with hex encoding
-
-### EVM Execution
-
-- **`EVM`**: Main execution engine with async/await support
-- **`ExecutionResult`**: Comprehensive execution results with gas usage and return data
-- **`GuillotineError`**: Typed error handling for all EVM operations
-
-## Examples
-
-### Working with Addresses
+### Address Handling
 
 ```swift
 // Create from hex string
-let address: Address = "0x1234567890123456789012345678901234567890"
+let addr1 = Address(hex: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb9")
+let addr2 = Address(hex: "742d35Cc6634C0532925a3b844Bc9e7595f0bEb9") // Without 0x prefix
 
-// Create zero address
-let zero = Address.zero
+// Create from data
+let data = Data(repeating: 0, count: 20)
+let addr3 = Address(bytes: data)
 
-// Convert to/from bytes
-let bytes = address.rawBytes
-let fromBytes = try Address(bytes)
+// Get hex representation
+print(addr1?.hexString) // "0x742d35cc6634c0532925a3b844bc9e7595f0beb9"
 ```
 
 ### Working with U256
 
 ```swift
-// Create from integer
-let value = U256(12345)
+// Create from UInt64
+let value1 = U256(42)
+let value2 = U256(1_000_000_000_000_000_000) // 1 ETH in wei
 
-// Create from hex
-let bigValue = try U256(hex: "0x1fffffffffffffffffffffffffffffffffffff")
-
-// Arithmetic operations
-let sum = try value.adding(U256(100))
-let difference = try bigValue.subtracting(U256(1))
+// Zero value
+let zero = U256.zero
 ```
 
-### EVM State Management
+### Call Types
 
 ```swift
-let evm = try EVM()
+// Regular call
+let call = CallParameters(
+    caller: caller,
+    to: contract,
+    value: U256(1000),
+    input: Data(),
+    gas: 100_000,
+    callType: .call
+)
 
-// Set account balance
-let address: Address = "0x1234567890123456789012345678901234567890"
-try evm.setBalance(address, balance: U256(1000))
+// Delegate call
+let delegateCall = CallParameters(
+    caller: caller,
+    to: contract,
+    value: .zero,
+    input: Data(),
+    gas: 100_000,
+    callType: .delegateCall
+)
 
-// Deploy contract code
-let contractCode = Bytes([0x60, 0x80, 0x60, 0x40, 0x52])
-try evm.setCode(address, code: contractCode)
-
-// Execute with parameters
-let result = try await evm.execute(
-    bytecode: contractCode,
-    caller: Address.zero,
-    to: address,
-    value: U256(100),
-    input: Bytes([0x01, 0x02, 0x03]),
-    gasLimit: 1_000_000
+// Static call (read-only)
+let staticCall = CallParameters(
+    caller: caller,
+    to: contract,
+    value: .zero,
+    input: Data(),
+    gas: 100_000,
+    callType: .staticCall
 )
 ```
 
-## Architecture
+### Simulation
 
-The Swift bindings follow a three-layer architecture:
+Simulate calls without modifying state:
 
-1. **GuillotineC**: C interop layer that bridges to the native Zig implementation
-2. **GuillotinePrimitives**: Core Ethereum types with Swift-native APIs
-3. **GuillotineEVM**: High-level EVM execution engine with async support
-
-### Thread Safety
-
-All types are marked as `Sendable` and the EVM class uses internal locking to ensure thread safety. You can safely use EVM instances across multiple tasks and actors.
-
-### Memory Management
-
-The Swift bindings use automatic reference counting (ARC) for memory management. The native Zig resources are automatically cleaned up when Swift objects are deallocated.
-
-## Platform Support
-
-- **macOS 13.0+**
-- **iOS 16.0+**
-- **watchOS 9.0+**
-- **tvOS 16.0+**
+```swift
+let result = try evm.simulate(params)
+// State is not modified
+```
 
 ## Testing
 
-Run the test suite:
+Run tests with:
 
 ```bash
 swift test
 ```
 
-Or from Xcode, press Cmd+U to run all tests.
+Make sure the shared library is built before running tests.
+
+## Important Notes
+
+1. **Addresses 0x01-0x09 are reserved for precompiled contracts** - avoid using these for regular contracts
+2. The EVM instance is automatically cleaned up when deallocated
+3. All operations that modify state should use proper error handling
+4. The library must be initialized before use (handled automatically by GuillotineEVM)
 
 ## Error Handling
 
-The Swift bindings use typed error handling:
+All EVM operations can throw errors:
 
 ```swift
 do {
-    let result = try await evm.execute(bytecode: bytecode)
-    // Handle successful execution
-} catch GuillotineError.executionFailed {
-    // Handle execution failure
-} catch GuillotineError.invalidBytecode {
-    // Handle invalid bytecode
+    let evm = try GuillotineEVM(blockInfo: blockInfo)
+    try evm.setBalance(address: account, balance: balance)
+    let result = try evm.call(params)
+} catch EVMError.initializationFailed(let message) {
+    print("Failed to initialize: \(message)")
+} catch EVMError.callFailed(let message) {
+    print("Call failed: \(message)")
 } catch {
-    // Handle other errors
+    print("Unexpected error: \(error)")
 }
 ```
 
-## Performance
-
-The Swift bindings provide zero-cost abstractions over the native Zig implementation. All performance-critical operations are handled by the native code with minimal Swift overhead.
-
 ## License
 
-Same as the main Guillotine project.
+See the main Guillotine repository for license information.
