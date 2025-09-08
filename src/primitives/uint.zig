@@ -16,21 +16,8 @@ pub fn mask(bits: usize) u64 {
 
 // Optimized carry operations using compiler intrinsics when available
 pub inline fn addWithCarry(a: u64, b: u64, carry: u8) struct { sum: u64, carry: u8 } {
-    if (comptime builtin.cpu.arch == .x86_64 and builtin.mode != .Debug) {
-        // Use x86-64 ADCX/ADOX instructions when available
-        var sum: u64 = undefined;
-        var new_carry: u8 = undefined;
-        asm volatile (
-            \\add %[carry], %[carry]  # Set CF from carry
-            \\adc %[b], %[a]          # Add with carry
-            \\setc %[new_carry]       # Extract carry
-            : [a] "=r" (sum),
-              [new_carry] "=r" (new_carry),
-            : [a] "0" (a),
-              [b] "r" (b),
-              [carry] "r" (carry),
-            : "cc");
-        return .{ .sum = sum, .carry = new_carry };
+    if (false) {
+        unreachable; // asm path disabled for Zig 0.15 compatibility
     } else {
         // Fallback implementation
         const sum = a +% b;
@@ -42,21 +29,8 @@ pub inline fn addWithCarry(a: u64, b: u64, carry: u8) struct { sum: u64, carry: 
 }
 
 pub inline fn subWithBorrow(a: u64, b: u64, borrow: u8) struct { diff: u64, borrow: u8 } {
-    if (comptime builtin.cpu.arch == .x86_64 and builtin.mode != .Debug) {
-        // Use x86-64 SBB instruction
-        var diff: u64 = undefined;
-        var new_borrow: u8 = undefined;
-        asm volatile (
-            \\add %[borrow], %[borrow]  # Set CF from borrow
-            \\sbb %[b], %[a]            # Subtract with borrow
-            \\setc %[new_borrow]        # Extract borrow
-            : [a] "=r" (diff),
-              [new_borrow] "=r" (new_borrow),
-            : [a] "0" (a),
-              [b] "r" (b),
-              [borrow] "r" (borrow),
-            : "cc");
-        return .{ .diff = diff, .borrow = new_borrow };
+    if (false) {
+        unreachable; // asm path disabled for Zig 0.15 compatibility
     } else {
         // Fallback implementation
         const diff = a -% b;
