@@ -1,21 +1,22 @@
 ---
 title: Configuration
-description: Configure Guillotine for your needs
+description: Configure Guillotine and initialize the EVM correctly
 ---
 
 # Configuration
 
-Guillotine works out of the box with sensible defaults, but can be customized for specific requirements.
+Guillotine works out of the box with sensible defaults and exposes a small set of compile-time options via `EvmConfig`.
 
 ## Quick Configuration
 
 ### Default Configuration
 
-Zero configuration needed for most use cases:
+The default config targets the latest hardfork and sensible limits:
 
 ```zig
-// Uses latest hardfork (Cancun) with all features enabled
-const Evm = guillotine.Evm(.{});
+const g = @import("guillotine");
+const config = g.EvmConfig{};
+const Evm = g.Evm(config);
 ```
 
 ### Common Configurations
@@ -23,27 +24,18 @@ const Evm = guillotine.Evm(.{});
 :::code-group
 
 ```zig [Production]
-const Evm = guillotine.Evm(.{
-    .eips = .{ .hardfork = .CANCUN },
-    .enable_precompiles = true,
-    .enable_fusion = true,
-});
+const config = g.EvmConfig{ .eips = .{ .hardfork = .CANCUN } };
+const Evm = g.Evm(config);
 ```
 
 ```zig [Testing]
-const Evm = guillotine.Evm(.{
-    .eips = .{ .hardfork = .CANCUN },
-    .enable_precompiles = false, // Simplify testing
-    .max_call_depth = 100,       // Reduce for tests
-});
+const config = g.EvmConfig{ .max_call_depth = 100, .enable_precompiles = false };
+const Evm = g.Evm(config);
 ```
 
 ```zig [Minimal]
-const Evm = guillotine.Evm(.{
-    .enable_precompiles = false,
-    .enable_fusion = false,
-    .stack_size = 256,
-});
+const config = g.EvmConfig{ .enable_precompiles = false, .enable_fusion = false, .stack_size = 256 };
+const Evm = g.Evm(config);
 ```
 
 :::
@@ -55,12 +47,7 @@ const Evm = guillotine.Evm(.{
 Choose the Ethereum hardfork to use:
 
 ```zig
-const Evm = guillotine.Evm(.{
-    .eips = .{ .hardfork = .CANCUN },  // Latest (default)
-    // .hardfork = .SHANGHAI,          // Pre-Cancun
-    // .hardfork = .LONDON,            // EIP-1559
-    // .hardfork = .BERLIN,            // EIP-2929
-});
+const config = g.EvmConfig{ .eips = .{ .hardfork = .CANCUN } }; // default
 ```
 
 | Hardfork | Features | Use Case |
@@ -75,13 +62,7 @@ const Evm = guillotine.Evm(.{
 Enable or disable features:
 
 ```zig
-const Evm = guillotine.Evm(.{
-    // Precompiled contracts (ecrecover, sha256, etc.)
-    .enable_precompiles = true,
-    
-    // Opcode fusion optimization
-    .enable_fusion = true,
-});
+const config = g.EvmConfig{ .enable_precompiles = true, .enable_fusion = true };
 ```
 
 ### Resource Limits
@@ -89,16 +70,11 @@ const Evm = guillotine.Evm(.{
 Set execution limits:
 
 ```zig
-const Evm = guillotine.Evm(.{
-    // Maximum nested call depth
-    .max_call_depth = 1024,      // Default: 1024
-    
-    // Maximum input data size
-    .max_input_size = 131072,    // Default: 128 KB
-    
-    // Block gas limit
-    .block_gas_limit = 30_000_000, // Default: 30M
-});
+const config = g.EvmConfig{
+  .max_call_depth = 1024,
+  .max_input_size = 131072,
+  .block_gas_limit = 30_000_000,
+};
 ```
 
 ## Memory Configuration
@@ -106,21 +82,13 @@ const Evm = guillotine.Evm(.{
 ### Stack Size
 
 ```zig
-const Evm = guillotine.Evm(.{
-    .stack_size = 1024,  // Default: 1024 items
-});
+const config = g.EvmConfig{ .stack_size = 1024 };
 ```
 
 ### Memory Limits
 
 ```zig
-const Evm = guillotine.Evm(.{
-    // Initial allocation
-    .memory_initial_capacity = 4096,    // Default: 4 KB
-    
-    // Maximum memory
-    .memory_limit = 0xFFFFFF,           // Default: ~16 MB
-});
+const config = g.EvmConfig{ .memory_initial_capacity = 4096, .memory_limit = 0xFFFFFF };
 ```
 
 ## Build Modes
@@ -148,95 +116,54 @@ zig build -Doptimize=ReleaseSmall
 | ReleaseFast | ❌ None | ❌ None | ✅ Fastest | ⚠️ Medium | Benchmarking |
 | ReleaseSmall | ❌ None | ❌ None | ✅ Fast | ✅ Smallest | Embedded |
 
-## Database Configuration
+## Initialization (context and state)
 
-### In-Memory Database
-
-Default for testing:
+`Evm.init` requires a database and context values:
 
 ```zig
-var database = try MemoryDatabase.init(allocator);
-evm.setDatabase(&database);
+var db = g.Database.init(allocator);
+defer db.deinit();
+
+var block = g.BlockInfo.init();
+const tx = g.TransactionContext{ .gas_limit = 1_000_000, .coinbase = g.Primitives.ZERO_ADDRESS, .chain_id = 1 };
+const origin = g.Primitives.ZERO_ADDRESS;
+var evm = try Evm.init(allocator, &db, block, tx, /*gas_price=*/0, origin, config.eips.hardfork);
+defer evm.deinit();
 ```
 
-### Custom Database
-
-Implement your own storage:
-
-```zig
-const MyDatabase = struct {
-    // Implement required methods
-    pub fn get_account(self: *MyDatabase, address: Address) ?Account {
-        // Your implementation
-    }
-    
-    pub fn set_storage(self: *MyDatabase, address: Address, key: U256, value: U256) void {
-        // Your implementation
-    }
-};
-
-const Evm = guillotine.Evm(.{
-    .DatabaseType = MyDatabase,
-});
-```
-
-## Tracing Configuration
-
-Enable execution tracing for debugging:
-
-```zig
-// Define a tracer
-const MyTracer = struct {
-    pub fn on_opcode(self: *MyTracer, pc: usize, opcode: u8, gas: u64) void {
-        std.debug.print("PC: {} Op: 0x{x:0>2} Gas: {}\n", .{ pc, opcode, gas });
-    }
-};
-
-// Configure EVM with tracer
-const Evm = guillotine.Evm(.{
-    .TracerType = MyTracer,
-});
-```
+> Note: Some advanced fields (like tracing types) exist in `EvmConfig` for internal modules. External tracing and custom database types are not part of the stable public API yet.
 
 ## Configuration Examples
 
 ### For dApps
 
 ```zig
-const Evm = guillotine.Evm(.{
-    .eips = .{ .hardfork = .CANCUN },
-    .enable_precompiles = true,
-    .enable_fusion = true,
-    .max_input_size = 65536, // 64 KB for smaller calls
-});
+const config = g.EvmConfig{ .eips = .{ .hardfork = .CANCUN }, .enable_precompiles = true, .enable_fusion = true, .max_input_size = 65536 };
+const Evm = g.Evm(config);
 ```
 
 ### For Testing
 
 ```zig
-const Evm = guillotine.Evm(.{
-    .enable_precompiles = false,
-    .max_call_depth = 10,
-    .stack_size = 256,
-    .TracerType = TestTracer,
-});
+const config = g.EvmConfig{ .enable_precompiles = false, .max_call_depth = 10, .stack_size = 256 };
+const Evm = g.Evm(config);
 ```
 
 ### For Embedded Systems
 
 ```zig
-const Evm = guillotine.Evm(.{
-    .stack_size = 256,
-    .memory_initial_capacity = 1024,
-    .memory_limit = 65536,
-    .max_call_depth = 5,
-    .enable_fusion = false,
-});
+const config = g.EvmConfig{ .stack_size = 256, .memory_initial_capacity = 1024, .memory_limit = 65536, .max_call_depth = 5, .enable_fusion = false };
+const Evm = g.Evm(config);
 ```
 
-## Environment Variables
+## Build Modes
 
-Set runtime configuration via environment:
+Choose the right build mode (Guillotine recommendation):
+
+```bash
+zig build -Doptimize=ReleaseSafe   # recommended
+zig build test                     # verify
+```
 
 ```bash
 # Set log level

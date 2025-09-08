@@ -1,49 +1,70 @@
 ---
 title: Basic Execution
-description: Learn how to execute EVM bytecode with Guillotine
+description: Learn how to execute calls and contract creation with Guillotine’s real API
 ---
 
 # Basic Execution
 
-Guillotine provides multiple ways to execute EVM bytecode, from simple standalone execution to complex contract interactions.
+Guillotine executes calls against state stored in a Database. You install bytecode into an account, then invoke it via `call`. Use `simulate` to run without committing state changes.
 
 ## Execution Modes
 
-### Direct Execution
+### Direct Call
 
-The simplest way to execute bytecode:
+Call code stored at an address:
 
 ```zig
-const bytecode = [_]u8{ 0x60, 0x42 }; // PUSH1 66
-const result = try evm.execute(&bytecode);
+// Install code
+const code = [_]u8{ 0x60, 0x2A, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3 };
+const code_hash = try db.set_code(&code);
+const target = g.Primitives.Address.from_u256(0xABCD);
+var account = g.Account.zero();
+account.code_hash = code_hash;
+try db.set_account(target.bytes, account);
+
+// Build params and call
+const CallParams = Evm.CallParams;
+const params = CallParams{ .call = .{
+  .caller = origin,
+  .to = target,
+  .value = 0,
+  .input = &.{},
+  .gas = 200_000,
+} };
+const result = evm.call(params);
 ```
 
-### Contract Calls
+### Calldata Calls
 
-Execute calls to deployed contracts:
+Execute a function by sending calldata:
 
 ```zig
-const result = try evm.call(.{
-    .caller = sender_address,
-    .target = contract_address,
-    .value = 0,
-    .data = calldata,
-    .gas = gas_limit,
-    .is_static = false,
-});
+const input = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ encoded_args; // transfer(address,uint256)
+const params = CallParams{ .call = .{
+  .caller = origin,
+  .to = token,
+  .value = 0,
+  .input = input,
+  .gas = 500_000,
+} };
+const result = evm.call(params);
 ```
 
 ### Contract Creation
 
-Deploy new contracts:
+Create contracts via `create` or `create2` call params:
 
 ```zig
-const address = try evm.create(.{
-    .caller = deployer,
-    .value = initial_value,
-    .data = init_code,
-    .gas = gas_limit,
-});
+const params = CallParams{ .create = .{
+  .caller = deployer,
+  .value = 0,
+  .init_code = init_code,
+  .gas = 1_000_000,
+} };
+const result = evm.call(params);
+if (result.success and result.created_address) |addr| {
+  // addr is the new contract address
+}
 ```
 
 ## Working with Bytecode
@@ -107,25 +128,20 @@ const bytecode = [_]u8{
 };
 ```
 
-## Transaction Context
+## Execution Context
 
-Set up the environment for execution:
+EVM initialization requires explicit block and transaction context:
 
 ```zig
-evm.setTransactionContext(.{
-    // Required fields
-    .origin = tx_origin,           // Transaction originator
-    .gas_price = 20_000_000_000,  // Gas price in wei
-    .block_number = 18_000_000,   // Current block
-    .timestamp = 1700000000,      // Unix timestamp
-    .gas_limit = 3_000_000,       // Block gas limit
-    
-    // Optional fields
-    .chain_id = 1,                // Network ID
-    .difficulty = 0,              // PoW difficulty (deprecated)
-    .base_fee = 15_000_000_000,   // EIP-1559 base fee
-    .blob_base_fee = null,        // EIP-4844 blob fee
-});
+var block = g.BlockInfo.init();
+block.number = 18_000_000;
+block.timestamp = 1_700_000_000;
+const tx = g.TransactionContext{
+  .gas_limit = 3_000_000,
+  .coinbase = g.Primitives.ZERO_ADDRESS,
+  .chain_id = 1,
+};
+var evm = try Evm.init(allocator, &db, block, tx, gas_price, origin, config.eips.hardfork);
 ```
 
 ## Call Types
@@ -135,14 +151,14 @@ evm.setTransactionContext(.{
 Transfer value and execute code:
 
 ```zig
-const result = try evm.call(.{
-    .caller = sender,
-    .target = contract,
-    .value = 1_000_000_000_000_000_000, // 1 ETH
-    .data = calldata,
-    .gas = 100_000,
-    .is_static = false,
-});
+const params = CallParams{ .call = .{
+  .caller = sender,
+  .to = contract,
+  .value = 1_000_000_000_000_000_000, // 1 ETH
+  .input = calldata,
+  .gas = 100_000,
+} };
+const result = evm.call(params);
 ```
 
 ### Static Call
@@ -150,14 +166,13 @@ const result = try evm.call(.{
 Read-only execution (no state changes):
 
 ```zig
-const result = try evm.call(.{
-    .caller = sender,
-    .target = contract,
-    .value = 0, // Cannot send value in static call
-    .data = calldata,
-    .gas = 50_000,
-    .is_static = true, // Enforces read-only
-});
+const params = CallParams{ .staticcall = .{
+  .caller = sender,
+  .to = contract,
+  .input = calldata,
+  .gas = 50_000,
+} };
+const result = evm.call(params);
 ```
 
 ### Delegate Call
@@ -165,57 +180,51 @@ const result = try evm.call(.{
 Execute in caller's context:
 
 ```zig
-const result = try evm.delegatecall(.{
-    .caller = sender,
-    .target = implementation,
-    .data = calldata,
-    .gas = 100_000,
-});
+const params = CallParams{ .delegatecall = .{
+  .caller = sender,
+  .to = implementation,
+  .input = calldata,
+  .gas = 100_000,
+} };
+const result = evm.call(params);
 ```
 
 ## Return Values
 
-### Success Result
+### Success/Failure
 
 ```zig
-switch (result) {
-    .success => |data| {
-        // data contains return bytes
-        const return_value = std.mem.readInt(u256, data[0..32], .big);
-    },
-    .revert => |reason| {
-        // Handle revert with reason
-    },
+if (result.success) {
+  if (result.output.len >= 32) {
+    const v = std.mem.readInt(u256, result.output[0..32], .big);
+  }
+} else {
+  // result.error_info may contain a short diagnostic string
 }
 ```
 
 ### Gas Information
 
 ```zig
-// Get gas metrics
-const gas_used = evm.getGasUsed();
-const gas_left = evm.getGasLeft();
-const gas_refund = evm.getGasRefund();
-
-std.debug.print("Gas used: {}/{}\n", .{ gas_used, gas_limit });
+// Initial gas is from params.getGas(); remaining is in result.gas_left
+const initial = params.getGas();
+const used = if (result.gas_left <= initial) initial - result.gas_left else 0;
 ```
 
 ## State Access
 
-### Reading State
+Interact with state through the Database instance you passed into `Evm.init`:
 
 ```zig
-// Get account information
-const account = try evm.getAccount(address);
-const balance = account.balance;
-const nonce = account.nonce;
+// Account
+const maybe = try db.get_account(address.bytes);
+const balance = try db.get_balance(address.bytes);
 
-// Read storage
-const value = try evm.getStorage(contract, key);
+// Storage
+const slot = try db.get_storage(contract.bytes, key);
 
-// Get code
-const code = try evm.getCode(contract);
-const code_hash = try evm.getCodeHash(contract);
+// Code
+const code = try db.get_code_by_address(contract.bytes);
 ```
 
 ### Modifying State
