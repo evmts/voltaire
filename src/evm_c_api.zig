@@ -2,15 +2,16 @@
 //! Provides FFI-compatible exports for Bun and other language bindings
 
 const std = @import("std");
-const evm = @import("evm.zig");
+const evm = @import("evm");
 const primitives = @import("primitives");
-const Database = @import("storage/database.zig").Database;
-const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo;
-const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
-const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
 
-// Default EVM type for FFI
+// Import types from evm module
 const DefaultEvm = evm.DefaultEvm;
+const Database = evm.Database;
+const BlockInfo = evm.BlockInfo;
+const TransactionContext = evm.TransactionContext;
+const Hardfork = evm.Hardfork;
+const Account = evm.Account;
 
 // Opaque handle for EVM instance
 pub const EvmHandle = opaque {};
@@ -94,14 +95,16 @@ export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle
         .base_fee = block_info_ptr.base_fee,
         .difficulty = block_info_ptr.difficulty,
         .prev_randao = block_info_ptr.prev_randao,
-        .chain_id = block_info_ptr.chain_id,
+        .chain_id = @intCast(block_info_ptr.chain_id),
+        .blob_base_fee = 0,
+        .blob_versioned_hashes = &.{},
     };
 
     // Create transaction context
     const tx_context = TransactionContext{
         .gas_limit = block_info_ptr.gas_limit,
         .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
-        .chain_id = block_info_ptr.chain_id,
+        .chain_id = @intCast(block_info_ptr.chain_id),
         .blob_versioned_hashes = &.{},
         .blob_base_fee = 0,
     };
@@ -158,7 +161,7 @@ export fn guillotine_set_balance(handle: *EvmHandle, address: *const [20]u8, bal
     var account = evm_ptr.database.get_account(address.*) catch {
         setError("Failed to get account", .{});
         return false;
-    } orelse primitives.Account.zero();
+    } orelse Account.zero();
     
     account.balance = balance_value;
     
@@ -186,7 +189,7 @@ export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: 
     var account = evm_ptr.database.get_account(address.*) catch {
         setError("Failed to get account", .{});
         return false;
-    } orelse primitives.Account.zero();
+    } orelse Account.zero();
     
     account.code_hash = code_hash;
     
@@ -206,9 +209,9 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResu
         return EvmResult{
             .success = false,
             .gas_left = 0,
-            .output = null,
+            .output = undefined,
             .output_len = 0,
-            .error_message = &last_error_z,
+            .error_message = @ptrCast(&last_error_z),
         };
     };
     
@@ -267,9 +270,9 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResu
             return EvmResult{
                 .success = false,
                 .gas_left = 0,
-                .output = null,
+                .output = undefined,
                 .output_len = 0,
-                .error_message = &last_error_z,
+                .error_message = @ptrCast(&last_error_z),
             };
         },
     };
@@ -278,7 +281,7 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResu
     const result = evm_ptr.call(call_params);
     
     // Copy output if present (caller must free)
-    var output_ptr: [*]const u8 = null;
+    var output_ptr: [*]const u8 = undefined;
     var output_len: usize = 0;
     if (result.output.len > 0) {
         const output_copy = allocator.alloc(u8, result.output.len) catch {
@@ -286,9 +289,9 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResu
             return EvmResult{
                 .success = false,
                 .gas_left = 0,
-                .output = null,
+                .output = undefined,
                 .output_len = 0,
-                .error_message = &last_error_z,
+                .error_message = @ptrCast(&last_error_z),
             };
         };
         @memcpy(output_copy, result.output);
@@ -301,7 +304,7 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) EvmResu
         .gas_left = result.gas_left,
         .output = output_ptr,
         .output_len = output_len,
-        .error_message = if (result.success) null else &last_error_z,
+        .error_message = if (result.success) undefined else @ptrCast(&last_error_z),
     };
 }
 
@@ -313,7 +316,7 @@ export fn guillotine_free_output(output: [*]u8, len: usize) void {
 
 // Get last error message
 export fn guillotine_get_last_error() [*:0]const u8 {
-    return &last_error_z;
+    return @ptrCast(&last_error_z);
 }
 
 // Simulate a call (doesn't commit state)
@@ -324,9 +327,9 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) Evm
         return EvmResult{
             .success = false,
             .gas_left = 0,
-            .output = null,
+            .output = undefined,
             .output_len = 0,
-            .error_message = &last_error_z,
+            .error_message = @ptrCast(&last_error_z),
         };
     };
     
@@ -352,9 +355,9 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) Evm
             return EvmResult{
                 .success = false,
                 .gas_left = 0,
-                .output = null,
+                .output = undefined,
                 .output_len = 0,
-                .error_message = &last_error_z,
+                .error_message = @ptrCast(&last_error_z),
             };
         },
     };
@@ -363,7 +366,7 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) Evm
     const result = evm_ptr.simulate(call_params);
     
     // Copy output if present
-    var output_ptr: [*]const u8 = null;
+    var output_ptr: [*]const u8 = undefined;
     var output_len: usize = 0;
     if (result.output.len > 0) {
         const output_copy = allocator.alloc(u8, result.output.len) catch {
@@ -371,9 +374,9 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) Evm
             return EvmResult{
                 .success = false,
                 .gas_left = 0,
-                .output = null,
+                .output = undefined,
                 .output_len = 0,
-                .error_message = &last_error_z,
+                .error_message = @ptrCast(&last_error_z),
             };
         };
         @memcpy(output_copy, result.output);
@@ -386,6 +389,6 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) Evm
         .gas_left = result.gas_left,
         .output = output_ptr,
         .output_len = output_len,
-        .error_message = if (result.success) null else &last_error_z,
+        .error_message = if (result.success) undefined else @ptrCast(&last_error_z),
     };
 }

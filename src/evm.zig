@@ -1720,6 +1720,7 @@ test "EVM call() entry point method" {
 
     // Create EVM instance
     const block_info = BlockInfo{
+        .chain_id = 1,
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
