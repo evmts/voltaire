@@ -355,6 +355,7 @@ test "block info address variations" {
     
     for (addresses) |addr| {
         const block = DefaultBlockInfo{
+            .chain_id = 1,
             .number = 1,
             .timestamp = 1640995200,
             .difficulty = 0,
@@ -380,6 +381,7 @@ test "block info prev_randao variations" {
     
     for (randao_values) |randao| {
         const block = DefaultBlockInfo{
+            .chain_id = 1,
             .number = 1,
             .timestamp = 1640995200,
             .difficulty = 0,
@@ -406,6 +408,7 @@ test "block info maximum blob hashes" {
     }
     
     const block = DefaultBlockInfo{
+        .chain_id = 1,
         .number = 18_000_000,
         .timestamp = 1640995200,
         .difficulty = 0,
@@ -427,6 +430,7 @@ test "block info maximum blob hashes" {
 test "block info zero blob base fee pre-cancun" {
     // Before Cancun fork, blob_base_fee should be 0
     const pre_cancun_block = DefaultBlockInfo{
+        .chain_id = 1,
         .number = 15_000_000, // Before Cancun
         .timestamp = 1640995200,
         .difficulty = 1000,
@@ -455,6 +459,7 @@ test "block info difficulty boundary values" {
     
     for (difficulty_values) |diff| {
         const block = DefaultBlockInfo{
+            .chain_id = 1,
             .number = 1,
             .timestamp = 1640995200,
             .difficulty = diff,
@@ -504,6 +509,7 @@ test "block info large base fee values" {
     
     for (large_base_fees) |base_fee| {
         const block = DefaultBlockInfo{
+            .chain_id = 1,
             .number = 20_000_000,
             .timestamp = 1640995200,
             .difficulty = 0,
