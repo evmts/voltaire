@@ -187,6 +187,10 @@ export default defineConfig({
           text: 'Architecture',
           items: [
             {
+              text: 'Overview',
+              link: '/advanced/architecture/overview',
+            },
+            {
               text: 'Design Principles',
               link: '/advanced/architecture/design',
             },
@@ -220,6 +224,27 @@ export default defineConfig({
               link: '/advanced/testing/fuzzing',
             },
           ],
+        },
+      ],
+    },
+    {
+      text: '📚 Resources',
+      items: [
+        {
+          text: 'Examples',
+          link: '/examples',
+        },
+        {
+          text: 'FAQ',
+          link: '/faq',
+        },
+        {
+          text: 'Status',
+          link: '/status',
+        },
+        {
+          text: 'Roadmap',
+          link: '/roadmap',
         },
       ],
     },

@@ -1,631 +1,88 @@
 ---
 title: State Management
-description: Managing blockchain state in Guillotine
+description: Database API for accounts, storage, code, and snapshots
 ---
 
 # State Management
 
-Guillotine provides comprehensive state management capabilities for tracking accounts, storage, and blockchain state changes with support for reverts and journaling.
-
-## Overview
-
-State management in Guillotine consists of:
-
-- **Database Interface** - Abstract storage layer
-- **Journal System** - Transaction rollback support
-- **Access Lists** - EIP-2930 warm/cold tracking
-- **Self-destruct Tracking** - Contract destruction
-- **Created Contracts** - New contract tracking
-
-## Database Interface
-
-### Abstract Database
+Guillotine uses an in-memory `Database` by default. You pass a pointer to this database when initializing the EVM, and interact with it directly to manage accounts, storage, and code.
 
 ```zig
-pub const Database = struct {
-    // Account operations
-    get_account: fn(self: *Database, address: Address) ?Account,
-    set_account: fn(self: *Database, address: Address, account: Account) void,
-    delete_account: fn(self: *Database, address: Address) void,
-    
-    // Storage operations
-    get_storage: fn(self: *Database, address: Address, key: U256) U256,
-    set_storage: fn(self: *Database, address: Address, key: U256, value: U256) void,
-    
-    // Code operations
-    get_code: fn(self: *Database, address: Address) []const u8,
-    set_code: fn(self: *Database, address: Address, code: []const u8) void,
-    
-    // Block operations
-    get_block_hash: fn(self: *Database, number: u64) Hash,
-};
+const g = @import("guillotine");
+var db = g.Database.init(allocator);
+defer db.deinit();
 ```
 
-### Account Structure
+## Accounts
 
 ```zig
-pub const Account = struct {
-    nonce: u64,
-    balance: u256,
-    code_hash: Hash,
-    storage_root: Hash,
-    
-    // Check if account exists
-    pub fn exists(self: Account) bool {
-        return self.nonce != 0 or 
-               self.balance != 0 or 
-               self.code_hash != EMPTY_CODE_HASH;
-    }
-    
-    // Check if account has code
-    pub fn has_code(self: Account) bool {
-        return self.code_hash != EMPTY_CODE_HASH;
-    }
-};
+// Read account
+const maybe = try db.get_account(address.bytes);    // ?Account
+
+// Write account
+var acc = g.Account.zero();
+acc.balance = 1_000_000_000_000_000_000; // 1 ETH
+try db.set_account(address.bytes, acc);
+
+// Delete account (and associated data)
+try db.delete_account(address.bytes);
+
+// Existence and balance
+const exists = db.account_exists(address.bytes);
+const balance = try db.get_balance(address.bytes);  // u256
 ```
 
-### Memory Database
-
-Built-in in-memory database implementation:
+## Storage
 
 ```zig
-pub const MemoryDatabase = struct {
-    allocator: Allocator,
-    accounts: HashMap(Address, Account),
-    storage: HashMap(StorageKey, U256),
-    code: HashMap(Address, []const u8),
-    
-    pub fn init(allocator: Allocator) !MemoryDatabase {
-        return .{
-            .allocator = allocator,
-            .accounts = HashMap(Address, Account).init(allocator),
-            .storage = HashMap(StorageKey, U256).init(allocator),
-            .code = HashMap(Address, []const u8).init(allocator),
-        };
-    }
-    
-    pub fn get_account(self: *MemoryDatabase, address: Address) ?Account {
-        return self.accounts.get(address);
-    }
-    
-    pub fn set_storage(
-        self: *MemoryDatabase,
-        address: Address,
-        key: U256,
-        value: U256
-    ) void {
-        const storage_key = StorageKey{ .address = address, .key = key };
-        if (value == 0) {
-            _ = self.storage.remove(storage_key);
-        } else {
-            self.storage.put(storage_key, value) catch {};
-        }
-    }
-};
+// Read storage slot
+const value = try db.get_storage(contract.bytes, key);
+
+// Write storage slot
+try db.set_storage(contract.bytes, key, value);
+
+// Transient storage (EIP-1153)
+const t = try db.get_transient_storage(contract.bytes, key);
+try db.set_transient_storage(contract.bytes, key, t + 1);
 ```
 
-## Journal System
-
-The journal tracks all state changes for transaction reverts.
-
-### Journal Structure
+## Code
 
 ```zig
-pub const Journal = struct {
-    allocator: Allocator,
-    entries: ArrayList(Entry),
-    snapshots: ArrayList(Snapshot),
-    
-    pub const Entry = union(enum) {
-        account_created: AccountCreated,
-        account_modified: AccountModified,
-        account_destroyed: AccountDestroyed,
-        storage_changed: StorageChanged,
-        code_deployed: CodeDeployed,
-        nonce_incremented: NonceIncremented,
-        balance_transfer: BalanceTransfer,
-    };
-    
-    pub const Snapshot = struct {
-        id: u32,
-        entry_count: usize,
-    };
-};
+// Install code and keep the hash
+const code_hash = try db.set_code(&bytecode);
+
+// Attach code to an account
+var acc = g.Account.zero();
+acc.code_hash = code_hash;
+try db.set_account(contract.bytes, acc);
+
+// Load code
+const code_by_hash = try db.get_code(code_hash);
+const code_by_addr = try db.get_code_by_address(contract.bytes);
 ```
 
-### Recording Changes
+## Snapshots and commits
 
 ```zig
-// Record account creation
-pub fn record_account_created(
-    self: *Journal,
-    address: Address
-) !void {
-    try self.entries.append(.{
-        .account_created = .{ .address = address }
-    });
-}
+// Create a snapshot before running a transaction
+const id = try db.create_snapshot();
 
-// Record storage change
-pub fn record_storage_change(
-    self: *Journal,
-    address: Address,
-    key: U256,
-    old_value: U256,
-    new_value: U256
-) !void {
-    try self.entries.append(.{
-        .storage_changed = .{
-            .address = address,
-            .key = key,
-            .old_value = old_value,
-            .new_value = new_value,
-        }
-    });
-}
+// ... make changes ...
 
-// Record balance transfer
-pub fn record_balance_transfer(
-    self: *Journal,
-    from: Address,
-    to: Address,
-    amount: U256
-) !void {
-    try self.entries.append(.{
-        .balance_transfer = .{
-            .from = from,
-            .to = to,
-            .amount = amount,
-        }
-    });
-}
+// Revert to snapshot on failure
+try db.revert_to_snapshot(id);
+
+// Or commit snapshot on success
+try db.commit_snapshot(id);
+
+// Commit batch changes / get state root (mocked)
+const root = try db.commit_changes();
 ```
 
-### Snapshots and Reverts
+## Notes
 
-```zig
-// Create snapshot for nested call
-pub fn snapshot(self: *Journal) !u32 {
-    const id = self.next_snapshot_id;
-    self.next_snapshot_id += 1;
-    
-    try self.snapshots.append(.{
-        .id = id,
-        .entry_count = self.entries.items.len,
-    });
-    
-    return id;
-}
+- The default `Database` is an in-memory implementation optimized for testing and integration
+- `get_code_by_address` resolves EIP-7702 delegated code if present
+- For production, persist state outside the EVM and hydrate this database as needed
 
-// Revert to snapshot
-pub fn revert(self: *Journal, snapshot_id: u32) !void {
-    // Find snapshot
-    var snapshot_index: ?usize = null;
-    for (self.snapshots.items, 0..) |snap, i| {
-        if (snap.id == snapshot_id) {
-            snapshot_index = i;
-            break;
-        }
-    }
-    
-    if (snapshot_index) |index| {
-        const snap = self.snapshots.items[index];
-        
-        // Revert entries
-        while (self.entries.items.len > snap.entry_count) {
-            const entry = self.entries.pop();
-            try self.revert_entry(entry);
-        }
-        
-        // Remove snapshot and all after it
-        self.snapshots.shrinkRetainingCapacity(index);
-    }
-}
-
-// Revert single entry
-fn revert_entry(self: *Journal, entry: Entry) !void {
-    switch (entry) {
-        .account_created => |e| {
-            // Delete created account
-            self.database.delete_account(e.address);
-        },
-        .storage_changed => |e| {
-            // Restore old value
-            self.database.set_storage(e.address, e.key, e.old_value);
-        },
-        .balance_transfer => |e| {
-            // Reverse transfer
-            // Note: Actual implementation would update balances
-        },
-        // ... handle other entry types
-    }
-}
-```
-
-## Access Lists (EIP-2930)
-
-Track warm/cold storage access for gas optimization.
-
-### Access List Structure
-
-```zig
-pub const AccessList = struct {
-    allocator: Allocator,
-    accounts: HashMap(Address, void),
-    storage: HashMap(StorageKey, void),
-    
-    pub const StorageKey = struct {
-        address: Address,
-        key: U256,
-    };
-    
-    pub fn init(allocator: Allocator) !AccessList {
-        return .{
-            .allocator = allocator,
-            .accounts = HashMap(Address, void).init(allocator),
-            .storage = HashMap(StorageKey, void).init(allocator),
-        };
-    }
-};
-```
-
-### Tracking Access
-
-```zig
-// Mark account as accessed
-pub fn access_account(self: *AccessList, address: Address) !void {
-    try self.accounts.put(address, {});
-}
-
-// Mark storage slot as accessed
-pub fn access_storage(
-    self: *AccessList,
-    address: Address,
-    key: U256
-) !void {
-    const storage_key = StorageKey{ .address = address, .key = key };
-    try self.storage.put(storage_key, {});
-}
-
-// Check if account is warm
-pub fn is_account_warm(self: *AccessList, address: Address) bool {
-    return self.accounts.contains(address);
-}
-
-// Check if storage is warm
-pub fn is_storage_warm(
-    self: *AccessList,
-    address: Address,
-    key: U256
-) bool {
-    const storage_key = StorageKey{ .address = address, .key = key };
-    return self.storage.contains(storage_key);
-}
-```
-
-### Gas Calculation
-
-```zig
-pub fn calculate_access_gas(
-    self: *AccessList,
-    address: Address,
-    key: ?U256
-) u64 {
-    var gas: u64 = 0;
-    
-    // Account access
-    if (!self.is_account_warm(address)) {
-        gas += 2600; // Cold account access
-        self.access_account(address) catch {};
-    } else {
-        gas += 100; // Warm account access
-    }
-    
-    // Storage access
-    if (key) |k| {
-        if (!self.is_storage_warm(address, k)) {
-            gas += 2100; // Cold storage access
-            self.access_storage(address, k) catch {};
-        } else {
-            gas += 100; // Warm storage access
-        }
-    }
-    
-    return gas;
-}
-```
-
-## Self-Destruct Management
-
-Track contracts marked for destruction.
-
-```zig
-pub const SelfDestruct = struct {
-    allocator: Allocator,
-    contracts: ArrayList(DestructEntry),
-    
-    pub const DestructEntry = struct {
-        address: Address,
-        beneficiary: Address,
-        balance: U256,
-    };
-    
-    pub fn mark_for_destruction(
-        self: *SelfDestruct,
-        address: Address,
-        beneficiary: Address,
-        balance: U256
-    ) !void {
-        try self.contracts.append(.{
-            .address = address,
-            .beneficiary = beneficiary,
-            .balance = balance,
-        });
-    }
-    
-    pub fn apply_destructions(
-        self: *SelfDestruct,
-        database: *Database
-    ) !void {
-        for (self.contracts.items) |entry| {
-            // Transfer balance to beneficiary
-            var beneficiary = database.get_account(entry.beneficiary) orelse Account{};
-            beneficiary.balance += entry.balance;
-            database.set_account(entry.beneficiary, beneficiary);
-            
-            // Delete contract
-            database.delete_account(entry.address);
-        }
-    }
-};
-```
-
-## Created Contracts
-
-Track newly created contracts.
-
-```zig
-pub const CreatedContracts = struct {
-    allocator: Allocator,
-    contracts: ArrayList(CreatedEntry),
-    
-    pub const CreatedEntry = struct {
-        address: Address,
-        deployer: Address,
-        code: []const u8,
-        value: U256,
-    };
-    
-    pub fn record_creation(
-        self: *CreatedContracts,
-        address: Address,
-        deployer: Address,
-        code: []const u8,
-        value: U256
-    ) !void {
-        try self.contracts.append(.{
-            .address = address,
-            .deployer = deployer,
-            .code = try self.allocator.dupe(u8, code),
-            .value = value,
-        });
-    }
-};
-```
-
-## Static Call Protection
-
-Prevent state modifications in static calls.
-
-```zig
-pub const StaticDatabase = struct {
-    inner: *Database,
-    
-    pub fn get_storage(
-        self: *StaticDatabase,
-        address: Address,
-        key: U256
-    ) U256 {
-        // Reads are allowed
-        return self.inner.get_storage(address, key);
-    }
-    
-    pub fn set_storage(
-        self: *StaticDatabase,
-        address: Address,
-        key: U256,
-        value: U256
-    ) Error!void {
-        // Writes are forbidden
-        _ = address;
-        _ = key;
-        _ = value;
-        return error.StaticCallViolation;
-    }
-    
-    pub fn set_account(
-        self: *StaticDatabase,
-        address: Address,
-        account: Account
-    ) Error!void {
-        // Account modifications forbidden
-        _ = address;
-        _ = account;
-        return error.StaticCallViolation;
-    }
-};
-```
-
-## Transaction Lifecycle
-
-### 1. Initialize State
-
-```zig
-var database = try MemoryDatabase.init(allocator);
-var journal = try Journal.init(allocator);
-var access_list = try AccessList.init(allocator);
-var self_destruct = try SelfDestruct.init(allocator);
-var created = try CreatedContracts.init(allocator);
-```
-
-### 2. Execute Transaction
-
-```zig
-// Create snapshot for main transaction
-const snapshot_id = try journal.snapshot();
-
-// Track state changes
-try journal.record_balance_transfer(from, to, value);
-try access_list.access_account(to);
-
-// Execute contract
-const result = try evm.execute(bytecode);
-```
-
-### 3. Handle Result
-
-```zig
-switch (result) {
-    .success => {
-        // Apply self-destructs
-        try self_destruct.apply_destructions(&database);
-        
-        // Commit state changes
-        try journal.commit();
-    },
-    .revert => {
-        // Revert to snapshot
-        try journal.revert(snapshot_id);
-    },
-}
-```
-
-## Merkle Patricia Trie
-
-State root calculation using Merkle Patricia Trie.
-
-```zig
-pub const Trie = struct {
-    root: Hash,
-    nodes: HashMap(Hash, Node),
-    
-    pub const Node = union(enum) {
-        branch: [17]?Hash,
-        extension: struct {
-            partial: []const u8,
-            next: Hash,
-        },
-        leaf: struct {
-            partial: []const u8,
-            value: []const u8,
-        },
-    };
-    
-    pub fn insert(
-        self: *Trie,
-        key: []const u8,
-        value: []const u8
-    ) !void {
-        // MPT insertion logic
-    }
-    
-    pub fn get(
-        self: *Trie,
-        key: []const u8
-    ) ?[]const u8 {
-        // MPT lookup logic
-    }
-    
-    pub fn calculate_root(self: *Trie) Hash {
-        // Calculate root hash
-        return self.root;
-    }
-};
-```
-
-## Performance Considerations
-
-### Caching Strategy
-
-```zig
-pub const CachedDatabase = struct {
-    inner: *Database,
-    account_cache: LruCache(Address, Account),
-    storage_cache: LruCache(StorageKey, U256),
-    
-    pub fn get_account(
-        self: *CachedDatabase,
-        address: Address
-    ) ?Account {
-        // Check cache first
-        if (self.account_cache.get(address)) |account| {
-            return account;
-        }
-        
-        // Load from database
-        const account = self.inner.get_account(address);
-        if (account) |acc| {
-            self.account_cache.put(address, acc) catch {};
-        }
-        
-        return account;
-    }
-};
-```
-
-### Batch Operations
-
-```zig
-pub fn batch_update(
-    database: *Database,
-    updates: []const StateUpdate
-) !void {
-    // Begin transaction
-    try database.begin_transaction();
-    defer database.end_transaction();
-    
-    // Apply all updates
-    for (updates) |update| {
-        switch (update) {
-            .account => |acc| {
-                database.set_account(acc.address, acc.data);
-            },
-            .storage => |stor| {
-                database.set_storage(stor.address, stor.key, stor.value);
-            },
-        }
-    }
-}
-```
-
-## Testing State
-
-```zig
-test "Journal revert" {
-    var journal = try Journal.init(testing.allocator);
-    defer journal.deinit();
-    
-    // Create snapshot
-    const snap = try journal.snapshot();
-    
-    // Make changes
-    try journal.record_storage_change(
-        address,
-        key,
-        old_value,
-        new_value
-    );
-    
-    // Revert
-    try journal.revert(snap);
-    
-    // Verify reverted
-    try testing.expectEqual(@as(usize, 0), journal.entries.items.len);
-}
-```
-
-## Next Steps
-
-- Learn about the [EVM API](/api/evm)
-- Understand [Customizing Opcodes](/advanced/customization/opcodes)
-- Explore [Architecture](/advanced/architecture/overview)
