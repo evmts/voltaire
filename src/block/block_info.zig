@@ -25,7 +25,7 @@ pub fn BlockInfo(comptime config: BlockInfoConfig) type {
         const Self = @This();
         
         /// Chain ID for EIP-155 replay protection
-        chain_id: u64,
+        chain_id: u64 = 1,
         /// Block number
         number: u64,
         /// Parent block hash (for EIP-2935 historical block hashes)
@@ -47,10 +47,10 @@ pub fn BlockInfo(comptime config: BlockInfoConfig) type {
         prev_randao: [32]u8,
         /// Blob base fee for EIP-4844 (cold data)
         /// Set to 0 for non-Cancun hardforks
-        blob_base_fee: BaseFeeType,
+        blob_base_fee: BaseFeeType = 0,
         /// Blob versioned hashes for EIP-4844 blob transactions (cold data)
         /// Empty slice for non-blob transactions
-        blob_versioned_hashes: []const [32]u8,
+        blob_versioned_hashes: []const [32]u8 = &.{},
         /// Beacon block root for EIP-4788 (Dencun)
         /// Contains the parent beacon block root for trust-minimized access to consensus layer
         beacon_root: ?[32]u8 = null,
