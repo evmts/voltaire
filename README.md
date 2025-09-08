@@ -22,33 +22,33 @@
 
 **Current Status**: DO NOT USE IN PRODUCTION
 
-Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow [issue tab](https://github.com/evmts/Guillotine/issues) which contains all features we want for Beta.
+Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
 ---
 
 ## ✨ Features
 
-🚧 = Coming soon. Consider opening a discussion if you have any API recomendations or requested features.
+🚧 = Coming soon. Consider opening a discussion if you have any API recommendations or requested features.
 
 - ⚡ **Extreme speed** 
-- 🌐 **Universal** - Planned and experimental Support for many langauges and platforms
+- 🌐 **Universal** - Planned and experimental support for many languages and platforms
   - **🚧 Golang** 
   - **🚧 Zig** 
   - **🚧 C** 
-  - **🚧 TypeScript** - Via Tevm including [hono-like adapters](https://hono.dev/docs/getting-started/basic) for all platforms
+  - **🚧 TypeScript** - Via Tevm including [Hono-like adapters](https://hono.dev/docs/getting-started/basic) for all platforms
   - **🚧 Python** 
   - **🚧 Rust** 
   - **🚧 Swift** 
   - **🚧 Kotlin** 
-  - **🚧 WASM** 
+  - **🚧 Wasm** 
 - 📦 **Minimal bundle size** 
-  - Comptime configuration means you only pay for features you actually use
-  - Skip precompiles or use specific hardforks without bundle size or runtime overhead
+  - Zig `comptime` configuration means you only pay for features you actually use
+  - Skip precompiles or use specific hard forks without bundle size or runtime overhead
 - 📚 **Well documented** 
-- 🎨 **Fun** - Guillotine is a fun way to dive into zig and fun/easy to [contribute](./CONTRIBUTING.md) to
-- 🤖 **LLM friendly** 
-- 🧪 **Robust** - Guillotine takes testing and architecture very seriously with [full unit tests](./src) for all files, a [robust e2e test suite](./test/e2e), [fuzz testing](./test/fuzz), [differential testing vs revm](./test/differential), and [benchmark testing](./test/benchmark)
-- ✨ **Useful** - 🚧 Coming soon 🚧 Guillotine is building a powerful [CLI](https://github.com/evmts/Guillotine/issues) and [native app](https://github.com/evmts/Guillotine/issues) that you can think of as a local-first tenderly
+- 🎨 **Fun** - Guillotine is a fun way to dive into Zig and fun/easy to [contribute](./CONTRIBUTING.md) to
+- 🤖 **LLM-friendly** 
+- 🧪 **Robust** - Guillotine takes testing and architecture very seriously with [full unit tests](./src) for all files, a robust [E2E test suite](./test/e2e), [fuzz testing](./test/fuzz), [differential testing vs REVM](./test/differential), and [benchmark testing](./test/benchmark)
+- ✨ **Useful** - 🚧 Coming soon 🚧 Guillotine is building a powerful [CLI](https://github.com/evmts/Guillotine/issues) and [native app](https://github.com/evmts/Guillotine/issues) that you can think of as a local-first, Tenderly-like tool
 
 ---
 
@@ -56,17 +56,17 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 
 Guillotine is fast.
 
-Benchmarks so far are looking very promising 
+Benchmarks so far look very promising.
 
-- Guillotine showing measurable performance gains over [Revm](https://github.com/bluealloy/revm) and performance on par with [Evmone](https://github.com/ethereum/evmone). 
+- Guillotine shows measurable performance gains over [REVM](https://github.com/bluealloy/revm) and performance on par with [evmone](https://github.com/ethereum/evmone). 
 - More major optimizations planned for Beta release
 
 ### Overall Performance Summary (Per Run)
 
-These benchmarks were taken using the [evm bench](https://github.com/ziyadedher/evm-bench) test cases using hyperfine. 
+These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/evm-bench) test cases with `hyperfine`. 
 
-- Benchmarking infra can be seen in previous commits but are currently being moved to their own dedicated repo. 
-- Looking for contributors to help set up easily reproducable benchmarks
+- Benchmarking infra can be seen in previous commits but is currently being moved to its own dedicated repo. 
+- Looking for contributors to help set up easily reproducible benchmarks
 
 | Test Case               | Guillotine | REVM     | Geth     | evmone   |
 | ----------------------- | ---------- | -------- | -------- | -------- |
@@ -80,56 +80,56 @@ These benchmarks were taken using the [evm bench](https://github.com/ziyadedher/
 
 ### Bundle size 🚧
 
-In past commits we got the EVM under 110k KB with expectations to be able to improve upon that. 
+In past commits we reduced the EVM to ~110 KB, with further improvements expected. 
 
-- We stopped supporting anything but `ReleaseFast` mode while focusing on performance but will be adding `ReleaseSmall` back soon
+- We’re currently focused on `ReleaseFast`; `ReleaseSmall` support returns soon
 
 ---
 
 ### How is Guillotine so fast?
 
-Guillotine was built using [data-oriented design](https://www.youtube.com/watch?v=rX0ItVEVjHc) with an emphasis on [minimizing branch-prediction misses](https://www.youtube.com/watch?v=nczJ58WvtYo) in the CPU. We studied every EVM implementation as well as [Wasm](https://webassembly.org/), [Lua](https://www.lua.org/), and [Python](https://www.python.org/) interpreter implementations for the state of the art. Optimizations include from most impactful to least impactful:
+Guillotine was built using [data-oriented design](https://www.youtube.com/watch?v=rX0ItVEVjHc) with an emphasis on [minimizing branch-prediction misses](https://www.youtube.com/watch?v=nczJ58WvtYo) in the CPU. We studied every EVM implementation as well as [Wasm](https://webassembly.org/), [Lua](https://www.lua.org/), and [Python](https://www.python.org/) interpreter implementations for the state of the art. Optimizations include, from most impactful to least impactful:
 
-- An extremely optimized StackFrame and opcode dispatch datastructure
+- An extremely optimized StackFrame and opcode dispatch data structure
 - [Indirect threading via tailcall recursion](https://news.ycombinator.com/item?id=43317592) (for excellent CPU branch prediction)
 - Highly microoptimized opcode instruction handlers
-- Highly microoptimized evm stack implementation
+- Highly microoptimized EVM stack implementation
 - Opcode fusions turning common opcode patterns into a single dispatch
 - **Assembly-optimized Keccak** via [keccak-asm](https://crates.io/crates/keccak-asm)
 - Batching calculation of static gas costs and stack analysis
-- Simple code that minimizes unnecessary abstractions, inline directives, and interfaces allowing the zig compiler maximum freedom to optimize for performance or size
-- Some more microoptimiations not worth noting 
+- Simple code that minimizes unnecessary abstractions, inline directives, and interfaces allowing the Zig compiler maximum freedom to optimize for performance or size
+- Additional micro-optimizations not listed 
 
 **Balanced tradeoffs** 
 
-We focus on maintainable code, performance optimizations where it counts. We do our best to write simple code the zig compiler can optimize.
+We focus on maintainable code and targeted optimizations where they matter. We do our best to write simple code the Zig compiler can optimize.
 
-There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register based EVM, a common technique used by interpreters like Lua cranelift and PyPy to get up to 30% performance increases.
+There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register-based EVM—a common technique used by interpreters like Lua and PyPy, and Cranelift-style designs—to achieve up to ~30% performance increases.
 
 --- 
 
 ### How is Guillotine so small?
 
-- Zig is a language that believes in no hidden control flow. 
+- Zig avoids hidden control flow. 
 - This makes it really easy to write the most minimal simple code needed to get the job done. 
 - By minimizing unnecessary abstractions the compiler is able to do a great job optimizing for size.
-- Zig comptime allows us to easily and surgically only include the minimum necessary code given the specific EVM and hardfork configuration. Code you don't use isn't included.
+- Zig `comptime` allows us to easily and surgically only include the minimum necessary code given the specific EVM and hard fork configuration. Code you don't use isn't included.
 
 ### How is Guillotine so safe?
 
-Guillotine currently is not in safe as we just came out of alpha. But we do have features that help improve the safety:
+Guillotine is not yet “safe”; it’s in early alpha. But we do have features that help improve safety:
 
-- Guillotine also is able to built in `ReleaseSafe` mode in addition to `Debug`, `ReleaseFast`, and `ReleaseSmall`. 
-- `ReleaseSafe` is what we recomend while in alpha 
-- `ReleaseSafe` it keeps debug mode only defensive checks, memory safety features, and many other safety benefits included in the final binary.
-- Guillotine also features an extensive unit test, e2e test, fuzz test, benchmark test, and differential test suite.
+- Guillotine can be built in `Debug`, `ReleaseFast`, `ReleaseSmall`, and `ReleaseSafe`. 
+- We recommend `ReleaseSafe` while in alpha.
+- `ReleaseSafe` preserves debug‑mode‑only defensive checks, memory safety features, and other safeguards in the final binary.
+- Guillotine also features extensive unit, E2E, fuzz, benchmark, and differential test suites.
 
 ---
 
 ## 🚧 Full Client
 
-Guillotine is a VM implementation (like [revm](https://github.com/bluealloy/revm)) not a full node (like [reth](https://github.com/paradigmxyz/reth)).
-However, [Tevm](https://github.com/evmts/tevm-monorepo) (the team behind Guillotine) plans on breaking ground on a highly-performant zig-based full client soon. This client will leverage some of Guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
+Guillotine is a VM implementation (like [REVM](https://github.com/bluealloy/revm)) not a full node (like [reth](https://github.com/paradigmxyz/reth)).
+However, [Tevm](https://github.com/evmts/tevm-monorepo) (the team behind Guillotine) plans to begin work on a highly performant Zig-based full client soon. This client will leverage parts of Guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
 
 ---
 
@@ -137,29 +137,29 @@ However, [Tevm](https://github.com/evmts/tevm-monorepo) (the team behind Guillot
 
 ### Zero Config
 
-Guillotine ships with opinionated defaults and mainnet ready with 0 configuration.
+Guillotine ships with opinionated defaults and is mainnet‑ready with zero configuration.
 
 ---
 
-### Customizablility
+### Customizability
 
-Guillotine is built from ground up to be the most highly customizable EVM SDK implementation. 
+Guillotine is built from the ground up to be a highly customizable EVM SDK. 
 
 **With Guillotine you can easily create your own EVM!**
 
-Utilizing [Zig](https://ziglang.org/) comptime, the Guillotine customizations  Comptime in zig utilizes simple familiar zig code to configure all comptime features. [Revm](https://github.com/bluealloy/revm) offers similar customizability but requires a higher level of onboarding onto using the complex generics and feature flag system compared to Zig comptime.
+Using [Zig](https://ziglang.org/) `comptime`, you configure features with regular Zig code, and the compiler includes only what you use. [REVM](https://github.com/bluealloy/revm) offers similar customizability but requires more onboarding into complex generics and feature flags compared to Zig `comptime`.
 
 Customizability features include
 
-- Configure any hardfork or EIP
-- Add or override any new opcodes or precompiles to the EVM
-- A powerful but simple Tracer interface for introspecting the EVM
-- Huge config option to configure every part of the Evm including niche configuration like changing the word size from u256
-- Powerful but simple comptime checks to make sure your configuration and use of Guillotine is valid
+- Configure any hard fork or EIP
+- Add or override opcodes and precompiles in the EVM
+- Simple, powerful tracer interface for introspection
+- Comprehensive options to configure the EVM (including niche settings like changing the word size from `u256`)
+- `comptime` validation to ensure configurations are sound
 
-All customizations are offered as 0 cost compiletime abstractions using the powerful but simple [Zig](https://ziglang.org/) comptime so customizatiosn never sacrifice runtime performance and your bundle size will only include the features you choose to use.
+All customizations are zero‑cost, compile‑time abstractions using [Zig](https://ziglang.org/) `comptime`, so customizations never sacrifice runtime performance and your bundle includes only the features you choose to use.
 
-For most users who don't need customizations we offer default options for all hardforks.
+For most users who don't need customizations, we offer default options for all major hard forks.
 
 🚧 This feature is considered experimental and the API could change. 
 
@@ -167,12 +167,12 @@ For most users who don't need customizations we offer default options for all ha
 
 ## 🔁 Relationship to Tevm
 
-Once stable, **Guillotine’s WASM build** will replace the current JavaScript EVM in [Tevm](https://node.tevm.sh).
+Once stable, **Guillotine’s Wasm build** will replace the current JavaScript EVM in [Tevm](https://node.tevm.sh).
 Upgrades include:
 
 - 🚀 **Up to 1000x performance boost**
-- 📉 **300KB (75%) bundle size reduction**
-- 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the guillotine primitives package
+- 📉 **300 KB (75%) bundle size reduction**
+- 🧱 **Fast Ethereum library** An ultrafast utility and client library wrapping the Guillotine primitives package
 
 ---
 
@@ -198,33 +198,33 @@ Be an early contributor and get listed here forever!
 
 ### Runtime Dependencies
 
-Guillotine values minimal runtime dependencies but utilized the following powerful crypto dependencies
+Guillotine values minimal runtime dependencies but utilizes the following powerful crypto dependencies
 
 - **[arkworks](https://github.com/arkworks-rs)** – Rust lib for elliptic curve operations
 - **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** – Simple C KZG commitment library for EIP-4844
 - **[keccak-asm](https://crates.io/crates/keccak-asm)** – Assembly-optimized Keccak-256
 - **[crypto from Zig std library](https://ziglang.org/documentation/master/std/#std.crypto)** 
 
-We have plans to make all crypto comptime configurable with opinionated defaults for Beta.
+We have plans to make all crypto `comptime` configurable with opinionated defaults for Beta.
 
 ---
 
 ### Tooling dependencies
 
-- **[Zig](https://ziglang.org)** – The best tool for the job for building a highly customizable ultrafast EVM
-- **[zbench](https://github.com/hendriknielaender/zBench)** – Zig specific Benchmarking framework for performance regression testing
-- **[foundry-compilers](https://github.com/foundry-rs/compilers)** – Rust solc wrapper wrapped in zig and used internally as a zig library for building contracts.
+- **[Zig](https://ziglang.org)** – The best tool for building a highly customizable ultrafast EVM
+- **[zbench](https://github.com/hendriknielaender/zBench)** – Zig‑specific benchmarking framework for performance regression testing
+- **[foundry-compilers](https://github.com/foundry-rs/compilers)** – Rust `solc` wrapper exposed in Zig and used internally as a Zig library for building contracts.
 
 ---
 
 ### Inspirations
 
-We deeply appreciate thes excellent EVM implementations that served as inspiration:
+We deeply appreciate these excellent EVM implementations that served as inspiration:
 
-- **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** – A simple pure JavaScript/TypeScript EVM implementation used by Tevm featuring 0 wasm dependencies
-- **[Evmone](https://github.com/ethereum/evmone)** – A hyperoptimized C++ EVM implementation known for its exceptional performance
+- **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** – A simple pure JavaScript/TypeScript EVM implementation used by Tevm featuring zero Wasm dependencies
+- **[evmone](https://github.com/ethereum/evmone)** – A hyperoptimized C++ EVM implementation known for its exceptional performance
 - **[Geth](https://github.com/ethereum/go-ethereum)** – The canonical Go Ethereum client. An EVM implementation that perfectly balances performance with simplicity
-- **[Revm](https://github.com/bluealloy/revm)** – A beautifully architected highly-customizable Rust EVM implementation. Used internally for differential tests.
+- **[REVM](https://github.com/bluealloy/revm)** – A beautifully architected, highly customizable Rust EVM implementation. Used internally for differential tests.
 
 ---
 
