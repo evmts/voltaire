@@ -1,6 +1,7 @@
 const FpMont = @import("FpMont.zig");
 const Fr = @import("Fr.zig");
 const curve_parameters = @import("curve_parameters.zig");
+const naf = @import("NAF.zig").naf;
 
 //G1 is the group of points on the elliptic curve y^2 = x^3 + 3
 // We use the Jacobian projective coordinates to represent the points
@@ -98,7 +99,7 @@ pub fn equal(self: *const G1, other: *const G1) bool {
 }
 
 pub fn sub(self: *const G1, other: *const G1) G1 {
-    return self.add(other.neg());
+    return self.add(&other.neg());
 }
 
 pub fn subAssign(self: *G1, other: *const G1) void {
@@ -195,24 +196,81 @@ pub fn addAssign(self: *G1, other: *const G1) void {
     self.* = self.add(other);
 }
 
-pub fn mul(self: *const G1, scalar: *const Fr) G1 {
-    return self.mul_by_int(scalar.value);
+// This is a easy to compute morphism, G -> λG, where λ is a fixed field element, it can be found in curve_parameters.zig
+pub fn GLS_endomorphism(self: *const G1) G1 {
+    const cube_root = FpMont.init(curve_parameters.cube_root_of_unity);
+    const point_aff = self.toAffine();
+    return G1{
+        .x = point_aff.x.mul(&cube_root),
+        .y = point_aff.y,
+        .z = FpMont.ONE,
+    };
 }
 
+// This is a decomposition of a scalar into two 128-bit integers, k1 and k2, such that k = k1 + λ * k2
+pub const scalar_decomposition = struct {
+    k1: u128,
+    k2: u128,
+};
+
+pub fn decomposeScalar(scalar: u256) scalar_decomposition {
+    const k: i512 = @intCast(scalar);
+    const r_mod = curve_parameters.FR_MOD;
+    const v1_x = curve_parameters.v1_x;
+    const v1_y = curve_parameters.v1_y;
+    const v2_x = curve_parameters.v2_x;
+    const v2_y = curve_parameters.v2_y;
+
+    const c1 = @divTrunc(v2_y * k, r_mod);
+    const c2 = @divTrunc(v1_y * k, r_mod);
+
+    const k1 = k - c1 * v1_x - c2 * v2_x;
+    const k2 = c1 * (-v1_y) + c2 * v2_y;
+
+    return scalar_decomposition{ .k1 = @intCast(k1), .k2 = @intCast(k2) };
+}
+
+// This uses GLS in NAF, we first compute k1 and k2 in NAF, such that k = k1 + λ * k2
+// we then use Shamir's trick to reduce the number of doublings
 pub fn mul_by_int(self: *const G1, scalar: u256) G1 {
-    if (self.isInfinity()) {
-        return INFINITY;
-    }
+    const decomposition = decomposeScalar(scalar);
+    const k1 = decomposition.k1;
+    const naf_k1 = naf(k1);
+    const k2 = decomposition.k2;
+    const naf_k2 = naf(k2);
+
+    const P = self;
+    const Q = self.GLS_endomorphism().neg();
+    const P_plus_Q = P.add(&Q);
+    const P_minus_Q = P.sub(&Q);
+
     var result = INFINITY;
-    var base = self.*;
-    var exp = scalar;
-    while (exp > 0) : (exp >>= 1) {
-        if (exp & 1 == 1) {
-            result.addAssign(&base);
+
+    for (0..128) |i| {
+        result.doubleAssign();
+
+        const k1_bit = naf_k1[127 - i];
+        const k2_bit = naf_k2[127 - i];
+        const switch_case: u4 = (@as(u4, @as(u2, @bitCast(k1_bit))) << 2) | @as(u2, @bitCast(k2_bit)); //combine k1 and k2 bits into a single switch case
+
+        switch (switch_case) { //(k1_bit, k2_bit)
+            0 => {}, // (0, 0)
+            1 => result.addAssign(&Q), // (0, 1)
+            3 => result.addAssign(&Q.neg()), // (0, -1)
+            4 => result.addAssign(P), // (1, 0)
+            5 => result.addAssign(&P_plus_Q), // (1, 1)
+            7 => result.addAssign(&P_minus_Q), // (1, -1)
+            12 => result.addAssign(&P.neg()), // (-1, 0)
+            13 => result.addAssign(&P_minus_Q.neg()), // (-1, 1)
+            15 => result.addAssign(&P_plus_Q.neg()), // (-1, -1)
+            else => unreachable,
         }
-        base.doubleAssign();
     }
     return result;
+}
+
+pub fn mul(self: *const G1, scalar: *const Fr) G1 {
+    return self.mul_by_int(scalar.value);
 }
 
 pub fn mulAssign(self: *G1, scalar: *const Fr) void {
@@ -406,3 +464,47 @@ test "G1.mulAssign basic assignment" {
     a.mulAssign(&scalar);
     try std.testing.expect(a.equal(&expected));
 }
+
+test "G1.GLS_endomorphism" {
+    const gen = G1.GENERATOR;
+
+    const test_values = [_]Fr{
+        Fr.init(1),
+        Fr.init(2654765),
+        Fr.init(34567898765434567898765434567898765434567898765434567898765434567898765434567),
+        Fr.init(45677654345678987654345678987654345678987654345678987654345678),
+        Fr.init(5678456789876543456789876543456789876543456789876543456789876543456789),
+    };
+
+    for (test_values) |value| {
+        const point = gen.mul(&value);
+        const endo = point.GLS_endomorphism();
+        const point_times_lambda = point.mul(&Fr.init(curve_parameters.GLS_LAMBDA));
+        try std.testing.expect(point_times_lambda.equal(&endo));
+    }
+}
+
+test "G1.decomposeScalar" {
+    const lambda = curve_parameters.GLS_LAMBDA;
+
+    const test_values = [_]Fr{
+        Fr.init(1),
+        Fr.init(2654765),
+        Fr.init(34567898765434567898765434567898765434567898765434567898765434567898765434567),
+        Fr.init(45677654345678987654345678987654345678987654345678987654345678),
+        Fr.init(5678456789876543456789876543456789876543456789876543456789876543456789),
+    };
+
+    for (test_values) |value| {
+        const decomposition = G1.decomposeScalar(value.value);
+        try std.testing.expect(decomposition.k2 >= 0);
+        try std.testing.expect(@mod(decomposition.k1 + lambda * (-@as(i512, decomposition.k2)), curve_parameters.FR_MOD) == value.value);
+    }
+}
+
+// test "G1.GLS_scalar_mul" {
+//     const gen = G1.GENERATOR;
+//     const scalar = Fr.init(3567845675456765456765456765467546754675467545674567);
+//     const result = gen.GLS_scalar_mul(&scalar);
+//     try std.testing.expect(result.equal(&gen.mul(&scalar)));
+// }
