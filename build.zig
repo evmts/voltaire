@@ -62,8 +62,7 @@ pub fn build(b: *std.Build) void {
     const rust_target = build_pkg.Config.getRustTarget(target);
 
     // Dependencies
-    const zbench_dep = b.dependency("zbench", .{ .target = target, .optimize = optimize });
-    const clap_dep = b.dependency("clap", .{ .target = target, .optimize = optimize });
+    const zbench_dep = b.dependency("zbench", .{ .target = target, .optimize = optimize }); // retained for module wiring; not used to build benches
 
     // Libraries
     const blst_lib = build_pkg.BlstLib.createBlstLibrary(b, target, optimize);
@@ -80,12 +79,7 @@ pub fn build(b: *std.Build) void {
     const guillotine_exe = build_pkg.GuillotineExe.createExecutable(b, modules.exe_mod);
     _ = build_pkg.GuillotineExe.createRunStep(b, guillotine_exe);
 
-    const evm_runner = build_pkg.EvmRunnerExe.createEvmRunner(b, target, optimize, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib, clap_dep);
-    const evm_runner_small = build_pkg.EvmRunnerExe.createEvmRunnerSmall(b, target, .ReleaseSmall, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib, clap_dep);
-    build_pkg.EvmRunnerExe.createRunSteps(b, evm_runner, evm_runner_small);
-    const evm_runner_test_step = build_pkg.EvmRunnerExe.createTestStep(b, target, optimize, modules.evm_mod, modules.primitives_mod, c_kzg_lib, blst_lib, bn254_lib);
-    const test_evm_runner_step = b.step("test-evm-runner", "Run EVM runner tests");
-    test_evm_runner_step.dependOn(evm_runner_test_step);
+    // Bench runner executables are removed (moved to separate repo)
 
     // Asset generation for devtool
     const asset_generator = build_pkg.AssetGenerator;
@@ -106,18 +100,7 @@ pub fn build(b: *std.Build) void {
     const devtool_exe = build_pkg.DevtoolExe.createDevtoolExecutable(b, target, optimize, modules.lib_mod, modules.evm_mod, modules.primitives_mod, modules.provider_mod, &generate_assets.step);
     build_pkg.DevtoolExe.createDevtoolSteps(b, devtool_exe, target);
 
-    // Benchmark executables
-    const debug_runner = build_pkg.BenchmarksExe.createDebugRunner(b, target, modules.evm_mod, modules.primitives_mod);
-    const crash_debugger = build_pkg.BenchmarksExe.createCrashDebugger(b, target, modules.evm_mod, modules.primitives_mod);
-    const simple_crash_test = build_pkg.BenchmarksExe.createSimpleCrashTest(b, target, modules.evm_mod, modules.primitives_mod);
-
-    // Get the build step created by EvmRunnerExe.createRunSteps
-    const build_evm_runner_step = b.step("build-evm-runner-manual", "Build the EVM benchmark runner");
-    build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner, .{}).step);
-
-    _ = build_pkg.BenchmarksExe.createPoopRunner(b, target, build_evm_runner_step);
-    _ = build_pkg.BenchmarksExe.createOrchestrator(b, target, clap_dep);
-    build_pkg.BenchmarksExe.createBenchmarkSteps(debug_runner, crash_debugger, simple_crash_test, b);
+    // Benchmark executables removed (moved to separate repo)
 
     // Libraries and utilities
     build_pkg.Utils.createLibraries(b, modules.lib_mod, bn254_lib);
@@ -190,52 +173,7 @@ pub fn build(b: *std.Build) void {
     const jump_table_test_step = b.step("test-jump-table", "Test jump table JUMPDEST recognition");
     jump_table_test_step.dependOn(&run_jump_table_test.step);
 
-    // BN254 benchmarks
-    const zbench_module = zbench_dep.module("zbench");
-    const zbench_bn254 = b.addExecutable(.{
-        .name = "zbench-bn254",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/crypto/bn254/zbench_benchmarks.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    zbench_bn254.root_module.addImport("zbench", zbench_module);
-
-    const run_zbench_bn254 = b.addRunArtifact(zbench_bn254);
-    const zbench_bn254_step = b.step("bench-bn254", "Run zbench BN254 benchmarks");
-    zbench_bn254_step.dependOn(&run_zbench_bn254.step);
-
-    // EVM benchmarks
-    const zbench_evm = b.addExecutable(.{
-        .name = "zbench-evm",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/evm_bench.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        }),
-    });
-    zbench_evm.root_module.addImport("zbench", zbench_module);
-    zbench_evm.root_module.addImport("log", b.createModule(.{
-        .root_source_file = b.path("src/log.zig"),
-        .target = target,
-        .optimize = optimize,
-    }));
-    zbench_evm.root_module.addImport("primitives", modules.primitives_mod);
-    zbench_evm.root_module.addImport("evm", modules.evm_mod);
-    zbench_evm.root_module.addImport("crypto", modules.crypto_mod);
-    if (modules.revm_mod) |revm_mod| {
-        zbench_evm.root_module.addImport("revm", revm_mod);
-    }
-    if (revm_lib) |revm| zbench_evm.linkLibrary(revm);
-    if (bn254_lib) |bn254| zbench_evm.linkLibrary(bn254);
-    zbench_evm.linkLibrary(c_kzg_lib);
-    zbench_evm.linkLibrary(blst_lib);
-    zbench_evm.linkLibC();
-
-    const run_zbench_evm = b.addRunArtifact(zbench_evm);
-    const zbench_evm_step = b.step("bench-evm", "Run zbench EVM benchmarks");
-    zbench_evm_step.dependOn(&run_zbench_evm.step);
+    // Zbench executables removed (moved to separate repo)
 
     // ERC20 deployment issue test
     const erc20_deployment_test = b.addTest(.{
