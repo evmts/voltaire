@@ -1,0 +1,56 @@
+---
+layout: landing
+---
+
+import { HomePage } from 'vocs/components'
+
+<HomePage.Root>
+  <HomePage.Logo />
+  <HomePage.Tagline>High-performance Zig EVM Implementation</HomePage.Tagline>
+  <HomePage.Description>
+    Guillotine is a blazingly fast Ethereum Virtual Machine implementation written in Zig,
+    focused on correctness, minimal allocations, and strong typing.
+  </HomePage.Description>
+  <HomePage.Buttons>
+    <HomePage.Button href="/getting-started" variant="accent">Get Started</HomePage.Button>
+    <HomePage.Button href="https://github.com/williamcory/Guillotine">GitHub</HomePage.Button>
+  </HomePage.Buttons>
+</HomePage.Root>
+
+## Features
+
+- **Performance First** - Optimized for speed with minimal allocations
+- **Type Safety** - Strong typing throughout the codebase
+- **Memory Efficient** - Cache-conscious struct layout
+- **Modular Design** - Clean separation of concerns
+- **Comprehensive Testing** - Differential testing against revm
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/williamcory/Guillotine.git
+cd Guillotine
+
+# Build the project
+zig build
+
+# Run tests
+zig build test
+```
+
+## Architecture
+
+Guillotine follows a modular architecture with clear separation between:
+
+- **EVM Core** - Opcode execution and stack management
+- **State Management** - Database, journaling, and access lists
+- **Bytecode Analysis** - Optimization and jump table generation
+- **Precompiles** - Built-in contract implementations
+
+## Community
+
+Join our community to get help, share ideas, and contribute:
+
+- [GitHub Issues](https://github.com/williamcory/Guillotine/issues) - Report bugs and request features
+- [GitHub Discussions](https://github.com/williamcory/Guillotine/discussions) - Ask questions and share ideas

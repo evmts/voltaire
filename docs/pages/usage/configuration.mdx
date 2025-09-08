@@ -1,0 +1,336 @@
+---
+title: Configuration
+description: Configure Guillotine for your needs
+---
+
+# Configuration
+
+Guillotine works out of the box with sensible defaults, but can be customized for specific requirements.
+
+## Quick Configuration
+
+### Default Configuration
+
+Zero configuration needed for most use cases:
+
+```zig
+// Uses latest hardfork (Cancun) with all features enabled
+const Evm = guillotine.Evm(.{});
+```
+
+### Common Configurations
+
+:::code-group
+
+```zig [Production]
+const Evm = guillotine.Evm(.{
+    .eips = .{ .hardfork = .CANCUN },
+    .enable_precompiles = true,
+    .enable_fusion = true,
+});
+```
+
+```zig [Testing]
+const Evm = guillotine.Evm(.{
+    .eips = .{ .hardfork = .CANCUN },
+    .enable_precompiles = false, // Simplify testing
+    .max_call_depth = 100,       // Reduce for tests
+});
+```
+
+```zig [Minimal]
+const Evm = guillotine.Evm(.{
+    .enable_precompiles = false,
+    .enable_fusion = false,
+    .stack_size = 256,
+});
+```
+
+:::
+
+## Basic Options
+
+### Hardfork Selection
+
+Choose the Ethereum hardfork to use:
+
+```zig
+const Evm = guillotine.Evm(.{
+    .eips = .{ .hardfork = .CANCUN },  // Latest (default)
+    // .hardfork = .SHANGHAI,          // Pre-Cancun
+    // .hardfork = .LONDON,            // EIP-1559
+    // .hardfork = .BERLIN,            // EIP-2929
+});
+```
+
+| Hardfork | Features | Use Case |
+|----------|----------|----------|
+| `CANCUN` | Latest features, blob transactions | Production mainnet |
+| `SHANGHAI` | Withdrawals, PUSH0 | Most testnets |
+| `LONDON` | EIP-1559, base fee | Legacy support |
+| `BERLIN` | Access lists | Older contracts |
+
+### Feature Toggles
+
+Enable or disable features:
+
+```zig
+const Evm = guillotine.Evm(.{
+    // Precompiled contracts (ecrecover, sha256, etc.)
+    .enable_precompiles = true,
+    
+    // Opcode fusion optimization
+    .enable_fusion = true,
+});
+```
+
+### Resource Limits
+
+Set execution limits:
+
+```zig
+const Evm = guillotine.Evm(.{
+    // Maximum nested call depth
+    .max_call_depth = 1024,      // Default: 1024
+    
+    // Maximum input data size
+    .max_input_size = 131072,    // Default: 128 KB
+    
+    // Block gas limit
+    .block_gas_limit = 30_000_000, // Default: 30M
+});
+```
+
+## Memory Configuration
+
+### Stack Size
+
+```zig
+const Evm = guillotine.Evm(.{
+    .stack_size = 1024,  // Default: 1024 items
+});
+```
+
+### Memory Limits
+
+```zig
+const Evm = guillotine.Evm(.{
+    // Initial allocation
+    .memory_initial_capacity = 4096,    // Default: 4 KB
+    
+    // Maximum memory
+    .memory_limit = 0xFFFFFF,           // Default: ~16 MB
+});
+```
+
+## Build Modes
+
+Choose the right build mode for your use case:
+
+```bash
+# Development - full debugging
+zig build -Doptimize=Debug
+
+# Production - with safety checks (recommended)
+zig build -Doptimize=ReleaseSafe
+
+# Maximum performance
+zig build -Doptimize=ReleaseFast
+
+# Minimum size
+zig build -Doptimize=ReleaseSmall
+```
+
+| Mode | Debug Info | Safety Checks | Speed | Size | Use Case |
+|------|------------|---------------|-------|------|----------|
+| Debug | ✅ Full | ✅ All | ❌ Slow | ❌ Large | Development |
+| ReleaseSafe | ⚠️ Limited | ✅ Runtime | ✅ Fast | ⚠️ Medium | **Production** |
+| ReleaseFast | ❌ None | ❌ None | ✅ Fastest | ⚠️ Medium | Benchmarking |
+| ReleaseSmall | ❌ None | ❌ None | ✅ Fast | ✅ Smallest | Embedded |
+
+## Database Configuration
+
+### In-Memory Database
+
+Default for testing:
+
+```zig
+var database = try MemoryDatabase.init(allocator);
+evm.setDatabase(&database);
+```
+
+### Custom Database
+
+Implement your own storage:
+
+```zig
+const MyDatabase = struct {
+    // Implement required methods
+    pub fn get_account(self: *MyDatabase, address: Address) ?Account {
+        // Your implementation
+    }
+    
+    pub fn set_storage(self: *MyDatabase, address: Address, key: U256, value: U256) void {
+        // Your implementation
+    }
+};
+
+const Evm = guillotine.Evm(.{
+    .DatabaseType = MyDatabase,
+});
+```
+
+## Tracing Configuration
+
+Enable execution tracing for debugging:
+
+```zig
+// Define a tracer
+const MyTracer = struct {
+    pub fn on_opcode(self: *MyTracer, pc: usize, opcode: u8, gas: u64) void {
+        std.debug.print("PC: {} Op: 0x{x:0>2} Gas: {}\n", .{ pc, opcode, gas });
+    }
+};
+
+// Configure EVM with tracer
+const Evm = guillotine.Evm(.{
+    .TracerType = MyTracer,
+});
+```
+
+## Configuration Examples
+
+### For dApps
+
+```zig
+const Evm = guillotine.Evm(.{
+    .eips = .{ .hardfork = .CANCUN },
+    .enable_precompiles = true,
+    .enable_fusion = true,
+    .max_input_size = 65536, // 64 KB for smaller calls
+});
+```
+
+### For Testing
+
+```zig
+const Evm = guillotine.Evm(.{
+    .enable_precompiles = false,
+    .max_call_depth = 10,
+    .stack_size = 256,
+    .TracerType = TestTracer,
+});
+```
+
+### For Embedded Systems
+
+```zig
+const Evm = guillotine.Evm(.{
+    .stack_size = 256,
+    .memory_initial_capacity = 1024,
+    .memory_limit = 65536,
+    .max_call_depth = 5,
+    .enable_fusion = false,
+});
+```
+
+## Environment Variables
+
+Set runtime configuration via environment:
+
+```bash
+# Set log level
+export GUILLOTINE_LOG_LEVEL=debug
+
+# Enable tracing
+export GUILLOTINE_TRACE=1
+
+# Set memory limit
+export GUILLOTINE_MEM_LIMIT=16777216
+```
+
+## Configuration Validation
+
+Guillotine validates configuration at compile time:
+
+```zig
+// This will fail at compile time
+const Evm = guillotine.Evm(.{
+    .max_call_depth = 100000, // Error: exceeds u11 max
+});
+```
+
+## Performance Impact
+
+| Setting | Impact | Notes |
+|---------|--------|-------|
+| `enable_fusion` | +10-15% speed | Fuses common opcode patterns |
+| `enable_precompiles` | Minimal | Only affects precompile calls |
+| `stack_size` | Memory usage | Larger = more memory |
+| `TracerType` | -20-30% speed | Significant overhead |
+| Build mode | Varies | ReleaseFast is 2-3x faster than Debug |
+
+## Best Practices
+
+:::tip[Configuration Tips]
+1. **Start with defaults** - Only configure what you need
+2. **Use ReleaseSafe for production** - Balance of safety and speed
+3. **Disable unused features** - Reduce binary size
+4. **Test configuration changes** - Measure performance impact
+5. **Document custom configs** - Help future maintainers
+:::
+
+## Advanced Configuration
+
+For advanced configuration options, see:
+
+:::info[Advanced Topics]
+- [Compile-time Configuration](/advanced/customization/comptime-config)
+- [Custom Hardforks](/advanced/customization/hardforks)
+- [Custom Opcodes](/advanced/customization/opcodes)
+- [Performance Tuning](/advanced/performance/optimization)
+:::
+
+## Configuration Reference
+
+### Complete EvmConfig
+
+```zig
+pub const EvmConfig = struct {
+    // Hardfork selection
+    eips: Eips = .{ .hardfork = .CANCUN },
+    
+    // Execution limits
+    max_call_depth: u11 = 1024,
+    max_input_size: u18 = 131072,
+    
+    // Features
+    enable_precompiles: bool = true,
+    enable_fusion: bool = true,
+    
+    // Stack and memory
+    stack_size: u12 = 1024,
+    WordType: type = u256,
+    memory_initial_capacity: usize = 4096,
+    memory_limit: u64 = 0xFFFFFF,
+    
+    // Code limits
+    max_bytecode_size: u32 = 24576,
+    max_initcode_size: u32 = 49152,
+    
+    // Gas
+    block_gas_limit: u64 = 30_000_000,
+    
+    // Storage
+    DatabaseType: type = Database,
+    
+    // Debugging
+    TracerType: ?type = null,
+};
+```
+
+## Next Steps
+
+- **[Error Handling](/usage/error-handling)** - Handle errors gracefully
+- **[Basic Execution](/usage/basic-execution)** - Execute EVM bytecode
+- **[API Reference](/api/evm)** - Complete API documentation

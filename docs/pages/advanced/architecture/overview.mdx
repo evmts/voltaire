@@ -1,0 +1,182 @@
+---
+title: Architecture Overview
+description: Understanding Guillotine's design and architecture
+---
+
+# Architecture Overview
+
+Guillotine is a high-performance EVM implementation in Zig, designed with data-oriented principles and optimized for speed, safety, and customizability.
+
+## Core Design Principles
+
+### 1. Data-Oriented Design
+Guillotine follows data-oriented design principles to maximize CPU cache efficiency and minimize branch prediction misses:
+
+- **Cache-conscious struct layouts** - Fields are ordered to minimize padding and maximize cache line utilization
+- **Indirect threading via tail-call recursion** - Provides excellent CPU branch prediction
+- **Minimal abstractions** - Simple, direct code that the Zig compiler can optimize effectively
+
+### 2. Zero-Cost Customization
+All customization happens at compile-time through Zig's comptime feature:
+
+```zig
+const config = EvmConfig{
+    .eips = Eips{ .hardfork = Hardfork.CANCUN },
+    .max_call_depth = 1024,
+    .enable_precompiles = true,
+    .enable_fusion = true,
+};
+const MyEvm = Evm(config);
+```
+
+### 3. Memory Safety
+Guillotine takes memory management seriously:
+
+- **Explicit ownership** - Clear responsibility for allocation and deallocation
+- **Arena allocators** - Efficient bulk memory management with controlled growth
+- **Defer patterns** - Guaranteed cleanup using Zig's defer mechanism
+
+## High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Application Layer                    │
+├─────────────────────────────────────────────────────────┤
+│                         EVM Core                         │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐ │
+│  │  Frame   │  │  Stack   │  │  Memory  │  │ Journal│ │
+│  └──────────┘  └──────────┘  └──────────┘  └────────┘ │
+├─────────────────────────────────────────────────────────┤
+│                    Execution Layer                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐ │
+│  │ Bytecode │  │ Planner  │  │ Dispatch │  │Handlers│ │
+│  └──────────┘  └──────────┘  └──────────┘  └────────┘ │
+├─────────────────────────────────────────────────────────┤
+│                     Storage Layer                        │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐ │
+│  │ Database │  │  Trie    │  │  Access  │  │ Precomp│ │
+│  │          │  │          │  │   List   │  │  iles  │ │
+│  └──────────┘  └──────────┘  └──────────┘  └────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Key Components
+
+### EVM Core (`evm.zig`)
+The main orchestrator that manages:
+- Transaction execution lifecycle
+- Call depth tracking
+- State journaling for reverts
+- Gas accounting
+- Integration with external operations
+
+### Frame (`frame/frame.zig`)
+Execution context for contract code:
+- Manages PC (program counter)
+- Handles opcode dispatch
+- Maintains local execution state
+- Integrates with stack and memory
+
+### Stack (`stack/stack.zig`)
+Highly optimized EVM stack implementation:
+- Fixed-size array (configurable, default 1024)
+- Unsafe operations for validated bytecode
+- Zero-copy operations where possible
+
+### Memory (`memory/memory.zig`)
+Dynamic memory management for EVM operations:
+- Efficient expansion strategy
+- Word-aligned access optimizations
+- Gas cost tracking
+
+### Bytecode Analysis
+Guillotine pre-analyzes bytecode for optimization:
+- Jump destination validation
+- Opcode fusion opportunities
+- Gas cost batching
+- Static analysis for safety
+
+### State Management
+- **Database Interface** - Abstract storage layer
+- **Journal** - Transaction rollback support
+- **Access Lists** - EIP-2930 implementation
+- **Trie** - Merkle Patricia Trie for state roots
+
+## Memory Allocation Strategy
+
+Guillotine uses a sophisticated arena-based allocation strategy for optimal performance and predictable memory usage.
+
+### Growing Arena Allocator
+
+The `GrowingArenaAllocator` provides:
+
+1. **Pre-allocation** - Initial capacity reservation to avoid early allocations
+2. **Controlled growth** - Configurable growth factor (default 150% = 50% growth)
+3. **Bulk deallocation** - All memory freed at once when transaction completes
+
+```zig
+var arena = GrowingArenaAllocator.init(
+    base_allocator,
+    initial_capacity: 32 * 1024,  // 32KB initial
+    growth_factor: 150             // Grow by 50% when needed
+);
+defer arena.deinit();
+```
+
+### Memory Lifecycle
+
+1. **Transaction Start**
+   - Arena allocator initialized with pre-allocated capacity
+   - Reduces allocation overhead for typical transactions
+
+2. **During Execution**
+   - All allocations go through the arena
+   - No individual frees during execution
+   - Arena grows automatically if needed
+
+3. **Transaction Complete**
+   - Entire arena freed at once
+   - Zero fragmentation
+   - Predictable cleanup
+
+### Benefits
+
+- **Performance** - Minimal allocation overhead
+- **Predictability** - No fragmentation or GC pauses  
+- **Safety** - Automatic cleanup on scope exit
+- **Efficiency** - Bulk operations are faster than individual alloc/free
+
+## Optimization Techniques
+
+### Opcode Fusion
+Common patterns like `PUSH1 + ADD` are combined into single operations:
+- Reduces dispatch overhead
+- Improves branch prediction
+- Configurable at compile-time
+
+### Indirect Threading
+Uses computed goto (via tail calls) for opcode dispatch:
+- CPU can predict branches effectively
+- Minimal overhead between opcodes
+- Better than switch statements
+
+### Microoptimizations
+- Assembly-optimized Keccak via external library
+- Batched gas calculations
+- Stack operations use unsafe variants after validation
+- Memory operations are word-aligned when possible
+
+## Compilation Modes
+
+Guillotine supports multiple build modes:
+
+- **Debug** - Full safety checks and debugging symbols
+- **ReleaseSafe** - Production-ready with safety checks retained
+- **ReleaseFast** - Maximum performance, minimal checks
+- **ReleaseSmall** - Optimized for binary size
+
+## Next Steps
+
+- Learn about the [EVM Core](/architecture/evm-core) implementation
+- Understand [Memory Management](/architecture/memory) in detail
+- Explore the [API Reference](/api/evm) for usage examples

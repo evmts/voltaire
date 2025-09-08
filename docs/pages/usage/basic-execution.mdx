@@ -1,0 +1,384 @@
+---
+title: Basic Execution
+description: Learn how to execute EVM bytecode with Guillotine
+---
+
+# Basic Execution
+
+Guillotine provides multiple ways to execute EVM bytecode, from simple standalone execution to complex contract interactions.
+
+## Execution Modes
+
+### Direct Execution
+
+The simplest way to execute bytecode:
+
+```zig
+const bytecode = [_]u8{ 0x60, 0x42 }; // PUSH1 66
+const result = try evm.execute(&bytecode);
+```
+
+### Contract Calls
+
+Execute calls to deployed contracts:
+
+```zig
+const result = try evm.call(.{
+    .caller = sender_address,
+    .target = contract_address,
+    .value = 0,
+    .data = calldata,
+    .gas = gas_limit,
+    .is_static = false,
+});
+```
+
+### Contract Creation
+
+Deploy new contracts:
+
+```zig
+const address = try evm.create(.{
+    .caller = deployer,
+    .value = initial_value,
+    .data = init_code,
+    .gas = gas_limit,
+});
+```
+
+## Working with Bytecode
+
+### Simple Operations
+
+:::code-group
+
+```zig [Addition]
+// 3 + 5 = 8
+const bytecode = [_]u8{
+    0x60, 0x03,  // PUSH1 3
+    0x60, 0x05,  // PUSH1 5
+    0x01,        // ADD
+};
+```
+
+```zig [Multiplication]
+// 4 * 7 = 28
+const bytecode = [_]u8{
+    0x60, 0x04,  // PUSH1 4
+    0x60, 0x07,  // PUSH1 7
+    0x02,        // MUL
+};
+```
+
+```zig [Comparison]
+// 10 > 5 = 1 (true)
+const bytecode = [_]u8{
+    0x60, 0x0A,  // PUSH1 10
+    0x60, 0x05,  // PUSH1 5
+    0x11,        // GT
+};
+```
+
+:::
+
+### Memory Operations
+
+```zig
+// Store and load from memory
+const bytecode = [_]u8{
+    0x60, 0x42,  // PUSH1 66 (value)
+    0x60, 0x00,  // PUSH1 0 (offset)
+    0x52,        // MSTORE
+    0x60, 0x00,  // PUSH1 0 (offset)
+    0x51,        // MLOAD
+};
+```
+
+### Storage Operations
+
+```zig
+// Persistent storage
+const bytecode = [_]u8{
+    0x60, 0x99,  // PUSH1 153 (value)
+    0x60, 0x01,  // PUSH1 1 (key)
+    0x55,        // SSTORE
+    0x60, 0x01,  // PUSH1 1 (key)
+    0x54,        // SLOAD
+};
+```
+
+## Transaction Context
+
+Set up the environment for execution:
+
+```zig
+evm.setTransactionContext(.{
+    // Required fields
+    .origin = tx_origin,           // Transaction originator
+    .gas_price = 20_000_000_000,  // Gas price in wei
+    .block_number = 18_000_000,   // Current block
+    .timestamp = 1700000000,      // Unix timestamp
+    .gas_limit = 3_000_000,       // Block gas limit
+    
+    // Optional fields
+    .chain_id = 1,                // Network ID
+    .difficulty = 0,              // PoW difficulty (deprecated)
+    .base_fee = 15_000_000_000,   // EIP-1559 base fee
+    .blob_base_fee = null,        // EIP-4844 blob fee
+});
+```
+
+## Call Types
+
+### Standard Call
+
+Transfer value and execute code:
+
+```zig
+const result = try evm.call(.{
+    .caller = sender,
+    .target = contract,
+    .value = 1_000_000_000_000_000_000, // 1 ETH
+    .data = calldata,
+    .gas = 100_000,
+    .is_static = false,
+});
+```
+
+### Static Call
+
+Read-only execution (no state changes):
+
+```zig
+const result = try evm.call(.{
+    .caller = sender,
+    .target = contract,
+    .value = 0, // Cannot send value in static call
+    .data = calldata,
+    .gas = 50_000,
+    .is_static = true, // Enforces read-only
+});
+```
+
+### Delegate Call
+
+Execute in caller's context:
+
+```zig
+const result = try evm.delegatecall(.{
+    .caller = sender,
+    .target = implementation,
+    .data = calldata,
+    .gas = 100_000,
+});
+```
+
+## Return Values
+
+### Success Result
+
+```zig
+switch (result) {
+    .success => |data| {
+        // data contains return bytes
+        const return_value = std.mem.readInt(u256, data[0..32], .big);
+    },
+    .revert => |reason| {
+        // Handle revert with reason
+    },
+}
+```
+
+### Gas Information
+
+```zig
+// Get gas metrics
+const gas_used = evm.getGasUsed();
+const gas_left = evm.getGasLeft();
+const gas_refund = evm.getGasRefund();
+
+std.debug.print("Gas used: {}/{}\n", .{ gas_used, gas_limit });
+```
+
+## State Access
+
+### Reading State
+
+```zig
+// Get account information
+const account = try evm.getAccount(address);
+const balance = account.balance;
+const nonce = account.nonce;
+
+// Read storage
+const value = try evm.getStorage(contract, key);
+
+// Get code
+const code = try evm.getCode(contract);
+const code_hash = try evm.getCodeHash(contract);
+```
+
+### Modifying State
+
+```zig
+// Transfer ETH
+try evm.transfer(from, to, amount);
+
+// Update storage
+try evm.setStorage(contract, key, value);
+
+// Self-destruct (careful!)
+try evm.selfDestruct(contract, beneficiary);
+```
+
+## Execution Flow
+
+::::steps
+### Initialize
+
+```zig
+var evm = try Evm.init(allocator);
+defer evm.deinit();
+```
+
+### Configure
+
+```zig
+evm.setTransactionContext(context);
+evm.setDatabase(database);
+```
+
+### Execute
+
+```zig
+const result = try evm.execute(bytecode);
+```
+
+### Process Result
+
+```zig
+switch (result) {
+    .success => handleSuccess(),
+    .revert => handleRevert(),
+}
+```
+::::
+
+## Common Patterns
+
+### Function Calls
+
+Call a contract function with ABI encoding:
+
+```zig
+fn callFunction(
+    evm: *Evm,
+    contract: Address,
+    selector: [4]u8,
+    args: []const u8,
+) ![]u8 {
+    var calldata = std.ArrayList(u8).init(allocator);
+    try calldata.appendSlice(&selector);
+    try calldata.appendSlice(args);
+    
+    const result = try evm.call(.{
+        .caller = sender,
+        .target = contract,
+        .data = calldata.items,
+        .gas = 100_000,
+        .value = 0,
+        .is_static = false,
+    });
+    
+    return switch (result) {
+        .success => |data| data,
+        .revert => error.CallReverted,
+    };
+}
+```
+
+### Event Monitoring
+
+Track events during execution:
+
+```zig
+// Enable tracing
+const TracedEvm = Evm(.{ .TracerType = EventTracer });
+
+// Execute with tracing
+const result = try evm.execute(bytecode);
+
+// Get emitted events
+const events = evm.tracer.getEvents();
+for (events) |event| {
+    std.debug.print("Event: {x}\n", .{event.topics[0]});
+}
+```
+
+### Gas Estimation
+
+Estimate gas for a transaction:
+
+```zig
+fn estimateGas(evm: *Evm, params: CallParams) !u64 {
+    // Binary search for optimal gas
+    var low: u64 = 21_000;
+    var high: u64 = 10_000_000;
+    
+    while (low < high) {
+        const mid = (low + high) / 2;
+        params.gas = mid;
+        
+        const result = evm.call(params) catch {
+            low = mid + 1;
+            continue;
+        };
+        
+        switch (result) {
+            .success => high = mid,
+            .revert => low = mid + 1,
+        }
+    }
+    
+    return low;
+}
+```
+
+## Best Practices
+
+:::tip[Execution Tips]
+1. **Always set gas limits** - Prevent infinite loops
+2. **Check return values** - Handle both success and revert
+3. **Validate inputs** - Ensure bytecode is valid
+4. **Use static calls for queries** - Prevent accidental state changes
+5. **Track gas consumption** - Monitor efficiency
+:::
+
+## Error Scenarios
+
+```zig
+const result = evm.execute(bytecode) catch |err| {
+    switch (err) {
+        error.OutOfGas => {
+            // Increase gas limit
+        },
+        error.InvalidJump => {
+            // Bytecode has invalid JUMP
+        },
+        error.StackUnderflow => {
+            // Stack operation failed
+        },
+        error.StaticCallViolation => {
+            // Attempted state change in static call
+        },
+        else => return err,
+    }
+};
+```
+
+## Next Steps
+
+- **[Configuration](/usage/configuration)** - Customize execution environment
+- **[Error Handling](/usage/error-handling)** - Robust error management
+- **[API Reference](/api/evm)** - Complete API documentation
+- **[Advanced Execution](/advanced/architecture/evm-core)** - Deep dive into internals

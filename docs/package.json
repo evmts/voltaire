@@ -1,0 +1,14 @@
+{
+  "name": "guillotine-docs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vocs dev",
+    "build": "vocs build",
+    "preview": "vocs preview"
+  },
+  "devDependencies": {
+    "vocs": "latest"
+  }
+}

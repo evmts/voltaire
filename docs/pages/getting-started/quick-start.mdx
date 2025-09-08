@@ -1,0 +1,217 @@
+---
+title: Quick Start
+description: Run your first EVM execution with Guillotine
+---
+
+# Quick Start
+
+Get up and running with Guillotine in under 5 minutes.
+
+:::info[Prerequisites]
+Make sure you've [installed Guillotine](/getting-started/installation) first.
+:::
+
+## Your First EVM Execution
+
+Create a simple program that executes EVM bytecode:
+
+::::steps
+### Create a new Zig project
+
+```bash
+mkdir my-evm-app
+cd my-evm-app
+zig init
+```
+
+### Add Guillotine dependency
+
+Edit `build.zig.zon`:
+
+```zig
+.{
+    .name = "my-evm-app",
+    .version = "0.0.1",
+    .dependencies = .{
+        .guillotine = .{
+            .path = "../Guillotine", // Adjust path to your Guillotine clone
+        },
+    },
+}
+```
+
+### Write your first EVM program
+
+Create `src/main.zig`:
+
+```zig
+const std = @import("std");
+const guillotine = @import("guillotine");
+
+pub fn main() !void {
+    // Create allocator
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Initialize EVM with default config
+    const Evm = guillotine.Evm(.{});
+    var evm = try Evm.init(allocator);
+    defer evm.deinit();
+
+    // Simple bytecode: PUSH1 0x2A (push 42 to stack)
+    const bytecode = [_]u8{ 0x60, 0x2A };
+    
+    // Execute
+    const result = try evm.execute(&bytecode);
+    
+    // Print result
+    std.debug.print("Execution successful!\n", .{});
+    std.debug.print("Stack top: {}\n", .{result.stack_top});
+}
+```
+
+### Run the program
+
+```bash
+zig build run
+```
+
+Expected output:
+```
+Execution successful!
+Stack top: 42
+```
+::::
+
+## Understanding the Code
+
+Let's break down what just happened:
+
+| Step | Description |
+|------|-------------|
+| **1. Allocator** | Zig requires explicit memory management. We use a general-purpose allocator. |
+| **2. EVM Config** | `Evm(.{})` creates an EVM with default settings (Cancun hardfork, all features enabled) |
+| **3. Bytecode** | `0x60 0x2A` means `PUSH1 42` - push the value 42 onto the stack |
+| **4. Execute** | Runs the bytecode and returns the result |
+| **5. Result** | Contains the final stack state, gas used, and any return data |
+
+## Common Operations
+
+### Addition Example
+
+```zig
+// Bytecode: 1 + 2
+const bytecode = [_]u8{
+    0x60, 0x01,  // PUSH1 1
+    0x60, 0x02,  // PUSH1 2  
+    0x01,        // ADD
+};
+
+const result = try evm.execute(&bytecode);
+std.debug.print("1 + 2 = {}\n", .{result.stack_top}); // Output: 3
+```
+
+### Storage Example
+
+```zig
+// Store and load a value
+const bytecode = [_]u8{
+    0x60, 0x42,  // PUSH1 66 (value)
+    0x60, 0x00,  // PUSH1 0 (key)
+    0x55,        // SSTORE
+    0x60, 0x00,  // PUSH1 0 (key)
+    0x54,        // SLOAD
+};
+
+const result = try evm.execute(&bytecode);
+std.debug.print("Loaded value: {}\n", .{result.stack_top}); // Output: 66
+```
+
+## Working with C
+
+If you prefer C, here's the same example:
+
+```c
+#include <stdio.h>
+#include "guillotine.h"
+
+int main() {
+    // Initialize EVM
+    guillotine_evm_t* evm = guillotine_evm_create();
+    
+    // Simple bytecode: PUSH1 42
+    uint8_t bytecode[] = {0x60, 0x2A};
+    
+    // Execute
+    guillotine_result_t result;
+    guillotine_execute(evm, bytecode, sizeof(bytecode), &result);
+    
+    // Print result
+    printf("Execution successful!\n");
+    printf("Stack top: %llu\n", result.stack_top);
+    
+    // Cleanup
+    guillotine_evm_destroy(evm);
+    return 0;
+}
+```
+
+Compile and run:
+```bash
+gcc -o my_evm main.c -lguillotine -L/path/to/guillotine/lib -I/path/to/guillotine/include
+./my_evm
+```
+
+## What's Next?
+
+Now that you've run your first EVM execution:
+
+:::tip[Explore Further]
+- **[Basic Example](/getting-started/basic-example)** - A complete contract execution example
+- **[Basic Execution](/usage/basic-execution)** - Learn about different execution modes
+- **[Configuration](/usage/configuration)** - Customize the EVM for your needs
+- **[API Reference](/api/evm)** - Complete API documentation
+:::
+
+:::info[Advanced Topics]
+Once comfortable with basics, explore:
+- [Performance optimization](/advanced/performance/optimization)
+- [Custom opcodes](/advanced/customization/opcodes)
+- [Differential testing](/advanced/testing/differential)
+:::
+
+## Quick Reference
+
+### Essential Opcodes
+
+| Opcode | Hex | Description | Example |
+|--------|-----|-------------|---------|
+| `PUSH1` | `0x60` | Push 1 byte | `0x60 0x42` (push 66) |
+| `ADD` | `0x01` | Addition | `a + b` |
+| `MUL` | `0x02` | Multiplication | `a * b` |
+| `SSTORE` | `0x55` | Store to storage | `storage[key] = value` |
+| `SLOAD` | `0x54` | Load from storage | `storage[key]` |
+| `RETURN` | `0xF3` | Return data | Return and halt |
+
+### Error Handling
+
+```zig
+const result = evm.execute(&bytecode) catch |err| switch (err) {
+    error.OutOfGas => {
+        std.debug.print("Not enough gas!\n", .{});
+        return;
+    },
+    error.InvalidOpcode => {
+        std.debug.print("Invalid opcode encountered!\n", .{});
+        return;
+    },
+    else => return err,
+};
+```
+
+## Need Help?
+
+- **Examples**: Check the [examples directory](https://github.com/williamcory/Guillotine/tree/main/examples)
+- **Issues**: Report bugs on [GitHub](https://github.com/williamcory/Guillotine/issues)
+- **Community**: Join our [Telegram](https://t.me/+ANThR9bHDLAwMjUx)

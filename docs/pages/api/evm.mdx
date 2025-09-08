@@ -1,0 +1,478 @@
+---
+title: EVM API
+description: Complete API reference for the Guillotine EVM
+---
+
+# EVM API Reference
+
+The Guillotine EVM provides a comprehensive API for executing Ethereum transactions and managing state.
+
+## Creating an EVM Instance
+
+### Basic Configuration
+
+```zig
+const std = @import("std");
+const Evm = @import("evm").Evm;
+const EvmConfig = @import("evm").EvmConfig;
+
+// Create with default configuration
+const config = EvmConfig{};
+const MyEvm = Evm(config);
+
+// Initialize instance
+var evm = try MyEvm.init(allocator);
+defer evm.deinit();
+```
+
+### Custom Configuration
+
+```zig
+const config = EvmConfig{
+    // Hardfork selection
+    .eips = Eips{ .hardfork = Hardfork.CANCUN },
+    
+    // Execution limits
+    .max_call_depth = 1024,
+    .max_input_size = 131072,
+    
+    // Features
+    .enable_precompiles = true,
+    .enable_fusion = true,
+    
+    // Stack configuration
+    .stack_size = 1024,
+    .WordType = u256,
+    
+    // Memory limits
+    .memory_initial_capacity = 4096,
+    .memory_limit = 0xFFFFFF,
+    
+    // Gas limits
+    .block_gas_limit = 30_000_000,
+};
+
+const CustomEvm = Evm(config);
+```
+
+## Configuration Options
+
+### Core Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `eips.hardfork` | `Hardfork` | `CANCUN` | Ethereum hardfork to use |
+| `max_call_depth` | `u11` | `1024` | Maximum nested call depth |
+| `max_input_size` | `u18` | `131072` | Maximum input data size (bytes) |
+| `enable_precompiles` | `bool` | `true` | Enable precompiled contracts |
+| `enable_fusion` | `bool` | `true` | Enable opcode fusion optimization |
+
+### Stack Configuration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `stack_size` | `u12` | `1024` | Maximum stack depth |
+| `WordType` | `type` | `u256` | Word size for stack operations |
+
+### Memory Configuration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `memory_initial_capacity` | `usize` | `4096` | Initial memory allocation |
+| `memory_limit` | `u64` | `0xFFFFFF` | Maximum memory size (~16MB) |
+
+### Code Size Limits
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `max_bytecode_size` | `u32` | `24576` | Maximum contract code size |
+| `max_initcode_size` | `u32` | `49152` | Maximum deployment code size |
+
+## Executing Transactions
+
+### Simple Execution
+
+```zig
+// Execute bytecode
+const bytecode = [_]u8{0x60, 0x01, 0x60, 0x02, 0x01}; // PUSH1 1 PUSH1 2 ADD
+const result = try evm.execute(&bytecode);
+
+switch (result) {
+    .success => |data| {
+        // Handle successful execution
+        std.debug.print("Result: {any}\n", .{data});
+    },
+    .revert => |reason| {
+        // Handle revert
+        std.debug.print("Reverted: {s}\n", .{reason});
+    },
+    .error => |err| {
+        // Handle error
+        std.debug.print("Error: {}\n", .{err});
+    },
+}
+```
+
+### Transaction Context
+
+```zig
+const TransactionContext = struct {
+    origin: Address,          // Transaction origin
+    gas_price: u256,         // Gas price
+    block_number: u64,       // Current block number
+    timestamp: u64,          // Block timestamp
+    gas_limit: u64,          // Gas limit
+    difficulty: u256,        // Block difficulty
+    chain_id: u64,           // Chain ID
+    base_fee: ?u256,         // EIP-1559 base fee
+};
+
+// Set transaction context
+evm.setTransactionContext(context);
+```
+
+### Contract Calls
+
+```zig
+const CallParams = struct {
+    caller: Address,         // Calling address
+    target: Address,         // Contract address
+    value: u256,            // ETH value
+    data: []const u8,       // Call data
+    gas: u64,               // Gas limit
+    is_static: bool,        // Static call flag
+};
+
+const result = try evm.call(params);
+```
+
+## State Management
+
+### Account Operations
+
+```zig
+// Get account
+const account = try evm.getAccount(address);
+
+// Check balance
+const balance = try evm.getBalance(address);
+
+// Transfer value
+try evm.transfer(from, to, amount);
+```
+
+### Storage Operations
+
+```zig
+// Read storage
+const value = try evm.getStorage(address, key);
+
+// Write storage
+try evm.setStorage(address, key, value);
+
+// Check storage slot
+const exists = try evm.hasStorage(address, key);
+```
+
+### Code Operations
+
+```zig
+// Get contract code
+const code = try evm.getCode(address);
+
+// Get code size
+const size = try evm.getCodeSize(address);
+
+// Get code hash
+const hash = try evm.getCodeHash(address);
+```
+
+## Contract Deployment
+
+### CREATE
+
+```zig
+const create_params = CallParams{
+    .caller = deployer,
+    .target = Address.zero(),
+    .value = 0,
+    .data = init_code,
+    .gas = gas_limit,
+    .is_static = false,
+};
+
+const address = try evm.create(create_params);
+```
+
+### CREATE2
+
+```zig
+const salt = [32]u8{...}; // Salt value
+
+const address = try evm.create2(create_params, salt);
+```
+
+## Error Handling
+
+### Error Types
+
+```zig
+pub const Error = error{
+    InvalidJump,         // Invalid JUMP destination
+    OutOfGas,           // Insufficient gas
+    StackUnderflow,     // Stack underflow
+    StackOverflow,      // Stack overflow
+    ContractNotFound,   // Contract doesn't exist
+    PrecompileError,    // Precompile execution failed
+    MemoryError,        // Memory operation failed
+    StorageError,       // Storage operation failed
+    CallDepthExceeded,  // Max call depth reached
+    InsufficientBalance,// Insufficient balance
+    ContractCollision,  // Contract already exists
+    InvalidBytecode,    // Invalid bytecode
+    StaticCallViolation,// State change in static call
+    InvalidOpcode,      // Unknown opcode
+    RevertExecution,    // Explicit revert
+    OutOfMemory,        // Memory limit exceeded
+    AllocationError,    // Allocation failed
+};
+```
+
+### Error Handling Patterns
+
+```zig
+// Explicit error handling
+evm.execute(bytecode) catch |err| switch (err) {
+    error.OutOfGas => {
+        // Handle out of gas
+    },
+    error.RevertExecution => {
+        // Handle revert
+    },
+    else => return err,
+};
+
+// Try pattern
+const result = try evm.execute(bytecode);
+
+// Error union
+const result = evm.execute(bytecode);
+if (result) |success| {
+    // Handle success
+} else |err| {
+    // Handle error
+}
+```
+
+## Gas Management
+
+### Gas Tracking
+
+```zig
+// Get remaining gas
+const gas_left = evm.getGasLeft();
+
+// Check gas consumption
+const gas_used = evm.getGasUsed();
+
+// Set gas limit
+evm.setGasLimit(3000000);
+```
+
+### Gas Costs
+
+```zig
+// Calculate call gas
+const gas_cost = evm.calculateCallGas(params);
+
+// Calculate memory expansion gas
+const mem_gas = evm.calculateMemoryGas(new_size);
+
+// Calculate storage gas
+const storage_gas = evm.calculateStorageGas(operation);
+```
+
+## Tracing and Debugging
+
+### Enable Tracing
+
+```zig
+const TracedEvm = Evm(EvmConfig{
+    .TracerType = MyTracer,
+    // ... other config
+});
+```
+
+### Tracer Interface
+
+```zig
+pub const Tracer = struct {
+    pub fn on_opcode(self: *Tracer, pc: usize, opcode: u8, gas: u64) void;
+    pub fn on_call(self: *Tracer, params: CallParams) void;
+    pub fn on_return(self: *Tracer, data: []const u8) void;
+    pub fn on_revert(self: *Tracer, reason: []const u8) void;
+    pub fn on_storage(self: *Tracer, address: Address, key: U256, value: U256) void;
+};
+```
+
+## Precompiled Contracts
+
+### Available Precompiles
+
+| Address | Name | Description |
+|---------|------|-------------|
+| `0x01` | ECRECOVER | Elliptic curve recovery |
+| `0x02` | SHA256 | SHA-256 hash |
+| `0x03` | RIPEMD160 | RIPEMD-160 hash |
+| `0x04` | IDENTITY | Identity function |
+| `0x05` | MODEXP | Modular exponentiation |
+| `0x06` | ECADD | Elliptic curve addition |
+| `0x07` | ECMUL | Elliptic curve multiplication |
+| `0x08` | ECPAIRING | Elliptic curve pairing |
+| `0x09` | BLAKE2F | BLAKE2F compression |
+
+### Calling Precompiles
+
+```zig
+const result = try evm.callPrecompile(
+    address,    // Precompile address
+    input,      // Input data
+    gas,        // Gas limit
+);
+```
+
+## Advanced Features
+
+### Opcode Fusion
+
+When enabled, common patterns are optimized:
+
+```zig
+// These patterns are fused:
+// PUSH1 + ADD
+// PUSH1 + MUL
+// DUP1 + SWAP1
+// And more...
+
+const config = EvmConfig{
+    .enable_fusion = true,  // Enable fusion
+};
+```
+
+### Custom Database
+
+```zig
+const MyDatabase = struct {
+    pub fn get_account(self: *MyDatabase, address: Address) ?Account {
+        // Custom implementation
+    }
+    
+    pub fn set_account(self: *MyDatabase, address: Address, account: Account) void {
+        // Custom implementation
+    }
+    
+    // ... other methods
+};
+
+const config = EvmConfig{
+    .DatabaseType = MyDatabase,
+};
+```
+
+### Memory Optimization
+
+```zig
+// Use arena allocator for transaction scope
+var arena = GrowingArenaAllocator.init(
+    allocator,
+    32 * 1024,  // 32KB initial
+    150,        // 50% growth
+);
+defer arena.deinit();
+
+var evm = try MyEvm.init(arena.allocator());
+```
+
+## Performance Tips
+
+1. **Use appropriate build mode**
+   ```bash
+   zig build -Doptimize=ReleaseFast  # Maximum performance
+   zig build -Doptimize=ReleaseSafe  # Production with safety
+   ```
+
+2. **Configure for your use case**
+   - Disable unused features (precompiles, fusion)
+   - Set appropriate limits (stack size, memory)
+   - Choose correct hardfork
+
+3. **Optimize memory usage**
+   - Use arena allocator
+   - Set appropriate initial capacity
+   - Reuse EVM instances when possible
+
+4. **Batch operations**
+   - Group related calls
+   - Use transaction batching
+   - Minimize state queries
+
+## Example: Complete Transaction
+
+```zig
+const std = @import("std");
+const Evm = @import("evm").Evm;
+const EvmConfig = @import("evm").EvmConfig;
+
+pub fn executeTransaction(allocator: Allocator) !void {
+    // Configure EVM
+    const config = EvmConfig{
+        .eips = Eips{ .hardfork = Hardfork.CANCUN },
+        .enable_precompiles = true,
+        .enable_fusion = true,
+    };
+    const MyEvm = Evm(config);
+    
+    // Initialize with arena allocator
+    var arena = GrowingArenaAllocator.init(allocator, 32 * 1024, 150);
+    defer arena.deinit();
+    
+    var evm = try MyEvm.init(arena.allocator());
+    defer evm.deinit();
+    
+    // Set transaction context
+    evm.setTransactionContext(.{
+        .origin = sender_address,
+        .gas_price = 20_000_000_000,
+        .block_number = 18_000_000,
+        .timestamp = 1700000000,
+        .gas_limit = 3_000_000,
+        .chain_id = 1,
+    });
+    
+    // Execute call
+    const result = try evm.call(.{
+        .caller = sender_address,
+        .target = contract_address,
+        .value = 0,
+        .data = call_data,
+        .gas = 1_000_000,
+        .is_static = false,
+    });
+    
+    // Handle result
+    switch (result) {
+        .success => |data| {
+            std.debug.print("Success: {x}\n", .{data});
+        },
+        .revert => |reason| {
+            std.debug.print("Reverted: {s}\n", .{reason});
+        },
+    }
+}
+```
+
+## Next Steps
+
+- Learn about [Opcode Implementation](/advanced/architecture/opcodes)
+- Explore [State Management](/api/state)
+- Understand [Architecture](/advanced/architecture/overview)

@@ -1,0 +1,439 @@
+---
+title: Error Handling
+description: Handle errors gracefully in Guillotine
+---
+
+# Error Handling
+
+Guillotine provides comprehensive error handling with clear, actionable error types. All errors are explicit and can be handled at compile time.
+
+## Common Errors
+
+### Quick Reference
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `OutOfGas` | Insufficient gas | Increase gas limit |
+| `InvalidOpcode` | Unknown instruction | Check bytecode |
+| `StackUnderflow` | Pop from empty stack | Validate bytecode |
+| `RevertExecution` | Explicit revert | Check revert reason |
+| `StaticCallViolation` | State change in static | Use non-static call |
+
+## Basic Error Handling
+
+### Try-Catch Pattern
+
+```zig
+// Basic error handling
+const result = evm.execute(bytecode) catch |err| {
+    std.debug.print("Execution failed: {}\n", .{err});
+    return err;
+};
+```
+
+### Switch on Errors
+
+```zig
+const result = evm.execute(bytecode) catch |err| switch (err) {
+    error.OutOfGas => {
+        std.debug.print("Not enough gas!\n", .{});
+        return error.InsufficientGas;
+    },
+    error.InvalidOpcode => {
+        std.debug.print("Invalid bytecode!\n", .{});
+        return error.BadBytecode;
+    },
+    else => return err,
+};
+```
+
+### Error Union Pattern
+
+```zig
+fn executeWithFallback(evm: *Evm, bytecode: []const u8) !Result {
+    const result = evm.execute(bytecode);
+    if (result) |success| {
+        return success;
+    } else |err| {
+        // Try fallback logic
+        return executeFallback(evm);
+    }
+}
+```
+
+## Execution Errors
+
+### Gas Errors
+
+```zig
+// Handle gas-related errors
+const result = evm.call(params) catch |err| switch (err) {
+    error.OutOfGas => {
+        // Transaction ran out of gas
+        log.warn("Gas exhausted at {} of {}", .{ 
+            evm.getGasUsed(), 
+            params.gas 
+        });
+        
+        // Try with more gas
+        params.gas *= 2;
+        return evm.call(params);
+    },
+    else => return err,
+};
+```
+
+### Stack Errors
+
+```zig
+// Handle stack issues
+const result = evm.execute(bytecode) catch |err| switch (err) {
+    error.StackUnderflow => {
+        log.err("Stack underflow at PC: {}", .{evm.getProgramCounter()});
+        return error.InvalidBytecode;
+    },
+    error.StackOverflow => {
+        log.err("Stack depth exceeded maximum", .{});
+        return error.ComplexityLimit;
+    },
+    else => return err,
+};
+```
+
+### Jump Errors
+
+```zig
+// Handle invalid jumps
+const result = evm.execute(bytecode) catch |err| switch (err) {
+    error.InvalidJump => {
+        const pc = evm.getProgramCounter();
+        log.err("Invalid JUMP destination at PC: {}", .{pc});
+        
+        // Analyze bytecode for debugging
+        const opcode = bytecode[pc];
+        if (opcode == 0x56) { // JUMP
+            log.debug("JUMP to invalid destination", .{});
+        }
+        return error.BadJump;
+    },
+    else => return err,
+};
+```
+
+## State Errors
+
+### Storage Errors
+
+```zig
+// Handle storage issues
+evm.setStorage(address, key, value) catch |err| switch (err) {
+    error.StorageError => {
+        log.err("Storage operation failed", .{});
+        // Retry or handle gracefully
+    },
+    error.StaticCallViolation => {
+        log.err("Cannot modify storage in static call", .{});
+        return error.ReadOnlyContext;
+    },
+    else => return err,
+};
+```
+
+### Account Errors
+
+```zig
+// Handle account-related errors
+const account = evm.getAccount(address) catch |err| switch (err) {
+    error.ContractNotFound => {
+        log.info("Contract not deployed at {}", .{address});
+        return null; // Treat as empty account
+    },
+    error.DatabaseError => {
+        log.err("Database access failed", .{});
+        return err;
+    },
+    else => return err,
+};
+```
+
+## Call Errors
+
+### Revert Handling
+
+```zig
+// Handle reverts with reason
+const result = try evm.call(params);
+
+switch (result) {
+    .success => |data| {
+        // Process success
+    },
+    .revert => |reason| {
+        // Decode revert reason
+        if (reason.len >= 4) {
+            const selector = reason[0..4];
+            
+            // Check for common revert selectors
+            if (std.mem.eql(u8, selector, &[_]u8{0x08, 0xc3, 0x79, 0xa0})) {
+                // Error(string) selector
+                const message = decodeRevertString(reason[4..]);
+                log.err("Reverted: {s}", .{message});
+            }
+        }
+    },
+}
+```
+
+### Call Depth Errors
+
+```zig
+// Handle call depth exceeded
+const result = evm.call(params) catch |err| switch (err) {
+    error.CallDepthExceeded => {
+        log.warn("Max call depth {} reached", .{config.max_call_depth});
+        
+        // Could be intentional (recursion limit)
+        // or could indicate infinite recursion
+        return error.RecursionLimit;
+    },
+    else => return err,
+};
+```
+
+## Memory Errors
+
+### Allocation Errors
+
+```zig
+// Handle memory allocation failures
+const result = evm.execute(bytecode) catch |err| switch (err) {
+    error.OutOfMemory => {
+        log.err("Memory allocation failed", .{});
+        
+        // Try with larger initial capacity
+        var new_arena = GrowingArenaAllocator.init(
+            allocator,
+            64 * 1024,  // Double initial capacity
+            150,
+        );
+        defer new_arena.deinit();
+        
+        var new_evm = try Evm.init(new_arena.allocator());
+        return new_evm.execute(bytecode);
+    },
+    error.AllocationError => {
+        log.err("Arena allocator failed", .{});
+        return error.InsufficientMemory;
+    },
+    else => return err,
+};
+```
+
+### Memory Limit Errors
+
+```zig
+// Handle EVM memory expansion limits
+const result = evm.execute(bytecode) catch |err| switch (err) {
+    error.MemoryError => {
+        const mem_size = evm.getMemorySize();
+        log.err("Memory limit exceeded: {} bytes", .{mem_size});
+        
+        if (mem_size > config.memory_limit) {
+            return error.MemoryLimitExceeded;
+        }
+        return err;
+    },
+    else => return err,
+};
+```
+
+## Error Recovery Patterns
+
+### Retry with Backoff
+
+```zig
+fn executeWithRetry(evm: *Evm, bytecode: []const u8) !Result {
+    var attempts: u32 = 0;
+    
+    while (attempts < 3) : (attempts += 1) {
+        const result = evm.execute(bytecode) catch |err| {
+            if (err == error.OutOfGas and attempts < 2) {
+                // Exponential backoff for gas
+                evm.setGasLimit(evm.getGasLimit() * 2);
+                continue;
+            }
+            return err;
+        };
+        
+        return result;
+    }
+    
+    return error.MaxRetriesExceeded;
+}
+```
+
+### Fallback Execution
+
+```zig
+fn executeWithFallback(evm: *Evm, primary: []const u8, fallback: []const u8) !Result {
+    // Try primary bytecode
+    const result = evm.execute(primary) catch |err| {
+        log.warn("Primary execution failed: {}, trying fallback", .{err});
+        
+        // Reset EVM state
+        evm.reset();
+        
+        // Try fallback bytecode
+        return evm.execute(fallback);
+    };
+    
+    return result;
+}
+```
+
+### Transaction Rollback
+
+```zig
+fn executeWithRollback(evm: *Evm, bytecode: []const u8) !Result {
+    // Create snapshot
+    const snapshot = try evm.snapshot();
+    
+    const result = evm.execute(bytecode) catch |err| {
+        // Rollback on error
+        try evm.revert(snapshot);
+        return err;
+    };
+    
+    // Commit on success
+    try evm.commit(snapshot);
+    return result;
+}
+```
+
+## Error Reporting
+
+### Detailed Error Context
+
+```zig
+const ExecutionError = struct {
+    err: Error,
+    pc: usize,
+    opcode: u8,
+    gas_used: u64,
+    stack_size: usize,
+    
+    pub fn format(self: ExecutionError) []const u8 {
+        return std.fmt.allocPrint(
+            allocator,
+            "Error: {} at PC: {} (opcode: 0x{x:0>2}, gas: {}, stack: {})",
+            .{ self.err, self.pc, self.opcode, self.gas_used, self.stack_size }
+        );
+    }
+};
+```
+
+### Error Logging
+
+```zig
+fn logError(err: Error, context: anytype) void {
+    const level = switch (err) {
+        error.OutOfGas => .warn,
+        error.InvalidOpcode => .err,
+        error.RevertExecution => .info,
+        else => .err,
+    };
+    
+    log.log(level, "EVM error: {} with context: {}", .{ err, context });
+}
+```
+
+## Testing Error Conditions
+
+```zig
+test "handles out of gas" {
+    var evm = try Evm.init(testing.allocator);
+    defer evm.deinit();
+    
+    // Set very low gas limit
+    evm.setGasLimit(10);
+    
+    // This should consume more than 10 gas
+    const bytecode = [_]u8{
+        0x60, 0x01,  // PUSH1 1
+        0x60, 0x02,  // PUSH1 2
+        0x01,        // ADD
+    };
+    
+    const result = evm.execute(&bytecode);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "handles invalid jump" {
+    var evm = try Evm.init(testing.allocator);
+    defer evm.deinit();
+    
+    // Jump to invalid destination
+    const bytecode = [_]u8{
+        0x60, 0xFF,  // PUSH1 255 (invalid)
+        0x56,        // JUMP
+    };
+    
+    const result = evm.execute(&bytecode);
+    try testing.expectError(error.InvalidJump, result);
+}
+```
+
+## Best Practices
+
+:::tip[Error Handling Tips]
+1. **Always handle errors explicitly** - No silent failures
+2. **Log errors with context** - Include PC, gas, stack info
+3. **Use appropriate error types** - Match error to situation
+4. **Test error paths** - Write tests for error conditions
+5. **Document error cases** - Help users understand failures
+6. **Provide recovery options** - Retry, fallback, or graceful degradation
+:::
+
+## Error Reference
+
+### Complete Error List
+
+```zig
+pub const Error = error{
+    // Execution errors
+    InvalidJump,
+    OutOfGas,
+    InvalidOpcode,
+    
+    // Stack errors
+    StackUnderflow,
+    StackOverflow,
+    
+    // State errors
+    ContractNotFound,
+    ContractCollision,
+    InsufficientBalance,
+    StorageError,
+    
+    // Call errors
+    CallDepthExceeded,
+    StaticCallViolation,
+    PrecompileError,
+    
+    // Memory errors
+    MemoryError,
+    OutOfMemory,
+    AllocationError,
+    
+    // Control flow
+    RevertExecution,
+    InvalidBytecode,
+};
+```
+
+## Next Steps
+
+- **[Basic Execution](/usage/basic-execution)** - Learn execution patterns
+- **[Configuration](/usage/configuration)** - Configure error behavior
+- **[Testing Guide](/advanced/testing/unit)** - Test error conditions
+- **[API Reference](/api/evm)** - Complete error documentation

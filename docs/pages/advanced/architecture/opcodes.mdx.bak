@@ -1,0 +1,453 @@
+---
+title: Opcodes
+description: EVM opcode reference and implementation details
+---
+
+# Opcodes Reference
+
+Guillotine implements all EVM opcodes with optimizations for performance and safety. Opcodes are organized into logical handler modules for maintainability.
+
+## Opcode Categories
+
+### Arithmetic Operations (`handlers_arithmetic.zig`)
+
+Basic arithmetic and comparison operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `STOP` | `0x00` | 0 | Halts execution |
+| `ADD` | `0x01` | 3 | Addition operation |
+| `MUL` | `0x02` | 5 | Multiplication operation |
+| `SUB` | `0x03` | 3 | Subtraction operation |
+| `DIV` | `0x04` | 5 | Integer division |
+| `SDIV` | `0x05` | 5 | Signed integer division |
+| `MOD` | `0x06` | 5 | Modulo operation |
+| `SMOD` | `0x07` | 5 | Signed modulo |
+| `ADDMOD` | `0x08` | 8 | Addition modulo |
+| `MULMOD` | `0x09` | 8 | Multiplication modulo |
+| `EXP` | `0x0a` | 10* | Exponential operation |
+| `SIGNEXTEND` | `0x0b` | 5 | Sign extension |
+
+*Dynamic gas cost
+
+### Comparison Operations (`handlers_comparison.zig`)
+
+Logical and comparison operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `LT` | `0x10` | 3 | Less than |
+| `GT` | `0x11` | 3 | Greater than |
+| `SLT` | `0x12` | 3 | Signed less than |
+| `SGT` | `0x13` | 3 | Signed greater than |
+| `EQ` | `0x14` | 3 | Equality |
+| `ISZERO` | `0x15` | 3 | Is zero |
+
+### Bitwise Operations (`handlers_bitwise.zig`)
+
+Bit manipulation operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `AND` | `0x16` | 3 | Bitwise AND |
+| `OR` | `0x17` | 3 | Bitwise OR |
+| `XOR` | `0x18` | 3 | Bitwise XOR |
+| `NOT` | `0x19` | 3 | Bitwise NOT |
+| `BYTE` | `0x1a` | 3 | Extract byte |
+| `SHL` | `0x1b` | 3 | Shift left |
+| `SHR` | `0x1c` | 3 | Logical shift right |
+| `SAR` | `0x1d` | 3 | Arithmetic shift right |
+
+### Hash Operations (`handlers_keccak.zig`)
+
+Cryptographic hash functions.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `KECCAK256` | `0x20` | 30* | Keccak-256 hash |
+
+*Plus 6 gas per word
+
+### Context Operations (`handlers_context.zig`)
+
+Environment and block information.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `ADDRESS` | `0x30` | 2 | Current contract address |
+| `BALANCE` | `0x31` | 100* | Account balance |
+| `ORIGIN` | `0x32` | 2 | Transaction origin |
+| `CALLER` | `0x33` | 2 | Message sender |
+| `CALLVALUE` | `0x34` | 2 | Message value |
+| `CALLDATALOAD` | `0x35` | 3 | Load call data |
+| `CALLDATASIZE` | `0x36` | 2 | Call data size |
+| `CALLDATACOPY` | `0x37` | 3* | Copy call data |
+| `CODESIZE` | `0x38` | 2 | Code size |
+| `CODECOPY` | `0x39` | 3* | Copy code |
+| `GASPRICE` | `0x3a` | 2 | Gas price |
+| `EXTCODESIZE` | `0x3b` | 100* | External code size |
+| `EXTCODECOPY` | `0x3c` | 100* | Copy external code |
+| `RETURNDATASIZE` | `0x3d` | 2 | Return data size |
+| `RETURNDATACOPY` | `0x3e` | 3* | Copy return data |
+| `EXTCODEHASH` | `0x3f` | 100* | External code hash |
+| `BLOCKHASH` | `0x40` | 20 | Block hash |
+| `COINBASE` | `0x41` | 2 | Block coinbase |
+| `TIMESTAMP` | `0x42` | 2 | Block timestamp |
+| `NUMBER` | `0x43` | 2 | Block number |
+| `DIFFICULTY` | `0x44` | 2 | Block difficulty |
+| `GASLIMIT` | `0x45` | 2 | Block gas limit |
+| `CHAINID` | `0x46` | 2 | Chain ID |
+| `SELFBALANCE` | `0x47` | 5 | Current balance |
+| `BASEFEE` | `0x48` | 2 | Block base fee |
+
+*Dynamic or conditional gas cost
+
+### Stack Operations (`handlers_stack.zig`)
+
+Stack manipulation operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `POP` | `0x50` | 2 | Remove from stack |
+| `MLOAD` | `0x51` | 3* | Load from memory |
+| `MSTORE` | `0x52` | 3* | Store to memory |
+| `MSTORE8` | `0x53` | 3* | Store byte to memory |
+| `PUSH0` | `0x5f` | 2 | Push zero |
+| `PUSH1-32` | `0x60-0x7f` | 3 | Push 1-32 bytes |
+| `DUP1-16` | `0x80-0x8f` | 3 | Duplicate stack item |
+| `SWAP1-16` | `0x90-0x9f` | 3 | Swap stack items |
+
+*Plus memory expansion cost
+
+### Memory Operations (`handlers_memory.zig`)
+
+Memory access operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `MSIZE` | `0x59` | 2 | Memory size |
+| `MCOPY` | `0x5e` | 3* | Memory copy (EIP-5656) |
+
+*Plus memory expansion cost
+
+### Storage Operations (`handlers_storage.zig`)
+
+Persistent storage operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `SLOAD` | `0x54` | 100* | Load from storage |
+| `SSTORE` | `0x55` | 100* | Store to storage |
+| `TLOAD` | `0x5c` | 100 | Transient load (EIP-1153) |
+| `TSTORE` | `0x5d` | 100 | Transient store (EIP-1153) |
+
+*Complex gas calculation based on warm/cold access
+
+### Control Flow Operations (`handlers_jump.zig`)
+
+Program counter and control flow.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `JUMP` | `0x56` | 8 | Unconditional jump |
+| `JUMPI` | `0x57` | 10 | Conditional jump |
+| `PC` | `0x58` | 2 | Program counter |
+| `GAS` | `0x5a` | 2 | Remaining gas |
+| `JUMPDEST` | `0x5b` | 1 | Jump destination |
+
+### Logging Operations (`handlers_log.zig`)
+
+Event emission operations.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `LOG0` | `0xa0` | 375* | Log with 0 topics |
+| `LOG1` | `0xa1` | 750* | Log with 1 topic |
+| `LOG2` | `0xa2` | 1125* | Log with 2 topics |
+| `LOG3` | `0xa3` | 1500* | Log with 3 topics |
+| `LOG4` | `0xa4` | 1875* | Log with 4 topics |
+
+*Plus 8 gas per byte
+
+### System Operations (`handlers_system.zig`)
+
+Contract creation and interaction.
+
+| Opcode | Hex | Gas | Description |
+|--------|-----|-----|-------------|
+| `CREATE` | `0xf0` | 32000* | Create contract |
+| `CALL` | `0xf1` | 100* | Call contract |
+| `CALLCODE` | `0xf2` | 100* | Call with code |
+| `RETURN` | `0xf3` | 0* | Return data |
+| `DELEGATECALL` | `0xf4` | 100* | Delegate call |
+| `CREATE2` | `0xf5` | 32000* | Create with salt |
+| `STATICCALL` | `0xfa` | 100* | Static call |
+| `REVERT` | `0xfd` | 0* | Revert execution |
+| `INVALID` | `0xfe` | All | Invalid operation |
+| `SELFDESTRUCT` | `0xff` | 5000* | Destroy contract |
+
+*Complex gas calculation
+
+## Implementation Details
+
+### Opcode Handler Pattern
+
+Each opcode follows a consistent implementation pattern:
+
+```zig
+pub fn add(self: *Frame) Error!void {
+    // 1. Validate stack requirements
+    if (self.stack.len < 2) return error.StackUnderflow;
+    
+    // 2. Perform operation (unsafe for speed)
+    const b = self.stack.pop_unsafe();
+    const a = self.stack.peek_unsafe();
+    
+    // 3. Update stack
+    self.stack.set_top_unsafe(a +% b);
+}
+```
+
+### Safety vs Performance
+
+Guillotine uses a two-tier approach:
+
+1. **Safe wrappers** - Validate inputs
+2. **Unsafe operations** - Fast execution after validation
+
+```zig
+// Safe public API
+pub fn push(self: *Stack, value: u256) Error!void {
+    if (self.len >= self.data.len) return error.StackOverflow;
+    self.push_unsafe(value);
+}
+
+// Unsafe internal operation
+pub fn push_unsafe(self: *Stack, value: u256) void {
+    self.data[self.len] = value;
+    self.len += 1;
+}
+```
+
+### Opcode Fusion
+
+Common patterns are detected and fused:
+
+```zig
+// Instead of:
+// PUSH1 0x01
+// ADD
+
+// Fused to:
+// PUSH1_ADD 0x01
+```
+
+Fusion patterns:
+- `PUSH + Arithmetic` (ADD, MUL, SUB, DIV)
+- `DUP + SWAP` combinations
+- `PUSH + Comparison` (LT, GT, EQ)
+- `ISZERO + JUMPI` (common pattern)
+
+### Gas Calculation
+
+Gas costs are calculated in phases:
+
+1. **Static costs** - Fixed per opcode
+2. **Dynamic costs** - Based on operation
+3. **Memory costs** - Quadratic expansion
+4. **Storage costs** - Warm/cold access
+
+```zig
+pub fn calculateGas(opcode: u8, params: GasParams) u64 {
+    var gas = static_costs[opcode];
+    
+    // Add dynamic costs
+    switch (opcode) {
+        0x20 => { // KECCAK256
+            gas += 6 * ((params.size + 31) / 32);
+        },
+        0x55 => { // SSTORE
+            gas += calculateSstoreGas(params);
+        },
+        // ...
+    }
+    
+    // Add memory expansion
+    gas += calculateMemoryGas(params.memory_size);
+    
+    return gas;
+}
+```
+
+### Jump Analysis
+
+Jumps are pre-validated during bytecode analysis:
+
+```zig
+pub fn analyzeJumps(bytecode: []const u8) !JumpTable {
+    var table = JumpTable.init();
+    
+    for (bytecode, 0..) |op, pc| {
+        if (op == 0x5b) { // JUMPDEST
+            try table.addDestination(pc);
+        }
+    }
+    
+    return table;
+}
+
+// During execution
+pub fn jump(self: *Frame, dest: usize) Error!void {
+    if (!self.jump_table.isValid(dest)) {
+        return error.InvalidJump;
+    }
+    self.pc = dest;
+}
+```
+
+### Memory Management
+
+Memory operations handle expansion:
+
+```zig
+pub fn mstore(self: *Frame) Error!void {
+    const offset = self.stack.pop_unsafe();
+    const value = self.stack.pop_unsafe();
+    
+    // Expand memory if needed
+    const new_size = offset + 32;
+    if (new_size > self.memory.len) {
+        try self.memory.expand(new_size);
+    }
+    
+    // Store value
+    self.memory.store_word(offset, value);
+}
+```
+
+### Storage Access
+
+Storage tracks warm/cold access for gas:
+
+```zig
+pub fn sload(self: *Frame) Error!void {
+    const key = self.stack.pop_unsafe();
+    
+    // Check access list
+    const is_warm = self.access_list.isWarm(self.address, key);
+    
+    // Charge gas
+    const gas_cost = if (is_warm) 100 else 2100;
+    try self.useGas(gas_cost);
+    
+    // Load value
+    const value = self.host.getStorage(self.address, key);
+    self.stack.push_unsafe(value);
+    
+    // Mark as warm
+    self.access_list.markWarm(self.address, key);
+}
+```
+
+## Hardfork Differences
+
+### Shanghai
+- `PUSH0` (0x5f) opcode added
+- Warm/cold storage access costs
+
+### Cancun
+- `TLOAD` (0x5c) transient storage load
+- `TSTORE` (0x5d) transient storage store
+- `MCOPY` (0x5e) memory copy
+- `BLOBHASH` (0x49) blob versioned hash
+- `BLOBBASEFEE` (0x4a) blob base fee
+
+### London
+- `BASEFEE` (0x48) opcode
+- EIP-3529: Reduced refunds
+- EIP-3541: Reject 0xEF bytecode
+
+## Performance Optimizations
+
+### Dispatch Strategy
+
+Guillotine uses indirect threading:
+
+```zig
+const dispatch_table = [256]*const fn(*Frame) Error!void{
+    handlers.stop,    // 0x00
+    handlers.add,     // 0x01
+    handlers.mul,     // 0x02
+    // ...
+};
+
+// Tail-call optimization
+pub fn execute(self: *Frame) Error!void {
+    const handler = dispatch_table[self.bytecode[self.pc]];
+    return handler(self);
+}
+```
+
+### Stack Optimizations
+
+- No bounds checking in hot path
+- Direct array access
+- Inline small operations
+
+### Memory Optimizations
+
+- Word-aligned access
+- Batch zero initialization
+- Reuse allocated memory
+
+## Testing Opcodes
+
+Guillotine includes comprehensive opcode tests:
+
+```zig
+test "ADD opcode" {
+    var frame = try Frame.init(allocator);
+    defer frame.deinit();
+    
+    // Push operands
+    try frame.stack.push(5);
+    try frame.stack.push(3);
+    
+    // Execute ADD
+    try handlers.add(&frame);
+    
+    // Check result
+    try testing.expectEqual(@as(u256, 8), frame.stack.pop());
+}
+```
+
+## Debugging
+
+### Opcode Tracing
+
+```zig
+if (config.TracerType) |Tracer| {
+    tracer.on_opcode(.{
+        .pc = self.pc,
+        .opcode = opcode,
+        .stack = self.stack.data[0..self.stack.len],
+        .memory = self.memory.data,
+        .gas_left = self.gas_left,
+    });
+}
+```
+
+### Finding Opcodes
+
+```bash
+# Find opcode implementation
+grep -n "pub fn add" src/evm/handlers_arithmetic.zig
+grep -n "pub fn sstore" src/evm/handlers_storage.zig
+grep -n "pub fn call" src/evm/handlers_system.zig
+```
+
+## Next Steps
+
+- Learn about [State Management](/api/state)
+- Understand the [EVM API](/api/evm)
+- Explore [Architecture](/architecture/overview)

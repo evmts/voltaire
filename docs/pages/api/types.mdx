@@ -1,0 +1,493 @@
+---
+title: Types
+description: Common types used in Guillotine's API
+---
+
+# Types Reference
+
+Common types and data structures used throughout Guillotine.
+
+## Core Types
+
+### Address
+
+20-byte Ethereum address:
+
+```zig
+pub const Address = [20]u8;
+
+// Creating addresses
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7");
+const zero = Address.zero(); // 0x0000...0000
+
+// Operations
+addr.isZero();      // Check if zero address
+addr.toString();    // Convert to hex string
+addr.equals(other); // Compare addresses
+```
+
+### U256
+
+256-bit unsigned integer (default word size):
+
+```zig
+pub const U256 = u256;
+
+// Creating values
+const value = 1000000000000000000; // 1 ETH in wei
+const max = std.math.maxInt(u256);
+
+// Arithmetic (wrapping)
+const sum = a +% b;
+const product = a *% b;
+```
+
+### Hash
+
+32-byte hash value:
+
+```zig
+pub const Hash = [32]u8;
+
+// Common hashes
+const empty_hash = Hash.empty();
+const keccak = Hash.keccak256(data);
+```
+
+## Transaction Types
+
+### CallParams
+
+Parameters for contract calls:
+
+```zig
+pub const CallParams = struct {
+    caller: Address,       // Message sender
+    target: Address,       // Contract address
+    value: U256,          // ETH value
+    data: []const u8,     // Call data
+    gas: u64,             // Gas limit
+    is_static: bool,      // Static call flag
+};
+```
+
+### TransactionContext
+
+Transaction environment:
+
+```zig
+pub const TransactionContext = struct {
+    origin: Address,       // Transaction origin
+    gas_price: U256,      // Gas price
+    block_number: u64,    // Block number
+    timestamp: u64,       // Block timestamp
+    gas_limit: u64,       // Block gas limit
+    chain_id: u64,        // Chain ID
+    difficulty: ?U256,    // PoW difficulty (deprecated)
+    base_fee: ?U256,      // EIP-1559 base fee
+    blob_base_fee: ?U256, // EIP-4844 blob fee
+};
+```
+
+## Result Types
+
+### CallResult
+
+Result of contract execution:
+
+```zig
+pub const CallResult = union(enum) {
+    success: struct {
+        data: []const u8,  // Return data
+        gas_used: u64,     // Gas consumed
+    },
+    revert: struct {
+        reason: []const u8, // Revert reason
+        gas_used: u64,      // Gas consumed
+    },
+};
+
+// Usage
+switch (result) {
+    .success => |s| handleSuccess(s.data),
+    .revert => |r| handleRevert(r.reason),
+}
+```
+
+### ExecutionResult
+
+Detailed execution outcome:
+
+```zig
+pub const ExecutionResult = struct {
+    status: Status,         // Success/Revert/Error
+    return_data: []const u8, // Return data
+    gas_used: u64,          // Gas consumed
+    gas_refund: u64,        // Gas refunded
+    logs: []Log,            // Emitted logs
+    created_contracts: []Address, // Created contracts
+    state_changes: []StateChange, // State modifications
+};
+```
+
+## State Types
+
+### Account
+
+Ethereum account state:
+
+```zig
+pub const Account = struct {
+    nonce: u64,           // Transaction count
+    balance: U256,        // ETH balance
+    code_hash: Hash,      // Contract code hash
+    storage_root: Hash,   // Storage trie root
+    
+    // Helper methods
+    pub fn exists(self: Account) bool;
+    pub fn has_code(self: Account) bool;
+    pub fn is_empty(self: Account) bool;
+};
+```
+
+### StorageKey
+
+Storage location identifier:
+
+```zig
+pub const StorageKey = struct {
+    address: Address,     // Contract address
+    key: U256,           // Storage slot
+};
+```
+
+### StateChange
+
+State modification record:
+
+```zig
+pub const StateChange = union(enum) {
+    account_created: Address,
+    account_modified: struct {
+        address: Address,
+        old: Account,
+        new: Account,
+    },
+    storage_changed: struct {
+        address: Address,
+        key: U256,
+        old_value: U256,
+        new_value: U256,
+    },
+    code_deployed: struct {
+        address: Address,
+        code: []const u8,
+    },
+};
+```
+
+## Gas Types
+
+### GasMetrics
+
+Gas consumption details:
+
+```zig
+pub const GasMetrics = struct {
+    intrinsic: u64,       // Base transaction cost
+    execution: u64,       // Opcode execution cost
+    memory: u64,          // Memory expansion cost
+    storage: u64,         // Storage operation cost
+    refund: u64,          // Gas refunded
+    
+    pub fn total(self: GasMetrics) u64 {
+        return self.intrinsic + self.execution + 
+               self.memory + self.storage - self.refund;
+    }
+};
+```
+
+### GasParams
+
+Gas calculation parameters:
+
+```zig
+pub const GasParams = struct {
+    gas_limit: u64,       // Maximum gas
+    gas_price: U256,      // Price per gas
+    base_fee: ?U256,      // EIP-1559 base fee
+    priority_fee: ?U256,  // EIP-1559 priority fee
+};
+```
+
+## Log Types
+
+### Log
+
+Event log entry:
+
+```zig
+pub const Log = struct {
+    address: Address,     // Contract address
+    topics: []Hash,       // Indexed topics (max 4)
+    data: []const u8,     // Non-indexed data
+};
+```
+
+### LogFilter
+
+Log query filter:
+
+```zig
+pub const LogFilter = struct {
+    from_block: ?u64,     // Start block
+    to_block: ?u64,       // End block
+    addresses: ?[]Address, // Contract addresses
+    topics: ?[]?Hash,     // Topic filters
+};
+```
+
+## Error Types
+
+### Error
+
+Execution error enumeration:
+
+```zig
+pub const Error = error{
+    // Execution
+    InvalidJump,
+    OutOfGas,
+    InvalidOpcode,
+    
+    // Stack
+    StackUnderflow,
+    StackOverflow,
+    
+    // State
+    ContractNotFound,
+    InsufficientBalance,
+    
+    // Memory
+    OutOfMemory,
+    MemoryError,
+    
+    // Calls
+    CallDepthExceeded,
+    StaticCallViolation,
+    
+    // Other
+    RevertExecution,
+};
+```
+
+### ErrorContext
+
+Error with additional context:
+
+```zig
+pub const ErrorContext = struct {
+    err: Error,           // Error type
+    pc: usize,           // Program counter
+    opcode: ?u8,         // Current opcode
+    gas_left: u64,       // Remaining gas
+    message: ?[]const u8, // Error message
+};
+```
+
+## Bytecode Types
+
+### Bytecode
+
+Analyzed bytecode:
+
+```zig
+pub const Bytecode = struct {
+    code: []const u8,     // Raw bytecode
+    jump_table: JumpTable, // Valid jump destinations
+    push_table: []u8,     // PUSH argument sizes
+    analysis: Analysis,   // Static analysis results
+};
+```
+
+### Opcode
+
+Operation code:
+
+```zig
+pub const Opcode = enum(u8) {
+    STOP = 0x00,
+    ADD = 0x01,
+    MUL = 0x02,
+    // ... all opcodes
+    
+    pub fn gas_cost(self: Opcode) u64;
+    pub fn stack_input(self: Opcode) u8;
+    pub fn stack_output(self: Opcode) u8;
+};
+```
+
+## Block Types
+
+### BlockInfo
+
+Block context information:
+
+```zig
+pub const BlockInfo = struct {
+    number: u64,          // Block number
+    timestamp: u64,       // Unix timestamp
+    gas_limit: u64,       // Block gas limit
+    difficulty: U256,     // PoW difficulty
+    coinbase: Address,    // Block miner
+    base_fee: ?U256,      // EIP-1559 base fee
+    
+    // Fork-specific fields
+    withdrawals_root: ?Hash,  // Shanghai+
+    blob_gas_used: ?u64,     // Cancun+
+    excess_blob_gas: ?u64,   // Cancun+
+};
+```
+
+## Configuration Types
+
+### EvmConfig
+
+EVM configuration:
+
+```zig
+pub const EvmConfig = struct {
+    // Hardfork
+    eips: Eips,
+    
+    // Limits
+    max_call_depth: u11,
+    max_input_size: u18,
+    stack_size: u12,
+    
+    // Features
+    enable_precompiles: bool,
+    enable_fusion: bool,
+    
+    // Memory
+    memory_initial_capacity: usize,
+    memory_limit: u64,
+    
+    // Types
+    WordType: type,
+    DatabaseType: type,
+    TracerType: ?type,
+};
+```
+
+### Hardfork
+
+Ethereum hardfork enumeration:
+
+```zig
+pub const Hardfork = enum {
+    FRONTIER,
+    HOMESTEAD,
+    BYZANTIUM,
+    CONSTANTINOPLE,
+    ISTANBUL,
+    BERLIN,
+    LONDON,
+    SHANGHAI,
+    CANCUN,
+    
+    pub fn is_enabled(self: Hardfork, eip: u32) bool;
+};
+```
+
+## Helper Functions
+
+### Type Conversions
+
+```zig
+// Address conversions
+const addr = Address.fromHex("0x742d...");
+const str = addr.toHex();
+
+// U256 conversions
+const value = U256.fromHex("0x1234");
+const bytes = value.toBytes();
+
+// Hash operations
+const hash = Hash.keccak256(data);
+const empty = Hash.isEmpty(hash);
+```
+
+### Validation
+
+```zig
+// Address validation
+if (address.isContract()) {
+    // Has code
+}
+
+// Value checks
+if (value.isZero()) {
+    // Zero value
+}
+
+// Bytecode validation
+if (Bytecode.isValid(code)) {
+    // Valid bytecode
+}
+```
+
+## Usage Examples
+
+### Creating a Transaction
+
+```zig
+const params = CallParams{
+    .caller = Address.fromHex("0x742d..."),
+    .target = Address.fromHex("0xA0b8..."),
+    .value = 0,
+    .data = &[_]u8{0xa9, 0x05, 0x9c, 0xbb},
+    .gas = 50000,
+    .is_static = false,
+};
+
+const result = try evm.call(params);
+```
+
+### Handling Results
+
+```zig
+const result = try evm.execute(bytecode);
+
+switch (result) {
+    .success => |s| {
+        std.debug.print("Gas used: {}\n", .{s.gas_used});
+        processReturnData(s.data);
+    },
+    .revert => |r| {
+        std.debug.print("Reverted: {s}\n", .{r.reason});
+    },
+}
+```
+
+### Working with State
+
+```zig
+const account = Account{
+    .nonce = 0,
+    .balance = 1000000000000000000,
+    .code_hash = Hash.empty(),
+    .storage_root = Hash.empty(),
+};
+
+if (account.exists()) {
+    database.set_account(address, account);
+}
+```
+
+## Next Steps
+
+- **[EVM API](/api/evm)** - Complete API reference
+- **[State API](/api/state)** - State management
+- **[Basic Execution](/usage/basic-execution)** - Using these types
+- **[Error Handling](/usage/error-handling)** - Error type details
