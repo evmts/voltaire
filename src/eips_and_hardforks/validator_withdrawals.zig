@@ -65,7 +65,7 @@ pub const ValidatorWithdrawalsContract = struct {
     
     /// Deinitialize the withdrawals contract
     pub fn deinit(self: *Self) void {
-        self.pending_withdrawals.deinit();
+        self.pending_withdrawals.deinit(self.pending_withdrawals.allocator);
     }
     
     /// Execute the validator withdrawals contract
@@ -109,7 +109,7 @@ pub const ValidatorWithdrawalsContract = struct {
         
         // Verify caller matches source address (authorization check)
         if (!std.mem.eql(u8, &caller.bytes, &request.source_address.bytes)) {
-            log.debug("ValidatorWithdrawals: Unauthorized - caller {} != source {}", .{ caller, request.source_address });
+            log.debug("ValidatorWithdrawals: Unauthorized - caller {any} != source {any}", .{ caller, request.source_address });
             return .{ .output = &.{}, .gas_used = WITHDRAWAL_REQUEST_GAS };
         }
         
@@ -122,14 +122,14 @@ pub const ValidatorWithdrawalsContract = struct {
         }
         
         // Store withdrawal request
-        try self.pending_withdrawals.append(request);
+        try self.pending_withdrawals.append(self.pending_withdrawals.allocator, request);
         
         // Store withdrawal count in storage
         const withdrawal_count = self.pending_withdrawals.items.len;
         try self.database.set_storage(
             WITHDRAWAL_REQUEST_ADDRESS.bytes,
             0, // Storage slot 0 for withdrawal count
-            withdrawal_count,
+            @as(u256, withdrawal_count),
         );
         
         // Store withdrawal request hash at slot = count
@@ -145,7 +145,7 @@ pub const ValidatorWithdrawalsContract = struct {
         
         try self.database.set_storage(
             WITHDRAWAL_REQUEST_ADDRESS.bytes,
-            withdrawal_count,
+            @as(u256, withdrawal_count),
             request_hash,
         );
         
@@ -153,7 +153,7 @@ pub const ValidatorWithdrawalsContract = struct {
         
         // Return success (32 bytes with request index)
         var output: [32]u8 = [_]u8{0} ** 32;
-        std.mem.writeInt(u256, &output, withdrawal_count - 1, .big);
+        std.mem.writeInt(u256, &output, @as(u256, withdrawal_count - 1), .big);
         
         return .{ .output = &output, .gas_used = WITHDRAWAL_REQUEST_GAS };
     }

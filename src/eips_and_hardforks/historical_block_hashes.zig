@@ -230,7 +230,7 @@ test "historical block hashes contract execution" {
     
     // Test system call to store block hash
     const block_number: u64 = 42;
-    const block_hash = [32]u8{0xAB} ** 32;
+    const block_hash: [32]u8 = .{0xAB} ** 32;
     
     var input: [64]u8 = undefined;
     std.mem.writeInt(u256, input[0..32], block_number, .big);
@@ -263,8 +263,8 @@ test "block hash retrieval with overflow" {
     const block1 = 100;
     _ = block1 + HISTORY_BUFFER_LENGTH; // Same slot due to modulo
     
-    const hash1 = [32]u8{0x11} ** 32;
-    const hash2 = [32]u8{0x22} ** 32;
+    const hash1: [32]u8 = .{0x11} ** 32;
+    const hash2: [32]u8 = .{0x22} ** 32;
     
     // Store first hash
     const slot = block1 % HISTORY_BUFFER_LENGTH;

@@ -43,7 +43,7 @@ pub const Eips = struct {
     /// Shanghai hardfork introduced this optimization
     pub fn eip_3651_warm_coinbase_address(self: Self, access_list: *AccessList, coinbase: primitives.Address.Address) !void {
         if (!self.hardfork.isAtLeast(.SHANGHAI)) return;
-        try access_list.pre_warm_addresses(.{coinbase});
+        try access_list.pre_warm_addresses(&[_]primitives.Address{ coinbase });
     }
 
     /// EIP-3529: Reduction in refunds & gas refunds for SELFDESTRUCT
@@ -309,7 +309,7 @@ pub const Eips = struct {
             return .{ .gas = 20000, .refund = 0 };
         }
         if (current != 0 and new == 0) {
-            const refund = if (self.hardfork.isAtLeast(.LONDON)) 4800 else 15000; // EIP-3529
+            const refund: u64 = if (self.hardfork.isAtLeast(.LONDON)) @as(u64, 4800) else @as(u64, 15000); // EIP-3529
             return .{ .gas = 5000, .refund = refund };
         }
         return .{ .gas = 5000, .refund = 0 };

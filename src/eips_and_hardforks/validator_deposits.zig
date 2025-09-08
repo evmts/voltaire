@@ -67,7 +67,7 @@ pub const ValidatorDepositsContract = struct {
     
     /// Deinitialize the deposits contract
     pub fn deinit(self: *Self) void {
-        self.deposits.deinit();
+        self.deposits.deinit(self.deposits.allocator);
     }
     
     /// Execute the validator deposits contract
@@ -133,21 +133,21 @@ pub const ValidatorDepositsContract = struct {
         }
         
         // Validate value matches amount (value is in Wei, amount is in Gwei)
-        const expected_value = deposit.amount * 1_000_000_000; // Convert Gwei to Wei
+        const expected_value: u256 = @as(u256, deposit.amount) * @as(u256, 1_000_000_000); // Convert Gwei to Wei
         if (value != expected_value) {
             log.debug("ValidatorDeposits: Value mismatch: {} Wei != {} Wei", .{ value, expected_value });
             return .{ .output = &.{}, .gas_used = DEPOSIT_GAS };
         }
         
         // Store deposit for processing
-        try self.deposits.append(deposit);
+        try self.deposits.append(self.deposits.allocator, deposit);
         
         // Store deposit count in storage
         const deposit_count = self.deposits.items.len;
         try self.database.set_storage(
             DEPOSIT_CONTRACT_ADDRESS.bytes,
             0, // Storage slot 0 for deposit count
-            deposit_count,
+            @as(u256, deposit_count),
         );
         
         // Store deposit data hash at slot = index + 1
@@ -162,7 +162,7 @@ pub const ValidatorDepositsContract = struct {
         
         try self.database.set_storage(
             DEPOSIT_CONTRACT_ADDRESS.bytes,
-            deposit.index + 1,
+            @as(u256, deposit.index + 1),
             deposit_hash,
         );
         
@@ -170,7 +170,7 @@ pub const ValidatorDepositsContract = struct {
         
         // Return success (32 bytes with deposit index)
         var output: [32]u8 = [_]u8{0} ** 32;
-        std.mem.writeInt(u256, &output, deposit.index, .big);
+        std.mem.writeInt(u256, &output, @as(u256, deposit.index), .big);
         
         return .{ .output = &output, .gas_used = DEPOSIT_GAS };
     }
@@ -183,15 +183,15 @@ pub const ValidatorDepositsContract = struct {
     /// Clear processed deposits (called after consensus layer processes them)
     pub fn clearProcessedDeposits(self: *Self, up_to_index: u64) !void {
         var new_deposits = std.ArrayList(DepositRequest).init(self.deposits.allocator);
-        errdefer new_deposits.deinit();
+        errdefer new_deposits.deinit(self.deposits.allocator);
         
         for (self.deposits.items) |deposit| {
             if (deposit.index > up_to_index) {
-                try new_deposits.append(deposit);
+                try new_deposits.append(self.deposits.allocator, deposit);
             }
         }
         
-        self.deposits.deinit();
+        self.deposits.deinit(self.deposits.allocator);
         self.deposits = new_deposits;
     }
     
