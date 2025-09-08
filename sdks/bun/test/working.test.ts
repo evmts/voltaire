@@ -4,45 +4,43 @@ import { join } from "path";
 
 describe("Working FFI Tests", () => {
   const libPath = join(__dirname, "../../../zig-out/lib", `libguillotine_ffi.${suffix}`);
-  let lib: any;
-  let evmHandle: any;
+  
+  // Load library once for all tests
+  const lib = dlopen(libPath, {
+    guillotine_init: {
+      args: [],
+      returns: FFIType.void,
+    },
+    guillotine_cleanup: {
+      args: [],
+      returns: FFIType.void,
+    },
+    guillotine_evm_create: {
+      args: [FFIType.ptr],
+      returns: FFIType.ptr,
+    },
+    guillotine_evm_destroy: {
+      args: [FFIType.ptr],
+      returns: FFIType.void,
+    },
+    guillotine_set_balance: {
+      args: [FFIType.ptr, FFIType.ptr, FFIType.ptr],
+      returns: FFIType.bool,
+    },
+    guillotine_set_code: {
+      args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.usize],
+      returns: FFIType.bool,
+    },
+    guillotine_get_last_error: {
+      args: [],
+      returns: FFIType.cstring,
+    },
+  });
+  
+  // Initialize FFI once
+  lib.symbols.guillotine_init();
 
-  beforeAll(() => {
-    // Load library with all functions we need
-    lib = dlopen(libPath, {
-      guillotine_init: {
-        args: [],
-        returns: FFIType.void,
-      },
-      guillotine_cleanup: {
-        args: [],
-        returns: FFIType.void,
-      },
-      guillotine_evm_create: {
-        args: [FFIType.ptr],
-        returns: FFIType.ptr,
-      },
-      guillotine_evm_destroy: {
-        args: [FFIType.ptr],
-        returns: FFIType.void,
-      },
-      guillotine_set_balance: {
-        args: [FFIType.ptr, FFIType.ptr, FFIType.ptr],
-        returns: FFIType.bool,
-      },
-      guillotine_set_code: {
-        args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.usize],
-        returns: FFIType.bool,
-      },
-      guillotine_get_last_error: {
-        args: [],
-        returns: FFIType.cstring,
-      },
-    });
-    
-    // Initialize FFI
-    lib.symbols.guillotine_init();
-    
+  test("EVM instance should be created", () => {
     // Create block info
     const blockInfoBuffer = new ArrayBuffer(136);
     const blockInfoView = new DataView(blockInfoBuffer);
@@ -54,23 +52,28 @@ describe("Working FFI Tests", () => {
     blockInfoView.setBigUint64(60, 0n, true); // difficulty
     
     // Create EVM instance
-    evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
-  });
-
-  afterAll(() => {
-    if (evmHandle) {
-      lib.symbols.guillotine_evm_destroy(evmHandle);
-    }
-    lib.symbols.guillotine_cleanup();
-  });
-
-  test("EVM instance should be created", () => {
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
     expect(evmHandle).toBeTruthy();
     expect(evmHandle).not.toBe(0);
     console.log("✅ EVM instance created:", evmHandle);
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("should set account balance", () => {
+    // Create EVM instance first
+    const blockInfoBuffer = new ArrayBuffer(136);
+    const blockInfoView = new DataView(blockInfoBuffer);
+    blockInfoView.setBigUint64(0, 1n, true);
+    blockInfoView.setBigUint64(8, 1000n, true);
+    blockInfoView.setBigUint64(16, 30_000_000n, true);
+    blockInfoView.setBigUint64(44, 1_000_000_000n, true);
+    blockInfoView.setBigUint64(52, 1n, true);
+    
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
+    expect(evmHandle).toBeTruthy();
+    
     const address = new Uint8Array(20);
     address[19] = 1; // Address ending in 0x01
     
@@ -82,9 +85,23 @@ describe("Working FFI Tests", () => {
     const success = lib.symbols.guillotine_set_balance(evmHandle, ptr(address), ptr(balance));
     expect(success).toBe(true);
     console.log("✅ Balance set for address 0x...01");
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("should set multiple account balances", () => {
+    // Create EVM instance
+    const blockInfoBuffer = new ArrayBuffer(136);
+    const blockInfoView = new DataView(blockInfoBuffer);
+    blockInfoView.setBigUint64(0, 1n, true);
+    blockInfoView.setBigUint64(8, 1000n, true);
+    blockInfoView.setBigUint64(16, 30_000_000n, true);
+    blockInfoView.setBigUint64(44, 1_000_000_000n, true);
+    blockInfoView.setBigUint64(52, 1n, true);
+    
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
+    
     const accounts = [
       { addr: 2, balance: [0, 0, 0, 1000] }, // 1000 wei
       { addr: 3, balance: [0, 0, 1, 0] },    // 256 wei
@@ -104,9 +121,23 @@ describe("Working FFI Tests", () => {
       expect(success).toBe(true);
     }
     console.log("✅ Multiple balances set");
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("should set contract code", () => {
+    // Create EVM instance
+    const blockInfoBuffer = new ArrayBuffer(136);
+    const blockInfoView = new DataView(blockInfoBuffer);
+    blockInfoView.setBigUint64(0, 1n, true);
+    blockInfoView.setBigUint64(8, 1000n, true);
+    blockInfoView.setBigUint64(16, 30_000_000n, true);
+    blockInfoView.setBigUint64(44, 1_000_000_000n, true);
+    blockInfoView.setBigUint64(52, 1n, true);
+    
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
+    
     const contractAddress = new Uint8Array(20);
     contractAddress[19] = 10; // Address ending in 0x0a
     
@@ -121,9 +152,23 @@ describe("Working FFI Tests", () => {
     );
     expect(success).toBe(true);
     console.log("✅ Contract code set for address 0x...0a");
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("should set complex contract code", () => {
+    // Create EVM instance
+    const blockInfoBuffer = new ArrayBuffer(136);
+    const blockInfoView = new DataView(blockInfoBuffer);
+    blockInfoView.setBigUint64(0, 1n, true);
+    blockInfoView.setBigUint64(8, 1000n, true);
+    blockInfoView.setBigUint64(16, 30_000_000n, true);
+    blockInfoView.setBigUint64(44, 1_000_000_000n, true);
+    blockInfoView.setBigUint64(52, 1n, true);
+    
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
+    
     const contractAddress = new Uint8Array(20);
     contractAddress[19] = 11; // Address ending in 0x0b
     
@@ -146,9 +191,23 @@ describe("Working FFI Tests", () => {
     );
     expect(success).toBe(true);
     console.log("✅ Complex contract code set for address 0x...0b");
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("should handle empty code", () => {
+    // Create EVM instance
+    const blockInfoBuffer = new ArrayBuffer(136);
+    const blockInfoView = new DataView(blockInfoBuffer);
+    blockInfoView.setBigUint64(0, 1n, true);
+    blockInfoView.setBigUint64(8, 1000n, true);
+    blockInfoView.setBigUint64(16, 30_000_000n, true);
+    blockInfoView.setBigUint64(44, 1_000_000_000n, true);
+    blockInfoView.setBigUint64(52, 1n, true);
+    
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
+    
     const contractAddress = new Uint8Array(20);
     contractAddress[19] = 12;
     
@@ -162,9 +221,23 @@ describe("Working FFI Tests", () => {
     );
     expect(success).toBe(true);
     console.log("✅ Empty code handled correctly");
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("should set large contract code", () => {
+    // Create EVM instance
+    const blockInfoBuffer = new ArrayBuffer(136);
+    const blockInfoView = new DataView(blockInfoBuffer);
+    blockInfoView.setBigUint64(0, 1n, true);
+    blockInfoView.setBigUint64(8, 1000n, true);
+    blockInfoView.setBigUint64(16, 30_000_000n, true);
+    blockInfoView.setBigUint64(44, 1_000_000_000n, true);
+    blockInfoView.setBigUint64(52, 1n, true);
+    
+    const evmHandle = lib.symbols.guillotine_evm_create(ptr(blockInfoBuffer));
+    
     const contractAddress = new Uint8Array(20);
     contractAddress[19] = 13;
     
@@ -184,6 +257,9 @@ describe("Working FFI Tests", () => {
     );
     expect(success).toBe(true);
     console.log("✅ Large contract code (201 bytes) set successfully");
+    
+    // Clean up
+    lib.symbols.guillotine_evm_destroy(evmHandle);
   });
 
   test("error handling - should get last error", () => {
