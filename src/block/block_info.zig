@@ -109,10 +109,11 @@ test "block info initialization" {
 }
 
 test "block info custom values" {
-    const custom_address: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const custom_address: Address = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const custom_randao = [_]u8{0xff} ** 32;
     
     const block = DefaultBlockInfo{
+        .chain_id = 1,
         .number = 12345,
         .timestamp = 1640995200, // Jan 1, 2022
         .difficulty = 1000000,
@@ -181,6 +182,7 @@ test "block info validation" {
 test "block info edge cases" {
     // Maximum values
     const max_block = DefaultBlockInfo{
+        .chain_id = 1,
         .number = std.math.maxInt(u64),
         .timestamp = std.math.maxInt(u64),
         .difficulty = std.math.maxInt(u256),
@@ -196,6 +198,7 @@ test "block info edge cases" {
     
     // Minimum valid values
     const min_block = DefaultBlockInfo{
+        .chain_id = 1,
         .number = 0,
         .timestamp = 1438269973, // Ethereum genesis
         .difficulty = 0,
@@ -212,6 +215,7 @@ test "block info edge cases" {
 test "compact block info" {
     // Test compact block info with u64 types
     const block = CompactBlockInfo{
+        .chain_id = 1,
         .number = 15000000,
         .timestamp = 1640995200,
         .difficulty = 15_000_000_000_000_000, // 15 PH - fits in u64
@@ -237,6 +241,7 @@ test "block info with blob data (EIP-4844)" {
     const blob_hashes = [_][32]u8{ blob_hash1, blob_hash2 };
     
     const block = DefaultBlockInfo{
+        .chain_id = 1,
         .number = 15_000_000,
         .timestamp = 1640995200,
         .difficulty = 0, // Post-merge

@@ -1003,7 +1003,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 .jump_destinations = try std.ArrayList(JumpDestInfo).initCapacity(allocator, 0),
                 .push_data = try std.ArrayList(PushInfo).initCapacity(allocator, 0),
             };
-            errdefer analysis.deinit();
+            errdefer analysis.deinit(allocator);
 
             var pc: PcType = 0;
             while (pc < self.runtime_code.len) {
@@ -1516,22 +1516,39 @@ test "Iterator functionality - basic iteration" {
     // First instruction: PUSH1
     var opcode_data = iter.next();
     try testing.expect(opcode_data != null);
-    try testing.expectEqual(@as(u8, 0x60), @intFromEnum(opcode_data.?.opcode));
+    switch (opcode_data.?) {
+        .push => |p| {
+            try testing.expectEqual(@as(u8, 1), p.size);
+            try testing.expectEqual(@as(u256, 0x42), p.value);
+        },
+        else => return error.UnexpectedToken,
+    }
 
     // Second instruction: ADD (should skip push data)
     opcode_data = iter.next();
     try testing.expect(opcode_data != null);
-    try testing.expectEqual(@as(u8, 0x01), @intFromEnum(opcode_data.?.opcode));
+    switch (opcode_data.?) {
+        .regular => |r| try testing.expectEqual(@as(u8, 0x01), r.opcode),
+        else => return error.UnexpectedToken,
+    }
 
     // Third instruction: JUMPDEST
     opcode_data = iter.next();
     try testing.expect(opcode_data != null);
-    try testing.expectEqual(@as(u8, 0x5B), @intFromEnum(opcode_data.?.opcode));
+    switch (opcode_data.?) {
+        .jumpdest => |j| {
+            _ = j; // gas_cost checked elsewhere
+        },
+        else => return error.UnexpectedToken,
+    }
 
     // Fourth instruction: STOP
     opcode_data = iter.next();
     try testing.expect(opcode_data != null);
-    try testing.expectEqual(@as(u8, 0x00), @intFromEnum(opcode_data.?.opcode));
+    switch (opcode_data.?) {
+        .stop => {},
+        else => return error.UnexpectedToken,
+    }
 
     // Should be at end
     opcode_data = iter.next();
