@@ -4480,7 +4480,7 @@ test "journal state application - nested snapshots rollback" {
     var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
     defer evm.deinit();
 
-    const test_address = [_]u8{0xBE} ++ [_]u8{0} ** 19;
+    const test_address: primitives.Address = .{ .bytes = [_]u8{0xBE} ++ [_]u8{0} ** 19 };
     const original_balance: u256 = 100;
     const middle_balance: u256 = 200;
     const final_balance: u256 = 300;
@@ -4991,7 +4991,7 @@ test "EVM benchmark scenario - reproduces segfault" {
     const stop_bytecode = [_]u8{0x00}; // Simple STOP for now
     const deploy_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
     const code_hash = try db.set_code(&stop_bytecode);
-    try db.set_account(deploy_address, Account{
+    try db.set_account(deploy_address.bytes, Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -5032,14 +5032,14 @@ test "EVM benchmark scenario - reproduces segfault" {
         },
     };
 
-    const result = try evm_instance.call(call_params);
+    const result = evm_instance.call(call_params);
     try std.testing.expect(result.success);
 
     // The segfault happens in deinit, so let's explicitly test that
     // by creating and destroying multiple times
     for (0..3) |_| {
         var temp_evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
-        const temp_result = try temp_evm.call(call_params);
+        const temp_result = temp_evm.call(call_params);
         try std.testing.expect(temp_result.success);
         temp_evm.deinit(); // This is where the segfault happens
     }
@@ -5074,7 +5074,7 @@ test "CREATE interaction - deployed contract can be called" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -5090,7 +5090,7 @@ test "CREATE interaction - deployed contract can be called" {
         0xF3, // RETURN
     };
 
-    var init_code = std.ArrayList(u8).init(allocator);
+    var init_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer init_code.deinit();
 
     // Store runtime code in memory
@@ -5110,9 +5110,9 @@ test "CREATE interaction - deployed contract can be called" {
     try init_code.append(0xF3); // RETURN
 
     // Deploy the contract
-    const create_result = try evm_instance.call(.{
+    const create_result = evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = init_code.items,
             .gas = 1_000_000,
@@ -5125,12 +5125,12 @@ test "CREATE interaction - deployed contract can be called" {
 
     // Get deployed contract address
     var contract_address: primitives.Address = undefined;
-    @memcpy(&contract_address, create_result.output[0..20]);
+    @memcpy(&contract_address.bytes, create_result.output[0..20]);
 
     // Step 2: Call the deployed contract
-    const call_result = try evm_instance.call(.{
+    const call_result = evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = contract_address,
             .value = 0,
             .input = &[_]u8{}, // No input data
@@ -5175,7 +5175,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -5192,7 +5192,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     };
 
     // Child init code: stores constructor argument in slot 0
-    var child_init = std.ArrayList(u8).init(allocator);
+    var child_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer child_init.deinit();
 
     // Store caller-provided value in slot 0
@@ -5220,7 +5220,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try child_init.append(0xF3); // RETURN
 
     // Factory contract: creates child with initialization value
-    var factory_code = std.ArrayList(u8).init(allocator);
+    var factory_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer factory_code.deinit();
 
     // Load initialization value from calldata
@@ -5263,14 +5263,14 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     try factory_code.append(0xF3); // RETURN
 
     // Deploy factory with initialization value 123
-    var deploy_data = std.ArrayList(u8).init(allocator);
+    var deploy_data = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer deploy_data.deinit();
     const init_value = [_]u8{0} ** 31 ++ [_]u8{123}; // 123 as uint256
     try deploy_data.appendSlice(&init_value);
 
-    const factory_result = try evm_instance.call(.{
+    const factory_result = evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = deploy_data.items,
             .gas = 5_000_000,
@@ -5282,12 +5282,12 @@ test "CREATE interaction - factory creates and initializes child contracts" {
 
     // Extract child contract address from output
     var child_address: primitives.Address = undefined;
-    @memcpy(&child_address, factory_result.output[0..20]); // Contract address
+    @memcpy(&child_address.bytes, factory_result.output[0..20]); // Contract address
 
     // Call child contract to verify initialization
-    const verify_result = try evm_instance.call(.{
+    const verify_result = evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = child_address,
             .value = 0,
             .input = &[_]u8{},
@@ -5331,7 +5331,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        .{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -5347,7 +5347,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     };
 
     // Level 3 init code
-    var level3_init = std.ArrayList(u8).init(allocator);
+    var level3_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level3_init.deinit();
     for (level3_runtime, 0..) |byte, i| {
         try level3_init.append(0x60); // PUSH1
@@ -5363,7 +5363,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level3_init.append(0xF3); // RETURN
 
     // Level 2 contract (child): creates level 3 and returns its address
-    var level2_runtime = std.ArrayList(u8).init(allocator);
+    var level2_runtime = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level2_runtime.deinit();
 
     // Store level 3 init code
@@ -5395,7 +5395,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_runtime.append(0xF3); // RETURN
 
     // Level 2 init code
-    var level2_init = std.ArrayList(u8).init(allocator);
+    var level2_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level2_init.deinit();
     for (level2_runtime.items, 0..) |byte, i| {
         try level2_init.append(0x60); // PUSH1
@@ -5412,7 +5412,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level2_init.append(0xF3); // RETURN
 
     // Level 1 contract (parent): creates level 2
-    var level1_code = std.ArrayList(u8).init(allocator);
+    var level1_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer level1_code.deinit();
 
     // Store level 2 init code
@@ -5420,7 +5420,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
         try level1_code.append(0x60); // PUSH1
         try level1_code.append(byte);
         try level1_code.append(0x61); // PUSH2
-        try level1_code.append(@as(u8, @truncate(std.math.shr(u32, i, 8))));
+        try level1_code.append(@as(u8, @truncate(i >> 8)));
         try level1_code.append(@as(u8, @truncate(i & 0xFF)));
         try level1_code.append(0x53); // MSTORE8
     }
@@ -5442,9 +5442,9 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try level1_code.append(0x00); // STOP
 
     // Execute level 1
-    const result1 = try evm_instance.call(.{
+    const result1 = evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = level1_code.items,
             .gas = 10_000_000,
@@ -5455,15 +5455,15 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try std.testing.expect(result1.success);
 
     // Get level 2 address from storage
-    const level2_addr_u256 = evm_instance.get_storage([_]u8{0x01} ** 20, 0);
+    const level2_addr_u256 = evm_instance.get_storage(.{ .bytes = [_]u8{0x01} ** 20 }, 0);
     var level2_addr: primitives.Address = undefined;
     const bytes = std.mem.toBytes(level2_addr_u256);
-    @memcpy(&level2_addr, bytes[12..32]);
+    @memcpy(&level2_addr.bytes, bytes[12..32]);
 
     // Call level 2 to get level 3 address
-    const result2 = try evm_instance.call(.{
+    const result2 = evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = level2_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -5476,12 +5476,12 @@ test "CREATE interaction - contract creates contract that creates contract" {
 
     // Get level 3 address
     var level3_addr: primitives.Address = undefined;
-    @memcpy(&level3_addr, result2.output[0..20]);
+    @memcpy(&level3_addr.bytes, result2.output[0..20]);
 
     // Call level 3 to verify it returns 99
-    const result3 = try evm_instance.call(.{
+    const result3 = evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .to = level3_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -5524,7 +5524,7 @@ test "CREATE interaction - created contract modifies parent storage" {
             .chain_id = 1,
         },
         20_000_000_000,
-        [_]u8{0x01} ** 20,
+        primitives.Address{ .bytes = [_]u8{0x01} ** 20 },
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -5553,7 +5553,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     };
 
     // Child init code
-    var child_init = std.ArrayList(u8).init(allocator);
+    var child_init = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer child_init.deinit();
     for (child_runtime, 0..) |byte, i| {
         try child_init.append(0x60); // PUSH1
@@ -5569,7 +5569,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     try child_init.append(0xF3); // RETURN
 
     // Parent contract with setValue function
-    var parent_code = std.ArrayList(u8).init(allocator);
+    var parent_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer parent_code.deinit();
 
     // Check if being called (calldata size > 0)
@@ -5614,9 +5614,9 @@ test "CREATE interaction - created contract modifies parent storage" {
     try parent_code.append(0x00); // STOP
 
     // Deploy parent contract
-    const deploy_result = try evm_instance.call(.{
+    const deploy_result = evm_instance.call(.{
         .create = .{
-            .caller = [_]u8{0x01} ** 20,
+            .caller = .{ .bytes = [_]u8{0x01} ** 20 },
             .value = 0,
             .init_code = parent_code.items,
             .gas = 5_000_000,
@@ -5627,22 +5627,22 @@ test "CREATE interaction - created contract modifies parent storage" {
     try std.testing.expect(deploy_result.success);
 
     // Get parent address (deterministic based on sender nonce)
-    const parent_addr = [_]u8{0x01} ** 20; // Simplified for test
+    const parent_addr: primitives.Address = .{ .bytes = [_]u8{0x01} ** 20 }; // Simplified for test
 
     // Get child address from parent's storage
     const child_addr_u256 = evm_instance.get_storage(parent_addr, 1);
     var child_addr: primitives.Address = undefined;
     const bytes = std.mem.toBytes(child_addr_u256);
-    @memcpy(&child_addr, bytes[12..32]);
+    @memcpy(&child_addr.bytes, bytes[12..32]);
 
     // Verify parent's value storage is initially 0
     const initial_value = evm_instance.get_storage(parent_addr, 0);
     try std.testing.expectEqual(@as(u256, 0), initial_value);
 
     // Call child contract, which should call back to parent
-    const call_result = try evm_instance.call(.{
+    const call_result = evm_instance.call(.{
         .call = .{
-            .caller = [_]u8{0x02} ** 20,
+            .caller = .{ .bytes = [_]u8{0x02} ** 20 },
             .to = child_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -5685,9 +5685,9 @@ test "Arena allocator - resets between calls" {
     // Simple contract that emits a log
     // PUSH1 0x20 PUSH1 0x00 LOG0 STOP
     const bytecode = [_]u8{ 0x60, 0x20, 0x60, 0x00, 0xA0, 0x00 };
-    const contract_addr = [_]u8{0x01} ** 20;
+    const contract_addr: primitives.Address = .{ .bytes = [_]u8{0x01} ** 20 };
     const code_hash = try db.set_code(&bytecode);
-    try db.set_account(contract_addr, .{
+    try db.set_account(contract_addr.bytes, .{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -5713,7 +5713,7 @@ test "Arena allocator - resets between calls" {
     try std.testing.expectEqual(@as(usize, 1), result1.logs.len);
 
     // Arena should have allocated memory for the log
-    const after_first_call = evm.internal_arena.queryCapacity();
+    const after_first_call = evm.call_arena.queryCapacity();
     try std.testing.expect(after_first_call >= initial_arena_bytes);
 
     // Second call - arena should be reset
@@ -5732,7 +5732,7 @@ test "Arena allocator - resets between calls" {
     try std.testing.expectEqual(@as(usize, 1), result2.logs.len);
 
     // Arena capacity should be retained but memory reused
-    const after_second_call = evm.internal_arena.queryCapacity();
+    const after_second_call = evm.call_arena.queryCapacity();
     try std.testing.expectEqual(after_first_call, after_second_call);
 }
 
@@ -5773,9 +5773,9 @@ test "Arena allocator - handles multiple logs efficiently" {
     }
     bytecode[500] = 0x00; // STOP
 
-    const contract_addr = [_]u8{0x02} ** 20;
+    const contract_addr: primitives.Address = .{ .bytes = [_]u8{0x02} ** 20 };
     const code_hash = try db.set_code(&bytecode);
-    try db.set_account(contract_addr, .{
+    try db.set_account(contract_addr.bytes, .{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -5947,6 +5947,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     idx += 1;
 
     const parent_addr = [_]u8{0x04} ** 20;
+    const parent_address: primitives.Address = .{ .bytes = parent_addr };
     const parent_code_hash = try db.set_code(parent_bytecode[0..idx]);
     try db.set_account(parent_addr, .{
         .balance = 0,
@@ -5972,7 +5973,7 @@ test "Arena allocator - memory efficiency with nested calls" {
         const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = parent_addr,
+            .to = parent_address,
             .value = 0,
             .input = &[_]u8{},
             .gas = 1000000,
@@ -5984,14 +5985,14 @@ test "Arena allocator - memory efficiency with nested calls" {
     try std.testing.expectEqual(@as(usize, 2), result.logs.len); // Parent and child logs
 
     // Arena should have grown to accommodate logs
-    const final_capacity = evm.internal_arena.queryCapacity();
+    const final_capacity = evm.call_arena.queryCapacity();
     try std.testing.expect(final_capacity >= initial_capacity);
 
     // Second call should reuse arena capacity
     const result2 = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
-            .to = parent_addr,
+            .to = parent_address,
             .value = 0,
             .input = &[_]u8{},
             .gas = 1000000,
@@ -6003,7 +6004,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     try std.testing.expectEqual(@as(usize, 2), result2.logs.len);
 
     // Arena capacity should be retained
-    const final_capacity2 = evm.internal_arena.queryCapacity();
+    const final_capacity2 = evm.call_arena.queryCapacity();
     try std.testing.expectEqual(final_capacity, final_capacity2);
 }
 
@@ -6090,7 +6091,7 @@ test "CREATE stores deployed code bytes" {
 
     // Give creator account some balance
     const creator_address: primitives.Address = .{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -6109,7 +6110,7 @@ test "CREATE stores deployed code bytes" {
     };
 
     // Init code that deploys the runtime code
-    var init_code = std.ArrayList(u8).init(allocator);
+    var init_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer init_code.deinit();
 
     // Store runtime code length
@@ -6136,7 +6137,7 @@ test "CREATE stores deployed code bytes" {
     try init_code.append(0xF3); // RETURN
 
     // Contract that calls CREATE with the init code
-    var creator_bytecode = std.ArrayList(u8).init(allocator);
+    var creator_bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer creator_bytecode.deinit();
 
     // Push init code to memory
@@ -6169,7 +6170,7 @@ test "CREATE stores deployed code bytes" {
 
     // Deploy creator contract
     const creator_code_hash = try db.set_code(creator_bytecode.items);
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = creator_code_hash,
@@ -6192,10 +6193,10 @@ test "CREATE stores deployed code bytes" {
 
     // Extract created contract address from output
     var created_address: primitives.Address = undefined;
-    @memcpy(&created_address, result.output[0..20]);
+    @memcpy(&created_address.bytes, result.output[0..20]);
 
     // Verify the deployed contract exists and has the correct code
-    const deployed_code = try db.get_code_by_address(created_address);
+    const deployed_code = try db.get_code_by_address(created_address.bytes);
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
 
     // Call the deployed contract to verify it works
@@ -6214,8 +6215,8 @@ test "CREATE stores deployed code bytes" {
 
     // Verify it returns 42
     var returned_value: u256 = 0;
-    for (call_result.output, 0..) |byte, i| {
-        returned_value |= std.math.shl(u256, @as(u256, byte), @intCast(8 * (31 - i)));
+    for (call_result.output) |b| {
+        returned_value = (returned_value << 8) | @as(u256, b);
     }
     try std.testing.expectEqual(@as(u256, 42), returned_value);
 }
@@ -6250,7 +6251,7 @@ test "CREATE2 stores deployed code bytes" {
 
     // Give creator account some balance
     const creator_address: primitives.Address = .{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 };
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = [_]u8{0} ** 32,
@@ -6269,7 +6270,7 @@ test "CREATE2 stores deployed code bytes" {
     };
 
     // Init code that deploys the runtime code
-    var init_code = std.ArrayList(u8).init(allocator);
+    var init_code = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer init_code.deinit();
 
     // Store runtime code length
@@ -6296,7 +6297,7 @@ test "CREATE2 stores deployed code bytes" {
     try init_code.append(0xF3); // RETURN
 
     // Contract that calls CREATE2 with the init code
-    var creator_bytecode = std.ArrayList(u8).init(allocator);
+    var creator_bytecode = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer creator_bytecode.deinit();
 
     // Push init code to memory
@@ -6332,7 +6333,7 @@ test "CREATE2 stores deployed code bytes" {
 
     // Deploy creator contract
     const creator_code_hash = try db.set_code(creator_bytecode.items);
-    try db.set_account(creator_address, Account{
+    try db.set_account(creator_address.bytes, Account{
         .balance = 1_000_000,
         .nonce = 0,
         .code_hash = creator_code_hash,
@@ -6355,10 +6356,10 @@ test "CREATE2 stores deployed code bytes" {
 
     // Extract created contract address from output
     var created_address: primitives.Address = undefined;
-    @memcpy(&created_address, result.output[0..20]);
+    @memcpy(&created_address.bytes, result.output[0..20]);
 
     // Verify the deployed contract exists and has the correct code
-    const deployed_code = try db.get_code_by_address(created_address);
+    const deployed_code = try db.get_code_by_address(created_address.bytes);
     try std.testing.expectEqualSlices(u8, &deployed_runtime, deployed_code);
 
     // Call the deployed contract to verify it works
@@ -6377,8 +6378,8 @@ test "CREATE2 stores deployed code bytes" {
 
     // Verify it returns 99
     var returned_value: u256 = 0;
-    for (call_result.output, 0..) |byte, i| {
-        returned_value |= std.math.shl(u256, @as(u256, byte), @intCast(8 * (31 - i)));
+    for (call_result.output) |b| {
+        returned_value = (returned_value << 8) | @as(u256, b);
     }
     try std.testing.expectEqual(@as(u256, 99), returned_value);
 }
@@ -6414,7 +6415,7 @@ test "EVM bytecode iterator execution - simple STOP" {
     // Add contract with STOP bytecode
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x42} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&stop_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -6476,7 +6477,7 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
     // Add contract
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x43} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&return_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
@@ -6499,8 +6500,8 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
 
     // Verify returned value is 0x42
     var returned_value: u256 = 0;
-    for (result.output, 0..) |byte, i| {
-        returned_value |= std.math.shl(u256, @as(u256, byte), @intCast(8 * (31 - i)));
+    for (result.output) |b| {
+        returned_value = (returned_value << 8) | @as(u256, b);
     }
     try std.testing.expectEqual(@as(u256, 0x42), returned_value);
 }
@@ -6543,7 +6544,7 @@ test "EVM bytecode iterator execution - handles jumps" {
     // Add contract
     const contract_address: primitives.Address = .{ .bytes = [_]u8{0x44} ++ [_]u8{0} ** 19 };
     const code_hash = try db.set_code(&jump_bytecode);
-    try db.set_account(contract_address, Account{
+    try db.set_account(contract_address.bytes, Account{
         .balance = 0,
         .nonce = 0,
         .code_hash = code_hash,
