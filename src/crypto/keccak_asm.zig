@@ -288,7 +288,7 @@ test "keccak256 - avalanche effect" {
     
     // Test that small changes in input produce large changes in output
     const base_data = "The quick brown fox jumps over the lazy dog";
-    var modified_data = std.ArrayList(u8).init(testing.allocator);
+    var modified_data = std.array_list.AlignedManaged(u8, null).init(testing.allocator);
     defer modified_data.deinit();
     try modified_data.appendSlice(base_data);
     

@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const crypto = std.crypto;
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
+const ArrayList = std.array_list.AlignedManaged;
 
 // Import primitives
 const Hash = @import("hash_utils.zig");
@@ -165,7 +165,7 @@ pub const TypedData = struct {
 
 // EIP-712 Domain type properties
 fn get_eip712_domain_types(domain: *const Eip712Domain, allocator: Allocator) Eip712Error![]TypeProperty {
-    var properties = ArrayList(TypeProperty).init(allocator);
+    var properties = ArrayList(TypeProperty, null).init(allocator);
     defer properties.deinit();
 
     if (domain.name != null) {
@@ -211,7 +211,7 @@ fn encode_type(allocator: Allocator, primary_type: []const u8, types: *const Typ
     var visited = std.StringHashMap(void).init(allocator);
     defer visited.deinit();
 
-    var result = ArrayList(u8).init(allocator);
+    var result = ArrayList(u8, null).init(allocator);
     defer result.deinit();
 
     try encode_type_recursive(allocator, primary_type, types, &visited, &result);
@@ -223,7 +223,7 @@ fn encode_type_recursive(
     type_name: []const u8,
     types: *const TypeDefinitions,
     visited: *std.StringHashMap(void),
-    result: *ArrayList(u8),
+    result: *ArrayList(u8, null),
 ) Eip712Error!void {
     if (visited.contains(type_name)) return;
     try visited.put(try allocator.dupe(u8, type_name), {});
