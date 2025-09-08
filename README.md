@@ -18,7 +18,7 @@
 
 ---
 
-## 🚧 Development Status
+## 🚧 Development Status (Early Alpha)
 
 **Current Status**: DO NOT USE IN PRODUCTION
 
