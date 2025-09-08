@@ -66,6 +66,11 @@ pub fn to_u256(addr: Address) u256 {
     return result;
 }
 
+// Convenience method-style API for compatibility with older tests
+pub fn toU256(self: Address) u256 {
+    return to_u256(self);
+}
+
 pub fn from_u256(value: u256) Address {
     var addr: Address = undefined;
     var v = value;
@@ -113,6 +118,19 @@ pub fn is_zero(address: Address) bool {
 
 pub fn equals(a: Address, b: Address) bool {
     return std.mem.eql(u8, &a.bytes, &b.bytes);
+}
+
+pub fn eql(self: Address, other: Address) bool {
+    return equals(self, other);
+}
+
+pub const FromBytesError = error{ InvalidAddressLength };
+
+pub fn fromBytes(bytes: []const u8) FromBytesError!Address {
+    if (bytes.len != 20) return error.InvalidAddressLength;
+    var addr: Address = undefined;
+    @memcpy(&addr.bytes, bytes[0..20]);
+    return addr;
 }
 
 pub fn is_valid(addr_str: []const u8) bool {
