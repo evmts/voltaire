@@ -5884,15 +5884,15 @@ test "E2E DELEGATECALL - context preservation" {
     // Slot 0: Should contain original_caller (preserved through DELEGATECALL)
     const stored_caller = try db.get_storage(proxy_address.bytes, 0);
     const caller_bytes = @as([32]u8, @bitCast(stored_caller));
-    try std.testing.expectEqualSlices(u8, &original_caller, caller_bytes[12..32]);
+    try std.testing.expectEqualSlices(u8, &original_caller.bytes, caller_bytes[12..32]);
 
     // Slot 1: Should contain proxy_address (ADDRESS returns current contract)
-    const stored_address = try db.get_storage(proxy_address, 1);
+    const stored_address = try db.get_storage(proxy_address.bytes, 1);
     const address_bytes = @as([32]u8, @bitCast(stored_address));
-    try std.testing.expectEqualSlices(u8, &proxy_address, address_bytes[12..32]);
+    try std.testing.expectEqualSlices(u8, &proxy_address.bytes, address_bytes[12..32]);
 
     // Slot 2: Should contain the test value
-    const stored_value = try db.get_storage(proxy_address, 2);
+    const stored_value = try db.get_storage(proxy_address.bytes, 2);
     try std.testing.expectEqual(test_value, stored_value);
 
     // Implementation contract's storage should be empty
