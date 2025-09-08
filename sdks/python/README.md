@@ -24,31 +24,45 @@ Python bindings for the Guillotine EVM - a high-performance Ethereum Virtual Mac
 pip install guillotine-evm
 ```
 
-## Quick Start
+## Quick Start (Bun-parity API)
 
 ```python
-from guillotine_evm import EVM, Address, U256
+from guillotine_evm import EVM, BlockInfo, CallType, CallParams
 
-# Create an EVM instance
-evm = EVM()
+evm = EVM(BlockInfo(
+    number=1,
+    timestamp=1,
+    gas_limit=30_000_000,
+    coinbase="0x" + "00" * 20,
+    base_fee=1_000_000_000,
+    chain_id=1,
+))
 
-# Create addresses and values
-from_addr = Address.from_hex("0x1234567890123456789012345678901234567890")
-to_addr = Address.from_hex("0x0987654321098765432109876543210987654321") 
-value = U256.from_int(1000)
+caller = "0x" + "11" * 20
+to = "0x" + "22" * 20
+evm.set_balance(caller, 10**18)
 
-# Execute bytecode
-bytecode = bytes.fromhex("6001600101")  # Simple addition: PUSH1 1 PUSH1 1 ADD
-result = evm.execute(
-    bytecode=bytecode,
-    caller=from_addr,
-    value=value,
-    gas_limit=100000
-)
+def push32_return_bytes(data: bytes) -> bytes:
+    assert len(data) == 32
+    return bytes([0x7F]) + data + bytes([0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3])
 
-print(f"Success: {result.success}")
-print(f"Gas used: {result.gas_used}")
-print(f"Return data: {result.return_data.hex()}")
+ret = (b"\x00" * 31) + b"\x2a"
+evm.set_code(to, push32_return_bytes(ret))
+
+result = evm.call(CallParams(
+    caller=caller,
+    to=to,
+    value=0,
+    input=b"",
+    gas=100_000,
+    call_type=CallType.CALL,
+))
+
+print("Success:", result.success)
+print("Gas left:", result.gas_left)
+print("Output:", result.output.hex())
+
+evm.destroy()
 ```
 
 ## API Overview
@@ -63,10 +77,12 @@ print(f"Return data: {result.return_data.hex()}")
 ### EVM Package
 
 ```python
-from guillotine_evm.evm import EVM, ExecutionResult
+from guillotine_evm import EVM, BlockInfo, CallType, CallParams
 
-evm = EVM()
-result = evm.execute(bytecode, caller, value, gas_limit)
+evm = EVM(BlockInfo(...))
+res = evm.call(CallParams(...))
+sim = evm.simulate(CallParams(...))
+evm.destroy()
 ```
 
 ### Primitives Package
