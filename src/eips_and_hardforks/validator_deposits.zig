@@ -53,6 +53,7 @@ pub const DepositRequest = struct {
 /// Validator deposits contract implementation
 pub const ValidatorDepositsContract = struct {
     database: *Database,
+    allocator: std.mem.Allocator,
     deposits: std.ArrayList(DepositRequest),
     
     const Self = @This();
@@ -61,13 +62,14 @@ pub const ValidatorDepositsContract = struct {
     pub fn init(allocator: std.mem.Allocator, database: *Database) Self {
         return .{
             .database = database,
-            .deposits = std.ArrayList(DepositRequest).init(allocator),
+            .allocator = allocator,
+            .deposits = .{},
         };
     }
     
     /// Deinitialize the deposits contract
     pub fn deinit(self: *Self) void {
-        self.deposits.deinit(self.deposits.allocator);
+        self.deposits.deinit(self.allocator);
     }
     
     /// Execute the validator deposits contract
@@ -140,7 +142,7 @@ pub const ValidatorDepositsContract = struct {
         }
         
         // Store deposit for processing
-        try self.deposits.append(self.deposits.allocator, deposit);
+        try self.deposits.append(self.allocator, deposit);
         
         // Store deposit count in storage
         const deposit_count = self.deposits.items.len;
@@ -182,16 +184,16 @@ pub const ValidatorDepositsContract = struct {
     
     /// Clear processed deposits (called after consensus layer processes them)
     pub fn clearProcessedDeposits(self: *Self, up_to_index: u64) !void {
-        var new_deposits = std.ArrayList(DepositRequest).init(self.deposits.allocator);
-        errdefer new_deposits.deinit(self.deposits.allocator);
+        var new_deposits = std.ArrayList(DepositRequest){};
+        errdefer new_deposits.deinit(self.allocator);
         
         for (self.deposits.items) |deposit| {
             if (deposit.index > up_to_index) {
-                try new_deposits.append(self.deposits.allocator, deposit);
+                try new_deposits.append(self.allocator, deposit);
             }
         }
         
-        self.deposits.deinit(self.deposits.allocator);
+        self.deposits.deinit(self.allocator);
         self.deposits = new_deposits;
     }
     
@@ -249,7 +251,7 @@ test "validator deposit processing" {
     std.mem.writeInt(u64, input[184..192], index, .big);
     
     // Execute deposit
-    const value = amount * 1_000_000_000; // Convert to Wei
+    const value: u256 = @as(u256, amount) * @as(u256, 1_000_000_000); // Convert to Wei
     const result = try contract.execute(
         primitives.ZERO_ADDRESS,
         &input,

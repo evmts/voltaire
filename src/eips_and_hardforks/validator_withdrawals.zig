@@ -51,6 +51,7 @@ pub const WithdrawalRequest = struct {
 /// Validator withdrawals contract implementation
 pub const ValidatorWithdrawalsContract = struct {
     database: *Database,
+    allocator: std.mem.Allocator,
     pending_withdrawals: std.ArrayList(WithdrawalRequest),
     
     const Self = @This();
@@ -59,13 +60,14 @@ pub const ValidatorWithdrawalsContract = struct {
     pub fn init(allocator: std.mem.Allocator, database: *Database) Self {
         return .{
             .database = database,
-            .pending_withdrawals = std.ArrayList(WithdrawalRequest).init(allocator),
+            .allocator = allocator,
+            .pending_withdrawals = .{},
         };
     }
     
     /// Deinitialize the withdrawals contract
     pub fn deinit(self: *Self) void {
-        self.pending_withdrawals.deinit(self.pending_withdrawals.allocator);
+        self.pending_withdrawals.deinit(self.allocator);
     }
     
     /// Execute the validator withdrawals contract
@@ -122,7 +124,7 @@ pub const ValidatorWithdrawalsContract = struct {
         }
         
         // Store withdrawal request
-        try self.pending_withdrawals.append(self.pending_withdrawals.allocator, request);
+        try self.pending_withdrawals.append(self.allocator, request);
         
         // Store withdrawal count in storage
         const withdrawal_count = self.pending_withdrawals.items.len;
