@@ -165,3 +165,8 @@ fn customHandler(e: *webui.Event) void {
 5. **Analyze results** - Use visualization tools to understand execution
 
 The devtool module is essential for EVM development, providing the visibility and control needed to understand complex bytecode execution patterns and debug smart contracts effectively.
+
+## Build Notes
+
+- The Zig build integrates asset generation: `npm install && npm run build` under `src/devtool/`, then embeds the produced assets into a Zig module. Running the devtool from the project root via `zig build` generates assets automatically when needed.
+- All web assets live in `src/devtool/public` and compiled output in `src/devtool/dist`.

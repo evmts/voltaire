@@ -159,21 +159,20 @@ This directory contains the complete implementation of Ethereum Virtual Machine 
 - **High performance**: Optimized implementation with SIMD instructions where available
 - **Parameter validation**: Comprehensive validation of all input parameters
 
-#### 0x0A - pointEvaluation (KZG Point Evaluation - EIP-4844)
+#### 0x0A - pointEvaluation (KZG Point Evaluation - EIP‑4844)
 ```zig
 // Verify KZG commitment evaluation
-// Input: 192 bytes (versioned_hash[32] + z[32] + y[32] + commitment[48] + proof[48])
-// Output: 64 bytes (field_elements_per_blob[32] + bls_modulus[32])
+// Input: versioned_hash[32] || z[32] || y[32] || commitment[48] || proof[48]
+// Output: empty (success indicated by success=true)
 // Gas cost: 50000
 ```
 
-**Purpose**: Enables blob transaction verification for Ethereum's data availability sampling.
+**Purpose**: Verifies a single polynomial evaluation against a KZG commitment.
 
 **Implementation Features**:
-- **KZG proof verification**: Verifies polynomial commitment evaluations
-- **BLS12-381 operations**: Efficient operations on the BLS12-381 curve
-- **Trusted setup integration**: Uses Ethereum's KZG ceremony parameters
-- **Blob data support**: Core component for EIP-4844 blob transactions
+- KZG proof verification via c-kzg bindings (BLS12‑381)
+- Trusted setup initialization (downloaded during build if missing)
+- Empty output on success; failure sets success=false
 
 ### Future Precompiles (EIP-2537 - BLS12-381)
 

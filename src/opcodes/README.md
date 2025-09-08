@@ -10,9 +10,9 @@ The module includes comprehensive opcode definitions according to the Ethereum Y
 
 ### Primary Files
 
-- **`opcode.zig`** - Core opcode enumeration and metadata structures
-- **`opcode_data.zig`** - Comprehensive opcode information including gas costs and properties
-- **`opcode_synthetic.zig`** - Synthetic opcode definitions for optimization scenarios
+- `opcode.zig` — Core opcode enumeration (`Opcode`)
+- `opcode_data.zig` — Static info table `OPCODE_INFO: [256]OpcodeInfo`
+- `opcode_synthetic.zig` — Synthetic opcode definitions for optimization
 
 ## Key Data Structures
 
@@ -53,37 +53,18 @@ pub const Opcode = enum(u8) {
 };
 ```
 
-### Opcode Information Structure  
+### Opcode Information Structure
+From `opcode_data.zig`:
 ```zig
 pub const OpcodeInfo = struct {
-    opcode: Opcode,
-    name: []const u8,
-    inputs: u8,      // Stack inputs required
-    outputs: u8,     // Stack outputs produced
-    gas_cost: GasCost,
-    is_jump: bool,   // Control flow modification
-    is_push: bool,   // PUSH instruction
-    push_size: u8,   // Size for PUSH instructions (0-32)
-    
-    pub fn stack_change(self: OpcodeInfo) i16 {
-        return @as(i16, self.outputs) - @as(i16, self.inputs);
-    }
+    gas_cost: u16,
+    stack_inputs: u4,
+    stack_outputs: u4,
 };
+pub const OPCODE_INFO: [256]OpcodeInfo = // ...
 ```
 
-### Gas Cost Structure
-```zig
-pub const GasCost = union(enum) {
-    static: u64,                    // Fixed gas cost
-    dynamic: DynamicGasCost,        // Variable gas cost
-    
-    pub const DynamicGasCost = struct {
-        base: u64,                  // Base gas cost
-        per_word: u64,             // Additional cost per word
-        memory_expansion: bool,     // Includes memory expansion cost
-    };
-};
-```
+Gas costs encoded here are static base costs. Dynamic gas calculations happen in instruction handlers using hardfork-aware rules.
 
 ### Synthetic Opcodes
 ```zig
@@ -178,29 +159,8 @@ pub fn calculate_gas_cost(
 }
 ```
 
-### Synthetic Opcode Optimization
-Synthetic opcodes reduce dispatch overhead for common instruction patterns:
-```zig
-pub fn is_synthetic_candidate(opcodes: []const u8, offset: usize) ?OpcodeSynthetic {
-    if (offset + 1 >= opcodes.len) return null;
-    
-    const first = opcodes[offset];
-    const second = opcodes[offset + 1];
-    
-    // Check for common patterns
-    if (first == 0x01 and second == 0x50) { // ADD + POP
-        return .ADD_POP;
-    }
-    if (first == 0x02 and second == 0x01) { // MUL + ADD
-        return .MUL_ADD;
-    }
-    if (first == 0x15 and second == 0x57) { // ISZERO + JUMPI
-        return .ISZERO_JUMPI;
-    }
-    
-    return null;
-}
-```
+### Synthetic Opcodes
+Synthetic definitions enable planner/dispatch to fuse common patterns (e.g., `ISZERO+JUMPI`). See `opcode_synthetic.zig` for the enum and usage.
 
 ## Usage Examples
 

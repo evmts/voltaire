@@ -61,25 +61,20 @@ This directory provides comprehensive cryptographic implementations used through
 const crypto = @import("crypto");
 
 // Hash functions
-const hash = crypto.keccak256(data);
-const sha_hash = crypto.sha256(data);
+const Hash = crypto.Hash;
+const h = Hash.keccak256(data);
 
-// Digital signatures
-const signature = try crypto.sign(private_key, message);
-const public_key = try crypto.recover(signature, message);
-
-// Address derivation
-const address = crypto.publicKeyToAddress(public_key);
+// ECDSA (secp256k1) — developer utilities (unaudited)
+const C = crypto.Crypto;
+const priv = try C.unaudited_randomPrivateKey();
+const pub = try C.unaudited_getPublicKey(priv);
+const addr = C.public_key_to_address(pub);
+const sig = try C.unaudited_signMessage("hello", priv);
+const ok = try C.unaudited_verifyMessage("hello", sig, addr);
 ```
 
 ### Hardware Acceleration
-```zig
-// Detect available CPU features
-const features = crypto.detectCpuFeatures();
-if (features.has_aes_ni) {
-    // Use accelerated implementations
-}
-```
+Accelerated variants live under `Keccak256_Accel` and `SHA256_Accel`.
 
 ## Security Considerations
 
@@ -104,38 +99,27 @@ All cryptographic operations are designed to be constant-time:
 ### Basic Hash Operations
 ```zig
 const crypto = @import("crypto");
+const Hash = crypto.Hash;
 
-// Keccak-256 (most common in Ethereum)
 const data = "Hello, Ethereum!";
-const hash = crypto.keccak256(data);
-
-// SHA-256 (for precompiles)
-const sha_hash = crypto.sha256(data);
-
-// BLAKE2 (high performance)
-const blake_hash = crypto.blake2b(data);
+const keccak = Hash.keccak256(data);
 ```
 
-### Digital Signature Operations
+### Digital Signatures (developer helpers)
 ```zig
-// Generate key pair
-const private_key = crypto.generatePrivateKey();
-const public_key = try crypto.derivePublicKey(private_key);
+const C = (@import("crypto")).Crypto;
 
-// Sign message
-const message = "Transaction data";
-const signature = try crypto.sign(private_key, message);
-
-// Verify signature
-const is_valid = try crypto.verify(public_key, signature, message);
-
-// Recover public key from signature
-const recovered_key = try crypto.ecRecover(signature, message);
+const priv = try C.unaudited_randomPrivateKey();
+const pub = try C.unaudited_getPublicKey(priv);
+const sig = try C.unaudited_signHash((@import("crypto")).Hash.keccak256("msg"), priv);
+const addr = pub.to_address();
+const ok = try C.unaudited_verifyMessage("msg", sig, addr);
 ```
 
-### EIP-712 Structured Data Signing
+### EIP-712 Structured Data
 ```zig
-const domain = crypto.EIP712Domain{
+const Eip712 = (@import("crypto")).Eip712;
+const domain = Eip712.Domain{
     .name = "MyDApp",
     .version = "1",
     .chainId = 1,
@@ -148,7 +132,7 @@ const message = MyMessage{
     .amount = 1000,
 };
 
-const signature = try crypto.signTypedData(private_key, domain, message);
+// Build digest with EIP-712 helpers then sign via Crypto.unaudited_signHash
 ```
 
 ### Address Derivation

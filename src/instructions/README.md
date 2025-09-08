@@ -105,19 +105,23 @@ pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
 ```
 
 ### Memory Operation Handler
-```zig  
-/// MSTORE opcode (0x52) - Store word to memory
+```zig
+/// MSTORE opcode (0x52) - Store word to memory (EVM expansion semantics)
 pub fn mstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
     std.debug.assert(self.stack.size() >= 2);
     const offset = self.stack.pop_unsafe();
     const value = self.stack.pop_unsafe();
-    
-    // Expand memory if needed
-    try self.memory.expand_to_word(offset);
-    
-    // Store 32-byte word
-    self.memory.store_word_unsafe(offset, value);
-    
+
+    // Charge memory expansion gas (32 bytes) and store using EVM helpers
+    const end = @as(usize, @intCast(offset)) + 32;
+    const cost = self.memory.get_expansion_cost(@as(u24, @intCast(end)));
+    self.gas_remaining -= @intCast(cost);
+    if (self.gas_remaining < 0) return Error.OutOfGas;
+
+    self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset)), @as(u256, value)) catch {
+        return Error.AllocationError;
+    };
+
     const next_cursor = cursor + 1;
     return @call(.always_tail, next_cursor[0].opcode_handler, .{ self, next_cursor });
 }

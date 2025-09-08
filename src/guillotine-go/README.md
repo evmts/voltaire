@@ -1,25 +1,25 @@
-# Guillotine Go Bindings
+# Guillotine Go Bindings (WIP)
 
-Go language bindings for the Guillotine EVM, providing an idiomatic Go interface to the high-performance Zig-based EVM implementation.
+Go bindings and design notes for integrating the Zig EVM.
 
 ## Overview
 
-The guillotine-go module provides comprehensive Go bindings for Guillotine EVM, enabling Go applications to execute Ethereum Virtual Machine bytecode with high performance and memory safety. The bindings follow Go conventions while maintaining full access to Guillotine's advanced features.
+This directory documents the intended Go bindings. The reference implementation lives in a separate repository; examples here illustrate the intended API shape and memory‑safety constraints when calling into the Zig/C layer.
 
 ## Components
 
-### Core Packages
+### Packages (planned)
 
-- **`primitives/`** - Ethereum primitive types (Address, U256, Hash, Bytes)
-- **`evm/`** - Main EVM execution engine with C API integration
-- **`stack/`** - EVM stack operations and management
-- **`errors.go`** - Comprehensive error definitions and handling
+- `primitives` — Address, U256, Hash, Bytes
+- `evm` — EVM execution (C API)
+- `stack` — Stack helpers
+- `errors` — Error types
 
 ### Support Files
 
-- **`cgo.go`** - C API integration and memory management
-- **`go.mod`** - Module definition and dependencies
-- **`DESIGN.md`** - Detailed design documentation and implementation strategy
+- `cgo.go` — C API bridge and lifetime management
+- `go.mod` — Module definition and versions
+- `DESIGN.md` — Design rationale and FFI invariants
 
 ## Features
 
@@ -53,8 +53,8 @@ package main
 
 import (
     "fmt"
-    "github.com/evmts/guillotine/bindings/go/evm"
-    "github.com/evmts/guillotine/bindings/go/primitives"
+    evm "github.com/evmts/guillotine/bindings/go/evm"
+    primitives "github.com/evmts/guillotine/bindings/go/primitives"
 )
 
 func main() {
@@ -170,7 +170,7 @@ if err != nil {
 combined := data1.Append(data2)
 ```
 
-## API Reference
+## API Reference (preview)
 
 ### EVM Operations
 

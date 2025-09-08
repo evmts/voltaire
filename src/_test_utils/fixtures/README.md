@@ -92,16 +92,16 @@ Each fixture directory contains standardized files:
 ### Basic Fixture Structure
 ```
 fixture-name/
-├── bytecode.txt     # Contract bytecode (hex-encoded)
-└── calldata.txt     # Input calldata (hex-encoded, may be empty)
+├── bytecode.txt     # Contract bytecode, hex (no 0x prefix)
+└── calldata.txt     # Input calldata, hex with 0x (or "0x")
 ```
 
-### Extended Contract Structure  
+### Extended Contract Structure
 ```
 contract-name/
 ├── address.txt      # Contract address (for mainnet contracts)
 ├── bytecode.txt     # Contract bytecode
-├── calldata.txt     # Input calldata  
+├── calldata.txt     # Input calldata
 └── contract.abi.zon # Contract ABI in Zig Object Notation format
 ```
 
@@ -115,23 +115,13 @@ contract-name/
 ## Using Fixtures in Tests
 
 ### Basic Fixture Usage
-
 ```zig
 const std = @import("std");
 
 test "arithmetic opcodes" {
-    const bytecode = @embedFile("fixtures/opcodes-arithmetic/bytecode.txt");
-    const calldata = @embedFile("fixtures/opcodes-arithmetic/calldata.txt");
-    
-    // Initialize EVM with fixture data
-    var evm = try Evm.init(allocator);
-    defer evm.deinit();
-    
-    // Execute with fixture bytecode and calldata
-    const result = try evm.execute(bytecode, calldata);
-    
-    // Verify expected behavior
-    try std.testing.expect(result.success);
+    const code_hex = @embedFile("fixtures/opcodes-arithmetic/bytecode.txt");
+    const data_hex = @embedFile("fixtures/opcodes-arithmetic/calldata.txt");
+    // Convert as needed and execute
 }
 ```
 

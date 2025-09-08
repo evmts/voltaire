@@ -1,17 +1,17 @@
 # Test Utilities
 
-Testing infrastructure and utilities for the Guillotine EVM implementation.
+Testing infrastructure and fixtures for the Guillotine EVM.
 
 ## Overview
 
-This module provides comprehensive testing tools, fixtures, and utilities to ensure correctness of the EVM implementation.
+This module provides simple, self‑contained helpers and bytecode/calldata fixtures. Tests are driven via the Zig build system (zig build test). Avoid generic “test frameworks”; favor explicit, local setup as per project standards.
 
 ## Components
 
-### Core Testing Utilities
-- **test_runner.zig** - Main test runner and orchestration
-- **trace_diff.zig** - Differential testing utilities for comparing execution traces
-- **test_fixtures.zig** - Common test fixtures and data generators
+### Core Utilities
+- `test_runner.zig` — Orchestrates focused test suites
+- `trace_diff.zig` — Differential testing against REVM when enabled
+- `test_fixtures.zig` — Minimal helpers to load embedded fixtures
 
 ### Fixtures Directory (`fixtures/`)
 Contains pre-generated test cases for various EVM operations:
@@ -70,15 +70,18 @@ Contains pre-generated test cases for various EVM operations:
 
 ## Usage
 
-Import test utilities:
+Import utilities and embed fixture files directly in tests:
 ```zig
-const test_utils = @import("_test_utils");
-const fixtures = test_utils.fixtures;
+const std = @import("std");
+// Embed hex-encoded test bytecode/calldata
+const bytecode_hex = @embedFile("fixtures/opcodes-arithmetic/bytecode.txt");
+const calldata_hex = @embedFile("fixtures/opcodes-arithmetic/calldata.txt");
 ```
 
 ## Testing Philosophy
 
-- **Differential Testing** - Compare against reference implementations
-- **Fixture-Based Testing** - Use pre-generated test cases
-- **Property-Based Testing** - Verify invariants and properties
-- **Performance Testing** - Ensure execution meets performance targets
+- Differential testing where it adds value (REVM harness)
+- Fixture‑based coverage for opcodes and system paths
+- Self‑contained tests (no shared helpers unless required)
+- Evidence‑based debugging; increase visibility before fixes
+- By default, Zig tests emit nothing on success

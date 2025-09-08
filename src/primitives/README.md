@@ -117,12 +117,8 @@ const tx_hash = try tx.hash(allocator);
 defer allocator.free(tx_hash);
 ```
 
-### Cryptographic Operations  
+### 256-bit Integers
 ```zig
-// Hash data with Keccak256
-const data = "Hello, Ethereum!";
-const hash = primitives.crypto.keccak256(data);
-
 // Work with 256-bit integers
 const a = primitives.Uint(256).from_hex("0x1234567890abcdef...") catch unreachable;
 const b = primitives.Uint(256).from_int(42);
@@ -167,19 +163,8 @@ const decoded_event = try primitives.AbiEncoding.decode_event(
 defer decoded_event.deinit(allocator);
 ```
 
-### Gas Calculations
-```zig
-// Calculate intrinsic gas for transaction
-const intrinsic_gas = primitives.GasConstants.calculate_intrinsic_gas(
-    transaction_data, is_contract_creation, hardfork
-);
-
-// Get opcode gas cost
-const add_cost = primitives.GasConstants.get_opcode_gas_cost(.ADD, hardfork);
-const sstore_cost = primitives.GasConstants.calculate_sstore_gas_cost(
-    original_value, current_value, new_value, hardfork
-);
-```
+### Gas Constants
+`primitives.GasConstants` exposes the standard EVM gas constants (e.g., `GasFastestStep`, `SloadGas`, `ColdAccountAccessCost`).
 
 ## Design Principles
 
