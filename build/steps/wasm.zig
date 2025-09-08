@@ -62,11 +62,11 @@ pub fn addWasmSizeReportStep(
     wasm_files: []const []const u8,
     dependencies: []const *std.Build.Step,
 ) *std.Build.Step.Run {
-    var cmd = std.ArrayList([]const u8){};
+    var cmd = std.ArrayList([]const u8).empty;
     cmd.append(b.allocator, "sh") catch @panic("OOM");
     cmd.append(b.allocator, "-c") catch @panic("OOM");
     
-    var script = std.ArrayList(u8){};
+    var script = std.ArrayList(u8).empty;
     script.appendSlice(b.allocator, "echo '\\n=== WASM Bundle Size Report ===' && ") catch @panic("OOM");
     
     for (wasm_files) |file| {
