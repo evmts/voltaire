@@ -138,6 +138,15 @@ See our [Contributing Guide](./CONTRIBUTING.md) to get started.
 
 Guillotine stands on the shoulders of giants. We're grateful to:
 
+### Reference Implementations
+
+We deeply appreciate the excellent EVM implementations that served as references and inspiration:
+
+- **[Revm](https://github.com/bluealloy/revm)** – Rust EVM implementation that pioneered many optimizations and customization patterns
+- **[Evmone](https://github.com/ethereum/evmone)** – C++ EVM implementation known for its exceptional performance
+- **[Geth](https://github.com/ethereum/go-ethereum)** – The canonical Go Ethereum client and EVM implementation
+- **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** – JavaScript/TypeScript EVM implementation providing valuable insights
+
 ### Runtime Dependencies
 
 - **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** – C KZG commitment library for EIP-4844
