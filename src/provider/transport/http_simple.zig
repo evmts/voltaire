@@ -54,7 +54,7 @@ pub const HttpTransport = struct {
         };
         defer self.allocator.free(json_payload);
 
-        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        var response_buffer = std.array_list.AlignedManaged(u8, null).init(self.allocator);
         defer response_buffer.deinit();
 
         const response = self.client.fetch(.{

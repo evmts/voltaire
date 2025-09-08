@@ -66,7 +66,7 @@ pub const JsonRpcResponse = struct {
 
         if (root.get("result")) |result_val| {
             // Serialize the result back to JSON string
-            var result_str = std.ArrayList(u8).init(allocator);
+            var result_str = std.array_list.AlignedManaged(u8, null).init(allocator);
             defer result_str.deinit();
 
             try std.json.stringify(result_val, .{}, result_str.writer());
