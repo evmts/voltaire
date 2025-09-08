@@ -190,14 +190,14 @@ const MockHost = struct {
         return .{
             .allocator = allocator,
             .is_static = false,
-            .logs = std.ArrayList(Log).init(allocator),
+            .logs = .empty,
         };
     }
 
     pub fn deinit(self: *MockHost) void {
         // No need to free arena-allocated data
         // Just deinit the list structure
-        self.logs.deinit();
+        self.logs.deinit(self.allocator);
     }
 
     pub fn get_is_static(self: *const MockHost) bool {
@@ -205,7 +205,7 @@ const MockHost = struct {
     }
 
     pub fn emit_log(self: *MockHost, log_entry: Log) !void {
-        try self.logs.append(log_entry);
+        try self.logs.append(self.allocator, log_entry);
     }
 };
 
