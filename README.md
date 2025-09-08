@@ -18,6 +18,14 @@
 
 ---
 
+## 🚧 Development Status
+
+**Current Status**: DO NOT USE IN PRODUCTION
+
+Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow [issue tab](https://github.com/evmts/Guillotine/issues) which contains all features we want for Beta.
+
+---
+
 ## ✨ Features
 
 🚧 = Coming soon. Consider opening a discussion if you have any API recomendations or requested features.
@@ -41,21 +49,6 @@
 - 🤖 **LLM friendly** 
 - 🧪 **Robust** - Guillotine takes testing and architecture very seriously with [full unit tests](./src) for all files, a [robust e2e test suite](./test/e2e), [fuzz testing](./test/fuzz), [differential testing vs revm](./test/differential), and [benchmark testing](./test/benchmark)
 - ✨ **Useful** - 🚧 Coming soon 🚧 Guillotine is building a powerful [CLI](https://github.com/evmts/Guillotine/issues) and [native app](https://github.com/evmts/Guillotine/issues) that you can think of as a local-first tenderly
-
----
-
-## 🚧 Full Client
-
-Guillotine is a VM implementation (like [revm](https://github.com/bluealloy/revm)) not a full node (like [reth](https://github.com/paradigmxyz/reth)).
-However, [Tevm](https://github.com/evmts/tevm-monorepo) (the team behind Guillotine) plans on breaking ground on a highly-performant zig-based full client soon. This client will leverage some of Guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
-
----
-
-## 🚧 Development Status
-
-**Current Status**: DO NOT USE IN PRODUCTION
-
-Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow [issue tab](https://github.com/evmts/Guillotine/issues) which contains all features we want for Beta.
 
 ---
 
@@ -93,7 +86,7 @@ In past commits we got the EVM under 110k KB with expectations to be able to imp
 
 ---
 
-## How is Guillotine fast?
+### How is Guillotine so fast?
 
 Guillotine was built using [data-oriented design](https://www.youtube.com/watch?v=rX0ItVEVjHc) with an emphasis on [minimizing branch-prediction misses](https://www.youtube.com/watch?v=nczJ58WvtYo) in the CPU. We studied every EVM implementation as well as [Wasm](https://webassembly.org/), [Lua](https://www.lua.org/), and [Python](https://www.python.org/) interpreter implementations for the state of the art. Optimizations include from most impactful to least impactful:
 
@@ -104,10 +97,43 @@ Guillotine was built using [data-oriented design](https://www.youtube.com/watch?
 - Opcode fusions turning common opcode patterns into a single dispatch
 - **Assembly-optimized Keccak** via [keccak-asm](https://crates.io/crates/keccak-asm)
 - Batching calculation of static gas costs and stack analysis
+- Simple code that minimizes unnecessary abstractions, inline directives, and interfaces allowing the zig compiler maximum freedom to optimize for performance or size
+- Some more microoptimiations not worth noting 
+
+**Balanced tradeoffs** 
+
+We focus on maintainable code, performance optimizations where it counts. We do our best to write simple code the zig compiler can optimize.
 
 There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register based EVM, a common technique used by interpreters like Lua cranelift and PyPy to get up to 30% performance increases.
 
+--- 
+
+### How is Guillotine so small?
+
+- Zig is a language that believes in no hidden control flow. 
+- This makes it really easy to write the most minimal simple code needed to get the job done. 
+- By minimizing unnecessary abstractions the compiler is able to do a great job optimizing for size.
+- Zig comptime allows us to easily and surgically only include the minimum necessary code given the specific EVM and hardfork configuration. Code you don't use isn't included.
+
+### How is Guillotine so safe?
+
+Guillotine currently is not in safe as we just came out of alpha. But we do have features that help improve the safety:
+
+- Guillotine also is able to built in `ReleaseSafe` mode in addition to `Debug`, `ReleaseFast`, and `ReleaseSmall`. 
+- `ReleaseSafe` is what we recomend while in alpha 
+- `ReleaseSafe` it keeps debug mode only defensive checks, memory safety features, and many other safety benefits included in the final binary.
+- Guillotine also features an extensive unit test, e2e test, fuzz test, benchmark test, and differential test suite.
+
 ---
+
+## 🚧 Full Client
+
+Guillotine is a VM implementation (like [revm](https://github.com/bluealloy/revm)) not a full node (like [reth](https://github.com/paradigmxyz/reth)).
+However, [Tevm](https://github.com/evmts/tevm-monorepo) (the team behind Guillotine) plans on breaking ground on a highly-performant zig-based full client soon. This client will leverage some of Guillotine's architecture to execute transactions in parallel and architect around I/O bottlenecks.
+
+---
+
+## Additional features
 
 ### Zero Config
 
