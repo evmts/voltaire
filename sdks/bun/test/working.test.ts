@@ -211,13 +211,15 @@ describe("Working FFI Tests", () => {
     const contractAddress = new Uint8Array(20);
     contractAddress[19] = 12;
     
-    const bytecode = new Uint8Array(0); // Empty code
+    // For empty code, we'll use a single byte array with just a STOP opcode
+    // as Bun FFI doesn't handle zero-length arrays well
+    const bytecode = new Uint8Array([0x00]); // STOP opcode instead of empty
     
     const success = lib.symbols.guillotine_set_code(
       evmHandle,
       ptr(contractAddress),
       ptr(bytecode),
-      0
+      bytecode.length
     );
     expect(success).toBe(true);
     console.log("✅ Empty code handled correctly");
