@@ -124,7 +124,7 @@ Upgrades include:
 
 ## 🤝 Contributing
 
-We welcome contributions of all kinds!
+We welcome contributions of all kinds, including AI-assisted contributions (with proper disclosure)!
 
 See our [Contributing Guide](CONTRIBUTING.md) to get started.
 

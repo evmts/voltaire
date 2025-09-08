@@ -4,6 +4,32 @@ Thank you so much for you interest in contributing to Guillotine!
 
 We welcome contributions to Guillotine! This document provides guidelines and instructions for contributing to the project.
 
+## AI-Assisted Contributions
+
+**AI-assisted contributions are welcome with proper disclosure.** If you use AI tools (like GitHub Copilot, Claude, ChatGPT, etc.) to generate code:
+
+1. **Disclose AI usage** at the top of your PR description
+2. **Include all prompts** used to generate the changes
+3. **Provide a human-written description** explaining:
+   - Why the change is desired
+   - What problem it solves
+   - Link to any related issues
+4. **Review and understand** all AI-generated code before submitting
+5. **Take responsibility** for the correctness and quality of the code
+
+Example PR description:
+```
+## AI Disclosure
+This PR contains AI-generated code using Claude.
+
+### Prompts used:
+- "Add error handling for invalid bytecode in the EVM parser"
+- "Write tests for the new error cases"
+
+### Human Description:
+This change adds proper error handling for malformed bytecode that was causing panics in production. Fixes #123.
+```
+
 If your contribution is large please open a discussion to chat about the change before doing the work.
 
 ## Code of Conduct
@@ -14,7 +40,6 @@ We are committed to providing a welcoming and inclusive environment. All contrib
 - Welcome newcomers and help them get started
 - Focus on constructive criticism and collaborative problem-solving
 - Respect differing viewpoints and experiences
-- **Do not provide purely AI generated code without disclosing it's AI and how you generated it**
 
 ## Project structure
 
