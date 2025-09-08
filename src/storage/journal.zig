@@ -140,10 +140,10 @@ pub fn Journal(comptime config: JournalConfig) type {
         
         /// Get entries for a specific snapshot
         pub fn get_snapshot_entries(self: *const Self, snapshot_id: SnapshotIdType, allocator: std.mem.Allocator) ![]Entry {
-            var result = std.ArrayList(Entry).init(allocator);
+            var result = std.ArrayList(Entry){};
             for (self.entries.items) |entry| {
                 if (entry.snapshot_id == snapshot_id) {
-                    try result.append(entry);
+                    try result.append(allocator, entry);
                 }
             }
             return try result.toOwnedSlice(allocator);
@@ -823,7 +823,7 @@ test "Journal - memory management stress" {
     const num_cycles = 10;
     const entries_per_cycle = 50;
     
-    var snapshots = std.ArrayList(u32).init(testing.allocator);
+    var snapshots = std.array_list.AlignedManaged(u32, null).init(testing.allocator);
     defer snapshots.deinit();
     
     // Create and populate snapshots
