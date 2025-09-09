@@ -142,9 +142,38 @@ pub fn build(b: *std.Build) void {
     const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, revm_lib, bn254_lib, c_kzg_lib, blst_lib, rust_target);
     const run_integration_tests = b.addRunArtifact(integration_tests);
 
+    // Add test/root.zig tests  
+    const root_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/root.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    root_tests.root_module.addImport("evm", modules.evm_mod);
+    root_tests.root_module.addImport("primitives", modules.primitives_mod);
+    root_tests.root_module.addImport("crypto", modules.crypto_mod);
+    root_tests.root_module.addImport("compilers", modules.compilers_mod);
+    root_tests.root_module.addImport("provider", modules.provider_mod);
+    root_tests.root_module.addImport("trie", modules.trie_mod);
+    root_tests.root_module.addImport("Guillotine_lib", modules.lib_mod);
+    if (modules.revm_mod) |revm_mod| {
+        root_tests.root_module.addImport("revm", revm_mod);
+    }
+    root_tests.linkLibrary(c_kzg_lib);
+    root_tests.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| root_tests.linkLibrary(bn254);
+    if (revm_lib) |revm| {
+        root_tests.linkLibrary(revm);
+        root_tests.addIncludePath(b.path("lib/revm"));
+    }
+    root_tests.linkLibC();
+    const run_root_tests = b.addRunArtifact(root_tests);
+
     const test_step = b.step("test", "Run all tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_integration_tests.step);
+    test_step.dependOn(&run_root_tests.step);
 
     // BN254 benchmarks
     const zbench_module = zbench_dep.module("zbench");
