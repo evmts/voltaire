@@ -24,8 +24,47 @@ result, err := vm.Call(params)
 
 ## Installation
 
+### Prerequisites
+
+- Go 1.21 or later
+- Zig compiler (for building the underlying Guillotine library)
+- C compiler (CGO is required)
+
+### Install from source
+
+1. Clone the repository:
+```bash
+git clone https://github.com/evmts/guillotine.git
+cd guillotine/sdks/go
+```
+
+2. Build the Zig library and install Go dependencies:
+```bash
+make install
+```
+
+This will:
+- Build the Guillotine Zig library with optimizations
+- Download Go module dependencies
+- Set up the necessary shared libraries
+
+### Using as a dependency
+
+If you're using this as a dependency in your project, you'll need to ensure the Guillotine library is built first:
+
 ```bash
 go get github.com/evmts/guillotine/sdks/go
+cd $GOPATH/pkg/mod/github.com/evmts/guillotine/sdks/go@<version>
+make install
+```
+
+### Available make targets
+
+```bash
+make install  # Build Zig library and download Go dependencies
+make build    # Build only the Zig library
+make test     # Run Go tests (builds library first)
+make clean    # Clean build artifacts
 ```
 
 ## Usage Examples
