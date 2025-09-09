@@ -43,8 +43,8 @@ pub const EvmConfig = struct {
     
     /// Arena allocator configuration
     /// Initial and maximum retained capacity for the arena allocator (in bytes)
-    /// Default: 16MB - reasonable for most EVM operations
-    arena_capacity_limit: usize = 16 * 1024 * 1024,
+    /// Default: 64MB - optimized for complex EVM operations and modern hardware
+    arena_capacity_limit: usize = 64 * 1024 * 1024,
     /// Growth factor for arena allocator (as percentage, e.g., 150 = 50% growth)
     arena_growth_factor: u32 = 150,
     /// Database implementation type for storage operations (always required)
