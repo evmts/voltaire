@@ -12,7 +12,7 @@
   </a>
 </p>
 
-<a href="https://www.google.com/search?q=guillotine+youtube+rap+song&sca_esv=e7bf22627bcd1c5c&sxsrf=AE3TifN-Vq_4zYcDF-yqExR6N73D8GWaZQ%3A1757434715529&ei=W1PAaPmNIN7I0PEPmb_a0A4&ved=0ahUKEwi5p72_isyPAxVeJDQIHZmfFuoQ4dUDCBI&uact=5&oq=guillotine+youtube+rap+song&gs_lp=Egxnd3Mtd2l6LXNlcnAiG2d1aWxsb3RpbmUgeW91dHViZSByYXAgc29uZzIFECEYoAEyBRAhGKABMgUQIRigATIFECEYoAEyBRAhGKABMgUQIRirAjIFECEYnwUyBRAhGJ8FMgUQIRifBTIFECEYnwVIlSVQlhlY5iNwAXgAkAEAmAFhoAGFBqoBATm4AQPIAQD4AQGYAgmgAqYGwgIGEAAYFhgewgIJEAAYFhgeGMcDwgILEAAYgAQYigUYhgPCAgUQABjvBZgDAIgGAZIHAzguMaAH6DqyBwM4LjG4B6YGwgcFMC43LjLIBxg&sclient=gws-wiz-serp#fpstate=ive&vld=cid:6a319798,vid:Orlbo9WkZ2E,st:0"><img width="833" height="444" alt="Guillotine Logo" src="https://github.com/user-attachments/assets/1effa677-d931-4453-8e98-2a70372efd91" /></a>
+<a href="docs/pages"><img width="833" height="444" alt="Guillotine Logo" src="https://github.com/user-attachments/assets/1effa677-d931-4453-8e98-2a70372efd91" /></a>
 
 **The ultrafast EVM for every language and platform**
 
@@ -37,14 +37,14 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 - ⚡ **Extreme speed** 
 - 🌐 **Universal** - Planned and experimental support for many languages and platforms
   - **Golang** - Available with FFI bindings
-  - **🚧 Zig** 
-  - **🚧 C** 
-  - **🚧 TypeScript** - Via Tevm including [Hono-like adapters](https://hono.dev/docs/getting-started/basic) for all platforms
-  - **🚧 Python** 
-  - **🚧 Rust** 
-  - **🚧 Swift** 
+  - **Zig** 
+  - **C** 
+  - **TypeScript** - Wasm or Bun
+  - **Python** 
+  - **Rust** 
+  - **Swift** 
+  - **Wasm** 
   - **🚧 Kotlin** 
-  - **🚧 Wasm** 
 - 📦 **Minimal bundle size** 
   - Zig `comptime` configuration means you only pay for features you actually use
   - Skip precompiles or use specific hard forks without bundle size or runtime overhead
@@ -60,13 +60,13 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 
 All SDKs in this repo are vibecoded proof-of-concepts. APIs are unstable and may change without notice. We're actively seeking early users to try things out and tell us what APIs you want. Please open an issue or ping us on Telegram with feedback.
 
-- Go: `sdks/go` — Go bindings with FFI to Zig EVM
-- Bun: `sdks/bun` — Native Bun bindings around the Zig EVM
-- C: `sdks/c` — C/C++ FFI surface for embedding
-- Python: `sdks/python` — Python bindings and primitives
-- Rust: `sdks/rust` — Idiomatic Rust wrapper over FFI
-- Swift: `sdks/swift` — Swift bindings for Apple platforms
-- TypeScript: `sdks/ts` — WASM/TS APIs for Node, Bun, Browser
+- [Go](sdks/go) — Go bindings with FFI to Zig EVM
+- [Bun](sdks/bun) — Native Bun bindings around the Zig EVM
+- [C](sdks/c) — C/C++ FFI surface for embedding
+- [Python](sdks/python) — Python bindings and primitives
+- [Rust](sdks/rust) — Idiomatic Rust wrapper over FFI
+- [Swift](sdks/swift) — Swift bindings for Apple platforms
+- [TypeScript](sdks/typescript) — WASM/TS APIs for Node, Bun, Browser
 
 See each SDK's README for install, quick start, and current API.
 
