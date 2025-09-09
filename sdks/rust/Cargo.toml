@@ -3,29 +3,75 @@ name = "guillotine-rs"
 version = "0.1.0"
 edition = "2021"
 authors = ["Guillotine Contributors"]
-description = "Safe Rust bindings for the Guillotine EVM implementation"
+description = "Safe Rust bindings for the Guillotine EVM - a high-performance Ethereum Virtual Machine implementation written in Zig"
+documentation = "https://docs.rs/guillotine-rs"
 repository = "https://github.com/evmts/guillotine"
+homepage = "https://github.com/evmts/guillotine"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 keywords = ["ethereum", "evm", "blockchain", "ffi", "zig"]
 categories = ["cryptography::cryptocurrencies", "api-bindings"]
+include = [
+    "src/**/*",
+    "build.rs",
+    "wrapper.h",
+    "lib/**/*.a",
+    "lib/**/*.so",
+    "lib/**/*.dylib",
+    "lib/**/*.lib",
+    "lib/**/*.dll",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE*"
+]
+exclude = [
+    "target/*",
+    ".gitignore",
+    "*.log",
+    "*.bak",
+]
+
+[package.metadata.docs.rs]
+# Enable all features when building docs on docs.rs
+all-features = true
+# Build docs for the target that docs.rs uses
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-revm = { version = "14.0", features = ["c-kzg", "blst"] }
 alloy-primitives = "0.8"
 hex = "0.4"
 libc = "0.2"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+revm = { version = "14.0", features = ["c-kzg", "blst"] }
 
 [build-dependencies]
 bindgen = "0.69"
 cc = "1.0"
 
+[features]
+default = []
+# Enable tracing support for debugging EVM execution
+tracing = []
+# Build with optimizations for benchmarking
+bench = []
+
 [[bench]]
 name = "evm_comparison"
 harness = false
+required-features = ["bench"]
 
 [lib]
 name = "guillotine_ffi"
 crate-type = ["cdylib", "rlib"]
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+# Platform-specific dependencies
+[target.'cfg(unix)'.dependencies]
+# Unix-specific dependencies can go here if needed
+
+[target.'cfg(windows)'.dependencies]
+# Windows-specific dependencies can go here if needed

@@ -10,57 +10,108 @@ extern "C" {
 #endif
 
 // Opaque pointer types
-typedef struct GuillotineVm GuillotineVm;
-typedef struct GuillotineDatabase GuillotineDatabase;
+typedef struct EvmHandle EvmHandle;
 
-// Address type (20 bytes)
+// Block info for FFI
 typedef struct {
-    uint8_t bytes[20];
-} GuillotineAddress;
+    uint64_t number;
+    uint64_t timestamp;
+    uint64_t gas_limit;
+    uint8_t coinbase[20];
+    uint64_t base_fee;
+    uint64_t chain_id;
+    uint64_t difficulty;
+    uint8_t prev_randao[32];
+} BlockInfoFFI;
 
-// U256 type (32 bytes, little-endian)
+// Call parameters for FFI
 typedef struct {
-    uint8_t bytes[32];
-} GuillotineU256;
+    uint8_t caller[20];
+    uint8_t to[20];
+    uint8_t value[32]; // u256 as bytes
+    const uint8_t* input;
+    size_t input_len;
+    uint64_t gas;
+    uint8_t call_type; // 0=CALL, 1=CALLCODE, 2=DELEGATECALL, 3=STATICCALL, 4=CREATE, 5=CREATE2
+    uint8_t salt[32]; // For CREATE2
+} CallParams;
 
-// Execution result
+// Log entry for FFI
+typedef struct {
+    uint8_t address[20];
+    const uint8_t (*topics)[32];  // Array of 32-byte topics
+    size_t topics_len;
+    const uint8_t* data;
+    size_t data_len;
+} LogEntry;
+
+// Self-destruct record for FFI
+typedef struct {
+    uint8_t contract[20];
+    uint8_t beneficiary[20];
+} SelfDestructRecord;
+
+// Storage access record for FFI
+typedef struct {
+    uint8_t address[20];
+    uint8_t slot[32];  // u256 as bytes
+} StorageAccessRecord;
+
+// Result structure for FFI
 typedef struct {
     bool success;
-    uint64_t gas_used;
-    uint8_t* output;
+    uint64_t gas_left;
+    const uint8_t* output;
     size_t output_len;
-    char* error_message; // NULL if no error
-} GuillotineExecutionResult;
+    const char* error_message;
+    // Additional fields from CallResult
+    const LogEntry* logs;
+    size_t logs_len;
+    const SelfDestructRecord* selfdestructs;
+    size_t selfdestructs_len;
+    const uint8_t (*accessed_addresses)[20];  // Array of addresses
+    size_t accessed_addresses_len;
+    const StorageAccessRecord* accessed_storage;
+    size_t accessed_storage_len;
+    uint8_t created_address[20];  // For CREATE/CREATE2, zero if not applicable
+    bool has_created_address;
+    // JSON-RPC trace (if available)
+    const uint8_t* trace_json;
+    size_t trace_json_len;
+} EvmResult;
 
-// VM creation and destruction
-GuillotineVm* guillotine_vm_create();
-void guillotine_vm_destroy(GuillotineVm* vm);
+// Initialize the FFI layer
+void guillotine_init(void);
+void guillotine_cleanup(void);
+
+// EVM creation and destruction
+EvmHandle* guillotine_evm_create(const BlockInfoFFI* block_info);
+EvmHandle* guillotine_evm_create_tracing(const BlockInfoFFI* block_info);
+void guillotine_evm_destroy(EvmHandle* handle);
+void guillotine_evm_destroy_tracing(EvmHandle* handle);
 
 // State management
-bool guillotine_set_balance(GuillotineVm* vm, const GuillotineAddress* address, const GuillotineU256* balance);
-bool guillotine_get_balance(GuillotineVm* vm, const GuillotineAddress* address, GuillotineU256* balance);
-bool guillotine_set_code(GuillotineVm* vm, const GuillotineAddress* address, const uint8_t* code, size_t code_len);
-bool guillotine_set_storage(GuillotineVm* vm, const GuillotineAddress* address, const GuillotineU256* key, const GuillotineU256* value);
-bool guillotine_get_storage(GuillotineVm* vm, const GuillotineAddress* address, const GuillotineU256* key, GuillotineU256* value);
+bool guillotine_set_balance(EvmHandle* handle, const uint8_t address[20], const uint8_t balance[32]);
+bool guillotine_set_balance_tracing(EvmHandle* handle, const uint8_t address[20], const uint8_t balance[32]);
+bool guillotine_get_balance(EvmHandle* handle, const uint8_t address[20], uint8_t balance_out[32]);
+bool guillotine_set_code(EvmHandle* handle, const uint8_t address[20], const uint8_t* code, size_t code_len);
+bool guillotine_set_code_tracing(EvmHandle* handle, const uint8_t address[20], const uint8_t* code, size_t code_len);
+bool guillotine_get_code(EvmHandle* handle, const uint8_t address[20], uint8_t** code_out, size_t* len_out);
+bool guillotine_set_storage(EvmHandle* handle, const uint8_t address[20], const uint8_t key[32], const uint8_t value[32]);
+bool guillotine_get_storage(EvmHandle* handle, const uint8_t address[20], const uint8_t key[32], uint8_t value_out[32]);
 
 // Execution
-GuillotineExecutionResult guillotine_vm_execute(
-    GuillotineVm* vm,
-    const GuillotineAddress* from,
-    const GuillotineAddress* to,
-    const GuillotineU256* value,
-    const uint8_t* input,
-    size_t input_len,
-    uint64_t gas_limit
-);
+EvmResult* guillotine_call(EvmHandle* handle, const CallParams* params);
+EvmResult* guillotine_call_tracing(EvmHandle* handle, const CallParams* params);
+EvmResult* guillotine_simulate(EvmHandle* handle, const CallParams* params);
 
-// Result cleanup
-void guillotine_free_result(GuillotineExecutionResult* result);
+// Memory cleanup
+void guillotine_free_result(EvmResult* result);
+void guillotine_free_code(uint8_t* code, size_t len);
+void guillotine_free_output(uint8_t* output, size_t len);
 
-// Utility functions
-void guillotine_address_from_bytes(const uint8_t* bytes, GuillotineAddress* address);
-void guillotine_u256_from_u64(uint64_t value, GuillotineU256* u256);
-void guillotine_u256_from_bytes(const uint8_t* bytes, GuillotineU256* u256);
+// Error handling
+const char* guillotine_get_last_error(void);
 
 #ifdef __cplusplus
 }

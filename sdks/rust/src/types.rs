@@ -13,6 +13,10 @@ pub struct ExecutionResult {
     pub output: Vec<u8>,
     /// Logs emitted during execution
     pub logs: Vec<Log>,
+    /// Created contract address (for CREATE/CREATE2)
+    pub created_address: Option<Address>,
+    /// JSON trace if tracing was enabled
+    pub trace_json: Option<String>,
 }
 
 impl ExecutionResult {
@@ -23,6 +27,8 @@ impl ExecutionResult {
             gas_used,
             output,
             logs: Vec::new(),
+            created_address: None,
+            trace_json: None,
         }
     }
 
@@ -33,6 +39,8 @@ impl ExecutionResult {
             gas_used,
             output: Vec::new(),
             logs: Vec::new(),
+            created_address: None,
+            trace_json: None,
         }
     }
 
@@ -77,6 +85,24 @@ impl Log {
             data,
         }
     }
+}
+
+/// Call type for EVM operations
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallType {
+    /// Regular call
+    Call = 0,
+    /// Call code
+    CallCode = 1,
+    /// Delegate call
+    DelegateCall = 2,
+    /// Static call
+    StaticCall = 3,
+    /// Create contract
+    Create = 4,
+    /// Create2 contract
+    Create2 = 5,
 }
 
 /// Transaction input builder for contract calls
@@ -127,5 +153,19 @@ impl DeployData {
         result.extend_from_slice(&self.bytecode);
         result.extend_from_slice(&self.constructor_params);
         result
+    }
+}
+
+/// Default implementation for BlockInfoFFI wrapper
+pub fn default_block_info() -> crate::ffi::BlockInfoFFI {
+    crate::ffi::BlockInfoFFI {
+        number: 0,
+        timestamp: 0,
+        gas_limit: 30_000_000,
+        coinbase: [0; 20],
+        base_fee: 7,
+        chain_id: 1,
+        difficulty: 0,
+        prev_randao: [0; 32],
     }
 }
