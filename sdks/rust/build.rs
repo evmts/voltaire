@@ -39,10 +39,21 @@ fn main() {
     // Build the static library from source
     build_guillotine_library(&build_dir);
     
-    // Link the built library
+    // Link the built library - check for both possible names
     let zig_out = build_dir.join("zig-out").join("lib");
     println!("cargo:rustc-link-search=native={}", zig_out.display());
-    println!("cargo:rustc-link-lib=static=guillotine_ffi_static");
+    
+    // Check which library was actually built
+    if zig_out.join("libguillotine_ffi_static.a").exists() {
+        println!("cargo:rustc-link-lib=static=guillotine_ffi_static");
+    } else if zig_out.join("libguillotine_ffi.a").exists() {
+        println!("cargo:rustc-link-lib=static=guillotine_ffi");
+    } else if zig_out.join("libGuillotine.a").exists() {
+        println!("cargo:rustc-link-lib=static=Guillotine");
+    } else {
+        // Try the default name anyway
+        println!("cargo:rustc-link-lib=static=guillotine_ffi_static");
+    }
     
     // Link system libraries
     if cfg!(target_os = "macos") {
@@ -79,12 +90,31 @@ fn download_and_prepare_source(out_dir: &str) -> PathBuf {
         panic!("Failed to download Guillotine source code");
     }
     
+    // Download KZG trusted setup if it doesn't exist
+    let kzg_path = guillotine_dir.join("src/kzg/trusted_setup.txt");
+    if !kzg_path.exists() {
+        println!("cargo:warning=Downloading KZG trusted setup...");
+        std::fs::create_dir_all(kzg_path.parent().unwrap()).ok();
+        
+        let status = Command::new("curl")
+            .args(&[
+                "-L",
+                "-o",
+                kzg_path.to_str().unwrap(),
+                "https://github.com/ethereum/c-kzg-4844/raw/main/src/trusted_setup.txt"
+            ])
+            .status()
+            .expect("Failed to download KZG trusted setup. Is curl installed?");
+        
+        if !status.success() {
+            panic!("Failed to download KZG trusted setup");
+        }
+    }
+    
     guillotine_dir
 }
 
 fn build_guillotine_library(project_dir: &Path) {
-    // Get Rust build profile information
-    let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
     // Check for Zig compiler
     let zig_version = Command::new("zig")
         .arg("version")
@@ -124,11 +154,25 @@ fn build_guillotine_library(project_dir: &Path) {
     println!("cargo:warning=Building Guillotine with Zig (optimization: {}) - this may take a few minutes on first build", zig_optimize);
     
     // Build the static library with Zig
-    let output = Command::new("zig")
+    // First try 'static' step, fall back to default install if not available
+    let mut output = Command::new("zig")
         .current_dir(project_dir)
         .args(&["build", "static", &format!("-Doptimize={}", zig_optimize)])
         .output()
         .expect("Failed to execute zig build");
+    
+    // If 'static' step doesn't exist, try default build
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("no step named 'static'") {
+            println!("cargo:warning=Static build step not found, using default build");
+            output = Command::new("zig")
+                .current_dir(project_dir)
+                .args(&["build", &format!("-Doptimize={}", zig_optimize)])
+                .output()
+                .expect("Failed to execute zig build");
+        }
+    }
     
     if !output.status.success() {
         eprintln!("Zig build output:");
