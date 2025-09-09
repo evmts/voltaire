@@ -92,34 +92,164 @@ threadlocal var last_error_z: [257]u8 = undefined;
 const empty_error: [1]u8 = .{0};
 const empty_buffer: [0]u8 = .{};
 
+// Instance pooling for performance
+const EvmInstance = struct {
+    evm: *DefaultEvm,
+    database: *Database,
+    block_info: BlockInfoFFI,
+    in_use: bool,
+    needs_reset: bool,
+};
+
+const TracingEvmInstance = struct {
+    evm: *TracerEvm,
+    database: *Database,
+    block_info: BlockInfoFFI,
+    in_use: bool,
+    needs_reset: bool,
+};
+
+// Instance pools - maintain reusable EVM instances
+var instance_pool: ?std.ArrayList(*EvmInstance) = null;
+var tracing_instance_pool: ?std.ArrayList(*TracingEvmInstance) = null;
+var pool_mutex = std.Thread.Mutex{};
+
+// Map handles to instances
+var handle_map: ?std.AutoHashMap(*EvmHandle, *EvmInstance) = null;
+var tracing_handle_map: ?std.AutoHashMap(*EvmHandle, *TracingEvmInstance) = null;
+
 fn setError(comptime fmt: []const u8, args: anytype) void {
     const slice = std.fmt.bufPrint(&last_error, fmt, args) catch "Unknown error";
     @memcpy(last_error_z[0..slice.len], slice);
     last_error_z[slice.len] = 0;
 }
 
-// Initialize FFI allocator
+// Initialize FFI allocator and instance pools
 export fn guillotine_init() void {
+    pool_mutex.lock();
+    defer pool_mutex.unlock();
+    
     if (ffi_allocator == null) {
         ffi_allocator = std.heap.c_allocator;
     }
+    
+    const allocator = ffi_allocator.?;
+    
+    if (instance_pool == null) {
+        instance_pool = std.ArrayList(*EvmInstance).initCapacity(allocator, 4) catch return;
+        tracing_instance_pool = std.ArrayList(*TracingEvmInstance).initCapacity(allocator, 4) catch return;
+        handle_map = std.AutoHashMap(*EvmHandle, *EvmInstance).init(allocator);
+        tracing_handle_map = std.AutoHashMap(*EvmHandle, *TracingEvmInstance).init(allocator);
+    }
 }
 
-// Cleanup FFI allocator
+// Cleanup FFI allocator and instance pools
 export fn guillotine_cleanup() void {
+    pool_mutex.lock();
+    defer pool_mutex.unlock();
+    
+    if (ffi_allocator) |allocator| {
+        // Clean up instance pools
+        if (instance_pool) |*pool| {
+            for (pool.items) |instance| {
+                instance.evm.deinit();
+                instance.database.deinit();
+                allocator.destroy(instance.database);
+                allocator.destroy(instance.evm);
+                allocator.destroy(instance);
+            }
+            pool.deinit(allocator);
+            instance_pool = null;
+        }
+        
+        if (tracing_instance_pool) |*pool| {
+            for (pool.items) |instance| {
+                instance.evm.deinit();
+                instance.database.deinit();
+                allocator.destroy(instance.database);
+                allocator.destroy(instance.evm);
+                allocator.destroy(instance);
+            }
+            pool.deinit(allocator);
+            tracing_instance_pool = null;
+        }
+        
+        if (handle_map) |*map| {
+            map.deinit();
+            handle_map = null;
+        }
+        
+        if (tracing_handle_map) |*map| {
+            map.deinit();
+            tracing_handle_map = null;
+        }
+    }
+    
     ffi_allocator = null;
 }
 
-// Create a new EVM instance
+// Create a new EVM instance (or reuse from pool)
 export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle {
     const allocator = ffi_allocator orelse {
         setError("FFI not initialized. Call guillotine_init() first", .{});
         return null;
     };
-
+    
+    pool_mutex.lock();
+    defer pool_mutex.unlock();
+    
+    // Try to find a free instance in the pool
+    if (instance_pool) |*pool| {
+        for (pool.items) |instance| {
+            if (!instance.in_use) {
+                // Found a free instance - reset and reuse it
+                if (instance.needs_reset) {
+                    // Reset the database by reinitializing it
+                    instance.database.deinit();
+                    instance.database.* = Database.init(allocator);
+                    instance.needs_reset = false;
+                }
+                
+                // Update block info
+                instance.block_info = block_info_ptr.*;
+                const block_info = BlockInfo{
+                    .number = block_info_ptr.number,
+                    .timestamp = block_info_ptr.timestamp,
+                    .gas_limit = block_info_ptr.gas_limit,
+                    .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
+                    .base_fee = block_info_ptr.base_fee,
+                    .difficulty = block_info_ptr.difficulty,
+                    .prev_randao = block_info_ptr.prev_randao,
+                    .chain_id = @intCast(block_info_ptr.chain_id),
+                    .blob_base_fee = 0,
+                    .blob_versioned_hashes = &.{},
+                };
+                instance.evm.block_info = block_info;
+                instance.in_use = true;
+                
+                // Create handle and register it
+                const handle = @as(*EvmHandle, @ptrCast(instance.evm));
+                handle_map.?.put(handle, instance) catch {
+                    instance.in_use = false;
+                    setError("Failed to register handle", .{});
+                    return null;
+                };
+                
+                return handle;
+            }
+        }
+    }
+    
+    // No free instance found, create a new one
+    const instance = allocator.create(EvmInstance) catch {
+        setError("Failed to allocate instance", .{});
+        return null;
+    };
+    
     // Create database
     const db = allocator.create(Database) catch {
         setError("Failed to allocate database", .{});
+        allocator.destroy(instance);
         return null;
     };
     db.* = Database.init(allocator);
@@ -152,6 +282,7 @@ export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle
         setError("Failed to allocate EVM", .{});
         db.deinit();
         allocator.destroy(db);
+        allocator.destroy(instance);
         return null;
     };
 
@@ -168,10 +299,38 @@ export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle
         db.deinit();
         allocator.destroy(db);
         allocator.destroy(evm_ptr);
+        allocator.destroy(instance);
+        return null;
+    };
+    
+    // Initialize instance struct
+    instance.* = .{
+        .evm = evm_ptr,
+        .database = db,
+        .block_info = block_info_ptr.*,
+        .in_use = true,
+        .needs_reset = false,
+    };
+    
+    // Add to pool
+    instance_pool.?.append(allocator, instance) catch {
+        setError("Failed to add to pool", .{});
+        evm_ptr.deinit();
+        db.deinit();
+        allocator.destroy(db);
+        allocator.destroy(evm_ptr);
+        allocator.destroy(instance);
+        return null;
+    };
+    
+    // Create handle and register it
+    const handle = @as(*EvmHandle, @ptrCast(evm_ptr));
+    handle_map.?.put(handle, instance) catch {
+        setError("Failed to register handle", .{});
         return null;
     };
 
-    return @ptrCast(evm_ptr);
+    return handle;
 }
 
 // Create a new EVM instance with JSON-RPC tracing enabled
@@ -234,18 +393,21 @@ export fn guillotine_evm_create_tracing(block_info_ptr: *const BlockInfoFFI) ?*E
     return @ptrCast(evm_ptr);
 }
 
-// Destroy an EVM instance
+// Destroy an EVM instance (actually returns it to the pool)
 export fn guillotine_evm_destroy(handle: *EvmHandle) void {
-    const allocator = ffi_allocator orelse return;
-    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
+    pool_mutex.lock();
+    defer pool_mutex.unlock();
     
-    // Save database pointer before deinit
-    const db = evm_ptr.database;
-    
-    evm_ptr.deinit();
-    db.deinit();
-    allocator.destroy(db);
-    allocator.destroy(evm_ptr);
+    // Find the instance in the handle map
+    if (handle_map) |*map| {
+        if (map.fetchRemove(handle)) |entry| {
+            const instance = entry.value;
+            // Mark as not in use and needs reset
+            instance.in_use = false;
+            instance.needs_reset = true;
+            // Instance stays in the pool for reuse
+        }
+    }
 }
 
 // Destroy a tracing EVM instance
