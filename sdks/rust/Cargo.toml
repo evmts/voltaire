@@ -15,20 +15,9 @@ include = [
     "src/**/*",
     "build.rs",
     "wrapper.h",
-    "lib/**/*.a",
-    "lib/**/*.so",
-    "lib/**/*.dylib",
-    "lib/**/*.lib",
-    "lib/**/*.dll",
     "Cargo.toml",
     "README.md",
     "LICENSE*"
-]
-exclude = [
-    "target/*",
-    ".gitignore",
-    "*.log",
-    "*.bak",
 ]
 
 [package.metadata.docs.rs]
