@@ -212,14 +212,49 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 return error.BytecodeTooLarge;
             }
 
+            // Detect and strip Solidity metadata from the end of bytecode
+            // Metadata format: 0xa2 0x64 "ipfs" <hash> ... or 0xa1 0x65 "bzzr0" <hash> ...
+            // The metadata is CBOR encoded and starts with 0xa2 (map with 2 entries) or 0xa1 (map with 1 entry)
+            var runtime_code = code;
+            if (code.len >= 2) {
+                // Look for metadata marker near the end
+                // Typical metadata is 50-60 bytes, but can vary
+                const search_start = if (code.len > 100) code.len - 100 else 0;
+                var i = search_start;
+                while (i < code.len - 1) : (i += 1) {
+                    // Check for CBOR metadata markers
+                    if ((code[i] == 0xa2 or code[i] == 0xa1) and i + 10 < code.len) {
+                        // Check for "ipfs" or "bzzr" following the marker
+                        if ((code[i] == 0xa2 and i + 5 < code.len and
+                            code[i + 1] == 0x64 and // string of length 4
+                            code[i + 2] == 0x69 and // 'i'
+                            code[i + 3] == 0x70 and // 'p'
+                            code[i + 4] == 0x66 and // 'f'
+                            code[i + 5] == 0x73) or // 's'
+                            (code[i] == 0xa1 and i + 6 < code.len and
+                            code[i + 1] == 0x65 and // string of length 5
+                            code[i + 2] == 0x62 and // 'b'
+                            code[i + 3] == 0x7a and // 'z'
+                            code[i + 4] == 0x7a and // 'z'
+                            code[i + 5] == 0x72)) // 'r'
+                        {
+                            // Found metadata, trim the bytecode here
+                            runtime_code = code[0..i];
+                            log.debug("Detected Solidity metadata at position {}, trimming bytecode from {} to {} bytes", .{ i, code.len, runtime_code.len });
+                            break;
+                        }
+                    }
+                }
+            }
+
             var self = Self{
                 .full_code = code,
-                .runtime_code = code,
+                .runtime_code = runtime_code,
                 .allocator = allocator,
                 .packed_bitmap = &.{},
             };
-            // Build bitmaps and validate
-            try self.buildBitmapsAndValidateWithLength(code.len);
+            // Build bitmaps and validate only the runtime code
+            try self.buildBitmapsAndValidateWithLength(runtime_code.len);
             return self;
         }
 
@@ -1385,4 +1420,88 @@ test "Deployment vs Runtime bytecode handling" {
 
     // The bytecode init detects deployment pattern and uses full code
     try testing.expect(bytecode.runtime_code.len == deployment_code.len);
+}
+
+test "Bytecode with Solidity metadata - ipfs format" {
+    const allocator = testing.allocator;
+
+    // Real bytecode pattern with IPFS metadata
+    const code_with_metadata = [_]u8{
+        // Some valid bytecode
+        0x60, 0x80, // PUSH1 0x80
+        0x60, 0x40, // PUSH1 0x40
+        0x52,       // MSTORE
+        0x00,       // STOP
+        // IPFS metadata (CBOR encoded)
+        0xa2,       // CBOR map with 2 entries
+        0x64,       // string of length 4
+        0x69, 0x70, 0x66, 0x73, // "ipfs"
+        0x58, 0x22, // bytes of length 34
+        // 34 bytes of IPFS hash would follow...
+        0x12, 0x20, // multihash: SHA256
+    } ++ [_]u8{0xAA} ** 32 ++ // 32 bytes of hash data
+    [_]u8{
+        0x64,       // string of length 4  
+        0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x43,       // bytes of length 3
+        0x00, 0x08, 0x13, // version 0.8.19
+    };
+
+    var bytecode = try BytecodeDefault.init(allocator, &code_with_metadata);
+    defer bytecode.deinit();
+
+    // Should detect metadata and trim to just the actual code
+    try testing.expectEqual(@as(usize, 6), bytecode.runtime_code.len);
+    try testing.expectEqual(@as(u8, 0x60), bytecode.runtime_code[0]);
+    try testing.expectEqual(@as(u8, 0x00), bytecode.runtime_code[5]);
+}
+
+test "Bytecode with Solidity metadata - bzzr format" {
+    const allocator = testing.allocator;
+
+    // Older Solidity versions use bzzr0 or bzzr1 format
+    const code_with_metadata = [_]u8{
+        // Some valid bytecode
+        0x60, 0x01, // PUSH1 0x01
+        0x60, 0x02, // PUSH1 0x02
+        0x01,       // ADD
+        0x00,       // STOP
+        // bzzr metadata (CBOR encoded)
+        0xa1,       // CBOR map with 1 entry
+        0x65,       // string of length 5
+        0x62, 0x7a, 0x7a, 0x72, 0x30, // "bzzr0"
+        0x58, 0x20, // bytes of length 32
+    } ++ [_]u8{0xBB} ** 32; // 32 bytes of swarm hash
+
+    var bytecode = try BytecodeDefault.init(allocator, &code_with_metadata);
+    defer bytecode.deinit();
+
+    // Should detect metadata and trim to just the actual code
+    try testing.expectEqual(@as(usize, 6), bytecode.runtime_code.len);
+    try testing.expectEqual(@as(u8, 0x60), bytecode.runtime_code[0]);
+    try testing.expectEqual(@as(u8, 0x00), bytecode.runtime_code[5]);
+}
+
+test "Bytecode without metadata should remain unchanged" {
+    const allocator = testing.allocator;
+
+    // Bytecode without any metadata
+    const clean_code = [_]u8{
+        0x60, 0x80, // PUSH1 0x80
+        0x60, 0x40, // PUSH1 0x40
+        0x52,       // MSTORE
+        0x34,       // CALLVALUE
+        0x80,       // DUP1
+        0x15,       // ISZERO
+        0x60, 0x0e, // PUSH1 0x0e
+        0x57,       // JUMPI
+        0x00,       // STOP
+    };
+
+    var bytecode = try BytecodeDefault.init(allocator, &clean_code);
+    defer bytecode.deinit();
+
+    // Should not modify bytecode without metadata
+    try testing.expectEqual(clean_code.len, bytecode.runtime_code.len);
+    try testing.expectEqualSlices(u8, &clean_code, bytecode.runtime_code);
 }
