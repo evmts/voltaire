@@ -35,8 +35,10 @@ pub use alloy_primitives::{Address, Bytes, B256, U256};
 
 mod ffi;
 mod types;
+mod stateful;
 
 pub use types::{ExecutionResult, Log, CallType};
+pub use stateful::{StatefulEvm, StatefulEvmConfig, StateUpdate};
 
 use std::ffi::CStr;
 use std::ptr;
