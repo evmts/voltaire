@@ -44,19 +44,19 @@ fn run_mod_test(allocator: std.mem.Allocator, a: u256, b: u256) !void {
     }
     
     // MOD opcode
-    try buf.append(0x06);
+    try buf.append(allocator, 0x06);
     
     // Store result and return
-    try buf.append(0x60); // PUSH1
-    try buf.append(0x00); // 0 (memory offset)
-    try buf.append(0x52); // MSTORE
-    try buf.append(0x60); // PUSH1
-    try buf.append(0x20); // 32 (length)
-    try buf.append(0x60); // PUSH1
-    try buf.append(0x00); // 0 (offset)
-    try buf.append(0xf3); // RETURN
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, 0x00); // 0 (memory offset)
+    try buf.append(allocator, 0x52); // MSTORE
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, 0x20); // 32 (length)
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, 0x00); // 0 (offset)
+    try buf.append(allocator, 0xf3); // RETURN
     
-    const bytecode = try buf.toOwnedSlice();
+    const bytecode = try buf.toOwnedSlice(allocator);
     defer allocator.free(bytecode);
     
     // Setup Guillotine EVM
@@ -241,6 +241,24 @@ test "MOD: alternating bit patterns" {
     try run_mod_test(std.testing.allocator, pattern1, pattern2);
 }
 
+test "MOD: large 256-bit beyond u64" {
+    const huge_dividend = (@as(u256, 1) << 100) + (@as(u256, 0xDEADBEEF) << 50);
+    const huge_divisor = (@as(u256, 1) << 70) + 0xCAFEBABE;
+    try run_mod_test(std.testing.allocator, huge_dividend, huge_divisor);
+}
+
+test "MOD: very large 256-bit operations" {
+    const massive = (@as(u256, 1) << 200) + (@as(u256, 1) << 150);
+    const big_mod = (@as(u256, 1) << 100) + (@as(u256, 1) << 50);
+    try run_mod_test(std.testing.allocator, massive, big_mod);
+}
+
+test "MOD: near max u256" {
+    const near_max = std.math.maxInt(u256) - 1000;
+    const divisor = (@as(u256, 1) << 128) + 12345;
+    try run_mod_test(std.testing.allocator, near_max, divisor);
+}
+
 test "MOD: consecutive numbers (100 % 99 = 1)" {
     try run_mod_test(std.testing.allocator, 100, 99);
 }
@@ -323,28 +341,28 @@ fn run_mod_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256) !void 
     // We need PUSH1 (1) + dest byte (1) + JUMP (1) + JUMPDEST (1) = 4 bytes ahead
     const jump_dest = buf.items.len + 4;
     
-    try buf.append(0x60); // PUSH1
-    try buf.append(@intCast(jump_dest)); // destination
-    try buf.append(0x56); // JUMP
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, @intCast(jump_dest)); // destination
+    try buf.append(allocator, 0x56); // JUMP
     
     // Invalid opcode (should never be executed)
-    try buf.append(0xfe); // INVALID
+    try buf.append(allocator, 0xfe); // INVALID
     
     // JUMPDEST + MOD
-    try buf.append(0x5b); // JUMPDEST
-    try buf.append(0x06); // MOD opcode
+    try buf.append(allocator, 0x5b); // JUMPDEST
+    try buf.append(allocator, 0x06); // MOD opcode
     
     // Store result and return
-    try buf.append(0x60); // PUSH1
-    try buf.append(0x00); // 0 (memory offset)
-    try buf.append(0x52); // MSTORE
-    try buf.append(0x60); // PUSH1
-    try buf.append(0x20); // 32 (length)
-    try buf.append(0x60); // PUSH1
-    try buf.append(0x00); // 0 (offset)
-    try buf.append(0xf3); // RETURN
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, 0x00); // 0 (memory offset)
+    try buf.append(allocator, 0x52); // MSTORE
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, 0x20); // 32 (length)
+    try buf.append(allocator, 0x60); // PUSH1
+    try buf.append(allocator, 0x00); // 0 (offset)
+    try buf.append(allocator, 0xf3); // RETURN
     
-    const bytecode = try buf.toOwnedSlice();
+    const bytecode = try buf.toOwnedSlice(allocator);
     defer allocator.free(bytecode);
     
     // Setup Guillotine EVM
@@ -457,4 +475,22 @@ test "MOD with JUMP: power of 2 bit masking" {
 test "MOD with JUMP: near boundary values" {
     const near_u64 = @as(u256, std.math.maxInt(u32));
     try run_mod_test_with_jump(std.testing.allocator, near_u64, 999);
+}
+
+test "MOD with JUMP: large 256-bit beyond u64" {
+    const huge = (@as(u256, 1) << 150) + (@as(u256, 1) << 100);
+    const big_divisor = (@as(u256, 1) << 80) + 0xFEEDFACE;
+    try run_mod_test_with_jump(std.testing.allocator, huge, big_divisor);
+}
+
+test "MOD with JUMP: very large 256-bit" {
+    const massive = (@as(u256, 1) << 240) + (@as(u256, 0xDEADBEEF) << 200);
+    const huge_mod = (@as(u256, 1) << 190) + (@as(u256, 0xCAFEBABE) << 150);
+    try run_mod_test_with_jump(std.testing.allocator, massive, huge_mod);
+}
+
+test "MOD with JUMP: beyond u64 boundary" {
+    const beyond_u64 = (@as(u256, std.math.maxInt(u64)) + 1) << 10;
+    const divisor = (@as(u256, 1) << 65) + 12345;
+    try run_mod_test_with_jump(std.testing.allocator, beyond_u64, divisor);
 }
