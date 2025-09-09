@@ -311,6 +311,14 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// If set to something else the EVM will update to that new word size. e.g. run kekkak128 instead of kekkak256
         /// Lowering the word size can improve perf and bundle size
         pub const WordType = config.WordType;
+        /// Generic Uint type based on WordType for optimized arithmetic operations
+        /// Automatically determines the bit width and limb count from WordType
+        pub const UintN = blk: {
+            const Uint = @import("primitives").Uint;
+            const bits = @bitSizeOf(WordType);
+            const limbs = if (bits <= 64) 1 else (bits + 63) / 64;
+            break :blk Uint(bits, limbs);
+        };
         /// The type used to measure gas. Unsigned integer for perf reasons
         pub const GasType = config.GasType();
         /// The type used to index into bytecode or instructions. Determined by config.max_bytecode_size
