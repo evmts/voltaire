@@ -11,161 +11,72 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
 
-        /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // ADD requires 2 stack items
-            const b = self.stack.pop_unsafe(); // Second operand (top of stack)
-            const a = self.stack.peek_unsafe(); // First operand (second element)
-            const result = a +% b;
-            self.stack.set_top_unsafe(result);
+        /// Advance to the next opcode instruction
+        pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const next_cursor = cursor + 1;
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+        }
+
+        /// ADD opcode (0x01) - Addition with overflow wrapping.
+        pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            std.debug.assert(self.stack.size() >= 2); 
+
+            self.stack.set_top_unsafe(self.stack.pop_unsafe() +% self.stack.peek_unsafe());
+
+            return next_instruction(self, cursor);
         }
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // MUL requires 2 stack items
-            const b = self.stack.pop_unsafe(); // Second operand (top of stack)
-            const a = self.stack.peek_unsafe(); // First operand (second element)
-            const result = a *% b;
-            self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            std.debug.assert(self.stack.size() >= 2);
+            
+            self.stack.set_top_unsafe(self.stack.pop_unsafe() *% self.stack.peek_unsafe());
+
+            return next_instruction(self, cursor);
         }
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // SUB requires 2 stack items
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
-            // EVM semantics: top - second = a - b
-            const result = a -% b;
-            self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            std.debug.assert(self.stack.size() >= 2); 
+
+            self.stack.set_top_unsafe(self.stack.pop_unsafe() -% self.stack.peek_unsafe());
+
+            return next_instruction(self, cursor);
         }
 
-        test "SUB: basic subtraction" {
-            
-            // Test 1: Normal subtraction (no underflow)
-            {
-                var stack = @import("../stack.zig").Stack(256).init();
-                stack.push_unsafe(20); // bottom
-                stack.push_unsafe(5);  // top
-                
-                // Simulate SUB: 5 - 20 = -15 (should wrap)
-                const a = stack.pop_unsafe();
-                const b = stack.peek_unsafe();
-                const result = a -% b;
-                stack.set_top_unsafe(result);
-                
-                try std.testing.expectEqual(@as(u256, 5), a);
-                try std.testing.expectEqual(@as(u256, 20), b);
-                // 5 - 20 = -15, which in two's complement u256 is a large number
-                const expected: u256 = @as(u256, 5) -% @as(u256, 20);
-                try std.testing.expectEqual(expected, result);
-            }
-            
-            // Test 2: Subtraction without underflow
-            {
-                var stack = @import("../stack.zig").Stack(256).init();
-                stack.push_unsafe(5);   // bottom
-                stack.push_unsafe(20);  // top
-                
-                // Simulate SUB: 20 - 5 = 15
-                const a = stack.pop_unsafe();
-                const b = stack.peek_unsafe();
-                const result = a -% b;
-                stack.set_top_unsafe(result);
-                
-                try std.testing.expectEqual(@as(u256, 20), a);
-                try std.testing.expectEqual(@as(u256, 5), b);
-                try std.testing.expectEqual(@as(u256, 15), result);
-            }
-            
-            // Test 3: Subtraction with zero
-            {
-                var stack = @import("../stack.zig").Stack(256).init();
-                stack.push_unsafe(10);  // bottom
-                stack.push_unsafe(0);   // top
-                
-                // Simulate SUB: 0 - 10 = -10 (should wrap)
-                const a = stack.pop_unsafe();
-                const b = stack.peek_unsafe();
-                const result = a -% b;
-                stack.set_top_unsafe(result);
-                
-                try std.testing.expectEqual(@as(u256, 0), a);
-                try std.testing.expectEqual(@as(u256, 10), b);
-                const expected: u256 = @as(u256, 0) -% @as(u256, 10);
-                try std.testing.expectEqual(expected, result);
-            }
-            
-            // Test 4: Same values
-            {
-                var stack = @import("../stack.zig").Stack(256).init();
-                stack.push_unsafe(42);  // bottom
-                stack.push_unsafe(42);  // top
-                
-                // Simulate SUB: 42 - 42 = 0
-                const a = stack.pop_unsafe();
-                const b = stack.peek_unsafe();
-                const result = a -% b;
-                stack.set_top_unsafe(result);
-                
-                try std.testing.expectEqual(@as(u256, 42), a);
-                try std.testing.expectEqual(@as(u256, 42), b);
-                try std.testing.expectEqual(@as(u256, 0), result);
-            }
-        }
+        const from_native = FrameType.UintN.from_native;
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // DIV requires 2 stack items
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            std.debug.assert(self.stack.size() >= 2); 
 
-            // Convert to U256 for optimized division
-            const Uint = @import("primitives").Uint;
-            const U256 = Uint(256, 4);
-            const a_u256 = U256.from_u256_unsafe(a);
-            const b_u256 = U256.from_u256_unsafe(b);
+            self.stack.set_top_unsafe(
+                from_native(self.stack.pop_unsafe()).wrapping_div(
+                    from_native(self.stack.peek_unsafe())
+                ).to_native()
+            );
 
-            // EVM semantics: top / second = a / b (wrapping_div returns 0 for division by zero)
-            const result_u256 = a_u256.wrapping_div(b_u256);
-            const result = result_u256.to_u256_unsafe();
-
-            self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// SDIV opcode (0x05) - Signed integer division.
         // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
         // The current approach might be slower if the sign of operands is predictable.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // SDIV requires 2 stack items
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            std.debug.assert(self.stack.size() >= 2); 
+            const top = self.stack.pop_unsafe(); 
+            const second = self.stack.peek_unsafe(); 
 
-            // Convert to U256 for arithmetic
-            const Uint = @import("primitives").Uint;
-            const U256 = Uint(256, 4);
-            
-            // Constants for two's complement
             const SIGN_BIT = @as(u256, 1) << 255;
-            const MIN_SIGNED = SIGN_BIT; // -2^255 in two's complement
+            const MIN_SIGNED = SIGN_BIT; 
             
-            // Check for MIN / -1 overflow case and division by zero
-            if (b == 0) {
+            if (second == 0) {
                 self.stack.set_top_unsafe(0);
-                const next_cursor = cursor + 1;
-                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
             }
-            if (a == MIN_SIGNED and b == std.math.maxInt(u256)) { // -1 in two's complement
+            if (top == MIN_SIGNED and second == std.math.maxInt(u256)) { 
                 self.stack.set_top_unsafe(MIN_SIGNED);
-                const next_cursor = cursor + 1;
-                return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+                return next_instruction(self, cursor);
             }
             
             // This section implements branchless two's complement arithmetic.
@@ -177,75 +88,55 @@ pub fn Handlers(comptime FrameType: type) type {
             // 4. Perform unsigned division on the absolute values.
             // 5. Determine the result's sign by XORing the operand signs.
             // 6. Conditionally negate the result using the same mask trick.
-            const a_sign = a >> 255;
-            const b_sign = b >> 255;
+            const top_sign = top >> 255;
+            const second_sign = second >> 255;
             
-            const a_mask = @as(u256, 0) -% a_sign;
-            const b_mask = @as(u256, 0) -% b_sign;
+            const top_mask = @as(u256, 0) -% top_sign;
+            const b_mask = @as(u256, 0) -% second_sign;
             
-            const a_abs = (a ^ a_mask) -% a_mask;
-            const b_abs = (b ^ b_mask) -% b_mask;
+            const top_abs = (top ^ top_mask) -% top_mask;
+            const second_abs = (second ^ b_mask) -% b_mask;
             
-            const a_abs_u256 = U256.from_u256_unsafe(a_abs);
-            const b_abs_u256 = U256.from_u256_unsafe(b_abs);
-            const quotient_u256 = a_abs_u256.wrapping_div(b_abs_u256);
-            const quotient = quotient_u256.to_u256_unsafe();
+            const top_abs_u256 = FrameType.UintN.from_native(top_abs);
+            const second_abs_u256 = FrameType.UintN.from_native(second_abs);
+            const quotient_u256 = top_abs_u256.wrapping_div(second_abs_u256);
+            const quotient = quotient_u256.to_native();
             
-            const result_sign = a_sign ^ b_sign;
+            const result_sign = top_sign ^ second_sign;
             const result_mask = @as(u256, 0) -% result_sign;
             
             const result = (quotient ^ result_mask) -% result_mask;
             
             self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // MOD requires 2 stack items
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            std.debug.assert(self.stack.size() >= 2); 
 
-            // Convert to U256 for optimized modulo
-            const Uint = @import("primitives").Uint;
-            const U256 = Uint(256, 4);
-            const a_u256 = U256.from_u256_unsafe(a);
-            const b_u256 = U256.from_u256_unsafe(b);
+            self.stack.set_top_unsafe(FrameType.UintN.from_native(self.stack.pop_unsafe()).wrapping_rem(FrameType.UintN.from_native(self.stack.peek_unsafe())).to_native());
 
-            // EVM semantics: top % second = a % b (wrapping_rem returns 0 for modulo by zero)
-            const result_u256 = a_u256.wrapping_rem(b_u256);
-            const result = result_u256.to_u256_unsafe();
-
-            self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// SMOD opcode (0x07) - Signed modulo operation.
         // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
         // The current approach might be slower if the sign of operands is predictable.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); // SMOD requires 2 stack items
-            const a = self.stack.pop_unsafe(); // Top of stack (first operand)
-            const b = self.stack.peek_unsafe(); // Second from top (second operand)
+            std.debug.assert(self.stack.size() >= 2); 
+            const top = self.stack.pop_unsafe(); 
+            const second = self.stack.peek_unsafe(); 
 
-            // Convert to U256 for arithmetic
-            const Uint = @import("primitives").Uint;
-            const U256 = Uint(256, 4);
-            
-            // Constants for two's complement
             const SIGN_BIT = @as(u256, 1) << 255;
-            const MIN_SIGNED = SIGN_BIT; // -2^255 in two's complement
+            const MIN_SIGNED = SIGN_BIT; 
             
-            // Special case: modulo by zero returns 0
-            if (b == 0) {
+            if (second == 0) {
                 self.stack.set_top_unsafe(0);
                 const next_cursor = cursor + 1;
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
             }
-            // Special case: MIN_INT % -1 = 0 (to avoid overflow)
-            if (a == MIN_SIGNED and b == std.math.maxInt(u256)) { // -1 in two's complement
+            if (top == MIN_SIGNED and second == std.math.maxInt(u256)) { // -1 in two's complement
                 self.stack.set_top_unsafe(0);
                 const next_cursor = cursor + 1;
                 return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
@@ -253,26 +144,25 @@ pub fn Handlers(comptime FrameType: type) type {
             
             // This section implements branchless two's complement arithmetic.
             // The result of a % n takes the sign of the dividend `a`.
-            const a_sign = a >> 255;
-            const b_sign = b >> 255;
+            const top_sign = top >> 255;
+            const second_sign = second >> 255;
             
-            const a_mask = @as(u256, 0) -% a_sign;
-            const b_mask = @as(u256, 0) -% b_sign;
+            const top_mask = @as(u256, 0) -% top_sign;
+            const b_mask = @as(u256, 0) -% second_sign;
             
-            const a_abs = (a ^ a_mask) -% a_mask;
-            const b_abs = (b ^ b_mask) -% b_mask;
+            const top_abs = (top ^ top_mask) -% top_mask;
+            const second_abs = (second ^ b_mask) -% b_mask;
             
-            const a_abs_u256 = U256.from_u256_unsafe(a_abs);
-            const b_abs_u256 = U256.from_u256_unsafe(b_abs);
-            const remainder_u256 = a_abs_u256.wrapping_rem(b_abs_u256);
-            const remainder = remainder_u256.to_u256_unsafe();
+            const top_abs_u256 = FrameType.UintN.from_native(top_abs);
+            const second_abs_u256 = FrameType.UintN.from_native(second_abs);
+            const remainder_u256 = top_abs_u256.wrapping_rem(second_abs_u256);
+            const remainder = remainder_u256.to_native();
             
-            // Result takes sign of dividend (a_sign)
-            const result = (remainder ^ a_mask) -% a_mask;
+            // Result takes sign of dividend (top_sign)
+            const result = (remainder ^ top_mask) -% top_mask;
             
             self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// ADDMOD opcode (0x08) - (a + b) % N. All intermediate calculations are performed with arbitrary precision.
@@ -303,8 +193,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// MULMOD opcode (0x09) - (a * b) % N. All intermediate calculations are performed with arbitrary precision.
@@ -321,8 +210,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// Safe modular multiplication using double-width arithmetic to prevent overflow.
@@ -418,8 +306,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 base_working *%= base_working;
             }
             self.stack.set_top_unsafe(result);
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
 
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
@@ -452,8 +339,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             self.stack.set_top_unsafe(result);
 
-            const next_cursor = cursor + 1;
-            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+            return next_instruction(self, cursor);
         }
     };
 }

@@ -10,83 +10,69 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
 
+        /// Advance to the next opcode instruction
+        pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            // advance past the metadata
+            const next_cursor = cursor + 2;
+            return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
+        }
+
+        /// Validate stack constraints
+        pub inline fn validate_stack(self: *FrameType) void {
+            std.debug.assert(self.stack.size() >= 1); 
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); 
+        }
+
         /// PUSH_ADD_INLINE - Fused PUSH+ADD with inline value (≤8 bytes).
         /// Pushes a value and immediately adds it to the top of stack.
         pub fn push_add_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
-            const push_value = cursor[1].push_inline.value;
+            validate_stack(self);
 
-            // Pop top value and add the pushed value
-            std.debug.assert(self.stack.size() >= 1); // PUSH_ADD_INLINE requires 1 stack item
-            const top = self.stack.pop_unsafe();
-            const result = top +% push_value;
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(result);
+            self.stack.push_unsafe(cursor[1].push_inline.value +% self.stack.pop_unsafe());
 
-            // Continue to next operation (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
-            return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
+            return next_instruction(self, cursor);
         }
 
         /// PUSH_ADD_POINTER - Fused PUSH+ADD with pointer value (>8 bytes).
         pub fn push_add_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
-            const push_value = cursor[1].push_pointer.value.*;
+            validate_stack(self);
 
-            // Pop top value and add the pushed value
-            std.debug.assert(self.stack.size() >= 1); // PUSH_ADD_POINTER requires 1 stack item
-            const top = self.stack.pop_unsafe();
-            const result = top +% push_value;
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(result);
-
-            // Continue to next operation (cursor[2] since cursor[0]=handler, cursor[1]=metadata, cursor[2]=next)
-            return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
+            self.stack.push_unsafe(cursor[1].push_pointer.value.* +% self.stack.pop_unsafe());
+            
+            return next_instruction(self, cursor);
         }
 
         /// PUSH_MUL_INLINE - Fused PUSH+MUL with inline value (≤8 bytes).
         pub fn push_mul_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
-            const push_value = cursor[1].push_inline.value;
+            validate_stack(self);
+            
+            self.stack.push_unsafe(cursor[1].push_inline.value *% self.stack.pop_unsafe());
 
-            std.debug.assert(self.stack.size() >= 1); // PUSH_MUL_INLINE requires 1 stack item
-            const top = self.stack.pop_unsafe();
-            const result = top *% push_value;
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(result);
-
-            return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
+            return next_instruction(self, cursor);
         }
 
         /// PUSH_MUL_POINTER - Fused PUSH+MUL with pointer value (>8 bytes).
         pub fn push_mul_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
-            const push_value = cursor[1].push_pointer.value.*;
+            validate_stack(self);
 
-            std.debug.assert(self.stack.size() >= 1); // PUSH_MUL_POINTER requires 1 stack item
-            const top = self.stack.pop_unsafe();
-            const result = top *% push_value;
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(result);
+            self.stack.push_unsafe(cursor[1].push_pointer.value.* *% self.stack.pop_unsafe());
 
-            return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
+            return next_instruction(self, cursor);
         }
 
         /// PUSH_DIV_INLINE - Fused PUSH+DIV with inline value (≤8 bytes).
         pub fn push_div_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
-            const divisor = cursor[1].push_inline.value;
+            const dividend = cursor[1].push_inline.value;
 
-            std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_INLINE requires 1 stack item
-            const dividend = self.stack.pop_unsafe();
+            const divisor = self.stack.pop_unsafe();
             
-            // Convert to U256 for optimized division
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const dividend_u256 = U256.from_u256_unsafe(dividend);
-            const divisor_u256 = U256.from_u64(divisor);
+            const dividend_u256 = U256.from_native(dividend);
+            const divisor_u256 = U256.from_native(divisor);
             
             const result_u256 = dividend_u256.wrapping_div(divisor_u256);
-            const result = result_u256.to_u256_unsafe();
+            const result = result_u256.to_native();
             
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
@@ -97,19 +83,19 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_DIV_POINTER - Fused PUSH+DIV with pointer value (>8 bytes).
         pub fn push_div_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
-            const divisor = cursor[1].push_pointer.value.*;
+            const dividend = cursor[1].push_pointer.value.*;
 
             std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_POINTER requires 1 stack item
-            const dividend = self.stack.pop_unsafe();
+            const divisor = self.stack.pop_unsafe();
             
             // Convert to U256 for optimized division
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
-            const dividend_u256 = U256.from_u256_unsafe(dividend);
-            const divisor_u256 = U256.from_u256_unsafe(divisor);
+            const dividend_u256 = U256.from_native(dividend);
+            const divisor_u256 = U256.from_native(divisor);
             
             const result_u256 = dividend_u256.wrapping_div(divisor_u256);
-            const result = result_u256.to_u256_unsafe();
+            const result = result_u256.to_native();
             
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
@@ -119,29 +105,21 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_SUB_INLINE - Fused PUSH+SUB with inline value (≤8 bytes).
         pub fn push_sub_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
             const push_value = cursor[1].push_inline.value;
-
             std.debug.assert(self.stack.size() >= 1); // PUSH_SUB_INLINE requires 1 stack item
             const top = self.stack.pop_unsafe();
-            const result = top -% push_value;
+            const result = push_value -% top;
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(result);
-
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
 
         /// PUSH_SUB_POINTER - Fused PUSH+SUB with pointer value (>8 bytes).
         pub fn push_sub_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // For synthetic opcodes, cursor[1] contains the metadata directly
-            const push_value = cursor[1].push_pointer.value.*;
-
-            std.debug.assert(self.stack.size() >= 1); // PUSH_SUB_POINTER requires 1 stack item
-            const top = self.stack.pop_unsafe();
-            const result = top -% push_value;
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
+            std.debug.assert(self.stack.size() >= 1); 
+            const result = cursor[1].push_pointer.value.* -% self.stack.pop_unsafe();
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); 
             self.stack.push_unsafe(result);
-
             return @call(FrameType.getTailCallModifier(), cursor[2].opcode_handler, .{ self, cursor + 2 });
         }
     };

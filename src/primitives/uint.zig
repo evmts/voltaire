@@ -1773,7 +1773,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             return result.masked();
         }
 
-        pub fn from_u256_unsafe(value: u256) Self {
+        pub fn from_native(value: u256) Self {
             // Debug-only assertion to catch misuse
             if (comptime bits < 256) {
                 std.debug.assert(value < (@as(u256, 1) << bits));
@@ -1819,7 +1819,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             return result;
         }
 
-        pub fn to_u256_unsafe(self: Self) u256 {
+        pub fn to_native(self: Self) u256 {
             // Debug-only assertion for larger types
             if (comptime bits > 256) {
                 // Check that high limbs are zero
