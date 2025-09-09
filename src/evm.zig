@@ -316,10 +316,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Reset snapshot ID
                 self.current_snapshot_id = 0;
 
-                // Reset arena allocator to initial capacity
-                // This prevents memory buildup when running complex benchmarks multiple times
-                // while maintaining the pre-allocated 1MB for performance
-                self.call_arena.resetToInitialCapacity();
+                // Reset arena allocator but retain grown capacity
+                // This prevents memory buildup while keeping the grown capacity for better performance
+                // on subsequent transactions that need similar memory amounts
+                self.call_arena.resetRetainCapacity();
             }
 
             defer if (is_top_level) {

@@ -74,6 +74,14 @@ pub const GrowingArenaAllocator = struct {
         self.current_capacity = self.initial_capacity;
     }
 
+    /// Reset the arena while retaining the current capacity (which may have grown)
+    /// This is more efficient for repeated use as it avoids reallocations
+    pub fn resetRetainCapacity(self: *Self) void {
+        // Reset but keep the allocated memory for reuse
+        _ = self.arena.reset(.retain_capacity);
+        // Keep the current_capacity as is - it reflects our grown size
+    }
+
     /// Query the current capacity
     pub fn queryCapacity(self: *const Self) usize {
         return self.arena.queryCapacity();
