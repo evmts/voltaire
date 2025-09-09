@@ -283,6 +283,36 @@ test "SDIV: alternating bit pattern" {
     try run_sdiv_test(std.testing.allocator, pattern1, pattern2);
 }
 
+test "SDIV: large 256-bit positive beyond u64" {
+    const large_pos = (@as(u256, 1) << 100) + (@as(u256, 0xDEADBEEF) << 50);
+    const divisor = (@as(u256, 1) << 70) + 0xCAFEBABE;
+    try run_sdiv_test(std.testing.allocator, large_pos, divisor);
+}
+
+test "SDIV: large 256-bit negative beyond u64" {
+    // Create a negative number beyond i64 range
+    const large_neg = toU256(-(@as(i256, 1) << 100));
+    const divisor = (@as(u256, 1) << 70);
+    try run_sdiv_test(std.testing.allocator, large_neg, divisor);
+}
+
+test "SDIV: very large 256-bit mixed signs" {
+    const huge_pos = (@as(u256, 1) << 200) + (@as(u256, 1) << 150);
+    const huge_neg_divisor = toU256(-(@as(i256, 1) << 180));
+    try run_sdiv_test(std.testing.allocator, huge_pos, huge_neg_divisor);
+}
+
+test "SDIV: near max positive 256-bit" {
+    const near_max = (SIGN_BIT - 1) / 3; // Max positive / 3
+    try run_sdiv_test(std.testing.allocator, near_max, 3);
+}
+
+test "SDIV: exact division large numbers" {
+    const dividend = (@as(u256, 1) << 128) + (@as(u256, 1) << 64);
+    const divisor = (@as(u256, 1) << 64);
+    try run_sdiv_test(std.testing.allocator, dividend, divisor);
+}
+
 test "SDIV: edge case with high bits set" {
     // Test with number that has sign bit set but should be treated as negative
     const high_bits = SIGN_BIT | 0x1234;
@@ -473,4 +503,22 @@ test "SDIV with JUMP: large negative numbers (-200000 / -1000 = 200)" {
 
 test "SDIV with JUMP: sign alternation (12345 / -67 = -184)" {
     try run_sdiv_test_with_jump(std.testing.allocator, 12345, toU256(-67));
+}
+
+test "SDIV with JUMP: large positive beyond u64" {
+    const huge = (@as(u256, 1) << 150) + (@as(u256, 1) << 100);
+    const big_divisor = (@as(u256, 1) << 80);
+    try run_sdiv_test_with_jump(std.testing.allocator, huge, big_divisor);
+}
+
+test "SDIV with JUMP: large negative beyond u64" {
+    const huge_neg = toU256(-(@as(i256, 1) << 120));
+    const divisor = (@as(u256, 1) << 65);
+    try run_sdiv_test_with_jump(std.testing.allocator, huge_neg, divisor);
+}
+
+test "SDIV with JUMP: very large 256-bit operations" {
+    const massive = (@as(u256, 1) << 240) + (@as(u256, 0xFEEDFACE) << 200);
+    const big_div = (@as(u256, 1) << 190) + (@as(u256, 0xDEADBEEF) << 150);
+    try run_sdiv_test_with_jump(std.testing.allocator, massive, big_div);
 }
