@@ -259,6 +259,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             try self.database.set_account(to.bytes, to_account);
         }
 
+        // TODO: this doesn't work though
+        // We should move to a commit or reinitialize strategy
+
         /// Simulate an EVM operation without committing state changes.
         ///
         /// Executes exactly like `call()` but reverts all state changes at the end,
@@ -299,8 +302,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Only reset state for top-level calls (depth == 0)
             const is_top_level = self.depth == 0;
 
-            // Reset per-transaction state at the START of each new transaction
-            if (is_top_level) {
+            defer if (is_top_level) {
+                // Cleanup after transaction completes
+                self.depth = 0;
+                self.current_input = &.{};
+                // Note: return_data is not freed here because it's returned as part of CallResult
+                // and the caller is responsible for the memory
+                self.return_data = &.{};
                 // Clear access list for new transaction (EIP-2929)
                 self.access_list.clear();
                 // Clear journal for new transaction
@@ -325,17 +333,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // This prevents memory buildup while keeping the grown capacity for better performance
                 // on subsequent transactions that need similar memory amounts
                 self.call_arena.resetRetainCapacity();
-            }
-
-            defer if (is_top_level) {
-                // Cleanup after transaction completes
-                self.depth = 0;
-                self.current_input = &.{};
-                // Note: return_data is not freed here because it's returned as part of CallResult
-                // and the caller is responsible for the memory
-                self.return_data = &.{};
             };
 
+            // TODO: Seperate call from inner_call to remove this branching
             // Pre-warm addresses for top-level calls (EIP-2929)
             if (is_top_level) {
                 // Get the target address from params
@@ -644,18 +644,23 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Check balance for value transfer
             if (params.value > 0) {
                 const caller_account = self.database.get_account(params.caller.bytes) catch {
+                    @branchHint(.cold);
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 };
 
                 if (caller_account == null or caller_account.?.balance < params.value) {
+                    @branchHint(.cold);
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 }
             }
 
             const code = self.database.get_code_by_address(params.to.bytes) catch &.{};
-            if (code.len == 0) return CallResult.success_empty(params.gas);
+            if (code.len == 0) {
+                @branchHint(.unlikely);
+                return CallResult.success_empty(params.gas);
+            }
 
             // CALLCODE executes target's code in caller's context
             const result = self.execute_frame(
@@ -668,11 +673,15 @@ pub fn Evm(comptime config: EvmConfig) type {
                 false,
                 snapshot_id,
             ) catch {
+                @branchHint(.unlikely);
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
 
-            if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+            if (!result.success) {
+                @branchHint(.unlikely);
+                self.journal.revert_to_snapshot(snapshot_id);
+            }
             return result;
         }
 
@@ -687,6 +696,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
+                @branchHint(.cold);
                 log.debug("Delegatecall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
@@ -708,11 +718,15 @@ pub fn Evm(comptime config: EvmConfig) type {
                         false,
                         snapshot_id,
                     ) catch {
+                        @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
                         return CallResult.failure(0);
                     };
 
-                    if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+                    if (!result.success) {
+                        @branchHint(.unlikely);
+                        self.journal.revert_to_snapshot(snapshot_id);
+                    }
                     return result;
                 },
             }
@@ -729,6 +743,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, true, snapshot_id) catch |err| {
+                @branchHint(.cold);
                 log.debug("Staticcall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
@@ -749,6 +764,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         true, // is_static = true
                         snapshot_id,
                     ) catch {
+                        @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
                         return CallResult.failure(0);
                     };

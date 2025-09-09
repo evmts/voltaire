@@ -374,18 +374,18 @@ pub fn Frame(comptime config: FrameConfig) type {
         gas_remaining: GasType, // 8B - Gas tracking (i64)
         memory: Memory, // 16B - Memory operations
         database: config.DatabaseType, // 8B - Storage access
-        length_prefixed_calldata: ?[*]const u8, // 8B - Length-prefixed calldata pointer (first 8 bytes = length)
+        value: *const WordType, // 8B - Call value (pointer)
         evm_ptr: *anyopaque, // 8B - EVM instance pointer
         // CACHE LINE 2 (64-124 bytes) - WARM PATH
-        value: *const WordType, // 8B - Call value (pointer)
+        length_prefixed_calldata: ?[*]const u8, // 8B - Length-prefixed calldata pointer (first 8 bytes = length)
+        caller: Address, // 20B - Calling address
         logs: std.ArrayListUnmanaged(Log), // 16B - Log array list (unmanaged)
         contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
-        caller: Address, // 20B - Calling address
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         output: []u8, // 16B - Output data slice (only for RETURN/REVERT)
         code: []const u8 = &[_]u8{}, // Contract code (for CODESIZE/CODECOPY)
         authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
-        jump_table: Dispatch.JumpTable, // 24B - Jump table for JUMP/JUMPI validation (entries slice)
+        jump_table: *const Dispatch.JumpTable, // 8B - Pointer to jump table for JUMP/JUMPI validation
 
         //
         /// Initialize a new execution frame.
@@ -448,7 +448,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .evm_ptr = evm_ptr,
                 // Cache line 3+
                 .output = &[_]u8{}, // Start with empty output
-                .jump_table = .{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Empty jump table
+                .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
                 .authorized_address = null,
             };
         }
@@ -479,7 +479,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
 
             if (bytecode_raw.len > config.max_bytecode_size) {
-                @branchHint(.unlikely);
+                @branchHint(.cold);
                 log.err("Frame.interpret_with_tracer: Bytecode too large: {} > max {}", .{ bytecode_raw.len, config.max_bytecode_size });
                 return Error.BytecodeTooLarge;
             }
@@ -491,9 +491,9 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Either get from cache or create new dispatch
             var schedule: []const Dispatch.Item = undefined;
-            var jump_table: Dispatch.JumpTable = undefined;
+            var jump_table_ptr: *Dispatch.JumpTable = undefined;
             var owned_schedule: ?Dispatch.DispatchSchedule = null;
-            var owned_jump_table_entries: ?[]const Dispatch.JumpTable.JumpTableEntry = null;
+            var owned_jump_table: ?*Dispatch.JumpTable = null;
 
             // Check cache first
             if (global_dispatch_cache) |*cache| {
@@ -501,14 +501,18 @@ pub fn Frame(comptime config: FrameConfig) type {
                     // Use cached data
                     schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0 .. cached_data.schedule.len / @sizeOf(Dispatch.Item)];
                     const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0 .. cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
-                    jump_table = .{ .entries = jump_table_entries };
+                    // Allocate jump table on heap for cached data
+                    const cached_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
+                    cached_jump_table.* = .{ .entries = jump_table_entries };
+                    jump_table_ptr = cached_jump_table;
+                    owned_jump_table = cached_jump_table;
 
                     // Release cache entry when done
                     defer cache.release(bytecode_raw);
                 } else {
                     // Cache miss - create new dispatch
                     var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
-                        @branchHint(.unlikely);
+                        @branchHint(.cold);
                         log.err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
                         return switch (e) {
                             error.BytecodeTooLarge => Error.BytecodeTooLarge,
@@ -530,20 +534,23 @@ pub fn Frame(comptime config: FrameConfig) type {
                     };
                     schedule = owned_schedule.?.items;
 
-                    // Create jump table
+                    // Create jump table on heap
                     const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
-                    owned_jump_table_entries = jt.entries;
-                    jump_table = jt;
+                    const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
+                    heap_jump_table.* = jt;
+                    jump_table_ptr = heap_jump_table;
+                    owned_jump_table = heap_jump_table;
 
                     // Try to cache it
                     const schedule_bytes = std.mem.sliceAsBytes(schedule);
-                    const jump_table_bytes = std.mem.sliceAsBytes(jump_table.entries);
+                    const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
                     cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
-                        // Cache insertion failed, continue without caching
-                        log.debug("Failed to cache dispatch schedule for bytecode", .{});
+                        @branchHint(.cold);
+                        log.err("Failed to cache dispatch schedule for bytecode", .{});
                     };
                 }
             } else {
+                @branchHint(.unlikely);
                 // No cache available - create new dispatch
                 var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                     @branchHint(.unlikely);
@@ -568,16 +575,21 @@ pub fn Frame(comptime config: FrameConfig) type {
                 };
                 schedule = owned_schedule.?.items;
 
-                // Create jump table
+                // Create jump table on heap
                 const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
-                owned_jump_table_entries = jt.entries;
-                jump_table = jt;
+                const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
+                heap_jump_table.* = jt;
+                jump_table_ptr = heap_jump_table;
+                owned_jump_table = heap_jump_table;
             }
 
             // Clean up owned resources when done
             defer {
                 if (owned_schedule) |*s| s.deinit();
-                if (owned_jump_table_entries) |entries| allocator.free(entries);
+                if (owned_jump_table) |jt| {
+                    if (jt.entries.len > 0) allocator.free(jt.entries);
+                    allocator.destroy(jt);
+                }
             }
 
             // Setup tracer if needed
@@ -590,8 +602,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            // Store jump table in frame for JUMP/JUMPI handlers
-            self.jump_table = jump_table;
+            // Store pointer to jump table in frame for JUMP/JUMPI handlers
+            self.jump_table = jump_table_ptr;
 
             // Handle first_block_gas
             var start_index: usize = 0;
