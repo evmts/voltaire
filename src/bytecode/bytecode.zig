@@ -59,7 +59,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
 
     return struct {
-        pub const fusions_enabled = true;
+        pub const fusions_enabled = cfg.fusions_enabled;
         pub const ValidationError = error{
             InvalidOpcode,
             TruncatedPush,
@@ -105,7 +105,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             value: u256, // The actual pushed value
             is_inline: bool, // true if <= 8 bytes (can inline)
         };
-
 
         // Iterator for efficient bytecode traversal
         pub const Iterator = struct {
@@ -232,11 +231,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             code[i + 4] == 0x66 and // 'f'
                             code[i + 5] == 0x73) or // 's'
                             (code[i] == 0xa1 and i + 6 < code.len and
-                            code[i + 1] == 0x65 and // string of length 5
-                            code[i + 2] == 0x62 and // 'b'
-                            code[i + 3] == 0x7a and // 'z'
-                            code[i + 4] == 0x7a and // 'z'
-                            code[i + 5] == 0x72)) // 'r'
+                                code[i + 1] == 0x65 and // string of length 5
+                                code[i + 2] == 0x62 and // 'b'
+                                code[i + 3] == 0x7a and // 'z'
+                                code[i + 4] == 0x7a and // 'z'
+                                code[i + 5] == 0x72)) // 'r'
                         {
                             // Found metadata, trim the bytecode here
                             runtime_code = code[0..i];
@@ -1374,7 +1373,7 @@ test "Deployment bytecode - actual ten-thousand-hashes fixture" {
         0x60, 0x0e, 0x57, 0x5f, 0x5f, 0xfd, 0x5b, 0x50,
         0x60, 0x97, 0x80, 0x60, 0x1a, 0x5f, 0x39, 0x5f,
         0xf3, 0xfe, // RETURN opcode followed by INVALID
-        0x60, 0x80, 0x60,                                                      0x40, 0x52, 0x34, // Start of runtime bytecode
+        0x60, 0x80, 0x60, 0x40, 0x52, 0x34, // Start of runtime bytecode
         0x80, 0x15, 0x60, // This ends with 0x60 (PUSH1) without the data byte
     };
 
@@ -1430,22 +1429,22 @@ test "Bytecode with Solidity metadata - ipfs format" {
         // Some valid bytecode
         0x60, 0x80, // PUSH1 0x80
         0x60, 0x40, // PUSH1 0x40
-        0x52,       // MSTORE
-        0x00,       // STOP
+        0x52, // MSTORE
+        0x00, // STOP
         // IPFS metadata (CBOR encoded)
-        0xa2,       // CBOR map with 2 entries
-        0x64,       // string of length 4
+        0xa2, // CBOR map with 2 entries
+        0x64, // string of length 4
         0x69, 0x70, 0x66, 0x73, // "ipfs"
         0x58, 0x22, // bytes of length 34
         // 34 bytes of IPFS hash would follow...
         0x12, 0x20, // multihash: SHA256
     } ++ [_]u8{0xAA} ** 32 ++ // 32 bytes of hash data
-    [_]u8{
-        0x64,       // string of length 4  
-        0x73, 0x6f, 0x6c, 0x63, // "solc"
-        0x43,       // bytes of length 3
-        0x00, 0x08, 0x13, // version 0.8.19
-    };
+        [_]u8{
+            0x64, // string of length 4
+            0x73, 0x6f, 0x6c, 0x63, // "solc"
+            0x43, // bytes of length 3
+            0x00, 0x08, 0x13, // version 0.8.19
+        };
 
     var bytecode = try BytecodeDefault.init(allocator, &code_with_metadata);
     defer bytecode.deinit();
@@ -1464,11 +1463,11 @@ test "Bytecode with Solidity metadata - bzzr format" {
         // Some valid bytecode
         0x60, 0x01, // PUSH1 0x01
         0x60, 0x02, // PUSH1 0x02
-        0x01,       // ADD
-        0x00,       // STOP
+        0x01, // ADD
+        0x00, // STOP
         // bzzr metadata (CBOR encoded)
-        0xa1,       // CBOR map with 1 entry
-        0x65,       // string of length 5
+        0xa1, // CBOR map with 1 entry
+        0x65, // string of length 5
         0x62, 0x7a, 0x7a, 0x72, 0x30, // "bzzr0"
         0x58, 0x20, // bytes of length 32
     } ++ [_]u8{0xBB} ** 32; // 32 bytes of swarm hash
@@ -1489,13 +1488,13 @@ test "Bytecode without metadata should remain unchanged" {
     const clean_code = [_]u8{
         0x60, 0x80, // PUSH1 0x80
         0x60, 0x40, // PUSH1 0x40
-        0x52,       // MSTORE
-        0x34,       // CALLVALUE
-        0x80,       // DUP1
-        0x15,       // ISZERO
+        0x52, // MSTORE
+        0x34, // CALLVALUE
+        0x80, // DUP1
+        0x15, // ISZERO
         0x60, 0x0e, // PUSH1 0x0e
-        0x57,       // JUMPI
-        0x00,       // STOP
+        0x57, // JUMPI
+        0x00, // STOP
     };
 
     var bytecode = try BytecodeDefault.init(allocator, &clean_code);

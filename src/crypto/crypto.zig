@@ -102,6 +102,7 @@ const testing = std.testing;
 const Hash = @import("hash.zig");
 const primitives = @import("primitives");
 const hex = primitives.Hex;
+const build_options = @import("build_options");
 
 // Import the local secp256k1 implementation
 const secp256k1 = @import("secp256k1.zig");
@@ -212,8 +213,8 @@ pub const SECP256K1_B: u256 = secp256k1.SECP256K1_B;
 pub const SECP256K1_GX: u256 = secp256k1.SECP256K1_GX;
 pub const SECP256K1_GY: u256 = secp256k1.SECP256K1_GY;
 
-// BLS12-381 FFI bindings
-pub const bls12_381 = struct {
+// BLS12-381 FFI bindings - conditionally compiled based on build options
+pub const bls12_381 = if (!build_options.no_precompiles) struct {
     // FFI function declarations
     extern fn bls12_381_g1_add(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
     extern fn bls12_381_g1_mul(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
@@ -289,6 +290,53 @@ pub const bls12_381 = struct {
     /// Get the output size for pairing operations
     pub fn pairing_output_size() u32 {
         return bls12_381_pairing_output_size();
+    }
+} else struct {
+    // Stub implementation when precompiles are disabled
+    pub const Error = error{
+        InvalidInput,
+        InvalidPoint,
+        InvalidScalar,
+        ComputationFailed,
+        NotImplemented,
+    };
+
+    /// Stub implementation - BLS12-381 G1 addition
+    pub fn g1_add(input: []const u8, output: []u8) Error!void {
+        _ = input;
+        _ = output;
+        return Error.NotImplemented;
+    }
+
+    /// Stub implementation - BLS12-381 G1 scalar multiplication
+    pub fn g1_mul(input: []const u8, output: []u8) Error!void {
+        _ = input;
+        _ = output;
+        return Error.NotImplemented;
+    }
+
+    /// Stub implementation - BLS12-381 G1 multi-scalar multiplication
+    pub fn g1_multiexp(input: []const u8, output: []u8) Error!void {
+        _ = input;
+        _ = output;
+        return Error.NotImplemented;
+    }
+
+    /// Stub implementation - BLS12-381 pairing check
+    pub fn pairing(input: []const u8, output: []u8) Error!void {
+        _ = input;
+        _ = output;
+        return Error.NotImplemented;
+    }
+
+    /// Stub implementation - Get the output size for G1 operations
+    pub fn g1_output_size() u32 {
+        return 96; // Standard BLS12-381 G1 point size in uncompressed form
+    }
+
+    /// Stub implementation - Get the output size for pairing operations
+    pub fn pairing_output_size() u32 {
+        return 32; // Pairing result is a single field element
     }
 };
 
