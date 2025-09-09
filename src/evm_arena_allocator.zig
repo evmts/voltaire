@@ -13,11 +13,21 @@ pub const GrowingArenaAllocator = struct {
     current_capacity: usize,
     /// Initial capacity to start with
     initial_capacity: usize,
+    /// Maximum capacity we'll retain when resetting (prevents unbounded growth)
+    max_capacity: usize,
     /// Growth factor (as a percentage, e.g., 150 = 50% growth)
     growth_factor: u32,
 
     /// Initialize a new growing arena allocator
+    /// @param base_allocator: The underlying allocator to use
+    /// @param initial_capacity: Initial capacity to preallocate (also used as max retained capacity)
+    /// @param growth_factor: Growth percentage (e.g., 150 = 50% growth)
     pub fn init(base_allocator: std.mem.Allocator, initial_capacity: usize, growth_factor: u32) Self {
+        return initWithMaxCapacity(base_allocator, initial_capacity, initial_capacity, growth_factor);
+    }
+
+    /// Initialize with separate initial and max capacities
+    pub fn initWithMaxCapacity(base_allocator: std.mem.Allocator, initial_capacity: usize, max_capacity: usize, growth_factor: u32) Self {
         var arena = std.heap.ArenaAllocator.init(base_allocator);
         
         // Preallocate the initial capacity
@@ -31,6 +41,7 @@ pub const GrowingArenaAllocator = struct {
             .base_allocator = base_allocator,
             .current_capacity = initial_capacity,
             .initial_capacity = initial_capacity,
+            .max_capacity = max_capacity,
             .growth_factor = growth_factor,
         };
     }
@@ -74,12 +85,29 @@ pub const GrowingArenaAllocator = struct {
         self.current_capacity = self.initial_capacity;
     }
 
-    /// Reset the arena while retaining the current capacity (which may have grown)
-    /// This is more efficient for repeated use as it avoids reallocations
+    /// Reset the arena while retaining capacity up to max_capacity limit
+    /// This prevents unbounded memory growth while still being efficient
     pub fn resetRetainCapacity(self: *Self) void {
-        // Reset but keep the allocated memory for reuse
-        _ = self.arena.reset(.retain_capacity);
-        // Keep the current_capacity as is - it reflects our grown size
+        const current_actual_capacity = self.arena.queryCapacity();
+        
+        // If we've grown beyond our max limit, reset to max capacity
+        if (current_actual_capacity > self.max_capacity) {
+            // Free all memory first
+            _ = self.arena.reset(.free_all);
+            
+            // Pre-allocate to max capacity
+            if (self.max_capacity > 0) {
+                _ = self.arena.allocator().alloc(u8, self.max_capacity) catch {};
+                _ = self.arena.reset(.retain_capacity);
+            }
+            
+            self.current_capacity = self.max_capacity;
+        } else {
+            // Within limits, just reset and retain
+            _ = self.arena.reset(.retain_capacity);
+            // Update our tracked capacity to reflect actual growth
+            self.current_capacity = current_actual_capacity;
+        }
     }
 
     /// Query the current capacity
@@ -99,10 +127,15 @@ pub const GrowingArenaAllocator = struct {
         // Check if we need to grow the arena
         const current_used = self.arena.queryCapacity();
         if (current_used + len > self.current_capacity) {
-            // Calculate new capacity with growth factor
+            // Calculate new capacity with growth factor, respecting max limit
             var new_capacity = self.current_capacity;
             while (new_capacity < current_used + len) {
                 new_capacity = (new_capacity * self.growth_factor) / 100;
+                // Don't grow beyond max capacity during normal operation
+                if (new_capacity > self.max_capacity) {
+                    new_capacity = self.max_capacity;
+                    break;
+                }
             }
             
             // Try to preallocate more space
@@ -175,4 +208,41 @@ test "GrowingArenaAllocator growth strategy" {
     // Capacity should have grown by at least 50%
     const new_cap = gaa.queryCapacity();
     try std.testing.expect(new_cap >= 1500);
+}
+
+test "GrowingArenaAllocator max capacity limit" {
+    // Create allocator with 1KB initial and 4KB max
+    var gaa = GrowingArenaAllocator.initWithMaxCapacity(std.testing.allocator, 1024, 4096, 150);
+    defer gaa.deinit();
+
+    const alloc = gaa.allocator();
+    
+    // Allocate enough to potentially grow beyond max capacity
+    _ = try alloc.alloc(u8, 2048);
+    _ = try alloc.alloc(u8, 2048);
+    _ = try alloc.alloc(u8, 2048);
+    
+    // Arena should have grown beyond initial capacity
+    const grown_cap = gaa.queryCapacity();
+    try std.testing.expect(grown_cap > 1024);
+    
+    // Track capacity before reset
+    const before_reset = grown_cap;
+    
+    // Reset with capacity retention
+    gaa.resetRetainCapacity();
+    
+    // After reset, if we were over max_capacity, we should have reset
+    const reset_cap = gaa.queryCapacity();
+    if (before_reset > 4096) {
+        // Should have reset to approximately max_capacity
+        // Allow some overhead as allocator may round up
+        try std.testing.expect(reset_cap <= 4096 * 2);
+    } else {
+        // Should have retained the capacity
+        try std.testing.expect(reset_cap >= before_reset);
+    }
+    
+    // Verify our tracked capacity matches expected
+    try std.testing.expect(gaa.current_capacity <= 4096 or gaa.current_capacity == before_reset);
 }

@@ -192,9 +192,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
-            // Initialize growing arena allocator with 1MB initial capacity and 50% growth strategy
+            // Initialize growing arena allocator with configurable capacity and growth strategy
             // This avoids repeated allocations from the underlying allocator during execution
-            const arena = GrowingArenaAllocator.init(allocator, 1024 * 1024, 150);
+            const arena = GrowingArenaAllocator.initWithMaxCapacity(
+                allocator,
+                config.arena_capacity_limit,
+                config.arena_capacity_limit,
+                config.arena_growth_factor,
+            );
 
             return Self{
                 .depth = 0,
