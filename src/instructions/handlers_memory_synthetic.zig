@@ -15,6 +15,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_MLOAD_INLINE - Fused PUSH+MLOAD with inline offset (≤8 bytes).
         /// Pushes an offset and immediately loads from that memory location.
+        /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mload_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const offset = cursor[1].push_inline.value;
@@ -26,13 +27,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Read 32 bytes from memory
             const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
@@ -49,6 +44,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// PUSH_MLOAD_POINTER - Fused PUSH+MLOAD with pointer offset (>8 bytes).
+        /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mload_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const offset = cursor[1].push_pointer.value.*;
@@ -60,13 +56,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Read 32 bytes from memory
             const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
@@ -86,6 +76,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_MSTORE_INLINE - Fused PUSH+MSTORE with inline offset (≤8 bytes).
         /// Pushes an offset, then pops a value and stores it at that offset.
+        /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const offset = cursor[1].push_inline.value;
@@ -101,13 +92,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
@@ -123,6 +108,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
+        /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const offset = cursor[1].push_pointer.value.*;
@@ -134,13 +120,7 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(offset <= std.math.maxInt(usize)); 
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 32)));
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
@@ -157,6 +137,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_MSTORE8_INLINE - Fused PUSH+MSTORE8 with inline offset (≤8 bytes).
         /// Pushes an offset, then pops a value and stores the least significant byte.
+        /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore8_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const offset = cursor[1].push_inline.value;
@@ -172,13 +153,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 1)));
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
@@ -194,6 +169,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
+        /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore8_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             // For synthetic opcodes, cursor[1] contains the metadata directly
             const offset = cursor[1].push_pointer.value.*;
@@ -209,14 +185,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Calculate gas cost for memory expansion
-            const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(offset_usize + 1)));
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
-            if (self.gas_remaining < 0) {
-                @branchHint(.unlikely);
-                return Error.OutOfGas;
-            }
+            // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));

@@ -128,7 +128,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     const fusion_data = iterator.bytecode.getFusionData(iterator.pc);
                     // Advance PC properly for fusion opcodes (PUSH + data + op)
                     switch (fusion_data) {
-                        .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion => {
+                        .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, 
+                        .push_and_fusion, .push_or_fusion, .push_xor_fusion, 
+                        .push_jump_fusion, .push_jumpi_fusion,
+                        .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => {
                             const push_size = opcode - 0x5F;
                             iterator.pc += 1 + push_size + 1;
                         },
@@ -193,6 +196,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             push_xor_fusion: struct { value: u256 },
             push_jump_fusion: struct { value: u256 },
             push_jumpi_fusion: struct { value: u256 },
+            push_mload_fusion: struct { value: u256 },
+            push_mstore_fusion: struct { value: u256 },
+            push_mstore8_fusion: struct { value: u256 },
             stop: void,
             invalid: void,
         };
@@ -311,6 +317,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 0x16 => return OpcodeData{ .push_and_fusion = .{ .value = value } }, // AND
                 0x17 => return OpcodeData{ .push_or_fusion = .{ .value = value } }, // OR
                 0x18 => return OpcodeData{ .push_xor_fusion = .{ .value = value } }, // XOR
+                0x51 => return OpcodeData{ .push_mload_fusion = .{ .value = value } }, // MLOAD
+                0x52 => return OpcodeData{ .push_mstore_fusion = .{ .value = value } }, // MSTORE
+                0x53 => return OpcodeData{ .push_mstore8_fusion = .{ .value = value } }, // MSTORE8
                 0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
                 0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
                 else => {
@@ -483,7 +492,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             const next_op = self.runtime_code[next_op_idx];
                             // Check for fusable patterns
                             const is_fusable = switch (next_op) {
-                                @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.MUL), @intFromEnum(Opcode.SUB), @intFromEnum(Opcode.DIV), @intFromEnum(Opcode.AND), @intFromEnum(Opcode.OR), @intFromEnum(Opcode.XOR), @intFromEnum(Opcode.JUMP), @intFromEnum(Opcode.JUMPI) => true,
+                                @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.MUL), @intFromEnum(Opcode.SUB), @intFromEnum(Opcode.DIV), @intFromEnum(Opcode.AND), @intFromEnum(Opcode.OR), @intFromEnum(Opcode.XOR), @intFromEnum(Opcode.JUMP), @intFromEnum(Opcode.JUMPI), @intFromEnum(Opcode.MLOAD), @intFromEnum(Opcode.MSTORE), @intFromEnum(Opcode.MSTORE8) => true,
                                 else => false,
                             };
 

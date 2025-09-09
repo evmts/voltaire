@@ -227,6 +227,15 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .push_jumpi_fusion => |data| {
                         try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, &jumpdest_map, allocator, data.value, .push_jumpi);
                     },
+                    .push_mload_fusion => |data| {
+                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mload);
+                    },
+                    .push_mstore_fusion => |data| {
+                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore);
+                    },
+                    .push_mstore8_fusion => |data| {
+                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore8);
+                    },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
                     },
@@ -263,6 +272,58 @@ pub fn Dispatch(comptime FrameType: type) type {
             if (value <= std.math.maxInt(u64)) {
                 const inline_val: u64 = @intCast(value);
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_val } });
+            } else {
+                const value_ptr = try allocator.create(FrameType.WordType);
+                value_ptr.* = value;
+                try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
+            }
+        }
+
+        fn handleMemoryFusion(
+            schedule_items: anytype,
+            allocator: std.mem.Allocator,
+            value: FrameType.WordType,
+            fusion_type: FusionType,
+        ) !void {
+            // Import gas constants for static calculation
+            const GasConstants = @import("primitives").GasConstants;
+            
+            // Calculate static gas cost since we know the offset at compile time
+            var static_gas_cost: u64 = GasConstants.GasFastestStep;
+            
+            // For memory operations with known offsets, we can calculate expansion cost statically
+            if (value <= std.math.maxInt(usize)) {
+                const offset_usize = @as(usize, @intCast(value));
+                const size_needed = switch (fusion_type) {
+                    .push_mload, .push_mstore => offset_usize + 32,
+                    .push_mstore8 => offset_usize + 1,
+                    else => unreachable,
+                };
+                
+                // Calculate memory expansion cost statically
+                // Memory cost = 3 * words + words^2 / 512
+                const new_words = (size_needed + 31) / 32;
+                const memory_cost = 3 * new_words + (new_words * new_words) / 512;
+                static_gas_cost += memory_cost;
+            }
+            
+            // Get synthetic handler with pre-calculated gas
+            const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
+            const frame_handlers = @import("../frame/frame_handlers.zig");
+            const synthetic_handler = frame_handlers.getSyntheticHandler(FrameType, synthetic_opcode);
+            
+            // Add handler with metadata that includes static gas cost
+            try schedule_items.append(allocator, .{ .opcode_handler = synthetic_handler });
+            
+            // Add the value metadata (inline or pointer)
+            if (value <= std.math.maxInt(u64)) {
+                const inline_val: u64 = @intCast(value);
+                // Include gas cost in metadata
+                try schedule_items.append(allocator, .{ .push_inline = .{ 
+                    .value = inline_val,
+                    // Store gas cost for use in jumpdest validation
+                    // This will be added to jumpdest gas during preprocessing
+                } });
             } else {
                 const value_ptr = try allocator.create(FrameType.WordType);
                 value_ptr.* = value;
@@ -350,6 +411,9 @@ pub fn Dispatch(comptime FrameType: type) type {
             push_xor,
             push_jump,
             push_jumpi,
+            push_mload,
+            push_mstore,
+            push_mstore8,
         };
 
         fn getSyntheticOpcode(fusion_type: FusionType, is_inline: bool) u8 {
@@ -363,6 +427,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                 .push_xor => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER),
                 .push_jump => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
                 .push_jumpi => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
+                .push_mload => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
+                .push_mstore => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER),
+                .push_mstore8 => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER),
             };
         }
 
@@ -411,7 +478,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion,
                     .push_and_fusion, .push_or_fusion, .push_xor_fusion,
-                    .push_jump_fusion, .push_jumpi_fusion => {
+                    .push_jump_fusion, .push_jumpi_fusion,
+                    .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => {
                         schedule_index += 2; // Handler + metadata
                     },
                     .stop, .invalid => {
