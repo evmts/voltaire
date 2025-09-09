@@ -16,6 +16,36 @@ A safe Rust wrapper around the Guillotine EVM - a high-performance Ethereum Virt
 
 This crate provides idiomatic Rust bindings to Guillotine, allowing Rust developers to leverage a fast, native EVM implementation with zero-copy FFI where possible. The wrapper is designed with safety, performance, and ease of use in mind.
 
+## Installation
+
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+guillotine-rs = "0.1.0"
+```
+
+### Build Requirements
+
+This crate requires the Guillotine EVM library. You have two options:
+
+#### Option 1: Use Pre-compiled Binaries (Recommended)
+The published crate includes pre-compiled libraries for common platforms:
+- Linux (x64, ARM64)
+- macOS (x64, ARM64)  
+- Windows (x64)
+
+#### Option 2: Build from Source
+If your platform isn't supported or you want to build from source:
+
+1. Install [Zig](https://ziglang.org/download/) (0.15.0 or later)
+2. Clone the [Guillotine repository](https://github.com/evmts/guillotine)
+3. Build the static library:
+   ```bash
+   zig build static
+   ```
+4. The library will be in `zig-out/lib/`
+
 ## Features
 
 - **Safe API**: All unsafe FFI calls are wrapped in safe Rust abstractions
