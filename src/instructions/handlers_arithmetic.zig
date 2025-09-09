@@ -45,6 +45,80 @@ pub fn Handlers(comptime FrameType: type) type {
             return @call(FrameType.getTailCallModifier(), next_cursor[0].opcode_handler, .{ self, next_cursor });
         }
 
+        test "SUB: basic subtraction" {
+            
+            // Test 1: Normal subtraction (no underflow)
+            {
+                var stack = @import("../stack.zig").Stack(256).init();
+                stack.push_unsafe(20); // bottom
+                stack.push_unsafe(5);  // top
+                
+                // Simulate SUB: 5 - 20 = -15 (should wrap)
+                const a = stack.pop_unsafe();
+                const b = stack.peek_unsafe();
+                const result = a -% b;
+                stack.set_top_unsafe(result);
+                
+                try std.testing.expectEqual(@as(u256, 5), a);
+                try std.testing.expectEqual(@as(u256, 20), b);
+                // 5 - 20 = -15, which in two's complement u256 is a large number
+                const expected: u256 = @as(u256, 5) -% @as(u256, 20);
+                try std.testing.expectEqual(expected, result);
+            }
+            
+            // Test 2: Subtraction without underflow
+            {
+                var stack = @import("../stack.zig").Stack(256).init();
+                stack.push_unsafe(5);   // bottom
+                stack.push_unsafe(20);  // top
+                
+                // Simulate SUB: 20 - 5 = 15
+                const a = stack.pop_unsafe();
+                const b = stack.peek_unsafe();
+                const result = a -% b;
+                stack.set_top_unsafe(result);
+                
+                try std.testing.expectEqual(@as(u256, 20), a);
+                try std.testing.expectEqual(@as(u256, 5), b);
+                try std.testing.expectEqual(@as(u256, 15), result);
+            }
+            
+            // Test 3: Subtraction with zero
+            {
+                var stack = @import("../stack.zig").Stack(256).init();
+                stack.push_unsafe(10);  // bottom
+                stack.push_unsafe(0);   // top
+                
+                // Simulate SUB: 0 - 10 = -10 (should wrap)
+                const a = stack.pop_unsafe();
+                const b = stack.peek_unsafe();
+                const result = a -% b;
+                stack.set_top_unsafe(result);
+                
+                try std.testing.expectEqual(@as(u256, 0), a);
+                try std.testing.expectEqual(@as(u256, 10), b);
+                const expected: u256 = @as(u256, 0) -% @as(u256, 10);
+                try std.testing.expectEqual(expected, result);
+            }
+            
+            // Test 4: Same values
+            {
+                var stack = @import("../stack.zig").Stack(256).init();
+                stack.push_unsafe(42);  // bottom
+                stack.push_unsafe(42);  // top
+                
+                // Simulate SUB: 42 - 42 = 0
+                const a = stack.pop_unsafe();
+                const b = stack.peek_unsafe();
+                const result = a -% b;
+                stack.set_top_unsafe(result);
+                
+                try std.testing.expectEqual(@as(u256, 42), a);
+                try std.testing.expectEqual(@as(u256, 42), b);
+                try std.testing.expectEqual(@as(u256, 0), result);
+            }
+        }
+
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); // DIV requires 2 stack items

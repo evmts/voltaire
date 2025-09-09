@@ -666,6 +666,30 @@ pub fn build_bytecode(allocator: std.mem.Allocator, opcode: u8) ![]u8 {
             try buf.append(allocator, 0xf5);
             try helpers.ret_top32(allocator, &buf);
         },
+        0xf6 => { // AUTH - EIP-3074
+            // AUTH requires 5 stack items: [authority, commitment, sig_v, sig_r, sig_s]
+            // Push valid signature components (but will fail verification)
+            try helpers.push_u256(allocator, &buf, 0); // sig_s
+            try helpers.push_u256(allocator, &buf, 0); // sig_r  
+            try helpers.push_u8(allocator, &buf, 27); // sig_v
+            try helpers.push_u256(allocator, &buf, 0); // commitment
+            try helpers.push_u256(allocator, &buf, 0x1234567890123456789012345678901234567890); // authority address
+            try buf.append(allocator, 0xf6); // AUTH
+            try helpers.ret_top32(allocator, &buf);
+        },
+        0xf7 => { // AUTHCALL - EIP-3074
+            // AUTHCALL requires 8 stack items: [gas, to, value, input_offset, input_size, output_offset, output_size, auth]
+            try helpers.push_u8(allocator, &buf, 0x00); // auth flag (0 = no auth)
+            try helpers.push_u8(allocator, &buf, 0x00); // output_size
+            try helpers.push_u8(allocator, &buf, 0x00); // output_offset
+            try helpers.push_u8(allocator, &buf, 0x00); // input_size
+            try helpers.push_u8(allocator, &buf, 0x00); // input_offset
+            try helpers.push_u8(allocator, &buf, 0x00); // value
+            try buf.append(allocator, 0x30); // ADDRESS - use self as target
+            try helpers.push_u16(allocator, &buf, 0x2710); // gas 10000
+            try buf.append(allocator, 0xf7); // AUTHCALL
+            try helpers.ret_top32(allocator, &buf);
+        },
         0xfa => { // STATICCALL
             try helpers.push_u8(allocator, &buf, 0x00); // retLength
             try helpers.push_u8(allocator, &buf, 0x00); // retOffset
