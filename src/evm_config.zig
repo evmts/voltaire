@@ -4,6 +4,27 @@ const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("frame/block_info_config.zig").BlockInfoConfig;
 const Eips = @import("eips_and_hardforks/eips.zig").Eips;
 const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
+const primitives = @import("primitives");
+const Address = primitives.Address;
+
+/// Custom opcode handler override
+pub const OpcodeOverride = struct {
+    opcode: u8,
+    handler: *const anyopaque,
+};
+
+/// Custom precompile implementation
+pub const PrecompileOverride = struct {
+    address: Address,
+    execute: *const fn (allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) anyerror!PrecompileOutput,
+};
+
+/// Precompile output result (duplicated here to avoid circular dependency)
+pub const PrecompileOutput = struct {
+    output: []const u8,
+    gas_used: u64,
+    success: bool,
+};
 
 pub const EvmConfig = struct {
     // TODO update enum to support latest hardfork
@@ -56,6 +77,16 @@ pub const EvmConfig = struct {
     /// Block information configuration
     /// Controls the types used for difficulty and base_fee fields
     block_info_config: BlockInfoConfig = .{},
+    
+    /// Custom opcode handler overrides
+    /// These will override the default handlers in frame_handlers.zig
+    /// Set to empty slice for no overrides
+    opcode_overrides: []const OpcodeOverride = &.{},
+    
+    /// Custom precompile implementations
+    /// These will override or add new precompiles
+    /// Set to empty slice for no overrides
+    precompile_overrides: []const PrecompileOverride = &.{},
 
     /// Computed frame configuration from the fields above
     pub fn frame_config(self: EvmConfig) FrameConfig {
@@ -279,4 +310,174 @@ test "EvmConfig - complete custom configuration" {
     try testing.expectEqual(false, config.enable_fusion);
     try testing.expectEqual(DummyTracer, config.TracerType.?);
     try testing.expectEqual(u11, config.get_depth_type());
+}
+
+test "EvmConfig - custom opcode handlers" {
+    const frame_handlers = @import("frame/frame_handlers.zig");
+    const opcode_data = @import("opcodes/opcode_data.zig");
+    const Opcode = opcode_data.Opcode;
+    
+    // Create a test frame type
+    const TestFrame = struct {
+        pub const OpcodeHandler = *const fn (*@This(), cursor: [*]const Dispatch.Item) Error!noreturn;
+        pub const Error = error{TestError, OutOfGas};
+        pub const Dispatch = struct {
+            pub const Item = u8;
+        };
+        
+        gas_remaining: u64,
+        custom_called: bool,
+        invalid_handler_called: bool,
+    };
+    
+    // Create a custom handler for ADD opcode
+    const custom_add = struct {
+        fn handler(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = cursor;
+            frame.custom_called = true;
+            return TestFrame.Error.TestError;
+        }
+    }.handler;
+    
+    // Create a handler for an otherwise invalid opcode (0xFE)
+    const custom_invalid = struct {
+        fn handler(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = cursor;
+            frame.invalid_handler_called = true;
+            return TestFrame.Error.TestError;
+        }
+    }.handler;
+    
+    // Test with overrides
+    const overrides = [_]struct { opcode: u8, handler: *const anyopaque }{
+        .{ .opcode = @intFromEnum(Opcode.ADD), .handler = &custom_add },
+        .{ .opcode = 0xFE, .handler = &custom_invalid }, // Invalid opcode
+    };
+    
+    const handlers = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &overrides);
+    
+    // Verify ADD was overridden
+    try testing.expectEqual(@as(TestFrame.OpcodeHandler, &custom_add), handlers[@intFromEnum(Opcode.ADD)]);
+    
+    // Verify invalid opcode 0xFE now has our custom handler
+    try testing.expectEqual(@as(TestFrame.OpcodeHandler, &custom_invalid), handlers[0xFE]);
+    
+    // Verify other opcodes are not affected (SUB should still have its default)
+    try testing.expect(handlers[@intFromEnum(Opcode.SUB)] != &custom_add);
+    try testing.expect(handlers[@intFromEnum(Opcode.SUB)] != &custom_invalid);
+}
+
+test "EvmConfig - empty opcode overrides" {
+    const frame_handlers = @import("frame/frame_handlers.zig");
+    
+    const TestFrame = struct {
+        pub const OpcodeHandler = *const fn (*@This(), cursor: [*]const Dispatch.Item) Error!noreturn;
+        pub const Error = error{OutOfGas};
+        pub const Dispatch = struct {
+            pub const Item = u8;
+        };
+        gas_remaining: u64,
+    };
+    
+    // Test with no overrides
+    const handlers_no_override = frame_handlers.getOpcodeHandlers(TestFrame);
+    const handlers_empty_override = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &.{});
+    
+    // Both should produce identical results
+    for (0..256) |i| {
+        try testing.expectEqual(handlers_no_override[i], handlers_empty_override[i]);
+    }
+}
+
+test "EvmConfig - multiple opcode overrides" {
+    const frame_handlers = @import("frame/frame_handlers.zig");
+    const opcode_data = @import("opcodes/opcode_data.zig");
+    const Opcode = opcode_data.Opcode;
+    
+    const TestFrame = struct {
+        pub const OpcodeHandler = *const fn (*@This(), cursor: [*]const Dispatch.Item) Error!noreturn;
+        pub const Error = error{TestError, OutOfGas};
+        pub const Dispatch = struct {
+            pub const Item = u8;
+        };
+        last_opcode: u8,
+    };
+    
+    // Create different handlers for different opcodes
+    const handler1 = struct {
+        fn h(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = cursor;
+            frame.last_opcode = 1;
+            return TestFrame.Error.TestError;
+        }
+    }.h;
+    
+    const handler2 = struct {
+        fn h(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = cursor;
+            frame.last_opcode = 2;
+            return TestFrame.Error.TestError;
+        }
+    }.h;
+    
+    const handler3 = struct {
+        fn h(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
+            _ = cursor;
+            frame.last_opcode = 3;
+            return TestFrame.Error.TestError;
+        }
+    }.h;
+    
+    const overrides = [_]struct { opcode: u8, handler: *const anyopaque }{
+        .{ .opcode = @intFromEnum(Opcode.ADD), .handler = &handler1 },
+        .{ .opcode = @intFromEnum(Opcode.MUL), .handler = &handler2 },
+        .{ .opcode = 0xFC, .handler = &handler3 }, // Invalid opcode
+    };
+    
+    const handlers = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &overrides);
+    
+    try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler1), handlers[@intFromEnum(Opcode.ADD)]);
+    try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler2), handlers[@intFromEnum(Opcode.MUL)]);
+    try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler3), handlers[0xFC]);
+}
+
+test "EvmConfig - precompile overrides" {
+    const config = EvmConfig{
+        .precompile_overrides = &[_]PrecompileOverride{
+            .{
+                .address = Address.from_u256(1), // ECRECOVER
+                .execute = struct {
+                    fn exec(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) anyerror!PrecompileOutput {
+                        _ = allocator;
+                        _ = input;
+                        _ = gas_limit;
+                        return PrecompileOutput{
+                            .output = &.{},
+                            .gas_used = 3000,
+                            .success = true,
+                        };
+                    }
+                }.exec,
+            },
+            .{
+                .address = Address.from_u256(99), // Custom precompile
+                .execute = struct {
+                    fn exec(allocator: std.mem.Allocator, input: []const u8, gas_limit: u64) anyerror!PrecompileOutput {
+                        _ = allocator;
+                        _ = input;
+                        _ = gas_limit;
+                        return PrecompileOutput{
+                            .output = &.{0x42},
+                            .gas_used = 100,
+                            .success = true,
+                        };
+                    }
+                }.exec,
+            },
+        },
+    };
+    
+    try testing.expectEqual(@as(usize, 2), config.precompile_overrides.len);
+    try testing.expectEqual(Address.from_u256(1), config.precompile_overrides[0].address);
+    try testing.expectEqual(Address.from_u256(99), config.precompile_overrides[1].address);
 }

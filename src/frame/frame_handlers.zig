@@ -29,6 +29,14 @@ threadlocal var tracer_vtable: ?*const anyopaque = null;
 
 /// Returns the normal (non-traced) opcode handlers array for a given Frame type
 pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler {
+    return getOpcodeHandlersWithOverrides(FrameType, &.{});
+}
+
+/// Returns opcode handlers with custom overrides applied
+pub fn getOpcodeHandlersWithOverrides(
+    comptime FrameType: type,
+    comptime overrides: []const struct { opcode: u8, handler: *const anyopaque },
+) [256]FrameType.OpcodeHandler {
     // Import handler modules with FrameType
     const ArithmeticHandlers = stack_frame_arithmetic.Handlers(FrameType);
     const ComparisonHandlers = stack_frame_comparison.Handlers(FrameType);
@@ -165,6 +173,12 @@ pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler 
     // Note: Synthetic opcodes (0xa5-0xbc) are NOT mapped here because they should only be used
     // internally by the dispatch system during optimization. Raw bytecode containing these values
     // should be treated as invalid opcodes and use the default invalid handler.
+    
+    // Apply custom overrides
+    inline for (overrides) |override| {
+        h[override.opcode] = @as(FrameType.OpcodeHandler, @ptrCast(override.handler));
+    }
+    
     return h;
 }
 
