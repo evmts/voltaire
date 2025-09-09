@@ -52,6 +52,7 @@ pub fn createModules(
     });
     crypto_mod.addImport("primitives", primitives_mod);
     crypto_mod.addImport("c_kzg", c_kzg_mod);
+    crypto_mod.addImport("build_options", build_options_mod);
     primitives_mod.addImport("crypto", crypto_mod);
 
     // Utils module
