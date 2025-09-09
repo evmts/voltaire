@@ -7,6 +7,7 @@ const primitives = @import("primitives");
 
 // Import types from evm module
 const DefaultEvm = evm.DefaultEvm;
+const TracerEvm = evm.Evm(.{ .TracerType = evm.tracer.JSONRPCTracer });
 const Database = evm.Database;
 const BlockInfo = evm.BlockInfo;
 const TransactionContext = evm.TransactionContext;
@@ -55,6 +56,9 @@ pub const EvmResult = extern struct {
     accessed_storage_len: usize,
     created_address: [20]u8,  // For CREATE/CREATE2, zero if not applicable
     has_created_address: bool,
+    // JSON-RPC trace (if available)
+    trace_json: [*]const u8,
+    trace_json_len: usize,
 };
 
 // Call parameters for FFI
@@ -143,7 +147,7 @@ export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle
         .blob_base_fee = 0,
     };
 
-    // Create EVM instance
+    // Create EVM instance (default, no tracing)
     const evm_ptr = allocator.create(DefaultEvm) catch {
         setError("Failed to allocate EVM", .{});
         db.deinit();
@@ -170,6 +174,66 @@ export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle
     return @ptrCast(evm_ptr);
 }
 
+// Create a new EVM instance with JSON-RPC tracing enabled
+export fn guillotine_evm_create_tracing(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle {
+    const allocator = ffi_allocator orelse {
+        setError("FFI not initialized. Call guillotine_init() first", .{});
+        return null;
+    };
+
+    const db = allocator.create(Database) catch {
+        setError("Failed to allocate database", .{});
+        return null;
+    };
+    db.* = Database.init(allocator);
+
+    const block_info = BlockInfo{
+        .number = block_info_ptr.number,
+        .timestamp = block_info_ptr.timestamp,
+        .gas_limit = block_info_ptr.gas_limit,
+        .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
+        .base_fee = block_info_ptr.base_fee,
+        .difficulty = block_info_ptr.difficulty,
+        .prev_randao = block_info_ptr.prev_randao,
+        .chain_id = @intCast(block_info_ptr.chain_id),
+        .blob_base_fee = 0,
+        .blob_versioned_hashes = &.{},
+    };
+
+    const tx_context = TransactionContext{
+        .gas_limit = block_info_ptr.gas_limit,
+        .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
+        .chain_id = @intCast(block_info_ptr.chain_id),
+        .blob_versioned_hashes = &.{},
+        .blob_base_fee = 0,
+    };
+
+    const evm_ptr = allocator.create(TracerEvm) catch {
+        setError("Failed to allocate TracerEvm", .{});
+        db.deinit();
+        allocator.destroy(db);
+        return null;
+    };
+
+    evm_ptr.* = TracerEvm.init(
+        allocator,
+        db,
+        block_info,
+        tx_context,
+        0,
+        primitives.Address.ZERO_ADDRESS,
+        .CANCUN,
+    ) catch {
+        setError("Failed to initialize TracerEvm", .{});
+        db.deinit();
+        allocator.destroy(db);
+        allocator.destroy(evm_ptr);
+        return null;
+    };
+
+    return @ptrCast(evm_ptr);
+}
+
 // Destroy an EVM instance
 export fn guillotine_evm_destroy(handle: *EvmHandle) void {
     const allocator = ffi_allocator orelse return;
@@ -178,6 +242,18 @@ export fn guillotine_evm_destroy(handle: *EvmHandle) void {
     // Save database pointer before deinit
     const db = evm_ptr.database;
     
+    evm_ptr.deinit();
+    db.deinit();
+    allocator.destroy(db);
+    allocator.destroy(evm_ptr);
+}
+
+// Destroy a tracing EVM instance
+export fn guillotine_evm_destroy_tracing(handle: *EvmHandle) void {
+    const allocator = ffi_allocator orelse return;
+    const evm_ptr: *TracerEvm = @ptrCast(@alignCast(handle));
+
+    const db = evm_ptr.database;
     evm_ptr.deinit();
     db.deinit();
     allocator.destroy(db);
@@ -207,6 +283,22 @@ export fn guillotine_set_balance(handle: *EvmHandle, address: *const [20]u8, bal
     return true;
 }
 
+// Set account balance (tracing)
+export fn guillotine_set_balance_tracing(handle: *EvmHandle, address: *const [20]u8, balance: *const [32]u8) bool {
+    const evm_ptr: *TracerEvm = @ptrCast(@alignCast(handle));
+    const balance_value = std.mem.readInt(u256, balance, .big);
+    var account = evm_ptr.database.get_account(address.*) catch {
+        setError("Failed to get account", .{});
+        return false;
+    } orelse Account.zero();
+    account.balance = balance_value;
+    evm_ptr.database.set_account(address.*, account) catch {
+        setError("Failed to set account balance", .{});
+        return false;
+    };
+    return true;
+}
+
 // Set contract code
 export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: [*]const u8, code_len: usize) bool {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
@@ -232,6 +324,26 @@ export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: 
         return false;
     };
     
+    return true;
+}
+
+// Set contract code (tracing)
+export fn guillotine_set_code_tracing(handle: *EvmHandle, address: *const [20]u8, code: [*]const u8, code_len: usize) bool {
+    const evm_ptr: *TracerEvm = @ptrCast(@alignCast(handle));
+    const code_slice = code[0..code_len];
+    const code_hash = evm_ptr.database.set_code(code_slice) catch {
+        setError("Failed to store code", .{});
+        return false;
+    };
+    var account = evm_ptr.database.get_account(address.*) catch {
+        setError("Failed to get account", .{});
+        return false;
+    } orelse Account.zero();
+    account.code_hash = code_hash;
+    evm_ptr.database.set_account(address.*, account) catch {
+        setError("Failed to update account code hash", .{});
+        return false;
+    };
     return true;
 }
 
@@ -430,6 +542,47 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
         evm_result.created_address = primitives.Address.ZERO_ADDRESS.bytes;
         evm_result.has_created_address = false;
     }
+
+    // If we have an execution trace, serialize to JSON-RPC format into a buffer
+    evm_result.trace_json = @as([*]const u8, @ptrCast(&empty_error));
+    evm_result.trace_json_len = 0;
+    if (result.trace) |*trace| {
+        // Serialize to JSON: {"structLogs": [...]} using the tracer JSON format
+        var buf = std.array_list.AlignedManaged(u8, null).init(allocator);
+        errdefer buf.deinit();
+        const w = buf.writer();
+        w.writeAll("{\"structLogs\":[") catch {
+            allocator.destroy(evm_result);
+            setError("Failed to write trace json", .{});
+            return null;
+        };
+        for (trace.steps, 0..) |step, i| {
+            if (i > 0) w.writeAll(",") catch {};
+            w.writeAll("{") catch {};
+            w.print("\"pc\":{d},", .{step.pc}) catch {};
+            w.print("\"op\":\"{s}\",", .{step.opcode_name}) catch {};
+            w.print("\"gas\":{d},", .{step.gas}) catch {};
+            w.print("\"gasCost\":{d},", .{step.gas_cost}) catch {};
+            w.print("\"depth\":{d},", .{step.depth}) catch {};
+            w.writeAll("\"stack\":[") catch {};
+            for (step.stack, 0..) |val, j| {
+                if (j > 0) w.writeAll(",") catch {};
+                w.print("\"0x{x}\"", .{val}) catch {};
+            }
+            w.writeAll("]") catch {};
+            w.print(",\"memSize\":{d}", .{step.mem_size}) catch {};
+            w.writeAll("}") catch {};
+        }
+        w.writeAll("]}") catch {};
+        // Duplicate into a stable allocation and then free the buffer
+        const bytes = allocator.dupe(u8, buf.items) catch {
+            setError("Failed to finalize trace json", .{});
+            allocator.destroy(evm_result);
+            return null;
+        };
+        evm_result.trace_json = bytes.ptr;
+        evm_result.trace_json_len = bytes.len;
+    }
     
     return evm_result;
 }
@@ -511,6 +664,31 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) ?*EvmRe
     const result = evm_ptr.call(call_params);
     
     // Convert result to FFI format
+    return convertCallResultToEvmResult(result, allocator);
+}
+
+// Execute a call (tracing)
+export fn guillotine_call_tracing(handle: *EvmHandle, params: *const CallParams) ?*EvmResult {
+    const evm_ptr: *TracerEvm = @ptrCast(@alignCast(handle));
+    const allocator = ffi_allocator orelse {
+        setError("FFI not initialized", .{});
+        return null;
+    };
+    const input_slice = if (params.input_len > 0) params.input[0..params.input_len] else &[_]u8{};
+    const value = std.mem.readInt(u256, &params.value, .big);
+    const call_params = switch (params.call_type) {
+        0 => TracerEvm.CallParams{ .call = .{ .caller = primitives.Address{ .bytes = params.caller }, .to = primitives.Address{ .bytes = params.to }, .value = value, .input = input_slice, .gas = params.gas } },
+        1 => TracerEvm.CallParams{ .callcode = .{ .caller = primitives.Address{ .bytes = params.caller }, .to = primitives.Address{ .bytes = params.to }, .value = value, .input = input_slice, .gas = params.gas } },
+        2 => TracerEvm.CallParams{ .delegatecall = .{ .caller = primitives.Address{ .bytes = params.caller }, .to = primitives.Address{ .bytes = params.to }, .input = input_slice, .gas = params.gas } },
+        3 => TracerEvm.CallParams{ .staticcall = .{ .caller = primitives.Address{ .bytes = params.caller }, .to = primitives.Address{ .bytes = params.to }, .input = input_slice, .gas = params.gas } },
+        4 => TracerEvm.CallParams{ .create = .{ .caller = primitives.Address{ .bytes = params.caller }, .value = value, .init_code = input_slice, .gas = params.gas } },
+        5 => TracerEvm.CallParams{ .create2 = .{ .caller = primitives.Address{ .bytes = params.caller }, .value = value, .init_code = input_slice, .salt = std.mem.readInt(u256, &params.salt, .big), .gas = params.gas } },
+        else => {
+            setError("Invalid call type: {}", .{params.call_type});
+            return null;
+        },
+    };
+    const result = evm_ptr.call(call_params);
     return convertCallResultToEvmResult(result, allocator);
 }
 
@@ -647,6 +825,11 @@ export fn guillotine_free_result(result: ?*EvmResult) void {
         // Free accessed storage
         if (r.accessed_storage_len > 0) {
             allocator.free(r.accessed_storage[0..r.accessed_storage_len]);
+        }
+        
+        // Free trace json buffer
+        if (r.trace_json_len > 0) {
+            allocator.free(r.trace_json[0..r.trace_json_len]);
         }
         
         // Finally free the result structure itself
