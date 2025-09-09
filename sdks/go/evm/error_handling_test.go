@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/evmts/guillotine/bindings/go/primitives"
+	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
 func TestErrorHandling(t *testing.T) {

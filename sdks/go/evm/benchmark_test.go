@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/evmts/guillotine/bindings/go/primitives"
+	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
 func BenchmarkArithmeticOperations(b *testing.B) {
