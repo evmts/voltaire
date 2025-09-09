@@ -81,6 +81,8 @@ typedef struct {
     size_t accessed_storage_len;
     uint8_t created_address[20];  // For CREATE/CREATE2
     bool has_created_address;
+    const uint8_t* trace_json;
+    size_t trace_json_len;
 } EvmResult;
 
 // ========================
@@ -93,11 +95,15 @@ void guillotine_cleanup(void);
 
 // EVM instance management
 EvmHandle* guillotine_evm_create(const BlockInfoFFI* block_info);
+EvmHandle* guillotine_evm_create_tracing(const BlockInfoFFI* block_info);
 void guillotine_evm_destroy(EvmHandle* handle);
+void guillotine_evm_destroy_tracing(EvmHandle* handle);
 
 // State management
 bool guillotine_set_balance(EvmHandle* handle, const uint8_t* address, const uint8_t* balance);
+bool guillotine_set_balance_tracing(EvmHandle* handle, const uint8_t* address, const uint8_t* balance);
 bool guillotine_set_code(EvmHandle* handle, const uint8_t* address, const uint8_t* code, size_t code_len);
+bool guillotine_set_code_tracing(EvmHandle* handle, const uint8_t* address, const uint8_t* code, size_t code_len);
 
 // State query functions
 bool guillotine_get_balance(EvmHandle* handle, const uint8_t* address, uint8_t* balance_out);
@@ -108,6 +114,7 @@ bool guillotine_get_storage(EvmHandle* handle, const uint8_t* address, const uin
 
 // Execution
 EvmResult* guillotine_call(EvmHandle* handle, const CallParams* params);
+EvmResult* guillotine_call_tracing(EvmHandle* handle, const CallParams* params);
 void guillotine_free_result(EvmResult* result);
 void guillotine_free_output(uint8_t* output, size_t len);
 
@@ -198,6 +205,49 @@ func NewVMHandle(blockInfo ...*BlockInfo) (*VMHandle, error) {
 		errMsg := C.GoString(C.guillotine_get_last_error())
 		if errMsg != "" {
 			return nil, fmt.Errorf("failed to create EVM: %s", errMsg)
+		}
+		return nil, ErrVMCreationFailed
+	}
+	return &VMHandle{ptr: ptr}, nil
+}
+
+// NewTracingVMHandle creates a new EVM instance with JSON-RPC tracing enabled
+func NewTracingVMHandle(blockInfo ...*BlockInfo) (*VMHandle, error) {
+	C.guillotine_init()
+	var info BlockInfo
+	if len(blockInfo) > 0 && blockInfo[0] != nil {
+		info = *blockInfo[0]
+	} else {
+		info = BlockInfo{
+			Number:     0,
+			Timestamp:  0,
+			GasLimit:   30_000_000,
+			Coinbase:   primitives.ZeroAddress(),
+			BaseFee:    0,
+			ChainID:    1,
+			Difficulty: 0,
+			PrevRandao: [32]byte{},
+		}
+	}
+	var cBlockInfo C.BlockInfoFFI
+	cBlockInfo.number = C.uint64_t(info.Number)
+	cBlockInfo.timestamp = C.uint64_t(info.Timestamp)
+	cBlockInfo.gas_limit = C.uint64_t(info.GasLimit)
+	cBlockInfo.base_fee = C.uint64_t(info.BaseFee)
+	cBlockInfo.chain_id = C.uint64_t(info.ChainID)
+	cBlockInfo.difficulty = C.uint64_t(info.Difficulty)
+	coinbaseArray := info.Coinbase.Array()
+	for i := 0; i < 20; i++ {
+		cBlockInfo.coinbase[i] = C.uint8_t(coinbaseArray[i])
+	}
+	for i := 0; i < 32; i++ {
+		cBlockInfo.prev_randao[i] = C.uint8_t(info.PrevRandao[i])
+	}
+	ptr := C.guillotine_evm_create_tracing(&cBlockInfo)
+	if ptr == nil {
+		errMsg := C.GoString(C.guillotine_get_last_error())
+		if errMsg != "" {
+			return nil, fmt.Errorf("failed to create tracing EVM: %s", errMsg)
 		}
 		return nil, ErrVMCreationFailed
 	}
@@ -354,6 +404,11 @@ func (vm *VMHandle) Call(params *CallParams) (*CallResult, error) {
 	if cResult.has_created_address {
 		createdAddr := primitives.NewAddress(*(*[20]byte)(unsafe.Pointer(&cResult.created_address[0])))
 		result.CreatedAddress = &createdAddr
+	}
+
+	// Copy trace JSON if present
+	if cResult.trace_json_len > 0 && cResult.trace_json != nil {
+		result.TraceJSON = C.GoBytes(unsafe.Pointer(cResult.trace_json), C.int(cResult.trace_json_len))
 	}
 	
 	return result, nil

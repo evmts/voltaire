@@ -99,6 +99,17 @@ func New() (*EVM, error) {
 	return evm, nil
 }
 
+// NewTracing creates a new EVM instance with JSON-RPC tracing enabled
+func NewTracing() (*EVM, error) {
+	vm, err := guillotine.NewTracingVMHandle()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracing EVM instance: %w", err)
+	}
+	e := &EVM{vm: vm}
+	runtime.SetFinalizer(e, (*EVM).finalize)
+	return e, nil
+}
+
 // finalize is called by the garbage collector
 func (evm *EVM) finalize() {
 	_ = evm.Destroy()

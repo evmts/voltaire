@@ -74,4 +74,5 @@ type CallResult struct {
 	AccessedStorage   []StorageAccessRecord
 	ErrorInfo         string
 	CreatedAddress    *primitives.Address // Address of created contract (for CREATE/CREATE2)
+	TraceJSON         []byte
 }
