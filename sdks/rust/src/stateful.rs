@@ -203,7 +203,7 @@ impl StatefulEvm {
                 StateUpdate::SetBalance { address, balance } => {
                     ffi::FfiBatchOperation {
                         op_type: 0,
-                        address: **address,
+                        address: address.0 .0,
                         key: u256_to_bytes_le(*balance),
                         value: ffi::FfiSlice { ptr: std::ptr::null(), len: 0 },
                     }
@@ -211,7 +211,7 @@ impl StatefulEvm {
                 StateUpdate::SetCode { address, code } => {
                     ffi::FfiBatchOperation {
                         op_type: 1,
-                        address: **address,
+                        address: address.0 .0,
                         key: [0; 32],
                         value: ffi::FfiSlice::from_slice(code),
                     }
@@ -219,7 +219,7 @@ impl StatefulEvm {
                 StateUpdate::SetStorage { address, slot, value } => {
                     ffi::FfiBatchOperation {
                         op_type: 2,
-                        address: **address,
+                        address: address.0 .0,
                         key: u256_to_bytes_le(*slot),
                         value: ffi::FfiSlice::from_slice(&u256_to_bytes_le(*value)),
                     }
