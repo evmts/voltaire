@@ -2,7 +2,6 @@ const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
 const revm = @import("revm");
-const log = @import("log");
 
 const DifferentialTracer = @import("evm").differential_tracer.DifferentialTracer;
 const Address = primitives.Address.Address;
@@ -11,7 +10,7 @@ test "snailtracer differential test" {
     const allocator = std.testing.allocator;
     
     // Read bytecode from fixture file
-    const bytecode_file = try std.fs.cwd().openFile("src/evm/fixtures/snailtracer/bytecode.txt", .{});
+    const bytecode_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/bytecode.txt", .{});
     defer bytecode_file.close();
     
     const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 1024 * 1024);
@@ -49,17 +48,26 @@ test "snailtracer differential test" {
         bytecode[i/2] = try std.fmt.parseInt(u8, hex_byte, 16);
     }
     
-    log.info("Loaded snailtracer bytecode: {} bytes", .{bytecode.len});
-    
     // Extract runtime code from deployment bytecode
     // The deployment bytecode starts with a constructor that copies and returns the runtime code
     // Looking for the pattern that ends the constructor (typically ends with CODECOPY PUSH RETURN)
     // In this case, the constructor is the first 32 bytes (0x20), and runtime code starts after
     const runtime_code = if (bytecode.len > 32) bytecode[32..] else bytecode;
-    log.info("Extracted runtime code: {} bytes", .{runtime_code.len});
+    
+    // Write the runtime bytecode to deployed_bytecode.txt for use in benchmarking
+    const deployed_file = try std.fs.cwd().createFile("src/_test_utils/fixtures/snailtracer/deployed_bytecode.txt", .{});
+    defer deployed_file.close();
+    
+    // Convert runtime bytecode to hex string
+    const hex_chars = "0123456789abcdef";
+    for (runtime_code) |byte| {
+        const high = byte >> 4;
+        const low = byte & 0x0F;
+        _ = try deployed_file.write(&[_]u8{hex_chars[high], hex_chars[low]});
+    }
     
     // Read calldata from fixture file
-    const calldata_file = try std.fs.cwd().openFile("src/evm/fixtures/snailtracer/calldata.txt", .{});
+    const calldata_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/calldata.txt", .{});
     defer calldata_file.close();
     
     const calldata_hex = try calldata_file.readToEndAlloc(allocator, 1024);
@@ -95,8 +103,6 @@ test "snailtracer differential test" {
         const hex_byte = calldata_clean[i..i+2];
         calldata[i/2] = try std.fmt.parseInt(u8, hex_byte, 16);
     }
-    
-    log.info("Loaded snailtracer calldata: {} bytes", .{calldata.len});
     
     // Setup test environment
     const contract_address = Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
@@ -178,23 +184,10 @@ test "snailtracer differential test" {
         },
     };
     
-    log.info("Starting snailtracer differential test...", .{});
-    log.info("  Contract: {any}", .{contract_address});
-    log.info("  Caller: {any}", .{caller_address});
-    log.info("  Bytecode size: {} bytes", .{bytecode.len});
-    log.info("  Calldata size: {} bytes", .{calldata.len});
-    log.info("  Gas limit: {}", .{call_params.call.gas});
-    
     // Run differential test  
-    var result = tracer.call(call_params) catch |err| {
-        log.err("Differential test failed: {}", .{err});
-        return err;
-    };
+    var result = try tracer.call(call_params);
     defer result.deinit(allocator);
     
     // Verify result
     try std.testing.expect(result.success);
-    log.info("✅ Snailtracer differential test passed!", .{});
-    log.info("  Gas used: {}", .{30_000_000 - result.gas_left});
-    log.info("  Output size: {} bytes", .{result.output.len});
 }
