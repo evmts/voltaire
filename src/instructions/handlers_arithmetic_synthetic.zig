@@ -26,6 +26,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_ADD_INLINE - Fused PUSH+ADD with inline value (≤8 bytes).
         /// Pushes a value and immediately adds it to the top of stack.
         pub fn push_add_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.likely);
             validate_stack(self);
 
             self.stack.push_unsafe(cursor[1].push_inline.value +% self.stack.pop_unsafe());

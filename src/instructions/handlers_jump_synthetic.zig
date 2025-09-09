@@ -49,7 +49,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const dest_pc: FrameType.PcType = @intCast(dest);
 
-            // Look up the destination in the jump table
             const jump_table = self.jump_table;
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 @branchHint(.likely);

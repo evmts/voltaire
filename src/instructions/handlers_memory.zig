@@ -38,6 +38,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(memory_expansion_cost);
             if (self.gas_remaining < 0) {
+                @branchHint(.unlikely);
                 return Error.OutOfGas;
             }
 
@@ -67,7 +68,7 @@ pub fn Handlers(comptime FrameType: type) type {
             //     self.stack.size(),
             //     self.stack.stack_ptr
             // });
-            // 
+            //
             // // Log stack contents
             // const stack_slice = self.stack.get_slice();
             // log.err("MSTORE: Stack contents (top first):", .{});
@@ -75,11 +76,11 @@ pub fn Handlers(comptime FrameType: type) type {
             //     if (i >= 3) break;
             //     log.err("  [{}] = {x}", .{i, val});
             // }
-            
+
             std.debug.assert(self.stack.size() >= 2); // MSTORE requires 2 stack items
             const offset = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
-            log.debug("MSTORE: offset={x}, value={x}", .{offset, value});
+            log.debug("MSTORE: offset={x}, value={x}", .{ offset, value });
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -98,6 +99,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(memory_expansion_cost);
             if (self.gas_remaining < 0) {
+                @branchHint(.unlikely);
                 return Error.OutOfGas;
             }
 
@@ -111,19 +113,19 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.MSTORE);
             const next = op_data.next;
-            
+
             // // Log exit state
             // log.err("MSTORE EXIT: stack_size={}, gas_remaining={}, next_opcode={x}", .{
             //     self.stack.size(),
             //     self.gas_remaining,
             //     @intFromPtr(next.cursor[0].opcode_handler),
             // });
-            // 
+            //
             // // Check stack state before next operation
             // if (self.stack.size() == 0) {
             //     log.err("MSTORE EXIT WARNING: Stack is empty before next operation!", .{});
             // }
-            
+
             return @call(FrameType.getTailCallModifier(), next.cursor[0].opcode_handler, .{ self, next.cursor });
         }
 
@@ -152,6 +154,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(memory_expansion_cost);
             if (self.gas_remaining < 0) {
+                @branchHint(.unlikely);
                 return Error.OutOfGas;
             }
 
@@ -186,9 +189,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 3); // MCOPY requires 3 stack items
-            const size = self.stack.pop_unsafe();         // Top of stack
-            const src_offset = self.stack.pop_unsafe();   // Second from top
-            const dest_offset = self.stack.pop_unsafe();  // Third from top
+            const size = self.stack.pop_unsafe(); // Top of stack
+            const src_offset = self.stack.pop_unsafe(); // Second from top
+            const dest_offset = self.stack.pop_unsafe(); // Third from top
 
             // Check if offsets and size fit in u24 (memory limit)
             if (dest_offset > 0xFFFFFF or src_offset > 0xFFFFFF or size > 0xFFFFFF) {

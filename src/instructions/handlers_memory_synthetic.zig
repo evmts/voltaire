@@ -131,11 +131,7 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
             const value = self.stack.pop_unsafe();
 
-            // Check if offset fits in usize
-            if (offset > std.math.maxInt(usize)) {
-                @branchHint(.unlikely);
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(offset <= std.math.maxInt(usize)); 
             const offset_usize = @as(usize, @intCast(offset));
 
             // Calculate gas cost for memory expansion
@@ -208,7 +204,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
-                @branchHint(.unlikely);
+                @branchHint(.cold);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -218,6 +214,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(GasConstants.GasFastestStep + memory_expansion_cost);
             if (self.gas_remaining < 0) {
+                @branchHint(.unlikely);
                 return Error.OutOfGas;
             }
 

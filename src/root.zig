@@ -24,13 +24,18 @@ pub const MemoryError = @import("memory/memory.zig").MemoryError;
 pub const Evm = @import("evm.zig").Evm;
 pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 
+// Build-configured EVM
+const evm_build_config = @import("evm_build_config.zig");
+pub const getBuildConfig = evm_build_config.getBuildConfig;
+pub const BuildConfiguredEvm = evm_build_config.BuildConfiguredEvm;
+
 // Fixtures for testing
 pub const FixtureContract = @import("_test_utils/fixtures/popular_contracts.zig").FixtureContract;
 pub const ContractName = @import("_test_utils/fixtures/popular_contracts.zig").ContractName;
 pub const FixtureRunner = @import("_test_utils/fixture_runner.zig").FixtureRunner;
 
-// Default EVM types
-pub const DefaultEvm = Evm(.{});
+// Default EVM types - now uses build configuration
+pub const DefaultEvm = BuildConfiguredEvm;
 
 // Tracer modules
 pub const tracer = @import("tracer/tracer.zig");

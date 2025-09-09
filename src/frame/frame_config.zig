@@ -30,12 +30,24 @@ pub const FrameConfig = struct {
     memory_limit: u64 = 0xFFFFFF,
     /// Database implementation type for storage operations (always required).
     DatabaseType: type,
-    
+
     /// Optional tracer type for execution tracing (null for no tracing)
     TracerType: ?type = null,
-    
+
     /// Block info configuration for the frame
     block_info_config: @import("block_info_config.zig").BlockInfoConfig = .{},
+
+    /// Disable gas checks for testing/development (default: false)
+    /// When enabled, gas consumption methods become no-ops
+    disable_gas_checks: bool = false,
+
+    /// Disable balance checks for testing/development (default: false)
+    /// When enabled, balance checks always return 0
+    disable_balance_checks: bool = false,
+
+    /// Disable fusion optimizations (default: false)
+    /// When enabled, bytecode fusion handlers are not registered
+    disable_fusion: bool = false,
 
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {

@@ -713,6 +713,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns GasOverflow if amount doesn't fit in GasType (extremely rare)
         /// Returns OutOfGas if insufficient gas remaining
         pub fn consumeGasChecked(self: *Self, amount: u32) Error!void {
+            // Skip gas checks if disabled in config
+            if (comptime config.disable_gas_checks) {
+                return;
+            }
+
             // Cast to GasType - should always succeed with u32 input
             // Only fails if GasType is smaller than u32 (impossible with current config)
             const amt = std.math.cast(GasType, amount) orelse {
