@@ -47,6 +47,21 @@ pub const EvmConfig = struct {
     /// When enabled, common opcode patterns like PUSH+ADD are fused into single operations
     enable_fusion: bool = true,
 
+    /// Disable gas checks for testing/development (default: false)
+    /// When enabled, gas consumption methods become no-ops
+    /// WARNING: Only use for testing, never in production
+    disable_gas_checks: bool = false,
+
+    /// Disable balance checks for testing/development (default: false)
+    /// When enabled, balance checks always return 0
+    /// WARNING: Only use for testing, never in production
+    disable_balance_checks: bool = false,
+
+    /// Disable fusion optimizations (default: false)
+    /// When enabled, bytecode fusion handlers are not registered
+    /// WARNING: Only use for testing/debugging
+    disable_fusion: bool = false,
+
     // Frame configuration fields (previously nested)
     /// The maximum stack size for the evm. Defaults to 1024
     stack_size: u12 = 1024,
@@ -61,7 +76,7 @@ pub const EvmConfig = struct {
     /// Memory configuration
     memory_initial_capacity: usize = 4096,
     memory_limit: u64 = 0xFFFFFF,
-    
+
     /// Arena allocator configuration
     /// Initial and maximum retained capacity for the arena allocator (in bytes)
     /// Default: 64MB - optimized for complex EVM operations and modern hardware
@@ -73,16 +88,16 @@ pub const EvmConfig = struct {
     /// Tracer type for execution tracing (default: null for no tracing)
     /// Set to a tracer type (e.g., JSONRPCTracer) to enable execution tracing
     TracerType: ?type = null,
-    
+
     /// Block information configuration
     /// Controls the types used for difficulty and base_fee fields
     block_info_config: BlockInfoConfig = .{},
-    
+
     /// Custom opcode handler overrides
     /// These will override the default handlers in frame_handlers.zig
     /// Set to empty slice for no overrides
     opcode_overrides: []const OpcodeOverride = &.{},
-    
+
     /// Custom precompile implementations
     /// These will override or add new precompiles
     /// Set to empty slice for no overrides
@@ -101,6 +116,9 @@ pub const EvmConfig = struct {
             .DatabaseType = self.DatabaseType,
             .TracerType = self.TracerType,
             .block_info_config = self.block_info_config,
+            .disable_gas_checks = self.disable_gas_checks,
+            .disable_balance_checks = self.disable_balance_checks,
+            .disable_fusion = self.disable_fusion,
         };
     }
 
@@ -139,12 +157,14 @@ const testing = std.testing;
 
 test "EvmConfig - default initialization" {
     const config = EvmConfig{};
-    
+
     try testing.expectEqual(Hardfork.CANCUN, config.eips.hardfork);
     try testing.expectEqual(@as(u11, 1024), config.max_call_depth);
     try testing.expectEqual(@as(u18, 131072), config.max_input_size);
     try testing.expectEqual(true, config.enable_precompiles);
     try testing.expectEqual(true, config.enable_fusion);
+    try testing.expectEqual(false, config.disable_gas_checks);
+    try testing.expectEqual(false, config.disable_balance_checks);
     try testing.expectEqual(@as(?type, null), config.TracerType);
 }
 
@@ -156,7 +176,7 @@ test "EvmConfig - custom configuration" {
         .enable_precompiles = false,
         .enable_fusion = false,
     };
-    
+
     try testing.expectEqual(Hardfork.BERLIN, config.eips.hardfork);
     try testing.expectEqual(@as(u11, 512), config.max_call_depth);
     try testing.expectEqual(@as(u18, 65536), config.max_input_size);
@@ -167,10 +187,10 @@ test "EvmConfig - custom configuration" {
 test "EvmConfig - get_depth_type" {
     const config_u8 = EvmConfig{ .max_call_depth = 255 };
     try testing.expectEqual(u8, config_u8.get_depth_type());
-    
+
     const config_u11 = EvmConfig{ .max_call_depth = 1024 };
     try testing.expectEqual(u11, config_u11.get_depth_type());
-    
+
     // Test boundary values
     const config_boundary = EvmConfig{ .max_call_depth = 256 };
     try testing.expectEqual(u11, config_boundary.get_depth_type());
@@ -179,20 +199,20 @@ test "EvmConfig - get_depth_type" {
 test "EvmConfig - depth type edge cases" {
     const config_min = EvmConfig{ .max_call_depth = 1 };
     try testing.expectEqual(u8, config_min.get_depth_type());
-    
+
     const config_max_u8 = EvmConfig{ .max_call_depth = 255 };
     try testing.expectEqual(u8, config_max_u8.get_depth_type());
-    
+
     const config_beyond_u8 = EvmConfig{ .max_call_depth = 256 };
     try testing.expectEqual(u11, config_beyond_u8.get_depth_type());
-    
+
     const config_max_u11 = EvmConfig{ .max_call_depth = 2047 };
     try testing.expectEqual(u11, config_max_u11.get_depth_type());
 }
 
 test "EvmConfig - optimizeFast configuration" {
     const config = EvmConfig.optimizeFast();
-    
+
     // Should have default values since planner_strategy is commented out
     try testing.expectEqual(Hardfork.CANCUN, config.eips.hardfork);
     try testing.expectEqual(@as(u11, 1024), config.max_call_depth);
@@ -201,7 +221,7 @@ test "EvmConfig - optimizeFast configuration" {
 
 test "EvmConfig - optimizeSmall configuration" {
     const config = EvmConfig.optimizeSmall();
-    
+
     // Should have default values since planner_strategy is commented out
     try testing.expectEqual(Hardfork.CANCUN, config.eips.hardfork);
     try testing.expectEqual(@as(u11, 1024), config.max_call_depth);
@@ -218,7 +238,7 @@ test "EvmConfig - hardfork variations" {
         EvmConfig{ .eips = Eips{ .hardfork = Hardfork.SHANGHAI } },
         EvmConfig{ .eips = Eips{ .hardfork = Hardfork.CANCUN } },
     };
-    
+
     inline for (configs) |config| {
         // All should have same default non-hardfork settings
         try testing.expectEqual(@as(u11, 1024), config.max_call_depth);
@@ -229,11 +249,11 @@ test "EvmConfig - hardfork variations" {
 test "EvmConfig - max input size variations" {
     const small_config = EvmConfig{ .max_input_size = 1024 };
     try testing.expectEqual(@as(u18, 1024), small_config.max_input_size);
-    
+
     // u18 cannot represent 262144 (2^18); use max-1 instead
     const large_config = EvmConfig{ .max_input_size = 262143 }; // 2^18 - 1
     try testing.expectEqual(@as(u18, 262143), large_config.max_input_size);
-    
+
     // Test maximum value for u18
     const max_config = EvmConfig{ .max_input_size = 262143 }; // 2^18 - 1
     try testing.expectEqual(@as(u18, 262143), max_config.max_input_size);
@@ -242,10 +262,10 @@ test "EvmConfig - max input size variations" {
 test "EvmConfig - call depth limits" {
     const minimal_depth = EvmConfig{ .max_call_depth = 1 };
     try testing.expectEqual(@as(u11, 1), minimal_depth.max_call_depth);
-    
+
     const standard_depth = EvmConfig{ .max_call_depth = 1024 };
     try testing.expectEqual(@as(u11, 1024), standard_depth.max_call_depth);
-    
+
     const max_depth = EvmConfig{ .max_call_depth = 2047 }; // Maximum u11 value
     try testing.expectEqual(@as(u11, 2047), max_depth.max_call_depth);
 }
@@ -257,16 +277,16 @@ test "EvmConfig - precompiles and fusion combinations" {
         EvmConfig{ .enable_precompiles = false, .enable_fusion = true },
         EvmConfig{ .enable_precompiles = false, .enable_fusion = false },
     };
-    
+
     try testing.expectEqual(true, configs[0].enable_precompiles);
     try testing.expectEqual(true, configs[0].enable_fusion);
-    
+
     try testing.expectEqual(true, configs[1].enable_precompiles);
     try testing.expectEqual(false, configs[1].enable_fusion);
-    
+
     try testing.expectEqual(false, configs[2].enable_precompiles);
     try testing.expectEqual(true, configs[2].enable_fusion);
-    
+
     try testing.expectEqual(false, configs[3].enable_precompiles);
     try testing.expectEqual(false, configs[3].enable_fusion);
 }
@@ -274,26 +294,26 @@ test "EvmConfig - precompiles and fusion combinations" {
 test "EvmConfig - tracer type handling" {
     const no_tracer_config = EvmConfig{};
     try testing.expectEqual(@as(?type, null), no_tracer_config.TracerType);
-    
+
     // Test with a dummy tracer type
     const DummyTracer = struct {
         pub fn trace(_: @This()) void {}
     };
-    
+
     const with_tracer_config = EvmConfig{ .TracerType = DummyTracer };
     try testing.expectEqual(DummyTracer, with_tracer_config.TracerType.?);
 }
 
 test "EvmConfig - block info config integration" {
     const config = EvmConfig{};
-    
+
     // Default block info config should be initialized
     try testing.expectEqual(BlockInfoConfig{}, config.block_info_config);
 }
 
 test "EvmConfig - complete custom configuration" {
     const DummyTracer = struct {};
-    
+
     const config = EvmConfig{
         .eips = Eips{ .hardfork = Hardfork.ISTANBUL },
         .max_call_depth = 2000,
@@ -302,7 +322,7 @@ test "EvmConfig - complete custom configuration" {
         .enable_fusion = false,
         .TracerType = DummyTracer,
     };
-    
+
     try testing.expectEqual(Hardfork.ISTANBUL, config.eips.hardfork);
     try testing.expectEqual(@as(u11, 2000), config.max_call_depth);
     try testing.expectEqual(@as(u18, 200000), config.max_input_size);
@@ -316,20 +336,20 @@ test "EvmConfig - custom opcode handlers" {
     const frame_handlers = @import("frame/frame_handlers.zig");
     const opcode_data = @import("opcodes/opcode_data.zig");
     const Opcode = opcode_data.Opcode;
-    
+
     // Create a test frame type
     const TestFrame = struct {
         pub const OpcodeHandler = *const fn (*@This(), cursor: [*]const Dispatch.Item) Error!noreturn;
-        pub const Error = error{TestError, OutOfGas};
+        pub const Error = error{ TestError, OutOfGas };
         pub const Dispatch = struct {
             pub const Item = u8;
         };
-        
+
         gas_remaining: u64,
         custom_called: bool,
         invalid_handler_called: bool,
     };
-    
+
     // Create a custom handler for ADD opcode
     const custom_add = struct {
         fn handler(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
@@ -338,7 +358,7 @@ test "EvmConfig - custom opcode handlers" {
             return TestFrame.Error.TestError;
         }
     }.handler;
-    
+
     // Create a handler for an otherwise invalid opcode (0xFE)
     const custom_invalid = struct {
         fn handler(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
@@ -347,21 +367,21 @@ test "EvmConfig - custom opcode handlers" {
             return TestFrame.Error.TestError;
         }
     }.handler;
-    
+
     // Test with overrides
     const overrides = [_]struct { opcode: u8, handler: *const anyopaque }{
         .{ .opcode = @intFromEnum(Opcode.ADD), .handler = &custom_add },
         .{ .opcode = 0xFE, .handler = &custom_invalid }, // Invalid opcode
     };
-    
+
     const handlers = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &overrides);
-    
+
     // Verify ADD was overridden
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &custom_add), handlers[@intFromEnum(Opcode.ADD)]);
-    
+
     // Verify invalid opcode 0xFE now has our custom handler
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &custom_invalid), handlers[0xFE]);
-    
+
     // Verify other opcodes are not affected (SUB should still have its default)
     try testing.expect(handlers[@intFromEnum(Opcode.SUB)] != &custom_add);
     try testing.expect(handlers[@intFromEnum(Opcode.SUB)] != &custom_invalid);
@@ -369,7 +389,7 @@ test "EvmConfig - custom opcode handlers" {
 
 test "EvmConfig - empty opcode overrides" {
     const frame_handlers = @import("frame/frame_handlers.zig");
-    
+
     const TestFrame = struct {
         pub const OpcodeHandler = *const fn (*@This(), cursor: [*]const Dispatch.Item) Error!noreturn;
         pub const Error = error{OutOfGas};
@@ -378,11 +398,11 @@ test "EvmConfig - empty opcode overrides" {
         };
         gas_remaining: u64,
     };
-    
+
     // Test with no overrides
     const handlers_no_override = frame_handlers.getOpcodeHandlers(TestFrame);
     const handlers_empty_override = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &.{});
-    
+
     // Both should produce identical results
     for (0..256) |i| {
         try testing.expectEqual(handlers_no_override[i], handlers_empty_override[i]);
@@ -393,16 +413,16 @@ test "EvmConfig - multiple opcode overrides" {
     const frame_handlers = @import("frame/frame_handlers.zig");
     const opcode_data = @import("opcodes/opcode_data.zig");
     const Opcode = opcode_data.Opcode;
-    
+
     const TestFrame = struct {
         pub const OpcodeHandler = *const fn (*@This(), cursor: [*]const Dispatch.Item) Error!noreturn;
-        pub const Error = error{TestError, OutOfGas};
+        pub const Error = error{ TestError, OutOfGas };
         pub const Dispatch = struct {
             pub const Item = u8;
         };
         last_opcode: u8,
     };
-    
+
     // Create different handlers for different opcodes
     const handler1 = struct {
         fn h(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
@@ -411,7 +431,7 @@ test "EvmConfig - multiple opcode overrides" {
             return TestFrame.Error.TestError;
         }
     }.h;
-    
+
     const handler2 = struct {
         fn h(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
             _ = cursor;
@@ -419,7 +439,7 @@ test "EvmConfig - multiple opcode overrides" {
             return TestFrame.Error.TestError;
         }
     }.h;
-    
+
     const handler3 = struct {
         fn h(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) TestFrame.Error!noreturn {
             _ = cursor;
@@ -427,18 +447,57 @@ test "EvmConfig - multiple opcode overrides" {
             return TestFrame.Error.TestError;
         }
     }.h;
-    
+
     const overrides = [_]struct { opcode: u8, handler: *const anyopaque }{
         .{ .opcode = @intFromEnum(Opcode.ADD), .handler = &handler1 },
         .{ .opcode = @intFromEnum(Opcode.MUL), .handler = &handler2 },
         .{ .opcode = 0xFC, .handler = &handler3 }, // Invalid opcode
     };
-    
+
     const handlers = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &overrides);
-    
+
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler1), handlers[@intFromEnum(Opcode.ADD)]);
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler2), handlers[@intFromEnum(Opcode.MUL)]);
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler3), handlers[0xFC]);
+}
+
+test "EvmConfig - gas and balance check disabling" {
+    const config_default = EvmConfig{};
+    try testing.expectEqual(false, config_default.disable_gas_checks);
+    try testing.expectEqual(false, config_default.disable_balance_checks);
+
+    const config_gas_disabled = EvmConfig{ .disable_gas_checks = true };
+    try testing.expectEqual(true, config_gas_disabled.disable_gas_checks);
+    try testing.expectEqual(false, config_gas_disabled.disable_balance_checks);
+
+    const config_balance_disabled = EvmConfig{ .disable_balance_checks = true };
+    try testing.expectEqual(false, config_balance_disabled.disable_gas_checks);
+    try testing.expectEqual(true, config_balance_disabled.disable_balance_checks);
+
+    const config_both_disabled = EvmConfig{
+        .disable_gas_checks = true,
+        .disable_balance_checks = true,
+    };
+    try testing.expectEqual(true, config_both_disabled.disable_gas_checks);
+    try testing.expectEqual(true, config_both_disabled.disable_balance_checks);
+}
+
+test "EvmConfig - fusion disabling" {
+    const config_default = EvmConfig{};
+    try testing.expectEqual(false, config_default.disable_fusion);
+    try testing.expectEqual(true, config_default.enable_fusion);
+
+    const config_fusion_disabled = EvmConfig{ .disable_fusion = true };
+    try testing.expectEqual(true, config_fusion_disabled.disable_fusion);
+
+    const config_all_disabled = EvmConfig{
+        .disable_gas_checks = true,
+        .disable_balance_checks = true,
+        .disable_fusion = true,
+    };
+    try testing.expectEqual(true, config_all_disabled.disable_gas_checks);
+    try testing.expectEqual(true, config_all_disabled.disable_balance_checks);
+    try testing.expectEqual(true, config_all_disabled.disable_fusion);
 }
 
 test "EvmConfig - precompile overrides" {
@@ -476,7 +535,7 @@ test "EvmConfig - precompile overrides" {
             },
         },
     };
-    
+
     try testing.expectEqual(@as(usize, 2), config.precompile_overrides.len);
     try testing.expectEqual(Address.from_u256(1), config.precompile_overrides[0].address);
     try testing.expectEqual(Address.from_u256(99), config.precompile_overrides[1].address);

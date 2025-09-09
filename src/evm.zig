@@ -54,7 +54,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub const BytecodeFactory = @import("bytecode/bytecode.zig").Bytecode;
         pub const Bytecode = BytecodeFactory(.{
             .max_bytecode_size = config.max_bytecode_size,
-            .fusions_enabled = config.enable_fusion,
+            .fusions_enabled = !config.disable_fusion,
         });
         /// Journal handles reverting state when state needs to be reverted
         pub const Journal: type = @import("storage/journal.zig").Journal(.{
@@ -249,7 +249,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Transfer value between accounts with proper balance checks and error handling
         fn doTransfer(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
             var from_account = try self.database.get_account(from.bytes) orelse Account.zero();
-            if (from_account.balance < value) return error.InsufficientBalance;
+            // Skip balance check if disabled in config
+            if (comptime !config.disable_balance_checks) {
+                if (from_account.balance < value) return error.InsufficientBalance;
+            }
             var to_account = try self.database.get_account(to.bytes) orelse Account.zero();
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
@@ -325,7 +328,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Reset call stack to initial state
                 // This is critical when reusing EVM instances across multiple transactions
                 self.call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth;
-                
+
                 // Reset snapshot ID
                 self.current_snapshot_id = 0;
 
@@ -643,16 +646,19 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Check balance for value transfer
             if (params.value > 0) {
-                const caller_account = self.database.get_account(params.caller.bytes) catch {
-                    @branchHint(.cold);
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
+                // Skip balance check if disabled in config
+                if (comptime !config.disable_balance_checks) {
+                    const caller_account = self.database.get_account(params.caller.bytes) catch {
+                        @branchHint(.cold);
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return CallResult.failure(0);
+                    };
 
-                if (caller_account == null or caller_account.?.balance < params.value) {
-                    @branchHint(.cold);
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
+                    if (caller_account == null or caller_account.?.balance < params.value) {
+                        @branchHint(.cold);
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        return CallResult.failure(0);
+                    }
                 }
             }
 
@@ -1320,6 +1326,10 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get account balance
         pub fn get_balance(self: *Self, address: primitives.Address) u256 {
+            // Return 0 for all balance checks if disabled in config
+            if (comptime config.disable_balance_checks) {
+                return 0;
+            }
             return self.database.get_balance(address.bytes) catch 0;
         }
 
@@ -5994,7 +6004,7 @@ test "Arena allocator - memory efficiency with nested calls" {
     const initial_capacity = evm.call_arena.queryCapacity();
 
     // Execute parent contract
-        const result = evm.call(.{
+    const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = parent_address,
@@ -6202,7 +6212,7 @@ test "CREATE stores deployed code bytes" {
     });
 
     // Execute CREATE
-        const result = evm.call(.{
+    const result = evm.call(.{
         .call = .{
             .caller = primitives.ZERO_ADDRESS,
             .to = creator_address,
