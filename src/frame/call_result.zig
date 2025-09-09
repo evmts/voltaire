@@ -240,8 +240,14 @@ pub const TraceStep = struct {
     opcode: u8,
     opcode_name: []const u8,
     gas: u64,
+    /// Depth of the call at this step (JSON-RPC compatibility)
+    depth: u32 = 0,
     stack: []const u256,
     memory: []const u8,
+    /// Memory size at this step (JSON-RPC compatibility)
+    mem_size: u32 = 0,
+    /// Gas cost of this step (JSON-RPC compatibility)
+    gas_cost: u64 = 0,
     storage_reads: []const StorageRead,
     storage_writes: []const StorageWrite,
 

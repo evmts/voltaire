@@ -1009,13 +1009,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             for (tracer_steps, 0..) |tracer_step, i| {
                 trace_steps[i] = call_result.TraceStep{
                     .pc = @intCast(tracer_step.pc),
-                    .opcode = tracer_step.opcode, // Use the actual opcode byte from tracer
+                    .opcode = tracer_step.opcode,
                     .opcode_name = try allocator.dupe(u8, tracer_step.op),
                     .gas = tracer_step.gas,
+                    .depth = tracer_step.depth,
+                    .mem_size = tracer_step.memSize,
+                    .gas_cost = tracer_step.gasCost,
                     .stack = try allocator.dupe(u256, tracer_step.stack),
                     .memory = if (tracer_step.memory) |mem| try allocator.dupe(u8, mem) else &.{},
-                    .storage_reads = &.{}, // Empty for now
-                    .storage_writes = &.{}, // Empty for now
+                    .storage_reads = &.{},
+                    .storage_writes = &.{},
                 };
                 allocated_count += 1;
             }
