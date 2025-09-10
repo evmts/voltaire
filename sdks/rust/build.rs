@@ -154,8 +154,9 @@ fn build_guillotine_library(project_dir: &Path) {
     println!("cargo:warning=Building Guillotine with Zig (optimization: {}) - this may take a few minutes on first build", zig_optimize);
     
     // Collect build arguments based on enabled features
-    let mut build_args = vec!["build", "static", &format!("-Doptimize={}", zig_optimize)];
-    let mut extra_args = Vec::new();
+    let optimize_arg = format!("-Doptimize={}", zig_optimize);
+    let mut build_args = vec!["build", "static"];
+    let mut extra_args = vec![optimize_arg.clone()];
     
     // Check for hardfork features
     if cfg!(feature = "hardfork-frontier") {
@@ -230,6 +231,11 @@ fn build_guillotine_library(project_dir: &Path) {
     
     if cfg!(feature = "tracing") {
         extra_args.push("-Denable-tracing=true".to_string());
+    }
+    
+    // Debug: Print which features are enabled
+    if !extra_args.is_empty() {
+        println!("cargo:warning=Configuring EVM with features: {:?}", extra_args);
     }
     
     // Add extra args references to build_args
