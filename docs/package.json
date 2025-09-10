@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vocs dev",
-    "build": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 vocs build",
+    "build": "npx playwright install chromium && vocs build",
     "preview": "vocs preview"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "playwright": "^1.55.0",
     "vercel": "^47.0.7",
     "vocs": "^1.0.13"
   }
