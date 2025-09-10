@@ -25,6 +25,7 @@
 Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
 **Network Support**: Currently only **Ethereum Mainnet** is supported. Planned for Beta:
+
 - **OP Stack** support (Optimism, Base, etc.)
 - **Arbitrum Nitro** support
 
@@ -34,23 +35,23 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 
 🚧 = Coming soon. Consider opening a discussion if you have any API recommendations or requested features.
 
-- ⚡ **Extreme speed** 
+- ⚡ **Extreme speed**
 - 🌐 **Universal** - Planned and experimental support for many languages and platforms
   - **Golang** - Available with FFI bindings
-  - **Zig** 
-  - **C** 
+  - **Zig**
+  - **C**
   - **TypeScript** - Wasm or Bun
-  - **Python** 
-  - **Rust** 
-  - **Swift** 
-  - **Wasm** 
-  - **🚧 Kotlin** 
-- 📦 **Minimal bundle size** 
+  - **Python**
+  - **Rust**
+  - **Swift**
+  - **Wasm**
+  - **🚧 Kotlin**
+- 📦 **Minimal bundle size**
   - Zig `comptime` configuration means you only pay for features you actually use
   - Skip precompiles or use specific hard forks without bundle size or runtime overhead
-- 📚 **Well documented** 
+- 📚 **Well documented**
 - 🎨 **Fun** - Guillotine is a fun way to dive into Zig and fun/easy to [contribute](./CONTRIBUTING.md) to
-- 🤖 **LLM-friendly** 
+- 🤖 **LLM-friendly**
 - 🧪 **Robust** - Guillotine takes testing and architecture very seriously with [full unit tests](./src) for all files, a robust [E2E test suite](./test/e2e), [fuzz testing](./test/fuzz), [differential testing vs REVM](./test/differential), and [benchmark testing](./test/benchmark)
 - ✨ **Useful** - 🚧 Coming soon 🚧 Guillotine is building a powerful [CLI](https://github.com/evmts/Guillotine/issues) and [native app](https://github.com/evmts/Guillotine/issues) that you can think of as a local-first, Tenderly-like tool
 
@@ -78,14 +79,14 @@ Guillotine is fast.
 
 Benchmarks so far look very promising.
 
-- Guillotine shows measurable performance gains over [REVM](https://github.com/bluealloy/revm) and performance on par with [evmone](https://github.com/ethereum/evmone). 
+- Guillotine shows measurable performance gains over [REVM](https://github.com/bluealloy/revm) and performance on par with [evmone](https://github.com/ethereum/evmone).
 - More major optimizations planned for Beta release
 
 ### Overall Performance Summary (Per Run)
 
-These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/evm-bench) test cases with `hyperfine`. 
+These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/evm-bench) test cases with `hyperfine`.
 
-- Benchmarking infra can be seen in previous commits but is currently being moved to its own dedicated repo: https://github.com/evmts/evm-bench (WIP). 
+- Benchmarking infra can be seen in previous commits but is currently being moved to its [own dedicated repo](https://github.com/evmts/evm-benchmarks).
 - Looking for contributors to help set up easily reproducible benchmarks
 
 | Test Case               | Guillotine | REVM     | Geth     | evmone   |
@@ -100,7 +101,7 @@ These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/
 
 ### Bundle size 🚧
 
-In past commits we reduced the EVM to ~110 KB, with further improvements expected. 
+In past commits we reduced the EVM to ~110 KB, with further improvements expected.
 
 - We’re currently focused on `ReleaseFast`; `ReleaseSmall` support returns soon
 
@@ -118,20 +119,20 @@ Guillotine was built using [data-oriented design](https://www.youtube.com/watch?
 - **Assembly-optimized Keccak** via [keccak-asm](https://crates.io/crates/keccak-asm)
 - Batching calculation of static gas costs and stack analysis
 - Simple code that minimizes unnecessary abstractions, inline directives, and interfaces allowing the Zig compiler maximum freedom to optimize for performance or size
-- Additional micro-optimizations not listed 
+- Additional micro-optimizations not listed
 
-**Balanced tradeoffs** 
+**Balanced tradeoffs**
 
 We focus on maintainable code and targeted optimizations where they matter. We do our best to write simple code the Zig compiler can optimize.
 
 There are many more optimizations that have not been implemented yet. The biggest of which will be translating our stack-based EVM into a register-based EVM—a common technique used by interpreters like Lua and PyPy, and Cranelift-style designs—to achieve up to ~30% performance increases.
 
---- 
+---
 
 ### How is Guillotine so small?
 
-- Zig avoids hidden control flow. 
-- This makes it really easy to write the most minimal simple code needed to get the job done. 
+- Zig avoids hidden control flow.
+- This makes it really easy to write the most minimal simple code needed to get the job done.
 - By minimizing unnecessary abstractions the compiler is able to do a great job optimizing for size.
 - Zig `comptime` allows us to easily and surgically only include the minimum necessary code given the specific EVM and hard fork configuration. Code you don't use isn't included.
 
@@ -139,7 +140,7 @@ There are many more optimizations that have not been implemented yet. The bigges
 
 Guillotine is not yet “safe”; it’s in early alpha. But we do have features that help improve safety:
 
-- Guillotine can be built in `Debug`, `ReleaseFast`, `ReleaseSmall`, and `ReleaseSafe`. 
+- Guillotine can be built in `Debug`, `ReleaseFast`, `ReleaseSmall`, and `ReleaseSafe`.
 - We recommend `ReleaseSafe` while in alpha.
 - `ReleaseSafe` preserves debug‑mode‑only defensive checks, memory safety features, and other safeguards in the final binary.
 - Guillotine also features extensive unit, E2E, fuzz, benchmark, and differential test suites.
@@ -163,7 +164,7 @@ Guillotine ships with opinionated defaults and is mainnet‑ready with zero conf
 
 ### Customizability
 
-Guillotine is built from the ground up to be a highly customizable EVM SDK. 
+Guillotine is built from the ground up to be a highly customizable EVM SDK.
 
 **With Guillotine you can easily create your own EVM!**
 
@@ -181,7 +182,7 @@ All customizations are zero‑cost, compile‑time abstractions using [Zig](http
 
 For most users who don't need customizations, we offer default options for all major hard forks.
 
-🚧 This feature is considered experimental and the API could change. 
+🚧 This feature is considered experimental and the API could change.
 
 ---
 
@@ -223,7 +224,7 @@ Guillotine values minimal runtime dependencies but utilizes the following powerf
 - **[arkworks](https://github.com/arkworks-rs)** – Rust lib for elliptic curve operations
 - **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** – Simple C KZG commitment library for EIP-4844
 - **[keccak-asm](https://crates.io/crates/keccak-asm)** – Assembly-optimized Keccak-256
-- **[crypto from Zig std library](https://ziglang.org/documentation/master/std/#std.crypto)** 
+- **[crypto from Zig std library](https://ziglang.org/documentation/master/std/#std.crypto)**
 
 We have plans to make all crypto `comptime` configurable with opinionated defaults for Beta.
 
