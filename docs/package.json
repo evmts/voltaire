@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vocs dev",
-    "build": "vocs build",
+    "build": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 vocs build",
     "preview": "vocs preview"
   },
   "devDependencies": {

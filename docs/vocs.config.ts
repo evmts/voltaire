@@ -125,6 +125,43 @@ export default defineConfig({
       ],
     },
     {
+      text: '📦 SDKs',
+      items: [
+        {
+          text: 'Overview',
+          link: '/sdks',
+        },
+        {
+          text: 'Go',
+          link: '/sdks/go',
+        },
+        {
+          text: 'Rust',
+          link: '/sdks/rust',
+        },
+        {
+          text: 'Python',
+          link: '/sdks/python',
+        },
+        {
+          text: 'TypeScript',
+          link: '/sdks/typescript',
+        },
+        {
+          text: 'Bun',
+          link: '/sdks/bun',
+        },
+        {
+          text: 'Swift',
+          link: '/sdks/swift',
+        },
+        {
+          text: 'C',
+          link: '/sdks/c',
+        },
+      ],
+    },
+    {
       text: '🔧 Advanced',
       collapsed: true,
       items: [
