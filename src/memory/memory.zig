@@ -114,7 +114,30 @@ pub fn Memory(comptime config: MemoryConfig) type {
                     // We have capacity, just extend length and zero
                     const old_len = current_len;
                     self.buffer_ptr.*.items.len = required_total;
-                    @memset(self.buffer_ptr.*.items[old_len..required_total], 0);
+                    
+                    // Use SIMD for zeroing if vector_length > 1 and data is large enough
+                    if (comptime (config.vector_length > 1)) {
+                        const slice = self.buffer_ptr.*.items[old_len..required_total];
+                        if (slice.len >= config.vector_length) {
+                            const VectorType = @Vector(config.vector_length, u8);
+                            const zero_vec: VectorType = @splat(0);
+                            
+                            // SIMD-aligned chunks
+                            var i: usize = 0;
+                            while (i + config.vector_length <= slice.len) : (i += config.vector_length) {
+                                const ptr: *VectorType = @ptrCast(@alignCast(slice.ptr + i));
+                                ptr.* = zero_vec;
+                            }
+                            // Handle remainder
+                            if (i < slice.len) {
+                                @memset(slice[i..], 0);
+                            }
+                        } else {
+                            @memset(slice, 0);
+                        }
+                    } else {
+                        @memset(self.buffer_ptr.*.items[old_len..required_total], 0);
+                    }
                     return;
                 }
             }
@@ -124,8 +147,30 @@ pub fn Memory(comptime config: MemoryConfig) type {
             // Use ensureTotalCapacity + manual growth to control zeroing
             try self.buffer_ptr.*.ensureTotalCapacity(allocator, required_total);
             self.buffer_ptr.*.items.len = required_total;
-            // Zero only the new portion
-            @memset(self.buffer_ptr.*.items[old_len..required_total], 0);
+            
+            // Zero only the new portion with SIMD if applicable
+            if (comptime (config.vector_length > 1)) {
+                const slice = self.buffer_ptr.*.items[old_len..required_total];
+                if (slice.len >= config.vector_length * 4) { // Only use SIMD for larger buffers
+                    const VectorType = @Vector(config.vector_length, u8);
+                    const zero_vec: VectorType = @splat(0);
+                    
+                    // SIMD-aligned chunks
+                    var i: usize = 0;
+                    while (i + config.vector_length <= slice.len) : (i += config.vector_length) {
+                        const ptr: *VectorType = @ptrCast(@alignCast(slice.ptr + i));
+                        ptr.* = zero_vec;
+                    }
+                    // Handle remainder
+                    if (i < slice.len) {
+                        @memset(slice[i..], 0);
+                    }
+                } else {
+                    @memset(slice, 0);
+                }
+            } else {
+                @memset(self.buffer_ptr.*.items[old_len..required_total], 0);
+            }
         }
 
         // EVM-compliant memory operations that expand to word boundaries
@@ -137,7 +182,30 @@ pub fn Memory(comptime config: MemoryConfig) type {
             try self.ensure_capacity(allocator, @as(u24, @intCast(word_aligned_end)));
             const checkpoint_usize = @as(usize, self.checkpoint);
             const start_idx = checkpoint_usize + offset_usize;
-            @memcpy(self.buffer_ptr.*.items[start_idx .. start_idx + data.len], data);
+            
+            // Use SIMD for copying if vector_length > 1 and data is large enough
+            if (comptime (config.vector_length > 1)) {
+                if (data.len >= config.vector_length * 4) { // Only use SIMD for larger copies
+                    const VectorType = @Vector(config.vector_length, u8);
+                    const dst = self.buffer_ptr.*.items[start_idx .. start_idx + data.len];
+                    
+                    // SIMD-aligned chunks
+                    var i: usize = 0;
+                    while (i + config.vector_length <= data.len) : (i += config.vector_length) {
+                        const src_vec: VectorType = data[i..][0..config.vector_length].*;
+                        const dst_ptr: *VectorType = @ptrCast(@alignCast(dst.ptr + i));
+                        dst_ptr.* = src_vec;
+                    }
+                    // Handle remainder
+                    if (i < data.len) {
+                        @memcpy(dst[i..], data[i..]);
+                    }
+                } else {
+                    @memcpy(self.buffer_ptr.*.items[start_idx .. start_idx + data.len], data);
+                }
+            } else {
+                @memcpy(self.buffer_ptr.*.items[start_idx .. start_idx + data.len], data);
+            }
         }
 
         pub fn set_byte_evm(self: *Self, allocator: std.mem.Allocator, offset: u24, value: u8) !void {

@@ -49,6 +49,10 @@ pub const FrameConfig = struct {
     /// When enabled, bytecode fusion handlers are not registered
     disable_fusion: bool = false,
 
+    /// SIMD vector length for optimized operations
+    /// Value of 1 means scalar operations (no SIMD)
+    vector_length: comptime_int = 1,
+
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
         return if (self.max_bytecode_size <= std.math.maxInt(u8))

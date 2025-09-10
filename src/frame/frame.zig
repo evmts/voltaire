@@ -305,6 +305,10 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const Dispatch = dispatch_mod.Dispatch(Self);
         /// The config passed into Frame(config)
         pub const frame_config = config;
+        
+        /// SIMD vector length for optimized operations
+        /// Value of 1 means scalar operations (no SIMD)
+        pub const vector_length = config.vector_length;
 
         /// Returns the appropriate tail call modifier based on the target architecture.
         /// WebAssembly doesn't support tail calls by default, so we use .auto for wasm targets.
@@ -335,6 +339,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             .initial_capacity = config.memory_initial_capacity,
             .memory_limit = config.memory_limit,
             .owned = true,
+            .vector_length = config.vector_length,
         });
         /// The struct in charge of managing Evm Word stack
         pub const Stack = stack_mod.Stack(.{

@@ -62,6 +62,11 @@ pub const EvmConfig = struct {
     /// WARNING: Only use for testing/debugging
     disable_fusion: bool = false,
 
+    /// SIMD vector length for optimized memory operations
+    /// Auto-detected based on target CPU, or explicitly set for testing
+    /// Value of 1 disables SIMD and uses scalar operations
+    vector_length: comptime_int = 0, // 0 means auto-detect
+
     // Frame configuration fields (previously nested)
     /// The maximum stack size for the evm. Defaults to 1024
     stack_size: u12 = 1024,
@@ -103,6 +108,16 @@ pub const EvmConfig = struct {
     /// Set to empty slice for no overrides
     precompile_overrides: []const PrecompileOverride = &.{},
 
+    /// Get the effective SIMD vector length for the current target
+    pub fn getVectorLength(self: EvmConfig) comptime_int {
+        if (self.vector_length > 0) {
+            return self.vector_length;
+        }
+        // Auto-detect based on target CPU
+        const target = @import("builtin").target;
+        return std.simd.suggestVectorLengthForCpu(u8, target.cpu) orelse 1;
+    }
+
     /// Computed frame configuration from the fields above
     pub fn frame_config(self: EvmConfig) FrameConfig {
         return .{
@@ -119,6 +134,7 @@ pub const EvmConfig = struct {
             .disable_gas_checks = self.disable_gas_checks,
             .disable_balance_checks = self.disable_balance_checks,
             .disable_fusion = self.disable_fusion,
+            .vector_length = self.getVectorLength(),
         };
     }
 
