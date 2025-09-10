@@ -115,6 +115,51 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 if (iterator.pc >= iterator.bytecode.len()) return null;
 
                 const opcode = iterator.bytecode.get_unsafe(iterator.pc);
+                // Check if packed_bitmap has enough elements
+                if (iterator.pc >= iterator.bytecode.packed_bitmap.len) {
+                    // Log error and return null
+                    log.err("Iterator PC {} exceeds packed_bitmap len {}", .{ iterator.pc, iterator.bytecode.packed_bitmap.len });
+                    return null;
+                }
+                const packed_bits = iterator.bytecode.packed_bitmap[iterator.pc];
+
+                // Handle fusion opcodes first (only if fusions are enabled)
+                if (fusions_enabled and packed_bits.is_fusion_candidate) {
+                    const fusion_data = iterator.bytecode.getFusionData(iterator.pc);
+                    // Advance PC properly for fusion opcodes
+                    switch (fusion_data) {
+                        // 2-opcode fusions: PUSH + op
+                        .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, 
+                        .push_and_fusion, .push_or_fusion, .push_xor_fusion, 
+                        .push_jump_fusion, .push_jumpi_fusion,
+                        .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => {
+                            const push_size = opcode - 0x5F;
+                            iterator.pc += 1 + push_size + 1;
+                        },
+                        // Advanced fusion patterns
+                        .multi_push => |mp| {
+                            iterator.pc += mp.original_length;
+                        },
+                        .multi_pop => |mp| {
+                            iterator.pc += mp.original_length;
+                        },
+                        .iszero_jumpi => |ij| {
+                            iterator.pc += ij.original_length;
+                        },
+                        .dup2_mstore_push => |dmp| {
+                            iterator.pc += dmp.original_length;
+                        },
+                        .push => |push_data| {
+                            iterator.pc += 1 + push_data.size;
+                        },
+                        else => {
+                            iterator.pc += 1;
+                        },
+                    }
+                    return fusion_data;
+                }
+
+                // push
 
                 // Handle regular opcodes
                 switch (opcode) {
@@ -156,6 +201,23 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             regular: struct { opcode: u8 },
             push: struct { value: u256, size: u8 },
             jumpdest: struct { gas_cost: u16 },
+            push_add_fusion: struct { value: u256 },
+            push_mul_fusion: struct { value: u256 },
+            push_sub_fusion: struct { value: u256 },
+            push_div_fusion: struct { value: u256 },
+            push_and_fusion: struct { value: u256 },
+            push_or_fusion: struct { value: u256 },
+            push_xor_fusion: struct { value: u256 },
+            push_jump_fusion: struct { value: u256 },
+            push_jumpi_fusion: struct { value: u256 },
+            push_mload_fusion: struct { value: u256 },
+            push_mstore_fusion: struct { value: u256 },
+            push_mstore8_fusion: struct { value: u256 },
+            // Advanced fusion patterns
+            multi_push: struct { count: u8, original_length: u8, values: [3]u256 },
+            multi_pop: struct { count: u8, original_length: u8 },
+            iszero_jumpi: struct { target: u256, original_length: u8 },
+            dup2_mstore_push: struct { push_value: u256, original_length: u8 },
             stop: void,
             invalid: void,
         };
@@ -217,31 +279,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             };
             // Build bitmaps and validate only the runtime code
             try self.buildBitmapsAndValidateWithLength(runtime_code.len);
-
-            // Second pass: validate jump destinations
-            var i: PcType = 0;
-            while (i < self.runtime_code.len) {
-                const op = self.runtime_code[i];
-                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
-                    const n = op - 0x5f;
-                    const next_pc = i + 1 + n;
-                    if (next_pc < self.runtime_code.len) {
-                        const next_op = self.runtime_code[next_pc];
-                        if (next_op == @intFromEnum(Opcode.JUMP) or next_op == @intFromEnum(Opcode.JUMPI)) {
-                            if (self.readPushValue(i, n)) |dest_pc| {
-                                if (dest_pc >= self.runtime_code.len or !self.isValidJumpDest(@intCast(dest_pc))) {
-                                    return error.InvalidJumpDestination;
-                                }
-                            } else {
-                                return error.TruncatedPush;
-                            }
-                        }
-                    }
-                    i += n;
-                }
-                i += 1;
-            }
-
             return self;
         }
 
@@ -266,13 +303,201 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             };
         }
 
-        fn readPushValue(self: *const Self, pc: PcType, n: u8) ?u256 {
-            if (pc + 1 + n > self.runtime_code.len) return null;
-            var value: u256 = 0;
-            for (0..n) |i| {
-                value = (value << 8) | self.runtime_code[pc + 1 + i];
+        // Advanced pattern detection functions
+        
+        fn checkMultiPushPattern(self: *const Self, pc: PcType, n: u8) ?OpcodeData {
+            if (pc + n > self.len()) return null;
+            
+            var current_pc = pc;
+            var total_length: PcType = 0;
+            var values: [3]u256 = .{0, 0, 0};
+            
+            // Check for n consecutive PUSH instructions
+            var i: u8 = 0;
+            while (i < n) : (i += 1) {
+                if (current_pc >= self.len()) return null;
+                const op = self.get_unsafe(current_pc);
+                if (op < 0x60 or op > 0x7F) { // Not a PUSH opcode
+                    return null;
+                }
+                const push_size = op - 0x5F;
+                
+                // Extract value
+                var value: u256 = 0;
+                const end = @min(current_pc + 1 + push_size, self.len());
+                for (current_pc + 1..end) |j| {
+                    value = std.math.shl(u256, value, 8) | self.get_unsafe(@intCast(j));
+                }
+                if (i < 3) values[i] = value;
+                
+                current_pc += 1 + push_size;
+                total_length += 1 + push_size;
             }
-            return value;
+            
+            return OpcodeData{ .multi_push = .{ 
+                .count = n, 
+                .original_length = @intCast(total_length),
+                .values = values
+            }};
+        }
+        
+        fn checkMultiPopPattern(self: *const Self, pc: PcType, n: u8) ?OpcodeData {
+            if (pc + n > self.len()) return null;
+            
+            // Check if we have n consecutive POP instructions
+            var i: u8 = 0;
+            while (i < n) : (i += 1) {
+                if (self.get_unsafe(pc + i) != 0x50) { // POP opcode
+                    return null;
+                }
+            }
+            
+            return OpcodeData{ .multi_pop = .{ 
+                .count = n, 
+                .original_length = n 
+            }};
+        }
+        
+        fn checkIszeroJumpiPattern(self: *const Self, pc: PcType) ?OpcodeData {
+            if (pc + 2 >= self.len()) return null;
+            
+            // Check for ISZERO
+            if (self.get_unsafe(pc) != 0x15) return null;
+            
+            // Check for PUSH after ISZERO
+            const push_pc = pc + 1;
+            const push_op = self.get_unsafe(push_pc);
+            if (push_op < 0x60 or push_op > 0x7F) {
+                return null;
+            }
+            
+            const push_size = push_op - 0x5F;
+            const jumpi_pc = push_pc + 1 + push_size;
+            
+            // Check for JUMPI
+            if (jumpi_pc >= self.len() or self.get_unsafe(jumpi_pc) != 0x57) {
+                return null;
+            }
+            
+            // Extract target
+            var target: u256 = 0;
+            const end = @min(push_pc + 1 + push_size, self.len());
+            for (push_pc + 1..end) |i| {
+                target = std.math.shl(u256, target, 8) | self.get_unsafe(@intCast(i));
+            }
+            
+            return OpcodeData{ .iszero_jumpi = .{ 
+                .target = target, 
+                .original_length = @intCast(jumpi_pc + 1 - pc)
+            }};
+        }
+        
+        fn checkDup2MstorePushPattern(self: *const Self, pc: PcType) ?OpcodeData {
+            if (pc + 3 >= self.len()) return null;
+            
+            // Check for DUP2
+            if (self.get_unsafe(pc) != 0x81) return null;
+            
+            // Check for MSTORE
+            if (self.get_unsafe(pc + 1) != 0x52) return null;
+            
+            // Check for PUSH after MSTORE
+            const push_pc = pc + 2;
+            const push_op = self.get_unsafe(push_pc);
+            if (push_op < 0x60 or push_op > 0x7F) {
+                return null;
+            }
+            
+            const push_size = push_op - 0x5F;
+            
+            // Extract push value
+            var value: u256 = 0;
+            const end = @min(push_pc + 1 + push_size, self.len());
+            for (push_pc + 1..end) |i| {
+                value = std.math.shl(u256, value, 8) | self.get_unsafe(@intCast(i));
+            }
+            
+            return OpcodeData{ .dup2_mstore_push = .{ 
+                .push_value = value, 
+                .original_length = @intCast(3 + push_size)
+            }};
+        }
+        
+        /// Get fusion data for a bytecode position marked as fusion candidate
+        /// This method checks for advanced patterns first (in priority order)
+        pub fn getFusionData(self: *const Self, pc: PcType) OpcodeData {
+            if (pc >= self.len()) return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
+
+            // Check advanced fusion patterns in priority order (longest first)
+            
+            // 1. Check for ISZERO-JUMPI pattern (highest priority) (variable length)
+            if (self.checkIszeroJumpiPattern(pc)) |fusion| {
+                return fusion;
+            }
+            
+            // 3. Check for DUP2-MSTORE-PUSH pattern (variable length)
+            if (self.checkDup2MstorePushPattern(pc)) |fusion| {
+                return fusion;
+            }
+            
+            // 4. Check for 3-PUSH fusion
+            if (self.checkMultiPushPattern(pc, 3)) |fusion| {
+                return fusion;
+            }
+            
+            // 5. Check for 3-POP fusion
+            if (self.checkMultiPopPattern(pc, 3)) |fusion| {
+                return fusion;
+            }
+            
+            // 6. Check for 2-PUSH fusion
+            if (self.checkMultiPushPattern(pc, 2)) |fusion| {
+                return fusion;
+            }
+            
+            // 7. Check for 2-POP fusion
+            if (self.checkMultiPopPattern(pc, 2)) |fusion| {
+                return fusion;
+            }
+
+            const first_op = self.get_unsafe(pc);
+
+            // Check for existing 2-opcode fusions (PUSH + op)
+            if (first_op >= 0x60 and first_op <= 0x7F) { // PUSH opcode
+                const push_size = first_op - 0x5F;
+                var value: u256 = 0;
+                const end_pc = @min(pc + 1 + push_size, self.len());
+                for (pc + 1..end_pc) |i| {
+                    value = std.math.shl(u256, value, 8) | self.get_unsafe(@intCast(i));
+                }
+
+                // The second opcode comes AFTER the push data
+                const second_op_pc = pc + 1 + push_size;
+                const second_op = if (second_op_pc < self.len()) self.get_unsafe(second_op_pc) else 0x00;
+
+                // Return appropriate fusion type based on second opcode
+                switch (second_op) {
+                    0x01 => return OpcodeData{ .push_add_fusion = .{ .value = value } }, // ADD
+                    0x02 => return OpcodeData{ .push_mul_fusion = .{ .value = value } }, // MUL
+                    0x03 => return OpcodeData{ .push_sub_fusion = .{ .value = value } }, // SUB
+                    0x04 => return OpcodeData{ .push_div_fusion = .{ .value = value } }, // DIV
+                    0x16 => return OpcodeData{ .push_and_fusion = .{ .value = value } }, // AND
+                    0x17 => return OpcodeData{ .push_or_fusion = .{ .value = value } }, // OR
+                    0x18 => return OpcodeData{ .push_xor_fusion = .{ .value = value } }, // XOR
+                    0x51 => return OpcodeData{ .push_mload_fusion = .{ .value = value } }, // MLOAD
+                    0x52 => return OpcodeData{ .push_mstore_fusion = .{ .value = value } }, // MSTORE
+                    0x53 => return OpcodeData{ .push_mstore8_fusion = .{ .value = value } }, // MSTORE8
+                    0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
+                    0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
+                    else => {
+                        // No fusion detected, return regular PUSH
+                        return OpcodeData{ .push = .{ .value = value, .size = push_size } };
+                    },
+                }
+            }
+            
+            // No fusion pattern detected, return regular opcode
+            return OpcodeData{ .regular = .{ .opcode = first_op } };
         }
 
         /// Get the length of the bytecode
@@ -385,9 +610,27 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 packed_bits.* = PackedBits{ .is_push_data = false, .is_op_start = false, .is_jumpdest = false, .is_fusion_candidate = false };
             }
 
+            // Single pass: validate opcodes, mark bitmaps, detect JUMPDEST and fusions
+            // Track state for immediate jump validation
+            var last_push_value: ?u256 = null;
+            var last_push_end: PcType = 0;
+
+            // Collect immediate jumps to validate after first pass
+            var immediate_jumps = std.ArrayList(PcType){};
+            defer immediate_jumps.deinit(self.allocator);
+
             var i: PcType = 0;
             while (i < validate_up_to) {
                 @branchHint(.likely);
+
+                // Prefetch ahead for better cache performance on large bytecode
+                if (@as(usize, i) + PREFETCH_DISTANCE < validate_up_to) {
+                    @prefetch(&self.runtime_code[@as(usize, i) + PREFETCH_DISTANCE], .{
+                        .rw = .read,
+                        .locality = 3, // Low temporal locality
+                        .cache = .data,
+                    });
+                }
 
                 // Mark operation start
                 self.packed_bitmap[i].is_op_start = true;
@@ -396,6 +639,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Validate opcode - undefined opcodes are valid but treated as INVALID
                 const opcode_enum = std.meta.intToEnum(Opcode, op) catch blk: {
+                    // Undefined opcodes are valid in EVM - they execute as INVALID operation
+                    // which consumes all gas and reverts. We'll treat them as INVALID (0xFE)
                     break :blk Opcode.INVALID;
                 };
 
@@ -404,13 +649,50 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     self.packed_bitmap[i].is_jumpdest = true;
                 }
 
+                // Check for fusion candidates if enabled
+                if (comptime fusions_enabled) {
+                    // Check if this is a PUSH that could be part of a fusion
+                    if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                        const push_size: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                        const next_op_idx = i + 1 + push_size;
+
+                        // Ensure we can read the next opcode
+                        if (next_op_idx < validate_up_to) {
+                            const next_op = self.runtime_code[next_op_idx];
+                            // Check for fusable patterns
+                            const is_fusable = switch (next_op) {
+                                @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.MUL), @intFromEnum(Opcode.SUB), @intFromEnum(Opcode.DIV), @intFromEnum(Opcode.AND), @intFromEnum(Opcode.OR), @intFromEnum(Opcode.XOR), @intFromEnum(Opcode.JUMP), @intFromEnum(Opcode.JUMPI), @intFromEnum(Opcode.MLOAD), @intFromEnum(Opcode.MSTORE), @intFromEnum(Opcode.MSTORE8) => true,
+                                else => false,
+                            };
+
+                            if (is_fusable) {
+                                self.packed_bitmap[i].is_fusion_candidate = true;
+                            }
+                        }
+                    }
+                }
+
                 // Handle PUSH instructions
                 if (@intFromEnum(opcode_enum) >= @intFromEnum(Opcode.PUSH1) and
                     @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32))
                 {
                     const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
 
+                    // We need to read n bytes after the opcode at position i
+                    // So we need positions i+1 through i+n to be valid
+                    // This means i+n must be less than the validation length
+                    // PUSH32 at position 0 needs to read bytes 1-32, so position 32 must be valid
+                    // Therefore i+1+n must be <= validate_up_to, or i+n < validate_up_to
                     if (i + 1 + n > validate_up_to) return error.TruncatedPush;
+
+                    // Extract push value for immediate jump validation (only if fusions enabled)
+                    var push_value: u256 = 0;
+                    if (comptime fusions_enabled) {
+                        var byte_idx: PcType = 0;
+                        while (byte_idx < n) : (byte_idx += 1) {
+                            push_value = std.math.shl(u256, push_value, 8) | self.runtime_code[i + 1 + byte_idx];
+                        }
+                    }
 
                     // Mark push data bytes
                     var j: PcType = 0;
@@ -419,11 +701,53 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         self.packed_bitmap[idx].is_push_data = true;
                     }
 
-                    i += 1 + n;
+                    const push_end = i + 1 + n;
+
+                    // ONLY check for immediate jump patterns if fusions are enabled
+                    // This is for optimization purposes, not correctness validation
+                    if (comptime fusions_enabled) {
+                        if (push_end < validate_up_to) {
+                            const next_op = self.runtime_code[push_end];
+
+                            // Case 1: PUSH + JUMP (for fusion optimization)
+                            if (next_op == @intFromEnum(Opcode.JUMP)) {
+                                log.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
+                                // Note: We do NOT validate jump targets here - that happens at runtime
+                                // This is only for marking fusion opportunities
+                            }
+
+                            // Case 2: PUSH + JUMPI (check if previous was also a PUSH)
+                            else if (push_end < validate_up_to and next_op == @intFromEnum(Opcode.JUMPI) and
+                                last_push_value != null and
+                                last_push_end == i)
+                            {
+                                // We have PUSH(dest) + PUSH(cond) + JUMPI pattern
+                                const jump_dest = last_push_value.?;
+                                log.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
+                                // Note: We do NOT validate jump targets here - that happens at runtime
+                            }
+                        }
+
+                        // Update state for next iteration
+                        last_push_value = push_value;
+                        last_push_end = push_end;
+                    }
+
+                    i = push_end;
                 } else {
+                    // Reset state when we see non-PUSH opcodes (unless it's JUMPI)
+                    if (op != @intFromEnum(Opcode.JUMPI) and op != @intFromEnum(Opcode.JUMP)) {
+                        last_push_value = null;
+                        last_push_end = 0;
+                    }
                     i += 1;
                 }
             }
+            // Note: We do NOT validate immediate jumps during bytecode initialization because:
+            // 1. Not all PUSH+JUMP patterns in bytecode are actually executed (dead code, data sections)
+            // 2. The EVM spec requires jump validation at execution time, not initialization time
+            // 3. Validating jumps here would reject valid contracts that contain unreachable PUSH+JUMP patterns
+            // The immediate jump detection above is ONLY for fusion optimization, not correctness validation.
         }
 
         pub fn analyze(self: Self, allocator: std.mem.Allocator) !Analysis {
