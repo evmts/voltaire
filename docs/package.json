@@ -6,11 +6,9 @@
   "scripts": {
     "dev": "vocs dev",
     "build": "vocs build",
-    "preview": "vocs preview",
-    "postinstall": "playwright install chromium"
+    "preview": "vocs preview"
   },
   "devDependencies": {
-    "playwright": "^1.47.2",
-    "vocs": "1.0.13"
+    "vocs": "^1.0.13"
   }
 }

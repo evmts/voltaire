@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bun install && npx playwright install chromium && bun run build",
+  "buildCommand": "bun install && bun run build",
   "outputDirectory": "dist",
   "installCommand": "bun install",
   "framework": null,
