@@ -25,6 +25,21 @@ Add this to your `Cargo.toml`:
 guillotine-rs = "0.1.0"
 ```
 
+### Configuration via Feature Flags
+
+Guillotine can be configured at compile-time through Cargo feature flags:
+
+```toml
+[dependencies]
+guillotine-rs = { version = "0.1.0", features = ["hardfork-shanghai", "optimize-fast"] }
+```
+
+Available features:
+- **Hardfork selection**: `hardfork-frontier`, `hardfork-homestead`, `hardfork-byzantium`, `hardfork-berlin`, `hardfork-london`, `hardfork-shanghai`, `hardfork-cancun` (default)
+- **Optimization**: `optimize-fast` (max performance), `optimize-small` (min size), `optimize-safe` (balanced, default)
+- **Configuration**: `max-call-depth-256/512/2048`, `stack-size-256/512/2048`, `large-memory-limit`, `small-memory-limit`, `large-arena`, `small-arena`
+- **Features**: `tracing`, `disable-precompiles`, `disable-fusion`, `disable-gas-checks` (⚠️ testing only), `disable-balance-checks` (⚠️ testing only)
+
 ### Build Requirements
 
 This crate requires the Guillotine EVM library. You have two options:
@@ -56,6 +71,8 @@ If your platform isn't supported or you want to build from source:
 - **Comprehensive error handling**: All errors are properly propagated
 
 ## Usage
+
+### Basic Usage
 
 ```rust
 use guillotine_rs::{Evm, EvmBuilder, ExecutionResult};
@@ -90,6 +107,35 @@ match result {
     ExecutionResult::Failure { error, gas_used } => {
         println!("Failed: {}", error);
     }
+}
+```
+
+### Configuration Examples
+
+#### Performance-Optimized Build
+```toml
+[dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["optimize-fast", "large-arena"] 
+}
+```
+
+#### Minimal Size Build
+```toml
+[dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["optimize-small", "small-arena", "disable-precompiles"] 
+}
+```
+
+#### Testing Configuration
+```toml
+[dev-dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["tracing", "disable-gas-checks", "disable-balance-checks"] 
 }
 ```
 
