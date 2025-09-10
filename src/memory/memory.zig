@@ -118,7 +118,11 @@ pub fn Memory(comptime config: MemoryConfig) type {
                     // Use SIMD for zeroing if vector_length > 1 and data is large enough
                     if (comptime (config.vector_length > 1)) {
                         const slice = self.buffer_ptr.*.items[old_len..required_total];
-                        if (slice.len >= config.vector_length) {
+                        // Only use SIMD if we have enough data AND proper alignment
+                        const ptr_addr = @intFromPtr(slice.ptr);
+                        const alignment_ok = (ptr_addr % @alignOf(@Vector(config.vector_length, u8))) == 0;
+                        
+                        if (slice.len >= config.vector_length and alignment_ok and config.vector_length > 1) {
                             const VectorType = @Vector(config.vector_length, u8);
                             const zero_vec: VectorType = @splat(0);
                             

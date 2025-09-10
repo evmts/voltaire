@@ -253,10 +253,18 @@ pub fn execute_sha256(allocator: std.mem.Allocator, input: []const u8, gas_limit
         };
     }
 
-    // Compute SHA-256 hash
+    // Compute SHA-256 hash using SIMD-accelerated implementation
     const output = try allocator.alloc(u8, 32);
     var hash: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(input, &hash, .{});
+    
+    // Get vector size from build options or default to auto-detect
+    const vector_size = if (@hasDecl(build_options, "vector_length"))
+        build_options.vector_length
+    else
+        comptime std.simd.suggestVectorLengthForCpu(u8, @import("builtin").target.cpu) orelse 1;
+    
+    const SHA256 = crypto.SHA256_Accel.SHA256_Accel(vector_size);
+    SHA256.hash(input, &hash);
     @memcpy(output, &hash);
 
     return PrecompileOutput{
