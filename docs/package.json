@@ -9,6 +9,7 @@
     "preview": "vocs preview"
   },
   "devDependencies": {
+    "vercel": "^47.0.7",
     "vocs": "^1.0.13"
   }
 }
