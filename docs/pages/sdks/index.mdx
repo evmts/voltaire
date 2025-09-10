@@ -145,42 +145,39 @@ ls zig-out/lib/
 
 ### SDK-Specific Installation
 
-<Tabs items={['Go', 'Rust', 'Python', 'TypeScript', 'Bun', 'Swift']}>
-  <Tab value="Go">
-    ```bash
-    go get github.com/evmts/guillotine/sdks/go
-    ```
-  </Tab>
-  <Tab value="Rust">
-    ```toml
-    [dependencies]
-    guillotine-rs = "0.1.0"
-    ```
-  </Tab>
-  <Tab value="Python">
-    ```bash
-    pip install guillotine-evm
-    ```
-  </Tab>
-  <Tab value="TypeScript">
-    ```bash
-    npm install @evmts/guillotine
-    ```
-  </Tab>
-  <Tab value="Bun">
-    ```bash
-    bun add @guillotine/bun
-    ```
-  </Tab>
-  <Tab value="Swift">
-    ```swift
-    // Package.swift
-    dependencies: [
-        .package(url: "https://github.com/evmts/guillotine-swift", from: "0.1.0")
-    ]
-    ```
-  </Tab>
-</Tabs>
+**Go:**
+```bash
+go get github.com/evmts/guillotine/sdks/go
+```
+
+**Rust:**
+```toml
+[dependencies]
+guillotine-rs = "0.1.0"
+```
+
+**Python:**
+```bash
+pip install guillotine-evm
+```
+
+**TypeScript:**
+```bash
+npm install @evmts/guillotine
+```
+
+**Bun:**
+```bash
+bun add @guillotine/bun
+```
+
+**Swift:**
+```swift
+// Package.swift
+dependencies: [
+    .package(url: "https://github.com/evmts/guillotine-swift", from: "0.1.0")
+]
+```
 
 ## Quick Start Examples
 
@@ -188,61 +185,58 @@ ls zig-out/lib/
 
 All SDKs follow a similar pattern for basic EVM operations:
 
-<Tabs items={['Go', 'Rust', 'Python', 'TypeScript']}>
-  <Tab value="Go">
-    ```go
-    vm := evm.New()
-    defer vm.Destroy()
-    
-    result, err := vm.Call(&evm.CallParams{
-        Caller:   caller,
-        Target:   target,
-        Value:    big.NewInt(1000),
-        Input:    []byte{},
-        GasLimit: 1000000,
-    })
-    ```
-  </Tab>
-  <Tab value="Rust">
-    ```rust
-    let mut evm = Evm::new();
-    
-    let result = evm.call(CallParams {
-        caller,
-        target: Some(target),
-        value: U256::from(1000),
-        input: vec![],
-        gas_limit: 1000000,
-        call_type: CallType::Call,
-    })?;
-    ```
-  </Tab>
-  <Tab value="Python">
-    ```python
-    with EVM() as evm:
-        result = evm.call(
-            caller=caller,
-            target=target,
-            value=1000,
-            input=b'',
-            gas_limit=1000000
-        )
-    ```
-  </Tab>
-  <Tab value="TypeScript">
-    ```typescript
-    const evm = await EVM.create();
-    
-    const result = await evm.call({
-        caller,
-        target,
-        value: 1000n,
-        input: new Uint8Array(),
-        gasLimit: 1000000n
-    });
-    ```
-  </Tab>
-</Tabs>
+**Go:**
+```go
+vm := evm.New()
+defer vm.Destroy()
+
+result, err := vm.Call(&evm.CallParams{
+    Caller:   caller,
+    Target:   target,
+    Value:    big.NewInt(1000),
+    Input:    []byte{},
+    GasLimit: 1000000,
+})
+```
+
+**Rust:**
+```rust
+let mut evm = Evm::new();
+
+let result = evm.call(CallParams {
+    caller,
+    target: Some(target),
+    value: U256::from(1000),
+    input: vec![],
+    gas_limit: 1000000,
+    call_type: CallType::Call,
+})?;
+```
+
+**Python:**
+```python
+with EVM() as evm:
+    result = evm.call(
+        caller=caller,
+        target=target,
+        value=1000,
+        input=b'',
+        gas_limit=1000000
+    )
+```
+
+**TypeScript:**
+```typescript
+const evm = await EVM.create();
+
+const result = await evm.call({
+    caller,
+    target,
+    value: 1000n,
+    input: new Uint8Array(),
+    gasLimit: 1000000n
+});
+```
 
 ## Architecture
 

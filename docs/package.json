@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vocs dev",
-    "build": "npx playwright install chromium && npx playwright install-deps && vocs build",
+    "build": "vocs build",
     "preview": "vocs preview"
   },
   "devDependencies": {
