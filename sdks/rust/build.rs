@@ -153,11 +153,95 @@ fn build_guillotine_library(project_dir: &Path) {
     
     println!("cargo:warning=Building Guillotine with Zig (optimization: {}) - this may take a few minutes on first build", zig_optimize);
     
+    // Collect build arguments based on enabled features
+    let mut build_args = vec!["build", "static", &format!("-Doptimize={}", zig_optimize)];
+    let mut extra_args = Vec::new();
+    
+    // Check for hardfork features
+    if cfg!(feature = "hardfork-frontier") {
+        extra_args.push("-Devm-hardfork=FRONTIER".to_string());
+    } else if cfg!(feature = "hardfork-homestead") {
+        extra_args.push("-Devm-hardfork=HOMESTEAD".to_string());
+    } else if cfg!(feature = "hardfork-byzantium") {
+        extra_args.push("-Devm-hardfork=BYZANTIUM".to_string());
+    } else if cfg!(feature = "hardfork-berlin") {
+        extra_args.push("-Devm-hardfork=BERLIN".to_string());
+    } else if cfg!(feature = "hardfork-london") {
+        extra_args.push("-Devm-hardfork=LONDON".to_string());
+    } else if cfg!(feature = "hardfork-shanghai") {
+        extra_args.push("-Devm-hardfork=SHANGHAI".to_string());
+    } else if cfg!(feature = "hardfork-cancun") {
+        extra_args.push("-Devm-hardfork=CANCUN".to_string());
+    }
+    
+    // Check for optimization strategy features
+    if cfg!(feature = "optimize-fast") {
+        extra_args.push("-Devm-optimize=fast".to_string());
+    } else if cfg!(feature = "optimize-small") {
+        extra_args.push("-Devm-optimize=small".to_string());
+    } else if cfg!(feature = "optimize-safe") {
+        extra_args.push("-Devm-optimize=safe".to_string());
+    }
+    
+    // Check for configuration features
+    if cfg!(feature = "max-call-depth-256") {
+        extra_args.push("-Devm-max-call-depth=256".to_string());
+    } else if cfg!(feature = "max-call-depth-512") {
+        extra_args.push("-Devm-max-call-depth=512".to_string());
+    } else if cfg!(feature = "max-call-depth-2048") {
+        extra_args.push("-Devm-max-call-depth=2048".to_string());
+    }
+    
+    if cfg!(feature = "stack-size-256") {
+        extra_args.push("-Devm-stack-size=256".to_string());
+    } else if cfg!(feature = "stack-size-512") {
+        extra_args.push("-Devm-stack-size=512".to_string());
+    } else if cfg!(feature = "stack-size-2048") {
+        extra_args.push("-Devm-stack-size=2048".to_string());
+    }
+    
+    if cfg!(feature = "disable-precompiles") {
+        extra_args.push("-Dno_precompiles=true".to_string());
+    }
+    
+    if cfg!(feature = "disable-fusion") {
+        extra_args.push("-Devm-disable-fusion=true".to_string());
+    }
+    
+    if cfg!(feature = "disable-gas-checks") {
+        extra_args.push("-Devm-disable-gas=true".to_string());
+    }
+    
+    if cfg!(feature = "disable-balance-checks") {
+        extra_args.push("-Devm-disable-balance=true".to_string());
+    }
+    
+    if cfg!(feature = "large-memory-limit") {
+        extra_args.push("-Devm-memory-limit=67108864".to_string()); // 64MB
+    } else if cfg!(feature = "small-memory-limit") {
+        extra_args.push("-Devm-memory-limit=1048576".to_string()); // 1MB
+    }
+    
+    if cfg!(feature = "large-arena") {
+        extra_args.push("-Devm-arena-capacity=134217728".to_string()); // 128MB
+    } else if cfg!(feature = "small-arena") {
+        extra_args.push("-Devm-arena-capacity=16777216".to_string()); // 16MB
+    }
+    
+    if cfg!(feature = "tracing") {
+        extra_args.push("-Denable-tracing=true".to_string());
+    }
+    
+    // Add extra args references to build_args
+    for arg in &extra_args {
+        build_args.push(arg.as_str());
+    }
+    
     // Build the static library with Zig
     // First try 'static' step, fall back to default install if not available
     let mut output = Command::new("zig")
         .current_dir(project_dir)
-        .args(&["build", "static", &format!("-Doptimize={}", zig_optimize)])
+        .args(&build_args)
         .output()
         .expect("Failed to execute zig build");
     

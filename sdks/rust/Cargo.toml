@@ -46,6 +46,36 @@ tracing = []
 # Build with optimizations for benchmarking
 bench = []
 
+# Hardfork selection features (mutually exclusive)
+hardfork-frontier = []
+hardfork-homestead = []
+hardfork-byzantium = []
+hardfork-berlin = []
+hardfork-london = []
+hardfork-shanghai = []
+hardfork-cancun = []
+
+# Optimization strategy features (mutually exclusive)
+optimize-fast = []
+optimize-small = []
+optimize-safe = []
+
+# Configuration features
+max-call-depth-256 = []
+max-call-depth-512 = []
+max-call-depth-2048 = []
+stack-size-256 = []
+stack-size-512 = []
+stack-size-2048 = []
+disable-precompiles = []
+disable-fusion = []
+disable-gas-checks = []
+disable-balance-checks = []
+large-memory-limit = []
+small-memory-limit = []
+large-arena = []
+small-arena = []
+
 [[bench]]
 name = "evm_comparison"
 harness = false

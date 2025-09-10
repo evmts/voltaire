@@ -36,6 +36,15 @@ guillotine-rs = "0.1.0"
 alloy-primitives = "0.7"
 ```
 
+### Feature Flags
+
+Guillotine can be configured at compile-time through Cargo feature flags to optimize for your specific use case:
+
+```toml filename="Cargo.toml"
+[dependencies]
+guillotine-rs = { version = "0.1.0", features = ["hardfork-shanghai", "optimize-fast"] }
+```
+
 ## Quick Start
 
 ### Basic Example
@@ -415,6 +424,120 @@ This crate ensures safety through:
 // Or explicit cleanup
 let evm = Evm::new()?;
 drop(evm); // Explicit cleanup
+```
+
+## Configuration
+
+### Compile-Time Configuration
+
+The Rust SDK supports compile-time configuration of the underlying Guillotine EVM through Cargo feature flags. These flags allow you to customize various aspects of the EVM to match your specific requirements.
+
+#### Available Feature Flags
+
+##### Hardfork Selection
+Choose which Ethereum hardfork rules to follow (mutually exclusive):
+
+| Feature | Description |
+|---------|------------|
+| `hardfork-frontier` | Original Ethereum launch rules |
+| `hardfork-homestead` | Homestead hardfork rules |
+| `hardfork-byzantium` | Byzantium hardfork rules |
+| `hardfork-berlin` | Berlin hardfork rules |
+| `hardfork-london` | London hardfork rules (EIP-1559) |
+| `hardfork-shanghai` | Shanghai hardfork rules |
+| `hardfork-cancun` | Cancun hardfork rules (default) |
+
+##### Optimization Strategy
+Control how the EVM is optimized (mutually exclusive):
+
+| Feature | Description |
+|---------|------------|
+| `optimize-fast` | Maximum performance, larger binary |
+| `optimize-small` | Minimum binary size |
+| `optimize-safe` | Balanced approach (default) |
+
+##### EVM Limits
+Configure various EVM execution limits:
+
+| Feature | Description |
+|---------|------------|
+| `max-call-depth-256` | Set max call depth to 256 |
+| `max-call-depth-512` | Set max call depth to 512 |
+| `max-call-depth-2048` | Set max call depth to 2048 (default: 1024) |
+| `stack-size-256` | Set stack size to 256 |
+| `stack-size-512` | Set stack size to 512 |
+| `stack-size-2048` | Set stack size to 2048 (default: 1024) |
+| `large-memory-limit` | 64MB memory limit (default: 16MB) |
+| `small-memory-limit` | 1MB memory limit |
+| `large-arena` | 128MB arena allocator (default: 64MB) |
+| `small-arena` | 16MB arena allocator |
+
+##### Feature Toggles
+Enable or disable specific EVM features:
+
+| Feature | Description |
+|---------|------------|
+| `tracing` | Enable execution tracing |
+| `disable-precompiles` | Disable precompiled contracts |
+| `disable-fusion` | Disable bytecode fusion optimizations |
+| `disable-gas-checks` | Disable gas checks (⚠️ testing only!) |
+| `disable-balance-checks` | Disable balance checks (⚠️ testing only!) |
+
+#### Usage Examples
+
+##### Performance-Optimized Build
+```toml filename="Cargo.toml"
+[dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["optimize-fast", "large-arena"] 
+}
+```
+
+##### Minimal Size Build
+```toml filename="Cargo.toml"
+[dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["optimize-small", "small-arena", "disable-precompiles"] 
+}
+```
+
+##### Testing Configuration
+```toml filename="Cargo.toml"
+[dev-dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["tracing", "disable-gas-checks", "disable-balance-checks"] 
+}
+```
+
+##### Specific Hardfork
+```toml filename="Cargo.toml"
+[dependencies]
+guillotine-rs = { 
+    version = "0.1.0", 
+    features = ["hardfork-shanghai", "max-call-depth-512"] 
+}
+```
+
+<Callout type="warning">
+**Security Warning**: Features like `disable-gas-checks` and `disable-balance-checks` should NEVER be used in production as they bypass critical safety mechanisms. They are intended for testing and development only.
+</Callout>
+
+### Runtime Configuration
+
+While compile-time features provide the deepest optimizations, you can still configure some aspects at runtime through the builder pattern:
+
+```rust
+let evm = EvmBuilder::new()
+    .with_gas_limit(10_000_000)  // Runtime gas limit for transactions
+    .with_block_context(BlockContext {
+        number: 18_000_000,
+        timestamp: 1_700_000_000,
+        // ... other runtime parameters
+    })
+    .build()?;
 ```
 
 ## Building from Source
