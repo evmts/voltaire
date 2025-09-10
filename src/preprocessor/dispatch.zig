@@ -140,20 +140,11 @@ pub fn Dispatch(comptime FrameType: type) type {
                         gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         return gas;
                     },
-                    else => {
-                        const new_gas = std.math.add(u64, gas, 6) catch gas;
-                        gas = new_gas;
-                    },
                 }
             }
 
             return gas;
         }
-
-        const UnresolvedJump = struct {
-            schedule_index: usize,  // Index in schedule where jump_static metadata is
-            target_pc: FrameType.PcType,  // PC of the jump destination
-        };
 
         pub fn init(
             allocator: std.mem.Allocator,
@@ -163,14 +154,6 @@ pub fn Dispatch(comptime FrameType: type) type {
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
-
-            // Track unresolved forward jumps
-            var unresolved_jumps = ArrayList(UnresolvedJump, null){};
-            defer unresolved_jumps.deinit(allocator);
-
-            // NEW: Track JUMPDEST locations during first pass
-            var jumpdest_map = std.AutoHashMap(FrameType.PcType, usize).init(allocator);
-            defer jumpdest_map.deinit();
 
             var iter = bytecode.createIterator();
 
@@ -194,47 +177,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try processPushOpcode(&schedule_items, allocator, opcode_handlers, data);
                     },
                     .jumpdest => |data| {
-                        // Record this JUMPDEST's location in schedule for single-pass resolution
-                        try jumpdest_map.put(@intCast(instr_pc), schedule_items.items.len);
-                        
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
-                    },
-                    .push_add_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_add);
-                    },
-                    .push_mul_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_mul);
-                    },
-                    .push_sub_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_sub);
-                    },
-                    .push_div_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_div);
-                    },
-                    .push_and_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_and);
-                    },
-                    .push_or_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_or);
-                    },
-                    .push_xor_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor);
-                    },
-                    .push_jump_fusion => |data| {
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, &jumpdest_map, allocator, data.value, .push_jump);
-                    },
-                    .push_jumpi_fusion => |data| {
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, &jumpdest_map, allocator, data.value, .push_jumpi);
-                    },
-                    .push_mload_fusion => |data| {
-                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mload);
-                    },
-                    .push_mstore_fusion => |data| {
-                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore);
-                    },
-                    .push_mstore8_fusion => |data| {
-                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore8);
                     },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -242,260 +186,15 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .invalid => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.INVALID)] });
                     },
-                    // Advanced fusion patterns - use optimized handlers
-                    .multi_push => |mp| {
-                        // Use optimized multi-push handler
-                        const frame_handlers = @import("../frame/frame_handlers.zig");
-                        const handler = if (mp.count == 2)
-                            frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.MULTI_PUSH_2))
-                        else
-                            frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.MULTI_PUSH_3));
-                        
-                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
-                        
-                        // Add all values as metadata
-                        var i: u8 = 0;
-                        while (i < mp.count) : (i += 1) {
-                            const value = mp.values[i];
-                            if (value <= std.math.maxInt(u64)) {
-                                try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(value) } });
-                            } else {
-                                const value_ptr = try allocator.create(FrameType.WordType);
-                                value_ptr.* = value;
-                                try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-                            }
-                        }
-                    },
-                    .multi_pop => |mp| {
-                        // Use optimized multi-pop handler
-                        const frame_handlers = @import("../frame/frame_handlers.zig");
-                        const handler = if (mp.count == 2)
-                            frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.MULTI_POP_2))
-                        else
-                            frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.MULTI_POP_3));
-                        
-                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
-                    },
-                    .iszero_jumpi => |ij| {
-                        // Use optimized iszero-jumpi handler
-                        const frame_handlers = @import("../frame/frame_handlers.zig");
-                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.ISZERO_JUMPI));
-                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
-                        
-                        // Add target as metadata
-                        if (ij.target <= std.math.maxInt(u64)) {
-                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(ij.target) } });
-                        } else {
-                            const value_ptr = try allocator.create(FrameType.WordType);
-                            value_ptr.* = ij.target;
-                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-                        }
-                    },
-                    .dup2_mstore_push => |dmp| {
-                        // Use optimized dup2-mstore-push handler
-                        const frame_handlers = @import("../frame/frame_handlers.zig");
-                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.DUP2_MSTORE_PUSH));
-                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
-                        
-                        // Add push value as metadata
-                        if (dmp.push_value <= std.math.maxInt(u64)) {
-                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(dmp.push_value) } });
-                        } else {
-                            const value_ptr = try allocator.create(FrameType.WordType);
-                            value_ptr.* = dmp.push_value;
-                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-                        }
-                    },
                 }
             }
 
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
             try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
 
-            const final_schedule = try schedule_items.toOwnedSlice(allocator);
-            
-            // Resolve all jumps using our map (no second bytecode iteration!)
-            try resolveStaticJumpsWithMap(allocator, final_schedule, &jumpdest_map, unresolved_jumps.items);
-            
-            return final_schedule;
+            return try schedule_items.toOwnedSlice(allocator);
         }
 
-
-
-        fn handleFusionOperation(
-            schedule_items: anytype,
-            allocator: std.mem.Allocator,
-            value: FrameType.WordType,
-            fusion_type: FusionType,
-        ) !void {
-            const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
-            const frame_handlers = @import("../frame/frame_handlers.zig");
-            const synthetic_handler = frame_handlers.getSyntheticHandler(FrameType, synthetic_opcode);
-            try schedule_items.append(allocator, .{ .opcode_handler = synthetic_handler });
-
-            if (value <= std.math.maxInt(u64)) {
-                const inline_val: u64 = @intCast(value);
-                try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_val } });
-            } else {
-                const value_ptr = try allocator.create(FrameType.WordType);
-                value_ptr.* = value;
-                try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-            }
-        }
-
-        fn handleMemoryFusion(
-            schedule_items: anytype,
-            allocator: std.mem.Allocator,
-            value: FrameType.WordType,
-            fusion_type: FusionType,
-        ) !void {
-            // Import gas constants for static calculation
-            const GasConstants = @import("primitives").GasConstants;
-            
-            // Calculate static gas cost since we know the offset at compile time
-            var static_gas_cost: u64 = GasConstants.GasFastestStep;
-            
-            // For memory operations with known offsets, we can calculate expansion cost statically
-            if (value <= std.math.maxInt(usize)) {
-                const offset_usize = @as(usize, @intCast(value));
-                const size_needed = switch (fusion_type) {
-                    .push_mload, .push_mstore => offset_usize + 32,
-                    .push_mstore8 => offset_usize + 1,
-                    else => unreachable,
-                };
-                
-                // Calculate memory expansion cost statically
-                // Memory cost = 3 * words + words^2 / 512
-                const new_words = (size_needed + 31) / 32;
-                const memory_cost = 3 * new_words + (new_words * new_words) / 512;
-                static_gas_cost += memory_cost;
-            }
-            
-            // Get synthetic handler with pre-calculated gas
-            const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
-            const frame_handlers = @import("../frame/frame_handlers.zig");
-            const synthetic_handler = frame_handlers.getSyntheticHandler(FrameType, synthetic_opcode);
-            
-            // Add handler with metadata that includes static gas cost
-            try schedule_items.append(allocator, .{ .opcode_handler = synthetic_handler });
-            
-            // Add the value metadata (inline or pointer)
-            if (value <= std.math.maxInt(u64)) {
-                const inline_val: u64 = @intCast(value);
-                // Include gas cost in metadata
-                try schedule_items.append(allocator, .{ .push_inline = .{ 
-                    .value = inline_val,
-                    // Store gas cost for use in jumpdest validation
-                    // This will be added to jumpdest gas during preprocessing
-                } });
-            } else {
-                const value_ptr = try allocator.create(FrameType.WordType);
-                value_ptr.* = value;
-                try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
-            }
-        }
-
-        fn handleStaticJumpFusion(
-            schedule_items: anytype,
-            unresolved_jumps: *ArrayList(UnresolvedJump, null),
-            jumpdest_map: *std.AutoHashMap(FrameType.PcType, usize),
-            allocator: std.mem.Allocator,
-            value: FrameType.WordType,
-            fusion_type: FusionType,
-        ) !void {
-            // Use the new static jump handlers
-            const JumpSyntheticHandlers = @import("../instructions/handlers_jump_synthetic.zig").Handlers(FrameType);
-            const handler = switch (fusion_type) {
-                .push_jump => &JumpSyntheticHandlers.jump_to_static_location,
-                .push_jumpi => &JumpSyntheticHandlers.jumpi_to_static_location,
-                else => unreachable,
-            };
-            
-            try schedule_items.append(allocator, .{ .opcode_handler = handler });
-            
-            // Check if within valid PC range
-            if (value <= std.math.maxInt(FrameType.PcType)) {
-                const target_pc: FrameType.PcType = @intCast(value);
-                
-                // Check if we've already seen this JUMPDEST (backward jump)
-                if (jumpdest_map.get(target_pc)) |_| {
-                    // Backward jump - we've seen this JUMPDEST already
-                    // Note: We need to use the final schedule pointer, which we don't have yet
-                    // So we still need to track it for resolution after toOwnedSlice
-                    const metadata_index = schedule_items.items.len;
-                    try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-                    try unresolved_jumps.append(allocator, .{
-                        .schedule_index = metadata_index,
-                        .target_pc = target_pc,
-                    });
-                } else {
-                    // Forward jump - record for later resolution
-                    const metadata_index = schedule_items.items.len;
-                    try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-                    try unresolved_jumps.append(allocator, .{
-                        .schedule_index = metadata_index,
-                        .target_pc = target_pc,
-                    });
-                }
-            } else {
-                // Invalid jump destination - add undefined metadata
-                try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-            }
-        }
-
-        fn resolveStaticJumpsWithMap(
-            allocator: std.mem.Allocator,
-            schedule: []Item,
-            jumpdest_map: *std.AutoHashMap(FrameType.PcType, usize),
-            unresolved_jumps: []const UnresolvedJump,
-        ) !void {
-            _ = allocator;
-            
-            // Resolve each unresolved jump using the map we built during the first pass
-            for (unresolved_jumps) |unresolved| {
-                if (jumpdest_map.get(unresolved.target_pc)) |target_schedule_idx| {
-                    // Update the jump_static metadata with the resolved dispatch pointer
-                    schedule[unresolved.schedule_index].jump_static = .{
-                        .dispatch = @as(*const anyopaque, @ptrCast(schedule.ptr + target_schedule_idx)),
-                    };
-                } else {
-                    // Invalid jump destination - leave as undefined, will fail at runtime
-                    // This maintains compatibility with existing error handling
-                }
-            }
-        }
-
-        const FusionType = enum {
-            push_add,
-            push_mul,
-            push_sub,
-            push_div,
-            push_and,
-            push_or,
-            push_xor,
-            push_jump,
-            push_jumpi,
-            push_mload,
-            push_mstore,
-            push_mstore8,
-        };
-
-        fn getSyntheticOpcode(fusion_type: FusionType, is_inline: bool) u8 {
-            return switch (fusion_type) {
-                .push_add => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
-                .push_mul => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
-                .push_sub => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER),
-                .push_div => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
-                .push_and => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER),
-                .push_or => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER),
-                .push_xor => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER),
-                .push_jump => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
-                .push_jumpi => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
-                .push_mload => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
-                .push_mstore => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER),
-                .push_mstore8 => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER),
-            };
-        }
 
         pub fn createJumpTable(
             allocator: std.mem.Allocator,
@@ -540,27 +239,8 @@ pub fn Dispatch(comptime FrameType: type) type {
                     .push => {
                         schedule_index += 2; // Handler + metadata  
                     },
-                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion,
-                    .push_and_fusion, .push_or_fusion, .push_xor_fusion,
-                    .push_jump_fusion, .push_jumpi_fusion,
-                    .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => {
-                        schedule_index += 2; // Handler + metadata
-                    },
                     .stop, .invalid => {
                         schedule_index += 1; // Handler
-                    },
-                    // Advanced fusion patterns
-                    .multi_push => |mp| {
-                        schedule_index += @as(usize, mp.count) * 2; // Each push: handler + value
-                    },
-                    .multi_pop => |mp| {
-                        schedule_index += mp.count; // Each pop: handler only
-                    },
-                    .iszero_jumpi => {
-                        schedule_index += 5; // ISZERO handler + PUSH handler + value + JUMPI handler + metadata
-                    },
-                    .dup2_mstore_push => {
-                        schedule_index += 4; // DUP2 handler + MSTORE handler + PUSH handler + value
                     },
                 }
             }
