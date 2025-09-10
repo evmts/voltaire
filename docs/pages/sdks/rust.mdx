@@ -462,7 +462,7 @@ zig build -Doptimize=ReleaseFast
 :::
 
 :::details[Thread panic when using EVM]
-**Solution**: EVMs are Send but not Sync. Use Arc<Mutex<Evm>> for sharing:
+**Solution**: EVMs are Send but not Sync. Use `Arc<Mutex<Evm>>` for sharing:
 ```rust
 use std::sync::{Arc, Mutex};
 
