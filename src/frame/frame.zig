@@ -27,7 +27,6 @@ const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
-const keccak_asm = @import("crypto").keccak_asm;
 const frame_handlers = @import("frame_handlers.zig");
 const SelfDestruct = @import("../storage/self_destruct.zig").SelfDestruct;
 const DefaultEvm = @import("../evm.zig").DefaultEvm;
@@ -37,12 +36,13 @@ const logs = @import("primitives").logs;
 const Log = logs.Log;
 // LogList functionality is inlined into Frame for optimal packing
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const keccak256 = @import("crypto").keccak_asm.keccak256;
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode
 const DispatchCacheEntry = struct {
-    /// Hash of the bytecode (first 32 bytes of keccak256)
-    bytecode_hash: [32]u8,
+    /// First 64 bytes of bytecode used as key for fast lookup
+    bytecode_key: [64]u8,
+    /// Full bytecode slice for verification on key match
+    bytecode: []const u8,
     /// Cached dispatch schedule (owned by cache)
     schedule: []const u8, // Store as raw bytes
     /// Cached jump table (owned by cache)
@@ -82,17 +82,15 @@ const DispatchCache = struct {
         }
     }
 
-    fn computeHash(bytecode: []const u8) [32]u8 {
-        var hash: [32]u8 = undefined;
-        keccak256(bytecode, &hash) catch {
-            // On error, return zero hash
-            return [_]u8{0} ** 32;
-        };
-        return hash;
+    fn getBytecodeKey(bytecode: []const u8) [64]u8 {
+        var key: [64]u8 = [_]u8{0} ** 64;
+        const copy_len = @min(bytecode.len, 64);
+        @memcpy(key[0..copy_len], bytecode[0..copy_len]);
+        return key;
     }
 
     fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
-        const hash = computeHash(bytecode);
+        const key = getBytecodeKey(bytecode);
 
         self.mutex.lock();
         defer self.mutex.unlock();
@@ -102,15 +100,19 @@ const DispatchCache = struct {
         // Search for matching entry
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
-                if (std.mem.eql(u8, &entry.bytecode_hash, &hash)) {
-                    // Found a hit
-                    self.hits += 1;
-                    entry.last_access = self.access_counter;
-                    entry.ref_count += 1;
-                    return .{
-                        .schedule = entry.schedule,
-                        .jump_table = entry.jump_table_entries,
-                    };
+                // First check the 64-byte key for fast rejection
+                if (std.mem.eql(u8, &entry.bytecode_key, &key)) {
+                    // Key matches, now verify full bytecode
+                    if (std.mem.eql(u8, entry.bytecode, bytecode)) {
+                        // Found a hit
+                        self.hits += 1;
+                        entry.last_access = self.access_counter;
+                        entry.ref_count += 1;
+                        return .{
+                            .schedule = entry.schedule,
+                            .jump_table = entry.jump_table_entries,
+                        };
+                    }
                 }
             }
         }
@@ -120,7 +122,7 @@ const DispatchCache = struct {
     }
 
     fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
-        const hash = computeHash(bytecode);
+        const key = getBytecodeKey(bytecode);
 
         self.mutex.lock();
         defer self.mutex.unlock();
@@ -160,7 +162,8 @@ const DispatchCache = struct {
 
         // Insert new entry
         self.entries[target_idx] = DispatchCacheEntry{
-            .bytecode_hash = hash,
+            .bytecode_key = key,
+            .bytecode = bytecode, // Store reference to original bytecode
             .schedule = schedule_copy,
             .jump_table_entries = jump_table_copy,
             .last_access = self.access_counter,
@@ -169,18 +172,22 @@ const DispatchCache = struct {
     }
 
     fn release(self: *DispatchCache, bytecode: []const u8) void {
-        const hash = computeHash(bytecode);
+        const key = getBytecodeKey(bytecode);
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
-                if (std.mem.eql(u8, &entry.bytecode_hash, &hash)) {
-                    if (entry.ref_count > 0) {
-                        entry.ref_count -= 1;
+                // Quick key check first
+                if (std.mem.eql(u8, &entry.bytecode_key, &key)) {
+                    // Verify full bytecode
+                    if (std.mem.eql(u8, entry.bytecode, bytecode)) {
+                        if (entry.ref_count > 0) {
+                            entry.ref_count -= 1;
+                        }
+                        return;
                     }
-                    return;
                 }
             }
         }
