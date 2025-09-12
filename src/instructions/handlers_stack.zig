@@ -84,7 +84,6 @@ pub fn Handlers(comptime FrameType: type) type {
                     
                     if (comptime push_n <= 8) {
                         const value = op_data.metadata.value;
-                        log.err("[PUSH{d}] Pushing inline value: {d}, cursor={*}", .{ push_n, value, cursor });
                         std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                         self.stack.push_unsafe(value);
                     } else {
@@ -93,10 +92,6 @@ pub fn Handlers(comptime FrameType: type) type {
                         std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                         self.stack.push_unsafe(value);
                     }
-                    
-                    // log.debug("[PUSH{d}] Stack after: {any}", .{ push_n, self.stack.get_slice() });
-                    
-                    log.err("[PUSH{d}] Calling next handler at cursor={*}", .{ push_n, op_data.next_cursor.cursor });
                     return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 }
             }.pushHandler;
