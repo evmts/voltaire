@@ -10,6 +10,3 @@
 [submodule "lib/c-kzg-4844"]
 	path = lib/c-kzg-4844
 	url = git@github.com:evmts/c-kzg-4844.git
-[submodule "lib/zig"]
-	path = lib/zig
-	url = git@github.com:evmts/zig.git
