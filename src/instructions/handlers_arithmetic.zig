@@ -23,7 +23,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
 
-            self.stack.set_top_unsafe(self.stack.pop_unsafe() +% self.stack.peek_unsafe());
+            self.stack.binary_op_unsafe(struct { fn op(a: WordType, b: WordType) WordType { return a +% b; } }.op);
 
             return next_instruction(self, cursor);
         }
@@ -32,7 +32,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2);
             
-            self.stack.set_top_unsafe(self.stack.pop_unsafe() *% self.stack.peek_unsafe());
+            self.stack.binary_op_unsafe(struct { fn op(a: WordType, b: WordType) WordType { return a *% b; } }.op);
 
             return next_instruction(self, cursor);
         }
@@ -41,7 +41,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
 
-            self.stack.set_top_unsafe(self.stack.pop_unsafe() -% self.stack.peek_unsafe());
+            self.stack.binary_op_unsafe(struct { fn op(a: WordType, b: WordType) WordType { return a -% b; } }.op);
 
             return next_instruction(self, cursor);
         }
@@ -52,11 +52,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
 
-            self.stack.set_top_unsafe(
-                from_native(self.stack.pop_unsafe()).wrapping_div(
-                    from_native(self.stack.peek_unsafe())
-                ).to_native()
-            );
+            self.stack.binary_op_unsafe(struct { 
+                fn op(a: WordType, b: WordType) WordType { 
+                    return from_native(a).wrapping_div(from_native(b)).to_native();
+                } 
+            }.op);
 
             return next_instruction(self, cursor);
         }
@@ -117,7 +117,11 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
 
-            self.stack.set_top_unsafe(FrameType.UintN.from_native(self.stack.pop_unsafe()).wrapping_rem(FrameType.UintN.from_native(self.stack.peek_unsafe())).to_native());
+            self.stack.binary_op_unsafe(struct {
+                fn op(a: WordType, b: WordType) WordType {
+                    return FrameType.UintN.from_native(a).wrapping_rem(FrameType.UintN.from_native(b)).to_native();
+                }
+            }.op);
 
             return next_instruction(self, cursor);
         }
@@ -187,6 +191,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 var r = sum[0];
                 // If overflow occurred or r >= modulus, subtract once
                 if (sum[1] == 1 or r >= modulus) {
+                    @branchHint(.unlikely);
                     r -%= modulus;
                 }
                 result = r;
@@ -262,6 +267,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check if addition would overflow
             if (addend1_mod > modulus - addend2_mod) {
+                @branchHint(.unlikely);
                 // Overflow case: (addend1 + addend2) = modulus + (addend1 + addend2 - modulus)
                 return (addend1_mod - (modulus - addend2_mod));
             } else {
@@ -331,6 +337,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 const mask = std.math.shl(WordType, @as(WordType, 1), shift_amount) - 1;
                 const sign_bit = std.math.shr(WordType, value, shift_amount) & 1;
                 if (sign_bit == 1) {
+                    @branchHint(.unlikely);
                     result = value | ~mask;
                 } else {
                     result = value & mask;
