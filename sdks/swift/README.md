@@ -104,8 +104,8 @@ let areEqual = value1 == value2
 Type-safe byte array handling:
 
 ```swift
-let bytecode: Bytes = [0x60, 0x42, 0x60, 0x00, 0x52]
-let data = Bytes(hex: "0x6042600052") 
+let bytecode = Bytes([0x60, 0x42, 0x60, 0x00, 0x52])
+let data = try Bytes(hex: "0x6042600052") 
 ```
 
 ## EVM Execution

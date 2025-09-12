@@ -1511,7 +1511,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Access a storage slot and return the gas cost (EIP-2929)
         pub fn access_storage_slot(self: *Self, contract_address: primitives.Address, slot: u256) !u64 {
-            const cost = try self.access_list.access_storage_slot(contract_address, slot);
+            const cost = try self.access_list.access_storage_slot(self.allocator, contract_address, slot);
             return cost;
         }
 

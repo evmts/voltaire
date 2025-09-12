@@ -399,43 +399,158 @@ int main() {
 
 The C API can be used from various languages:
 
-- **Python**: Use `ctypes` or `cffi`
-- **JavaScript/Node.js**: Use `ffi-napi`
-- **Go**: Use `cgo`
-- **Rust**: Use `bindgen` and FFI
-- **Ruby**: Use `ffi` gem
-- **Java**: Use JNI
+### Python (ctypes)
+```python
+import ctypes
 
-## Example Projects
+# Load the library  
+lib = ctypes.CDLL("./zig-out/lib/libguillotine_ffi.so")
 
-See the `examples/` directory for complete examples:
-- `examples/c/` - Pure C example
-- `examples/python/` - Python FFI example
-- `examples/node/` - Node.js integration
+# Define function signatures
+lib.guillotine_init.argtypes = []
+lib.guillotine_init.restype = None
+
+lib.guillotine_evm_create.argtypes = [ctypes.POINTER(BlockInfoFFI)]
+lib.guillotine_evm_create.restype = ctypes.c_void_p
+
+# Initialize and use
+lib.guillotine_init()
+# ... use API ...
+lib.guillotine_cleanup()
+```
+
+### JavaScript/Node.js (ffi-napi)
+```javascript
+const ffi = require('ffi-napi');
+
+const lib = ffi.Library('./zig-out/lib/libguillotine_ffi.so', {
+  'guillotine_init': ['void', []],
+  'guillotine_evm_create': ['pointer', ['pointer']],
+  'guillotine_cleanup': ['void', []]
+});
+
+lib.guillotine_init();
+// ... use API ...
+lib.guillotine_cleanup();
+```
+
+### Go (cgo)
+```go
+/*
+#cgo LDFLAGS: -L./zig-out/lib -lguillotine_ffi
+#include "guillotine.h" // You'll need to create this header
+*/
+import "C"
+
+func main() {
+    C.guillotine_init()
+    defer C.guillotine_cleanup()
+    // ... use API ...
+}
+```
+
+### Rust
+```rust
+use std::ffi::c_void;
+
+#[link(name = "guillotine_ffi")]
+extern "C" {
+    fn guillotine_init();
+    fn guillotine_cleanup();
+    fn guillotine_evm_create(block_info: *const BlockInfoFFI) -> *mut c_void;
+}
+
+fn main() {
+    unsafe {
+        guillotine_init();
+        // ... use API ...
+        guillotine_cleanup();
+    }
+}
+```
+
+## Compilation and Linking
+
+### Basic Compilation
+```bash
+# Compile your C program
+gcc -o myprogram myprogram.c -L./zig-out/lib -lguillotine_ffi
+
+# Run with library path
+LD_LIBRARY_PATH=./zig-out/lib ./myprogram
+```
+
+### Static Linking
+```bash
+# Link against static library
+gcc -o myprogram myprogram.c ./zig-out/lib/libguillotine_ffi.a
+```
+
+### Header Files
+The C API doesn't currently provide header files. You'll need to create them based on the function signatures in the documentation above.
 
 ## Performance Considerations
 
-- The library is optimized for minimal allocations
-- Bytecode fusion is enabled by default for better performance
-- Use batch operations when possible to reduce FFI overhead
-- Consider using the static library for better performance
+- **Instance Pooling**: The API uses instance pooling internally for better performance
+- **Memory Management**: Always free allocated resources to prevent memory leaks  
+- **Gas Limits**: Set appropriate gas limits to prevent infinite loops
+- **Static vs Dynamic**: Static linking may provide better performance
+- **Batch Operations**: Group related operations together when possible
 
 ## Troubleshooting
 
-### Undefined symbols
-Ensure you're linking against the correct libraries:
+### Build Issues
 ```bash
-gcc your_program.c -L. -lguillotine -lc
+# Ensure submodules are initialized
+git submodule update --init --recursive
+
+# Verify Zig version
+zig version  # Should be 0.14.1 or later
+
+# Build with verbose output
+zig build shared --verbose
 ```
 
-### Segmentation faults
-- Always check return values for NULL
-- Ensure proper initialization with `evm_init()`
-- Match create/destroy calls
+### Runtime Issues
+```bash
+# Check library dependencies (Linux)
+ldd ./zig-out/lib/libguillotine_ffi.so
 
-### Memory leaks
-- Use valgrind or similar tools to verify proper cleanup
-- Ensure all created objects are destroyed
+# Check library dependencies (macOS)  
+otool -L ./zig-out/lib/libguillotine_ffi.dylib
+
+# Run with debugging
+valgrind --leak-check=full ./your_program
+```
+
+### Common Errors
+- **Initialization**: Always call `guillotine_init()` before any other functions
+- **Memory Management**: Match every create with destroy, every malloc with free
+- **Error Checking**: Always check return values and call `guillotine_get_last_error()` on failure
+- **Thread Safety**: The API is not thread-safe; use synchronization if needed
+
+## Architecture Notes
+
+### Instance Pooling
+The C API maintains internal pools of EVM instances for performance. When you call `guillotine_evm_destroy()`, instances are returned to the pool rather than immediately destroyed. This reduces allocation overhead for repeated operations.
+
+### Thread Safety
+The current API is **not thread-safe**. If you need to use it from multiple threads, implement your own synchronization mechanisms.
+
+### Gas Metering
+All operations are properly gas-metered according to the EVM specification. Set appropriate gas limits to prevent infinite loops or excessive resource usage.
+
+### Hardfork Support
+The EVM defaults to the Cancun hardfork. This is currently compile-time configured and cannot be changed via the C API.
+
+## Contributing
+
+When working with the C API:
+
+1. **Test Changes**: Always run `zig build && zig build test-opcodes` after modifications
+2. **Memory Safety**: Use tools like valgrind to verify proper memory management  
+3. **Error Handling**: Ensure all error cases return appropriate codes and set error messages
+4. **Documentation**: Update this README when adding new functions or changing behavior
 
 ## License
 
@@ -444,5 +559,10 @@ See the main project LICENSE file.
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/your-org/guillotine/issues
-- Documentation: https://docs.guillotine.dev
+- GitHub Issues: https://github.com/evmts/Guillotine/issues
+- Documentation: https://guillotine.dev
+- Telegram: https://t.me/+ANThR9bHDLAwMjUx
+
+---
+
+**Note**: This is an experimental proof-of-concept API. Breaking changes are expected as the project evolves. Please test thoroughly in your environment and report any issues you encounter.

@@ -32,6 +32,17 @@ yarn add @evmts/guillotine
 bun add @evmts/guillotine
 ```
 
+### WASM Module Setup
+
+The SDK requires a WebAssembly module compiled from the Zig implementation. The loader will automatically search for the WASM file in these locations:
+
+1. Custom path if provided to `GuillotineEVM.create(wasmPath)`
+2. `../wasm/guillotine-evm.wasm` (relative to package)
+3. `../../../../zig-out/bin/guillotine-evm.wasm` (development)
+4. `zig-out/bin/guillotine-evm.wasm` (project root)
+
+For browser usage, ensure the WASM file is served at `/wasm/guillotine-evm.wasm`.
+
 ## Quick Start
 
 ```typescript
@@ -196,6 +207,41 @@ class ExecutionResult {
   hasRevertReason(): boolean
   getRevertReasonString(): string | null
   getReturnDataString(): string | null
+}
+```
+
+#### Error Handling
+
+```typescript
+// Error types
+type GuillotineErrorType = 
+  | 'InitializationFailed'
+  | 'WasmLoadFailed' 
+  | 'WasmNotLoaded'
+  | 'VMCreationFailed'
+  | 'VMNotInitialized'
+  | 'ExecutionFailed'
+  | 'InvalidBytecode'
+  | 'InvalidAddress'
+  | 'InvalidValue'
+  | 'OutOfGas'
+  | 'StackOverflow'
+  | 'StackUnderflow' 
+  | 'InvalidJump'
+  | 'InvalidOpcode'
+  | 'MemoryError'
+  | 'StateError'
+  | 'UnknownError';
+
+class GuillotineError extends Error {
+  readonly type: GuillotineErrorType;
+  readonly cause?: Error;
+  
+  // Static factory methods
+  static initializationFailed(message: string, cause?: Error): GuillotineError
+  static executionFailed(message: string, cause?: Error): GuillotineError
+  static invalidBytecode(message: string): GuillotineError
+  // ... other static methods
 }
 ```
 
