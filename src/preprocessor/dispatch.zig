@@ -179,23 +179,23 @@ pub fn Dispatch(comptime FrameType: type) type {
 
                 switch (op_data) {
                     .regular => |data| {
-                        // Handle special opcodes that need metadata directly
-                        if (data.opcode == @intFromEnum(Opcode.PC)) {
-                            // PC needs both handler and the current PC value as metadata
-                            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[data.opcode] });
-                            try schedule_items.append(allocator, .{ .pc = .{ .value = @intCast(instr_pc) } });
-                        } else if (data.opcode == @intFromEnum(Opcode.JUMP)) {
-                            // JUMP needs handler and jump_dest metadata for validation
-                            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[data.opcode] });
-                            try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
-                        } else if (data.opcode == @intFromEnum(Opcode.JUMPI)) {
-                            // JUMPI needs handler and jump_dest metadata for validation
-                            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[data.opcode] });
-                            try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
-                        } else {
-                            // Truly regular opcodes just need their handler
-                            try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[data.opcode] });
-                        }
+                        // Regular opcodes just need their handler
+                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[data.opcode] });
+                    },
+                    .pc => |data| {
+                        // PC needs both handler and the current PC value as metadata
+                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.PC)] });
+                        try schedule_items.append(allocator, .{ .pc = .{ .value = data.value } });
+                    },
+                    .jump => {
+                        // Dynamic JUMP needs handler and jump_dest metadata for validation
+                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMP)] });
+                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
+                    },
+                    .jumpi => {
+                        // Dynamic JUMPI needs handler and jump_dest metadata for validation
+                        try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPI)] });
+                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
                     },
                     .push => |data| {
                         try processPushOpcode(&schedule_items, allocator, opcode_handlers, data);
@@ -486,9 +486,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                 .push_and => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER),
                 .push_or => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER),
                 .push_xor => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER),
-                // Jump opcodes MUST be inline since jump destinations always fit in u64
-                .push_jump => @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
-                .push_jumpi => @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
+                // Deprecated jump handlers - these should not be used anymore
+                .push_jump => unreachable, // Use JUMP_TO_STATIC_LOCATION instead
+                .push_jumpi => unreachable, // Use JUMPI_TO_STATIC_LOCATION instead
                 .push_mload => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
                 .push_mstore => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER),
                 .push_mstore8 => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER),
@@ -526,14 +526,14 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try jumpdest_map.put(@intCast(instr_pc), schedule_index);
                         schedule_index += 2; // Handler + metadata
                     },
-                    .regular => |data| {
-                        schedule_index += 1; // Handler
-                        if (data.opcode == @intFromEnum(Opcode.PC) or
-                            data.opcode == @intFromEnum(Opcode.JUMP) or
-                            data.opcode == @intFromEnum(Opcode.JUMPI))
-                        {
-                            schedule_index += 1; // Extra metadata
-                        }
+                    .regular => {
+                        schedule_index += 1; // Handler only
+                    },
+                    .pc => {
+                        schedule_index += 2; // Handler + PC metadata
+                    },
+                    .jump, .jumpi => {
+                        schedule_index += 2; // Handler + jump_dest metadata
                     },
                     .push => {
                         schedule_index += 2; // Handler + metadata  
