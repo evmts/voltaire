@@ -41,6 +41,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// ADDRESS opcode (0x30) - Get address of currently executing account.
         /// Stack: [] → [address]
         pub fn address(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .ADDRESS);
             const dispatch = Dispatch{ .cursor = cursor };
             const addr_u256 = to_u256(self.contract_address);
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // ADDRESS requires stack space
@@ -53,6 +54,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BALANCE opcode (0x31) - Get balance of the given account.
         /// Stack: [address] → [balance]
         pub fn balance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .BALANCE);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // BALANCE requires 1 stack item
             const address_u256 = self.stack.peek_unsafe();
@@ -82,6 +84,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// ORIGIN opcode (0x32) - Get execution origination address.
         /// Stack: [] → [origin]
         pub fn origin(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .ORIGIN);
             const dispatch = Dispatch{ .cursor = cursor };
             const tx_origin = self.getEvm().get_tx_origin();
             const origin_u256 = to_u256(tx_origin);
@@ -95,6 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLER opcode (0x33) - Get caller address.
         /// Stack: [] → [caller]
         pub fn caller(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CALLER);
             const dispatch = Dispatch{ .cursor = cursor };
             const caller_u256 = to_u256(self.caller);
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLER requires stack space
@@ -107,6 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLVALUE opcode (0x34) - Get deposited value by the instruction/transaction responsible for this execution.
         /// Stack: [] → [value]
         pub fn callvalue(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CALLVALUE);
             const dispatch = Dispatch{ .cursor = cursor };
             const value = self.value;
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLVALUE requires stack space
@@ -118,6 +123,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLDATALOAD opcode (0x35) - Get input data of current environment.
         /// Stack: [offset] → [data]
         pub fn calldataload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CALLDATALOAD);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // CALLDATALOAD requires 1 stack item
             const offset = self.stack.peek_unsafe();
@@ -151,6 +157,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLDATASIZE opcode (0x36) - Get size of input data in current environment.
         /// Stack: [] → [size]
         pub fn calldatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CALLDATASIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             const calldata = self.calldata();
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
@@ -163,6 +170,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLDATACOPY opcode (0x37) - Copy input data in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn calldatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CALLDATACOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 3); // CALLDATACOPY requires 3 stack items
             const length = self.stack.pop_unsafe();       // Top of stack
@@ -223,6 +231,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODESIZE opcode (0x38) - Get size of code running in current environment.
         /// Stack: [] → [size]
         pub fn codesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CODESIZE);
             // Get codesize from frame's code
             const bytecode_len = @as(WordType, @intCast(self.code.len));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CODESIZE requires stack space
@@ -235,6 +244,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODECOPY opcode (0x39) - Copy code running in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CODECOPY);
             // EVM stack order: [destOffset, offset, length] with dest on top
             std.debug.assert(self.stack.size() >= 3); // CODECOPY requires 3 stack items
             const dest_offset = self.stack.pop_unsafe();  // Top of stack
@@ -298,6 +308,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GASPRICE opcode (0x3A) - Get price of gas in current environment.
         /// Stack: [] → [gas_price]
         pub fn gasprice(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .GASPRICE);
             const dispatch = Dispatch{ .cursor = cursor };
             const gas_price = self.getEvm().get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
@@ -310,6 +321,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EXTCODESIZE opcode (0x3B) - Get size of an account's code.
         /// Stack: [address] → [size]
         pub fn extcodesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .EXTCODESIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // EXTCODESIZE requires 1 stack item
             const address_u256 = self.stack.peek_unsafe();
@@ -338,6 +350,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EXTCODECOPY opcode (0x3C) - Copy an account's code to memory.
         /// Stack: [address, destOffset, offset, length] → []
         pub fn extcodecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .EXTCODECOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 4); // EXTCODECOPY requires 4 stack items
             const length = self.stack.pop_unsafe();       // Top of stack  
@@ -413,6 +426,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EXTCODEHASH opcode (0x3F) - Get hash of account's code.
         /// Stack: [address] → [hash]
         pub fn extcodehash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .EXTCODEHASH);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // EXTCODEHASH requires 1 stack item
             const address_u256 = self.stack.peek_unsafe();
@@ -467,6 +481,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// RETURNDATASIZE opcode (0x3D) - Get size of output data from the previous call.
         /// Stack: [] → [size]
         pub fn returndatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .RETURNDATASIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             // Return data is stored in the frame's output field after a call
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(self.output.len))));
@@ -479,6 +494,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// RETURNDATACOPY opcode (0x3E) - Copy output data from the previous call to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn returndatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .RETURNDATACOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             // EVM stack order: [destOffset, offset, length] with dest on top
             std.debug.assert(self.stack.size() >= 3); // RETURNDATACOPY requires 3 stack items
@@ -544,6 +560,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOCKHASH opcode (0x40) - Get the hash of one of the 256 most recent complete blocks.
         /// Stack: [block_number] → [hash]
         pub fn blockhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .BLOCKHASH);
             // BLOCKHASH costs 20 gas
             const gas_cost = 20;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -579,6 +596,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// COINBASE opcode (0x41) - Get the current block's beneficiary address.
         /// Stack: [] → [coinbase]
         pub fn coinbase(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .COINBASE);
             // COINBASE costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -600,6 +618,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// TIMESTAMP opcode (0x42) - Get the current block's timestamp.
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .TIMESTAMP);
             // TIMESTAMP costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -620,6 +639,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// NUMBER opcode (0x43) - Get the current block's number.
         /// Stack: [] → [number]
         pub fn number(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .NUMBER);
             // NUMBER costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -660,6 +680,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PREVRANDAO opcode - Alias for DIFFICULTY post-merge.
         /// Stack: [] → [prevrandao]
         pub fn prevrandao(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PREVRANDAO);
             const dispatch = Dispatch{ .cursor = cursor };
             return difficulty(self, dispatch);
         }
@@ -667,6 +688,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GASLIMIT opcode (0x45) - Get the current block's gas limit.
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .GASLIMIT);
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
@@ -679,6 +701,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CHAINID opcode (0x46) - Get the chain ID.
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .CHAINID);
             const dispatch = Dispatch{ .cursor = cursor };
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
@@ -691,6 +714,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .SELFBALANCE);
             const dispatch = Dispatch{ .cursor = cursor };
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
@@ -703,6 +727,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BASEFEE opcode (0x48) - Get the current block's base fee.
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .BASEFEE);
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
@@ -715,6 +740,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBHASH opcode (0x49) - Get versioned hashes of blob transactions.
         /// Stack: [index] → [hash]
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .BLOBHASH);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // BLOBHASH requires 1 stack item
             const index = self.stack.peek_unsafe();
@@ -747,6 +773,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBBASEFEE opcode (0x4a) - Get the current block's blob base fee.
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .BLOBBASEFEE);
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const blob_base_fee = block_info.blob_base_fee;
@@ -760,6 +787,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// GAS opcode (0x5A) - Get the amount of available gas.
         /// Stack: [] → [gas]
         pub fn gas(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .GAS);
             const dispatch = Dispatch{ .cursor = cursor };
             // Note: The gas value pushed should be after the gas for this instruction is consumed
             // The dispatch system handles the gas consumption before calling this handler
@@ -774,6 +802,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PC opcode (0x58) - Get the value of the program counter prior to the increment.
         /// Stack: [] → [pc]
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PC);
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);

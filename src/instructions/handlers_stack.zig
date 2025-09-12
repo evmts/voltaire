@@ -12,6 +12,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// POP opcode (0x50) - Remove item from stack.
         pub fn pop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .POP);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // POP requires 1 stack item
             _ = self.stack.pop_unsafe();
@@ -21,6 +22,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH0 opcode (0x5f) - Push 0 onto stack.
         pub fn push0(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH0);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(0);
@@ -34,6 +36,41 @@ pub fn Handlers(comptime FrameType: type) type {
             if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
             return &struct {
                 pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+                    log.debug_instruction(self, switch (push_n) {
+                        1 => .PUSH1,
+                        2 => .PUSH2,
+                        3 => .PUSH3,
+                        4 => .PUSH4,
+                        5 => .PUSH5,
+                        6 => .PUSH6,
+                        7 => .PUSH7,
+                        8 => .PUSH8,
+                        9 => .PUSH9,
+                        10 => .PUSH10,
+                        11 => .PUSH11,
+                        12 => .PUSH12,
+                        13 => .PUSH13,
+                        14 => .PUSH14,
+                        15 => .PUSH15,
+                        16 => .PUSH16,
+                        17 => .PUSH17,
+                        18 => .PUSH18,
+                        19 => .PUSH19,
+                        20 => .PUSH20,
+                        21 => .PUSH21,
+                        22 => .PUSH22,
+                        23 => .PUSH23,
+                        24 => .PUSH24,
+                        25 => .PUSH25,
+                        26 => .PUSH26,
+                        27 => .PUSH27,
+                        28 => .PUSH28,
+                        29 => .PUSH29,
+                        30 => .PUSH30,
+                        31 => .PUSH31,
+                        32 => .PUSH32,
+                        else => unreachable,
+                    });
                     const dispatch = Dispatch{ .cursor = cursor };
                     
                     // For PUSH1-PUSH8, we get push_inline metadata with u64 value
@@ -94,6 +131,25 @@ pub fn Handlers(comptime FrameType: type) type {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+                    log.debug_instruction(self, switch (dup_n) {
+                        1 => .DUP1,
+                        2 => .DUP2,
+                        3 => .DUP3,
+                        4 => .DUP4,
+                        5 => .DUP5,
+                        6 => .DUP6,
+                        7 => .DUP7,
+                        8 => .DUP8,
+                        9 => .DUP9,
+                        10 => .DUP10,
+                        11 => .DUP11,
+                        12 => .DUP12,
+                        13 => .DUP13,
+                        14 => .DUP14,
+                        15 => .DUP15,
+                        16 => .DUP16,
+                        else => unreachable,
+                    });
                     const dispatch = Dispatch{ .cursor = cursor };
                     std.debug.assert(self.stack.size() >= dup_n); // DUP{d} requires {d} stack items
                     std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
@@ -128,6 +184,25 @@ pub fn Handlers(comptime FrameType: type) type {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+                    log.debug_instruction(self, switch (swap_n) {
+                        1 => .SWAP1,
+                        2 => .SWAP2,
+                        3 => .SWAP3,
+                        4 => .SWAP4,
+                        5 => .SWAP5,
+                        6 => .SWAP6,
+                        7 => .SWAP7,
+                        8 => .SWAP8,
+                        9 => .SWAP9,
+                        10 => .SWAP10,
+                        11 => .SWAP11,
+                        12 => .SWAP12,
+                        13 => .SWAP13,
+                        14 => .SWAP14,
+                        15 => .SWAP15,
+                        16 => .SWAP16,
+                        else => unreachable,
+                    });
                     const dispatch = Dispatch{ .cursor = cursor };
                     std.debug.assert(self.stack.size() >= swap_n + 1); // SWAP{d} requires {d}+1 stack items
                     self.stack.swap_n_unsafe(swap_n);

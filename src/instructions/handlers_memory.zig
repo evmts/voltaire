@@ -30,6 +30,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// MLOAD opcode (0x51) - Load word from memory.
         /// Pops memory offset from stack and pushes the 32-byte word at that offset.
         pub fn mload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .MLOAD);
             const dispatch = Dispatch{ .cursor = cursor };
             // MLOAD loads a 32-byte word from memory
             std.debug.assert(self.stack.size() >= 1); // MLOAD requires 1 stack item
@@ -75,6 +76,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// MSTORE opcode (0x52) - Store word to memory.
         /// Pops memory offset and value from stack, stores 32 bytes at that offset.
         pub fn mstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .MSTORE);
             const dispatch = Dispatch{ .cursor = cursor };
             // MSTORE stores a 32-byte word to memory
 
@@ -133,6 +135,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// MSTORE8 opcode (0x53) - Store byte to memory.
         /// Pops memory offset and value from stack, stores the least significant byte at that offset.
         pub fn mstore8(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .MSTORE8);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 2); // MSTORE8 requires 2 stack items
             const offset = self.stack.pop_unsafe();
@@ -175,6 +178,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// MSIZE opcode (0x59) - Get size of active memory.
         /// Pushes the size of active memory in bytes onto the stack.
         pub fn msize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .MSIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             const size = self.memory.size();
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
@@ -188,6 +192,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// MCOPY opcode (0x5e) - Memory copy operation (EIP-5656).
         /// Copies memory from one location to another.
         pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .MCOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 3); // MCOPY requires 3 stack items
             const size = self.stack.pop_unsafe(); // Top of stack

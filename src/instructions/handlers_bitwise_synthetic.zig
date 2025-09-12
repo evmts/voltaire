@@ -13,6 +13,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_AND_INLINE - Fused PUSH+AND with inline value (≤8 bytes).
         pub fn push_and_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH_AND_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_AND_INLINE, Dispatch, Dispatch.Item, cursor);
             
@@ -29,6 +30,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_AND_POINTER - Fused PUSH+AND with pointer value (>8 bytes).
         pub fn push_and_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH_AND_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_AND_POINTER, Dispatch, Dispatch.Item, cursor);
             
@@ -45,6 +47,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_OR_INLINE - Fused PUSH+OR with inline value (≤8 bytes).
         pub fn push_or_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH_OR_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_OR_INLINE, Dispatch, Dispatch.Item, cursor);
             
@@ -61,6 +64,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_OR_POINTER - Fused PUSH+OR with pointer value (>8 bytes).
         pub fn push_or_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH_OR_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_OR_POINTER, Dispatch, Dispatch.Item, cursor);
             
@@ -77,6 +81,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_XOR_INLINE - Fused PUSH+XOR with inline value (≤8 bytes).
         pub fn push_xor_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH_XOR_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_XOR_INLINE, Dispatch, Dispatch.Item, cursor);
             
@@ -93,6 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH_XOR_POINTER - Fused PUSH+XOR with pointer value (>8 bytes).
         pub fn push_xor_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .PUSH_XOR_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_XOR_POINTER, Dispatch, Dispatch.Item, cursor);
             

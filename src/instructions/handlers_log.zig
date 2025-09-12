@@ -21,6 +21,18 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn logHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
+                    
+                    // Add debug logging for the specific LOG opcode
+                    const unified_opcode = switch (topic_count) {
+                        0 => .LOG0,
+                        1 => .LOG1,
+                        2 => .LOG2,
+                        3 => .LOG3,
+                        4 => .LOG4,
+                        else => unreachable,
+                    };
+                    log.debug_instruction(self, unified_opcode);
+                    
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // LOG0 requires 2 items, LOG1 requires 3, LOG2 requires 4, LOG3 requires 5, LOG4 requires 6

@@ -15,6 +15,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jump_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            log.debug_instruction(self, .JUMP_TO_STATIC_LOCATION);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMP_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
 
@@ -28,6 +29,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            log.debug_instruction(self, .JUMPI_TO_STATIC_LOCATION);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMPI_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
 

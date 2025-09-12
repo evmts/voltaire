@@ -15,6 +15,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pops destination from stack and transfers control to that location.
         /// The destination must be a valid JUMPDEST.
         pub fn jump(self: *FrameType, _: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .JUMP);
             std.debug.assert(self.stack.size() >= 1); // JUMP requires 1 stack item
             // Get jump table from frame
             const jump_table = self.jump_table;
@@ -50,6 +51,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pops destination and condition from stack.
         /// Jumps to destination if condition is non-zero, otherwise continues to next instruction.
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .JUMPI);
             std.debug.assert(self.stack.size() >= 2); 
             const jump_table = self.jump_table;
 
@@ -89,6 +91,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// This opcode marks a valid destination for JUMP and JUMPI operations.
         /// It also serves as a gas consumption point and stack validation point for the entire basic block.
         pub fn jumpdest(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            log.debug_instruction(self, .JUMPDEST);
             // Jump table not needed for JUMPDEST itself
             const dispatch = Dispatch{ .cursor = cursor };
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
