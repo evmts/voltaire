@@ -42,8 +42,12 @@ pub fn Handlers(comptime FrameType: type) type {
             // Handle empty data case
             if (size == 0) {
                 @branchHint(.unlikely);
-                // Gas cost for empty data (0 words)
-                try self.consumeGasChecked(@as(u32, @intCast(GasConstants.Keccak256Gas)));
+                // Gas cost for empty data: static only (30 gas)
+                // Note: JUMPDEST doesn't properly calculate block gas yet
+                self.gas_remaining -= @intCast(GasConstants.Keccak256Gas);
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
                 
                 // Hash of empty data depends on Keccak variant
                 const empty_hash = switch (@bitSizeOf(WordType)) {
@@ -79,11 +83,15 @@ pub fn Handlers(comptime FrameType: type) type {
             const size_usize = @as(usize, @intCast(size));
 
             // Calculate gas cost: 30 + 6 * ((size + 31) / 32)
+            // Note: JUMPDEST doesn't properly calculate block gas yet, so we need to charge both static and dynamic
             const words = (size_usize + 31) / 32;
             const gas_cost = GasConstants.Keccak256Gas + words * GasConstants.Keccak256WordGas;
             
-            // Check gas and consume
-            try self.consumeGasChecked(@as(u32, @intCast(gas_cost)));
+            // Use negative gas pattern for single-branch out-of-gas detection
+            self.gas_remaining -= @intCast(gas_cost);
+            if (self.gas_remaining < 0) {
+                return Error.OutOfGas;
+            }
 
             // Check for overflow
             const end = std.math.add(usize, offset_usize, size_usize) catch {
