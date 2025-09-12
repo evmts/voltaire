@@ -37,7 +37,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.PUSH_ADD_POINTER, Dispatch, Dispatch.Item, cursor);
             const top = self.stack.peek_unsafe();
-            self.stack.set_top_unsafe(op_data.metadata.value.* +% top);
+            self.stack.set_top_unsafe(self.u256_constants[op_data.metadata.index] +% top);
             
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -59,7 +59,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.PUSH_MUL_POINTER, Dispatch, Dispatch.Item, cursor);
             const top = self.stack.peek_unsafe();
-            self.stack.set_top_unsafe(op_data.metadata.value.* *% top);
+            self.stack.set_top_unsafe(self.u256_constants[op_data.metadata.index] *% top);
 
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -87,7 +87,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_DIV_POINTER - Fused PUSH+DIV with pointer value (>8 bytes).
         pub fn push_div_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const op_data = dispatch.getOpData(.PUSH_DIV_POINTER, Dispatch, Dispatch.Item, cursor);
-            const dividend = op_data.metadata.value.*;
+            const dividend = self.u256_constants[op_data.metadata.index];
 
             std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_POINTER requires 1 stack item
             const divisor = self.stack.peek_unsafe();
@@ -122,7 +122,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch.getOpData(.PUSH_SUB_POINTER, Dispatch, Dispatch.Item, cursor);
             std.debug.assert(self.stack.size() >= 1); 
             const top = self.stack.peek_unsafe();
-            const result = op_data.metadata.value.* -% top;
+            const result = self.u256_constants[op_data.metadata.index] -% top;
             self.stack.set_top_unsafe(result);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }

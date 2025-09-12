@@ -79,7 +79,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                         self.stack.push_unsafe(value);
                     } else {
-                        const value = op_data.metadata.value.*;
+                        const value = self.u256_constants[op_data.metadata.index];
                         // log.debug("[PUSH{d}] Pushing pointer value: {d}", .{ push_n, value });
                         std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
                         self.stack.push_unsafe(value);

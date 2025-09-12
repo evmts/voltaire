@@ -33,7 +33,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_AND_POINTER, Dispatch, Dispatch.Item, cursor);
             
             // For synthetic opcodes, cursor now points to metadata
-            const push_value = op_data.metadata.value.*;
+            const push_value = self.u256_constants[op_data.metadata.index];
 
             std.debug.assert(self.stack.size() >= 1); // PUSH_AND_POINTER requires 1 stack item
             const top = self.stack.peek_unsafe();
@@ -65,7 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_OR_POINTER, Dispatch, Dispatch.Item, cursor);
             
             // For synthetic opcodes, cursor now points to metadata
-            const push_value = op_data.metadata.value.*;
+            const push_value = self.u256_constants[op_data.metadata.index];
 
             std.debug.assert(self.stack.size() >= 1); // PUSH_OR_POINTER requires 1 stack item
             const top = self.stack.peek_unsafe();
@@ -97,7 +97,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_XOR_POINTER, Dispatch, Dispatch.Item, cursor);
             
             // For synthetic opcodes, cursor now points to metadata
-            const push_value = op_data.metadata.value.*;
+            const push_value = self.u256_constants[op_data.metadata.index];
 
             std.debug.assert(self.stack.size() >= 1); // PUSH_XOR_POINTER requires 1 stack item
             const top = self.stack.peek_unsafe();

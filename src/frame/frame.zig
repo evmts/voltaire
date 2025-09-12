@@ -32,9 +32,6 @@ const SelfDestruct = @import("../storage/self_destruct.zig").SelfDestruct;
 const DefaultEvm = @import("../evm.zig").DefaultEvm;
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
-const logs = @import("primitives").logs;
-const Log = logs.Log;
-// LogList functionality is inlined into Frame for optimal packing
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode
@@ -374,17 +371,18 @@ pub fn Frame(comptime config: FrameConfig) type {
         stack: Stack, // 16B - Stack operations
         gas_remaining: GasType, // 8B - Gas tracking (i64)
         memory: Memory, // 16B - Memory operations
+        dispatch: Dispatch, // 16B - Dispatch cursor and u256_values pointer
         database: config.DatabaseType, // 8B - Storage access
+        // CACHE LINE 2 (64-127 bytes) - WARM PATH
         value: *const WordType, // 8B - Call value (pointer)
         evm_ptr: *anyopaque, // 8B - EVM instance pointer
-        // CACHE LINE 2 (64-124 bytes) - WARM PATH
         length_prefixed_calldata: ?[*]const u8, // 8B - Length-prefixed calldata pointer (first 8 bytes = length)
         caller: Address, // 20B - Calling address
-        logs: std.ArrayListUnmanaged(Log), // 16B - Log array list (unmanaged)
         contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         output: []u8, // 16B - Output data slice (only for RETURN/REVERT)
         code: []const u8 = &[_]u8{}, // Contract code (for CODESIZE/CODECOPY)
+        u256_constants: []const WordType = &[_]WordType{}, // Array of u256 constants from dispatch
         authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
         jump_table: *const Dispatch.JumpTable, // 8B - Pointer to jump table for JUMP/JUMPI validation
 
@@ -439,26 +437,27 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .stack = stack,
                 .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
                 .memory = memory,
+                .dispatch = Dispatch{ .cursor = undefined }, // Will be set during interpret
                 .database = database,
-                .length_prefixed_calldata = length_prefixed,
                 // Cache line 2
                 .value = value,
+                .evm_ptr = evm_ptr,
+                .length_prefixed_calldata = length_prefixed,
                 .contract_address = Address.ZERO_ADDRESS,
                 .caller = caller,
-                .logs = .{},
-                .evm_ptr = evm_ptr,
                 // Cache line 3+
                 .output = &[_]u8{}, // Start with empty output
+                .u256_constants = &[_]WordType{}, // Will be set during interpret
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
                 .authorized_address = null,
             };
         }
         /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            log.debug("Frame.deinit: Starting cleanup, logs_count={}, output_len={}", .{ self.logs.items.len, self.output.len });
+            log.debug("Frame.deinit: Starting cleanup, output_len={}", .{self.output.len});
             self.stack.deinit(allocator);
             self.memory.deinit(allocator);
-            // No need to free any arena-allocated data (logs, output, calldata)
+            // No need to free any arena-allocated data (output, calldata)
             // The arena allocator will be reset after the call completes
             log.debug("Frame.deinit: Cleanup complete", .{});
         }
@@ -618,7 +617,13 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            const cursor = Dispatch{ .cursor = schedule.ptr + start_index };
+            // Set up dispatch cursor
+            self.dispatch = Dispatch{ 
+                .cursor = schedule.ptr + start_index,
+            };
+            
+            // Store u256_constants slice for Frame access
+            self.u256_constants = if (owned_schedule) |s| s.u256_values else &[_]WordType{};
 
             // Verify bytecode stream ends with 2 stop handlers (debug builds only)
             if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
@@ -640,14 +645,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            try cursor.cursor[0].opcode_handler(self, cursor.cursor);
+            try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
             unreachable; // Handlers never return normally
         }
 
         /// Create a deep copy of the frame.
         /// This is used by DebugPlan to create a sidecar frame for validation.
         pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
-            log.debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}, logs_count={}", .{ self.stack.get_slice().len, self.memory.size(), self.logs.items.len });
+            log.debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}", .{ self.stack.get_slice().len, self.memory.size() });
             var new_stack = Stack.init(allocator) catch return Error.AllocationError;
             errdefer new_stack.deinit(allocator);
             const src_stack_slice = self.stack.get_slice();
@@ -667,23 +672,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 try new_memory.set_data(0, bytes);
             }
 
-            var new_logs = std.ArrayListUnmanaged(Log){};
-            errdefer new_logs.deinit(allocator);
-
-            for (self.logs.items) |log_entry| {
-                const topics_copy = allocator.dupe(u256, log_entry.topics) catch return Error.AllocationError;
-                errdefer allocator.free(topics_copy);
-
-                const data_copy = allocator.dupe(u8, log_entry.data) catch return Error.AllocationError;
-                errdefer allocator.free(data_copy);
-
-                try new_logs.append(allocator, Log{
-                    .address = log_entry.address,
-                    .topics = topics_copy,
-                    .data = data_copy,
-                });
-            }
-
             const new_output = if (self.output.len > 0) blk: {
                 const output_copy = allocator.alloc(u8, self.output.len) catch return Error.AllocationError;
                 @memcpy(output_copy, self.output);
@@ -695,14 +683,16 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .stack = new_stack,
                 .gas_remaining = self.gas_remaining,
                 .memory = new_memory,
+                .dispatch = self.dispatch,
                 .database = self.database,
-                .logs = new_logs,
-                .evm_ptr = self.evm_ptr,
-                .caller = self.caller,
                 .value = self.value,
+                .evm_ptr = self.evm_ptr,
+                .length_prefixed_calldata = self.length_prefixed_calldata,
+                .caller = self.caller,
                 .contract_address = self.contract_address,
                 .output = new_output,
-                .length_prefixed_calldata = self.length_prefixed_calldata,
+                .code = self.code,
+                .u256_constants = self.u256_constants,
                 .jump_table = self.jump_table,
                 .authorized_address = self.authorized_address,
             };
@@ -869,10 +859,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 try writer.print("\n", .{});
             }
 
-            // Logs count
-            if (self.logs.items.len > 0) {
-                try writer.print("\n{s}📝 Logs:{s} {d} events\n", .{ Colors.cyan, Colors.reset, self.logs.items.len });
-            }
+            // Logs count - removed as Frame doesn't track logs directly
 
             // Output data (if any)
             if (self.output.len > 0) {

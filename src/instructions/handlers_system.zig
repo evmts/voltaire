@@ -136,14 +136,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
 
-            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.CALL);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
@@ -275,14 +268,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
 
-            var result = self.getEvm().inner_call(call_params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.CALLCODE);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(call_params);
             defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
@@ -396,14 +382,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
-            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.DELEGATECALL);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
@@ -530,14 +509,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = gas_u64,
                 },
             };
-            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.STATICCALL);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0
@@ -628,14 +600,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = @as(u64, @intCast(self.gas_remaining)),
                 },
             };
-            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.CREATE);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
             // Update gas remaining
@@ -713,14 +678,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     .gas = @as(u64, @intCast(self.gas_remaining)),
                 },
             };
-            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.CREATE2);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
             // Update gas remaining
@@ -1072,14 +1030,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
 
-            var result = self.getEvm().inner_call(params) catch |err| switch (err) {
-                else => {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.AUTHCALL);
-                    // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-                },
-            };
+            var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
             // Write return data to memory if successful and output size > 0

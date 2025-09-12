@@ -53,7 +53,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_POINTER, Dispatch, Dispatch.Item, cursor);
             
             // Cursor now points to metadata
-            const offset = op_data.metadata.value.*;
+            const offset = self.u256_constants[op_data.metadata.index];
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -119,7 +119,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_POINTER, Dispatch, Dispatch.Item, cursor);
             
             // Cursor now points to metadata
-            const offset = op_data.metadata.value.*;
+            const offset = self.u256_constants[op_data.metadata.index];
 
             // Pop the value to store
             std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
@@ -182,7 +182,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_POINTER, Dispatch, Dispatch.Item, cursor);
             
             // Cursor now points to metadata
-            const offset = op_data.metadata.value.*;
+            const offset = self.u256_constants[op_data.metadata.index];
 
             // Pop the value to store
             std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE8 requires 1 stack item
