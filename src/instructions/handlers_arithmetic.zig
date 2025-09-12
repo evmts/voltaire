@@ -119,8 +119,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
-                    // EVM MOD computes: top % second
-                    return FrameType.UintN.from_native(top).wrapping_rem(FrameType.UintN.from_native(second)).to_native();
+                    return from_native(top).wrapping_rem(from_native(second)).to_native();
                 }
             }.op);
 
