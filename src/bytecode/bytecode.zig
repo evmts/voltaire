@@ -356,36 +356,31 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 return error.BytecodeTooLarge;
             }
 
-            // Detect and strip Solidity metadata from the end of bytecode
-            // Metadata format: 0xa2 0x64 "ipfs" <hash> ... or 0xa1 0x65 "bzzr0" <hash> ...
-            // The metadata is CBOR encoded and starts with 0xa2 (map with 2 entries) or 0xa1 (map with 1 entry)
+            // Detect and strip Solidity metadata from the end of bytecode.
+            // Per the Solidity specification, metadata is appended to the bytecode.
+            // The last two bytes of the contract's raw bytecode form a big-endian
+            // integer that specifies the length of the CBOR-encoded metadata section.
+            // This allows for efficient O(1) retrieval of the metadata without scanning.
             var runtime_code = code;
-            if (code.len >= 2) {
-                // Look for metadata marker near the end
-                // Typical metadata is 50-60 bytes, but can vary
-                const search_start = if (code.len > 100) code.len - 100 else 0;
-                var i = search_start;
-                while (i < code.len - 1) : (i += 1) {
-                    // Check for CBOR metadata markers
-                    if ((code[i] == 0xa2 or code[i] == 0xa1) and i + 10 < code.len) {
-                        // Check for "ipfs" or "bzzr" following the marker
-                        if ((code[i] == 0xa2 and i + 5 < code.len and
-                            code[i + 1] == 0x64 and // string of length 4
-                            code[i + 2] == 0x69 and // 'i'
-                            code[i + 3] == 0x70 and // 'p'
-                            code[i + 4] == 0x66 and // 'f'
-                            code[i + 5] == 0x73) or // 's'
-                            (code[i] == 0xa1 and i + 6 < code.len and
-                                code[i + 1] == 0x65 and // string of length 5
-                                code[i + 2] == 0x62 and // 'b'
-                                code[i + 3] == 0x7a and // 'z'
-                                code[i + 4] == 0x7a and // 'z'
-                                code[i + 5] == 0x72)) // 'r'
+            if (code.len >= 4) { // Minimal length for metadata to be present.
+                const metadata_len = std.mem.readInt(u16, code[code.len - 2 ..][0..2], .big);
+
+                if (metadata_len > 0 and metadata_len + 2 <= code.len) {
+                    const metadata_start_idx = code.len - metadata_len - 2;
+                    const metadata_slice = code[metadata_start_idx .. code.len - 2];
+
+                    // A valid metadata block is a CBOR map. We check for common Solidity patterns for robustness.
+                    if (metadata_slice.len > 6) {
+                        const ipfs_pattern = &.{ 0xa2, 0x64, 'i', 'p', 'f', 's' };
+                        const bzzr0_pattern = &.{ 0xa1, 0x65, 'b', 'z', 'z', 'r', '0' };
+                        const bzzr1_pattern = &.{ 0xa1, 0x65, 'b', 'z', 'z', 'r', '1' };
+
+                        if (std.mem.startsWith(u8, metadata_slice, ipfs_pattern) or
+                            std.mem.startsWith(u8, metadata_slice, bzzr0_pattern) or
+                            std.mem.startsWith(u8, metadata_slice, bzzr1_pattern))
                         {
-                            // Found metadata, trim the bytecode here
-                            runtime_code = code[0..i];
-                            log.debug("Detected Solidity metadata at position {}, trimming bytecode from {} to {} bytes", .{ i, code.len, runtime_code.len });
-                            break;
+                            runtime_code = code[0..metadata_start_idx];
+                            log.debug("Detected Solidity metadata, trimming bytecode from {} to {} bytes", .{ code.len, runtime_code.len });
                         }
                     }
                 }

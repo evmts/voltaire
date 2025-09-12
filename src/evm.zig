@@ -262,9 +262,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             try self.database.set_account(to.bytes, to_account);
         }
 
-        // TODO: this doesn't work though
-        // We should move to a commit or reinitialize strategy
-
         /// Simulate an EVM operation without committing state changes.
         ///
         /// Executes exactly like `call()` but reverts all state changes at the end,

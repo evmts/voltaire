@@ -115,7 +115,7 @@ test {
     
     // Test bytecode modules
     _ = @import("bytecode/bytecode_tests.zig");
-    _ = @import("bytecode/bytecode_jump_validation_tests.zig");
+    _ = @import("bytecode/bytecode_jump_validation_test.zig");
     
     // C API modules are not compiled in tests in this configuration
     // _ = @import("root_c.zig");
