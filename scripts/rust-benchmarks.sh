@@ -11,6 +11,15 @@ echo "Building guillotine..."
 cd "$REPO_ROOT"
 zig build || exit 1
 
+# Clone benchmarks repository if it doesn't exist
+if [ ! -d "$REPO_ROOT/benchmarks" ]; then
+    echo "Cloning benchmarks repository..."
+    git clone git@github.com:evmts/evm-benchmarks.git "$REPO_ROOT/benchmarks" || {
+        echo "Failed to clone benchmarks repository. Trying HTTPS..."
+        git clone https://github.com/evmts/evm-benchmarks.git "$REPO_ROOT/benchmarks" || exit 1
+    }
+fi
+
 # Build and run benchmarks with the local guillotine path
 echo "Building benchmarks with local guillotine..."
 cd "$REPO_ROOT/benchmarks"
