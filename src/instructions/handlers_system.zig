@@ -872,8 +872,9 @@ pub fn Handlers(comptime FrameType: type) type {
             message[0] = 0x04; // AUTH magic byte
 
             // Get chain ID and nonce from context
-            const chain_id = self.getEvm().get_chain_id();
-            const nonce = self.database.get_account(authority.bytes) catch {
+            const evm = self.getEvm();
+            const chain_id = evm.get_chain_id();
+            const nonce = evm.database.get_account(authority.bytes) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTH);
                 // Use op_data.next_handler and op_data.next_cursor directly

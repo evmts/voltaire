@@ -38,8 +38,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Load value from storage directly from frame's database
-            const value = self.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
+            // Load value from storage through EVM's database for better cache locality
+            const value = evm.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
             self.stack.set_top_unsafe(value);
@@ -70,13 +70,15 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
 
-            // Get current value for gas calculation
-            const current_value = self.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
+            // Get EVM instance once for all storage operations (better cache locality)
+            const evm = self.getEvm();
+            
+            // Get current value for gas calculation (through EVM's database)
+            const current_value = evm.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
 
             // Access storage slot once to both warm it and get cost
-            const evm = self.getEvm();
             const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
@@ -108,8 +110,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Store the value directly in frame's database
-            self.database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
+            // Store the value through EVM's database (better cache locality)
+            evm.database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => return Error.WriteProtection,
                 else => return Error.AllocationError,
             };
@@ -134,8 +136,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
 
-            // Load value from transient storage directly from frame's database
-            const value = self.database.get_transient_storage(contract_addr.bytes, slot) catch |err| switch (err) {
+            // Load value from transient storage through EVM's database
+            const evm = self.getEvm();
+            const value = evm.database.get_transient_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
 
@@ -169,8 +172,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Store the value in transient storage directly in frame's database
-            self.database.set_transient_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
+            // Store the value in transient storage through EVM's database
+            const evm = self.getEvm();
+            evm.database.set_transient_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => return Error.WriteProtection,
                 else => return Error.AllocationError,
             };

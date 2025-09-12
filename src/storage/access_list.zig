@@ -63,8 +63,7 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
 
         /// Mark an address as accessed and return the gas cost
         /// Returns COLD_ACCOUNT_ACCESS_COST if first access, WARM_ACCOUNT_ACCESS_COST if already accessed
-        pub fn access_address(self: *Self, allocator: std.mem.Allocator, address: Address) !u64 {
-            _ = allocator; // ArrayHashMap manages its own memory
+        pub fn access_address(self: *Self, address: Address) !u64 {
             const result = try self.addresses.getOrPut(address);
             if (result.found_existing) {
                 return WARM_ACCOUNT_ACCESS_COST;
@@ -74,9 +73,9 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
 
         /// Mark a storage slot as accessed and return the gas cost
         /// Returns COLD_SLOAD_COST if first access, WARM_SLOAD_COST if already accessed
-        pub fn access_storage_slot(self: *Self, allocator: std.mem.Allocator, address: Address, slot: config.SlotType) !u64 {
+        pub fn access_storage_slot(self: *Self, address: Address, slot: config.SlotType) !u64 {
             const key = StorageKey{ .address = address, .slot = slot };
-            const result = try self.storage_slots.getOrPutContext(allocator, key, {});
+            const result = try self.storage_slots.getOrPut(key);
             if (result.found_existing) {
                 return WARM_SLOAD_COST;
             }
@@ -96,8 +95,7 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
 
         /// Pre-warm addresses for transaction initialization
         /// This is used to warm the tx.origin, coinbase, and transaction target
-        pub fn pre_warm_addresses(self: *Self, allocator: std.mem.Allocator, addresses: []const Address) !void {
-            _ = allocator; // Not needed with managed map
+        pub fn pre_warm_addresses(self: *Self, addresses: []const Address) !void {
             for (addresses) |address| {
                 const result = try self.addresses.getOrPut(address);
                 // Ensure the compiler doesn't optimize away the operation
@@ -124,11 +122,11 @@ test "AccessList - address access tracking" {
     const test_address = Address{ .bytes = [_]u8{1} ** 20 };
 
     // First access should be cold
-    const cost1 = try access_list.access_address(testing.allocator, test_address);
+    const cost1 = try access_list.access_address(test_address);
     try testing.expectEqual(AccessList.COLD_ACCOUNT_ACCESS_COST, cost1);
 
     // Second access should be warm
-    const cost2 = try access_list.access_address(testing.allocator, test_address);
+    const cost2 = try access_list.access_address(test_address);
     try testing.expectEqual(AccessList.WARM_ACCOUNT_ACCESS_COST, cost2);
 
     // Check warmth
@@ -147,15 +145,15 @@ test "AccessList - storage slot access tracking" {
     const slot2: u256 = 100;
 
     // First access to slot1 should be cold
-    const cost1 = try access_list.access_storage_slot(testing.allocator, test_address, slot1);
+    const cost1 = try access_list.access_storage_slot(test_address, slot1);
     try testing.expectEqual(AccessList.COLD_SLOAD_COST, cost1);
 
     // Second access to slot1 should be warm
-    const cost2 = try access_list.access_storage_slot(testing.allocator, test_address, slot1);
+    const cost2 = try access_list.access_storage_slot(test_address, slot1);
     try testing.expectEqual(AccessList.WARM_SLOAD_COST, cost2);
 
     // First access to slot2 should be cold
-    const cost3 = try access_list.access_storage_slot(testing.allocator, test_address, slot2);
+    const cost3 = try access_list.access_storage_slot(test_address, slot2);
     try testing.expectEqual(AccessList.COLD_SLOAD_COST, cost3);
 
     // Check warmth
