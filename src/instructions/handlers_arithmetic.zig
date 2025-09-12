@@ -66,8 +66,8 @@ pub fn Handlers(comptime FrameType: type) type {
         // The current approach might be slower if the sign of operands is predictable.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
-            const top = self.stack.peek_unsafe(); 
-            const second = self.stack.peek_at_unsafe(1); 
+            const top = self.stack.pop_unsafe(); 
+            const second = self.stack.peek_unsafe(); 
 
             const SIGN_BIT = @as(u256, 1) << 255;
             const MIN_SIGNED = SIGN_BIT; 

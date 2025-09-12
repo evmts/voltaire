@@ -33,7 +33,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // MLOAD loads a 32-byte word from memory
             std.debug.assert(self.stack.size() >= 1); // MLOAD requires 1 stack item
-            const offset = self.stack.pop_unsafe();
+            const offset = self.stack.peek_unsafe();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -65,8 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Convert to WordType (truncate if necessary for smaller word types)
             const value = @as(WordType, @truncate(value_u256));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(value);
+            self.stack.set_top_unsafe(value);
 
             const op_data = dispatch.getOpData(.MLOAD);
             // Use op_data.next_handler and op_data.next_cursor directly

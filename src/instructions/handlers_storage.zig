@@ -20,7 +20,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // SLOAD loads a value from storage
 
             std.debug.assert(self.stack.size() >= 1); // SLOAD requires 1 stack item
-            const slot = self.stack.pop_unsafe();
+            const slot = self.stack.peek_unsafe();
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -42,8 +42,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const value = self.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(value);
+            self.stack.set_top_unsafe(value);
 
             const op_data = dispatch.getOpData(.SLOAD);
             // Use op_data.next_handler and op_data.next_cursor directly
@@ -130,7 +129,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn tload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // TLOAD requires 1 stack item
-            const slot = self.stack.pop_unsafe();
+            const slot = self.stack.peek_unsafe();
 
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
@@ -140,8 +139,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
-            self.stack.push_unsafe(value);
+            self.stack.set_top_unsafe(value);
 
             const op_data = dispatch.getOpData(.TLOAD);
             // Use op_data.next_handler and op_data.next_cursor directly

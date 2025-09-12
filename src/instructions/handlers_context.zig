@@ -55,7 +55,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn balance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // BALANCE requires 1 stack item
-            const address_u256 = self.stack.pop_unsafe();
+            const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
 
             // Access the address for warm/cold accounting (EIP-2929)
@@ -73,8 +73,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const bal = evm.get_balance(addr);
             const balance_word = @as(WordType, @truncate(bal));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BALANCE push requires stack space
-            self.stack.push_unsafe(balance_word);
+            self.stack.set_top_unsafe(balance_word);
             const op_data = dispatch.getOpData(.BALANCE);
             // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -121,11 +120,10 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn calldataload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // CALLDATALOAD requires 1 stack item
-            const offset = self.stack.pop_unsafe();
+            const offset = self.stack.peek_unsafe();
             // Convert u256 to usize, checking for overflow
             if (offset > std.math.maxInt(usize)) {
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLDATALOAD push requires stack space
-                self.stack.push_unsafe(0);
+                self.stack.set_top_unsafe(0);
                 const op_data = dispatch.getOpData(.CALLDATALOAD); // Use op_data.next_handler and op_data.next_cursor directly
                 return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
@@ -145,8 +143,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             // Convert to WordType (truncate if necessary for smaller word types)
             const word_typed = @as(WordType, @truncate(word));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLDATALOAD push requires stack space
-            self.stack.push_unsafe(word_typed);
+            self.stack.set_top_unsafe(word_typed);
             const op_data = dispatch.getOpData(.CALLDATALOAD); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -312,7 +309,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // EXTCODESIZE requires 1 stack item
-            const address_u256 = self.stack.pop_unsafe();
+            const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
             
             // Access the address for warm/cold accounting (EIP-2929)
@@ -330,8 +327,7 @@ pub fn Handlers(comptime FrameType: type) type {
             
             const code = evm.get_code(addr);
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // EXTCODESIZE push requires stack space
-            self.stack.push_unsafe(code_len);
+            self.stack.set_top_unsafe(code_len);
             const op_data = dispatch.getOpData(.EXTCODESIZE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -416,7 +412,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodehash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // EXTCODEHASH requires 1 stack item
-            const address_u256 = self.stack.pop_unsafe();
+            const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
             
             // Access the address for warm/cold accounting (EIP-2929)
@@ -434,8 +430,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (!evm.account_exists(addr)) {
                 // Non-existent account returns 0 per EIP-1052
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // EXTCODEHASH push requires stack space
-                self.stack.push_unsafe(0);
+                self.stack.set_top_unsafe(0);
                 const op_data = dispatch.getOpData(.EXTCODEHASH); // Use op_data.next_handler and op_data.next_cursor directly
                 return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
@@ -445,8 +440,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Existing account with empty code returns keccak256("") constant
                 const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
                 const empty_hash_word = @as(WordType, @truncate(empty_hash_u256));
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // EXTCODEHASH push requires stack space
-                self.stack.push_unsafe(empty_hash_word);
+                self.stack.set_top_unsafe(empty_hash_word);
                 const op_data = dispatch.getOpData(.EXTCODEHASH); // Use op_data.next_handler and op_data.next_cursor directly
                 return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
@@ -461,8 +455,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 hash_u256 = (hash_u256 << 8) | @as(u256, b);
             }
             const hash_word = @as(WordType, @truncate(hash_u256));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // EXTCODEHASH push requires stack space
-            self.stack.push_unsafe(hash_word);
+            self.stack.set_top_unsafe(hash_word);
 
             const op_data = dispatch.getOpData(.EXTCODEHASH); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -558,7 +551,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // BLOCKHASH requires 1 stack item
-            const block_number = self.stack.pop_unsafe();
+            const block_number = self.stack.peek_unsafe();
             // Cast to u64 - EVM spec says only last 256 blocks are accessible
             const block_number_u64 = @as(u64, @truncate(block_number));
             const block_hash_opt = self.getEvm().get_block_hash(block_number_u64);
@@ -571,11 +564,9 @@ pub fn Handlers(comptime FrameType: type) type {
                     hash_value = (hash_value << 8) | @as(u256, byte);
                 }
                 const hash_word = @as(WordType, @truncate(hash_value));
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BLOCKHASH push requires stack space
-                self.stack.push_unsafe(hash_word);
+                self.stack.set_top_unsafe(hash_word);
             } else {
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BLOCKHASH push requires stack space
-                self.stack.push_unsafe(0);
+                self.stack.set_top_unsafe(0);
             }
 
             const op_data = dispatch.getOpData(.BLOCKHASH); // Use op_data.next_handler and op_data.next_cursor directly
@@ -723,11 +714,10 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // BLOBHASH requires 1 stack item
-            const index = self.stack.pop_unsafe();
+            const index = self.stack.peek_unsafe();
             // Convert u256 to usize for array access
             if (index > std.math.maxInt(usize)) {
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BLOBHASH push requires stack space
-                self.stack.push_unsafe(0);
+                self.stack.set_top_unsafe(0);
                 const op_data = dispatch.getOpData(.BLOBHASH); // Use op_data.next_handler and op_data.next_cursor directly
                 return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
@@ -742,12 +732,10 @@ pub fn Handlers(comptime FrameType: type) type {
                     hash_value = (hash_value << 8) | @as(u256, byte);
                 }
                 const hash_word = @as(WordType, @truncate(hash_value));
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BLOBHASH push requires stack space
-                self.stack.push_unsafe(hash_word);
+                self.stack.set_top_unsafe(hash_word);
             } else {
                 // Index out of bounds - push zero
-                std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // BLOBHASH push requires stack space
-                self.stack.push_unsafe(0);
+                self.stack.set_top_unsafe(0);
             }
             const op_data = dispatch.getOpData(.BLOBHASH); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
