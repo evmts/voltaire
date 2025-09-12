@@ -653,7 +653,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            try cursor.cursor[0].opcode_handler(self, cursor.cursor);
+            try cursor.cursor[0].opcode_handler(self, cursor.cursor + 1);
             unreachable; // Handlers never return normally
         }
 
