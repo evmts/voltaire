@@ -34,6 +34,15 @@ pub fn GetOpDataReturnType(
         .MULTI_POP_2, .MULTI_POP_3 => struct { next_handler: OpcodeHandler, next_cursor: Self }, // No metadata
         .ISZERO_JUMPI => struct { items: [*]const Item, next_handler: OpcodeHandler, next_cursor: Self }, // Jump target item
         .DUP2_MSTORE_PUSH => struct { items: [*]const Item, next_handler: OpcodeHandler, next_cursor: Self }, // Push value item
+        // New high-impact fusions
+        .DUP3_ADD_MSTORE => struct { next_handler: OpcodeHandler, next_cursor: Self }, // No metadata
+        .SWAP1_DUP2_ADD => struct { next_handler: OpcodeHandler, next_cursor: Self }, // No metadata
+        .PUSH_DUP3_ADD => struct { items: [*]const Item, next_handler: OpcodeHandler, next_cursor: Self }, // Push value item
+        .FUNCTION_DISPATCH => struct { items: [*]const Item, next_handler: OpcodeHandler, next_cursor: Self }, // Selector + target items
+        .CALLVALUE_CHECK => struct { next_handler: OpcodeHandler, next_cursor: Self }, // No metadata
+        .PUSH0_REVERT => struct { next_handler: OpcodeHandler, next_cursor: Self }, // No metadata
+        .PUSH_ADD_DUP1 => struct { items: [*]const Item, next_handler: OpcodeHandler, next_cursor: Self }, // Push value item
+        .MLOAD_SWAP1_DUP2 => struct { next_handler: OpcodeHandler, next_cursor: Self }, // No metadata
         // All standard opcodes without metadata
         .STOP, .ADD, .MUL, .SUB, .DIV, .SDIV, .MOD, .SMOD, .ADDMOD, .MULMOD, .EXP, .SIGNEXTEND, .LT, .GT, .SLT, .SGT, .EQ, .ISZERO, .AND, .OR, .XOR, .NOT, .BYTE, .SHL, .SHR, .SAR, .KECCAK256, .ADDRESS, .BALANCE, .ORIGIN, .CALLER, .CALLVALUE, .CALLDATALOAD, .CALLDATASIZE, .CALLDATACOPY, .CODESIZE, .CODECOPY, .GASPRICE, .EXTCODESIZE, .EXTCODECOPY, .RETURNDATASIZE, .RETURNDATACOPY, .EXTCODEHASH, .BLOCKHASH, .COINBASE, .TIMESTAMP, .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID, .SELFBALANCE, .BASEFEE, .BLOBHASH, .BLOBBASEFEE, .POP, .MLOAD, .MSTORE, .MSTORE8, .SLOAD, .SSTORE, .JUMP, .JUMPI, .MSIZE, .GAS, .TLOAD, .TSTORE, .MCOPY, .PUSH0, .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8, .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16, .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8, .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16, .LOG0, .LOG1, .LOG2, .LOG3, .LOG4, .CREATE, .CALL, .CALLCODE, .RETURN, .DELEGATECALL, .CREATE2, .AUTH, .AUTHCALL, .STATICCALL, .REVERT, .INVALID, .SELFDESTRUCT => struct { next_handler: OpcodeHandler, next_cursor: Self },
     };
@@ -121,6 +130,21 @@ pub inline fn getOpData(
             .items = cursor + 1, // Points to push value item at cursor[1]
             .next_handler = cursor[2].opcode_handler,
             .next_cursor = Self{ .cursor = cursor + 2 },
+        },
+        // New high-impact fusions
+        .DUP3_ADD_MSTORE, .SWAP1_DUP2_ADD, .CALLVALUE_CHECK, .PUSH0_REVERT, .MLOAD_SWAP1_DUP2 => .{
+            .next_handler = cursor[1].opcode_handler,
+            .next_cursor = Self{ .cursor = cursor + 1 },
+        },
+        .PUSH_DUP3_ADD, .PUSH_ADD_DUP1 => .{
+            .items = cursor + 1, // Points to push value item at cursor[1]
+            .next_handler = cursor[2].opcode_handler,
+            .next_cursor = Self{ .cursor = cursor + 2 },
+        },
+        .FUNCTION_DISPATCH => .{
+            .items = cursor + 1, // Points to selector and target items starting at cursor[1]
+            .next_handler = cursor[3].opcode_handler,
+            .next_cursor = Self{ .cursor = cursor + 3 },
         },
         // All standard opcodes without metadata
         .STOP, .ADD, .MUL, .SUB, .DIV, .SDIV, .MOD, .SMOD, .ADDMOD, .MULMOD, .EXP, .SIGNEXTEND, .LT, .GT, .SLT, .SGT, .EQ, .ISZERO, .AND, .OR, .XOR, .NOT, .BYTE, .SHL, .SHR, .SAR, .KECCAK256, .ADDRESS, .BALANCE, .ORIGIN, .CALLER, .CALLVALUE, .CALLDATALOAD, .CALLDATASIZE, .CALLDATACOPY, .CODESIZE, .CODECOPY, .GASPRICE, .EXTCODESIZE, .EXTCODECOPY, .RETURNDATASIZE, .RETURNDATACOPY, .EXTCODEHASH, .BLOCKHASH, .COINBASE, .TIMESTAMP, .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID, .SELFBALANCE, .BASEFEE, .BLOBHASH, .BLOBBASEFEE, .POP, .MLOAD, .MSTORE, .MSTORE8, .SLOAD, .SSTORE, .JUMP, .JUMPI, .MSIZE, .GAS, .TLOAD, .TSTORE, .MCOPY, .PUSH0, .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8, .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16, .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8, .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16, .LOG0, .LOG1, .LOG2, .LOG3, .LOG4, .CREATE, .CALL, .CALLCODE, .RETURN, .DELEGATECALL, .CREATE2, .AUTH, .AUTHCALL, .STATICCALL, .REVERT, .INVALID, .SELFDESTRUCT => .{

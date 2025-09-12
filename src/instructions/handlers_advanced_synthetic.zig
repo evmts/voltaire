@@ -162,18 +162,209 @@ pub fn Handlers(comptime FrameType: type) type {
             const mem_value = self.stack.pop_unsafe();
             
             // Store to memory
-            const memory_mod = @import("../memory/memory.zig");
             const offset_u24 = @as(u24, @intCast(offset));
-            self.memory.set_u256_evm(self.getAllocator(), offset_u24, mem_value) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.OutOfBounds,
-            };
+            self.memory.set_u256_evm(self.getAllocator(), offset_u24, mem_value) catch return Error.OutOfBounds;
             
             // PUSH: Push the new value
             self.stack.push_unsafe(push_value);
             
             // Use getOpData for next instruction
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        // New high-impact fusion handlers
+        
+        /// DUP3_ADD_MSTORE - Optimized DUP3 + ADD + MSTORE pattern (60 occurrences)
+        pub fn dup3_add_mstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.DUP3_ADD_MSTORE, Dispatch, Dispatch.Item, cursor);
+            
+            // DUP3: duplicate 3rd stack item
+            self.stack.dup_n_unsafe(3);
+            
+            // ADD: pop two values and add
+            const b = self.stack.pop_unsafe();
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a +% b);
+            
+            // MSTORE: Store at offset
+            const offset = self.stack.pop_unsafe();
+            const data = self.stack.pop_unsafe();
+            const offset_u24 = @as(u24, @intCast(offset));
+            self.memory.set_u256_evm(self.getAllocator(), offset_u24, data) catch return Error.OutOfBounds;
+            
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        /// SWAP1_DUP2_ADD - Optimized SWAP1 + DUP2 + ADD pattern (134+ occurrences)
+        pub fn swap1_dup2_add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.SWAP1_DUP2_ADD, Dispatch, Dispatch.Item, cursor);
+            
+            // SWAP1: swap top two stack items
+            const top = self.stack.pop_unsafe();
+            const second = self.stack.pop_unsafe();
+            self.stack.push_unsafe(top);
+            self.stack.push_unsafe(second);
+            
+            // DUP2: duplicate 2nd stack item
+            self.stack.dup_n_unsafe(2);
+            
+            // ADD: pop two values and add
+            const b = self.stack.pop_unsafe();
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a +% b);
+            
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        /// PUSH_DUP3_ADD - Optimized PUSH + DUP3 + ADD pattern (58 occurrences)
+        pub fn push_dup3_add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.PUSH_DUP3_ADD, Dispatch, Dispatch.Item, cursor);
+            
+            // PUSH: Add push value
+            const push_item = op_data.items[0];
+            if (push_item == .push_inline) {
+                self.stack.push_unsafe(push_item.push_inline.value);
+            } else if (push_item == .push_pointer) {
+                self.stack.push_unsafe(push_item.push_pointer.value.*);
+            }
+            
+            // DUP3: duplicate 3rd stack item
+            self.stack.dup_n_unsafe(3);
+            
+            // ADD: pop two values and add
+            const b = self.stack.pop_unsafe();
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(a +% b);
+            
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        /// FUNCTION_DISPATCH - Optimized PUSH4 + EQ + PUSH + JUMPI for function selectors
+        pub fn function_dispatch(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.FUNCTION_DISPATCH, Dispatch, Dispatch.Item, cursor);
+            
+            // Extract selector and target from metadata
+            const selector = @as(u32, @intCast(op_data.items[0].push_inline.value));
+            const target_item = op_data.items[1];
+            const target = if (target_item == .push_inline) 
+                target_item.push_inline.value 
+            else 
+                target_item.push_pointer.value.*;
+            
+            // PUSH4 selector
+            self.stack.push_unsafe(selector);
+            
+            // EQ: Compare with top of stack (usually from CALLDATALOAD)
+            const b = self.stack.pop_unsafe();
+            const a = self.stack.pop_unsafe();
+            self.stack.push_unsafe(if (a == b) 1 else 0);
+            
+            // PUSH target
+            self.stack.push_unsafe(target);
+            
+            // JUMPI: Conditional jump
+            const dest = self.stack.pop_unsafe();
+            const condition = self.stack.pop_unsafe();
+            
+            if (condition != 0) {
+                // Jump to the function implementation
+                const dest_pc: FrameType.PcType = @intCast(dest);
+                if (self.jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                } else {
+                    return Error.InvalidJump;
+                }
+            }
+            
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        /// CALLVALUE_CHECK - Optimized CALLVALUE + DUP1 + ISZERO for payable checks
+        pub fn callvalue_check(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.CALLVALUE_CHECK, Dispatch, Dispatch.Item, cursor);
+            
+            // CALLVALUE: Get msg.value
+            const value = self.value.*;
+            self.stack.push_unsafe(value);
+            
+            // DUP1: Duplicate call value
+            self.stack.push_unsafe(value);
+            
+            // ISZERO: Check if value is zero
+            const top = self.stack.pop_unsafe();
+            self.stack.push_unsafe(if (top == 0) 1 else 0);
+            
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        /// PUSH0_REVERT - Optimized PUSH0 + PUSH0 + REVERT for error handling
+        pub fn push0_revert(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            _ = cursor;
+            
+            // PUSH0 PUSH0: Push two zeros for offset and size
+            self.stack.push_unsafe(0);
+            self.stack.push_unsafe(0);
+            
+            // REVERT: Revert with empty data
+            const size = self.stack.pop_unsafe();
+            const offset = self.stack.pop_unsafe();
+            
+            _ = size;
+            _ = offset;
+            // For empty revert, just return error
+            return Error.REVERT;
+        }
+        
+        /// PUSH_ADD_DUP1 - Optimized PUSH + ADD + DUP1 pattern (common in loops)
+        pub fn push_add_dup1(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.PUSH_ADD_DUP1, Dispatch, Dispatch.Item, cursor);
+            
+            // PUSH: Add push value
+            const push_item = op_data.items[0];
+            const push_value = if (push_item == .push_inline) 
+                push_item.push_inline.value 
+            else 
+                push_item.push_pointer.value.*;
+            self.stack.push_unsafe(push_value);
+            
+            // ADD: pop two values and add
+            const b = self.stack.pop_unsafe();
+            const a = self.stack.pop_unsafe();
+            const result = a +% b;
+            self.stack.push_unsafe(result);
+            
+            // DUP1: Duplicate the result
+            self.stack.push_unsafe(result);
+            
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+        
+        /// MLOAD_SWAP1_DUP2 - Optimized MLOAD + SWAP1 + DUP2 memory pattern
+        pub fn mload_swap1_dup2(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.MLOAD_SWAP1_DUP2, Dispatch, Dispatch.Item, cursor);
+            
+            // MLOAD: Load from memory
+            const offset = self.stack.pop_unsafe();
+            const offset_u24 = @as(u24, @intCast(offset));
+            const value = self.memory.get_u256_evm(self.getAllocator(), offset_u24) catch return Error.OutOfBounds;
+            self.stack.push_unsafe(value);
+            
+            // SWAP1: Swap top two stack items
+            const top = self.stack.pop_unsafe();
+            const second = self.stack.pop_unsafe();
+            self.stack.push_unsafe(top);
+            self.stack.push_unsafe(second);
+            
+            // DUP2: Duplicate 2nd stack item
+            self.stack.dup_n_unsafe(2);
+            
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };

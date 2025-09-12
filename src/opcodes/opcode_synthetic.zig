@@ -48,11 +48,21 @@ pub const OpcodeSynthetic = enum(u8) {
     MULTI_POP_3 = 0xC2,           // Three consecutive POP operations
     ISZERO_JUMPI = 0xC3,          // ISZERO + PUSH + JUMPI pattern
     DUP2_MSTORE_PUSH = 0xC4,      // DUP2 + MSTORE + PUSH pattern
+    
+    // New high-impact fusions based on pattern analysis
+    DUP3_ADD_MSTORE = 0xC5,       // DUP3 + ADD + MSTORE (60 occurrences)
+    SWAP1_DUP2_ADD = 0xC6,        // SWAP1 + DUP2 + ADD (134+ occurrences)
+    PUSH_DUP3_ADD = 0xC7,         // PUSH + DUP3 + ADD (58 occurrences)
+    FUNCTION_DISPATCH = 0xC8,     // PUSH4 + EQ + PUSH + JUMPI (function selector)
+    CALLVALUE_CHECK = 0xC9,        // CALLVALUE + DUP1 + ISZERO (payable check)
+    PUSH0_REVERT = 0xCA,           // PUSH0 + PUSH0 + REVERT (error pattern)
+    PUSH_ADD_DUP1 = 0xCB,          // PUSH + ADD + DUP1 (common in loops)
+    MLOAD_SWAP1_DUP2 = 0xCC,       // MLOAD + SWAP1 + DUP2 (memory pattern)
 };
 
 // Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
 comptime {
-    @setEvalBranchQuota(10000);
+    @setEvalBranchQuota(20000);
     for (@typeInfo(OpcodeSynthetic).@"enum".fields) |syn_field| {
         // Try to convert the synthetic opcode value to a regular Opcode
         if (std.meta.intToEnum(Opcode, syn_field.value) catch null) |conflicting_opcode| {

@@ -322,6 +322,77 @@ pub fn Dispatch(comptime FrameType: type) type {
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
                         }
                     },
+                    // New high-impact fusion handlers
+                    .dup3_add_mstore => {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.DUP3_ADD_MSTORE));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                    },
+                    .swap1_dup2_add => {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.SWAP1_DUP2_ADD));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                    },
+                    .push_dup3_add => |pda| {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.PUSH_DUP3_ADD));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                        
+                        // Add push value as metadata
+                        if (pda.value <= std.math.maxInt(u64)) {
+                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(pda.value) } });
+                        } else {
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            value_ptr.* = pda.value;
+                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .function_dispatch => |fd| {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.FUNCTION_DISPATCH));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                        
+                        // Add selector as inline metadata (always 4 bytes)
+                        try schedule_items.append(allocator, .{ .push_inline = .{ .value = @as(u64, fd.selector) } });
+                        
+                        // Add target as metadata
+                        if (fd.target <= std.math.maxInt(u64)) {
+                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(fd.target) } });
+                        } else {
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            value_ptr.* = fd.target;
+                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .callvalue_check => {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.CALLVALUE_CHECK));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                    },
+                    .push0_revert => {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.PUSH0_REVERT));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                    },
+                    .push_add_dup1 => |pad| {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.PUSH_ADD_DUP1));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                        
+                        // Add push value as metadata
+                        if (pad.value <= std.math.maxInt(u64)) {
+                            try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(pad.value) } });
+                        } else {
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            value_ptr.* = pad.value;
+                            try schedule_items.append(allocator, .{ .push_pointer = .{ .value = value_ptr } });
+                        }
+                    },
+                    .mload_swap1_dup2 => {
+                        const frame_handlers = @import("../frame/frame_handlers.zig");
+                        const handler = frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(OpcodeSynthetic.MLOAD_SWAP1_DUP2));
+                        try schedule_items.append(allocator, .{ .opcode_handler = handler });
+                    },
                 }
             }
 
@@ -578,16 +649,41 @@ pub fn Dispatch(comptime FrameType: type) type {
                     },
                     // Advanced fusion patterns
                     .multi_push => |mp| {
-                        schedule_index += @as(usize, mp.count) * 2; // Each push: handler + value
+                        schedule_index += 1 + @as(usize, mp.count); // Handler + values
                     },
-                    .multi_pop => |mp| {
-                        schedule_index += mp.count; // Each pop: handler only
+                    .multi_pop => {
+                        schedule_index += 1; // Handler only
                     },
                     .iszero_jumpi => {
-                        schedule_index += 5; // ISZERO handler + PUSH handler + value + JUMPI handler + metadata
+                        schedule_index += 2; // Handler + target value
                     },
                     .dup2_mstore_push => {
-                        schedule_index += 4; // DUP2 handler + MSTORE handler + PUSH handler + value
+                        schedule_index += 2; // Handler + push value
+                    },
+                    // New high-impact fusions
+                    .dup3_add_mstore => {
+                        schedule_index += 1; // Handler only
+                    },
+                    .swap1_dup2_add => {
+                        schedule_index += 1; // Handler only
+                    },
+                    .push_dup3_add => {
+                        schedule_index += 2; // Handler + push value
+                    },
+                    .function_dispatch => {
+                        schedule_index += 3; // Handler + selector + target
+                    },
+                    .callvalue_check => {
+                        schedule_index += 1; // Handler only
+                    },
+                    .push0_revert => {
+                        schedule_index += 1; // Handler only
+                    },
+                    .push_add_dup1 => {
+                        schedule_index += 2; // Handler + push value
+                    },
+                    .mload_swap1_dup2 => {
+                        schedule_index += 1; // Handler only
                     },
                 }
             }

@@ -610,6 +610,15 @@ pub const UnifiedOpcode = enum(u16) {
     MULTI_POP_3 = 0x100 + 0xC2,
     ISZERO_JUMPI = 0x100 + 0xC3,
     DUP2_MSTORE_PUSH = 0x100 + 0xC4,
+    // New high-impact fusions
+    DUP3_ADD_MSTORE = 0x100 + 0xC5,
+    SWAP1_DUP2_ADD = 0x100 + 0xC6,
+    PUSH_DUP3_ADD = 0x100 + 0xC7,
+    FUNCTION_DISPATCH = 0x100 + 0xC8,
+    CALLVALUE_CHECK = 0x100 + 0xC9,
+    PUSH0_REVERT = 0x100 + 0xCA,
+    PUSH_ADD_DUP1 = 0x100 + 0xCB,
+    MLOAD_SWAP1_DUP2 = 0x100 + 0xCC,
 
     /// Convert from regular Opcode
     pub fn fromOpcode(opcode: Opcode) UnifiedOpcode {
