@@ -64,7 +64,8 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
         /// Mark an address as accessed and return the gas cost
         /// Returns COLD_ACCOUNT_ACCESS_COST if first access, WARM_ACCOUNT_ACCESS_COST if already accessed
         pub fn access_address(self: *Self, allocator: std.mem.Allocator, address: Address) !u64 {
-            const result = try self.addresses.getOrPutContext(allocator, address, {});
+            _ = allocator; // ArrayHashMap manages its own memory
+            const result = try self.addresses.getOrPut(address);
             if (result.found_existing) {
                 return WARM_ACCOUNT_ACCESS_COST;
             }
