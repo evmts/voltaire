@@ -406,44 +406,32 @@ pub fn Dispatch(comptime FrameType: type) type {
             value: FrameType.WordType,
             fusion_type: FusionType,
         ) !void {
-            // Use the new static jump handlers
+            _ = unresolved_jumps; // No longer used since we don't have static jumps
+            _ = jumpdest_map; // No longer used since we don't have static jumps
+            
+            // Jump destinations must fit in u64 (no PC can be > u64)
+            // Since we removed pointer variants, always use inline versions
+            if (value > std.math.maxInt(u64)) {
+                // Invalid jump - use the regular INVALID opcode handler
+                const opcode_handlers = @import("../frame/frame_handlers.zig").getOpcodeHandlers(FrameType);
+                try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers[@intFromEnum(@import("../opcodes/opcode.zig").Opcode.INVALID)] });
+                return;
+            }
+            
+            // Use the inline handlers since we can't have pointer variants for jumps
+            // These will perform the binary search at runtime
             const JumpSyntheticHandlers = @import("../instructions/handlers_jump_synthetic.zig").Handlers(FrameType);
             const handler = switch (fusion_type) {
-                .push_jump => &JumpSyntheticHandlers.jump_to_static_location,
-                .push_jumpi => &JumpSyntheticHandlers.jumpi_to_static_location,
+                .push_jump => &JumpSyntheticHandlers.push_jump_inline,
+                .push_jumpi => &JumpSyntheticHandlers.push_jumpi_inline,
                 else => unreachable,
             };
             
             try schedule_items.append(allocator, .{ .opcode_handler = handler });
             
-            // Check if within valid PC range
-            if (value <= std.math.maxInt(FrameType.PcType)) {
-                const target_pc: FrameType.PcType = @intCast(value);
-                
-                // Check if we've already seen this JUMPDEST (backward jump)
-                if (jumpdest_map.get(target_pc)) |_| {
-                    // Backward jump - we've seen this JUMPDEST already
-                    // Note: We need to use the final schedule pointer, which we don't have yet
-                    // So we still need to track it for resolution after toOwnedSlice
-                    const metadata_index = schedule_items.items.len;
-                    try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-                    try unresolved_jumps.append(allocator, .{
-                        .schedule_index = metadata_index,
-                        .target_pc = target_pc,
-                    });
-                } else {
-                    // Forward jump - record for later resolution
-                    const metadata_index = schedule_items.items.len;
-                    try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-                    try unresolved_jumps.append(allocator, .{
-                        .schedule_index = metadata_index,
-                        .target_pc = target_pc,
-                    });
-                }
-            } else {
-                // Invalid jump destination - add undefined metadata
-                try schedule_items.append(allocator, .{ .jump_static = .{ .dispatch = undefined } });
-            }
+            // Add inline value metadata (always fits in u64 for valid jumps)
+            const inline_val: u64 = @intCast(value);
+            try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_val } });
         }
 
         fn resolveStaticJumpsWithMap(
@@ -492,8 +480,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                 .push_and => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER),
                 .push_or => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER),
                 .push_xor => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER),
-                .push_jump => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
-                .push_jumpi => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
+                // Jump opcodes MUST be inline since jump destinations always fit in u64
+                .push_jump => @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
+                .push_jumpi => @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
                 .push_mload => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER),
                 .push_mstore => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER),
                 .push_mstore8 => if (is_inline) @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER),

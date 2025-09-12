@@ -74,35 +74,6 @@ pub fn Handlers(comptime FrameType: type) type {
             }
         }
 
-        /// PUSH_JUMP_POINTER - Fused PUSH+JUMP with pointer destination (>8 bytes).
-        /// @deprecated Use jump_to_static_location for better performance
-        pub fn push_jump_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            @branchHint(.likely);
-            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
-            const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMP_POINTER, Dispatch, Dispatch.Item, cursor);
-            
-            // Cursor now points to metadata
-            const dest = op_data.metadata.value.*;
-
-            // Validate jump destination range
-            if (dest > std.math.maxInt(FrameType.PcType)) {
-                @branchHint(.unlikely);
-                return Error.InvalidJump;
-            }
-
-            const dest_pc: FrameType.PcType = @intCast(dest);
-
-            // Look up the destination in the jump table
-            const jump_table = self.jump_table;
-            if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
-                @branchHint(.likely);
-                // Found valid JUMPDEST - tail call to the jump destination
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
-            } else {
-                // Not a valid JUMPDEST
-                return Error.InvalidJump;
-            }
-        }
 
         /// PUSH_JUMPI_INLINE - Fused PUSH+JUMPI with inline destination (≤8 bytes).
         /// Pushes a destination, pops condition, and conditionally jumps.
@@ -143,45 +114,6 @@ pub fn Handlers(comptime FrameType: type) type {
             }
         }
 
-        /// PUSH_JUMPI_POINTER - Fused PUSH+JUMPI with pointer destination (>8 bytes).
-        /// @deprecated Use jumpi_to_static_location for better performance
-        pub fn push_jumpi_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            @branchHint(.likely);
-            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
-            const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMPI_POINTER, Dispatch, Dispatch.Item, cursor);
-            
-            // Cursor now points to metadata
-            const dest = op_data.metadata.value.*;
-
-            // Pop the condition
-            std.debug.assert(self.stack.size() >= 1); // PUSH_JUMPI requires 1 stack item
-            const condition = self.stack.pop_unsafe();
-
-            if (condition != 0) {
-                @branchHint(.unlikely);
-                // Take the jump - validate destination range
-                if (dest > std.math.maxInt(FrameType.PcType)) {
-                    @branchHint(.unlikely);
-                    return Error.InvalidJump;
-                }
-
-                const dest_pc: FrameType.PcType = @intCast(dest);
-
-                // Look up the destination in the jump table
-                const jump_table = self.jump_table;
-                if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
-                    @branchHint(.likely);
-                    // Found valid JUMPDEST - tail call to the jump destination
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
-                } else {
-                    // Not a valid JUMPDEST
-                    return Error.InvalidJump;
-                }
-            } else {
-                // Continue to next instruction
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-            }
-        }
     };
 }
 
@@ -240,27 +172,6 @@ fn createInlineDispatch(value: u256) TestFrame.Dispatch {
     };
 }
 
-// Helper to create dispatch with pointer metadata
-fn createPointerDispatch(value: *const u256) TestFrame.Dispatch {
-    const mock_handler = struct {
-        fn handler(frame: TestFrame, dispatch: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
-            _ = frame;
-            _ = dispatch;
-            return TestFrame.Success.stop;
-        }
-    }.handler;
-
-    var cursor: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
-    cursor[0] = .{ .opcode_handler = &mock_handler };
-    cursor[1] = .{ .opcode_handler = &mock_handler };
-
-    cursor[0].metadata = .{ .pointer_value = value };
-
-    return TestFrame.Dispatch{
-        .cursor = &cursor,
-        .bytecode_length = 0,
-    };
-}
 
 test "jump_to_static_location - direct jump without search" {
     var frame = try createTestFrame(testing.allocator);
@@ -366,16 +277,6 @@ test "PUSH_JUMP_INLINE - unconditional jump" {
     try testing.expectEqual(TestFrame.Success.Stop, try result);
 }
 
-test "PUSH_JUMP_POINTER - large destination jump" {
-    var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
-
-    const large_dest: u256 = 0x1000000;
-    const dispatch = createPointerDispatch(&large_dest);
-    const result = TestFrame.JumpSyntheticHandlers.push_jump_pointer(frame, dispatch);
-
-    try testing.expectEqual(TestFrame.Success.Stop, try result);
-}
 
 test "PUSH_JUMPI_INLINE - conditional jump taken" {
     var frame = try createTestFrame(testing.allocator);
@@ -408,25 +309,6 @@ test "PUSH_JUMPI_INLINE - conditional jump not taken" {
     try testing.expectEqual(@as(usize, 0), frame.stack.len());
 }
 
-test "synthetic jump - pointer variants" {
-    var frame = try createTestFrame(testing.allocator);
-    defer frame.deinit(testing.allocator);
-
-    // Test PUSH_JUMPI_POINTER with condition true
-    try frame.stack.push(42); // non-zero condition
-    const dest1: u256 = 0x80000000;
-    var dispatch = createPointerDispatch(&dest1);
-    var result = TestFrame.JumpSyntheticHandlers.push_jumpi_pointer(frame, dispatch);
-    try testing.expectEqual(TestFrame.Success.Stop, try result);
-
-    // Test PUSH_JUMPI_POINTER with condition false
-    try frame.stack.push(0); // zero condition
-    const dest2: u256 = 0x90000000;
-    dispatch = createPointerDispatch(&dest2);
-    result = TestFrame.JumpSyntheticHandlers.push_jumpi_pointer(frame, dispatch);
-    // Should continue (mock returns stop)
-    try testing.expectEqual(TestFrame.Success.stop, try result);
-}
 
 test "PUSH_JUMPI - various conditions" {
     var frame = try createTestFrame(testing.allocator);

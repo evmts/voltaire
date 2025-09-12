@@ -23,9 +23,9 @@ pub const OpcodeSynthetic = enum(u8) {
     PUSH_DIV_INLINE = 0xA9,
     PUSH_DIV_POINTER = 0xAA,
     PUSH_JUMP_INLINE = 0xAB,
-    PUSH_JUMP_POINTER = 0xAC,
+    // 0xAC removed - was PUSH_JUMP_POINTER (not needed, jumps fit in u64)
     PUSH_JUMPI_INLINE = 0xAD,
-    PUSH_JUMPI_POINTER = 0xAE,
+    // 0xAE removed - was PUSH_JUMPI_POINTER (not needed, jumps fit in u64)
     PUSH_SUB_INLINE = 0xAF,
     PUSH_SUB_POINTER = 0xB0,
     // New: PUSH+MLOAD and PUSH+MSTORE fusions (immediate offset)
@@ -77,9 +77,7 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
         @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE),
         @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
         @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
-        @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
         @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
-        @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
         @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE),
         @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER),
     };
@@ -95,9 +93,7 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
     try std.testing.expectEqual(@as(u8, 0xA9), @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE));
     try std.testing.expectEqual(@as(u8, 0xAA), @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER));
     try std.testing.expectEqual(@as(u8, 0xAB), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xAC), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER));
     try std.testing.expectEqual(@as(u8, 0xAD), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xAE), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER));
     try std.testing.expectEqual(@as(u8, 0xAF), @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE));
     try std.testing.expectEqual(@as(u8, 0xB0), @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER));
     try std.testing.expectEqual(@as(u8, 0xB1), @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE));
