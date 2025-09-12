@@ -36,8 +36,8 @@ const dispatch_mod = @import("../preprocessor/dispatch.zig");
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode
 const DispatchCacheEntry = struct {
-    /// Full bytecode used as key (padded with zeros if shorter than max)
-    bytecode_key: []const u8, // Points to bytecode directly when it fits, or to a copy
+    /// Full bytecode used as key (points to bytecode directly)
+    bytecode_key: []const u8,
     /// Cached dispatch schedule (owned by cache)
     schedule: []const u8, // Store as raw bytes
     /// Cached jump table (owned by cache)
@@ -50,6 +50,7 @@ const DispatchCacheEntry = struct {
 
 const DispatchCache = struct {
     const CACHE_SIZE = 256; // Number of cached contracts
+    const SMALL_BYTECODE_THRESHOLD = 256; // Compute on-demand for bytecode smaller than this
 
     entries: [CACHE_SIZE]?DispatchCacheEntry = [_]?DispatchCacheEntry{null} ** CACHE_SIZE,
     allocator: std.mem.Allocator,
@@ -77,9 +78,12 @@ const DispatchCache = struct {
         }
     }
 
-    // No longer needed - we use bytecode directly as key
-
     fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
+        // Skip cache for small bytecode - compute on-demand is faster
+        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
+            return null;
+        }
+
         self.mutex.lock();
         defer self.mutex.unlock();
 
@@ -88,7 +92,7 @@ const DispatchCache = struct {
         // Search for matching entry
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
-                // Direct bytecode comparison - entire bytecode is the key
+                // Direct bytecode comparison - safe from collision attacks
                 if (std.mem.eql(u8, entry.bytecode_key, bytecode)) {
                     // Found a hit
                     self.hits += 1;
@@ -107,6 +111,10 @@ const DispatchCache = struct {
     }
 
     fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
+        // Skip cache for small bytecode
+        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
+            return;
+        }
 
         self.mutex.lock();
         defer self.mutex.unlock();
@@ -155,6 +163,11 @@ const DispatchCache = struct {
     }
 
     fn release(self: *DispatchCache, bytecode: []const u8) void {
+        // Skip for small bytecode
+        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
+            return;
+        }
+
         self.mutex.lock();
         defer self.mutex.unlock();
 
@@ -367,24 +380,32 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const MemorySyntheticHandlers = @import("../instructions/handlers_memory_synthetic.zig").Handlers(Self);
         pub const JumpSyntheticHandlers = @import("../instructions/handlers_jump_synthetic.zig").Handlers(Self);
 
-        // CACHE LINE 1 (0-63 bytes) - ULTRA HOT PATH
-        stack: Stack, // 16B - Stack operations
-        gas_remaining: GasType, // 8B - Gas tracking (i64)
-        memory: Memory, // 16B - Memory operations
-        dispatch: Dispatch, // 16B - Dispatch cursor and u256_values pointer
-        database: config.DatabaseType, // 8B - Storage access
-        // CACHE LINE 2 (64-127 bytes) - WARM PATH
-        value: WordType, // 32B - Call value (direct value, not pointer)
-        evm_ptr: *anyopaque, // 8B - EVM instance pointer
-        calldata_slice: []const u8, // 16B - Calldata slice (direct, not pointer)
-        caller: Address, // 20B - Calling address
-        contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
+        // CACHE LINE 1 (64 bytes exactly) - TRUE HOT PATH
+        // These fields are accessed in nearly every instruction
+        stack: Stack, // 16B - Stack operations (EVERY arithmetic/stack op)
+        gas_remaining: GasType, // 8B - Gas tracking (checked in most ops)
+        dispatch: Dispatch, // 16B - Dispatch cursor (EVERY instruction)
+        memory: Memory, // 16B - Memory operations (frequent)
+        evm_ptr: *anyopaque, // 8B - EVM instance pointer (storage/context/system)
+        // Total: 64 bytes exactly
+        
+        // CACHE LINE 2 (64 bytes) - STORAGE/CONTEXT/EXECUTION
+        // These fields are accessed together during storage ops and execution
+        contract_address: Address, // 20B - Current contract (storage ops, ADDRESS)
+        u256_constants: []const WordType, // 16B - Constants from dispatch (PUSH9-32)
+        jump_table: *const Dispatch.JumpTable, // 8B - Jump table for JUMP/JUMPI
+        output: []u8, // 16B - Output data (RETURN/REVERT/calls)
+        _padding2: [4]u8 = undefined, // 4B - Alignment padding
+        // Total: 64 bytes
+        
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
-        output: []u8, // 16B - Output data slice (only for RETURN/REVERT)
-        code: []const u8 = &[_]u8{}, // Contract code (for CODESIZE/CODECOPY)
-        u256_constants: []const WordType = &[_]WordType{}, // Array of u256 constants from dispatch
-        authorized_address: ?Address = null, // 20B - EIP-3074 authorized address
-        jump_table: *const Dispatch.JumpTable, // 8B - Pointer to jump table for JUMP/JUMPI validation
+        // These fields are rarely accessed (specific opcodes only)
+        // Note: database moved to EVM struct - access via evm_ptr for better cache locality
+        caller: Address, // 20B - Only for CALLER opcode
+        value: WordType, // 32B - Only for CALLVALUE opcode (moved from warm)
+        calldata_slice: []const u8, // 16B - Only for CALLDATALOAD/COPY
+        code: []const u8 = &[_]u8{}, // 16B - Only for CODESIZE/CODECOPY
+        authorized_address: ?Address = null, // 21B - EIP-3074 (rarely used)
 
         //
         /// Initialize a new execution frame.
@@ -394,7 +415,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// and analysis is now handled separately by dispatch initialization.
         ///
         /// Initialize a new execution frame.
-        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
+        /// Note: database is now accessed through evm_ptr for better cache locality
+        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
             // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata_input.len, self_destruct != null });
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
@@ -411,22 +433,23 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // log.debug("Frame.init: Successfully initialized frame components", .{});
             return Self{
-                // Cache line 1
+                // Cache line 1 - TRUE HOT PATH
                 .stack = stack,
                 .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
-                .memory = memory,
                 .dispatch = Dispatch{ .cursor = undefined }, // Will be set during interpret
-                .database = database,
-                // Cache line 2
-                .value = value,
+                .memory = memory,
                 .evm_ptr = evm_ptr,
-                .calldata_slice = calldata_input,
+                // Cache line 2 - STORAGE/CONTEXT/EXECUTION
                 .contract_address = Address.ZERO_ADDRESS,
-                .caller = caller,
-                // Cache line 3+
-                .output = &[_]u8{}, // Start with empty output
                 .u256_constants = &[_]WordType{}, // Will be set during interpret
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
+                .output = &[_]u8{}, // Start with empty output
+                ._padding2 = undefined,
+                // Cache line 3+ - COLD PATH
+                .caller = caller,
+                .value = value,
+                .calldata_slice = calldata_input,
+                .code = &[_]u8{}, // Will be set during interpret
                 .authorized_address = null,
             };
         }
@@ -658,20 +681,23 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             log.debug("Frame.copy: Deep copy complete", .{});
             return Self{
+                // Cache line 1 - TRUE HOT PATH
                 .stack = new_stack,
                 .gas_remaining = self.gas_remaining,
-                .memory = new_memory,
                 .dispatch = self.dispatch,
-                .database = self.database,
-                .value = self.value,
+                .memory = new_memory,
                 .evm_ptr = self.evm_ptr,
-                .calldata_slice = self.calldata_slice,
-                .caller = self.caller,
+                // Cache line 2 - STORAGE/CONTEXT/EXECUTION
                 .contract_address = self.contract_address,
-                .output = new_output,
-                .code = self.code,
                 .u256_constants = self.u256_constants,
                 .jump_table = self.jump_table,
+                .output = new_output,
+                ._padding2 = undefined,
+                // Cache line 3+ - COLD PATH
+                .caller = self.caller,
+                .value = self.value,
+                .calldata_slice = self.calldata_slice,
+                .code = self.code,
                 .authorized_address = self.authorized_address,
             };
         }

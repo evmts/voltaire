@@ -108,44 +108,42 @@ pub fn Evm(comptime config: EvmConfig) type {
         };
 
         // OPTIMIZED CACHE LINE LAYOUT
-        // Cache line 1 (64 bytes) - HOT PATH: Most frequently accessed during frame execution
+        // Cache line 1 (64 bytes) - EXECUTION CONTROL: Accessed frequently during execution
         /// Current call depth (0 = root call)
         depth: config.get_depth_type(),                    // 1-2 bytes (u8 or u11)
-        /// Current snapshot ID for the active call frame
-        current_snapshot_id: Journal.SnapshotIdType,       // 1-2 bytes (u8 or u16)
         /// Disable gas checking (for testing/debugging)
         disable_gas_checking: bool,                        // 1 byte
-        _padding1: [3]u8 = undefined,                      // 3 bytes padding for alignment
-        /// Gas refund counter for SSTORE operations
-        gas_refund_counter: u64,                           // 8 bytes
+        _padding1: [5]u8 = undefined,                      // 5-6 bytes padding for alignment
         /// Current call input data (slice: ptr + len)
         current_input: []const u8,                         // 16 bytes
         /// Current return data (slice: ptr + len)
         return_data: []const u8,                           // 16 bytes
+        /// Allocator for dynamic memory
+        allocator: std.mem.Allocator,                      // 16 bytes (vtable ptr + context ptr)
+        // Total: ~56 bytes (fits in cache line 1)
+
+        // Cache line 2 (64+ bytes) - STORAGE OPERATIONS: All accessed together for SLOAD/SSTORE
         /// Database interface for state storage
         database: *Database,                               // 8 bytes
         /// Access list for tracking warm/cold access (EIP-2929)
-        /// Moved to cache line 1 as it's accessed on every SLOAD/SSTORE/BALANCE/etc
-        access_list: AccessList,                           // ~40 bytes (allocator + 2 hashmaps)
-        // Total: ~88 bytes (will span into cache line 2)
+        access_list: AccessList,                           // ~40 bytes (2 hashmaps)
+        /// Current snapshot ID for the active call frame
+        current_snapshot_id: Journal.SnapshotIdType,       // 1-2 bytes (u8 or u16)
+        /// Gas refund counter for SSTORE operations
+        gas_refund_counter: u64,                           // 8 bytes
+        // Total: ~58 bytes (mostly fits in cache line 2)
 
-        // Cache line 2 - WARM PATH: Frame execution context
-        /// Allocator for dynamic memory
-        allocator: std.mem.Allocator,                      // 16 bytes (vtable ptr + context ptr)
-        /// Small reusable buffer for fixed-size outputs (e.g., 32-byte address)
-        small_output_buf: [64]u8 = undefined,
-
-        // Cache line 3 - STATE CHANGES: Accessed on state modifications
+        // Cache line 3+ - STATE TRACKING: Transaction-level state changes
+        /// Journal for tracking state changes and snapshots
+        journal: Journal,                                  // Variable size
         /// Logs emitted during the current call (accessed for LOG0-LOG4 opcodes)
         logs: std.ArrayList(@import("frame/call_result.zig").Log),
         /// Tracks contracts created in current transaction (EIP-6780)
         created_contracts: CreatedContracts,
         /// Contracts marked for self-destruction
         self_destruct: SelfDestruct,
-        /// Journal for tracking state changes and snapshots
-        journal: Journal,
 
-        // Cache line 4+ - TRANSACTION CONTEXT: Rarely changes during execution
+        // Cache line 4+ - TRANSACTION CONTEXT: Set once per transaction, rarely accessed
         /// Block information
         block_info: BlockInfo,
         /// Transaction context
@@ -208,32 +206,31 @@ pub fn Evm(comptime config: EvmConfig) type {
             );
 
             return Self{
-                // Cache line 1 - hot path
+                // Cache line 1 - EXECUTION CONTROL
                 .depth = 0,
-                .current_snapshot_id = 0,
                 .disable_gas_checking = false,
                 ._padding1 = undefined,
-                .gas_refund_counter = 0,
                 .current_input = &.{},
                 .return_data = &.{},
+                .allocator = allocator,
+                // Cache line 2 - STORAGE OPERATIONS
                 .database = database,
                 .access_list = access_list,
-                // Cache line 2 - warm path
-                .allocator = allocator,
-                .small_output_buf = undefined,
-                // Cache line 3 - state changes
+                .current_snapshot_id = 0,
+                .gas_refund_counter = 0,
+                // Cache line 3+ - STATE TRACKING
+                .journal = Journal.init(allocator),
                 .logs = .empty,
                 .created_contracts = CreatedContracts.init(allocator),
                 .self_destruct = SelfDestruct.init(allocator),
-                .journal = Journal.init(allocator),
-                // Cache line 4 - transaction context
+                // Cache line 4+ - TRANSACTION CONTEXT
                 .block_info = block_info,
                 .context = context,
                 .gas_price = gas_price,
                 .origin = origin,
                 .hardfork_config = hardfork_config,
                 .eips = (eips.Eips{ .hardfork = hardfork_config }).get_evm_config(),
-                // Cache line 5+ - cold path
+                // Cache line 5+ - COLD PATH
                 .call_arena = arena,
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
             };
@@ -382,7 +379,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Pre-warm all addresses
             if (warm_count > 0) {
-                self.access_list.pre_warm_addresses(self.allocator, warm_addresses[0..warm_count]) catch {};
+                self.access_list.pre_warm_addresses(warm_addresses[0..warm_count]) catch {};
             }
 
             // Check gas unless disabled
@@ -1131,12 +1128,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             // log.debug("DEBUG: About to call Frame.init\n", .{});
             // Use arena allocator for all frame allocations
             const arena_allocator = self.getCallArenaAllocator();
-            var frame = try Frame.init(arena_allocator, gas_cast, self.database.*, caller, value, input, @as(*anyopaque, @ptrCast(self)));
+            var frame = try Frame.init(arena_allocator, gas_cast, caller, value, input, @as(*anyopaque, @ptrCast(self)));
             frame.contract_address = address;
             defer frame.deinit(arena_allocator);
 
             // EIP-2929: Warm the contract address being executed
-            _ = self.access_list.access_address(self.allocator, address) catch {};
+            _ = self.access_list.access_address(address) catch {};
 
             // log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
 
@@ -1505,13 +1502,13 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Access an address and return the gas cost (EIP-2929)
         pub fn access_address(self: *Self, address: primitives.Address) !u64 {
-            const cost = try self.access_list.access_address(self.allocator, address);
+            const cost = try self.access_list.access_address(address);
             return cost;
         }
 
         /// Access a storage slot and return the gas cost (EIP-2929)
         pub fn access_storage_slot(self: *Self, contract_address: primitives.Address, slot: u256) !u64 {
-            const cost = try self.access_list.access_storage_slot(self.allocator, contract_address, slot);
+            const cost = try self.access_list.access_storage_slot(contract_address, slot);
             return cost;
         }
 
