@@ -8,6 +8,9 @@ const PatternKey2 = struct { a: u8, b: u8 };
 const PatternKey3 = struct { a: u8, b: u8, c: u8 };
 const PatternKey4 = struct { a: u8, b: u8, c: u8, d: u8 };
 const PatternKey5 = struct { a: u8, b: u8, c: u8, d: u8, e: u8 };
+const PatternKey6 = struct { a: u8, b: u8, c: u8, d: u8, e: u8, f: u8 };
+const PatternKey7 = struct { a: u8, b: u8, c: u8, d: u8, e: u8, f: u8, g: u8 };
+const PatternKey8 = struct { a: u8, b: u8, c: u8, d: u8, e: u8, f: u8, g: u8, h: u8 };
 
 /// User owned struct used for introspection and debugging
 pub const BytecodeStats = struct {
@@ -53,11 +56,14 @@ pub const BytecodeStats = struct {
     jumps: []const Jump,
     backwards_jumps: usize,
     is_create_code: bool,
-    // Pattern tracking - top 3 patterns for lengths 2, 3, 4, and 5+
+    // Pattern tracking - top 3 patterns for each length
     patterns_2: []const Pattern,
     patterns_3: []const Pattern,
     patterns_4: []const Pattern,
-    patterns_5_plus: []const Pattern,
+    patterns_5: []const Pattern,
+    patterns_6: []const Pattern,
+    patterns_7: []const Pattern,
+    patterns_8: []const Pattern,
     
     /// Analyze bytecode and return statistics
     pub fn analyze(allocator: std.mem.Allocator, bytecode: []const u8) !BytecodeStats {
@@ -81,6 +87,12 @@ pub const BytecodeStats = struct {
         defer pattern_map_4.deinit();
         var pattern_map_5 = std.AutoHashMap(PatternKey5, u32).init(allocator);
         defer pattern_map_5.deinit();
+        var pattern_map_6 = std.AutoHashMap(PatternKey6, u32).init(allocator);
+        defer pattern_map_6.deinit();
+        var pattern_map_7 = std.AutoHashMap(PatternKey7, u32).init(allocator);
+        defer pattern_map_7.deinit();
+        var pattern_map_8 = std.AutoHashMap(PatternKey8, u32).init(allocator);
+        defer pattern_map_8.deinit();
         
         // Store the actual opcodes for pattern analysis (excluding push data)
         var opcodes = try std.ArrayList(u8).initCapacity(allocator, bytecode.len);
@@ -235,11 +247,53 @@ pub const BytecodeStats = struct {
             }
         }
         
+        // Track 6-opcode patterns
+        if (opcode_list.len >= 6) {
+            var i: usize = 0;
+            while (i < opcode_list.len - 5) : (i += 1) {
+                const key = PatternKey6{ .a = opcode_list[i], .b = opcode_list[i + 1], .c = opcode_list[i + 2], .d = opcode_list[i + 3], .e = opcode_list[i + 4], .f = opcode_list[i + 5] };
+                const entry = try pattern_map_6.getOrPut(key);
+                if (!entry.found_existing) {
+                    entry.value_ptr.* = 0;
+                }
+                entry.value_ptr.* += 1;
+            }
+        }
+        
+        // Track 7-opcode patterns
+        if (opcode_list.len >= 7) {
+            var i: usize = 0;
+            while (i < opcode_list.len - 6) : (i += 1) {
+                const key = PatternKey7{ .a = opcode_list[i], .b = opcode_list[i + 1], .c = opcode_list[i + 2], .d = opcode_list[i + 3], .e = opcode_list[i + 4], .f = opcode_list[i + 5], .g = opcode_list[i + 6] };
+                const entry = try pattern_map_7.getOrPut(key);
+                if (!entry.found_existing) {
+                    entry.value_ptr.* = 0;
+                }
+                entry.value_ptr.* += 1;
+            }
+        }
+        
+        // Track 8-opcode patterns
+        if (opcode_list.len >= 8) {
+            var i: usize = 0;
+            while (i < opcode_list.len - 7) : (i += 1) {
+                const key = PatternKey8{ .a = opcode_list[i], .b = opcode_list[i + 1], .c = opcode_list[i + 2], .d = opcode_list[i + 3], .e = opcode_list[i + 4], .f = opcode_list[i + 5], .g = opcode_list[i + 6], .h = opcode_list[i + 7] };
+                const entry = try pattern_map_8.getOrPut(key);
+                if (!entry.found_existing) {
+                    entry.value_ptr.* = 0;
+                }
+                entry.value_ptr.* += 1;
+            }
+        }
+        
         // Extract top 3 patterns for each length
         const patterns_2 = try extractTopPatterns2(allocator, pattern_map_2);
         const patterns_3 = try extractTopPatterns3(allocator, pattern_map_3);
         const patterns_4 = try extractTopPatterns4(allocator, pattern_map_4);
         const patterns_5 = try extractTopPatterns5(allocator, pattern_map_5);
+        const patterns_6 = try extractTopPatterns6(allocator, pattern_map_6);
+        const patterns_7 = try extractTopPatterns7(allocator, pattern_map_7);
+        const patterns_8 = try extractTopPatterns8(allocator, pattern_map_8);
         
         return BytecodeStats{
             .opcode_counts = opcode_counts,
@@ -252,7 +306,10 @@ pub const BytecodeStats = struct {
             .patterns_2 = patterns_2,
             .patterns_3 = patterns_3,
             .patterns_4 = patterns_4,
-            .patterns_5_plus = patterns_5,
+            .patterns_5 = patterns_5,
+            .patterns_6 = patterns_6,
+            .patterns_7 = patterns_7,
+            .patterns_8 = patterns_8,
         };
     }
     
@@ -275,9 +332,17 @@ pub const BytecodeStats = struct {
             }
         }.lessThan);
         
-        // Return top 3
+        // Return top 3 and clean up the rest
         const top_count = @min(3, patterns.items.len);
-        return try allocator.dupe(Pattern, patterns.items[0..top_count]);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
     }
     
     fn extractTopPatterns3(allocator: std.mem.Allocator, map: std.AutoHashMap(PatternKey3, u32)) ![]const Pattern {
@@ -300,7 +365,15 @@ pub const BytecodeStats = struct {
         }.lessThan);
         
         const top_count = @min(3, patterns.items.len);
-        return try allocator.dupe(Pattern, patterns.items[0..top_count]);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
     }
     
     fn extractTopPatterns4(allocator: std.mem.Allocator, map: std.AutoHashMap(PatternKey4, u32)) ![]const Pattern {
@@ -324,7 +397,15 @@ pub const BytecodeStats = struct {
         }.lessThan);
         
         const top_count = @min(3, patterns.items.len);
-        return try allocator.dupe(Pattern, patterns.items[0..top_count]);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
     }
     
     fn extractTopPatterns5(allocator: std.mem.Allocator, map: std.AutoHashMap(PatternKey5, u32)) ![]const Pattern {
@@ -349,7 +430,120 @@ pub const BytecodeStats = struct {
         }.lessThan);
         
         const top_count = @min(3, patterns.items.len);
-        return try allocator.dupe(Pattern, patterns.items[0..top_count]);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
+    }
+    
+    fn extractTopPatterns6(allocator: std.mem.Allocator, map: std.AutoHashMap(PatternKey6, u32)) ![]const Pattern {
+        var patterns = try std.ArrayList(Pattern).initCapacity(allocator, map.count());
+        defer patterns.deinit(allocator);
+        
+        var iter = map.iterator();
+        while (iter.next()) |entry| {
+            const opcodes = try allocator.alloc(u8, 6);
+            opcodes[0] = entry.key_ptr.a;
+            opcodes[1] = entry.key_ptr.b;
+            opcodes[2] = entry.key_ptr.c;
+            opcodes[3] = entry.key_ptr.d;
+            opcodes[4] = entry.key_ptr.e;
+            opcodes[5] = entry.key_ptr.f;
+            try patterns.append(allocator, .{ .opcodes = opcodes, .count = entry.value_ptr.* });
+        }
+        
+        std.mem.sort(Pattern, patterns.items, {}, struct {
+            fn lessThan(_: void, a: Pattern, b: Pattern) bool {
+                return a.count > b.count;
+            }
+        }.lessThan);
+        
+        const top_count = @min(3, patterns.items.len);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
+    }
+    
+    fn extractTopPatterns7(allocator: std.mem.Allocator, map: std.AutoHashMap(PatternKey7, u32)) ![]const Pattern {
+        var patterns = try std.ArrayList(Pattern).initCapacity(allocator, map.count());
+        defer patterns.deinit(allocator);
+        
+        var iter = map.iterator();
+        while (iter.next()) |entry| {
+            const opcodes = try allocator.alloc(u8, 7);
+            opcodes[0] = entry.key_ptr.a;
+            opcodes[1] = entry.key_ptr.b;
+            opcodes[2] = entry.key_ptr.c;
+            opcodes[3] = entry.key_ptr.d;
+            opcodes[4] = entry.key_ptr.e;
+            opcodes[5] = entry.key_ptr.f;
+            opcodes[6] = entry.key_ptr.g;
+            try patterns.append(allocator, .{ .opcodes = opcodes, .count = entry.value_ptr.* });
+        }
+        
+        std.mem.sort(Pattern, patterns.items, {}, struct {
+            fn lessThan(_: void, a: Pattern, b: Pattern) bool {
+                return a.count > b.count;
+            }
+        }.lessThan);
+        
+        const top_count = @min(3, patterns.items.len);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
+    }
+    
+    fn extractTopPatterns8(allocator: std.mem.Allocator, map: std.AutoHashMap(PatternKey8, u32)) ![]const Pattern {
+        var patterns = try std.ArrayList(Pattern).initCapacity(allocator, map.count());
+        defer patterns.deinit(allocator);
+        
+        var iter = map.iterator();
+        while (iter.next()) |entry| {
+            const opcodes = try allocator.alloc(u8, 8);
+            opcodes[0] = entry.key_ptr.a;
+            opcodes[1] = entry.key_ptr.b;
+            opcodes[2] = entry.key_ptr.c;
+            opcodes[3] = entry.key_ptr.d;
+            opcodes[4] = entry.key_ptr.e;
+            opcodes[5] = entry.key_ptr.f;
+            opcodes[6] = entry.key_ptr.g;
+            opcodes[7] = entry.key_ptr.h;
+            try patterns.append(allocator, .{ .opcodes = opcodes, .count = entry.value_ptr.* });
+        }
+        
+        std.mem.sort(Pattern, patterns.items, {}, struct {
+            fn lessThan(_: void, a: Pattern, b: Pattern) bool {
+                return a.count > b.count;
+            }
+        }.lessThan);
+        
+        const top_count = @min(3, patterns.items.len);
+        const result = try allocator.alloc(Pattern, top_count);
+        for (0..top_count) |i| {
+            result[i] = patterns.items[i];
+        }
+        // Free the opcodes that we're not keeping
+        for (patterns.items[top_count..]) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        return result;
     }
     
     /// Deallocate statistics data
@@ -371,10 +565,22 @@ pub const BytecodeStats = struct {
             allocator.free(pattern.opcodes);
         }
         allocator.free(self.patterns_4);
-        for (self.patterns_5_plus) |pattern| {
+        for (self.patterns_5) |pattern| {
             allocator.free(pattern.opcodes);
         }
-        allocator.free(self.patterns_5_plus);
+        allocator.free(self.patterns_5);
+        for (self.patterns_6) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        allocator.free(self.patterns_6);
+        for (self.patterns_7) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        allocator.free(self.patterns_7);
+        for (self.patterns_8) |pattern| {
+            allocator.free(pattern.opcodes);
+        }
+        allocator.free(self.patterns_8);
     }
     
     pub fn formatStats(self: BytecodeStats, allocator: std.mem.Allocator) ![]const u8 {
