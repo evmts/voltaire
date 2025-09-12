@@ -23,7 +23,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
 
-            self.stack.binary_op_unsafe(struct { fn op(a: WordType, b: WordType) WordType { return a +% b; } }.op);
+            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return top +% second; } }.op);
 
             return next_instruction(self, cursor);
         }
@@ -32,7 +32,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2);
             
-            self.stack.binary_op_unsafe(struct { fn op(a: WordType, b: WordType) WordType { return a *% b; } }.op);
+            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return top *% second; } }.op);
 
             return next_instruction(self, cursor);
         }
@@ -41,7 +41,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             std.debug.assert(self.stack.size() >= 2); 
 
-            self.stack.binary_op_unsafe(struct { fn op(a: WordType, b: WordType) WordType { return a -% b; } }.op);
+            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return top -% second; } }.op);
 
             return next_instruction(self, cursor);
         }
@@ -53,8 +53,8 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 2); 
 
             self.stack.binary_op_unsafe(struct { 
-                fn op(a: WordType, b: WordType) WordType { 
-                    return from_native(a).wrapping_div(from_native(b)).to_native();
+                fn op(top: WordType, second: WordType) WordType { 
+                    return from_native(top).wrapping_div(from_native(second)).to_native();
                 } 
             }.op);
 
@@ -94,10 +94,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const second_sign = second >> 255;
             
             const top_mask = @as(u256, 0) -% top_sign;
-            const b_mask = @as(u256, 0) -% second_sign;
+            const second_mask = @as(u256, 0) -% second_sign;
             
             const top_abs = (top ^ top_mask) -% top_mask;
-            const second_abs = (second ^ b_mask) -% b_mask;
+            const second_abs = (second ^ second_mask) -% second_mask;
             
             const top_abs_u256 = FrameType.UintN.from_native(top_abs);
             const second_abs_u256 = FrameType.UintN.from_native(second_abs);
@@ -115,11 +115,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() >= 2); 
+            std.debug.assert(self.stack.size() >= 2);
 
             self.stack.binary_op_unsafe(struct {
-                fn op(a: WordType, b: WordType) WordType {
-                    return FrameType.UintN.from_native(a).wrapping_rem(FrameType.UintN.from_native(b)).to_native();
+                fn op(top: WordType, second: WordType) WordType {
+                    // EVM MOD computes: top % second
+                    return FrameType.UintN.from_native(top).wrapping_rem(FrameType.UintN.from_native(second)).to_native();
                 }
             }.op);
 
@@ -152,10 +153,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const second_sign = second >> 255;
             
             const top_mask = @as(u256, 0) -% top_sign;
-            const b_mask = @as(u256, 0) -% second_sign;
+            const second_mask = @as(u256, 0) -% second_sign;
             
             const top_abs = (top ^ top_mask) -% top_mask;
-            const second_abs = (second ^ b_mask) -% b_mask;
+            const second_abs = (second ^ second_mask) -% second_mask;
             
             const top_abs_u256 = FrameType.UintN.from_native(top_abs);
             const second_abs_u256 = FrameType.UintN.from_native(second_abs);

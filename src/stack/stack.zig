@@ -145,10 +145,10 @@ pub fn Stack(comptime config: StackConfig) type {
         pub inline fn binary_op_unsafe(self: *Self, comptime op: fn(a: WordType, b: WordType) WordType) void {
             @branchHint(.likely);
             std.debug.assert(@intFromPtr(self.stack_ptr) + @sizeOf(WordType) < @intFromPtr(self.stack_base()));
-            const b = self.stack_ptr[0];
+            const top = self.stack_ptr[0];
+            const second = self.stack_ptr[1];
+            self.stack_ptr[1] = op(top, second);
             self.stack_ptr += 1;
-            const a = self.stack_ptr[0];
-            self.stack_ptr[0] = op(a, b);
         }
 
         // Generic dup function for DUP1-DUP16
