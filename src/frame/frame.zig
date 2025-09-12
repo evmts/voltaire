@@ -529,8 +529,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     const handlers = &Self.opcode_handlers;
 
                     // Create dispatch schedule
-                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch |e| {
-                        log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
+                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch {
                         return Error.AllocationError;
                     };
                     schedule = owned_schedule.?.items;
@@ -570,8 +569,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 const handlers = &Self.opcode_handlers;
 
                 // Create dispatch schedule
-                owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch |e| {
-                    log.err("Frame.interpret_with_tracer: Failed to create dispatch schedule: {}", .{e});
+                owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers) catch {
                     return Error.AllocationError;
                 };
                 schedule = owned_schedule.?.items;
