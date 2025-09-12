@@ -20,7 +20,7 @@ pub fn Handlers(comptime FrameType: type) type {
             
             // The dispatch pointer already points to the JUMPDEST handler location
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
-            // Call the handler at that location, passing cursor pointing to the next slot (where metadata would be)
+            // Call the handler at that location, passing cursor pointing to the handler itself
             return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
         }
 
