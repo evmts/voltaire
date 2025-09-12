@@ -374,9 +374,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         dispatch: Dispatch, // 16B - Dispatch cursor and u256_values pointer
         database: config.DatabaseType, // 8B - Storage access
         // CACHE LINE 2 (64-127 bytes) - WARM PATH
-        value: *const WordType, // 8B - Call value (pointer)
+        value: WordType, // 32B - Call value (direct value, not pointer)
         evm_ptr: *anyopaque, // 8B - EVM instance pointer
-        length_prefixed_calldata: ?[*]const u8, // 8B - Length-prefixed calldata pointer (first 8 bytes = length)
+        calldata_slice: []const u8, // 16B - Calldata slice (direct, not pointer)
         caller: Address, // 20B - Calling address
         contract_address: Address = Address.ZERO_ADDRESS, // 20B - Current contract
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
@@ -394,7 +394,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// and analysis is now handled separately by dispatch initialization.
         ///
         /// Initialize a new execution frame.
-        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: *const WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
+        pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, database: config.DatabaseType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
             // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata_input.len, self_destruct != null });
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
@@ -409,28 +409,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             errdefer memory.deinit(allocator);
 
-            // Create length-prefixed calldata
-            const length_prefixed = if (calldata_input.len > 0) blk: {
-                // Allocate space for length (8 bytes) + data
-                const total_size = 8 + calldata_input.len;
-                const buffer = allocator.alloc(u8, total_size) catch {
-                    @branchHint(.cold);
-                    log.err("Frame.init: Failed to allocate length-prefixed calldata", .{});
-                    return Error.AllocationError;
-                };
-                errdefer allocator.free(buffer);
-
-                // Write length as 8 bytes (little-endian)
-                std.mem.writeInt(u64, buffer[0..8], calldata_input.len, .little);
-                // Copy calldata
-                @memcpy(buffer[8..], calldata_input);
-                break :blk buffer.ptr;
-            } else null;
-            errdefer if (length_prefixed) |ptr| {
-                const len = std.mem.readInt(u64, ptr[0..8], .little);
-                allocator.free(ptr[0 .. 8 + @as(usize, @intCast(len))]);
-            };
-
             // log.debug("Frame.init: Successfully initialized frame components", .{});
             return Self{
                 // Cache line 1
@@ -442,7 +420,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // Cache line 2
                 .value = value,
                 .evm_ptr = evm_ptr,
-                .length_prefixed_calldata = length_prefixed,
+                .calldata_slice = calldata_input,
                 .contract_address = Address.ZERO_ADDRESS,
                 .caller = caller,
                 // Cache line 3+
@@ -687,7 +665,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .database = self.database,
                 .value = self.value,
                 .evm_ptr = self.evm_ptr,
-                .length_prefixed_calldata = self.length_prefixed_calldata,
+                .calldata_slice = self.calldata_slice,
                 .caller = self.caller,
                 .contract_address = self.contract_address,
                 .output = new_output,
@@ -723,14 +701,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.gas_remaining -= amt;
         }
 
-        /// Get calldata as a slice from the length-prefixed pointer.
-        /// Returns empty slice if no calldata is present.
+        /// Get calldata as a slice.
+        /// Returns the calldata slice directly.
         pub inline fn calldata(self: *const Self) []const u8 {
-            const ptr = self.length_prefixed_calldata orelse return &[_]u8{};
-            // Read length from first 8 bytes
-            const len = std.mem.readInt(u64, ptr[0..8], .little);
-            // Return slice starting after length prefix
-            return ptr[8 .. 8 + @as(usize, @intCast(len))];
+            return self.calldata_slice;
         }
 
         /// Get the EVM instance from the opaque pointer
@@ -785,8 +759,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             try writer.print("{s}📞 Caller:{s}   {s}0x{s}{s}\n", .{ Colors.blue, Colors.reset, Colors.dim, std.fmt.bytesToHex(&self.caller.bytes, .lower), Colors.reset });
 
             // Value (if non-zero)
-            if (self.value.* != 0) {
-                try writer.print("{s}💰 Value:{s}    {s}{d}{s}\n", .{ Colors.magenta, Colors.reset, Colors.bold, self.value.*, Colors.reset });
+            if (self.value != 0) {
+                try writer.print("{s}💰 Value:{s}    {s}{d}{s}\n", .{ Colors.magenta, Colors.reset, Colors.bold, self.value, Colors.reset });
             }
 
             // Stack visualization (simplified for now)

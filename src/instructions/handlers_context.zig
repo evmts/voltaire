@@ -108,7 +108,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [] → [value]
         pub fn callvalue(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             const dispatch = Dispatch{ .cursor = cursor };
-            const value = self.value.*;
+            const value = self.value;
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLVALUE requires stack space
             self.stack.push_unsafe(value);
             const op_data = dispatch.getOpData(.CALLVALUE); // Use op_data.next_handler and op_data.next_cursor directly

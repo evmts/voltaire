@@ -289,7 +289,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.CALLVALUE_CHECK, Dispatch, Dispatch.Item, cursor);
             
             // CALLVALUE: Get msg.value
-            const value = self.value.*;
+            const value = self.value;
             self.stack.push_unsafe(value);
             
             // DUP1: Duplicate call value
