@@ -90,6 +90,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                 PushInlineMetadata,
                 PushPointerMetadata,
                 JumpDestMetadata,
+                JumpStaticMetadata,
             );
         }
 

@@ -38,7 +38,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     frame_handlers.setCurrentPc(dest_pc);
                 }
 
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
                 log.warn("JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
@@ -74,7 +74,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         frame_handlers.setCurrentPc(dest_pc);
                     }
 
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
                     log.warn("JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});

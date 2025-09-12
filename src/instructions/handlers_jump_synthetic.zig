@@ -15,25 +15,33 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jump_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
-            // Cursor now points to the metadata
-            const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cursor[0].jump_static.dispatch)));
-            return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr + 1 });
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.JUMP_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
+            
+            // The dispatch pointer already points to the JUMPDEST handler location
+            const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
+            // Call the handler at that location, passing cursor pointing to the next slot (where metadata would be)
+            return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
         }
 
         /// Conditionally jump to a statically known location without binary search.
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
-            // Cursor now points to the metadata
-            const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cursor[0].jump_static.dispatch)));
+            const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+            const op_data = dispatch_opcode_data.getOpData(.JUMPI_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
+            
+            // The dispatch pointer already points to the JUMPDEST handler location
+            const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
             std.debug.assert(self.stack.size() >= 1);
             const condition = self.stack.pop_unsafe();
             if (condition != 0) {
                 @branchHint(.unlikely);
-                return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr + 1 });
+                // Call the handler at that location, passing cursor pointing to that slot
+                return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
             }
-            // Continue to next instruction - advance past metadata
-            return @call(FrameType.getTailCallModifier(), cursor[1].opcode_handler, .{ self, cursor + 2 });
+            // Continue to next instruction
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_JUMP_INLINE - Fused PUSH+JUMP with inline destination (≤8 bytes).
@@ -59,7 +67,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
                 return Error.InvalidJump;
@@ -89,7 +97,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
                 return Error.InvalidJump;
@@ -124,7 +132,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
                     return Error.InvalidJump;
@@ -164,7 +172,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
                     return Error.InvalidJump;

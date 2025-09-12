@@ -305,7 +305,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const Dispatch = dispatch_mod.Dispatch(Self);
         /// The config passed into Frame(config)
         pub const frame_config = config;
-        
+
         /// SIMD vector length for optimized operations
         /// Value of 1 means scalar operations (no SIMD)
         pub const vector_length = config.vector_length;
@@ -653,7 +653,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            try cursor.cursor[0].opcode_handler(self, cursor.cursor + 1);
+            try cursor.cursor[0].opcode_handler(self, cursor.cursor);
             unreachable; // Handlers never return normally
         }
 
