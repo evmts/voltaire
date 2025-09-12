@@ -438,6 +438,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Execute a nested EVM call - used for calls from within the EVM.
         /// This handles nested calls and manages depth tracking.
         pub fn inner_call(self: *Self, params: CallParams) CallResult {
+            @branchHint(.likely);
             params.validate() catch return CallResult.failure(0);
 
             if (!self.disable_gas_checking and params.getGas() == 0) return CallResult.failure(0);
@@ -616,6 +617,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             input: []const u8,
             gas: u64,
         }) !CallResult {
+            @branchHint(.likely);
             // log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
             const snapshot_id = self.journal.create_snapshot();
 

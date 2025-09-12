@@ -467,6 +467,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Simply delegates to interpret_with_tracer with no tracer.
         /// @param bytecode_raw: Raw bytecode to execute
         pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
+            @branchHint(.likely);
             return self.interpret_with_tracer(bytecode_raw, null, {});
         }
 
@@ -477,6 +478,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
+            @branchHint(.likely);
             // log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
 
             if (bytecode_raw.len > config.max_bytecode_size) {
