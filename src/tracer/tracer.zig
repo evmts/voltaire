@@ -19,18 +19,39 @@ const block_info_mod = @import("../block/block_info.zig");
 const call_params_mod = @import("../frame/call_params.zig");
 const call_result_mod = @import("../frame/call_result.zig");
 const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
+const pc_tracker_mod = @import("pc_tracker.zig");
 // const Host = @import("host.zig").Host; // Only needed for tests which are commented out
 
 // ============================================================================
 // NO-OP TRACER
 // ============================================================================
 
-// No-op tracer that does nothing - zero runtime cost
-// Now includes logging functionality from log.zig
+// Default tracer does not do anything in release modes but does extensive defensive validation 
+// In debug and safe mode. In a debug mode the tracer can be thought of as unit tests that run in
+// real time as the evm is executing and we are expected to have similar levels of coverage.
+// For this reason, the tracer is intentionally decoupled from the EVM and is expected to share
+// minimal code with it.
 pub const DefaultTracer = struct {
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
+    // PC tracker for validation (only in debug/safe builds)
+    // Our EVM does not execute via pc indexing into the bytecode
+    // Our EVM instead executes as an array of function pointers to
+    // opcode handlers that recursively call the next opcode at the
+    // end of their instruction. We track pc internally here so we can provide
+    // - Better tracing
+    // - Unfuze, easily break down what is happening whenever our evm efficiently fuzed multiple instructions
+    //   Into a single instruction, does a JIT, or any other potential optimization
+    // - Validate the efficient opcode handler data structure is executing in order we expect in debug/safe modes
+    pc_tracker: ?pc_tracker_mod.PcTracker,
 
+    // To validate that gas is being tracked as expected we internally implement a simple independent gas tracking
+    // system. This helps provide simpler and better traces when tracing is turned on, allows us to internally
+    // test our gas is working as expected with unit tests as it executes in safe mode and debug mode, and
+    // allows us to validate the gas is correct at the end of the execution. 
+    gas_tracker: ?u64,
+
+    // Internal representation of an execution step
     pub const ExecutionStep = struct {
         step_number: u64,
         pc: u32,
@@ -52,11 +73,29 @@ pub const DefaultTracer = struct {
         _ = allocator; // DefaultTracer doesn't use allocator
         return .{
             .steps = std.ArrayList(ExecutionStep){},
+            .pc_tracker = null, // Will be initialized when bytecode is available
         };
     }
 
     pub fn deinit(self: *DefaultTracer) void {
         self.steps.deinit(std.heap.c_allocator);
+    }
+
+    /// Initialize PC tracker with bytecode (called when frame starts interpretation)
+    pub fn initPcTracker(self: *DefaultTracer, bytecode: []const u8) void {
+        // Disable PC tracking for now - it needs more work to handle the dispatch model correctly
+        // The issue is that dispatch pre-processes some instructions (like PUSH) and the PC tracker
+        // doesn't see them, causing mismatches. This needs a deeper integration with dispatch.
+        _ = self;
+        _ = bytecode;
+        // TODO: Re-enable once we properly integrate with dispatch
+        // const builtin = @import("builtin");
+        // if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+        //     // Only initialize if not already initialized or if bytecode is non-empty
+        //     if (bytecode.len > 0) {
+        //         self.pc_tracker = pc_tracker_mod.PcTracker.init(bytecode);
+        //     }
+        // }
     }
 
     pub fn beforeOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
@@ -120,13 +159,29 @@ pub const DefaultTracer = struct {
     }
 
     pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
-        _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
                 // Get opcode name at compile time
                 // For now, just use @tagName since we have the enum
                 const opcode_name = comptime @tagName(opcode);
+
+                // Get the numeric opcode value
+                const opcode_value = @intFromEnum(opcode);
+
+                // Execute PC tracking if available and we have valid bytecode
+                // Skip PC tracking if frame.code is empty (unit tests with direct opcode execution)
+                if (self.pc_tracker) |*tracker| {
+                    // Only track when we have real bytecode and regular opcodes
+                    if (opcode_value <= 0xff and tracker.bytecode.len > 0) {
+                        tracker.execute(frame, @as(u8, @intCast(opcode_value)));
+
+                        // If tracker detected an error, log it
+                        if (!tracker.isValid()) {
+                            std.log.err("[EVM2] PC tracking validation failed at opcode {s}", .{opcode_name});
+                        }
+                    }
+                }
 
                 // For operations that need stack values, we'll log them
                 // The stack uses stack_ptr to access elements, with stack_ptr[0] being the top
@@ -138,6 +193,20 @@ pub const DefaultTracer = struct {
                     stack_size,
                     frame.gas_remaining,
                 });
+            }
+        }
+    }
+
+    pub fn after_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        _ = self;
+        _ = frame;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+                const opcode_name = comptime @tagName(opcode);
+
+                // Optional: Log after instruction execution
+                std.log.debug("[EVM2] DONE: {s}", .{opcode_name});
             }
         }
     }

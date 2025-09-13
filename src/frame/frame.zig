@@ -494,6 +494,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Store the raw code in the frame
             self.code = bytecode_raw;
 
+            // Initialize PC tracker with bytecode for validation
+            self.getTracer().initPcTracker(bytecode_raw);
+
             const allocator = self.getAllocator();
 
             // Either get from cache or create new dispatch
@@ -751,6 +754,62 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Get the tracer for logging and debugging
         pub inline fn getTracer(self: *const Self) *@import("../tracer/tracer.zig").DefaultTracer {
             return &self.getEvm().tracer;
+        }
+
+        /// Validate that the current dispatch cursor points to the expected handler and metadata.
+        /// This provides extra validation that cursor logic is working as expected.
+        /// Only runs in Debug and ReleaseSafe modes, no-op in ReleaseSmall/ReleaseFast.
+        pub inline fn validateOpcodeHandler(
+            self: *Self,
+            comptime opcode: Dispatch.UnifiedOpcode,
+            cursor: [*]const Dispatch.Item,
+        ) void {
+            if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) {
+                return;
+            }
+
+            // Delegate to Dispatch's validation logic which encapsulates all the checks
+            const dispatch = Dispatch{ .cursor = cursor };
+            dispatch.validateOpcodeHandler(opcode, self);
+        }
+
+        /// Unified method to handle pre-instruction operations
+        /// Combines tracer's before_instruction and opcode validation
+        pub inline fn beforeInstruction(
+            self: *Self,
+            comptime opcode: Dispatch.UnifiedOpcode,
+            cursor: [*]const Dispatch.Item,
+        ) void {
+            // Call tracer's before_instruction
+            self.getTracer().before_instruction(self, opcode);
+
+            // Validate opcode handler (only in debug/safe builds)
+            self.validateOpcodeHandler(opcode, cursor);
+        }
+
+        /// Unified method to handle post-instruction operations
+        /// Called right before the tail call to the next instruction (normal flow)
+        pub inline fn afterInstruction(
+            self: *Self,
+            comptime opcode: Dispatch.UnifiedOpcode,
+            next_handler: OpcodeHandler,
+            next_cursor: [*]const Dispatch.Item,
+        ) void {
+            _ = next_handler; // Will be used for advanced tracing
+            _ = next_cursor; // Will be used for advanced tracing
+
+            // Call tracer's after_instruction
+            self.getTracer().after_instruction(self, opcode);
+        }
+
+        /// Called when an instruction completes with a terminal state
+        /// (Error, Return, Stop, etc.) rather than continuing to next instruction
+        pub inline fn afterComplete(
+            self: *Self,
+            comptime opcode: Dispatch.UnifiedOpcode,
+        ) void {
+            // Call tracer's after_instruction for terminal states
+            self.getTracer().after_instruction(self, opcode);
         }
 
         /// Pretty print the frame state for debugging and visualization.
