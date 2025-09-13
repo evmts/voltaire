@@ -26,6 +26,7 @@ const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 // ============================================================================
 
 // No-op tracer that does nothing - zero runtime cost
+// Now includes logging functionality from log.zig
 pub const NoOpTracer = struct {
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
@@ -73,14 +74,72 @@ pub const NoOpTracer = struct {
         _ = frame;
         // FrameType is used in the function signature, no need to discard
     }
-    
-    pub fn onError(self: *NoOpTracer, pc: u32, opcode: u8, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+
+    pub fn onError(self: *NoOpTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = pc;
         _ = opcode;
         _ = frame;
-        std.debug.assert(err != error.OutOfMemory); // Suppress error set discard warning
+        std.debug.assert(error_val != error.OutOfMemory); // Suppress error set discard warning
         // FrameType is comptime, no need to discard
+    }
+
+    // Logging functions from log.zig
+    pub fn debug(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+                std.log.debug("[EVM2] " ++ format, args);
+            }
+        }
+    }
+
+    pub fn err(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+            std.log.err("[EVM2] " ++ format, args);
+        }
+    }
+
+    pub fn warn(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+            std.log.warn("[EVM2] " ++ format, args);
+        }
+    }
+
+    pub fn info(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+            std.log.info("[EVM2] " ++ format, args);
+        }
+    }
+
+    pub fn debug_instruction(self: *NoOpTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+                // Get opcode name at compile time
+                // For now, just use @tagName since we have the enum
+                const opcode_name = comptime @tagName(opcode);
+
+                // For operations that need stack values, we'll log them
+                // The stack uses stack_ptr to access elements, with stack_ptr[0] being the top
+                const stack_size = frame.stack.size();
+
+                // Basic logging for now - can be expanded to match log.zig's detailed implementation
+                std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d}", .{
+                    opcode_name,
+                    stack_size,
+                    frame.gas_remaining,
+                });
+            }
+        }
     }
 };
 
@@ -268,8 +327,8 @@ pub const DebuggingTracer = struct {
         // and requiring explicit resume calls
 
         // Capture state before operation for step recording
-        self.captureStateForStep(pc, opcode, FrameType, frame, true) catch |err| {
-            log.debug("Failed to capture before state: {}", .{err});
+        self.captureStateForStep(pc, opcode, FrameType, frame, true) catch |e| {
+            log.debug("Failed to capture before state: {}", .{e});
         };
     }
 
@@ -279,18 +338,18 @@ pub const DebuggingTracer = struct {
         self.total_instructions += 1;
 
         // Capture state after operation to complete the step record
-        self.captureStateForStep(pc, opcode, FrameType, frame, false) catch |err| {
-            log.debug("Failed to capture after state: {}", .{err});
+        self.captureStateForStep(pc, opcode, FrameType, frame, false) catch |e| {
+            log.debug("Failed to capture after state: {}", .{e});
         };
 
         // Create state snapshot if configured
-        self.captureState(pc, FrameType, frame) catch |err| {
-            log.debug("Failed to capture state snapshot: {}", .{err});
+        self.captureState(pc, FrameType, frame) catch |e| {
+            log.debug("Failed to capture state snapshot: {}", .{e});
         };
     }
 
     /// Required tracer interface: called when an error occurs
-    pub fn onError(self: *Self, pc: u32, opcode: u8, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn onError(self: *Self, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = frame;
         _ = pc;
         _ = opcode;
@@ -300,14 +359,40 @@ pub const DebuggingTracer = struct {
             current_step.error_occurred = true;
 
             // Store error message
-            const error_name = @errorName(err);
+            const error_name = @errorName(error_val);
             current_step.error_msg = self.allocator.dupe(u8, error_name) catch null;
         }
 
         // Always pause on error for debugging
         self.paused = true;
 
-        log.debug("DebuggingTracer: Error occurred in frame type {s}: {}", .{ @typeName(FrameType), err });
+        log.debug("DebuggingTracer: Error occurred in frame type {s}: {}", .{ @typeName(FrameType), error_val });
+    }
+
+    // Logging functions
+    pub fn debug(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.debug(format, args);
+    }
+
+    pub fn err(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.err(format, args);
+    }
+
+    pub fn warn(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.warn(format, args);
+    }
+
+    pub fn info(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.info(format, args);
+    }
+
+    pub fn debug_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        _ = self;
+        log.debug_instruction(frame, opcode);
     }
 
     /// Helper function to capture state for step recording
@@ -563,13 +648,39 @@ pub const JSONRPCTracer = struct {
     }
     
     /// Called when an error occurs during execution
-    pub fn onError(self: *Self, pc: u32, opcode: u8, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn onError(self: *Self, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = pc;
         _ = opcode;
-        _ = err;
+        _ = error_val;
         _ = frame;
         // Could add error information to the current step if needed
+    }
+
+    // Logging functions
+    pub fn debug(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.debug(format, args);
+    }
+
+    pub fn err(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.err(format, args);
+    }
+
+    pub fn warn(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.warn(format, args);
+    }
+
+    pub fn info(self: *Self, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.info(format, args);
+    }
+
+    pub fn debug_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        _ = self;
+        log.debug_instruction(frame, opcode);
     }
     
     /// Get the collected trace steps
@@ -792,17 +903,17 @@ pub fn GenericTracer(comptime Writer: type) type {
         pub fn afterOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
             // Optionally capture snapshot after each operation
             if (self.cfg.capture_each_op) {
-                self.writeSnapshot(pc, opcode, FrameType, frame) catch |err| {
-                    log.debug("Failed to write snapshot: {}", .{err});
+                self.writeSnapshot(pc, opcode, FrameType, frame) catch |e| {
+                    log.debug("Failed to write snapshot: {}", .{e});
                 };
             }
         }
         
-        pub fn onError(self: *Self, pc: u32, opcode: u8, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+        pub fn onError(self: *Self, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
             _ = self;
             _ = pc;
             _ = opcode;
-            _ = err;
+            _ = error_val;
             _ = frame;
             // Generic tracer doesn't do anything on error by default
         }
@@ -996,8 +1107,34 @@ pub const FileTracer = struct {
         self.base.afterOp(pc, opcode, FrameType, frame);
     }
     
-    pub fn onError(self: *FileTracer, pc: u32, opcode: u8, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
-        self.base.onError(pc, opcode, err, FrameType, frame);
+    pub fn onError(self: *FileTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.onError(pc, opcode, error_val, FrameType, frame);
+    }
+
+    // Logging functions
+    pub fn debug(self: *FileTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.debug(format, args);
+    }
+
+    pub fn err(self: *FileTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.err(format, args);
+    }
+
+    pub fn warn(self: *FileTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.warn(format, args);
+    }
+
+    pub fn info(self: *FileTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.info(format, args);
+    }
+
+    pub fn debug_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        _ = self;
+        log.debug_instruction(frame, opcode);
     }
     
     /// Write JSON trace to file with enhanced features
@@ -1042,8 +1179,34 @@ pub const LoggingTracer = struct {
         self.base.afterOp(pc, opcode, FrameType, frame);
     }
     
-    pub fn onError(self: *LoggingTracer, pc: u32, opcode: u8, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
-        self.base.onError(pc, opcode, err, FrameType, frame);
+    pub fn onError(self: *LoggingTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.onError(pc, opcode, error_val, FrameType, frame);
+    }
+
+    // Logging functions
+    pub fn debug(self: *LoggingTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.debug(format, args);
+    }
+
+    pub fn err(self: *LoggingTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.err(format, args);
+    }
+
+    pub fn warn(self: *LoggingTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.warn(format, args);
+    }
+
+    pub fn info(self: *LoggingTracer, comptime format: []const u8, args: anytype) void {
+        _ = self;
+        log.info(format, args);
+    }
+
+    pub fn debug_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        _ = self;
+        log.debug_instruction(frame, opcode);
     }
 };
 
