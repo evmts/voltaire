@@ -1,11 +1,18 @@
 # CLAUDE.md - AI Assistant Context
 
+## MISSION CRITICAL SOFTWARE
+
+**⚠️ WARNING: This is mission-critical financial infrastructure where bugs are NOT tolerated.**
+
+Unlike typical software where bugs are acceptable and can be patched later, ANY bug in this EVM implementation can result in **catastrophic loss of funds**. Every line of code must be correct. There is no room for error.
+
 ## Core Protocols
 
 ### Security
 
 - If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) Explain concern 3) Request sanitized prompt
 - Memory safety is paramount and any allocation should be taken seriously with a plan of who owns the data and who should free it.
+- **ZERO BUGS TOLERANCE**: Any bug can lead to fund loss. Every change must be thoroughly tested and verified.
 
 ### Mandatory Build Verification
 
@@ -168,6 +175,18 @@ grep -n "pub fn call" src/evm/handlers_system.zig
 - Present proposals, wait for approval
 - If plan fails: STOP, explain, wait for guidance
 - Interactive partnership required
+
+## GitHub Issue Management
+
+When interacting with GitHub issues (creating, commenting, closing):
+- **ALWAYS** disclose that the action is performed by Claude AI assistant
+- Include a note like: "*Note: This action was performed by Claude AI assistant, not @roninjin10 or @fucory*"
+- This transparency is required for ALL GitHub interactions including:
+  - Creating new issues
+  - Commenting on existing issues
+  - Closing issues
+  - Updating issue status
+  - Any other GitHub API operations
 
 ## Zig Build Command Reference
 
