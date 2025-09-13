@@ -67,6 +67,16 @@ return thing;
 - Evidence-based debugging only (no speculation)
 - **IMPORTANT**: Zig tests output NOTHING when passing - DO NOT grep for test names/results in successful runs
 
+### Debug Logging in Tests
+
+To enable debug logging in tests, add this at the top level of your test file:
+```zig
+test {
+    std.testing.log_level = .debug;
+}
+```
+This enables all log.debug(), log.warn(), log.err() calls during test execution.
+
 ## Project Architecture
 
 ### Guillotine: Zig EVM Implementation
