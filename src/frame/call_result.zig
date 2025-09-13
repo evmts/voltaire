@@ -86,7 +86,7 @@ pub fn CallResult(comptime config: anytype) type {
             .selfdestructs = &.{},
             .accessed_addresses = &.{},
             .accessed_storage = &.{},
-            .error_info = "execution reverted",
+            .error_info = null,  // Don't set error_info to avoid freeing string literal
         };
     }
 
