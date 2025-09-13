@@ -982,50 +982,41 @@ pub const DefaultTracer = struct {
 
     /// Event: EVM initialization started
     pub fn onEvmInit(self: *DefaultTracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
-        _ = self;
-        _ = gas_price;
-        _ = origin;
-        _ = hardfork;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] Initializing: gas_price={}, origin={x}, hardfork={s}", .{ gas_price, origin.bytes, hardfork });
         }
     }
 
     /// Event: Beacon root update processing
-    pub fn onBeaconRootUpdate(self: *DefaultTracer, success: bool, err: ?anyerror) void {
-        _ = self;
-        if (!success and err != null) {
-            self.warn("[EVM] Failed to process beacon root update: {}", .{err.?});
+    pub fn onBeaconRootUpdate(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+        if (!success and error_val != null) {
+            self.warn("[EVM] Failed to process beacon root update: {}", .{error_val.?});
         }
     }
 
     /// Event: Historical block hash update processing
-    pub fn onHistoricalBlockHashUpdate(self: *DefaultTracer, success: bool, err: ?anyerror) void {
-        _ = self;
-        if (!success and err != null) {
-            self.warn("[EVM] Failed to process historical block hash update: {}", .{err.?});
+    pub fn onHistoricalBlockHashUpdate(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+        if (!success and error_val != null) {
+            self.warn("[EVM] Failed to process historical block hash update: {}", .{error_val.?});
         }
     }
 
     /// Event: Validator deposits processing
-    pub fn onValidatorDeposits(self: *DefaultTracer, success: bool, err: ?anyerror) void {
-        _ = self;
-        if (!success and err != null) {
-            self.warn("[EVM] Failed to process validator deposits: {}", .{err.?});
+    pub fn onValidatorDeposits(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+        if (!success and error_val != null) {
+            self.warn("[EVM] Failed to process validator deposits: {}", .{error_val.?});
         }
     }
 
     /// Event: Validator withdrawals processing
-    pub fn onValidatorWithdrawals(self: *DefaultTracer, success: bool, err: ?anyerror) void {
-        _ = self;
-        if (!success and err != null) {
-            self.warn("[EVM] Failed to process validator withdrawals: {}", .{err.?});
+    pub fn onValidatorWithdrawals(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+        if (!success and error_val != null) {
+            self.warn("[EVM] Failed to process validator withdrawals: {}", .{error_val.?});
         }
     }
 
     /// Event: Call operation started
     pub fn onCallStart(self: *DefaultTracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] Starting {s}: gas={}, to={x}, value={}", .{ call_type, gas, to.bytes, value });
         }
@@ -1033,7 +1024,6 @@ pub const DefaultTracer = struct {
 
     /// Event: Call operation completed
     pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: i64, output_len: usize) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] Call complete: success={}, gas_left={}, output_len={}", .{ success, gas_left, output_len });
         }
@@ -1041,7 +1031,6 @@ pub const DefaultTracer = struct {
 
     /// Event: Call value transfer
     pub fn onCallValueTransfer(self: *DefaultTracer, from: anytype, to: anytype, value: u256, success: bool) void {
-        _ = self;
         if (!success) {
             self.debug("[EVM] Call value transfer failed: from={x}, to={x}, value={}", .{ from.bytes, to.bytes, value });
         }
@@ -1049,7 +1038,6 @@ pub const DefaultTracer = struct {
 
     /// Event: Preflight check for call
     pub fn onCallPreflight(self: *DefaultTracer, call_type: []const u8, result: []const u8) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] {s} preflight: {s}", .{ call_type, result });
         }
@@ -1057,16 +1045,14 @@ pub const DefaultTracer = struct {
 
     /// Event: Account lookup
     pub fn onAccountLookup(self: *DefaultTracer, address: anytype, found: bool, has_delegation: bool) void {
-        _ = self;
+        _ = found;
         if (self.config.trace_preanalysis and has_delegation) {
             self.debug("[EVM] Account {x} has delegation", .{address.bytes});
         }
-        _ = found;
     }
 
     /// Event: Code retrieval
     pub fn onCodeRetrieval(self: *DefaultTracer, address: anytype, code_len: usize, is_empty: bool) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             if (is_empty) {
                 self.debug("[EVM] Code is empty for address {x}", .{address.bytes});
@@ -1078,31 +1064,26 @@ pub const DefaultTracer = struct {
 
     /// Event: CREATE/CREATE2 operation started
     pub fn onCreateStart(self: *DefaultTracer, create_type: []const u8, gas: i64, init_len: usize, value: u256) void {
-        _ = self;
         self.debug("[EVM] {s}: gas={}, init_len={}, value={}", .{ create_type, gas, init_len, value });
     }
 
     /// Event: CREATE depth check
     pub fn onCreateDepthExceeded(self: *DefaultTracer, depth: usize, max_depth: usize) void {
-        _ = self;
         self.debug("[EVM] CREATE depth exceeded: depth={}, max={}", .{ depth, max_depth });
     }
 
     /// Event: CREATE insufficient balance
     pub fn onCreateInsufficientBalance(self: *DefaultTracer, balance: u256, required: u256) void {
-        _ = self;
         self.debug("[EVM] CREATE insufficient balance: have={}, need={}", .{ balance, required });
     }
 
     /// Event: CREATE collision detected
     pub fn onCreateCollision(self: *DefaultTracer, address: anytype) void {
-        _ = self;
         self.debug("[EVM] CREATE collision at address {x}", .{address.bytes});
     }
 
     /// Event: CREATE gas overhead check
     pub fn onCreateGasOverhead(self: *DefaultTracer, required: i64, available: i64) void {
-        _ = self;
         if (required > available) {
             self.debug("[EVM] CREATE insufficient gas for overhead: need={}, have={}", .{ required, available });
         }
@@ -1110,17 +1091,15 @@ pub const DefaultTracer = struct {
 
     /// Event: Init code execution
     pub fn onInitCodeExecution(self: *DefaultTracer, code_len: usize, gas: i64) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] Executing init code: len={}, gas={}", .{ code_len, gas });
         }
     }
 
     /// Event: Init code result
-    pub fn onInitCodeResult(self: *DefaultTracer, success: bool, output_len: usize, err: ?anyerror) void {
-        _ = self;
+    pub fn onInitCodeResult(self: *DefaultTracer, success: bool, output_len: usize, error_val: ?anyerror) void {
         if (!success) {
-            if (err) |e| {
+            if (error_val) |e| {
                 self.debug("[EVM] Init code execution failed: {}", .{e});
             } else {
                 self.debug("[EVM] Init code execution failed, success=false", .{});
@@ -1132,7 +1111,6 @@ pub const DefaultTracer = struct {
 
     /// Event: Init code size check
     pub fn onInitCodeSizeCheck(self: *DefaultTracer, code_len: usize, max_len: usize) void {
-        _ = self;
         if (code_len > max_len) {
             self.debug("[EVM] Init code too large: {} > {}", .{ code_len, max_len });
         }
@@ -1140,75 +1118,65 @@ pub const DefaultTracer = struct {
 
     /// Event: Frame execution started
     pub fn onFrameExecutionStart(self: *DefaultTracer, code_len: usize, gas: i64, depth: usize) void {
-        _ = self;
         self.debug("[EVM] Starting frame: code_len={}, gas={}, depth={}", .{ code_len, gas, depth });
     }
 
     /// Event: Frame execution completed
     pub fn onFrameExecutionComplete(self: *DefaultTracer, gas_remaining: i64, output_len: usize, termination: []const u8) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] Frame complete: gas_remaining={}, output_len={}, termination={s}", .{ gas_remaining, output_len, termination });
         }
     }
 
     /// Event: Frame execution error
-    pub fn onFrameExecutionError(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        self.debug("[EVM] Frame execution failed: {}", .{err});
+    pub fn onFrameExecutionError(self: *DefaultTracer, error_val: anyerror) void {
+        self.debug("[EVM] Frame execution failed: {}", .{error_val});
     }
 
     /// Event: Journal operation
     pub fn onJournalOperation(self: *DefaultTracer, operation: []const u8, snapshot_id: anytype) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[EVM] Journal {s}: snapshot_id={}", .{ operation, snapshot_id });
         }
     }
 
     /// Event: Journal revert error
-    pub fn onJournalRevertError(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        self.err("[EVM] Failed to revert journal entry: {}", .{err});
+    pub fn onJournalRevertError(self: *DefaultTracer, error_val: anyerror) void {
+        self.err("[EVM] Failed to revert journal entry: {}", .{error_val});
     }
 
     /// Event: Block hash lookup
-    pub fn onBlockHashLookup(self: *DefaultTracer, block_number: u64, found: bool, err: ?anyerror) void {
-        _ = self;
-        if (!found and err != null) {
-            self.debug("[EVM] Failed to get block hash from history contract: {}", .{err.?});
-        }
+    pub fn onBlockHashLookup(self: *DefaultTracer, block_number: u64, found: bool, error_val: ?anyerror) void {
         _ = block_number;
+        if (!found and error_val != null) {
+            self.debug("[EVM] Failed to get block hash from history contract: {}", .{error_val.?});
+        }
     }
 
     // === Frame-level Named Events ===
 
     /// Event: Frame initialization
     pub fn onFrameInit(self: *DefaultTracer, gas: i64, caller: anytype, value: u256, calldata_len: usize) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             self.debug("[Frame] Init: gas={}, caller={x}, value={}, calldata_len={}", .{ gas, caller.bytes, value, calldata_len });
         }
     }
 
     /// Event: Frame initialization error
-    pub fn onFrameInitError(self: *DefaultTracer, component: []const u8, err: anyerror) void {
-        _ = self;
-        self.err("[Frame] Failed to initialize {s}: {}", .{ component, err });
+    pub fn onFrameInitError(self: *DefaultTracer, component: []const u8, error_val: anyerror) void {
+        self.err("[Frame] Failed to initialize {s}: {}", .{ component, error_val });
     }
 
     /// Event: Frame bytecode initialization
-    pub fn onFrameBytecodeInit(self: *DefaultTracer, bytecode_len: usize, success: bool, err: ?anyerror) void {
-        _ = self;
-        if (!success and err != null) {
-            self.err("[Frame] Bytecode init failed: {}", .{err.?});
-        }
+    pub fn onFrameBytecodeInit(self: *DefaultTracer, bytecode_len: usize, success: bool, error_val: ?anyerror) void {
         _ = bytecode_len;
+        if (!success and error_val != null) {
+            self.err("[Frame] Bytecode init failed: {}", .{error_val.?});
+        }
     }
 
     /// Event: Dispatch cache lookup
     pub fn onDispatchCacheLookup(self: *DefaultTracer, bytecode_len: usize, hit: bool) void {
-        _ = self;
         if (self.config.trace_preanalysis) {
             const result = if (hit) "hit" else "miss";
             self.debug("[Frame] Dispatch cache {s}: bytecode_len={}", .{ result, bytecode_len });
@@ -1217,16 +1185,15 @@ pub const DefaultTracer = struct {
 
     /// Event: Dispatch cache store
     pub fn onDispatchCacheStore(self: *DefaultTracer, bytecode_len: usize, evicted: bool) void {
-        _ = self;
         if (self.config.trace_preanalysis and evicted) {
             self.debug("[Frame] Dispatch cache store with eviction: bytecode_len={}", .{bytecode_len});
+        } else {
+            _ = bytecode_len;
         }
-        _ = bytecode_len;
     }
 
     /// Event: Performance warning
     pub fn onPerformanceWarning(self: *DefaultTracer, operation: []const u8, elapsed_ns: u64, threshold_ns: u64) void {
-        _ = self;
         self.warn("[PERF] {s}: elapsed={} ns (threshold={} ns)", .{ operation, elapsed_ns, threshold_ns });
     }
 

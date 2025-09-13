@@ -356,7 +356,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // This should only be called at the top level
             std.debug.assert(self.depth == 0);
 
-            log.debug("EVM.call: Starting execution, type={s}, gas={}", .{ @tagName(params), params.getGas() });
+            self.tracer.onCallStart(params, params.getGas());
 
             params.validate() catch return CallResult.failure(0);
 
@@ -457,7 +457,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             var result = self.inner_call(modified_params);
 
-            log.debug("EVM.call: Execution complete, success={}, gas_left={}", .{ result.success, result.gas_left });
+            self.tracer.onCallComplete(result.success, result.gas_left);
 
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
@@ -4279,7 +4279,7 @@ test "Debug - Bytecode size affects execution time" {
         });
         const elapsed = std.time.nanoTimestamp() - start_time;
 
-        const gas_used = gas_limit - result.gas_left;
+        _ = gas_limit - result.gas_left; // gas_used
         evm.tracer.onPerformanceWarning("Large contract", elapsed, 1_000_000_000);
 
         // With low gas, should fail before completing
