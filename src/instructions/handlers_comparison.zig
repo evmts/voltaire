@@ -16,7 +16,11 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .LT);
             std.debug.assert(self.stack.size() >= 2); // LT requires 2 stack items
             // EVM: pops top, then second; pushes (top < second)
-            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return @intFromBool(top < second); } }.op);
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
+                    return @intFromBool(top < second);
+                }
+            }.op);
             const op_data = dispatch.getOpData(.LT, Dispatch, Dispatch.Item, cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -26,7 +30,11 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .GT);
             std.debug.assert(self.stack.size() >= 2); // GT requires 2 stack items
             // EVM: pops top, then second; pushes (top > second)
-            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return @intFromBool(top > second); } }.op);
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
+                    return @intFromBool(top > second);
+                }
+            }.op);
             const op_data = dispatch.getOpData(.GT, Dispatch, Dispatch.Item, cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -66,7 +74,11 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .EQ);
             std.debug.assert(self.stack.size() >= 2); // EQ requires 2 stack items
             // EVM: pops top, then second, and pushes (top == second)
-            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return @intFromBool(top == second); } }.op);
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
+                    return @intFromBool(top == second);
+                }
+            }.op);
             const op_data = dispatch.getOpData(.EQ, Dispatch, Dispatch.Item, cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
@@ -89,7 +101,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 

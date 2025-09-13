@@ -16,7 +16,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_AND_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_AND_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             // For synthetic opcodes, cursor now points to metadata
             const push_value = op_data.metadata.value;
 
@@ -33,7 +33,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_AND_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_AND_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // For synthetic opcodes, cursor now points to metadata
             const push_value = self.u256_constants[op_data.metadata.index];
 
@@ -50,7 +50,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_OR_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_OR_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             // For synthetic opcodes, cursor now points to metadata
             const push_value = op_data.metadata.value;
 
@@ -67,7 +67,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_OR_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_OR_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // For synthetic opcodes, cursor now points to metadata
             const push_value = self.u256_constants[op_data.metadata.index];
 
@@ -84,7 +84,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_XOR_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_XOR_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             // For synthetic opcodes, cursor now points to metadata
             const push_value = op_data.metadata.value;
 
@@ -101,7 +101,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_XOR_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_XOR_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // For synthetic opcodes, cursor now points to metadata
             const push_value = self.u256_constants[op_data.metadata.index];
 
@@ -120,7 +120,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
@@ -131,7 +131,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = MemoryDatabase,
-    .TracerType = NoOpTracer,
+    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

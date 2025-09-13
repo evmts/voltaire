@@ -1,7 +1,7 @@
 /// Configurable execution tracing system for EVM debugging and analysis
 ///
 /// Provides multiple tracer implementations with compile-time selection:
-/// - `NoOpTracer`: Zero runtime overhead (default for production)
+/// - `DefaultTracer`: Zero runtime overhead (default for production)
 /// - `DebuggingTracer`: Step-by-step debugging with breakpoints
 /// - `LoggingTracer`: Structured logging to stdout
 /// - `FileTracer`: High-performance file output
@@ -27,7 +27,7 @@ const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 
 // No-op tracer that does nothing - zero runtime cost
 // Now includes logging functionality from log.zig
-pub const NoOpTracer = struct {
+pub const DefaultTracer = struct {
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
 
@@ -48,18 +48,18 @@ pub const NoOpTracer = struct {
         error_msg: ?[]const u8,
     };
 
-    pub fn init(allocator: std.mem.Allocator) NoOpTracer {
-        _ = allocator; // NoOpTracer doesn't use allocator
+    pub fn init(allocator: std.mem.Allocator) DefaultTracer {
+        _ = allocator; // DefaultTracer doesn't use allocator
         return .{
             .steps = std.ArrayList(ExecutionStep){},
         };
     }
 
-    pub fn deinit(self: *NoOpTracer) void {
+    pub fn deinit(self: *DefaultTracer) void {
         self.steps.deinit(std.heap.c_allocator);
     }
 
-    pub fn beforeOp(self: *NoOpTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn beforeOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = pc;
         _ = opcode;
@@ -67,7 +67,7 @@ pub const NoOpTracer = struct {
         // FrameType is used in the function signature, no need to discard
     }
 
-    pub fn afterOp(self: *NoOpTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn afterOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = pc;
         _ = opcode;
@@ -75,7 +75,7 @@ pub const NoOpTracer = struct {
         // FrameType is used in the function signature, no need to discard
     }
 
-    pub fn onError(self: *NoOpTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn onError(self: *DefaultTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = pc;
         _ = opcode;
@@ -85,7 +85,7 @@ pub const NoOpTracer = struct {
     }
 
     // Logging functions from log.zig
-    pub fn debug(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+    pub fn debug(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -95,7 +95,7 @@ pub const NoOpTracer = struct {
         }
     }
 
-    pub fn err(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+    pub fn err(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         const builtin = @import("builtin");
         if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -103,7 +103,7 @@ pub const NoOpTracer = struct {
         }
     }
 
-    pub fn warn(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+    pub fn warn(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         const builtin = @import("builtin");
         if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -111,7 +111,7 @@ pub const NoOpTracer = struct {
         }
     }
 
-    pub fn info(self: *NoOpTracer, comptime format: []const u8, args: anytype) void {
+    pub fn info(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         const builtin = @import("builtin");
         if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -119,7 +119,7 @@ pub const NoOpTracer = struct {
         }
     }
 
-    pub fn debug_instruction(self: *NoOpTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn debug_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -316,7 +316,7 @@ pub const DebuggingTracer = struct {
     pub fn beforeOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         // Update instruction counter to verify tracer is working
         self.total_instructions += 1;
-        
+
         // Check if we should pause execution
         if (self.shouldPause(pc)) {
             self.paused = true;
@@ -501,7 +501,7 @@ pub const DebuggingTracer = struct {
 /// Collects execution traces and produces them in a format compatible with Ethereum JSON-RPC
 pub const JSONRPCTracer = struct {
     const Self = @This();
-    
+
     allocator: std.mem.Allocator,
     trace_steps: std.ArrayList(JSONRPCStep),
     current_depth: u32 = 0,
@@ -509,10 +509,10 @@ pub const JSONRPCTracer = struct {
     current_pc: u32 = 0,
     jump_table: ?*const anyopaque = null, // Pointer to jump table for PC lookups
     last_opcode: u8 = 0, // Track last opcode to detect jumps
-    
+
     pub const JSONRPCStep = struct {
         op: []const u8,
-        opcode: u8,  // Add the actual opcode byte
+        opcode: u8, // Add the actual opcode byte
         pc: u64,
         gas: u64,
         gasCost: u64,
@@ -522,7 +522,7 @@ pub const JSONRPCTracer = struct {
         memSize: u32 = 0,
         storage: ?std.hash_map.HashMap(u256, u256, std.hash_map.AutoContext(u256), 80) = null,
         returnData: ?[]const u8 = null,
-        
+
         pub fn deinit(self: *JSONRPCStep, allocator: std.mem.Allocator) void {
             allocator.free(self.op);
             allocator.free(self.stack);
@@ -537,35 +537,35 @@ pub const JSONRPCTracer = struct {
             }
         }
     };
-    
+
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .allocator = allocator,
             .trace_steps = std.ArrayList(JSONRPCStep){},
         };
     }
-    
+
     pub fn deinit(self: *Self) void {
         for (self.trace_steps.items) |*step| {
             step.deinit(self.allocator);
         }
         self.trace_steps.deinit(self.allocator);
     }
-    
+
     /// Called before frame execution begins
     pub fn beforeExecute(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = frame;
         // Initialize any execution-level state
     }
-    
+
     /// Called after frame execution completes
     pub fn afterExecute(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = frame;
         // Finalize any execution-level state
     }
-    
+
     /// Called before each opcode operation
     pub fn beforeOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         // Update our PC tracking based on the last opcode
@@ -586,30 +586,29 @@ pub const JSONRPCTracer = struct {
             // First instruction, use PC 0
             self.current_pc = 0;
         }
-        
-        
+
         // Capture pre-execution state for the step
         const gas_before: u64 = @max(frame.gas_remaining, 0);
-        
+
         // Create stack copy
         const stack_size = @constCast(&frame.stack).size();
         const stack_copy = self.allocator.alloc(u256, stack_size) catch return; // Return on allocation failure
         const stack_slice = @constCast(&frame.stack).get_slice();
         @memcpy(stack_copy, stack_slice);
-        
+
         const op_name = getOpcodeName(opcode);
         const op_name_copy = self.allocator.dupe(u8, op_name) catch {
             self.allocator.free(stack_copy);
             return;
         };
-        
+
         // Get depth if available
         const depth_val: u32 = if (comptime @hasField(FrameType, "depth")) @intCast(frame.depth) else self.current_depth;
-        
+
         // Create the step (gas cost will be calculated in afterOp)
         const step = JSONRPCStep{
             .op = op_name_copy,
-            .opcode = opcode,  // Store the actual opcode byte
+            .opcode = opcode, // Store the actual opcode byte
             .pc = @intCast(self.current_pc),
             .gas = gas_before,
             .gasCost = 0, // Will be updated in afterOp
@@ -617,36 +616,36 @@ pub const JSONRPCTracer = struct {
             .stack = stack_copy,
             .memSize = if (comptime @hasField(FrameType, "memory")) @intCast(@constCast(&frame.memory).size()) else 0,
         };
-        
+
         self.trace_steps.append(self.allocator, step) catch return; // Return on allocation failure
-        
+
         // Update last opcode for next iteration
         self.last_opcode = opcode;
     }
-    
+
     /// Called after each opcode operation
     pub fn afterOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         _ = pc;
         _ = opcode;
-        
+
         // Update the last step with post-execution state
         if (self.trace_steps.items.len == 0) return;
-        
+
         const current_step = &self.trace_steps.items[self.trace_steps.items.len - 1];
         const gas_after: u64 = @max(frame.gas_remaining, 0);
-        
+
         // Calculate gas cost
-        current_step.gasCost = if (current_step.gas >= gas_after) 
-            current_step.gas - gas_after 
-        else 
+        current_step.gasCost = if (current_step.gas >= gas_after)
+            current_step.gas - gas_after
+        else
             0;
-            
+
         // Update memory size if available
         if (comptime @hasField(FrameType, "memory")) {
             current_step.memSize = @intCast(@constCast(&frame.memory).size());
         }
     }
-    
+
     /// Called when an error occurs during execution
     pub fn onError(self: *Self, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
@@ -682,26 +681,26 @@ pub const JSONRPCTracer = struct {
         _ = self;
         log.debug_instruction(frame, opcode);
     }
-    
+
     /// Get the collected trace steps
     pub fn getTraceSteps(self: *const Self) []const JSONRPCStep {
         return self.trace_steps.items;
     }
-    
+
     /// Export trace in JSON format compatible with geth debug_traceTransaction
     pub fn toJSON(self: *const Self, writer: anytype) !void {
         try writer.writeAll("{\"structLogs\":[");
-        
+
         for (self.trace_steps.items, 0..) |step, i| {
             if (i > 0) try writer.writeAll(",");
-            
+
             try writer.writeAll("{");
             try writer.print("\"pc\":{},", .{step.pc});
             try writer.print("\"op\":\"{s}\",", .{step.op});
             try writer.print("\"gas\":{},", .{step.gas});
             try writer.print("\"gasCost\":{},", .{step.gasCost});
             try writer.print("\"depth\":{},", .{step.depth});
-            
+
             // Write stack
             try writer.writeAll("\"stack\":[");
             for (step.stack, 0..) |val, j| {
@@ -709,9 +708,9 @@ pub const JSONRPCTracer = struct {
                 try writer.print("\"0x{x}\"", .{val});
             }
             try writer.writeAll("],");
-            
+
             try writer.print("\"memSize\":{}", .{step.memSize});
-            
+
             // Write memory if present
             if (step.memory) |mem| {
                 try writer.writeAll(",\"memory\":[");
@@ -721,8 +720,8 @@ pub const JSONRPCTracer = struct {
                 }
                 try writer.writeAll("]");
             }
-            
-            // Write storage if present  
+
+            // Write storage if present
             if (step.storage) |storage| {
                 try writer.writeAll(",\"storage\":{");
                 var first = true;
@@ -734,7 +733,7 @@ pub const JSONRPCTracer = struct {
                 }
                 try writer.writeByte('}');
             }
-            
+
             // Write return data if present
             if (step.returnData) |ret_data| {
                 try writer.writeAll(",\"returnData\":\"0x");
@@ -743,10 +742,10 @@ pub const JSONRPCTracer = struct {
                 }
                 try writer.writeByte('"');
             }
-            
+
             try writer.writeAll("}");
         }
-        
+
         try writer.writeAll("]}");
     }
 };
@@ -778,7 +777,7 @@ pub const DetailedStructLog = struct {
     returnData: ?[]const u8,
     refund: u64,
     @"error": ?[]const u8,
-    
+
     pub fn deinit(self: *DetailedStructLog, allocator: std.mem.Allocator) void {
         allocator.free(self.stack);
         if (self.memory) |mem| {
@@ -908,7 +907,7 @@ pub fn GenericTracer(comptime Writer: type) type {
                 };
             }
         }
-        
+
         pub fn onError(self: *Self, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
             _ = self;
             _ = pc;
@@ -953,7 +952,7 @@ pub fn GenericTracer(comptime Writer: type) type {
                 }
                 try self.writer.writeByte('}');
             }
-            
+
             // Write return data if captured
             if (log_entry.returnData) |ret_data| {
                 try self.writer.writeAll(",\"returnData\":\"0x");
@@ -994,7 +993,7 @@ pub fn GenericTracer(comptime Writer: type) type {
                 };
 
                 if (to_copy == 0) return null;
-                
+
                 // Get memory data as slice and copy it
                 const memory_data = memory_ref.get_slice_evm(0, to_copy) catch return null;
                 return try self.allocator.dupe(u8, memory_data);
@@ -1003,7 +1002,7 @@ pub fn GenericTracer(comptime Writer: type) type {
             mem_size.* = 0;
             return null;
         }
-        
+
         fn captureStorage(
             self: *Self,
             comptime FrameType: type,
@@ -1011,16 +1010,16 @@ pub fn GenericTracer(comptime Writer: type) type {
         ) !?std.hash_map.HashMap(u256, u256, std.hash_map.AutoContext(u256), 80) {
             _ = self;
             _ = frame_instance;
-            
+
             // For now, storage tracking would need to be implemented at the EVM level
             // This is a placeholder for storage state changes during execution
             // In practice, this would track SLOAD/SSTORE operations and their state changes
-            
+
             // TODO: Implement storage state tracking by:
             // 1. Adding storage change tracking to the frame or EVM
             // 2. Collecting changed storage slots during execution
             // 3. Returning the map of slot -> value pairs
-            
+
             // Example implementation when storage tracking is available:
             // if (comptime @hasField(FrameType, "storage_changes")) {
             //     var storage_map = std.hash_map.HashMap(u256, u256, std.hash_map.AutoContext(u256), 80).init(self.allocator);
@@ -1029,10 +1028,10 @@ pub fn GenericTracer(comptime Writer: type) type {
             //     }
             //     return storage_map;
             // }
-            
+
             return null;
         }
-        
+
         fn captureReturnData(
             self: *Self,
             comptime FrameType: type,
@@ -1045,17 +1044,17 @@ pub fn GenericTracer(comptime Writer: type) type {
                     return try self.allocator.dupe(u8, return_data);
                 }
             }
-            
+
             // Check if frame has access to EVM context with return data
             if (comptime @hasField(FrameType, "host")) {
                 // Try to get return data from host/EVM context
                 const host_ptr: *anyopaque = @constCast(frame_instance.host);
-                
+
                 // This would need to be implemented based on the actual host interface
                 // For now, we return null as the interface varies
                 _ = host_ptr;
             }
-            
+
             return null;
         }
     };
@@ -1106,7 +1105,7 @@ pub const FileTracer = struct {
     pub fn afterOp(self: *FileTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         self.base.afterOp(pc, opcode, FrameType, frame);
     }
-    
+
     pub fn onError(self: *FileTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         self.base.onError(pc, opcode, error_val, FrameType, frame);
     }
@@ -1136,7 +1135,7 @@ pub const FileTracer = struct {
         _ = self;
         log.debug_instruction(frame, opcode);
     }
-    
+
     /// Write JSON trace to file with enhanced features
     pub fn writeJSONTrace(self: *FileTracer, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !void {
         const log_entry = try self.base.snapshot(pc, opcode, FrameType, frame_instance);
@@ -1178,7 +1177,7 @@ pub const LoggingTracer = struct {
     pub fn afterOp(self: *LoggingTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         self.base.afterOp(pc, opcode, FrameType, frame);
     }
-    
+
     pub fn onError(self: *LoggingTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         self.base.onError(pc, opcode, error_val, FrameType, frame);
     }
@@ -1209,7 +1208,6 @@ pub const LoggingTracer = struct {
         log.debug_instruction(frame, opcode);
     }
 };
-
 
 fn getFrameError(comptime FrameType: type, frame_instance: *const FrameType) ?[]const u8 {
     _ = frame_instance;
@@ -1375,16 +1373,16 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TODO: Update this test to work without Host
 // test "tracer captures basic frame state with writer" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     // Create a frame with some state
 //     const Frame = frame_mod.Frame(.{
 //         .stack_size = 10,
 //         .block_gas_limit = 1000,
 //     });
-//     
+//
 //     // var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     // Push some values onto the stack
 //     try test_frame.stack.push(3);
 //     try test_frame.stack.push(5);
@@ -1394,15 +1392,15 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //         return error.OutOfGas;
 //     }
 //     test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume1));
-//     
+//
 //     // Create tracer with array list writer
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-//     
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     const log = try tracer.snapshot(4, 0x01, Frame, &test_frame); // PC=4, opcode=ADD
 //     defer allocator.free(log.stack);
-//     
+//
 //     // Verify snapshot
 //     try std.testing.expectEqual(@as(u64, 4), log.pc);
 //     try std.testing.expectEqualStrings("ADD", log.op);
@@ -1416,25 +1414,25 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TODO: Update this test to work without Host
 // test "tracer writes JSON to writer" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     const Frame = frame_mod.Frame(.{});
 //     // var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     try test_frame.stack.push(3);
 //     try test_frame.stack.push(5);
 //     // PC is now managed by plan, not frame
 //     const gas_to_consume2 = @as(u64, @intCast(test_frame.gas_remaining - 950));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume2))) return error.OutOfGas;
 //     test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume2));
-//     
+//
 //     // Create tracer with array list writer
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-//     
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     try tracer.writeSnapshot(4, 0x01, Frame, &test_frame); // PC=4, opcode=ADD
-//     
+//
 //     const json = output.items;
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"pc\":4") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"op\":\"ADD\"") != null);
@@ -1445,15 +1443,15 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TODO: Update this test to work without Host
 // test "logging tracer writes to stdout" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     var tracer = LoggingTracer.init(allocator);
 //     const log = try tracer.snapshot(0, 0x00, Frame, &test_frame); // PC=0, opcode=STOP
 //     defer allocator.free(log.stack);
-//     
+//
 //     try std.testing.expectEqual(@as(u64, 0), log.pc);
 //     try std.testing.expectEqualStrings("STOP", log.op);
 // }
@@ -1461,39 +1459,39 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TODO: Update this test to work without Host
 // test "file tracer writes to file" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     // Create temp dir and file
 //     var tmp_dir = std.testing.tmpDir(.{});
 //     defer tmp_dir.cleanup();
-//     
+//
 //     // Create file in the temp directory
 //     const file = try tmp_dir.dir.createFile("trace.json", .{});
 //     file.close();
-//     
+//
 //     // Get the full path
 //     const file_path = try tmp_dir.dir.realpathAlloc(allocator, "trace.json");
 //     defer allocator.free(file_path);
-//     
+//
 //     // Create frame
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     // PC is now managed by plan, not frame
 //     const gas_to_consume3 = @as(u64, @intCast(test_frame.gas_remaining - 997));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume3))) return error.OutOfGas;
 //     test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume3));
-//     
+//
 //     // Create file tracer and write
 //     var tracer = try FileTracer.init(allocator, file_path);
 //     defer tracer.deinit();
-//     
+//
 //     try tracer.writeSnapshot(0, 0x60, Frame, &test_frame); // PC=0, opcode=PUSH1
-//     
+//
 //     // Read file and verify
 //     const contents = try tmp_dir.dir.readFileAlloc(allocator, "trace.json", 1024);
 //     defer allocator.free(contents);
-//     
+//
 //     try std.testing.expect(std.mem.indexOf(u8, contents, "\"pc\":0") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, contents, "\"op\":\"PUSH1\"") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, contents, "\"gas\":997") != null);
@@ -1502,20 +1500,20 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TODO: Update this test to work without Host
 // test "tracer with gas cost computation" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x01 }, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-//     
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).initWithConfig(
 //         allocator,
 //         output.writer(),
 //         .{ .compute_gas_cost = true },
 //     );
-//     
+//
 //     // First snapshot - no previous gas, so cost should be 0
 //     const gas_to_consume4 = @as(u64, @intCast(test_frame.gas_remaining - 1000));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume4))) return error.OutOfGas;
@@ -1523,7 +1521,7 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     const log1 = try tracer.snapshot(0, 0x60, Frame, &test_frame); // PUSH1
 //     defer allocator.free(log1.stack);
 //     try std.testing.expectEqual(@as(u64, 0), log1.gasCost);
-//     
+//
 //     // Second snapshot - gas decreased by 3
 //     const gas_to_consume5 = @as(u64, @intCast(test_frame.gas_remaining - 997));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume5))) return error.OutOfGas;
@@ -1531,7 +1529,7 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     const log2 = try tracer.snapshot(1, 0x60, Frame, &test_frame); // PUSH1
 //     defer allocator.free(log2.stack);
 //     try std.testing.expectEqual(@as(u64, 3), log2.gasCost);
-//     
+//
 //     // Third snapshot - gas decreased by 21
 //     const gas_to_consume6 = @as(u64, @intCast(test_frame.gas_remaining - 976));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume6))) return error.OutOfGas;
@@ -1544,38 +1542,38 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TODO: Update this test to work without Host
 // test "tracer handles empty stack with JSON output" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-//     
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     try tracer.writeSnapshot(0, 0x00, Frame, &test_frame); // STOP
-//     
+//
 //     const json = output.items;
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"stack\":[]") != null);
 // }
 
-// TODO: Update this test to work without Host  
+// TODO: Update this test to work without Host
 // test "tracer handles large stack values in JSON" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, undefined // createTestHost());
 //     defer test_frame.deinit(allocator);
-//     
+//
 //     try test_frame.stack.push(std.math.maxInt(u256));
 //     try test_frame.stack.push(0xdeadbeef);
-//     
+//
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-//     
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     try tracer.writeSnapshot(0, 0x00, Frame, &test_frame); // STOP
-//     
+//
 //     const json = output.items;
 //     try std.testing.expect(std.mem.indexOf(u8, json, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, json, "0xdeadbeef") != null);
@@ -1584,17 +1582,17 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // Tests from main branch (commented out as they use Frame instead of Frame)
 // // test "tracer captures basic frame state with writer" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     // Create a frame with some state
 //     const Frame = frame_mod.Frame(.{
 //         .stack_size = 10,
 //         .block_gas_limit = 1000,
 //     });
-// 
+//
 //     const host = createTestHost();
 //     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, host);
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     // Push some values onto the stack
 //     try test_frame.stack.push(3);
 //     try test_frame.stack.push(5);
@@ -1602,15 +1600,15 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     const gas_to_consume1 = @as(u64, @intCast(test_frame.gas_remaining - 950));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume1))) return error.OutOfGas;
 //     test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume1));
-// 
+//
 //     // Create tracer with array list writer
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-// 
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     const log = try tracer.snapshot(4, 0x01, Frame, &test_frame); // PC=4, opcode=ADD
 //     defer allocator.free(log.stack);
-// 
+//
 //     // Verify snapshot
 //     try std.testing.expectEqual(@as(u64, 4), log.pc);
 //     try std.testing.expectEqualStrings("ADD", log.op);
@@ -1620,106 +1618,106 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     try std.testing.expectEqual(@as(u256, 3), log.stack[0]);
 //     try std.testing.expectEqual(@as(u256, 5), log.stack[1]);
 // }
-// 
+//
 // test "tracer writes JSON to writer" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000, {}, createTestHost());
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     try test_frame.stack.push(3);
 //     try test_frame.stack.push(5);
 //     // PC is now managed by plan, not frame
 //     const gas_to_consume2 = @as(u64, @intCast(test_frame.gas_remaining - 950));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume2))) return error.OutOfGas;
 //     test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume2));
-// 
+//
 //     // Create tracer with array list writer
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-// 
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     try tracer.writeSnapshot(4, 0x01, Frame, &test_frame); // PC=4, opcode=ADD
-// 
+//
 //     const json = output.items;
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"pc\":4") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"op\":\"ADD\"") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"gas\":950") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"stack\":[\"0x3\",\"0x5\"]") != null);
 // }
-// 
+//
 // test "logging tracer writes to stdout" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, createTestHost());
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     var tracer = LoggingTracer.init(allocator);
 //     const log = try tracer.snapshot(0, 0x00, Frame, &test_frame); // PC=0, opcode=STOP
 //     defer allocator.free(log.stack);
-// 
+//
 //     try std.testing.expectEqual(@as(u64, 0), log.pc);
 //     try std.testing.expectEqualStrings("STOP", log.op);
 // }
-// 
+//
 // test "file tracer writes to file" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     // Create temp dir and file
 //     var tmp_dir = std.testing.tmpDir(.{});
 //     defer tmp_dir.cleanup();
-// 
+//
 //     // Create file in the temp directory
 //     const file = try tmp_dir.dir.createFile("trace.json", .{});
 //     file.close();
-// 
+//
 //     // Get the full path
 //     const file_path = try tmp_dir.dir.realpathAlloc(allocator, "trace.json");
 //     defer allocator.free(file_path);
-// 
+//
 //     // Create frame
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000, {}, createTestHost());
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     // PC is now managed by plan, not frame
 //     const gas_to_consume3 = @as(u64, @intCast(test_frame.gas_remaining - 997));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume3))) return error.OutOfGas;
 //     test_frame.gas_remaining -= @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume3));
-// 
+//
 //     // Create file tracer and write
 //     var tracer = try FileTracer.init(allocator, file_path);
 //     defer tracer.deinit();
-// 
+//
 //     try tracer.writeSnapshot(0, 0x60, Frame, &test_frame); // PC=0, opcode=PUSH1
-// 
+//
 //     // Read file and verify
 //     const contents = try tmp_dir.dir.readFileAlloc(allocator, "trace.json", 1024);
 //     defer allocator.free(contents);
-// 
+//
 //     try std.testing.expect(std.mem.indexOf(u8, contents, "\"pc\":0") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, contents, "\"op\":\"PUSH1\"") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, contents, "\"gas\":997") != null);
 // }
-// 
+//
 // test "tracer with gas cost computation" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x01 }, 1000, {}, createTestHost());
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-// 
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).initWithConfig(
 //         allocator,
 //         output.writer(),
 //         .{ .compute_gas_cost = true },
 //     );
-// 
+//
 //     // First snapshot - no previous gas, so cost should be 0
 //     const gas_to_consume4 = @as(u64, @intCast(test_frame.gas_remaining - 1000));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume4))) return error.OutOfGas;
@@ -1727,7 +1725,7 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     const log1 = try tracer.snapshot(0, 0x60, Frame, &test_frame); // PUSH1
 //     defer allocator.free(log1.stack);
 //     try std.testing.expectEqual(@as(u64, 0), log1.gasCost);
-// 
+//
 //     // Second snapshot - gas decreased by 3
 //     const gas_to_consume5 = @as(u64, @intCast(test_frame.gas_remaining - 997));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume5))) return error.OutOfGas;
@@ -1735,7 +1733,7 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     const log2 = try tracer.snapshot(1, 0x60, Frame, &test_frame); // PUSH1
 //     defer allocator.free(log2.stack);
 //     try std.testing.expectEqual(@as(u64, 3), log2.gasCost);
-// 
+//
 //     // Third snapshot - gas decreased by 21
 //     const gas_to_consume6 = @as(u64, @intCast(test_frame.gas_remaining - 976));
 //     if (test_frame.gas_remaining < @as(@TypeOf(test_frame.gas_remaining), @intCast(gas_to_consume6))) return error.OutOfGas;
@@ -1744,40 +1742,40 @@ fn getOpcodeName(opcode: u8) []const u8 {
 //     defer allocator.free(log3.stack);
 //     try std.testing.expectEqual(@as(u64, 21), log3.gasCost);
 // }
-// 
+//
 // test "tracer handles empty stack with JSON output" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, createTestHost());
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-// 
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     try tracer.writeSnapshot(0, 0x00, Frame, &test_frame); // STOP
-// 
+//
 //     const json = output.items;
 //     try std.testing.expect(std.mem.indexOf(u8, json, "\"stack\":[]") != null);
 // }
-// 
+//
 // test "tracer handles large stack values in JSON" {
 //     const allocator = std.testing.allocator;
-// 
+//
 //     const Frame = frame_mod.Frame(.{});
 //     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000, {}, createTestHost());
 //     defer test_frame.deinit(allocator);
-// 
+//
 //     try test_frame.stack.push(std.math.maxInt(u256));
 //     try test_frame.stack.push(0xdeadbeef);
-// 
+//
 //     var output = std.ArrayList(u8).init(allocator);
 //     defer output.deinit();
-// 
+//
 //     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
 //     try tracer.writeSnapshot(0, 0x00, Frame, &test_frame); // STOP
-// 
+//
 //     const json = output.items;
 //     try std.testing.expect(std.mem.indexOf(u8, json, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") != null);
 //     try std.testing.expect(std.mem.indexOf(u8, json, "0xdeadbeef") != null);
@@ -1787,9 +1785,9 @@ fn getOpcodeName(opcode: u8) []const u8 {
 // TRACER TESTS
 // ============================================================================
 
-// Test that NoOpTracer has zero cost
-test "NoOpTracer has zero runtime cost" {
-    var tracer = NoOpTracer.init(std.testing.allocator);
+// Test that DefaultTracer has zero cost
+test "DefaultTracer has zero runtime cost" {
+    var tracer = DefaultTracer.init(std.testing.allocator);
 
     const TestFrame = struct {
         gas: i32,
@@ -2063,7 +2061,7 @@ test "DebuggingTracer memory management" {
 
 test "GenericTracer with enhanced features" {
     const allocator = std.testing.allocator;
-    
+
     // Create a test frame with memory and return data
     const TestFrame = struct {
         gas_remaining: i64 = 1000,
@@ -2071,53 +2069,49 @@ test "GenericTracer with enhanced features" {
         memory: MockMemory = .{},
         return_data: []const u8 = "test return data",
         depth: u32 = 1,
-        
+
         const MockStack = struct {
-            data: [3]u256 = [_]u256{0x123, 0x456, 0x789},
-            
+            data: [3]u256 = [_]u256{ 0x123, 0x456, 0x789 },
+
             pub fn get_slice(self: *const MockStack) []const u256 {
                 return &self.data;
             }
-            
+
             pub fn size(self: *const MockStack) usize {
                 return self.data.len;
             }
         };
-        
+
         const MockMemory = struct {
-            data: [32]u8 = [_]u8{0xDE, 0xAD, 0xBE, 0xEF} ++ [_]u8{0} ** 28,
-            
+            data: [32]u8 = [_]u8{ 0xDE, 0xAD, 0xBE, 0xEF } ++ [_]u8{0} ** 28,
+
             pub fn size(self: *const MockMemory) usize {
                 return self.data.len;
             }
-            
+
             pub fn get_slice_evm(self: *const MockMemory, offset: usize, len: usize) ![]const u8 {
                 if (offset + len > self.data.len) return error.OutOfBounds;
-                return self.data[offset..offset + len];
+                return self.data[offset .. offset + len];
             }
         };
     };
-    
+
     var test_frame = TestFrame{};
-    
+
     // Test with ArrayList writer (memory buffer)
     var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
-    
-    var tracer = GenericTracer(std.ArrayList(u8).Writer).initWithConfig(
-        allocator, 
-        output.writer(), 
-        .{ 
-            .capture_memory = .full,
-            .compute_gas_cost = true,
-            .capture_each_op = false,
-        }
-    );
-    
+
+    var tracer = GenericTracer(std.ArrayList(u8).Writer).initWithConfig(allocator, output.writer(), .{
+        .capture_memory = .full,
+        .compute_gas_cost = true,
+        .capture_each_op = false,
+    });
+
     // Take a snapshot with enhanced features
     const trace_log = try tracer.snapshot(5, 0x51, TestFrame, &test_frame); // PC=5, MLOAD
     defer trace_log.deinit(allocator);
-    
+
     // Verify enhanced log capture
     try std.testing.expectEqual(@as(u64, 5), trace_log.pc);
     try std.testing.expectEqualStrings("MLOAD", trace_log.op);
@@ -2125,7 +2119,7 @@ test "GenericTracer with enhanced features" {
     try std.testing.expectEqual(@as(u32, 1), trace_log.depth);
     try std.testing.expectEqual(@as(usize, 3), trace_log.stack.len);
     try std.testing.expectEqual(@as(u32, 32), trace_log.memSize);
-    
+
     // Verify memory was captured
     try std.testing.expect(trace_log.memory != null);
     if (trace_log.memory) |mem| {
@@ -2133,17 +2127,17 @@ test "GenericTracer with enhanced features" {
         try std.testing.expectEqual(@as(u8, 0xDE), mem[0]);
         try std.testing.expectEqual(@as(u8, 0xAD), mem[1]);
     }
-    
-    // Verify return data was captured  
+
+    // Verify return data was captured
     try std.testing.expect(trace_log.returnData != null);
     if (trace_log.returnData) |ret_data| {
         try std.testing.expectEqualStrings("test return data", ret_data);
     }
-    
+
     // Write JSON and verify output includes new fields
     try tracer.writeJson(&trace_log);
     const json = output.items;
-    
+
     // Should include new fields
     try std.testing.expect(std.mem.indexOf(u8, json, "returnData") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "0xdead") != null); // memory content
@@ -2151,40 +2145,40 @@ test "GenericTracer with enhanced features" {
 
 test "FileTracer with generic writer interface" {
     const allocator = std.testing.allocator;
-    
+
     // Create temp directory for test file
     var tmp_dir = std.testing.tmpDir(.{});
     defer tmp_dir.cleanup();
-    
+
     const test_file_path = "test_trace.json";
     const file = try tmp_dir.dir.createFile(test_file_path, .{});
     file.close();
-    
+
     // Get absolute path for FileTracer
     const abs_path = try tmp_dir.dir.realpathAlloc(allocator, test_file_path);
     defer allocator.free(abs_path);
-    
+
     // Test frame
     const TestFrame = struct {
         gas_remaining: i64 = 500,
         stack: MockStack = .{},
         depth: u32 = 2,
-        
+
         const MockStack = struct {
             data: [1]u256 = [_]u256{0x42},
-            
+
             pub fn get_slice(self: *const MockStack) []const u256 {
                 return &self.data;
             }
-            
+
             pub fn size(self: *const MockStack) usize {
                 return self.data.len;
             }
         };
     };
-    
+
     var test_frame = TestFrame{};
-    
+
     // Create FileTracer with enhanced config
     var tracer = try FileTracer.initWithConfig(allocator, abs_path, .{
         .capture_memory = .prefix,
@@ -2193,14 +2187,14 @@ test "FileTracer with generic writer interface" {
         .capture_each_op = true,
     });
     defer tracer.deinit();
-    
+
     // Write enhanced trace
     try tracer.writeJSONTrace(0, 0x60, TestFrame, &test_frame); // PUSH1
-    
+
     // Verify file was written
     const contents = try tmp_dir.dir.readFileAlloc(allocator, test_file_path, 4096);
     defer allocator.free(contents);
-    
+
     try std.testing.expect(contents.len > 0);
     try std.testing.expect(std.mem.indexOf(u8, contents, "\"op\":\"PUSH1\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, contents, "\"depth\":2") != null);
@@ -2208,41 +2202,41 @@ test "FileTracer with generic writer interface" {
 
 test "JSONRPCTracer with enhanced output" {
     const allocator = std.testing.allocator;
-    
+
     var tracer = JSONRPCTracer.init(allocator);
     defer tracer.deinit();
-    
-    // Simple test frame  
+
+    // Simple test frame
     const TestFrame = struct {
         gas_remaining: i64 = 800,
         stack: MockStack = .{},
-        
+
         const MockStack = struct {
-            data: [2]u256 = [_]u256{0x100, 0x200},
-            
+            data: [2]u256 = [_]u256{ 0x100, 0x200 },
+
             pub fn get_slice(self: *const MockStack) []const u256 {
                 return &self.data;
             }
-            
+
             pub fn size(self: *const MockStack) usize {
                 return self.data.len;
             }
         };
     };
-    
+
     var test_frame = TestFrame{};
-    
+
     // Capture step
     tracer.beforeOp(10, 0x01, TestFrame, &test_frame); // ADD at PC=10
     tracer.afterOp(10, 0x01, TestFrame, &test_frame);
-    
+
     // Export to JSON and verify enhanced format
     var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
-    
+
     try tracer.toJSON(output.writer());
     const json = output.items;
-    
+
     // Verify basic structure
     try std.testing.expect(std.mem.indexOf(u8, json, "\"structLogs\":[") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "\"pc\":10") != null);

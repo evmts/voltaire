@@ -14,8 +14,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// Validate stack constraints
         pub inline fn validate_stack(self: *FrameType) void {
-            std.debug.assert(self.stack.size() >= 1); 
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); 
+            std.debug.assert(self.stack.size() >= 1);
+            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity);
         }
 
         /// PUSH_ADD_INLINE - Fused PUSH+ADD with inline value (≤8 bytes).
@@ -24,7 +24,7 @@ pub fn Handlers(comptime FrameType: type) type {
             @branchHint(.likely);
             log.debug_instruction(self, .PUSH_ADD_INLINE);
             validate_stack(self);
-            
+
             const op_data = dispatch.getOpData(.PUSH_ADD_INLINE, Dispatch, Dispatch.Item, cursor);
             const top = self.stack.peek_unsafe();
             self.stack.set_top_unsafe(op_data.metadata.value +% top);
@@ -40,7 +40,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch.getOpData(.PUSH_ADD_POINTER, Dispatch, Dispatch.Item, cursor);
             const top = self.stack.peek_unsafe();
             self.stack.set_top_unsafe(self.u256_constants[op_data.metadata.index] +% top);
-            
+
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
@@ -48,7 +48,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn push_mul_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.debug_instruction(self, .PUSH_MUL_INLINE);
             validate_stack(self);
-            
+
             const op_data = dispatch.getOpData(.PUSH_MUL_INLINE, Dispatch, Dispatch.Item, cursor);
             const top = self.stack.peek_unsafe();
             self.stack.set_top_unsafe(op_data.metadata.value *% top);
@@ -75,15 +75,15 @@ pub fn Handlers(comptime FrameType: type) type {
             const dividend = op_data.metadata.value;
 
             const divisor = self.stack.peek_unsafe();
-            
+
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
             const dividend_u256 = U256.from_native(dividend);
             const divisor_u256 = U256.from_native(divisor);
-            
+
             const result_u256 = dividend_u256.wrapping_div(divisor_u256);
             const result = result_u256.to_native();
-            
+
             self.stack.set_top_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -97,16 +97,16 @@ pub fn Handlers(comptime FrameType: type) type {
 
             std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_POINTER requires 1 stack item
             const divisor = self.stack.peek_unsafe();
-            
+
             // Convert to U256 for optimized division
             const Uint = @import("primitives").Uint;
             const U256 = Uint(256, 4);
             const dividend_u256 = U256.from_native(dividend);
             const divisor_u256 = U256.from_native(divisor);
-            
+
             const result_u256 = dividend_u256.wrapping_div(divisor_u256);
             const result = result_u256.to_native();
-            
+
             self.stack.set_top_unsafe(result);
 
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -128,7 +128,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn push_sub_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.debug_instruction(self, .PUSH_SUB_POINTER);
             const op_data = dispatch.getOpData(.PUSH_SUB_POINTER, Dispatch, Dispatch.Item, cursor);
-            std.debug.assert(self.stack.size() >= 1); 
+            std.debug.assert(self.stack.size() >= 1);
             const top = self.stack.peek_unsafe();
             const result = self.u256_constants[op_data.metadata.index] -% top;
             self.stack.set_top_unsafe(result);
@@ -142,7 +142,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const bytecode_mod = @import("../bytecode/bytecode.zig");
 
 // Test configuration
@@ -152,7 +152,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
-    .TracerType = NoOpTracer,
+    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -191,21 +191,21 @@ fn stopHandler(frame: *TestFrame, cursor: [*]const TestFrame.Dispatch.Item) Test
 fn createTestCursorInline(value: u256) [*]TestFrame.Dispatch.Item {
     // Store value as u64 (truncating for inline metadata)
     const inline_value = @as(u64, @truncate(value));
-    
+
     test_cursor_storage[0] = .{ .opcode_handler = undefined }; // Will be set by caller
     test_cursor_storage[1] = .{ .push_inline = .{ .value = inline_value } };
     test_cursor_storage[2] = .{ .opcode_handler = &stopHandler };
-    
+
     return &test_cursor_storage;
 }
 
 fn createTestCursorPointer(value: u256) [*]TestFrame.Dispatch.Item {
     test_value_storage = value;
-    
+
     test_cursor_storage[0] = .{ .opcode_handler = undefined }; // Will be set by caller
     test_cursor_storage[1] = .{ .push_pointer = .{ .value = &test_value_storage } };
     test_cursor_storage[2] = .{ .opcode_handler = &stopHandler };
-    
+
     return &test_cursor_storage;
 }
 
@@ -218,7 +218,7 @@ test "PUSH_ADD_INLINE - basic addition" {
 
     const cursor = createTestCursorInline(5);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_add_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -234,7 +234,7 @@ test "PUSH_ADD_POINTER - large value addition" {
 
     const cursor = createTestCursorPointer(large_value);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_pointer;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_add_pointer(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -250,7 +250,7 @@ test "PUSH_MUL_INLINE - multiplication" {
 
     const cursor = createTestCursorInline(6);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -265,7 +265,7 @@ test "PUSH_DIV_INLINE - division" {
 
     const cursor = createTestCursorInline(4);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_div_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -280,7 +280,7 @@ test "PUSH_DIV_INLINE - division by zero" {
 
     const cursor = createTestCursorInline(0);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_div_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -296,7 +296,7 @@ test "PUSH_SUB_INLINE - subtraction" {
 
     const cursor = createTestCursorInline(30);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -311,7 +311,7 @@ test "PUSH_SUB_INLINE - underflow" {
 
     const cursor = createTestCursorInline(20);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_sub_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -361,7 +361,7 @@ test "PUSH_ADD_INLINE - overflow wrapping" {
 
     const cursor = createTestCursorInline(1);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_add_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_add_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -378,7 +378,7 @@ test "PUSH_MUL_INLINE - overflow wrapping" {
 
     const cursor = createTestCursorInline(2);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_inline;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_mul_inline(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -395,7 +395,7 @@ test "PUSH_SUB_POINTER - underflow wrapping" {
 
     const cursor = createTestCursorPointer(sub_value);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_sub_pointer(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -412,7 +412,7 @@ test "PUSH_DIV_POINTER - division by zero" {
 
     const cursor = createTestCursorPointer(zero_value);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_div_pointer;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_div_pointer(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 
@@ -429,7 +429,7 @@ test "PUSH_MUL_POINTER - large value multiplication" {
 
     const cursor = createTestCursorPointer(large);
     cursor[0].opcode_handler = &TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer;
-    
+
     const result = TestFrame.ArithmeticSyntheticHandlers.push_mul_pointer(&frame, cursor);
     try testing.expectError(TestFrame.Error.Stop, result);
 

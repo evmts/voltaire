@@ -74,7 +74,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Get EVM instance once for all storage operations (better cache locality)
             const evm = self.getEvm();
-            
+
             // Get current value for gas calculation (through EVM's database)
             const current_value = evm.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => return Error.AllocationError,
@@ -92,7 +92,6 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Calculate SSTORE operation cost (includes cold access cost if applicable)
             const total_gas_cost: u64 = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
-
 
             log.debug(
                 "SSTORE metering: slot={}, original={}, current={}, new={}, is_cold={}, total={}",
@@ -195,7 +194,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 // const Host = @import("evm.zig").Host;
 
 // Test configuration with database enabled

@@ -20,7 +20,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_MLOAD_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const offset = op_data.metadata.value;
 
@@ -53,7 +53,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_MLOAD_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const offset = self.u256_constants[op_data.metadata.index];
 
@@ -87,7 +87,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_MSTORE_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const offset = op_data.metadata.value;
 
@@ -121,7 +121,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_MSTORE_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const offset = self.u256_constants[op_data.metadata.index];
 
@@ -129,7 +129,7 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
             const value = self.stack.pop_unsafe();
 
-            std.debug.assert(offset <= std.math.maxInt(usize)); 
+            std.debug.assert(offset <= std.math.maxInt(usize));
             const offset_usize = @as(usize, @intCast(offset));
 
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
@@ -152,7 +152,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_MSTORE8_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const offset = op_data.metadata.value;
 
@@ -186,7 +186,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .PUSH_MSTORE8_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const offset = self.u256_constants[op_data.metadata.index];
 
@@ -221,7 +221,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
@@ -232,7 +232,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = MemoryDatabase,
-    .TracerType = NoOpTracer,
+    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

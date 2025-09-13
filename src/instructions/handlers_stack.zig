@@ -72,7 +72,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         else => unreachable,
                     });
                     const dispatch = Dispatch{ .cursor = cursor };
-                    
+
                     // For PUSH1-PUSH8, we get push_inline metadata with u64 value
                     // For PUSH9-PUSH32, we get push_pointer metadata with *u256 value
                     const op_data = switch (push_n) {
@@ -110,7 +110,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         32 => dispatch.getOpData(.PUSH32),
                         else => unreachable,
                     };
-                    
+
                     if (comptime push_n <= 8) {
                         const value = op_data.metadata.value;
                         std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
@@ -238,7 +238,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
@@ -249,7 +249,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
-    .TracerType = NoOpTracer,
+    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

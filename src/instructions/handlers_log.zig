@@ -21,7 +21,7 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn logHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const dispatch = Dispatch{ .cursor = cursor };
-                    
+
                     // Add debug logging for the specific LOG opcode
                     const unified_opcode = switch (topic_count) {
                         0 => .LOG0,
@@ -32,7 +32,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         else => unreachable,
                     };
                     log.debug_instruction(self, unified_opcode);
-                    
+
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // LOG0 requires 2 items, LOG1 requires 3, LOG2 requires 4, LOG3 requires 5, LOG4 requires 6
@@ -41,7 +41,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Pop offset and length first (they're on top of stack)
                     const offset = self.stack.pop_unsafe();
                     const length = self.stack.pop_unsafe();
-                    
+
                     // Pop topics in order (topic1 is deepest, topicN is shallowest)
                     var topics: [4]WordType = [_]WordType{0} ** 4;
                     for (0..topic_count) |j| {
@@ -69,7 +69,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Calculate dynamic gas cost: data gas + memory expansion
                     const data_gas_cost = @as(u64, length_usize) * GasConstants.LogDataGas;
                     const total_dynamic_gas = data_gas_cost + memory_expansion_cost;
-                    
+
                     // Check gas and consume dynamic gas
                     // Use negative gas pattern for single-branch out-of-gas detection
                     self.gas_remaining -= @intCast(total_dynamic_gas);
@@ -91,7 +91,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
                     // Write log directly to EVM using EVM's main allocator for proper memory ownership
                     const evm = self.getEvm();
-                    
+
                     // Use EVM's main allocator (not arena) for log data that will be freed later
                     const data_copy = if (data.len > 0)
                         evm.allocator.dupe(u8, data) catch return Error.AllocationError
@@ -180,7 +180,7 @@ const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
 const bytecode_mod = @import("../bytecode/bytecode.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 // const host_mod = @import("host.zig");
 

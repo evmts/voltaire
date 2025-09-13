@@ -21,9 +21,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.getTracer().debug_instruction(self, .ADD);
-            std.debug.assert(self.stack.size() >= 2); 
+            std.debug.assert(self.stack.size() >= 2);
 
-            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return top +% second; } }.op);
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
+                    return top +% second;
+                }
+            }.op);
 
             return next_instruction(self, cursor);
         }
@@ -32,8 +36,12 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.getTracer().debug_instruction(self, .MUL);
             std.debug.assert(self.stack.size() >= 2);
-            
-            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return top *% second; } }.op);
+
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
+                    return top *% second;
+                }
+            }.op);
 
             return next_instruction(self, cursor);
         }
@@ -41,9 +49,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.getTracer().debug_instruction(self, .SUB);
-            std.debug.assert(self.stack.size() >= 2); 
+            std.debug.assert(self.stack.size() >= 2);
 
-            self.stack.binary_op_unsafe(struct { fn op(top: WordType, second: WordType) WordType { return top -% second; } }.op);
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
+                    return top -% second;
+                }
+            }.op);
 
             return next_instruction(self, cursor);
         }
@@ -53,12 +65,12 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.getTracer().debug_instruction(self, .DIV);
-            std.debug.assert(self.stack.size() >= 2); 
+            std.debug.assert(self.stack.size() >= 2);
 
-            self.stack.binary_op_unsafe(struct { 
-                fn op(top: WordType, second: WordType) WordType { 
+            self.stack.binary_op_unsafe(struct {
+                fn op(top: WordType, second: WordType) WordType {
                     return from_native(top).wrapping_div(from_native(second)).to_native();
-                } 
+                }
             }.op);
 
             return next_instruction(self, cursor);
@@ -69,22 +81,22 @@ pub fn Handlers(comptime FrameType: type) type {
         // The current approach might be slower if the sign of operands is predictable.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.getTracer().debug_instruction(self, .SDIV);
-            std.debug.assert(self.stack.size() >= 2); 
-            const top = self.stack.pop_unsafe(); 
-            const second = self.stack.peek_unsafe(); 
+            std.debug.assert(self.stack.size() >= 2);
+            const top = self.stack.pop_unsafe();
+            const second = self.stack.peek_unsafe();
 
             const SIGN_BIT = @as(u256, 1) << 255;
-            const MIN_SIGNED = SIGN_BIT; 
-            
+            const MIN_SIGNED = SIGN_BIT;
+
             if (second == 0) {
                 self.stack.set_top_unsafe(0);
-            return next_instruction(self, cursor);
+                return next_instruction(self, cursor);
             }
-            if (top == MIN_SIGNED and second == std.math.maxInt(u256)) { 
+            if (top == MIN_SIGNED and second == std.math.maxInt(u256)) {
                 self.stack.set_top_unsafe(MIN_SIGNED);
                 return next_instruction(self, cursor);
             }
-            
+
             // This section implements branchless two's complement arithmetic.
             // 1. Extract sign bits (1 for negative, 0 for positive).
             // 2. Create a mask that is all 1s for negative numbers and all 0s for positive.
@@ -96,23 +108,23 @@ pub fn Handlers(comptime FrameType: type) type {
             // 6. Conditionally negate the result using the same mask trick.
             const top_sign = top >> 255;
             const second_sign = second >> 255;
-            
+
             const top_mask = @as(u256, 0) -% top_sign;
             const second_mask = @as(u256, 0) -% second_sign;
-            
+
             const top_abs = (top ^ top_mask) -% top_mask;
             const second_abs = (second ^ second_mask) -% second_mask;
-            
+
             const top_abs_u256 = FrameType.UintN.from_native(top_abs);
             const second_abs_u256 = FrameType.UintN.from_native(second_abs);
             const quotient_u256 = top_abs_u256.wrapping_div(second_abs_u256);
             const quotient = quotient_u256.to_native();
-            
+
             const result_sign = top_sign ^ second_sign;
             const result_mask = @as(u256, 0) -% result_sign;
-            
+
             const result = (quotient ^ result_mask) -% result_mask;
-            
+
             self.stack.set_top_unsafe(result);
             return next_instruction(self, cursor);
         }
@@ -136,13 +148,13 @@ pub fn Handlers(comptime FrameType: type) type {
         // The current approach might be slower if the sign of operands is predictable.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.getTracer().debug_instruction(self, .SMOD);
-            std.debug.assert(self.stack.size() >= 2); 
-            const top = self.stack.pop_unsafe(); 
-            const second = self.stack.peek_unsafe(); 
+            std.debug.assert(self.stack.size() >= 2);
+            const top = self.stack.pop_unsafe();
+            const second = self.stack.peek_unsafe();
 
             const SIGN_BIT = @as(u256, 1) << 255;
-            const MIN_SIGNED = SIGN_BIT; 
-            
+            const MIN_SIGNED = SIGN_BIT;
+
             if (second == 0) {
                 self.stack.set_top_unsafe(0);
                 return next_instruction(self, cursor);
@@ -151,26 +163,26 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.set_top_unsafe(0);
                 return next_instruction(self, cursor);
             }
-            
+
             // This section implements branchless two's complement arithmetic.
             // The result of a % n takes the sign of the dividend `a`.
             const top_sign = top >> 255;
             const second_sign = second >> 255;
-            
+
             const top_mask = @as(u256, 0) -% top_sign;
             const second_mask = @as(u256, 0) -% second_sign;
-            
+
             const top_abs = (top ^ top_mask) -% top_mask;
             const second_abs = (second ^ second_mask) -% second_mask;
-            
+
             const top_abs_u256 = FrameType.UintN.from_native(top_abs);
             const second_abs_u256 = FrameType.UintN.from_native(second_abs);
             const remainder_u256 = top_abs_u256.wrapping_rem(second_abs_u256);
             const remainder = remainder_u256.to_native();
-            
+
             // Result takes sign of dividend (top_sign)
             const result = (remainder ^ top_mask) -% top_mask;
-            
+
             self.stack.set_top_unsafe(result);
             return next_instruction(self, cursor);
         }
@@ -366,7 +378,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const Address = @import("primitives").Address;
 
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;

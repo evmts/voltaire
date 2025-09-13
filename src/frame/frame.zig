@@ -324,14 +324,14 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const GasType = config.GasType();
         /// The type used to index into bytecode or instructions. Determined by config.max_bytecode_size
         pub const PcType = config.PcType();
-        
+
         // Compile-time check: PcType must be at least u8 for dispatch cache optimization
         comptime {
             if (@bitSizeOf(PcType) < 8) {
                 @compileError("PcType must be at least u8 (8 bits). Current max_bytecode_size is too small.");
             }
         }
-        
+
         /// The struct in charge of managing Evm memory
         pub const Memory = memory_mod.Memory(.{
             .initial_capacity = config.memory_initial_capacity,
@@ -385,7 +385,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         memory: Memory, // 16B - Memory operations (frequent)
         evm_ptr: *anyopaque, // 8B - EVM instance pointer (storage/context/system)
         // Total: 64 bytes exactly
-        
+
         // CACHE LINE 2 (64 bytes) - STORAGE/CONTEXT/EXECUTION
         // These fields are accessed together during storage ops and execution
         contract_address: Address, // 20B - Current contract (storage ops, ADDRESS)
@@ -394,7 +394,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         output: []u8, // 16B - Output data (RETURN/REVERT/calls)
         _padding2: [4]u8 = undefined, // 4B - Alignment padding
         // Total: 64 bytes
-        
+
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         // These fields are rarely accessed (specific opcodes only)
         // Note: database moved to EVM struct - access via evm_ptr for better cache locality
@@ -622,10 +622,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Set up dispatch cursor
-            self.dispatch = Dispatch{ 
+            self.dispatch = Dispatch{
                 .cursor = schedule.ptr + start_index,
             };
-            
+
             // Store u256_constants slice for Frame access
             self.u256_constants = if (owned_schedule) |s| s.u256_values else &[_]WordType{};
 
@@ -749,7 +749,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
 
         /// Get the tracer for logging and debugging
-        pub inline fn getTracer(self: *const Self) *@import("../tracer/tracer.zig").NoOpTracer {
+        pub inline fn getTracer(self: *const Self) *@import("../tracer/tracer.zig").DefaultTracer {
             return &self.getEvm().tracer;
         }
 

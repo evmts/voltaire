@@ -31,8 +31,8 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .KECCAK256);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 2); // KECCAK256 requires 2 stack items
-            const offset = self.stack.pop_unsafe();  // Top of stack is offset
-            const size = self.stack.pop_unsafe();    // Second is size
+            const offset = self.stack.pop_unsafe(); // Top of stack is offset
+            const size = self.stack.pop_unsafe(); // Second is size
 
             // Check bounds
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -49,7 +49,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 if (self.gas_remaining < 0) {
                     return Error.OutOfGas;
                 }
-                
+
                 // Hash of empty data depends on Keccak variant
                 const empty_hash = switch (@bitSizeOf(WordType)) {
                     256 => blk: {
@@ -87,7 +87,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Note: JUMPDEST doesn't properly calculate block gas yet, so we need to charge both static and dynamic
             const words = (size_usize + 31) / 32;
             const gas_cost = GasConstants.Keccak256Gas + words * GasConstants.Keccak256WordGas;
-            
+
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(gas_cost);
             if (self.gas_remaining < 0) {
@@ -178,7 +178,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 

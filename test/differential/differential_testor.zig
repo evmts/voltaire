@@ -3,14 +3,13 @@ const primitives = @import("primitives");
 const guillotine_evm = @import("evm");
 const revm = @import("revm");
 
-// Extract ExecutionTrace type from CallResult 
+// Extract ExecutionTrace type from CallResult
 const ExecutionTrace = @typeInfo(@TypeOf(@as(guillotine_evm.CallResult, undefined).trace)).optional.child;
 
 // The trace type will be extracted from the actual CallResult structure when needed
 
 // Use the same trace types as the EVM - access from call_result via guillotine_evm
 // For now, I'll create a type reference that works with the module system
-
 
 /// Result of execution with trace
 pub const ExecutionResultWithTrace = struct {
@@ -85,7 +84,7 @@ const TracedEVMType = guillotine_evm.Evm(.{
 });
 
 const NoTraceEVMType = guillotine_evm.Evm(.{
-    .TracerType = guillotine_evm.tracer.NoOpTracer,
+    .TracerType = guillotine_evm.tracer.DefaultTracer,
     .DatabaseType = guillotine_evm.Database,
 });
 
@@ -129,7 +128,7 @@ pub const DifferentialTestor = struct {
         // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
         db.* = guillotine_evm.Database.init(allocator);
-        
+
         const db_no_trace = try allocator.create(guillotine_evm.Database);
         db_no_trace.* = guillotine_evm.Database.init(allocator);
 
@@ -139,7 +138,7 @@ pub const DifferentialTestor = struct {
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
         });
-        
+
         try db_no_trace.set_account(caller.bytes, .{
             .balance = 10_000_000,
             .nonce = 0,
@@ -171,7 +170,7 @@ pub const DifferentialTestor = struct {
         // Create both traced and non-traced EVMs based on config
         var evm_traced: ?TracedEVMType = null;
         var evm_no_trace: ?NoTraceEVMType = null;
-        
+
         if (config.enable_tracing) {
             evm_traced = try TracedEVMType.init(
                 allocator,
@@ -183,7 +182,7 @@ pub const DifferentialTestor = struct {
                 .CANCUN,
             );
         }
-        
+
         evm_no_trace = try NoTraceEVMType.init(
             allocator,
             db_no_trace,
@@ -221,7 +220,7 @@ pub const DifferentialTestor = struct {
     /// Deploy a contract by executing its deployment bytecode
     fn deployContractGuillotine(self: *DifferentialTestor, deployment_bytecode: []const u8, enable_tracing: bool) ![]u8 {
         const log = std.log.scoped(.differential_testor);
-        
+
         // Execute the deployment bytecode (init code) using CREATE semantics
         // This should execute the init code and return the runtime code
         const result = if (enable_tracing) blk: {
@@ -251,28 +250,28 @@ pub const DifferentialTestor = struct {
                 return error.NoTraceInstanceNotAvailable;
             }
         };
-        
+
         if (!result.success) {
             log.err("Contract deployment failed", .{});
             return error.DeploymentFailed;
         }
-        
+
         if (result.output.len == 0) {
             log.err("Contract deployment returned no runtime code", .{});
             return error.NoRuntimeCode;
         }
-        
+
         // Copy the output (runtime code) to return
         const runtime_code = try self.allocator.alloc(u8, result.output.len);
         @memcpy(runtime_code, result.output);
-        
+
         // Clean up call result memory
         var result_copy = result;
         result_copy.deinit(self.allocator);
-        
+
         return runtime_code;
     }
-    
+
     pub fn deinit(self: *DifferentialTestor) void {
         self.revm_instance.deinit();
         if (self.guillotine_instance_traced) |*inst| {
@@ -301,16 +300,16 @@ pub const DifferentialTestor = struct {
         if (self.guillotine_instance_traced) |_| {
             try self.test_bytecode_with_tracing_and_calldata_and_gas(bytecode, calldata, 1_000_000, true);
         }
-        
+
         // Then test with tracing disabled
         try self.test_bytecode_with_tracing_and_calldata_and_gas(bytecode, calldata, 1_000_000, false);
     }
-    
+
     /// Internal helper to test bytecode with specific tracing configuration and calldata
     fn test_bytecode_with_tracing_and_calldata_and_gas(self: *DifferentialTestor, bytecode: []const u8, calldata: []const u8, gas_limit: u64, enable_tracing: bool) !void {
         // Select the appropriate database and EVM instance
         const db = if (enable_tracing) self.guillotine_db else self.guillotine_db_no_trace;
-        
+
         // Better heuristic: deployment bytecode usually contains CODECOPY (0x39) followed by RETURN (0xf3)
         // This pattern is used to copy runtime code to memory and return it
         var is_deployment_bytecode = false;
@@ -320,7 +319,7 @@ pub const DifferentialTestor = struct {
                 if (byte == 0x39 and i + 1 < bytecode.len) { // Found CODECOPY
                     // Look for RETURN within the next 10 bytes
                     const search_end = @min(i + 10, bytecode.len);
-                    for (bytecode[i+1..search_end]) |next_byte| {
+                    for (bytecode[i + 1 .. search_end]) |next_byte| {
                         if (next_byte == 0xf3) { // Found RETURN after CODECOPY
                             is_deployment_bytecode = true;
                             break;
@@ -330,18 +329,18 @@ pub const DifferentialTestor = struct {
                 }
             }
         }
-        
+
         const log = std.log.scoped(.differential_testor);
-        
+
         if (is_deployment_bytecode) {
             log.warn("Detected deployment bytecode (contains CODECOPY + RETURN pattern), attempting to deploy contract", .{});
-            
+
             // For Guillotine: Execute deployment bytecode to get runtime code
             const runtime_code = try self.deployContractGuillotine(bytecode, enable_tracing);
             defer self.allocator.free(runtime_code);
-            
+
             log.warn("Deployment returned {} bytes of runtime code", .{runtime_code.len});
-            
+
             // Set the runtime code
             const code_hash = try db.set_code(runtime_code);
             try db.set_account(self.contract.bytes, .{
@@ -350,13 +349,13 @@ pub const DifferentialTestor = struct {
                 .code_hash = code_hash,
                 .storage_root = [_]u8{0} ** 32,
             });
-            
+
             // For REVM: Also use runtime code for fair comparison
             try self.revm_instance.setCode(self.contract, runtime_code);
         } else {
             // Not deployment bytecode, use as-is (original behavior)
             try self.revm_instance.setCode(self.contract, bytecode);
-            
+
             const code_hash = try db.set_code(bytecode);
             // log.debug("Set code with hash: {x} (tracing={})", .{code_hash, enable_tracing});
             // log.debug("Contract address is: {x}", .{self.contract.bytes});
@@ -388,10 +387,10 @@ pub const DifferentialTestor = struct {
         // Execute on both EVMs separately to get the results for trace display
         var revm_result = try self.executeRevmWithTrace(self.caller, self.contract, 0, calldata, gas_limit);
         defer revm_result.deinit();
-        
+
         var guillotine_result = try self.executeGuillotineWithTraceMode(self.caller, self.contract, 0, calldata, gas_limit, enable_tracing);
         defer guillotine_result.deinit();
-        
+
         // Generate diff
         var diff = try self.generateDiff(revm_result, guillotine_result);
         defer diff.deinit();
@@ -400,7 +399,7 @@ pub const DifferentialTestor = struct {
         if (diff.result_match and diff.trace_match) {
             return;
         }
-        
+
         const trace_mode = if (enable_tracing) "TRACING ENABLED" else "TRACING DISABLED";
         log.err("DIFFERENTIAL TEST FAILURE with {s}", .{trace_mode});
 
@@ -486,7 +485,7 @@ pub const DifferentialTestor = struct {
             .input = input,
             .gas = gas_limit,
         } };
-        
+
         var result = self.revm_instance.call(params) catch |err| {
             const log = std.log.scoped(.revm_trace);
             log.err("REVM call failed: {} - this breaks differential testing!", .{err});
@@ -495,13 +494,13 @@ pub const DifferentialTestor = struct {
         defer result.deinit();
 
         const output = try self.allocator.dupe(u8, result.output);
-        
+
         // Calculate gas_used from gas_left (REVM now returns gas_left)
-        const gas_used = if (gas_limit > result.gas_left) 
-            gas_limit - result.gas_left 
-        else 
+        const gas_used = if (gas_limit > result.gas_left)
+            gas_limit - result.gas_left
+        else
             0;
-        
+
         // If tracing is enabled, we might have trace files generated
         // For now, just log that tracing occurred
         if (self.revm_instance.enable_tracing) {
@@ -543,7 +542,7 @@ pub const DifferentialTestor = struct {
         };
 
         // std.debug.print("DIFFERENTIAL: About to call Guillotine with gas={}, to={x} (tracing={})\n", .{ gas_limit, to.bytes, enable_tracing });
-        
+
         var result = if (enable_tracing) blk: {
             if (self.guillotine_instance_traced) |*evm_instance| {
                 break :blk evm_instance.call(params);
@@ -557,7 +556,7 @@ pub const DifferentialTestor = struct {
                 return error.NoTraceInstanceNotAvailable;
             }
         };
-        
+
         // std.debug.print("DIFFERENTIAL: Guillotine call complete, success={}, gas_left={} (tracing={})\n", .{ result.success, result.gas_left, enable_tracing });
 
         // Transfer ownership of trace from CallResult
@@ -591,7 +590,7 @@ pub const DifferentialTestor = struct {
 
         // Copy output before freeing result
         const output_copy = try self.allocator.dupe(u8, result.output);
-        
+
         // Clean up CallResult allocated memory using the comprehensive deinit method
         result.deinit(self.allocator);
 
@@ -684,24 +683,20 @@ pub const DifferentialTestor = struct {
         if (diff.step_count_diff) |steps| {
             if (steps.guillotine > 0) {
                 log.err("🔍 GUILLOTINE TRACE PREVIEW (first {} steps):", .{@min(steps.guillotine, 5)});
-                
+
                 if (guillotine_result.trace) |trace| {
                     const max_steps = @min(trace.steps.len, 5);
                     for (trace.steps[0..max_steps], 0..) |step, i| {
-                        log.err("   Step {}: PC={}, Opcode=0x{X:0>2} ({s}), Gas={}", .{ 
-                            i, step.pc, step.opcode, step.opcode_name, step.gas 
-                        });
+                        log.err("   Step {}: PC={}, Opcode=0x{X:0>2} ({s}), Gas={}", .{ i, step.pc, step.opcode, step.opcode_name, step.gas });
                     }
-                    
+
                     // Show the LAST few steps to see where it stops
                     if (trace.steps.len > 5) {
                         log.err("   ... and {} more steps", .{trace.steps.len - 5});
                         log.err("   LAST 3 STEPS:", .{});
                         const start = if (trace.steps.len >= 3) trace.steps.len - 3 else 0;
                         for (trace.steps[start..], start..) |step, i| {
-                            log.err("   Step {}: PC={}, Opcode=0x{X:0>2} ({s}), Gas={}", .{ 
-                                i, step.pc, step.opcode, step.opcode_name, step.gas 
-                            });
+                            log.err("   Step {}: PC={}, Opcode=0x{X:0>2} ({s}), Gas={}", .{ i, step.pc, step.opcode, step.opcode_name, step.gas });
                         }
                     }
                 } else {
@@ -778,7 +773,7 @@ pub const DifferentialTestor = struct {
         // Compare traces (handle optional traces)
         const revm_steps_len: usize = if (revm_result.trace) |t| t.steps.len else 0;
         const guillotine_steps_len: usize = if (guillotine_result.trace) |t| t.steps.len else 0;
-        
+
         // If REVM tracing isn't working yet, focus on execution results only
         if (revm_result.trace == null and guillotine_result.trace != null) {
             const log = std.log.scoped(.differential_trace);
@@ -800,7 +795,6 @@ pub const DifferentialTestor = struct {
 
         return diff;
     }
-
 
     /// Print detailed diff visualization
     pub fn printDiff(_: *DifferentialTestor, diff: ExecutionDiff, test_name: []const u8) void {
@@ -854,7 +848,7 @@ pub const DifferentialTestor = struct {
         log.info("=== END DIFFERENTIAL TEST ===", .{});
     }
 
-    /// Parse REVM trace file in EIP-3155 format  
+    /// Parse REVM trace file in EIP-3155 format
     fn parseRevmTrace(self: *DifferentialTestor, trace_file_path: []const u8) !?ExecutionTrace {
         // Read the trace file
         const trace_content = std.fs.cwd().readFileAlloc(self.allocator, trace_file_path, 10 * 1024 * 1024) catch |err| switch (err) {
@@ -873,49 +867,50 @@ pub const DifferentialTestor = struct {
         // Simple trace parsing for debugging - just count steps and log key operations
         var step_count: u32 = 0;
         var lines = std.mem.splitSequence(u8, trace_content, "\n");
-        
+
         log.info("=== REVM EXECUTION TRACE ===", .{});
-        
+
         while (lines.next()) |line| {
             if (line.len == 0) continue;
-            
+
             // Parse each JSON line for basic info
             var parsed = std.json.parseFromSlice(std.json.Value, self.allocator, line, .{}) catch |err| {
                 log.warn("Failed to parse JSON line: {}, error: {}", .{ line.len, err });
                 continue;
             };
             defer parsed.deinit();
-            
+
             const obj = parsed.value.object;
-            
-            // Skip the final summary line (has "output" field) 
+
+            // Skip the final summary line (has "output" field)
             if (obj.get("output")) |output| {
                 log.info("REVM FINAL OUTPUT: {s}", .{output.string});
                 continue;
             }
-            
+
             // Extract basic step information
             const pc = @as(u32, @intCast(obj.get("pc").?.integer));
             _ = @as(u8, @intCast(obj.get("op").?.integer)); // opcode - unused for now
             const opcode_name = obj.get("opName").?.string;
-            
+
             // Parse gas as hex string
             const gas_hex = obj.get("gas").?.string;
             const gas = std.fmt.parseInt(u64, gas_hex[2..], 16) catch 0;
-            
+
             step_count += 1;
-            
+
             // Log key arithmetic operations
-            if (std.mem.eql(u8, opcode_name, "SUB") or 
-                std.mem.eql(u8, opcode_name, "MUL") or 
+            if (std.mem.eql(u8, opcode_name, "SUB") or
+                std.mem.eql(u8, opcode_name, "MUL") or
                 std.mem.eql(u8, opcode_name, "DIV") or
                 std.mem.eql(u8, opcode_name, "MOD") or
                 std.mem.eql(u8, opcode_name, "ADDMOD") or
                 std.mem.eql(u8, opcode_name, "MULMOD") or
                 std.mem.eql(u8, opcode_name, "EXP") or
                 std.mem.eql(u8, opcode_name, "ADD") or
-                std.mem.eql(u8, opcode_name, "RETURN")) {
-                
+                std.mem.eql(u8, opcode_name, "RETURN"))
+            {
+
                 // Also log the stack state for key operations
                 if (obj.get("stack")) |stack_array| {
                     log.info("REVM Step {}: {s} (PC={}, Gas={})", .{ step_count, opcode_name, pc, gas });

@@ -52,11 +52,11 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Jumps to destination if condition is non-zero, otherwise continues to next instruction.
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.debug_instruction(self, .JUMPI);
-            std.debug.assert(self.stack.size() >= 2); 
+            std.debug.assert(self.stack.size() >= 2);
             const jump_table = self.jump_table;
 
-            const dest = self.stack.pop_unsafe(); 
-            const condition = self.stack.pop_unsafe(); 
+            const dest = self.stack.pop_unsafe();
+            const condition = self.stack.pop_unsafe();
 
             if (condition != 0) {
                 if (dest > std.math.maxInt(u32)) {
@@ -110,15 +110,15 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Check stack requirements for the entire basic block
             const current_stack_size = self.stack.size();
-            
+
             // Check minimum stack requirement (won't underflow)
             if (min_stack > 0 and current_stack_size < @as(usize, @intCast(min_stack))) {
                 log.warn("JUMPDEST: Stack underflow - required min={}, current={}", .{ min_stack, current_stack_size });
                 return Error.StackUnderflow;
             }
-            
+
             // Check maximum stack requirement (won't overflow)
-            // max_stack represents the net stack change, so we need to ensure 
+            // max_stack represents the net stack change, so we need to ensure
             // current_stack_size + max_stack <= stack_capacity
             if (max_stack > 0) {
                 const stack_capacity = @TypeOf(self.stack).stack_capacity;
@@ -154,7 +154,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 const bytecode_mod = @import("../bytecode/bytecode.zig");
@@ -1010,7 +1010,7 @@ test "JUMPDEST opcode - stack requirements validation" {
         // Set stack with 2 items
         try frame.stack.push(100);
         try frame.stack.push(200);
-        
+
         var cursor: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
         const mock_handler = struct {
             fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
@@ -1019,27 +1019,27 @@ test "JUMPDEST opcode - stack requirements validation" {
                 return TestFrame.Success.stop;
             }
         }.handler;
-        
+
         cursor[0] = .{ .opcode_handler = &mock_handler };
         cursor[1] = .{ .opcode_handler = &mock_handler };
-        
+
         // Require 3 items minimum but we only have 2
         cursor[0].metadata = .{ .jump_dest = .{ .gas = 100, .min_stack = 3, .max_stack = 0 } };
-        
+
         const dispatch = TestFrame.Dispatch{
             .cursor = &cursor,
             .bytecode_length = 0,
         };
-        
+
         const result = TestFrame.JumpHandlers.jumpdest(frame, dispatch);
         try testing.expectError(TestFrame.Error.StackUnderflow, result);
     }
-    
+
     // Clear stack
     while (frame.stack.len() > 0) {
         _ = try frame.stack.pop();
     }
-    
+
     // Test stack overflow check
     {
         // Fill stack to near maximum (leave room for testing)
@@ -1047,7 +1047,7 @@ test "JUMPDEST opcode - stack requirements validation" {
         for (0..near_max) |i| {
             try frame.stack.push(@as(u256, i));
         }
-        
+
         var cursor: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
         const mock_handler = struct {
             fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
@@ -1056,34 +1056,34 @@ test "JUMPDEST opcode - stack requirements validation" {
                 return TestFrame.Success.stop;
             }
         }.handler;
-        
+
         cursor[0] = .{ .opcode_handler = &mock_handler };
         cursor[1] = .{ .opcode_handler = &mock_handler };
-        
+
         // max_stack of 10 would overflow (1020 + 10 > 1024)
         cursor[0].metadata = .{ .jump_dest = .{ .gas = 100, .min_stack = 0, .max_stack = 10 } };
-        
+
         const dispatch = TestFrame.Dispatch{
             .cursor = &cursor,
             .bytecode_length = 0,
         };
-        
+
         const result = TestFrame.JumpHandlers.jumpdest(frame, dispatch);
         try testing.expectError(TestFrame.Error.StackOverflow, result);
     }
-    
+
     // Clear stack
     while (frame.stack.len() > 0) {
         _ = try frame.stack.pop();
     }
-    
+
     // Test valid stack requirements
     {
         // Set stack with 5 items
         for (0..5) |i| {
             try frame.stack.push(@as(u256, i));
         }
-        
+
         var cursor: [2]dispatch_mod.ScheduleElement(TestFrame) = undefined;
         const mock_handler = struct {
             fn handler(f: TestFrame, d: TestFrame.Dispatch) TestFrame.Error!TestFrame.Success {
@@ -1092,18 +1092,18 @@ test "JUMPDEST opcode - stack requirements validation" {
                 return TestFrame.Success.stop;
             }
         }.handler;
-        
+
         cursor[0] = .{ .opcode_handler = &mock_handler };
         cursor[1] = .{ .opcode_handler = &mock_handler };
-        
+
         // Valid requirements: min=3 (we have 5), max=2 (5+2=7 < 1024)
         cursor[0].metadata = .{ .jump_dest = .{ .gas = 100, .min_stack = 3, .max_stack = 2 } };
-        
+
         const dispatch = TestFrame.Dispatch{
             .cursor = &cursor,
             .bytecode_length = 0,
         };
-        
+
         _ = try TestFrame.JumpHandlers.jumpdest(frame, dispatch);
         // Should succeed - no error
     }

@@ -44,7 +44,7 @@ pub const TracerConfig = @import("tracer/tracer.zig").TracerConfig;
 pub const MemoryCaptureMode = @import("tracer/tracer.zig").MemoryCaptureMode;
 pub const LoggingTracer = @import("tracer/tracer.zig").LoggingTracer;
 pub const FileTracer = @import("tracer/tracer.zig").FileTracer;
-pub const NoOpTracer = @import("tracer/tracer.zig").NoOpTracer;
+pub const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
 pub const DebuggingTracer = @import("tracer/tracer.zig").DebuggingTracer;
 pub const differential_tracer = @import("_test_utils/differential_tracer.zig");
 pub const trace_comparer = @import("_test_utils/trace_comparer.zig");
@@ -112,7 +112,7 @@ test {
     _ = @import("instructions/handlers_stack.zig");
     _ = @import("instructions/handlers_storage.zig");
     _ = @import("instructions/handlers_system.zig");
-    
+
     // Test bytecode modules
     _ = @import("bytecode/bytecode_tests.zig");
     _ = @import("bytecode/bytecode_jump_validation_test.zig");

@@ -5,7 +5,7 @@ Configurable execution tracing for debugging, analysis, and perf monitoring.
 ## Overview
 
 Multiple tracer implementations are available and selected at compile time for zero‑overhead when disabled:
-- `NoOpTracer` — production default, compiled away
+- `DefaultTracer` — production default, compiled away
 - `DebuggingTracer` — step snapshots and breakpoints
 - `LoggingTracer` — structured logs to stdout
 - `FileTracer` — high‑throughput JSON/binary file writer
@@ -17,7 +17,7 @@ Multiple tracer implementations are available and selected at compile time for z
 
 ### Tracer Types
 
-#### NoOpTracer
+#### DefaultTracer
 - **Zero Runtime Overhead**: Compile-time elimination of all tracing code
 - **Production Default**: Optimal for production deployments
 - **Interface Compliance**: Satisfies tracer interface without any operations
@@ -87,7 +87,7 @@ Multiple tracer implementations are available and selected at compile time for z
 const tracer = @import("tracer");
 const evm = @import("evm");
 
-const EvmProd = evm.Evm(tracer.NoOpTracer);
+const EvmProd = evm.Evm(tracer.DefaultTracer);
 const EvmDebug = evm.Evm(tracer.LoggingTracer);
 
 var prod = EvmProd.init(allocator, host);
@@ -236,7 +236,7 @@ const CustomEvm = evm.Evm(CustomTracer);
 
 ## Performance Characteristics
 
-### NoOpTracer Performance
+### DefaultTracer Performance
 - **Zero Runtime Cost**: Complete compile-time elimination
 - **No Memory Overhead**: No additional memory allocation
 - **No CPU Overhead**: No additional CPU cycles consumed
@@ -269,7 +269,7 @@ const Config = struct {
     tracer_type: type = if (builtin.mode == .Debug) 
         tracer.DebuggingTracer 
     else 
-        tracer.NoOpTracer,
+        tracer.DefaultTracer,
     
     // Other EVM configuration options
     enable_precompiles: bool = true,

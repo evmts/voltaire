@@ -12,16 +12,16 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
-        
+
         /// Maximum memory size (24-bit limit)
         const MEMORY_LIMIT: usize = 0xFFFFFF;
-        
+
         /// Check if an offset plus size would exceed memory limit
         inline fn checkMemoryBounds(offset: usize, size: usize) bool {
             const end = offset + size;
             return end <= MEMORY_LIMIT;
         }
-        
+
         /// Check if a value fits within memory limit
         inline fn checkMemoryLimit(value: anytype) bool {
             return value <= MEMORY_LIMIT;
@@ -265,7 +265,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const MemoryDatabase = @import("../storage/memory_database.zig").MemoryDatabase;
 const Address = @import("primitives").Address;
 
@@ -276,7 +276,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = MemoryDatabase,
-    .TracerType = NoOpTracer,
+    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

@@ -110,32 +110,32 @@ pub fn Evm(comptime config: EvmConfig) type {
         // OPTIMIZED CACHE LINE LAYOUT
         // Cache line 1 (64 bytes) - EXECUTION CONTROL: Accessed frequently during execution
         /// Current call depth (0 = root call)
-        depth: config.get_depth_type(),                    // 1-2 bytes (u8 or u11)
+        depth: config.get_depth_type(), // 1-2 bytes (u8 or u11)
         /// Disable gas checking (for testing/debugging)
-        disable_gas_checking: bool,                        // 1 byte
-        _padding1: [5]u8 = undefined,                      // 5-6 bytes padding for alignment
+        disable_gas_checking: bool, // 1 byte
+        _padding1: [5]u8 = undefined, // 5-6 bytes padding for alignment
         /// Current call input data (slice: ptr + len)
-        current_input: []const u8,                         // 16 bytes
+        current_input: []const u8, // 16 bytes
         /// Current return data (slice: ptr + len)
-        return_data: []const u8,                           // 16 bytes
+        return_data: []const u8, // 16 bytes
         /// Allocator for dynamic memory
-        allocator: std.mem.Allocator,                      // 16 bytes (vtable ptr + context ptr)
+        allocator: std.mem.Allocator, // 16 bytes (vtable ptr + context ptr)
         // Total: ~56 bytes (fits in cache line 1)
 
         // Cache line 2 (64+ bytes) - STORAGE OPERATIONS: All accessed together for SLOAD/SSTORE
         /// Database interface for state storage
-        database: *Database,                               // 8 bytes
+        database: *Database, // 8 bytes
         /// Access list for tracking warm/cold access (EIP-2929)
-        access_list: AccessList,                           // ~40 bytes (2 hashmaps)
+        access_list: AccessList, // ~40 bytes (2 hashmaps)
         /// Current snapshot ID for the active call frame
-        current_snapshot_id: Journal.SnapshotIdType,       // 1-2 bytes (u8 or u16)
+        current_snapshot_id: Journal.SnapshotIdType, // 1-2 bytes (u8 or u16)
         /// Gas refund counter for SSTORE operations
-        gas_refund_counter: u64,                           // 8 bytes
+        gas_refund_counter: u64, // 8 bytes
         // Total: ~58 bytes (mostly fits in cache line 2)
 
         // Cache line 3+ - STATE TRACKING: Transaction-level state changes
         /// Journal for tracking state changes and snapshots
-        journal: Journal,                                  // Variable size
+        journal: Journal, // Variable size
         /// Logs emitted during the current call (accessed for LOG0-LOG4 opcodes)
         logs: std.ArrayList(@import("frame/call_result.zig").Log),
         /// Tracks contracts created in current transaction (EIP-6780)
@@ -165,7 +165,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         // Tracer - at the very bottom of memory layout for minimal impact on cache performance
         /// Tracer for debugging and logging - can be accessed via evm.tracer or frame.evm_ptr.tracer
-        tracer: @import("tracer/tracer.zig").NoOpTracer,
+        tracer: @import("tracer/tracer.zig").DefaultTracer,
 
         /// Initialize a new EVM instance.
         ///
@@ -239,7 +239,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
 
                 // Initialize tracer
-                .tracer = @import("tracer/tracer.zig").NoOpTracer.init(allocator),
+                .tracer = @import("tracer/tracer.zig").DefaultTracer.init(allocator),
             };
         }
 
@@ -273,7 +273,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (comptime !config.disable_balance_checks) {
                 if (from_account.balance < value) return error.InsufficientBalance;
             }
-            
+
             // Self-transfer is a no-op
             if (from.equals(to)) return;
             var to_account = try self.database.get_account(to.bytes) orelse Account.zero();
@@ -282,7 +282,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Self-transfer is a no-op for balance updates
             if (std.mem.eql(u8, &from.bytes, &to.bytes)) return;
-            
+
             from_account.balance -= value;
             to_account.balance += value;
             try self.database.set_account(from.bytes, from_account);
@@ -326,13 +326,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn call(self: *Self, params: CallParams) CallResult {
             // This should only be called at the top level
             std.debug.assert(self.depth == 0);
-            
+
             log.debug("EVM.call: Starting execution, type={s}, gas={}", .{ @tagName(params), params.getGas() });
-            
+
             params.validate() catch return CallResult.failure(0);
 
             defer {
-                
+
                 // Cleanup after transaction completes
                 self.depth = 0;
                 self.current_input = &.{};
@@ -427,7 +427,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             modified_params.setGas(execution_gas);
 
             var result = self.inner_call(modified_params);
-            
+
             log.debug("EVM.call: Execution complete, success={}, gas_left={}", .{ result.success, result.gas_left });
 
             // Apply EIP-3529 gas refund cap if transaction succeeded
@@ -466,7 +466,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             self.depth += 1;
             defer self.depth -= 1;
-            
+
             if (self.depth >= config.max_call_depth) return CallResult.failure(0);
 
             // Get gas for execution
@@ -1173,40 +1173,40 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Frame.interpret returns Error!void and uses errors for success termination
             // reduce tracer call logging noise
             frame.interpret_with_tracer(code, @TypeOf(self.tracer), &self.tracer) catch |err| switch (err) {
-                    error.Stop => {
-                        termination_reason = error.Stop;
-                    },
-                    error.Return => {
-                        termination_reason = error.Return;
-                    },
-                    error.SelfDestruct => {
-                        log.debug("execute_frame: termination SelfDestruct (traced)", .{});
-                        termination_reason = error.SelfDestruct;
-                    },
-                    error.REVERT => {
-                        // REVERT is a special case - it's a successful termination but indicates failure
-                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
-                        const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                        // Copy revert data to avoid double-free with frame.deinit
-                        const out_len = frame.output.len;
-                        const out_copy = if (out_len > 0) blk: {
-                            const buf = try self.allocator.alloc(u8, out_len);
-                            @memcpy(buf, frame.output);
-                            break :blk buf;
-                        } else &[_]u8{};
-                        var result = CallResult.revert_with_data(gas_left, out_copy);
-                        result.trace = execution_trace;
-                        return result;
-                    },
-                    else => {
-                        // Actual errors - but still extract trace for debugging
-                        log.debug("Frame execution with tracer failed: {}", .{err});
-                        // Extract trace even on failure for debugging
-                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
-                        var failure = CallResult.failure(0);
-                        failure.trace = execution_trace;
-                        return failure;
-                    },
+                error.Stop => {
+                    termination_reason = error.Stop;
+                },
+                error.Return => {
+                    termination_reason = error.Return;
+                },
+                error.SelfDestruct => {
+                    log.debug("execute_frame: termination SelfDestruct (traced)", .{});
+                    termination_reason = error.SelfDestruct;
+                },
+                error.REVERT => {
+                    // REVERT is a special case - it's a successful termination but indicates failure
+                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
+                    const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
+                    // Copy revert data to avoid double-free with frame.deinit
+                    const out_len = frame.output.len;
+                    const out_copy = if (out_len > 0) blk: {
+                        const buf = try self.allocator.alloc(u8, out_len);
+                        @memcpy(buf, frame.output);
+                        break :blk buf;
+                    } else &[_]u8{};
+                    var result = CallResult.revert_with_data(gas_left, out_copy);
+                    result.trace = execution_trace;
+                    return result;
+                },
+                else => {
+                    // Actual errors - but still extract trace for debugging
+                    log.debug("Frame execution with tracer failed: {}", .{err});
+                    // Extract trace even on failure for debugging
+                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
+                    var failure = CallResult.failure(0);
+                    failure.trace = execution_trace;
+                    return failure;
+                },
             };
 
             // Extract trace data before tracer is destroyed (for success cases)
@@ -1303,7 +1303,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Reduce log noise
             return result;
         }
-
 
         /// Execute a precompile call (inlined)
         fn executePrecompileInline(self: *Self, address: primitives.Address, input: []const u8, gas: u64, is_static: bool, snapshot_id: Journal.SnapshotIdType) !CallResult {
@@ -3546,11 +3545,11 @@ test "Error handling - precompile execution" {
 
 test "Error handling - REVERT should preserve data and error message in both tracing and non-tracing modes" {
     const allocator = std.testing.allocator;
-    
+
     // Initialize database and EVM
     var db = Database.init(allocator);
     defer db.deinit();
-    
+
     const block_info = BlockInfo{
         .chain_id = 1,
         .number = 1,
@@ -3561,32 +3560,32 @@ test "Error handling - REVERT should preserve data and error message in both tra
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = primitives.Address.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     // Test non-tracing mode first (this is where the critical bug is)
     {
         var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .BERLIN);
         defer vm.deinit();
-        
+
         const contract_addr = primitives.Address{ .bytes = [_]u8{0x12} ** 20 };
-        
+
         // Bytecode: Store "FAIL" (0x4641494c) in memory and revert with it
         // PUSH4 0x4641494c (FAIL), PUSH1 0, MSTORE
         // PUSH1 4 (size), PUSH1 28 (offset), REVERT
         const bytecode = [_]u8{
-            0x63, 0x46, 0x41, 0x49, 0x4c,  // PUSH4 "FAIL"
-            0x60, 0x00,                     // PUSH1 0
-            0x52,                            // MSTORE
-            0x60, 0x04,                     // PUSH1 4 (size)
-            0x60, 0x1c,                     // PUSH1 28 (offset)
-            0xfd,                            // REVERT
+            0x63, 0x46, 0x41, 0x49, 0x4c, // PUSH4 "FAIL"
+            0x60, 0x00, // PUSH1 0
+            0x52, // MSTORE
+            0x60, 0x04, // PUSH1 4 (size)
+            0x60, 0x1c, // PUSH1 28 (offset)
+            0xfd, // REVERT
         };
-        
+
         const code_hash = try db.set_code(&bytecode);
         const account = Account{
             .balance = 0,
@@ -3596,7 +3595,7 @@ test "Error handling - REVERT should preserve data and error message in both tra
             .delegated_address = null,
         };
         try db.set_account(contract_addr.bytes, account);
-        
+
         // Execute call that should revert (non-tracing mode)
         const params = DefaultEvm.CallParams{ .call = .{
             .caller = primitives.Address.ZERO_ADDRESS,
@@ -3604,57 +3603,57 @@ test "Error handling - REVERT should preserve data and error message in both tra
             .value = 0,
             .input = &.{},
             .gas = 100_000,
-        }};
-        
+        } };
+
         const result = vm.call(params);
-        
+
         // Verify revert was handled correctly
         try std.testing.expect(!result.success);
-        
+
         // After fix: Output should contain "FAIL" in non-tracing mode
         std.debug.print("Non-tracing mode - Output length: {d}\n", .{result.output.len});
         if (result.output.len > 0) {
             std.debug.print("Non-tracing mode - Output data: {s}\n", .{result.output});
         }
-        
+
         // After fix: This should work because non-tracing mode now preserves revert data
         try std.testing.expect(result.output.len == 4);
         try std.testing.expect(std.mem.eql(u8, result.output, "FAIL"));
-        
+
         // After fix: Error message should not be empty
         std.debug.print("Non-tracing mode - Error info: {any}\n", .{result.error_info});
         try std.testing.expect(result.error_info != null);
         if (result.error_info) |info| {
             try std.testing.expect(std.mem.eql(u8, info, "execution reverted"));
         }
-        
+
         // Gas should be partially consumed, not zero
         std.debug.print("Non-tracing mode - Gas left: {d}\n", .{result.gas_left});
         try std.testing.expect(result.gas_left < 100_000); // Some gas should be consumed
-        
+
         // Clean up result
         var mutable_result = result;
         mutable_result.deinit(allocator);
     }
-    
+
     // Test tracing mode (this should work better but still has error_info issue)
     {
         const TracingEvm = Evm(.{ .TracerType = @import("tracer/tracer.zig").JSONRPCTracer });
         var vm = try TracingEvm.init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .BERLIN);
         defer vm.deinit();
-        
+
         const contract_addr = primitives.Address{ .bytes = [_]u8{0x13} ** 20 };
-        
+
         // Same bytecode as above
         const bytecode = [_]u8{
-            0x63, 0x46, 0x41, 0x49, 0x4c,  // PUSH4 "FAIL"
-            0x60, 0x00,                     // PUSH1 0
-            0x52,                            // MSTORE
-            0x60, 0x04,                     // PUSH1 4 (size)
-            0x60, 0x1c,                     // PUSH1 28 (offset)
-            0xfd,                            // REVERT
+            0x63, 0x46, 0x41, 0x49, 0x4c, // PUSH4 "FAIL"
+            0x60, 0x00, // PUSH1 0
+            0x52, // MSTORE
+            0x60, 0x04, // PUSH1 4 (size)
+            0x60, 0x1c, // PUSH1 28 (offset)
+            0xfd, // REVERT
         };
-        
+
         const code_hash = try db.set_code(&bytecode);
         const account = Account{
             .balance = 0,
@@ -3664,7 +3663,7 @@ test "Error handling - REVERT should preserve data and error message in both tra
             .delegated_address = null,
         };
         try db.set_account(contract_addr.bytes, account);
-        
+
         // Execute call that should revert (tracing mode)
         const params = TracingEvm.CallParams{ .call = .{
             .caller = primitives.Address.ZERO_ADDRESS,
@@ -3672,38 +3671,38 @@ test "Error handling - REVERT should preserve data and error message in both tra
             .value = 0,
             .input = &.{},
             .gas = 100_000,
-        }};
-        
+        } };
+
         const result = vm.call(params);
-        
+
         // Verify revert was handled correctly
         try std.testing.expect(!result.success);
-        
+
         // In tracing mode, output should be preserved
         std.debug.print("Tracing mode - Output length: {d}\n", .{result.output.len});
         if (result.output.len > 0) {
             std.debug.print("Tracing mode - Output data: {s}\n", .{result.output});
         }
-        
+
         // This should work in tracing mode
         try std.testing.expect(result.output.len == 4);
         try std.testing.expect(std.mem.eql(u8, result.output, "FAIL"));
-        
+
         // After fix: Error message should not be empty even in tracing mode
         std.debug.print("Tracing mode - Error info: {any}\n", .{result.error_info});
         try std.testing.expect(result.error_info != null);
         if (result.error_info) |info| {
             try std.testing.expect(std.mem.eql(u8, info, "execution reverted"));
         }
-        
+
         // Gas should be partially consumed
         std.debug.print("Tracing mode - Gas left: {d}\n", .{result.gas_left});
         try std.testing.expect(result.gas_left > 0);
         try std.testing.expect(result.gas_left < 100_000);
-        
+
         // Verify trace is present
         try std.testing.expect(result.trace != null);
-        
+
         // Clean up result
         var mutable_result = result;
         mutable_result.deinit(allocator);
@@ -3712,11 +3711,11 @@ test "Error handling - REVERT should preserve data and error message in both tra
 
 test "Error handling - REVERT with empty data should still have error message" {
     const allocator = std.testing.allocator;
-    
+
     // Initialize database and EVM
     var db = Database.init(allocator);
     defer db.deinit();
-    
+
     const block_info = BlockInfo{
         .chain_id = 1,
         .number = 1,
@@ -3727,26 +3726,26 @@ test "Error handling - REVERT with empty data should still have error message" {
         .base_fee = 0,
         .prev_randao = [_]u8{0} ** 32,
     };
-    
+
     const tx_context = TransactionContext{
         .gas_limit = 1000000,
         .coinbase = primitives.Address.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    
+
     var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .BERLIN);
     defer vm.deinit();
-    
+
     const contract_addr = primitives.Address{ .bytes = [_]u8{0x14} ** 20 };
-    
+
     // Bytecode: Simple REVERT with no data
     // PUSH1 0 (size), PUSH1 0 (offset), REVERT
     const bytecode = [_]u8{
-        0x60, 0x00,  // PUSH1 0 (size)
-        0x60, 0x00,  // PUSH1 0 (offset)  
-        0xfd,        // REVERT
+        0x60, 0x00, // PUSH1 0 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0xfd, // REVERT
     };
-    
+
     const code_hash = try db.set_code(&bytecode);
     const account = Account{
         .balance = 0,
@@ -3756,7 +3755,7 @@ test "Error handling - REVERT with empty data should still have error message" {
         .delegated_address = null,
     };
     try db.set_account(contract_addr.bytes, account);
-    
+
     // Execute call that should revert
     const params = DefaultEvm.CallParams{ .call = .{
         .caller = primitives.Address.ZERO_ADDRESS,
@@ -3764,26 +3763,26 @@ test "Error handling - REVERT with empty data should still have error message" {
         .value = 0,
         .input = &.{},
         .gas = 100_000,
-    }};
-    
+    } };
+
     const result = vm.call(params);
-    
+
     // Verify revert was handled correctly
     try std.testing.expect(!result.success);
-    
+
     // Output should be empty
     try std.testing.expect(result.output.len == 0);
-    
+
     // After fix: Error message should indicate revert even with empty data
     std.debug.print("Empty revert - Error info: {any}\n", .{result.error_info});
     try std.testing.expect(result.error_info != null);
     if (result.error_info) |info| {
         try std.testing.expect(std.mem.eql(u8, info, "execution reverted"));
     }
-    
+
     // Gas should be partially consumed
     try std.testing.expect(result.gas_left < 100_000);
-    
+
     // Clean up result
     var mutable_result = result;
     mutable_result.deinit(allocator);

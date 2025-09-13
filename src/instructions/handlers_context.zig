@@ -65,7 +65,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const access_cost = evm.access_address(addr) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Charge gas for address access
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(access_cost);
@@ -173,9 +173,9 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .CALLDATACOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 3); // CALLDATACOPY requires 3 stack items
-            const length = self.stack.pop_unsafe();       // Top of stack
-            const offset = self.stack.pop_unsafe();       // Second from top
-            const dest_offset = self.stack.pop_unsafe();  // Third from top
+            const length = self.stack.pop_unsafe(); // Top of stack
+            const offset = self.stack.pop_unsafe(); // Second from top
+            const dest_offset = self.stack.pop_unsafe(); // Third from top
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or
@@ -247,9 +247,9 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .CODECOPY);
             // EVM stack order: [destOffset, offset, length] with dest on top
             std.debug.assert(self.stack.size() >= 3); // CODECOPY requires 3 stack items
-            const dest_offset = self.stack.pop_unsafe();  // Top of stack
-            const offset = self.stack.pop_unsafe();       // Next
-            const length = self.stack.pop_unsafe();       // Next
+            const dest_offset = self.stack.pop_unsafe(); // Top of stack
+            const offset = self.stack.pop_unsafe(); // Next
+            const length = self.stack.pop_unsafe(); // Next
 
             // Check for overflow
             if (dest_offset > std.math.maxInt(usize) or
@@ -326,20 +326,20 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 1); // EXTCODESIZE requires 1 stack item
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
-            
+
             // Access the address for warm/cold accounting (EIP-2929)
             const evm = self.getEvm();
             const access_cost = evm.access_address(addr) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Charge gas for address access
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(access_cost);
             if (self.gas_remaining < 0) {
                 return Error.OutOfGas;
             }
-            
+
             const code = evm.get_code(addr);
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
             self.stack.set_top_unsafe(code_len);
@@ -353,9 +353,9 @@ pub fn Handlers(comptime FrameType: type) type {
             log.debug_instruction(self, .EXTCODECOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 4); // EXTCODECOPY requires 4 stack items
-            const length = self.stack.pop_unsafe();       // Top of stack  
-            const offset = self.stack.pop_unsafe();       // Second from top
-            const dest_offset = self.stack.pop_unsafe();  // Third from top
+            const length = self.stack.pop_unsafe(); // Top of stack
+            const offset = self.stack.pop_unsafe(); // Second from top
+            const dest_offset = self.stack.pop_unsafe(); // Third from top
             const address_u256 = self.stack.pop_unsafe(); // Fourth from top
 
             // Check for overflow
@@ -367,13 +367,13 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             const addr = from_u256(address_u256);
-            
+
             // Access the address for warm/cold accounting (EIP-2929)
             const evm = self.getEvm();
             const access_cost = evm.access_address(addr) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Charge gas for address access
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(access_cost);
@@ -431,13 +431,13 @@ pub fn Handlers(comptime FrameType: type) type {
             std.debug.assert(self.stack.size() >= 1); // EXTCODEHASH requires 1 stack item
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
-            
+
             // Access the address for warm/cold accounting (EIP-2929)
             const evm = self.getEvm();
             const access_cost = evm.access_address(addr) catch |err| switch (err) {
                 else => return Error.AllocationError,
             };
-            
+
             // Charge gas for address access
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(access_cost);
@@ -818,7 +818,7 @@ pub fn Handlers(comptime FrameType: type) type {
 const testing = std.testing;
 const Frame = @import("../frame/frame.zig").Frame;
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
+const DefaultTracer = @import("../tracer/tracer.zig").DefaultTracer;
 const block_info_mod = @import("../block/block_info.zig");
 
 // Test configuration
@@ -828,7 +828,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
-    .TracerType = NoOpTracer,
+    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -2329,7 +2329,7 @@ test "WordType truncation behavior" {
         .max_bytecode_size = 1024,
         .block_gas_limit = 30_000_000,
         .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
-        .TracerType = NoOpTracer,
+        .TracerType = DefaultTracer,
         .memory_initial_capacity = 4096,
         .memory_limit = 0xFFFFFF,
     };
