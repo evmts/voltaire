@@ -238,119 +238,545 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                 .MLOAD_SWAP1_DUP2 => "MLOAD_SWAP1_DUP2",
             };
             
-            // Get opcode-specific details at compile time
-            const details = comptime switch (opcode) {
-                // Arithmetic operations - show type of operation
-                .ADD, .MUL, .SUB, .DIV, .MOD => " | op=binary_arithmetic",
-                .SDIV, .SMOD => " | op=signed_arithmetic",
-                .ADDMOD, .MULMOD => " | op=modular_arithmetic",
-                .EXP => " | op=exponentiation",
-                .SIGNEXTEND => " | op=sign_extension",
+            // For operations that need stack values, we'll log them
+            // The stack uses stack_ptr to access elements, with stack_ptr[0] being the top
+            const stack_size = frame.stack.size();
+            const stack_ptr = frame.stack.stack_ptr;
+            
+            // Log with appropriate details based on opcode type
+            switch (opcode) {
+                // Binary arithmetic operations - log top 2 stack items
+                .ADD, .MUL, .SUB, .DIV, .MOD, .SDIV, .SMOD,
+                .LT, .GT, .SLT, .SGT, .EQ,
+                .AND, .OR, .XOR,
+                .EXP, .SIGNEXTEND,
+                .BYTE, .SHL, .SHR, .SAR => {
+                    if (stack_size >= 2) {
+                        // Stack items accessed via stack_ptr: [0] is top, [1] is second
+                        const top = stack_ptr[0];
+                        const second = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | operands=[{x}, {x}]", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            top,
+                            second,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Comparison operations
-                .LT, .GT, .SLT, .SGT, .EQ => " | op=comparison",
-                .ISZERO => " | op=zero_check",
+                // Ternary operations - log top 3 stack items
+                .ADDMOD, .MULMOD => {
+                    if (stack_size >= 3) {
+                        const top = stack_ptr[0];
+                        const second = stack_ptr[1];
+                        const third = stack_ptr[2];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | operands=[{x}, {x}, {x}]", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            top,
+                            second,
+                            third,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Bitwise operations
-                .AND, .OR, .XOR => " | op=bitwise_binary",
-                .NOT => " | op=bitwise_unary",
-                .BYTE => " | op=byte_extraction",
-                .SHL, .SHR, .SAR => " | op=bit_shift",
+                // Unary operations - log top stack item
+                .ISZERO, .NOT, .POP => {
+                    if (stack_size >= 1) {
+                        const top = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | value={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            top,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Stack operations
-                .POP => " | op=pop",
+                // DUP operations - show which item is being duplicated
+                .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8,
+                .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16 => {
+                    const dup_pos = comptime switch (opcode) {
+                        .DUP1 => 1, .DUP2 => 2, .DUP3 => 3, .DUP4 => 4,
+                        .DUP5 => 5, .DUP6 => 6, .DUP7 => 7, .DUP8 => 8,
+                        .DUP9 => 9, .DUP10 => 10, .DUP11 => 11, .DUP12 => 12,
+                        .DUP13 => 13, .DUP14 => 14, .DUP15 => 15, .DUP16 => 16,
+                        else => unreachable,
+                    };
+                    if (stack_size >= dup_pos) {
+                        const value = stack_ptr[dup_pos - 1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | duplicating_pos={d} value={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            dup_pos,
+                            value,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                
+                // SWAP operations - show the two positions being swapped
+                .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8,
+                .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16 => {
+                    const swap_pos = comptime switch (opcode) {
+                        .SWAP1 => 1, .SWAP2 => 2, .SWAP3 => 3, .SWAP4 => 4,
+                        .SWAP5 => 5, .SWAP6 => 6, .SWAP7 => 7, .SWAP8 => 8,
+                        .SWAP9 => 9, .SWAP10 => 10, .SWAP11 => 11, .SWAP12 => 12,
+                        .SWAP13 => 13, .SWAP14 => 14, .SWAP15 => 15, .SWAP16 => 16,
+                        else => unreachable,
+                    };
+                    if (stack_size > swap_pos) {
+                        const top = stack_ptr[0];
+                        const other = stack_ptr[swap_pos];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | swapping=[{x}, {x}] pos={d}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            top,
+                            other,
+                            swap_pos,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                
+                // Memory operations - show offset and value
+                .MLOAD => {
+                    if (stack_size >= 1) {
+                        const offset = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} mem={d} | offset={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            frame.memory.size(),
+                            offset,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .MSTORE, .MSTORE8 => {
+                    if (stack_size >= 2) {
+                        const offset = stack_ptr[0];
+                        const value = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} mem={d} | offset={x} value={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            frame.memory.size(),
+                            offset,
+                            value,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .MSIZE => {
+                    std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | mem_size={d}", .{
+                        opcode_name,
+                        stack_size,
+                        frame.gas_remaining,
+                        frame.memory.size(),
+                    });
+                },
+                
+                // Storage operations - show key and value
+                .SLOAD, .TLOAD => {
+                    if (stack_size >= 1) {
+                        const key = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | key={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            key,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .SSTORE, .TSTORE => {
+                    if (stack_size >= 2) {
+                        const key = stack_ptr[0];
+                        const value = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | key={x} value={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            key,
+                            value,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                
+                // Jump operations
+                .JUMP => {
+                    if (stack_size >= 1) {
+                        const destination = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | destination={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            destination,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .JUMPI => {
+                    if (stack_size >= 2) {
+                        const destination = stack_ptr[0];
+                        const condition = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | dest={x} cond={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            destination,
+                            condition,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                
+                // PUSH operations - just log that we're pushing
                 .PUSH0, .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
                 .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
                 .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
-                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => " | op=push",
-                .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8,
-                .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16 => " | op=duplicate",
-                .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8,
-                .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16 => " | op=swap",
+                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
+                    std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d}", .{
+                        opcode_name,
+                        stack_size,
+                        frame.gas_remaining,
+                    });
+                },
                 
-                // Memory operations
-                .MLOAD => " | op=memory_load",
-                .MSTORE => " | op=memory_store",
-                .MSTORE8 => " | op=memory_store_byte",
-                .MSIZE => " | op=memory_size",
-                .MCOPY => " | op=memory_copy",
+                // Simple context operations
+                .PC, .GAS, .JUMPDEST,
+                .ADDRESS, .ORIGIN, .CALLER, .COINBASE,
+                .BALANCE, .SELFBALANCE,
+                .CALLVALUE, .GASPRICE, .BASEFEE, .BLOBBASEFEE,
+                .CALLDATASIZE, .CODESIZE, .RETURNDATASIZE,
+                .TIMESTAMP, .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID,
+                .STOP, .INVALID => {
+                    std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d}", .{
+                        opcode_name,
+                        stack_size,
+                        frame.gas_remaining,
+                    });
+                },
                 
-                // Storage operations
-                .SLOAD => " | op=storage_load",
-                .SSTORE => " | op=storage_store",
-                .TLOAD => " | op=transient_load",
-                .TSTORE => " | op=transient_store",
+                // Operations that read offset from stack
+                .CALLDATALOAD, .EXTCODESIZE, .EXTCODEHASH, .BLOCKHASH, .BLOBHASH => {
+                    if (stack_size >= 1) {
+                        const arg = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | arg={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            arg,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Context operations
-                .ADDRESS, .ORIGIN, .CALLER, .COINBASE => " | op=address_info",
-                .BALANCE, .SELFBALANCE => " | op=balance_query",
-                .CALLVALUE, .GASPRICE, .BASEFEE, .BLOBBASEFEE => " | op=value_info",
-                .CALLDATALOAD => " | op=calldata_load",
-                .CALLDATASIZE, .CODESIZE, .RETURNDATASIZE => " | op=size_query",
-                .CALLDATACOPY, .CODECOPY, .RETURNDATACOPY => " | op=data_copy",
-                .EXTCODESIZE, .EXTCODEHASH => " | op=external_code_info",
-                .EXTCODECOPY => " | op=external_code_copy",
-                .BLOCKHASH => " | op=block_hash",
-                .TIMESTAMP, .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID => " | op=block_info",
-                .BLOBHASH => " | op=blob_hash",
-                .PC => " | op=program_counter",
-                .GAS => " | op=gas_query",
+                // Copy operations
+                .CALLDATACOPY, .CODECOPY, .RETURNDATACOPY, .MCOPY => {
+                    if (stack_size >= 3) {
+                        const dest = stack_ptr[0];
+                        const src = stack_ptr[1];
+                        const length = stack_ptr[2];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | dest={x} src={x} len={d}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            dest,
+                            src,
+                            length,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Jump operations
-                .JUMP => " | op=jump",
-                .JUMPI => " | op=conditional_jump",
-                .JUMPDEST => " | op=jump_destination",
+                // Hash and log operations
+                .KECCAK256, .LOG0, .LOG1, .LOG2, .LOG3, .LOG4 => {
+                    if (stack_size >= 2) {
+                        const offset = stack_ptr[0];
+                        const length = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | offset={x} len={d}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            offset,
+                            length,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // System operations
-                .CREATE => " | op=create_contract",
-                .CREATE2 => " | op=create2_contract",
-                .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => " | op=call",
-                .AUTHCALL => " | op=auth_call",
-                .AUTH => " | op=authorize",
-                .RETURN => " | op=return",
-                .REVERT => " | op=revert",
-                .SELFDESTRUCT => " | op=self_destruct",
-                .STOP => " | op=stop",
-                .INVALID => " | op=invalid",
+                // Return/revert operations
+                .RETURN, .REVERT => {
+                    if (stack_size >= 2) {
+                        const offset = stack_ptr[0];
+                        const length = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | offset={x} len={d}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            offset,
+                            length,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Crypto operations
-                .KECCAK256 => " | op=hash",
+                // System calls - log gas and address
+                .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => {
+                    if (stack_size >= 2) {
+                        const gas = stack_ptr[0];
+                        const address = stack_ptr[1];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | call_gas={d} addr={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            gas,
+                            address,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Log operations
-                .LOG0, .LOG1, .LOG2, .LOG3, .LOG4 => " | op=log_event",
+                // CREATE operations
+                .CREATE => {
+                    if (stack_size >= 3) {
+                        const value = stack_ptr[0];
+                        const offset = stack_ptr[1];
+                        const length = stack_ptr[2];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | value={x} offset={x} len={d}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            value,
+                            offset,
+                            length,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .CREATE2 => {
+                    if (stack_size >= 4) {
+                        const value = stack_ptr[0];
+                        const offset = stack_ptr[1];
+                        const length = stack_ptr[2];
+                        const salt = stack_ptr[3];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | value={x} offset={x} len={d} salt={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            value,
+                            offset,
+                            length,
+                            salt,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
                 
-                // Synthetic operations
-                .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => " | op=fused_push_add",
-                .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => " | op=fused_push_mul",
-                .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => " | op=fused_push_div",
-                .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => " | op=fused_push_sub",
-                .PUSH_AND_INLINE, .PUSH_AND_POINTER => " | op=fused_push_and",
-                .PUSH_OR_INLINE, .PUSH_OR_POINTER => " | op=fused_push_or",
-                .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => " | op=fused_push_xor",
-                .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => " | op=fused_push_mload",
-                .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => " | op=fused_push_mstore",
-                .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => " | op=fused_push_mstore8",
-                .JUMP_TO_STATIC_LOCATION => " | op=static_jump",
-                .JUMPI_TO_STATIC_LOCATION => " | op=static_conditional_jump",
-                .MULTI_PUSH_2, .MULTI_PUSH_3 => " | op=multi_push",
-                .MULTI_POP_2, .MULTI_POP_3 => " | op=multi_pop",
-                .ISZERO_JUMPI => " | op=fused_iszero_jumpi",
-                .DUP2_MSTORE_PUSH => " | op=fused_dup2_mstore_push",
-                .DUP3_ADD_MSTORE => " | op=fused_dup3_add_mstore",
-                .SWAP1_DUP2_ADD => " | op=fused_swap1_dup2_add",
-                .PUSH_DUP3_ADD => " | op=fused_push_dup3_add",
-                .FUNCTION_DISPATCH => " | op=function_dispatch",
-                .CALLVALUE_CHECK => " | op=callvalue_check",
-                .PUSH0_REVERT => " | op=fused_push0_revert",
-                .PUSH_ADD_DUP1 => " | op=fused_push_add_dup1",
-                .MLOAD_SWAP1_DUP2 => " | op=fused_mload_swap1_dup2",
-            };
-            
-            std.log.debug("[EVM2] EXEC: {s} | stack_size={d} gas_left={d}" ++ details, .{
-                opcode_name,
-                frame.stack.size(),
-                frame.gas_remaining,
-            });
+                // Other operations
+                .SELFDESTRUCT => {
+                    if (stack_size >= 1) {
+                        const beneficiary = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | beneficiary={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            beneficiary,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .AUTH => {
+                    if (stack_size >= 1) {
+                        const authority = stack_ptr[0];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | authority={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            authority,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .AUTHCALL => {
+                    if (stack_size >= 3) {
+                        const gas = stack_ptr[0];
+                        const address = stack_ptr[1];
+                        const auth = stack_ptr[2];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | call_gas={d} addr={x} auth={x}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            gas,
+                            address,
+                            auth,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                .EXTCODECOPY => {
+                    if (stack_size >= 4) {
+                        const address = stack_ptr[0];
+                        const dest = stack_ptr[1];
+                        const src = stack_ptr[2];
+                        const length = stack_ptr[3];
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | addr={x} dest={x} src={x} len={d}", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                            address,
+                            dest,
+                            src,
+                            length,
+                        });
+                    } else {
+                        std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | STACK_UNDERFLOW", .{
+                            opcode_name,
+                            stack_size,
+                            frame.gas_remaining,
+                        });
+                    }
+                },
+                
+                // Synthetic operations - just basic logging
+                .PUSH_ADD_INLINE, .PUSH_ADD_POINTER,
+                .PUSH_MUL_INLINE, .PUSH_MUL_POINTER,
+                .PUSH_DIV_INLINE, .PUSH_DIV_POINTER,
+                .PUSH_SUB_INLINE, .PUSH_SUB_POINTER,
+                .PUSH_AND_INLINE, .PUSH_AND_POINTER,
+                .PUSH_OR_INLINE, .PUSH_OR_POINTER,
+                .PUSH_XOR_INLINE, .PUSH_XOR_POINTER,
+                .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER,
+                .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER,
+                .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER,
+                .JUMP_TO_STATIC_LOCATION, .JUMPI_TO_STATIC_LOCATION,
+                .MULTI_PUSH_2, .MULTI_PUSH_3, .MULTI_POP_2, .MULTI_POP_3,
+                .ISZERO_JUMPI, .DUP2_MSTORE_PUSH, .DUP3_ADD_MSTORE,
+                .SWAP1_DUP2_ADD, .PUSH_DUP3_ADD, .FUNCTION_DISPATCH,
+                .CALLVALUE_CHECK, .PUSH0_REVERT, .PUSH_ADD_DUP1,
+                .MLOAD_SWAP1_DUP2 => {
+                    std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | synthetic_op", .{
+                        opcode_name,
+                        stack_size,
+                        frame.gas_remaining,
+                    });
+                },
+            }
         }
     }
 }

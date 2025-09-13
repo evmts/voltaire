@@ -480,7 +480,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
             @branchHint(.likely);
-            // log.debug("Frame.interpret_with_tracer: Starting execution, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
+            log.debug("Frame.interpret_with_tracer: Starting, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
 
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
@@ -502,6 +502,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Check cache first
             if (global_dispatch_cache) |*cache| {
                 if (cache.lookup(bytecode_raw)) |cached_data| {
+                    log.debug("Frame: Using cached dispatch schedule", .{});
                     // Use cached data
                     schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0 .. cached_data.schedule.len / @sizeOf(Dispatch.Item)];
                     const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0 .. cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
@@ -514,6 +515,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     // Release cache entry when done
                     defer cache.release(bytecode_raw);
                 } else {
+                    log.debug("Frame: Cache miss, creating new dispatch", .{});
                     // Cache miss - create new dispatch
                     var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                         @branchHint(.cold);
@@ -643,6 +645,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
+            log.debug("Frame: Starting opcode execution, first_item_type={s}", .{@tagName(self.dispatch.cursor[0])});
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
             unreachable; // Handlers never return normally
         }

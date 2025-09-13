@@ -317,6 +317,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             // This should only be called at the top level
             std.debug.assert(self.depth == 0);
             
+            log.debug("EVM.call: Starting execution, type={s}, gas={}", .{ @tagName(params), params.getGas() });
+            
             params.validate() catch return CallResult.failure(0);
 
             defer {
@@ -415,6 +417,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             modified_params.setGas(execution_gas);
 
             var result = self.inner_call(modified_params);
+            
+            log.debug("EVM.call: Execution complete, success={}, gas_left={}", .{ result.success, result.gas_left });
 
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
@@ -1109,9 +1113,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             is_static: bool,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            // std.debug.print("execute_frame: code_len={}, gas={}, address={any}, depth={}\n", .{
-            //     code.len, gas, address, self.depth,
-            // });
+            log.debug("EVM.execute_frame: Starting frame, code_len={}, gas={}, depth={}", .{ code.len, gas, self.depth });
             const prev_snapshot = self.current_snapshot_id;
             self.current_snapshot_id = snapshot_id;
             defer self.current_snapshot_id = prev_snapshot;

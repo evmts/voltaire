@@ -188,6 +188,9 @@ pub fn Dispatch(comptime FrameType: type) type {
             bytecode: anytype,
             opcode_handlers: *const [256]OpcodeHandler,
         ) !DispatchSchedule {
+            const log = @import("../log.zig");
+            log.debug("Dispatch.init: Starting bytecode analysis", .{});
+            
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
@@ -439,6 +442,8 @@ pub fn Dispatch(comptime FrameType: type) type {
             
             // Transfer ownership of u256 values to DispatchSchedule
             const u256_values = try u256_storage.values.toOwnedSlice(allocator);
+            
+            log.debug("Dispatch.init: Created schedule with {} items, {} jumpdests", .{ final_schedule.len, jumpdest_array.len });
             
             return DispatchSchedule{
                 .items = final_schedule,

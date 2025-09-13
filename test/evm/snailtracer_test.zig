@@ -6,12 +6,21 @@ const revm = @import("revm");
 const DifferentialTracer = @import("evm").differential_tracer.DifferentialTracer;
 const Address = primitives.Address.Address;
 
+// Enable debug logging for the test
+test {
+    std.testing.log_level = .debug;
+}
+
 test "snailtracer differential test" {
+    std.debug.print("\n=== Starting snailtracer test ===\n", .{});
     const allocator = std.testing.allocator;
+    std.debug.print("Allocator created\n", .{});
     
     // Read bytecode from fixture file
+    std.debug.print("Opening bytecode file...\n", .{});
     const bytecode_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/bytecode.txt", .{});
     defer bytecode_file.close();
+    std.debug.print("Bytecode file opened\n", .{});
     
     const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 1024 * 1024);
     defer allocator.free(bytecode_hex);
@@ -156,6 +165,7 @@ test "snailtracer differential test" {
     
     // Create differential tracer with tracing enabled
     // (snailtracer produces huge traces - 192MB)
+    std.debug.print("Creating differential tracer...\n", .{});
     const config = evm.differential_tracer.DifferentialConfig{
         .write_trace_files = true,  // Enable trace file writing
         .context_before = 5,
@@ -172,6 +182,7 @@ test "snailtracer differential test" {
         config,
     );
     defer tracer.deinit();
+    std.debug.print("Differential tracer created\n", .{});
     
     // Setup call parameters
     const call_params = evm.CallParams{
@@ -185,9 +196,12 @@ test "snailtracer differential test" {
     };
     
     // Run differential test  
+    std.debug.print("Starting differential test call...\n", .{});
     var result = try tracer.call(call_params);
     defer result.deinit(allocator);
+    std.debug.print("Differential test complete, success={}\n", .{result.success});
     
     // Verify result
     try std.testing.expect(result.success);
+    std.debug.print("=== Test passed ===\n", .{});
 }
