@@ -11,7 +11,6 @@
 /// and catch invalid parameter combinations early.
 const std = @import("std");
 const builtin = @import("builtin");
-const NoOpTracer = @import("../tracer/tracer.zig").NoOpTracer;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 const Mode = @import("../internal/safety_counter.zig").Mode;
 
@@ -33,9 +32,6 @@ pub const FrameConfig = struct {
     memory_limit: u64 = 0xFFFFFF,
     /// Database implementation type for storage operations (always required).
     DatabaseType: type,
-
-    /// Tracer type for execution tracing (default: NoOpTracer for zero overhead)
-    TracerType: type = NoOpTracer,
 
     /// Block info configuration for the frame
     block_info_config: @import("block_info_config.zig").BlockInfoConfig = .{},
@@ -101,7 +97,7 @@ pub const FrameConfig = struct {
     /// Create a loop safety counter based on the configuration
     /// Returns either an enabled or disabled counter depending on loop_quota
     /// Automatically selects the smallest type that can hold the quota
-    pub fn createLoopSafetyCounter(comptime self: Self) anytype {
+    pub fn createLoopSafetyCounter(comptime self: Self) type {
         const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
         const limit = self.loop_quota orelse 0;
 
@@ -116,7 +112,7 @@ pub const FrameConfig = struct {
             u64;
 
         const Counter = SafetyCounter(T, mode);
-        return Counter.init(limit);
+        return Counter;
     }
 
     pub fn validate(comptime self: Self) void {
