@@ -14,7 +14,11 @@
 
 const std = @import("std");
 const log = @import("../log.zig");
+const primitives = @import("primitives");
 pub const Account = @import("database_interface_account.zig").Account;
+
+/// All-zero code hash for EOA detection
+const ZERO_CODE_HASH = [_]u8{0} ** 32;
 
 /// High-performance in-memory database for EVM state
 pub const Database = struct {
@@ -211,6 +215,13 @@ pub const Database = struct {
                 return self.get_code_by_address(delegated_addr.bytes);
             }
             
+            // Check if this is an EOA (all-zero code_hash or EMPTY_CODE_HASH)
+            // EOAs don't have code stored, return empty code
+            if (std.mem.eql(u8, &account.code_hash, &ZERO_CODE_HASH) or
+                std.mem.eql(u8, &account.code_hash, &primitives.EMPTY_CODE_HASH)) {
+                return &.{};
+            }
+            
             // log.debug("get_code_by_address: Found account with code_hash {x}", .{account.code_hash});
             return self.get_code(account.code_hash);
         }
@@ -340,13 +351,12 @@ pub const Database = struct {
         var account = (try self.get_account(eoa_address)) orelse Account.zero();
         
         // Only EOAs can have delegations (no existing code)
-        if (!std.mem.eql(u8, &account.code_hash, &[_]u8{0} ** 32)) {
+        if (!std.mem.eql(u8, &account.code_hash, &ZERO_CODE_HASH)) {
             log.debug("set_delegation: Address {x} is a contract, cannot set delegation", .{eoa_address});
             return Error.InvalidAddress;
         }
         
         // Convert to Address type for the delegation
-        const primitives = @import("primitives");
         const delegate_addr = primitives.Address.Address{ .bytes = delegated_address };
         
         account.set_delegation(delegate_addr);
