@@ -263,9 +263,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (comptime !config.disable_balance_checks) {
                 if (from_account.balance < value) return error.InsufficientBalance;
             }
+            
+            // Self-transfer is a no-op
+            if (from.equals(to)) return;
             var to_account = try self.database.get_account(to.bytes) orelse Account.zero();
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
+            
             from_account.balance -= value;
             to_account.balance += value;
             try self.database.set_account(from.bytes, from_account);
