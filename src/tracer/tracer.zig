@@ -314,23 +314,6 @@ pub const DefaultTracer = struct {
     // EVM LIFECYCLE EVENTS
     // ============================================================================
 
-    /// Called when EVM starts executing a call
-    pub fn onCallStart(self: *DefaultTracer, params: anytype, gas: u64) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Call started: type={s}, gas={}", .{ @typeName(@TypeOf(params)), gas });
-        }
-    }
-
-    /// Called when EVM completes a call
-    pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: u64) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Call completed: success={}, gas_left={}", .{ success, gas_left });
-        }
-    }
 
     /// Called when frame execution starts
     pub fn onFrameStart(self: *DefaultTracer, code_len: usize, gas: u64, depth: u16) void {
