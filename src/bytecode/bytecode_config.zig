@@ -54,7 +54,7 @@ pub const BytecodeConfig = struct {
     /// Create a loop safety counter based on the configuration
     /// Returns either an enabled or disabled counter depending on loop_quota
     /// Automatically selects the smallest type that can hold the quota
-    pub fn createLoopSafetyCounter(comptime self: Self) anytype {
+    pub fn createLoopSafetyCounter(comptime self: Self) type {
         const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
         const limit = self.loop_quota orelse 0;
 
@@ -69,7 +69,7 @@ pub const BytecodeConfig = struct {
             u64;
 
         const Counter = SafetyCounter(T, mode);
-        return Counter.init(limit);
+        return Counter;
     }
 };
 

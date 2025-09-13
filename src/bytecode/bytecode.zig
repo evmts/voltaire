@@ -271,7 +271,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
                 var gas: u32 = 1; // JUMPDEST itself costs 1 gas
                 var pc = iterator.pc + 1; // Start after the JUMPDEST
-                var loop_counter = cfg.createLoopSafetyCounter();
+                var loop_counter = cfg.createLoopSafetyCounter().init(cfg.loop_quota orelse 0);
 
                 while (pc < iterator.bytecode.len()) {
                     loop_counter.inc();
