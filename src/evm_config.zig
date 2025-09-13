@@ -7,7 +7,6 @@ const Eips = @import("eips_and_hardforks/eips.zig").Eips;
 const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
 const primitives = @import("primitives");
 const Address = primitives.Address;
-const NoOpTracer = @import("tracer/tracer.zig").NoOpTracer;
 const SafetyCounter = @import("internal/safety_counter.zig").SafetyCounter;
 const Mode = @import("internal/safety_counter.zig").Mode;
 
@@ -94,9 +93,6 @@ pub const EvmConfig = struct {
     arena_growth_factor: u32 = 150,
     /// Database implementation type for storage operations (always required)
     DatabaseType: type = @import("storage/database.zig").Database,
-    /// Tracer type for execution tracing (default: NoOpTracer for zero overhead)
-    /// Set to a tracer type (e.g., JSONRPCTracer) to enable execution tracing
-    TracerType: type = NoOpTracer,
 
     /// Block information configuration
     /// Controls the types used for difficulty and base_fee fields
@@ -130,7 +126,7 @@ pub const EvmConfig = struct {
     /// Create a loop safety counter based on the configuration
     /// Returns either an enabled or disabled counter depending on loop_quota
     /// Automatically selects the smallest type that can hold the quota
-    pub fn createLoopSafetyCounter(comptime self: EvmConfig) anytype {
+    pub fn createLoopSafetyCounter(comptime self: EvmConfig) type {
         const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
         const limit = self.loop_quota orelse 0;
 
@@ -145,7 +141,7 @@ pub const EvmConfig = struct {
             u64;
 
         const Counter = SafetyCounter(T, mode);
-        return Counter.init(limit);
+        return Counter;
     }
 
     /// Computed frame configuration from the fields above
@@ -159,7 +155,6 @@ pub const EvmConfig = struct {
             .memory_initial_capacity = self.memory_initial_capacity,
             .memory_limit = self.memory_limit,
             .DatabaseType = self.DatabaseType,
-            .TracerType = self.TracerType,
             .block_info_config = self.block_info_config,
             .disable_gas_checks = self.disable_gas_checks,
             .disable_balance_checks = self.disable_balance_checks,
@@ -228,7 +223,7 @@ pub const EvmConfig = struct {
         if (build_options.enable_tracing) {
             // For now, we'll leave TracerType as null since it requires more complex setup
             // Users can still set up their own tracer through the configuration
-            config.TracerType = null;
+            // Tracer is now part of EVM struct, not config
         }
         
         return config;
@@ -266,7 +261,7 @@ test "EvmConfig - default initialization" {
     try testing.expectEqual(true, config.enable_fusion);
     try testing.expectEqual(false, config.disable_gas_checks);
     try testing.expectEqual(false, config.disable_balance_checks);
-    try testing.expectEqual(NoOpTracer, config.TracerType);
+    // TracerType is now part of EVM struct, not EvmConfig
 }
 
 test "EvmConfig - custom configuration" {
@@ -393,16 +388,18 @@ test "EvmConfig - precompiles and fusion combinations" {
 }
 
 test "EvmConfig - tracer type handling" {
-    const no_tracer_config = EvmConfig{};
-    try testing.expectEqual(NoOpTracer, no_tracer_config.TracerType);
+    _ = EvmConfig{};
+    // TracerType is now part of EVM struct, not EvmConfig
 
     // Test with a dummy tracer type
     const DummyTracer = struct {
         pub fn trace(_: @This()) void {}
     };
 
-    const with_tracer_config = EvmConfig{ .TracerType = DummyTracer };
-    try testing.expectEqual(DummyTracer, with_tracer_config.TracerType);
+    const with_tracer_config = EvmConfig{};
+    // TracerType is now part of EVM struct, not EvmConfig
+    _ = with_tracer_config;
+    _ = DummyTracer;
 }
 
 test "EvmConfig - block info config integration" {
@@ -421,7 +418,6 @@ test "EvmConfig - complete custom configuration" {
         .max_input_size = 200000,
         .enable_precompiles = false,
         .enable_fusion = false,
-        .TracerType = DummyTracer,
     };
 
     try testing.expectEqual(Hardfork.ISTANBUL, config.eips.hardfork);

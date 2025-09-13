@@ -163,6 +163,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Call stack - tracks caller and value for each call depth (accessed on depth changes)
         call_stack: [config.max_call_depth]CallStackEntry,
 
+        // Tracer - at the very bottom of memory layout for minimal impact on cache performance
+        /// Tracer for debugging and logging - can be accessed via evm.tracer or frame.evm_ptr.tracer
+        tracer: @import("tracer/tracer.zig").NoOpTracer,
+
         /// Initialize a new EVM instance.
         ///
         /// Sets up the execution environment with state storage, block context,
@@ -233,11 +237,17 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Cache line 5+ - COLD PATH
                 .call_arena = arena,
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
+
+                // Initialize tracer
+                .tracer = @import("tracer/tracer.zig").NoOpTracer.init(allocator),
             };
         }
 
         /// Clean up all resources.
         pub fn deinit(self: *Self) void {
+            // Deinit tracer
+            self.tracer.deinit();
+
             // Free return_data if it was allocated
             if (self.return_data.len > 0) {
                 self.allocator.free(self.return_data);
@@ -1158,16 +1168,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             const Termination = error{ Stop, Return, SelfDestruct };
             var termination_reason: ?Termination = null;
 
-            // Create tracer instance for this execution
-            const TracerType = config.TracerType;
-            var tracer = TracerType.init(self.allocator);
-            defer tracer.deinit();
-
-            // log.debug("Executing frame with tracer: {s}", .{@typeName(TracerType)});
+            // Tracer is now part of the EVM struct
 
             // Frame.interpret returns Error!void and uses errors for success termination
             // reduce tracer call logging noise
-            frame.interpret_with_tracer(code, TracerType, &tracer) catch |err| switch (err) {
+            frame.interpret_with_tracer(code, @TypeOf(self.tracer), &self.tracer) catch |err| switch (err) {
                     error.Stop => {
                         termination_reason = error.Stop;
                     },
@@ -1180,7 +1185,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     },
                     error.REVERT => {
                         // REVERT is a special case - it's a successful termination but indicates failure
-                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
                         const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
                         // Copy revert data to avoid double-free with frame.deinit
                         const out_len = frame.output.len;
@@ -1197,7 +1202,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         // Actual errors - but still extract trace for debugging
                         log.debug("Frame execution with tracer failed: {}", .{err});
                         // Extract trace even on failure for debugging
-                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
                         var failure = CallResult.failure(0);
                         failure.trace = execution_trace;
                         return failure;
@@ -1205,7 +1210,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
 
             // Extract trace data before tracer is destroyed (for success cases)
-            execution_trace = try convertTracerToExecutionTrace(self.allocator, &tracer);
+            execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
 
             // Map frame outcome to CallResult
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
