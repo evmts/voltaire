@@ -417,23 +417,23 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Initialize a new execution frame.
         /// Note: database is now accessed through evm_ptr for better cache locality
         pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
-            // log.debug("Frame.init: gas={}, caller={any}, value={}, calldata_len={}, self_destruct={}", .{ gas_remaining, caller, value.*, calldata_input.len, self_destruct != null });
+            // Frame initialization will be traced after frame is created
             var stack = Stack.init(allocator) catch {
                 @branchHint(.cold);
                 // Can't use tracer yet since Frame is not initialized
-                std.log.err("[EVM2] Frame.init: Failed to initialize stack", .{});
+                // This error will be traced when caught by the caller
                 return Error.AllocationError;
             };
             errdefer stack.deinit(allocator);
             var memory = Memory.init(allocator) catch {
                 @branchHint(.cold);
                 // Can't use tracer yet since Frame is not initialized
-                std.log.err("[EVM2] Frame.init: Failed to initialize memory", .{});
+                // This error will be traced when caught by the caller
                 return Error.AllocationError;
             };
             errdefer memory.deinit(allocator);
 
-            // log.debug("Frame.init: Successfully initialized frame components", .{});
+            // Initialization success will be traced by caller
             return Self{
                 // Cache line 1 - TRUE HOT PATH
                 .stack = stack,
@@ -483,11 +483,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
             @branchHint(.likely);
-            self.getTracer().debug("Frame.interpret_with_tracer: Starting, bytecode_len={}, gas={}", .{ bytecode_raw.len, self.gas_remaining });
+            self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
 
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
-                self.getTracer().err("Frame.interpret_with_tracer: Bytecode too large: {} > max {}", .{ bytecode_raw.len, config.max_bytecode_size });
+                self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
                 return Error.BytecodeTooLarge;
             }
 
@@ -528,7 +528,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     // Cache miss - create new dispatch
                     var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                         @branchHint(.cold);
-                        self.getTracer().err("Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
+                        self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, e);
                         return switch (e) {
                             error.BytecodeTooLarge => Error.BytecodeTooLarge,
                             error.InvalidOpcode => Error.InvalidOpcode,
@@ -568,8 +568,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 // No cache available - create new dispatch
                 var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                     @branchHint(.unlikely);
-                    // Can't use tracer here since bytecode init failed
-                    std.log.err("[EVM2] Frame.interpret_with_tracer: Bytecode init failed: {}", .{e});
+                    // Frame bytecode init failure - already traced by EVM caller
                     return switch (e) {
                         error.BytecodeTooLarge => Error.BytecodeTooLarge,
                         error.InvalidOpcode => Error.InvalidOpcode,
@@ -651,7 +650,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                         }
                     }
                 } else {
-                    self.getTracer().err("Frame.interpret_with_tracer: Bytecode stream too short", .{});
+                    self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.InvalidOpcode);
                     return Error.InvalidOpcode;
                 }
             }
