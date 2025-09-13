@@ -668,7 +668,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             @branchHint(.likely);
-            // log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
+            self.tracer.onCallStart("CALL", @intCast(params.gas), params.to, params.value);
             const snapshot_id = self.journal.create_snapshot();
 
             // Transfer value if needed
@@ -681,22 +681,21 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Perform pre-flight checks
-            // log.debug("DEBUG: calling performCallPreflight\n", .{});
-            const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch {
-                // log.debug("DEBUG: performCallPreflight failed: {}\n", .{err});
+            const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
+                self.tracer.onCallPreflight("CALL", @errorName(err));
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            // log.debug("DEBUG: preflight result: {s}\n", .{@tagName(preflight)});
+            self.tracer.onCallPreflight("CALL", @tagName(preflight));
 
             switch (preflight) {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| {
-                    // log.debug("EXECUTE_CALL: Call to empty account: {any}", .{params.to});
+                    self.tracer.onCodeRetrieval(params.to, 0, true);
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    // log.debug("EXECUTE_CALL: Executing code of length {} for address {x}", .{code.len, params.to.bytes});
+                    self.tracer.onCodeRetrieval(params.to, code.len, false);
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -4064,7 +4063,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail
         try std.testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
-        log.warn("Low gas (100): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        evm.tracer.onPerformanceWarning("Low gas (100)", elapsed, 1_000_000);
     }
 
     // Test 2: Medium gas limit
@@ -4083,7 +4082,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should still fail (infinite loop)
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        evm.tracer.onPerformanceWarning("Medium gas (10k)", elapsed, 10_000_000);
     }
 
     // Test 3: High gas limit
@@ -4102,7 +4101,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail after consuming all gas
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        log.warn("High gas (1M): elapsed = {} ns, success = {}", .{ elapsed, result.success });
+        evm.tracer.onPerformanceWarning("High gas (1M)", elapsed, 100_000_000);
     }
 }
 
@@ -4149,7 +4148,7 @@ test "Debug - Contract deployment and execution" {
 
         try std.testing.expect(result.success); // Empty contract succeeds immediately
         try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
-        log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{ elapsed, result.gas_left });
+        evm.tracer.onPerformanceWarning("Empty contract", elapsed, 1_000_000);
     }
 
     // Test 2: Simple contract that returns immediately (STOP opcode)
@@ -4180,7 +4179,7 @@ test "Debug - Contract deployment and execution" {
         // STOP should consume minimal gas
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used < 100); // Should use very little gas
-        log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
+        evm.tracer.onPerformanceWarning("STOP contract", elapsed, 1_000_000);
     }
 
     // Test 3: Contract with some computation
@@ -4213,7 +4212,7 @@ test "Debug - Contract deployment and execution" {
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used > 0); // Should use some gas
         try std.testing.expect(gas_used < 1000); // But not too much
-        log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{ elapsed, gas_used });
+        evm.tracer.onPerformanceWarning("ADD contract", elapsed, 1_000_000);
     }
 }
 
@@ -4281,7 +4280,7 @@ test "Debug - Bytecode size affects execution time" {
         const elapsed = std.time.nanoTimestamp() - start_time;
 
         const gas_used = gas_limit - result.gas_left;
-        log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", .{ gas_limit, elapsed, gas_used, result.success });
+        evm.tracer.onPerformanceWarning("Large contract", elapsed, 1_000_000_000);
 
         // With low gas, should fail before completing
         if (gas_limit < 50000) {

@@ -604,6 +604,177 @@ pub const DefaultTracer = struct {
     }
 
     // ============================================================================
+    // JUMP AND CONTROL FLOW EVENTS
+    // ============================================================================
+
+    /// Called when JUMP destination is out of range
+    pub fn onJumpDestinationOutOfRange(self: *DefaultTracer, dest: u256) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMP: Invalid destination out of range: 0x{x}", .{dest});
+        }
+    }
+
+    /// Called when JUMP destination is not a JUMPDEST
+    pub fn onJumpInvalidDestination(self: *DefaultTracer, dest_pc: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
+        }
+    }
+
+    /// Called when JUMPI destination is out of range
+    pub fn onJumpiDestinationOutOfRange(self: *DefaultTracer, dest: u256) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMPI: Invalid destination out of range: 0x{x}", .{dest});
+        }
+    }
+
+    /// Called when JUMPI destination is not a JUMPDEST
+    pub fn onJumpiInvalidDestination(self: *DefaultTracer, dest_pc: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
+        }
+    }
+
+    /// Called when JUMPDEST runs out of gas
+    pub fn onJumpdestOutOfGas(self: *DefaultTracer, required: u64, available: i64) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMPDEST: Out of gas - required={}, available={}", .{ required, available });
+        }
+    }
+
+    /// Called when JUMPDEST has stack underflow
+    pub fn onJumpdestStackUnderflow(self: *DefaultTracer, required: u16, current: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMPDEST: Stack underflow - required min={}, current={}", .{ required, current });
+        }
+    }
+
+    /// Called when JUMPDEST has stack overflow
+    pub fn onJumpdestStackOverflow(self: *DefaultTracer, current: usize, max_change: i16, capacity: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] JUMPDEST: Stack overflow - current={}, max_change={}, capacity={}", .{ current, max_change, capacity });
+        }
+    }
+
+    // ============================================================================
+    // MEMORY OPERATION EVENTS
+    // ============================================================================
+
+    /// Called when MSTORE operation is performed
+    pub fn onMstore(self: *DefaultTracer, offset: u256, value: u256) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] MSTORE: offset={x}, value={x}", .{ offset, value });
+        }
+    }
+
+    // ============================================================================
+    // STORAGE OPERATION EVENTS
+    // ============================================================================
+
+    /// Called when SSTORE metering is calculated
+    pub fn onSstoreMetering(self: *DefaultTracer, slot: u256, original: u256, current: u256, new: u256, is_cold: bool, total: u64) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug(
+                "[EVM] SSTORE metering: slot={}, original={}, current={}, new={}, is_cold={}, total={}",
+                .{ slot, original, current, new, is_cold, total },
+            );
+        }
+    }
+
+    // ============================================================================
+    // SYSTEM OPERATION EVENTS
+    // ============================================================================
+
+    /// Called when SELFDESTRUCT fails
+    pub fn onSelfdestructFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] SELFDESTRUCT failed with error: {}", .{err});
+        }
+    }
+
+    // ============================================================================
+    // BYTECODE ANALYSIS EVENTS
+    // ============================================================================
+
+    /// Called when iterator PC exceeds packed bitmap length
+    pub fn onIteratorPcExceedsBitmap(self: *DefaultTracer, pc: usize, bitmap_len: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.err("[EVM] Iterator PC {} exceeds packed_bitmap len {}", .{ pc, bitmap_len });
+        }
+    }
+
+    /// Called when Solidity metadata is detected and bytecode is trimmed
+    pub fn onSolidityMetadataDetected(self: *DefaultTracer, original_len: usize, trimmed_len: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Detected Solidity metadata, trimming bytecode from {} to {} bytes", .{ original_len, trimmed_len });
+        }
+    }
+
+    /// Called when PUSH + JUMP fusion opportunity is detected
+    pub fn onPushJumpFusionDetected(self: *DefaultTracer, pc: usize, push_value: u256, next_op: u8) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ pc, push_value, next_op });
+        }
+    }
+
+    /// Called when PUSH + PUSH + JUMPI fusion opportunity is detected
+    pub fn onPushPushJumpiFusionDetected(self: *DefaultTracer, pc: usize, jump_dest: u256, next_op: u8) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ pc, jump_dest, next_op });
+        }
+    }
+
+    // ============================================================================
+    // DISPATCH EVENTS
+    // ============================================================================
+
+    /// Called when dispatch starts bytecode analysis
+    pub fn onDispatchBytecodeAnalysisStart(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Dispatch.init: Starting bytecode analysis", .{});
+        }
+    }
+
+    /// Called when dispatch completes schedule creation
+    pub fn onDispatchScheduleComplete(self: *DefaultTracer, items: usize, jumpdests: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Dispatch.init: Created schedule with {} items, {} jumpdests", .{ items, jumpdests });
+        }
+    }
+
+    // ============================================================================
     // PRE-ANALYSIS TRACING EVENTS
     // ============================================================================
     // These methods provide visibility into bytecode analysis and schedule building
