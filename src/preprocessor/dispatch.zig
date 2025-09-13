@@ -123,8 +123,10 @@ pub fn Dispatch(comptime FrameType: type) type {
             const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
 
             var op_count: u32 = 0;
+            var loop_counter = FrameType.frame_config.createLoopSafetyCounter();
 
             while (true) {
+                loop_counter.inc();
                 const maybe = iter.next();
                 if (maybe == null) break;
                 const op_data = maybe.?;
@@ -213,7 +215,9 @@ pub fn Dispatch(comptime FrameType: type) type {
             }
 
             var opcode_count: usize = 0;
+            var loop_counter = FrameType.frame_config.createLoopSafetyCounter();
             while (true) {
+                loop_counter.inc();
                 const instr_pc = iter.pc;
                 const maybe = iter.next();
                 if (maybe == null) {

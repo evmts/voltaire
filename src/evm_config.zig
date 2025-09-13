@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 // const PlannerStrategy = @import("planner_strategy.zig").PlannerStrategy;
 const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("frame/block_info_config.zig").BlockInfoConfig;
@@ -7,6 +8,8 @@ const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const NoOpTracer = @import("tracer/tracer.zig").NoOpTracer;
+const SafetyCounter = @import("internal/safety_counter.zig").SafetyCounter;
+const Mode = @import("internal/safety_counter.zig").Mode;
 
 /// Custom opcode handler override
 pub const OpcodeOverride = struct {
@@ -109,6 +112,11 @@ pub const EvmConfig = struct {
     /// Set to empty slice for no overrides
     precompile_overrides: []const PrecompileOverride = &.{},
 
+    /// Loop quota for safety counters to prevent infinite loops
+    /// null = disabled (default for optimized builds)
+    /// value = maximum iterations before panic (default for debug/safe builds)
+    loop_quota: ?u32 = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 1_000_000 else null,
+
     /// Get the effective SIMD vector length for the current target
     pub fn getVectorLength(self: EvmConfig) comptime_int {
         if (self.vector_length > 0) {
@@ -117,6 +125,27 @@ pub const EvmConfig = struct {
         // Auto-detect based on target CPU
         const target = @import("builtin").target;
         return std.simd.suggestVectorLengthForCpu(u8, target.cpu) orelse 1;
+    }
+
+    /// Create a loop safety counter based on the configuration
+    /// Returns either an enabled or disabled counter depending on loop_quota
+    /// Automatically selects the smallest type that can hold the quota
+    pub fn createLoopSafetyCounter(comptime self: EvmConfig) anytype {
+        const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
+        const limit = self.loop_quota orelse 0;
+
+        // Choose the smallest type that can hold the limit
+        const T = if (limit <= std.math.maxInt(u8))
+            u8
+        else if (limit <= std.math.maxInt(u16))
+            u16
+        else if (limit <= std.math.maxInt(u32))
+            u32
+        else
+            u64;
+
+        const Counter = SafetyCounter(T, mode);
+        return Counter.init(limit);
     }
 
     /// Computed frame configuration from the fields above
@@ -136,6 +165,7 @@ pub const EvmConfig = struct {
             .disable_balance_checks = self.disable_balance_checks,
             .disable_fusion = self.disable_fusion,
             .vector_length = self.getVectorLength(),
+            .loop_quota = self.loop_quota,
         };
     }
 

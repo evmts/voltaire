@@ -271,8 +271,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
                 var gas: u32 = 1; // JUMPDEST itself costs 1 gas
                 var pc = iterator.pc + 1; // Start after the JUMPDEST
-                
+                var loop_counter = cfg.createLoopSafetyCounter();
+
                 while (pc < iterator.bytecode.len()) {
+                    loop_counter.inc();
                     const opcode = iterator.bytecode.get_unsafe(pc);
                     
                     // Check for block terminators

@@ -408,6 +408,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         code: []const u8 = &[_]u8{}, // 16B - Only for CODESIZE/CODECOPY
         authorized_address: ?Address = null, // 21B - EIP-3074 (rarely used)
 
+        // Loop safety counter for preventing infinite dispatch loops
+        instruction_counter: @TypeOf(config.createLoopSafetyCounter()) = config.createLoopSafetyCounter(),
+
         //
         /// Initialize a new execution frame.
         ///
