@@ -497,6 +497,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Initialize PC tracker with bytecode for validation
             self.getTracer().initPcTracker(bytecode_raw);
 
+            // Initialize MinimalEvm sidecar for validation (only in Debug/ReleaseSafe)
+            self.getTracer().onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
+
             const allocator = self.getAllocator();
 
             // Either get from cache or create new dispatch

@@ -176,31 +176,35 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Process beacon root update for EIP-4788 if applicable
             const beacon_roots = @import("eips_and_hardforks/beacon_roots.zig");
             beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
-                log.warn("Failed to process beacon root update: {}", .{err});
+                // Will be traced later when tracer is initialized
+                _ = err;
             };
 
             // Process historical block hash update for EIP-2935 if applicable
             const historical_block_hashes = @import("eips_and_hardforks/historical_block_hashes.zig");
             historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
-                log.warn("Failed to process historical block hash update: {}", .{err});
+                // Will be traced later when tracer is initialized
+                _ = err;
             };
 
             // Process validator deposits for EIP-6110 if applicable
             const validator_deposits = @import("eips_and_hardforks/validator_deposits.zig");
             validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
-                log.warn("Failed to process validator deposits: {}", .{err});
+                // Will be traced later when tracer is initialized
+                _ = err;
             };
 
             // Process validator withdrawals for EIP-7002 if applicable
             const validator_withdrawals = @import("eips_and_hardforks/validator_withdrawals.zig");
             validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
-                log.warn("Failed to process validator withdrawals: {}", .{err});
+                // Will be traced later when tracer is initialized
+                _ = err;
             };
 
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
-            // Initialize growing arena allocator with configurable capacity and growth strategy
+            // Initialize growing arena allocator first (without tracer for now)
             // This avoids repeated allocations from the underlying allocator during execution
             const arena = try GrowingArenaAllocator.initWithMaxCapacity(
                 allocator,
@@ -209,7 +213,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 config.arena_growth_factor,
             );
 
-            return Self{
+            var self = Self{
                 // Cache line 1 - EXECUTION CONTROL
                 .depth = 0,
                 .disable_gas_checking = false,
@@ -241,6 +245,31 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Initialize tracer
                 .tracer = @import("tracer/tracer.zig").DefaultTracer.init(allocator),
             };
+
+            // Now update the arena allocator to use the tracer
+            self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
+
+            // Trace arena initialization
+            self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
+
+            // Trace EVM initialization
+            self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
+
+            // Trace any initialization errors that occurred before tracer was ready
+            beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
+                self.tracer.onBeaconRootUpdate(false, err);
+            };
+            historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
+                self.tracer.onHistoricalBlockHashUpdate(false, err);
+            };
+            validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
+                self.tracer.onValidatorDeposits(false, err);
+            };
+            validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
+                self.tracer.onValidatorWithdrawals(false, err);
+            };
+
+            return self;
         }
 
         /// Clean up all resources.

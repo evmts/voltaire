@@ -353,6 +353,15 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         packed_bitmap: []PackedBits,
 
         pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
+            return initWithTracer(allocator, code, null);
+        }
+
+        pub fn initWithTracer(allocator: std.mem.Allocator, code: []const u8, tracer: anytype) ValidationError!Self {
+            // Notify tracer of analysis start
+            if (tracer) |t| {
+                t.onBytecodeAnalysisStart(code.len);
+            }
+
             // Enforce EIP-170: maximum runtime bytecode size
             if (code.len > cfg.max_bytecode_size) {
                 return error.BytecodeTooLarge;
@@ -395,7 +404,16 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 .packed_bitmap = &.{},
             };
             // Build bitmaps and validate only the runtime code
-            try self.buildBitmapsAndValidateWithLength(runtime_code.len);
+            try self.buildBitmapsAndValidateWithTracer(runtime_code.len, tracer);
+
+            // Notify tracer of analysis completion if not already done
+            if (tracer) |t| {
+                if (runtime_code.len == 0) {
+                    // For empty bytecode, notify completion with zero counts
+                    t.onBytecodeAnalysisComplete(0, 0, 0);
+                }
+            }
+
             return self;
         }
 
@@ -881,12 +899,20 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
         /// Build bitmaps and validate bytecode in a single pass
         fn buildBitmapsAndValidate(self: *Self) ValidationError!void {
-            return self.buildBitmapsAndValidateWithLength(self.runtime_code.len);
+            return self.buildBitmapsAndValidateWithTracer(self.runtime_code.len, null);
+        }
+
+        fn buildBitmapsAndValidateWithTracer(self: *Self, validation_length: usize, tracer: anytype) ValidationError!void {
+            return self.buildBitmapsAndValidateWithLengthAndTracer(validation_length, tracer);
         }
 
         /// Build bitmaps and validate bytecode with a specific validation length
         /// This allows validating only the code portion of deployment bytecode, excluding metadata
         fn buildBitmapsAndValidateWithLength(self: *Self, validation_length: usize) ValidationError!void {
+            return self.buildBitmapsAndValidateWithLengthAndTracer(validation_length, null);
+        }
+
+        fn buildBitmapsAndValidateWithLengthAndTracer(self: *Self, validation_length: usize, tracer: anytype) ValidationError!void {
             const N = self.runtime_code.len;
             const validate_up_to = @min(validation_length, N);
 
@@ -924,6 +950,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var immediate_jumps = std.ArrayList(PcType){};
             defer immediate_jumps.deinit(self.allocator);
 
+            var opcode_count: usize = 0;
+            var jumpdest_count: usize = 0;
             var i: PcType = 0;
             while (i < validate_up_to) {
                 @branchHint(.likely);
@@ -946,12 +974,22 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 const opcode_enum = std.meta.intToEnum(Opcode, op) catch blk: {
                     // Undefined opcodes are valid in EVM - they execute as INVALID operation
                     // which consumes all gas and reverts. We'll treat them as INVALID (0xFE)
+                    if (tracer) |t| {
+                        t.onInvalidOpcode(@intCast(i), op);
+                    }
                     break :blk Opcode.INVALID;
                 };
+                opcode_count += 1;
 
                 // Check if it's a JUMPDEST (and not push data)
                 if (op == @intFromEnum(Opcode.JUMPDEST)) {
                     self.packed_bitmap[i].is_jumpdest = true;
+                    jumpdest_count += 1;
+                    if (tracer) |t| {
+                        // Calculate gas cost for this JUMPDEST's basic block
+                        // (simplified for now - actual gas calculation happens during schedule build)
+                        t.onJumpdestFound(@intCast(i), 1);
+                    }
                 }
 
                 // Check for fusion candidates if enabled
@@ -988,7 +1026,12 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     // This means i+n must be less than the validation length
                     // PUSH32 at position 0 needs to read bytes 1-32, so position 32 must be valid
                     // Therefore i+1+n must be <= validate_up_to, or i+n < validate_up_to
-                    if (i + 1 + n > validate_up_to) return error.TruncatedPush;
+                    if (i + 1 + n > validate_up_to) {
+                        if (tracer) |t| {
+                            t.onTruncatedPush(@intCast(i), @intCast(n), validate_up_to - i - 1);
+                        }
+                        return error.TruncatedPush;
+                    }
 
                     // Extract push value for immediate jump validation (only if fusions enabled)
                     var push_value: u256 = 0;
@@ -1053,6 +1096,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // 2. The EVM spec requires jump validation at execution time, not initialization time
             // 3. Validating jumps here would reject valid contracts that contain unreachable PUSH+JUMP patterns
             // The immediate jump detection above is ONLY for fusion optimization, not correctness validation.
+
+            // Notify tracer of analysis completion
+            if (tracer) |t| {
+                t.onBytecodeAnalysisComplete(validate_up_to, opcode_count, jumpdest_count);
+            }
         }
 
         pub fn analyze(self: Self, allocator: std.mem.Allocator) !Analysis {

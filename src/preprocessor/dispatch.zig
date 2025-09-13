@@ -473,8 +473,22 @@ pub fn Dispatch(comptime FrameType: type) type {
             bytecode: anytype,
             opcode_handlers: *const [256]OpcodeHandler,
         ) !DispatchSchedule {
+            return initWithTracer(allocator, bytecode, opcode_handlers, null);
+        }
+
+        pub fn initWithTracer(
+            allocator: std.mem.Allocator,
+            bytecode: anytype,
+            opcode_handlers: *const [256]OpcodeHandler,
+            tracer: anytype,
+        ) !DispatchSchedule {
             const log = @import("../log.zig");
             log.debug("Dispatch.init: Starting bytecode analysis", .{});
+
+            // Notify tracer of schedule build start
+            if (tracer) |t| {
+                t.onScheduleBuildStart(bytecode.len());
+            }
             
             const ScheduleList = ArrayList(Self.Item, null);
             var schedule_items = ScheduleList{};
@@ -541,6 +555,9 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
                     },
                     .push_add_fusion => |data| {
+                        if (tracer) |t| {
+                            t.onFusionDetected(@intCast(instr_pc), "push_add", 2);
+                        }
                         try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_add, &u256_storage);
                     },
                     .push_mul_fusion => |data| {
@@ -562,10 +579,16 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor, &u256_storage);
                     },
                     .push_jump_fusion => |data| {
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jump, &u256_storage);
+                        if (tracer) |t| {
+                            t.onFusionDetected(@intCast(instr_pc), "push_jump", 2);
+                        }
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jump, &u256_storage, tracer, @intCast(instr_pc));
                     },
                     .push_jumpi_fusion => |data| {
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jumpi, &u256_storage);
+                        if (tracer) |t| {
+                            t.onFusionDetected(@intCast(instr_pc), "push_jumpi", 3);
+                        }
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jumpi, &u256_storage, tracer, @intCast(instr_pc));
                     },
                     .push_mload_fusion => |data| {
                         try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mload, &u256_storage);
@@ -725,13 +748,19 @@ pub fn Dispatch(comptime FrameType: type) type {
             std.sort.block(JumpDestEntry, jumpdest_array, {}, JumpDestEntry.lessThan);
             
             // Resolve all jumps using sorted array (no second bytecode iteration!)
-            try resolveStaticJumpsWithArray(final_schedule, &unresolved_jumps, jumpdest_array);
+            try resolveStaticJumpsWithArray(final_schedule, &unresolved_jumps, jumpdest_array, tracer);
             
             // Transfer ownership of u256 values to DispatchSchedule
             const u256_values = try u256_storage.values.toOwnedSlice(allocator);
             
             log.debug("Dispatch.init: Created schedule with {} items, {} jumpdests", .{ final_schedule.len, jumpdest_array.len });
-            
+
+            // Notify tracer of schedule completion
+            if (tracer) |t| {
+                t.onScheduleBuildComplete(final_schedule.len, u256_values.len);
+                t.onJumpTableCreated(jumpdest_array.len);
+            }
+
             return DispatchSchedule{
                 .items = final_schedule,
                 .u256_values = u256_values,
@@ -821,12 +850,17 @@ pub fn Dispatch(comptime FrameType: type) type {
             value: FrameType.WordType,
             fusion_type: FusionType,
             u256_storage: *U256Storage,
+            tracer: anytype,
+            jump_pc: u32,
         ) !void {
             _ = u256_storage; // Static jumps don't need u256 storage
-            
+
             // Convert immediate to PC type; bytecode validation guarantees this fits
             if (value > std.math.maxInt(FrameType.PcType)) {
                 // Value too large - use INVALID opcode as this is an invalid jump destination
+                if (tracer) |t| {
+                    t.onInvalidStaticJump(jump_pc, @intCast(value & 0xFFFFFFFF));
+                }
                 const opcode_handlers = @import("../frame/frame_handlers.zig").getOpcodeHandlers(FrameType);
                 try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers[@intFromEnum(@import("../opcodes/opcode.zig").Opcode.INVALID)] });
                 return;
@@ -855,17 +889,18 @@ pub fn Dispatch(comptime FrameType: type) type {
             schedule: []Item,
             unresolved_jumps: *ArrayList(UnresolvedJump, null),
             jumpdest_array: []const JumpDestEntry,
+            tracer: anytype,
         ) !void {
             for (unresolved_jumps.items) |unresolved| {
                 // Binary search for the target PC in the sorted array
                 var left: usize = 0;
                 var right: usize = jumpdest_array.len;
-                
+
                 var found: ?usize = null;
                 while (left < right) {
                     const mid = left + (right - left) / 2;
                     const mid_pc = jumpdest_array[mid].pc;
-                    
+
                     if (mid_pc == unresolved.target_pc) {
                         found = mid;
                         break;
@@ -875,15 +910,24 @@ pub fn Dispatch(comptime FrameType: type) type {
                         right = mid;
                     }
                 }
-                
+
                 if (found) |idx| {
                     const target_schedule_idx = jumpdest_array[idx].schedule_index;
                     // Update the jump_static metadata with the resolved dispatch pointer
                     schedule[unresolved.schedule_index].jump_static = .{
                         .dispatch = @as(*const anyopaque, @ptrCast(schedule.ptr + target_schedule_idx)),
                     };
+                    // Notify tracer of successful resolution
+                    if (tracer) |t| {
+                        // We don't have the original jump PC here, but we have the target PC
+                        t.onStaticJumpResolved(0, unresolved.target_pc);
+                    }
                 } else {
                     @branchHint(.cold);
+                    // Notify tracer of invalid jump
+                    if (tracer) |t| {
+                        t.onInvalidStaticJump(0, unresolved.target_pc);
+                    }
                     return error.InvalidStaticJump;
                 }
             }
@@ -1061,7 +1105,11 @@ pub fn Dispatch(comptime FrameType: type) type {
             allocator: std.mem.Allocator,
 
             pub fn init(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler) !DispatchSchedule {
-                return try Self.init(allocator, bytecode, opcode_handlers);
+                return try Self.initWithTracer(allocator, bytecode, opcode_handlers, null);
+            }
+
+            pub fn initWithTracer(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler, tracer: anytype) !DispatchSchedule {
+                return try Self.initWithTracer(allocator, bytecode, opcode_handlers, tracer);
             }
 
             pub fn deinit(self: *DispatchSchedule) void {

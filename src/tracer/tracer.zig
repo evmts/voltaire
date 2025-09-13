@@ -20,6 +20,7 @@ const call_params_mod = @import("../frame/call_params.zig");
 const call_result_mod = @import("../frame/call_result.zig");
 const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 const pc_tracker_mod = @import("pc_tracker.zig");
+const MinimalEvm = @import("MinimalEvm.zig").MinimalEvm;
 // const Host = @import("host.zig").Host; // Only needed for tests which are commented out
 
 // ============================================================================
@@ -48,8 +49,21 @@ pub const DefaultTracer = struct {
     // To validate that gas is being tracked as expected we internally implement a simple independent gas tracking
     // system. This helps provide simpler and better traces when tracing is turned on, allows us to internally
     // test our gas is working as expected with unit tests as it executes in safe mode and debug mode, and
-    // allows us to validate the gas is correct at the end of the execution. 
+    // allows us to validate the gas is correct at the end of the execution.
     gas_tracker: ?u64,
+
+    // Current PC for tracking instruction pointer movement
+    current_pc: u32,
+    // Bytecode being executed for PC validation
+    bytecode: []const u8,
+
+    // Minimal EVM for parallel execution tracking and validation
+    minimal_evm: ?MinimalEvm,
+
+    // Execution tracking
+    instruction_count: u64 = 0,  // Total instructions executed
+    simple_instruction_count: u64 = 0,  // Instructions in simple interpreter
+    fused_instruction_count: u64 = 0,  // Instructions in fused interpreter
 
     // Internal representation of an execution step
     pub const ExecutionStep = struct {
@@ -74,20 +88,32 @@ pub const DefaultTracer = struct {
         return .{
             .steps = std.ArrayList(ExecutionStep){},
             .pc_tracker = null, // Will be initialized when bytecode is available
+            .gas_tracker = null,
+            .current_pc = 0,
+            .bytecode = &[_]u8{},
+            .minimal_evm = null, // Will be initialized when bytecode is available
+            .instruction_count = 0,
+            .simple_instruction_count = 0,
+            .fused_instruction_count = 0,
         };
     }
 
     pub fn deinit(self: *DefaultTracer) void {
         self.steps.deinit(std.heap.c_allocator);
+        if (self.minimal_evm) |*evm| {
+            evm.deinit();
+        }
     }
 
     /// Initialize PC tracker with bytecode (called when frame starts interpretation)
     pub fn initPcTracker(self: *DefaultTracer, bytecode: []const u8) void {
+        // Store bytecode for PC validation
+        self.bytecode = bytecode;
+        self.current_pc = 0;
+
         // Disable PC tracking for now - it needs more work to handle the dispatch model correctly
         // The issue is that dispatch pre-processes some instructions (like PUSH) and the PC tracker
         // doesn't see them, causing mismatches. This needs a deeper integration with dispatch.
-        _ = self;
-        _ = bytecode;
         // TODO: Re-enable once we properly integrate with dispatch
         // const builtin = @import("builtin");
         // if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -98,20 +124,130 @@ pub const DefaultTracer = struct {
         // }
     }
 
+    /// Initialize MinimalEvm as a sidecar validator when frame starts interpretation
+    /// This is called by Frame.interpret_with_tracer after bytecode is validated
+    pub fn onInterpret(self: *DefaultTracer, frame: anytype, bytecode: []const u8, gas_limit: i64) void {
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // Cleanup any existing MinimalEvm
+            if (self.minimal_evm) |*evm| {
+                evm.deinit();
+                self.minimal_evm = null;
+            }
+
+            // Reset execution counters
+            self.instruction_count = 0;
+            self.simple_instruction_count = 0;
+            self.fused_instruction_count = 0;
+
+            if (bytecode.len > 0) {
+                // Initialize MinimalEvm with the same bytecode and gas
+                self.minimal_evm = MinimalEvm.init(std.heap.c_allocator, bytecode, gas_limit) catch null;
+
+                if (self.minimal_evm) |*evm| {
+                    // Sync initial state from frame
+                    if (@hasField(@TypeOf(frame.*), "contract_address")) {
+                        evm.address = frame.contract_address;
+                    }
+                    if (@hasField(@TypeOf(frame.*), "caller")) {
+                        evm.caller = frame.caller;
+                    }
+                    if (@hasField(@TypeOf(frame.*), "value")) {
+                        evm.value = frame.value;
+                    }
+                    if (@hasField(@TypeOf(frame.*), "calldata_slice")) {
+                        evm.calldata = frame.calldata_slice;
+                    }
+
+                    self.debug("MinimalEvm initialized: bytecode_len={d}, gas={d}, address={any}", .{
+                        bytecode.len,
+                        gas_limit,
+                        evm.address,
+                    });
+                }
+            }
+        }
+    }
+
     pub fn beforeOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
-        _ = self;
-        _ = pc;
-        _ = opcode;
-        _ = frame;
-        // FrameType is used in the function signature, no need to discard
+        _ = self; // Will be used when PC validation is re-enabled
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // TODO: Re-enable PC validation once we properly integrate with dispatch
+            // The issue is that dispatch pre-processes PUSH instructions and changes the execution order
+            // making our simple PC tracking incorrect. This needs deeper integration.
+            //
+            // // Validate PC matches our tracked PC
+            // if (self.bytecode.len > 0) {
+            //     if (pc != self.current_pc) {
+            //         self.throwError(
+            //             "PC tracking error: expected PC={d} but got PC={d} for opcode 0x{x:0>2}",
+            //             .{ self.current_pc, pc, opcode }
+            //         );
+            //     }
+            //
+            //     // Validate opcode at this PC
+            //     if (self.current_pc < self.bytecode.len) {
+            //         const expected_opcode = self.bytecode[self.current_pc];
+            //         if (expected_opcode != opcode) {
+            //             self.throwError(
+            //                 "Opcode mismatch at PC={d}: expected 0x{x:0>2} but got 0x{x:0>2}",
+            //                 .{ pc, expected_opcode, opcode }
+            //             );
+            //         }
+            //     }
+            // }
+
+            // Log execution
+            const stack_size = frame.stack.size();
+            std.log.debug("[EVM2] beforeOp: opcode=0x{x:0>2} PC={d} stack={d}", .{
+                opcode,
+                pc,
+                stack_size,
+            });
+        }
     }
 
     pub fn afterOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
-        _ = self;
-        _ = pc;
-        _ = opcode;
-        _ = frame;
-        // FrameType is used in the function signature, no need to discard
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // Update PC based on the opcode that just executed
+            // We need to determine the UnifiedOpcode from the u8 value
+            const next_pc = switch (opcode) {
+                0x56 => blk: { // JUMP
+                    if (frame.stack.size() > 0) {
+                        const dest = frame.stack.peek_unsafe();
+                        break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
+                    }
+                    break :blk self.current_pc + 1;
+                },
+                0x57 => blk: { // JUMPI
+                    if (frame.stack.size() >= 2) {
+                        const stack_slice = frame.stack.get_slice();
+                        const dest = stack_slice[stack_slice.len - 1];
+                        const condition = stack_slice[stack_slice.len - 2];
+                        if (condition != 0) {
+                            break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
+                        }
+                    }
+                    break :blk self.current_pc + 1;
+                },
+                0x60...0x7f => blk: { // PUSH1-PUSH32
+                    const push_size = (opcode - 0x5f);
+                    break :blk self.current_pc + 1 + push_size;
+                },
+                0x5f => self.current_pc + 1, // PUSH0
+                else => self.current_pc + 1,
+            };
+
+            std.log.debug("[EVM2] afterOp: opcode=0x{x:0>2} PC: {d} -> {d}", .{
+                opcode,
+                pc,
+                next_pc,
+            });
+
+            self.current_pc = next_pc;
+        }
     }
 
     pub fn onError(self: *DefaultTracer, pc: u32, opcode: u8, error_val: anyerror, comptime FrameType: type, frame: *const FrameType) void {
@@ -158,16 +294,1032 @@ pub const DefaultTracer = struct {
         }
     }
 
+    /// Throw an error with a message, either panicking (in wasm) or unreachable (native)
+    pub fn throwError(self: *DefaultTracer, comptime format: []const u8, args: anytype) noreturn {
+        _ = self;
+        const builtin = @import("builtin");
+
+        // Always log the error first
+        std.log.err("[EVM2] FATAL: " ++ format, args);
+
+        // In wasm, use panic to provide better debugging
+        if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
+            @panic("EVM execution error");
+        } else {
+            unreachable;
+        }
+    }
+
+    // ============================================================================
+    // EVM LIFECYCLE EVENTS
+    // ============================================================================
+
+    /// Called when EVM starts executing a call
+    pub fn onCallStart(self: *DefaultTracer, params: anytype, gas: u64) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Call started: type={s}, gas={}", .{ @typeName(@TypeOf(params)), gas });
+        }
+    }
+
+    /// Called when EVM completes a call
+    pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: u64) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Call completed: success={}, gas_left={}", .{ success, gas_left });
+        }
+    }
+
+    /// Called when frame execution starts
+    pub fn onFrameStart(self: *DefaultTracer, code_len: usize, gas: u64, depth: u16) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Frame execution started: code_len={}, gas={}, depth={}", .{ code_len, gas, depth });
+        }
+    }
+
+    /// Called when frame execution completes
+    pub fn onFrameComplete(self: *DefaultTracer, gas_left: u64, output_len: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Frame execution completed: gas_left={}, output_len={}", .{ gas_left, output_len });
+        }
+    }
+
+    // ============================================================================
+    // CONTRACT EVENTS
+    // ============================================================================
+
+    /// Called when processing beacon root update
+    pub fn onBeaconRootUpdateFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] Failed to process beacon root update: {}", .{err});
+        }
+    }
+
+    /// Called when processing historical block hash update
+    pub fn onHistoricalBlockHashUpdateFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] Failed to process historical block hash update: {}", .{err});
+        }
+    }
+
+    /// Called when processing validator deposits
+    pub fn onValidatorDepositsFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] Failed to process validator deposits: {}", .{err});
+        }
+    }
+
+    /// Called when processing validator withdrawals
+    pub fn onValidatorWithdrawalsFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[EVM] Failed to process validator withdrawals: {}", .{err});
+        }
+    }
+
+    /// Called when beacon roots contract execution fails
+    pub fn onBeaconRootsContractFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Beacon roots contract failed: {}", .{err});
+        }
+    }
+
+    /// Called when historical block hashes contract execution fails
+    pub fn onHistoricalBlockHashesContractFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Historical block hashes contract failed: {}", .{err});
+        }
+    }
+
+    // ============================================================================
+    // DELEGATION AND ACCOUNT EVENTS
+    // ============================================================================
+
+    /// Called when account has delegation
+    pub fn onAccountDelegation(self: *DefaultTracer, account: []const u8, delegated: []const u8) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Account {x} has delegation to {x}", .{ account, delegated });
+        }
+    }
+
+    /// Called when failed to get account
+    pub fn onGetAccountFailed(self: *DefaultTracer, address: []const u8, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Failed to get account for address {x}: {}", .{ address, err });
+        }
+    }
+
+    /// Called when empty account is accessed
+    pub fn onEmptyAccountAccess(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Code is empty, returning empty account result", .{});
+        }
+    }
+
+    // ============================================================================
+    // TRANSFER AND VALUE EVENTS
+    // ============================================================================
+
+    /// Called when value transfer fails
+    pub fn onValueTransferFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Call value transfer failed: {}", .{err});
+        }
+    }
+
+    // ============================================================================
+    // CALL TYPE EVENTS
+    // ============================================================================
+
+    /// Called when delegatecall preflight fails
+    pub fn onDelegatecallPreflightFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Delegatecall preflight failed: {}", .{err});
+        }
+    }
+
+    /// Called when staticcall preflight fails
+    pub fn onStaticcallPreflightFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Staticcall preflight failed: {}", .{err});
+        }
+    }
+
+    // ============================================================================
+    // CREATE CONTRACT EVENTS
+    // ============================================================================
+
+    /// Called when CREATE2 starts
+    pub fn onCreate2Start(self: *DefaultTracer, gas: u64, init_len: usize, value: u256) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] CREATE2: gas={}, init_len={}, value={}", .{ gas, init_len, value });
+        }
+    }
+
+    /// Called when CREATE2 depth exceeded
+    pub fn onCreate2DepthExceeded(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] CREATE2: depth exceeded", .{});
+        }
+    }
+
+    /// Called when CREATE2 fails to get account
+    pub fn onCreate2GetAccountFailed(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] CREATE2: get_account failed", .{});
+        }
+    }
+
+    /// Called when CREATE2 has insufficient balance
+    pub fn onCreate2InsufficientBalance(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] CREATE2: insufficient balance", .{});
+        }
+    }
+
+    /// Called when CREATE2 has address collision
+    pub fn onCreate2Collision(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] CREATE2: collision at address", .{});
+        }
+    }
+
+    /// Called when CREATE2 has insufficient gas
+    pub fn onCreate2InsufficientGas(self: *DefaultTracer, need: u64, have: u64) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] CREATE2: insufficient gas for overhead: need={}, have={}", .{ need, have });
+        }
+    }
+
+    /// Called when init code execution fails
+    pub fn onInitCodeExecutionFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] execute_init_code failed with error: {}", .{err});
+        }
+    }
+
+    /// Called when init code fails (success=false)
+    pub fn onInitCodeFailed(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Init code execution failed, success=false", .{});
+        }
+    }
+
+    /// Called when init code is too large (EIP-3860)
+    pub fn onInitCodeTooLarge(self: *DefaultTracer, size: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Init code too large: {} > 49152", .{size});
+        }
+    }
+
+    // ============================================================================
+    // FRAME INITIALIZATION EVENTS
+    // ============================================================================
+
+    /// Called when stack initialization fails
+    pub fn onStackInitFailed(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.err("[EVM] Frame.init: Failed to initialize stack", .{});
+        }
+    }
+
+    /// Called when memory initialization fails
+    pub fn onMemoryInitFailed(self: *DefaultTracer) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.err("[EVM] Frame.init: Failed to initialize memory", .{});
+        }
+    }
+
+    /// Called when bytecode initialization fails
+    pub fn onBytecodeInitFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.err("[EVM] Frame.interpret_with_tracer: Bytecode init failed: {}", .{err});
+        }
+    }
+
+    // ============================================================================
+    // BLOCK HASH EVENTS
+    // ============================================================================
+
+    /// Called when getting block hash from history contract fails
+    pub fn onGetBlockHashFromHistoryFailed(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Failed to get block hash from history contract: {}", .{err});
+        }
+    }
+
+    // ============================================================================
+    // PRE-ANALYSIS TRACING EVENTS
+    // ============================================================================
+    // These methods provide visibility into bytecode analysis and schedule building
+    // They are specific events that make it easy to audit what the EVM is doing
+
+    /// Called when bytecode analysis starts
+    pub fn onBytecodeAnalysisStart(self: *DefaultTracer, bytecode_len: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ANALYSIS] Starting bytecode analysis: len={d}", .{bytecode_len});
+        }
+    }
+
+    /// Called when bytecode analysis completes
+    pub fn onBytecodeAnalysisComplete(self: *DefaultTracer, bytecode_len: usize, opcode_count: usize, jumpdest_count: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ANALYSIS] Bytecode analysis complete: len={d}, opcodes={d}, jumpdests={d}", .{
+                bytecode_len,
+                opcode_count,
+                jumpdest_count,
+            });
+        }
+    }
+
+    /// Called when an invalid opcode is encountered during analysis
+    pub fn onInvalidOpcode(self: *DefaultTracer, pc: u32, opcode: u8) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[ANALYSIS] Invalid opcode at PC={d}: 0x{x:0>2}", .{ pc, opcode });
+        }
+    }
+
+    /// Called when a truncated PUSH instruction is detected
+    pub fn onTruncatedPush(self: *DefaultTracer, pc: u32, push_size: u8, available: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[ANALYSIS] Truncated PUSH at PC={d}: expected {d} bytes, only {d} available", .{
+                pc,
+                push_size,
+                available,
+            });
+        }
+    }
+
+    /// Called when a valid JUMPDEST is found
+    pub fn onJumpdestFound(self: *DefaultTracer, pc: u32, gas_cost: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ANALYSIS] JUMPDEST found at PC={d}, gas_cost={d}", .{ pc, gas_cost });
+        }
+    }
+
+    /// Called when schedule building starts
+    pub fn onScheduleBuildStart(self: *DefaultTracer, bytecode_len: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[SCHEDULE] Starting schedule build: bytecode_len={d}", .{bytecode_len});
+        }
+    }
+
+    /// Called when schedule building completes
+    pub fn onScheduleBuildComplete(self: *DefaultTracer, schedule_items: usize, u256_values: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[SCHEDULE] Schedule build complete: items={d}, u256_values={d}", .{
+                schedule_items,
+                u256_values,
+            });
+        }
+    }
+
+    /// Called when a bytecode fusion is detected
+    pub fn onFusionDetected(self: *DefaultTracer, pc: u32, fusion_type: []const u8, original_length: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[SCHEDULE] Fusion detected at PC={d}: type={s}, original_length={d}", .{
+                pc,
+                fusion_type,
+                original_length,
+            });
+        }
+    }
+
+    /// Called when a static jump is resolved
+    pub fn onStaticJumpResolved(self: *DefaultTracer, jump_pc: u32, target_pc: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[SCHEDULE] Static jump resolved: PC={d} -> PC={d}", .{ jump_pc, target_pc });
+        }
+    }
+
+    /// Called when an invalid static jump is detected
+    pub fn onInvalidStaticJump(self: *DefaultTracer, pc: u32, target_pc: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[SCHEDULE] Invalid static jump at PC={d}: target PC={d} is not a JUMPDEST", .{
+                pc,
+                target_pc,
+            });
+        }
+    }
+
+    /// Called when a jump table is created
+    pub fn onJumpTableCreated(self: *DefaultTracer, entry_count: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[SCHEDULE] Jump table created with {d} entries", .{entry_count});
+        }
+    }
+
+    /// Called for each schedule item added (detailed logging)
+    pub fn onScheduleItem(self: *DefaultTracer, index: usize, item_type: []const u8, metadata: ?[]const u8) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            if (metadata) |meta| {
+                std.log.debug("[SCHEDULE] Item[{d}]: {s} - {s}", .{ index, item_type, meta });
+            } else {
+                std.log.debug("[SCHEDULE] Item[{d}]: {s}", .{ index, item_type });
+            }
+        }
+    }
+
+    // ============================================================================
+    // MEMORY ALLOCATION TRACING EVENTS
+    // ============================================================================
+    // These methods provide visibility into arena allocator operations
+
+    /// Called when arena allocator is initialized
+    pub fn onArenaInit(self: *DefaultTracer, initial_capacity: usize, max_capacity: usize, growth_factor: u32) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ARENA] Initialized: initial={d}, max={d}, growth={d}%", .{
+                initial_capacity,
+                max_capacity,
+                growth_factor,
+            });
+        }
+    }
+
+    /// Called when an allocation is made
+    pub fn onArenaAlloc(self: *DefaultTracer, size: usize, alignment: usize, current_capacity: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ARENA] Allocation: size={d}, align={d}, capacity={d}", .{
+                size,
+                alignment,
+                current_capacity,
+            });
+        }
+    }
+
+    /// Called when arena grows to accommodate new allocations
+    pub fn onArenaGrow(self: *DefaultTracer, old_capacity: usize, new_capacity: usize, requested_size: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ARENA] Growing: {d} -> {d} bytes (requested={d})", .{
+                old_capacity,
+                new_capacity,
+                requested_size,
+            });
+        }
+    }
+
+    /// Called when arena is reset
+    pub fn onArenaReset(self: *DefaultTracer, mode: []const u8, capacity_before: usize, capacity_after: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[ARENA] Reset ({s}): capacity {d} -> {d}", .{
+                mode,
+                capacity_before,
+                capacity_after,
+            });
+        }
+    }
+
+    /// Called when allocation fails
+    pub fn onArenaAllocFailed(self: *DefaultTracer, size: usize, current_capacity: usize, max_capacity: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.warn("[ARENA] Allocation failed: size={d}, current={d}, max={d}", .{
+                size,
+                current_capacity,
+                max_capacity,
+            });
+        }
+    }
+
+    /// Called when arena queries its capacity
+    pub fn onArenaQuery(self: *DefaultTracer, capacity: usize, used_estimate: usize) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // Only log detailed queries in very verbose debugging
+            if (comptime false) {
+                std.log.debug("[ARENA] Query: capacity={d}, estimated_used={d}", .{
+                    capacity,
+                    used_estimate,
+                });
+            }
+        }
+    }
+
+    // === EVM-level Named Events ===
+
+    /// Event: EVM initialization started
+    pub fn onEvmInit(self: *DefaultTracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
+        _ = self;
+        _ = gas_price;
+        _ = origin;
+        _ = hardfork;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Initializing: gas_price={}, origin={x}, hardfork={s}", .{ gas_price, origin.bytes, hardfork });
+        }
+    }
+
+    /// Event: Beacon root update processing
+    pub fn onBeaconRootUpdate(self: *DefaultTracer, success: bool, err: ?anyerror) void {
+        _ = self;
+        if (!success and err != null) {
+            self.warn("[EVM] Failed to process beacon root update: {}", .{err.?});
+        }
+    }
+
+    /// Event: Historical block hash update processing
+    pub fn onHistoricalBlockHashUpdate(self: *DefaultTracer, success: bool, err: ?anyerror) void {
+        _ = self;
+        if (!success and err != null) {
+            self.warn("[EVM] Failed to process historical block hash update: {}", .{err.?});
+        }
+    }
+
+    /// Event: Validator deposits processing
+    pub fn onValidatorDeposits(self: *DefaultTracer, success: bool, err: ?anyerror) void {
+        _ = self;
+        if (!success and err != null) {
+            self.warn("[EVM] Failed to process validator deposits: {}", .{err.?});
+        }
+    }
+
+    /// Event: Validator withdrawals processing
+    pub fn onValidatorWithdrawals(self: *DefaultTracer, success: bool, err: ?anyerror) void {
+        _ = self;
+        if (!success and err != null) {
+            self.warn("[EVM] Failed to process validator withdrawals: {}", .{err.?});
+        }
+    }
+
+    /// Event: Call operation started
+    pub fn onCallStart(self: *DefaultTracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Starting {s}: gas={}, to={x}, value={}", .{ call_type, gas, to.bytes, value });
+        }
+    }
+
+    /// Event: Call operation completed
+    pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: i64, output_len: usize) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Call complete: success={}, gas_left={}, output_len={}", .{ success, gas_left, output_len });
+        }
+    }
+
+    /// Event: Call value transfer
+    pub fn onCallValueTransfer(self: *DefaultTracer, from: anytype, to: anytype, value: u256, success: bool) void {
+        _ = self;
+        if (!success) {
+            self.debug("[EVM] Call value transfer failed: from={x}, to={x}, value={}", .{ from.bytes, to.bytes, value });
+        }
+    }
+
+    /// Event: Preflight check for call
+    pub fn onCallPreflight(self: *DefaultTracer, call_type: []const u8, result: []const u8) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] {s} preflight: {s}", .{ call_type, result });
+        }
+    }
+
+    /// Event: Account lookup
+    pub fn onAccountLookup(self: *DefaultTracer, address: anytype, found: bool, has_delegation: bool) void {
+        _ = self;
+        if (self.config.trace_preanalysis and has_delegation) {
+            self.debug("[EVM] Account {x} has delegation", .{address.bytes});
+        }
+        _ = found;
+    }
+
+    /// Event: Code retrieval
+    pub fn onCodeRetrieval(self: *DefaultTracer, address: anytype, code_len: usize, is_empty: bool) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            if (is_empty) {
+                self.debug("[EVM] Code is empty for address {x}", .{address.bytes});
+            } else {
+                self.debug("[EVM] Retrieved code: address={x}, length={}", .{ address.bytes, code_len });
+            }
+        }
+    }
+
+    /// Event: CREATE/CREATE2 operation started
+    pub fn onCreateStart(self: *DefaultTracer, create_type: []const u8, gas: i64, init_len: usize, value: u256) void {
+        _ = self;
+        self.debug("[EVM] {s}: gas={}, init_len={}, value={}", .{ create_type, gas, init_len, value });
+    }
+
+    /// Event: CREATE depth check
+    pub fn onCreateDepthExceeded(self: *DefaultTracer, depth: usize, max_depth: usize) void {
+        _ = self;
+        self.debug("[EVM] CREATE depth exceeded: depth={}, max={}", .{ depth, max_depth });
+    }
+
+    /// Event: CREATE insufficient balance
+    pub fn onCreateInsufficientBalance(self: *DefaultTracer, balance: u256, required: u256) void {
+        _ = self;
+        self.debug("[EVM] CREATE insufficient balance: have={}, need={}", .{ balance, required });
+    }
+
+    /// Event: CREATE collision detected
+    pub fn onCreateCollision(self: *DefaultTracer, address: anytype) void {
+        _ = self;
+        self.debug("[EVM] CREATE collision at address {x}", .{address.bytes});
+    }
+
+    /// Event: CREATE gas overhead check
+    pub fn onCreateGasOverhead(self: *DefaultTracer, required: i64, available: i64) void {
+        _ = self;
+        if (required > available) {
+            self.debug("[EVM] CREATE insufficient gas for overhead: need={}, have={}", .{ required, available });
+        }
+    }
+
+    /// Event: Init code execution
+    pub fn onInitCodeExecution(self: *DefaultTracer, code_len: usize, gas: i64) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Executing init code: len={}, gas={}", .{ code_len, gas });
+        }
+    }
+
+    /// Event: Init code result
+    pub fn onInitCodeResult(self: *DefaultTracer, success: bool, output_len: usize, err: ?anyerror) void {
+        _ = self;
+        if (!success) {
+            if (err) |e| {
+                self.debug("[EVM] Init code execution failed: {}", .{e});
+            } else {
+                self.debug("[EVM] Init code execution failed, success=false", .{});
+            }
+        } else if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Init code succeeded: output_len={}", .{output_len});
+        }
+    }
+
+    /// Event: Init code size check
+    pub fn onInitCodeSizeCheck(self: *DefaultTracer, code_len: usize, max_len: usize) void {
+        _ = self;
+        if (code_len > max_len) {
+            self.debug("[EVM] Init code too large: {} > {}", .{ code_len, max_len });
+        }
+    }
+
+    /// Event: Frame execution started
+    pub fn onFrameExecutionStart(self: *DefaultTracer, code_len: usize, gas: i64, depth: usize) void {
+        _ = self;
+        self.debug("[EVM] Starting frame: code_len={}, gas={}, depth={}", .{ code_len, gas, depth });
+    }
+
+    /// Event: Frame execution completed
+    pub fn onFrameExecutionComplete(self: *DefaultTracer, gas_remaining: i64, output_len: usize, termination: []const u8) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Frame complete: gas_remaining={}, output_len={}, termination={s}", .{ gas_remaining, output_len, termination });
+        }
+    }
+
+    /// Event: Frame execution error
+    pub fn onFrameExecutionError(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        self.debug("[EVM] Frame execution failed: {}", .{err});
+    }
+
+    /// Event: Journal operation
+    pub fn onJournalOperation(self: *DefaultTracer, operation: []const u8, snapshot_id: anytype) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[EVM] Journal {s}: snapshot_id={}", .{ operation, snapshot_id });
+        }
+    }
+
+    /// Event: Journal revert error
+    pub fn onJournalRevertError(self: *DefaultTracer, err: anyerror) void {
+        _ = self;
+        self.err("[EVM] Failed to revert journal entry: {}", .{err});
+    }
+
+    /// Event: Block hash lookup
+    pub fn onBlockHashLookup(self: *DefaultTracer, block_number: u64, found: bool, err: ?anyerror) void {
+        _ = self;
+        if (!found and err != null) {
+            self.debug("[EVM] Failed to get block hash from history contract: {}", .{err.?});
+        }
+        _ = block_number;
+    }
+
+    // === Frame-level Named Events ===
+
+    /// Event: Frame initialization
+    pub fn onFrameInit(self: *DefaultTracer, gas: i64, caller: anytype, value: u256, calldata_len: usize) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            self.debug("[Frame] Init: gas={}, caller={x}, value={}, calldata_len={}", .{ gas, caller.bytes, value, calldata_len });
+        }
+    }
+
+    /// Event: Frame initialization error
+    pub fn onFrameInitError(self: *DefaultTracer, component: []const u8, err: anyerror) void {
+        _ = self;
+        self.err("[Frame] Failed to initialize {s}: {}", .{ component, err });
+    }
+
+    /// Event: Frame bytecode initialization
+    pub fn onFrameBytecodeInit(self: *DefaultTracer, bytecode_len: usize, success: bool, err: ?anyerror) void {
+        _ = self;
+        if (!success and err != null) {
+            self.err("[Frame] Bytecode init failed: {}", .{err.?});
+        }
+        _ = bytecode_len;
+    }
+
+    /// Event: Dispatch cache lookup
+    pub fn onDispatchCacheLookup(self: *DefaultTracer, bytecode_len: usize, hit: bool) void {
+        _ = self;
+        if (self.config.trace_preanalysis) {
+            const result = if (hit) "hit" else "miss";
+            self.debug("[Frame] Dispatch cache {s}: bytecode_len={}", .{ result, bytecode_len });
+        }
+    }
+
+    /// Event: Dispatch cache store
+    pub fn onDispatchCacheStore(self: *DefaultTracer, bytecode_len: usize, evicted: bool) void {
+        _ = self;
+        if (self.config.trace_preanalysis and evicted) {
+            self.debug("[Frame] Dispatch cache store with eviction: bytecode_len={}", .{bytecode_len});
+        }
+        _ = bytecode_len;
+    }
+
+    /// Event: Performance warning
+    pub fn onPerformanceWarning(self: *DefaultTracer, operation: []const u8, elapsed_ns: u64, threshold_ns: u64) void {
+        _ = self;
+        self.warn("[PERF] {s}: elapsed={} ns (threshold={} ns)", .{ operation, elapsed_ns, threshold_ns });
+    }
+
+    /// Validate MinimalEvm state against main EVM with detailed diffs
+    fn validateMinimalEvmState(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        if (self.minimal_evm) |*evm| {
+            const builtin = @import("builtin");
+            if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+                const opcode_name = comptime @tagName(opcode);
+                var has_mismatch = false;
+
+                // Validate stack
+                if (@hasField(@TypeOf(frame.*), "stack")) {
+                    const frame_stack = frame.stack.get_slice();
+                    const evm_stack = evm.stack.items;
+
+                    if (evm_stack.len != frame_stack.len) {
+                        has_mismatch = true;
+                        self.err(
+                            "[DIVERGENCE] Stack size mismatch at instruction #{d} ({s} @ PC={d}):\n" ++
+                            "  MinimalEvm stack size: {d}\n" ++
+                            "  Frame stack size: {d}\n" ++
+                            "  Difference: {d}",
+                            .{
+                                self.instruction_count,
+                                opcode_name,
+                                self.current_pc,
+                                evm_stack.len,
+                                frame_stack.len,
+                                @as(i64, @intCast(evm_stack.len)) - @as(i64, @intCast(frame_stack.len))
+                            },
+                        );
+
+                        // Show stack contents for debugging
+                        if (evm_stack.len > 0) {
+                            self.err("  MinimalEvm stack top: 0x{x}", .{evm_stack[evm_stack.len - 1]});
+                        }
+                        if (frame_stack.len > 0) {
+                            self.err("  Frame stack top: 0x{x}", .{frame_stack[frame_stack.len - 1]});
+                        }
+                    } else {
+                        // Check stack values match
+                        for (evm_stack, 0..) |evm_val, i| {
+                            const frame_val = frame_stack[i];
+                            if (evm_val != frame_val) {
+                                has_mismatch = true;
+                                self.err(
+                                    "[DIVERGENCE] Stack value mismatch at position {d} (instruction #{d}, {s} @ PC={d}):\n" ++
+                                    "  MinimalEvm: 0x{x}\n" ++
+                                    "  Frame: 0x{x}",
+                                    .{ i, self.instruction_count, opcode_name, self.current_pc, evm_val, frame_val },
+                                );
+                            }
+                        }
+                    }
+                }
+
+                // Validate gas
+                if (@hasField(@TypeOf(frame.*), "gas_remaining")) {
+                    const gas_diff = if (evm.gas_remaining > frame.gas_remaining)
+                        evm.gas_remaining - frame.gas_remaining
+                    else
+                        frame.gas_remaining - evm.gas_remaining;
+
+                    if (gas_diff > 100) { // Allow small differences due to different gas models
+                        has_mismatch = true;
+                        self.err(
+                            "[DIVERGENCE] Gas mismatch at instruction #{d} ({s} @ PC={d}):\n" ++
+                            "  MinimalEvm gas: {d}\n" ++
+                            "  Frame gas: {d}\n" ++
+                            "  Difference: {d}",
+                            .{
+                                self.instruction_count,
+                                opcode_name,
+                                self.current_pc,
+                                evm.gas_remaining,
+                                frame.gas_remaining,
+                                gas_diff
+                            },
+                        );
+                    }
+                }
+
+                // Validate memory size
+                if (@hasField(@TypeOf(frame.*), "memory")) {
+                    const frame_mem_size = frame.memory.size();
+                    if (evm.memory_size != frame_mem_size) {
+                        has_mismatch = true;
+                        self.err(
+                            "[DIVERGENCE] Memory size mismatch at instruction #{d} ({s} @ PC={d}):\n" ++
+                            "  MinimalEvm memory: {d} bytes\n" ++
+                            "  Frame memory: {d} bytes",
+                            .{
+                                self.instruction_count,
+                                opcode_name,
+                                self.current_pc,
+                                evm.memory_size,
+                                frame_mem_size
+                            },
+                        );
+                    }
+                }
+
+                if (has_mismatch) {
+                    self.err(
+                        "[DIVERGENCE SUMMARY] Execution diverged at:\n" ++
+                        "  Instruction count: {d} (simple: {d}, fused: {d})\n" ++
+                        "  Opcode: {s}\n" ++
+                        "  PC: {d}",
+                        .{
+                            self.instruction_count,
+                            self.simple_instruction_count,
+                            self.fused_instruction_count,
+                            opcode_name,
+                            self.current_pc,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    /// Calculate the next PC based on the current opcode
+    /// Most opcodes increment PC by 1, but JUMP/JUMPI read from stack
+    fn calculateNextPc(self: *const DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) u32 {
+        const opcode_value = @intFromEnum(opcode);
+
+        // Handle different opcode categories
+        return switch (opcode) {
+            // JUMP - unconditional jump, PC comes from stack
+            .JUMP => blk: {
+                if (frame.stack.size() > 0) {
+                    const dest = frame.stack.peek_unsafe();
+                    // Truncate to u32 for PC
+                    break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
+                }
+                // If stack is empty (shouldn't happen), just increment
+                break :blk self.current_pc + 1;
+            },
+
+            // JUMPI - conditional jump, PC comes from stack if condition is true
+            .JUMPI => blk: {
+                if (frame.stack.size() >= 2) {
+                    // Get destination and condition (don't pop, just peek)
+                    const stack_slice = frame.stack.get_slice();
+                    const dest = stack_slice[stack_slice.len - 1]; // Top is destination
+                    const condition = stack_slice[stack_slice.len - 2]; // Second is condition
+
+                    if (condition != 0) {
+                        // Jump taken
+                        break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
+                    }
+                }
+                // Jump not taken or stack underflow, continue to next instruction
+                // For JUMPI, we need to account for the fact it's 1 byte
+                break :blk self.current_pc + 1;
+            },
+
+            // PUSH instructions - skip over the push data
+            .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8,
+            .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
+            .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
+            .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => blk: {
+                // PUSH opcodes skip the data bytes
+                const push_size = (opcode_value - 0x5f); // PUSH1 is 0x60, so size = opcode - 0x5f
+                break :blk self.current_pc + 1 + push_size;
+            },
+
+            // PUSH0 is special - just 1 byte
+            .PUSH0 => self.current_pc + 1,
+
+            // PC opcode - doesn't affect PC calculation but returns current PC
+            .PC => self.current_pc + 1,
+
+            // All other opcodes increment by 1
+            else => self.current_pc + 1,
+        };
+    }
+
     pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
                 // Get opcode name at compile time
-                // For now, just use @tagName since we have the enum
                 const opcode_name = comptime @tagName(opcode);
-
-                // Get the numeric opcode value
                 const opcode_value = @intFromEnum(opcode);
+
+                // Increment instruction counts
+                self.instruction_count += 1;
+                if (opcode_value > 0xff) {
+                    // Synthetic/fused opcode
+                    self.fused_instruction_count += 1;
+                } else {
+                    // Simple opcode
+                    self.simple_instruction_count += 1;
+                }
+
+                // Sync state from Frame to MinimalEvm BEFORE execution
+                if (self.minimal_evm) |*evm| {
+                    // Sync stack state
+                    if (@hasField(@TypeOf(frame.*), "stack")) {
+                        evm.stack.clearRetainingCapacity();
+                        const stack_slice = frame.stack.get_slice();
+                        for (stack_slice) |value| {
+                            evm.stack.append(evm.allocator, value) catch break;
+                        }
+                    }
+
+                    // Sync gas
+                    if (@hasField(@TypeOf(frame.*), "gas_remaining")) {
+                        evm.gas_remaining = @intCast(frame.gas_remaining);
+                    }
+
+                    // Sync memory size
+                    if (@hasField(@TypeOf(frame.*), "memory")) {
+                        evm.memory_size = @as(u32, @intCast(frame.memory.size()));
+                    }
+
+                    // Now execute the opcode in MinimalEvm
+                    if (opcode_value <= 0xff and evm.pc < evm.bytecode.len) {
+                        const minimal_opcode = evm.bytecode[evm.pc];
+
+                        // Execute the opcode in MinimalEvm
+                        evm.executeOpcode(@intCast(minimal_opcode)) catch |exec_err| {
+                            self.warn("MinimalEvm execution failed at PC={d}: {any}", .{ evm.pc, exec_err });
+                        };
+                    }
+                }
+
+                // TODO: Re-enable PC validation once we properly integrate with dispatch
+                // The issue is that dispatch pre-processes PUSH instructions and changes the execution order
+                // making our simple PC tracking incorrect. This needs deeper integration.
+                //
+                // // Validate that the current PC points to the expected opcode
+                // if (self.bytecode.len > 0 and self.current_pc < self.bytecode.len) {
+                //     const expected_opcode = self.bytecode[self.current_pc];
+                //
+                //     // Only validate for regular opcodes (not synthetic ones)
+                //     if (opcode_value <= 0xff) {
+                //         if (expected_opcode != opcode_value) {
+                //             self.throwError(
+                //                 "PC mismatch at {d}: expected opcode 0x{x:0>2} but executing {s} (0x{x:0>2})",
+                //                 .{ self.current_pc, expected_opcode, opcode_name, opcode_value }
+                //             );
+                //         }
+                //     }
+                // }
 
                 // Execute PC tracking if available and we have valid bytecode
                 // Skip PC tracking if frame.code is empty (unit tests with direct opcode execution)
@@ -184,12 +1336,13 @@ pub const DefaultTracer = struct {
                 }
 
                 // For operations that need stack values, we'll log them
-                // The stack uses stack_ptr to access elements, with stack_ptr[0] being the top
                 const stack_size = frame.stack.size();
 
                 // Basic logging for now - can be expanded to match log.zig's detailed implementation
-                std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d}", .{
+                std.log.debug("[EVM2] EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
+                    self.instruction_count,
                     opcode_name,
+                    self.current_pc,
                     stack_size,
                     frame.gas_remaining,
                 });
@@ -198,15 +1351,34 @@ pub const DefaultTracer = struct {
     }
 
     pub fn after_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
-        _ = self;
-        _ = frame;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
                 const opcode_name = comptime @tagName(opcode);
 
-                // Optional: Log after instruction execution
-                std.log.debug("[EVM2] DONE: {s}", .{opcode_name});
+                // NOW validate MinimalEvm state AFTER both have executed
+                self.validateMinimalEvmState(frame, opcode);
+
+                // Calculate what the next PC should be based on the opcode
+                const next_pc = self.calculateNextPc(frame, opcode);
+
+                // Log the instruction completion with PC update
+                std.log.debug("[EVM2] DONE[{d}]: {s} | PC: {d} -> {d}", .{
+                    self.instruction_count,
+                    opcode_name,
+                    self.current_pc,
+                    next_pc,
+                });
+
+                // Update the current PC for the next instruction
+                self.current_pc = next_pc;
+
+                // Update MinimalEvm PC for next instruction if not stopped
+                if (self.minimal_evm) |*evm| {
+                    if (!evm.stopped and !evm.reverted) {
+                        evm.pc = next_pc;
+                    }
+                }
             }
         }
     }
@@ -831,6 +2003,7 @@ pub const TracerConfig = struct {
     memory_prefix: usize = 0, // bytes to capture when mode is .prefix
     compute_gas_cost: bool = false, // compute per-step gas deltas
     capture_each_op: bool = false, // capture snapshot after each operation
+    trace_preanalysis: bool = true, // trace bytecode analysis and schedule building (enabled by default)
 };
 
 pub const DetailedStructLog = struct {
