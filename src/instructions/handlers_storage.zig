@@ -17,10 +17,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Loads value from storage slot and pushes it onto the stack.
         pub fn sload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .SLOAD);
+            self.validateOpcodeHandler(.SLOAD, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             // SLOAD loads a value from storage
-
-            std.debug.assert(self.stack.size() >= 1); // SLOAD requires 1 stack item
             const slot = self.stack.peek_unsafe();
 
             // Use the currently executing contract's address
@@ -65,7 +64,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // - First push 0x42 (goes to stack position 0)
             // - Then push 0x00 (goes to stack position 1, becoming the top)
             // - SSTORE pops key first (0x00), then value (0x42)
-            std.debug.assert(self.stack.size() >= 2); // SSTORE requires 2 stack items
+            self.validateOpcodeHandler(.SSTORE, cursor);
             const slot = self.stack.pop_unsafe(); // Pop key/slot first (top of stack)
             const value = self.stack.pop_unsafe(); // Pop value second
 
@@ -132,7 +131,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn tload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .TLOAD);
             const dispatch = Dispatch{ .cursor = cursor };
-            std.debug.assert(self.stack.size() >= 1); // TLOAD requires 1 stack item
+            self.validateOpcodeHandler(.TLOAD, cursor);
             const slot = self.stack.peek_unsafe();
 
             // Use the currently executing contract's address
@@ -160,7 +159,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // EIP-214: WriteProtection is handled by host interface for static calls
 
             // TSTORE expects stack: [..., key, value] where key is at top
-            std.debug.assert(self.stack.size() >= 2); // TSTORE requires 2 stack items
+            self.validateOpcodeHandler(.TSTORE, cursor);
             const slot = self.stack.pop_unsafe(); // Pop key/slot first (top of stack)
             const value = self.stack.pop_unsafe(); // Pop value second
 

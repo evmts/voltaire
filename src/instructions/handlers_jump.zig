@@ -10,13 +10,20 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
+        const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+
+        /// Continue to next instruction with afterInstruction tracking
+        pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item, comptime opcode: Dispatch.UnifiedOpcode) Error!noreturn {
+            const op_data = dispatch_opcode_data.getOpData(opcode, Dispatch, Dispatch.Item, cursor);
+            self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
 
         /// JUMP opcode (0x56) - Unconditional jump.
         /// Pops destination from stack and transfers control to that location.
         /// The destination must be a valid JUMPDEST.
-        pub fn jump(self: *FrameType, _: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .JUMP);
-            std.debug.assert(self.stack.size() >= 1); // JUMP requires 1 stack item
+        pub fn jump(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            self.beforeInstruction(.JUMP, cursor);
             // Get jump table from frame
             const jump_table = self.jump_table;
 
@@ -25,6 +32,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
                 log.warn("JUMP: Invalid destination out of range: 0x{x}", .{dest});
+                self.afterComplete(.JUMP);
                 return Error.InvalidJump;
             }
 
@@ -39,10 +47,12 @@ pub fn Handlers(comptime FrameType: type) type {
                     frame_handlers.setCurrentPc(dest_pc);
                 }
 
+                self.afterInstruction(.JUMP, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
                 log.warn("JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
+                self.afterComplete(.JUMP);
                 return Error.InvalidJump;
             }
         }
@@ -51,8 +61,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pops destination and condition from stack.
         /// Jumps to destination if condition is non-zero, otherwise continues to next instruction.
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .JUMPI);
-            std.debug.assert(self.stack.size() >= 2);
+            self.beforeInstruction(.JUMPI, cursor);
             const jump_table = self.jump_table;
 
             const dest = self.stack.pop_unsafe();
@@ -61,6 +70,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (condition != 0) {
                 if (dest > std.math.maxInt(u32)) {
                     log.warn("JUMPI: Invalid destination out of range: 0x{x}", .{dest});
+                    self.afterComplete(.JUMPI);
                     return Error.InvalidJump;
                 }
 
@@ -73,17 +83,17 @@ pub fn Handlers(comptime FrameType: type) type {
                         frame_handlers.setCurrentPc(dest_pc);
                     }
 
+                    self.afterInstruction(.JUMPI, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
                     log.warn("JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
+                    self.afterComplete(.JUMPI);
                     return Error.InvalidJump;
                 }
             } else {
                 @branchHint(.likely);
-                const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
-                const op_data = dispatch_opcode_data.getOpData(.JUMPI, Dispatch, Dispatch.Item, cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return next_instruction(self, cursor, .JUMPI);
             }
         }
 
@@ -91,7 +101,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// This opcode marks a valid destination for JUMP and JUMPI operations.
         /// It also serves as a gas consumption point and stack validation point for the entire basic block.
         pub fn jumpdest(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .JUMPDEST);
+            self.beforeInstruction(.JUMPDEST, cursor);
             // Jump table not needed for JUMPDEST itself
             const dispatch = Dispatch{ .cursor = cursor };
             // JUMPDEST consumes gas for the entire basic block (static + dynamic)
@@ -105,6 +115,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
             if (self.gas_remaining < 0) {
                 log.warn("JUMPDEST: Out of gas - required={}, available={}", .{ gas_cost, self.gas_remaining + @as(FrameType.GasType, @intCast(gas_cost)) });
+                self.afterComplete(.JUMPDEST);
                 return Error.OutOfGas;
             }
 
@@ -114,6 +125,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check minimum stack requirement (won't underflow)
             if (min_stack > 0 and current_stack_size < @as(usize, @intCast(min_stack))) {
                 log.warn("JUMPDEST: Stack underflow - required min={}, current={}", .{ min_stack, current_stack_size });
+                self.afterComplete(.JUMPDEST);
                 return Error.StackUnderflow;
             }
 
@@ -125,10 +137,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 const max_final_size = @as(isize, @intCast(current_stack_size)) + @as(isize, max_stack);
                 if (max_final_size > @as(isize, @intCast(stack_capacity))) {
                     log.warn("JUMPDEST: Stack overflow - current={}, max_change={}, capacity={}", .{ current_stack_size, max_stack, stack_capacity });
+                    self.afterComplete(.JUMPDEST);
                     return Error.StackOverflow;
                 }
             }
 
+            self.afterInstruction(.JUMPDEST, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
@@ -136,7 +150,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes the current program counter onto the stack.
         /// The actual PC value is provided by the planner through metadata.
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
+            self.beforeInstruction(.PC, cursor);
             // Jump table not needed for PC
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
@@ -144,6 +158,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             self.stack.push_unsafe(op_data.metadata.value);
 
+            self.afterInstruction(.PC, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };

@@ -31,9 +31,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pops memory offset from stack and pushes the 32-byte word at that offset.
         pub fn mload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .MLOAD);
+            self.validateOpcodeHandler(.MLOAD, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             // MLOAD loads a 32-byte word from memory
-            std.debug.assert(self.stack.size() >= 1); // MLOAD requires 1 stack item
             const offset = self.stack.peek_unsafe();
 
             // Check if offset fits in usize
@@ -79,8 +79,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.before_instruction(self, .MSTORE);
             const dispatch = Dispatch{ .cursor = cursor };
             // MSTORE stores a 32-byte word to memory
-
-            std.debug.assert(self.stack.size() >= 2); // MSTORE requires 2 stack items
+            self.validateOpcodeHandler(.MSTORE, cursor);
             const offset = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
             log.debug("MSTORE: offset={x}, value={x}", .{ offset, value });
@@ -136,8 +135,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pops memory offset and value from stack, stores the least significant byte at that offset.
         pub fn mstore8(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .MSTORE8);
+            self.validateOpcodeHandler(.MSTORE8, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            std.debug.assert(self.stack.size() >= 2); // MSTORE8 requires 2 stack items
             const offset = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
 
@@ -179,9 +178,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes the size of active memory in bytes onto the stack.
         pub fn msize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .MSIZE);
+            self.validateOpcodeHandler(.MSIZE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             const size = self.memory.size();
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(@as(WordType, @intCast(size)));
 
             const op_data = dispatch.getOpData(.MSIZE);
@@ -193,8 +192,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Copies memory from one location to another.
         pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .MCOPY);
+            self.validateOpcodeHandler(.MCOPY, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            std.debug.assert(self.stack.size() >= 3); // MCOPY requires 3 stack items
             const size = self.stack.pop_unsafe(); // Top of stack
             const src_offset = self.stack.pop_unsafe(); // Second from top
             const dest_offset = self.stack.pop_unsafe(); // Third from top
