@@ -376,13 +376,6 @@ pub fn build(b: *std.Build) void {
             erc20_deployment_test.linkLibrary(revm);
             erc20_deployment_test.addIncludePath(b.path("lib/revm"));
             
-            const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
-            const revm_dylib_path_test = if (rust_target) |target_triple|
-                b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
-            else
-                b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
-            erc20_deployment_test.addObjectFile(b.path(revm_dylib_path_test));
-            
             if (target.result.os.tag == .linux) {
                 erc20_deployment_test.linkSystemLibrary("m");
                 erc20_deployment_test.linkSystemLibrary("pthread");
@@ -429,13 +422,6 @@ pub fn build(b: *std.Build) void {
             fixtures_differential_test.linkLibrary(revm);
             fixtures_differential_test.addIncludePath(b.path("lib/revm"));
             
-            const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
-            const revm_dylib_path_test = if (rust_target) |target_triple|
-                b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
-            else
-                b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
-            fixtures_differential_test.addObjectFile(b.path(revm_dylib_path_test));
-            
             if (target.result.os.tag == .linux) {
                 fixtures_differential_test.linkSystemLibrary("m");
                 fixtures_differential_test.linkSystemLibrary("pthread");
@@ -481,13 +467,6 @@ pub fn build(b: *std.Build) void {
         if (revm_lib) |revm| {
             snailtracer_test.linkLibrary(revm);
             snailtracer_test.addIncludePath(b.path("lib/revm"));
-            
-            const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
-            const revm_dylib_path_test = if (rust_target) |target_triple|
-                b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
-            else
-                b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
-            snailtracer_test.addObjectFile(b.path(revm_dylib_path_test));
             
             if (target.result.os.tag == .linux) {
                 snailtracer_test.linkSystemLibrary("m");
@@ -580,12 +559,6 @@ pub fn build(b: *std.Build) void {
                 if (revm_lib) |revm| {
                     t.linkLibrary(revm);
                     t.addIncludePath(b.path("lib/revm"));
-                    const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
-                    const revm_dylib_path_test = if (rust_target) |target_triple|
-                        b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
-                    else
-                        b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
-                    t.addObjectFile(b.path(revm_dylib_path_test));
 
                     if (target.result.os.tag == .linux) {
                         t.linkSystemLibrary("m");
@@ -634,13 +607,6 @@ pub fn build(b: *std.Build) void {
             if (revm_lib) |revm| {
                 erc20_mint_test.linkLibrary(revm);
                 erc20_mint_test.addIncludePath(b.path("lib/revm"));
-                
-                const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
-                const revm_dylib_path_test = if (rust_target) |target_triple|
-                    b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
-                else
-                    b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
-                erc20_mint_test.addObjectFile(b.path(revm_dylib_path_test));
                 
                 if (target.result.os.tag == .linux) {
                     erc20_mint_test.linkSystemLibrary("m");
@@ -908,12 +874,6 @@ pub fn build(b: *std.Build) void {
             if (revm_lib) |revm| {
                 fusions_diff_toggle.linkLibrary(revm);
                 fusions_diff_toggle.addIncludePath(b.path("lib/revm"));
-                const revm_rust_target_dir_test = if (optimize == .Debug) "debug" else "release";
-                const revm_dylib_path_test = if (rust_target) |target_triple|
-                    b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir_test })
-                else
-                    b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir_test});
-                fusions_diff_toggle.addObjectFile(b.path(revm_dylib_path_test));
             }
         }
         fusions_diff_toggle.linkLibrary(c_kzg_lib);

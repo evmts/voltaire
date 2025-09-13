@@ -23,13 +23,15 @@ cbindgen = "0.24"
 
 [profile.release]
 panic = "abort"
-lto = true
-codegen-units = 1
+lto = false  # Disabled for faster compilation
+# Allow multiple codegen units for parallel compilation
+# codegen-units = 1
 
 [profile.bench]
 panic = "abort"
-lto = true
-codegen-units = 1
+lto = false  # Disabled for faster compilation
+# Allow multiple codegen units for parallel compilation
+# codegen-units = 1
 
 # [[bin]]
 # name = "verify_lt_order"

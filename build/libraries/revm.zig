@@ -18,10 +18,8 @@ pub fn createRevmLibrary(
     });
 
     const profile_dir = if (optimize == .Debug) "debug" else "release";
-    const lib_path = if (rust_target) |target_triple|
-        b.fmt("target/{s}/{s}/librevm_wrapper.a", .{ target_triple, profile_dir })
-    else
-        b.fmt("target/{s}/librevm_wrapper.a", .{profile_dir});
+    // REVM is built in workspace root, not with target triple subdirectory
+    const lib_path = b.fmt("target/{s}/librevm_wrapper.a", .{profile_dir});
 
     lib.addObjectFile(b.path(lib_path));
     lib.linkLibC();
