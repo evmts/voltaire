@@ -13,7 +13,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// AND opcode (0x16) - Bitwise AND operation.
         pub fn @"and"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .AND);
+            log.before_instruction(self, .AND);
             std.debug.assert(self.stack.size() >= 2); // AND requires 2 stack items
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
@@ -26,7 +26,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// OR opcode (0x17) - Bitwise OR operation.
         pub fn @"or"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .OR);
+            log.before_instruction(self, .OR);
             std.debug.assert(self.stack.size() >= 2); // OR requires 2 stack items
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
@@ -39,7 +39,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// XOR opcode (0x18) - Bitwise XOR operation.
         pub fn xor(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .XOR);
+            log.before_instruction(self, .XOR);
             std.debug.assert(self.stack.size() >= 2); // XOR requires 2 stack items
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
@@ -52,7 +52,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// NOT opcode (0x19) - Bitwise NOT operation.
         pub fn not(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .NOT);
+            log.before_instruction(self, .NOT);
             std.debug.assert(self.stack.size() >= 1); // NOT requires 1 stack item
             const value = self.stack.peek_unsafe();
             self.stack.set_top_unsafe(~value);
@@ -66,7 +66,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Uses std.math.shr for consistent cross-platform behavior.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shr
         pub fn byte(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .BYTE);
+            log.before_instruction(self, .BYTE);
             std.debug.assert(self.stack.size() >= 2); // BYTE requires 2 stack items
             const byte_index = self.stack.pop_unsafe(); // Top of stack - byte index
             const value = self.stack.peek_unsafe(); // Second from top - value to extract from
@@ -84,7 +84,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SHL opcode (0x1b) - Shift left operation using std.math.shl for consistent behavior.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shl
         pub fn shl(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .SHL);
+            log.before_instruction(self, .SHL);
             std.debug.assert(self.stack.size() >= 2); // SHL requires 2 stack items
             const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
             const value = self.stack.peek_unsafe(); // Second from top - value to shift
@@ -103,7 +103,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SHR opcode (0x1c) - Logical shift right operation using std.math.shr.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shr
         pub fn shr(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .SHR);
+            log.before_instruction(self, .SHR);
             std.debug.assert(self.stack.size() >= 2); // SHR requires 2 stack items
             const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
             const value = self.stack.peek_unsafe(); // Second from top - value to shift
@@ -123,7 +123,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Preserves the sign bit during shift.
         /// See: https://ziglang.org/documentation/master/std/#std.math.shr
         pub fn sar(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .SAR);
+            log.before_instruction(self, .SAR);
             std.debug.assert(self.stack.size() >= 2); // SAR requires 2 stack items
             const shift = self.stack.pop_unsafe(); // Top of stack - shift amount
             const value = self.stack.peek_unsafe(); // Second from top - value to shift

@@ -16,7 +16,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// SLOAD opcode (0x54) - Load from storage.
         /// Loads value from storage slot and pushes it onto the stack.
         pub fn sload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .SLOAD);
+            log.before_instruction(self, .SLOAD);
             const dispatch = Dispatch{ .cursor = cursor };
             // SLOAD loads a value from storage
 
@@ -54,7 +54,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stores value to storage slot. Subject to gas refunds and write protection checks.
         /// EIP-214: Static calls use database that throws WriteProtection errors
         pub fn sstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .SSTORE);
+            log.before_instruction(self, .SSTORE);
             const dispatch = Dispatch{ .cursor = cursor };
             // SSTORE stores a value to storage
 
@@ -130,7 +130,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// TLOAD opcode (0x5c) - Load from transient storage (EIP-1153).
         /// Loads value from transient storage slot and pushes it onto the stack.
         pub fn tload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .TLOAD);
+            log.before_instruction(self, .TLOAD);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // TLOAD requires 1 stack item
             const slot = self.stack.peek_unsafe();
@@ -154,7 +154,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// TSTORE opcode (0x5d) - Store to transient storage (EIP-1153).
         /// Stores value to transient storage slot (cleared after transaction).
         pub fn tstore(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .TSTORE);
+            log.before_instruction(self, .TSTORE);
             const dispatch = Dispatch{ .cursor = cursor };
 
             // EIP-214: WriteProtection is handled by host interface for static calls

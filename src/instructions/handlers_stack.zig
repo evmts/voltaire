@@ -12,7 +12,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// POP opcode (0x50) - Remove item from stack.
         pub fn pop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .POP);
+            log.before_instruction(self, .POP);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() >= 1); // POP requires 1 stack item
             _ = self.stack.pop_unsafe();
@@ -22,7 +22,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// PUSH0 opcode (0x5f) - Push 0 onto stack.
         pub fn push0(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH0);
+            log.before_instruction(self, .PUSH0);
             const dispatch = Dispatch{ .cursor = cursor };
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(0);
@@ -36,7 +36,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
             return &struct {
                 pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-                    log.debug_instruction(self, switch (push_n) {
+                    log.before_instruction(self, switch (push_n) {
                         1 => .PUSH1,
                         2 => .PUSH2,
                         3 => .PUSH3,
@@ -131,7 +131,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-                    log.debug_instruction(self, switch (dup_n) {
+                    log.before_instruction(self, switch (dup_n) {
                         1 => .DUP1,
                         2 => .DUP2,
                         3 => .DUP3,
@@ -184,7 +184,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-                    log.debug_instruction(self, switch (swap_n) {
+                    log.before_instruction(self, switch (swap_n) {
                         1 => .SWAP1,
                         2 => .SWAP2,
                         3 => .SWAP3,

@@ -17,7 +17,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset and immediately loads from that memory location.
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mload_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH_MLOAD_INLINE);
+            log.before_instruction(self, .PUSH_MLOAD_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -50,7 +50,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_MLOAD_POINTER - Fused PUSH+MLOAD with pointer offset (>8 bytes).
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mload_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH_MLOAD_POINTER);
+            log.before_instruction(self, .PUSH_MLOAD_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -84,7 +84,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores it at that offset.
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH_MSTORE_INLINE);
+            log.before_instruction(self, .PUSH_MSTORE_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -118,7 +118,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH_MSTORE_POINTER);
+            log.before_instruction(self, .PUSH_MSTORE_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -149,7 +149,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores the least significant byte.
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore8_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH_MSTORE8_INLINE);
+            log.before_instruction(self, .PUSH_MSTORE8_INLINE);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -183,7 +183,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore8_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .PUSH_MSTORE8_POINTER);
+            log.before_instruction(self, .PUSH_MSTORE8_POINTER);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_POINTER, Dispatch, Dispatch.Item, cursor);
 

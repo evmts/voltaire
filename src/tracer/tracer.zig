@@ -119,7 +119,7 @@ pub const DefaultTracer = struct {
         }
     }
 
-    pub fn debug_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -390,9 +390,9 @@ pub const DebuggingTracer = struct {
         log.info(format, args);
     }
 
-    pub fn debug_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        log.debug_instruction(frame, opcode);
+        log.before_instruction(frame, opcode);
     }
 
     /// Helper function to capture state for step recording
@@ -677,9 +677,9 @@ pub const JSONRPCTracer = struct {
         log.info(format, args);
     }
 
-    pub fn debug_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        log.debug_instruction(frame, opcode);
+        log.before_instruction(frame, opcode);
     }
 
     /// Get the collected trace steps
@@ -1131,9 +1131,9 @@ pub const FileTracer = struct {
         log.info(format, args);
     }
 
-    pub fn debug_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        log.debug_instruction(frame, opcode);
+        log.before_instruction(frame, opcode);
     }
 
     /// Write JSON trace to file with enhanced features
@@ -1203,9 +1203,9 @@ pub const LoggingTracer = struct {
         log.info(format, args);
     }
 
-    pub fn debug_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        log.debug_instruction(frame, opcode);
+        log.before_instruction(frame, opcode);
     }
 };
 

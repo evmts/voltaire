@@ -42,7 +42,7 @@ pub fn info(comptime format: []const u8, args: anytype) void {
 /// Logs opcode execution with frame context information
 /// @param frame The execution frame containing stack, memory, and gas information
 /// @param opcode The UnifiedOpcode being executed (comptime known for optimization)
-pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcode.zig").UnifiedOpcode) void {
+pub fn before_instruction(frame: anytype, comptime opcode: @import("opcodes/opcode.zig").UnifiedOpcode) void {
     if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
         if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
             // Get opcode name at compile time
@@ -237,20 +237,16 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                 .PUSH_ADD_DUP1 => "PUSH_ADD_DUP1",
                 .MLOAD_SWAP1_DUP2 => "MLOAD_SWAP1_DUP2",
             };
-            
+
             // For operations that need stack values, we'll log them
             // The stack uses stack_ptr to access elements, with stack_ptr[0] being the top
             const stack_size = frame.stack.size();
             const stack_ptr = frame.stack.stack_ptr;
-            
+
             // Log with appropriate details based on opcode type
             switch (opcode) {
                 // Binary arithmetic operations - log top 2 stack items
-                .ADD, .MUL, .SUB, .DIV, .MOD, .SDIV, .SMOD,
-                .LT, .GT, .SLT, .SGT, .EQ,
-                .AND, .OR, .XOR,
-                .EXP, .SIGNEXTEND,
-                .BYTE, .SHL, .SHR, .SAR => {
+                .ADD, .MUL, .SUB, .DIV, .MOD, .SDIV, .SMOD, .LT, .GT, .SLT, .SGT, .EQ, .AND, .OR, .XOR, .EXP, .SIGNEXTEND, .BYTE, .SHL, .SHR, .SAR => {
                     if (stack_size >= 2) {
                         // Stack items accessed via stack_ptr: [0] is top, [1] is second
                         const top = stack_ptr[0];
@@ -270,7 +266,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Ternary operations - log top 3 stack items
                 .ADDMOD, .MULMOD => {
                     if (stack_size >= 3) {
@@ -293,7 +289,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Unary operations - log top stack item
                 .ISZERO, .NOT, .POP => {
                     if (stack_size >= 1) {
@@ -312,15 +308,26 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // DUP operations - show which item is being duplicated
-                .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8,
-                .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16 => {
+                .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8, .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16 => {
                     const dup_pos = comptime switch (opcode) {
-                        .DUP1 => 1, .DUP2 => 2, .DUP3 => 3, .DUP4 => 4,
-                        .DUP5 => 5, .DUP6 => 6, .DUP7 => 7, .DUP8 => 8,
-                        .DUP9 => 9, .DUP10 => 10, .DUP11 => 11, .DUP12 => 12,
-                        .DUP13 => 13, .DUP14 => 14, .DUP15 => 15, .DUP16 => 16,
+                        .DUP1 => 1,
+                        .DUP2 => 2,
+                        .DUP3 => 3,
+                        .DUP4 => 4,
+                        .DUP5 => 5,
+                        .DUP6 => 6,
+                        .DUP7 => 7,
+                        .DUP8 => 8,
+                        .DUP9 => 9,
+                        .DUP10 => 10,
+                        .DUP11 => 11,
+                        .DUP12 => 12,
+                        .DUP13 => 13,
+                        .DUP14 => 14,
+                        .DUP15 => 15,
+                        .DUP16 => 16,
                         else => unreachable,
                     };
                     if (stack_size >= dup_pos) {
@@ -340,15 +347,26 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // SWAP operations - show the two positions being swapped
-                .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8,
-                .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16 => {
+                .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8, .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16 => {
                     const swap_pos = comptime switch (opcode) {
-                        .SWAP1 => 1, .SWAP2 => 2, .SWAP3 => 3, .SWAP4 => 4,
-                        .SWAP5 => 5, .SWAP6 => 6, .SWAP7 => 7, .SWAP8 => 8,
-                        .SWAP9 => 9, .SWAP10 => 10, .SWAP11 => 11, .SWAP12 => 12,
-                        .SWAP13 => 13, .SWAP14 => 14, .SWAP15 => 15, .SWAP16 => 16,
+                        .SWAP1 => 1,
+                        .SWAP2 => 2,
+                        .SWAP3 => 3,
+                        .SWAP4 => 4,
+                        .SWAP5 => 5,
+                        .SWAP6 => 6,
+                        .SWAP7 => 7,
+                        .SWAP8 => 8,
+                        .SWAP9 => 9,
+                        .SWAP10 => 10,
+                        .SWAP11 => 11,
+                        .SWAP12 => 12,
+                        .SWAP13 => 13,
+                        .SWAP14 => 14,
+                        .SWAP15 => 15,
+                        .SWAP16 => 16,
                         else => unreachable,
                     };
                     if (stack_size > swap_pos) {
@@ -370,7 +388,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Memory operations - show offset and value
                 .MLOAD => {
                     if (stack_size >= 1) {
@@ -418,7 +436,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         frame.memory.size(),
                     });
                 },
-                
+
                 // Storage operations - show key and value
                 .SLOAD, .TLOAD => {
                     if (stack_size >= 1) {
@@ -456,7 +474,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Jump operations
                 .JUMP => {
                     if (stack_size >= 1) {
@@ -494,34 +512,25 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // PUSH operations - just log that we're pushing
-                .PUSH0, .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
-                .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
-                .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
-                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
+                .PUSH0, .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
                     std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d}", .{
                         opcode_name,
                         stack_size,
                         frame.gas_remaining,
                     });
                 },
-                
+
                 // Simple context operations
-                .PC, .GAS, .JUMPDEST,
-                .ADDRESS, .ORIGIN, .CALLER, .COINBASE,
-                .BALANCE, .SELFBALANCE,
-                .CALLVALUE, .GASPRICE, .BASEFEE, .BLOBBASEFEE,
-                .CALLDATASIZE, .CODESIZE, .RETURNDATASIZE,
-                .TIMESTAMP, .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID,
-                .STOP, .INVALID => {
+                .PC, .GAS, .JUMPDEST, .ADDRESS, .ORIGIN, .CALLER, .COINBASE, .BALANCE, .SELFBALANCE, .CALLVALUE, .GASPRICE, .BASEFEE, .BLOBBASEFEE, .CALLDATASIZE, .CODESIZE, .RETURNDATASIZE, .TIMESTAMP, .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID, .STOP, .INVALID => {
                     std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d}", .{
                         opcode_name,
                         stack_size,
                         frame.gas_remaining,
                     });
                 },
-                
+
                 // Operations that read offset from stack
                 .CALLDATALOAD, .EXTCODESIZE, .EXTCODEHASH, .BLOCKHASH, .BLOBHASH => {
                     if (stack_size >= 1) {
@@ -540,7 +549,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Copy operations
                 .CALLDATACOPY, .CODECOPY, .RETURNDATACOPY, .MCOPY => {
                     if (stack_size >= 3) {
@@ -563,7 +572,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Hash and log operations
                 .KECCAK256, .LOG0, .LOG1, .LOG2, .LOG3, .LOG4 => {
                     if (stack_size >= 2) {
@@ -584,7 +593,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Return/revert operations
                 .RETURN, .REVERT => {
                     if (stack_size >= 2) {
@@ -605,7 +614,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // System calls - log gas and address
                 .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => {
                     if (stack_size >= 2) {
@@ -626,7 +635,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // CREATE operations
                 .CREATE => {
                     if (stack_size >= 3) {
@@ -672,7 +681,7 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Other operations
                 .SELFDESTRUCT => {
                     if (stack_size >= 1) {
@@ -752,24 +761,9 @@ pub fn debug_instruction(frame: anytype, comptime opcode: @import("opcodes/opcod
                         });
                     }
                 },
-                
+
                 // Synthetic operations - just basic logging
-                .PUSH_ADD_INLINE, .PUSH_ADD_POINTER,
-                .PUSH_MUL_INLINE, .PUSH_MUL_POINTER,
-                .PUSH_DIV_INLINE, .PUSH_DIV_POINTER,
-                .PUSH_SUB_INLINE, .PUSH_SUB_POINTER,
-                .PUSH_AND_INLINE, .PUSH_AND_POINTER,
-                .PUSH_OR_INLINE, .PUSH_OR_POINTER,
-                .PUSH_XOR_INLINE, .PUSH_XOR_POINTER,
-                .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER,
-                .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER,
-                .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER,
-                .JUMP_TO_STATIC_LOCATION, .JUMPI_TO_STATIC_LOCATION,
-                .MULTI_PUSH_2, .MULTI_PUSH_3, .MULTI_POP_2, .MULTI_POP_3,
-                .ISZERO_JUMPI, .DUP2_MSTORE_PUSH, .DUP3_ADD_MSTORE,
-                .SWAP1_DUP2_ADD, .PUSH_DUP3_ADD, .FUNCTION_DISPATCH,
-                .CALLVALUE_CHECK, .PUSH0_REVERT, .PUSH_ADD_DUP1,
-                .MLOAD_SWAP1_DUP2 => {
+                .PUSH_ADD_INLINE, .PUSH_ADD_POINTER, .PUSH_MUL_INLINE, .PUSH_MUL_POINTER, .PUSH_DIV_INLINE, .PUSH_DIV_POINTER, .PUSH_SUB_INLINE, .PUSH_SUB_POINTER, .PUSH_AND_INLINE, .PUSH_AND_POINTER, .PUSH_OR_INLINE, .PUSH_OR_POINTER, .PUSH_XOR_INLINE, .PUSH_XOR_POINTER, .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER, .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER, .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER, .JUMP_TO_STATIC_LOCATION, .JUMPI_TO_STATIC_LOCATION, .MULTI_PUSH_2, .MULTI_PUSH_3, .MULTI_POP_2, .MULTI_POP_3, .ISZERO_JUMPI, .DUP2_MSTORE_PUSH, .DUP3_ADD_MSTORE, .SWAP1_DUP2_ADD, .PUSH_DUP3_ADD, .FUNCTION_DISPATCH, .CALLVALUE_CHECK, .PUSH0_REVERT, .PUSH_ADD_DUP1, .MLOAD_SWAP1_DUP2 => {
                     std.log.debug("[EVM2] EXEC: {s} | stack={d} gas={d} | synthetic_op", .{
                         opcode_name,
                         stack_size,

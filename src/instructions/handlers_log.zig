@@ -31,7 +31,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         4 => .LOG4,
                         else => unreachable,
                     };
-                    log.debug_instruction(self, unified_opcode);
+                    log.before_instruction(self, unified_opcode);
 
                     // EIP-214: WriteProtection is handled by host interface for static calls
 

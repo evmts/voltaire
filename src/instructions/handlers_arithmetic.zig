@@ -20,7 +20,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .ADD);
+            self.getTracer().before_instruction(self, .ADD);
             std.debug.assert(self.stack.size() >= 2);
 
             self.stack.binary_op_unsafe(struct {
@@ -34,7 +34,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .MUL);
+            self.getTracer().before_instruction(self, .MUL);
             std.debug.assert(self.stack.size() >= 2);
 
             self.stack.binary_op_unsafe(struct {
@@ -48,7 +48,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SUB opcode (0x03) - Subtraction with underflow wrapping.
         pub fn sub(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .SUB);
+            self.getTracer().before_instruction(self, .SUB);
             std.debug.assert(self.stack.size() >= 2);
 
             self.stack.binary_op_unsafe(struct {
@@ -64,7 +64,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .DIV);
+            self.getTracer().before_instruction(self, .DIV);
             std.debug.assert(self.stack.size() >= 2);
 
             self.stack.binary_op_unsafe(struct {
@@ -80,7 +80,7 @@ pub fn Handlers(comptime FrameType: type) type {
         // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
         // The current approach might be slower if the sign of operands is predictable.
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .SDIV);
+            self.getTracer().before_instruction(self, .SDIV);
             std.debug.assert(self.stack.size() >= 2);
             const top = self.stack.pop_unsafe();
             const second = self.stack.peek_unsafe();
@@ -131,7 +131,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MOD opcode (0x06) - Modulo operation. Modulo by zero returns 0.
         pub fn mod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .MOD);
+            self.getTracer().before_instruction(self, .MOD);
             std.debug.assert(self.stack.size() >= 2);
 
             self.stack.binary_op_unsafe(struct {
@@ -147,7 +147,7 @@ pub fn Handlers(comptime FrameType: type) type {
         // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
         // The current approach might be slower if the sign of operands is predictable.
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .SMOD);
+            self.getTracer().before_instruction(self, .SMOD);
             std.debug.assert(self.stack.size() >= 2);
             const top = self.stack.pop_unsafe();
             const second = self.stack.peek_unsafe();
@@ -189,7 +189,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// ADDMOD opcode (0x08) - (a + b) % N. All intermediate calculations are performed with arbitrary precision.
         pub fn addmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .ADDMOD);
+            self.getTracer().before_instruction(self, .ADDMOD);
             std.debug.assert(self.stack.size() >= 3); // ADDMOD requires 3 stack items
             const addend1 = self.stack.pop_unsafe(); // Top of stack (a)
             const addend2 = self.stack.pop_unsafe(); // Second on stack (b)
@@ -222,7 +222,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// MULMOD opcode (0x09) - (a * b) % N. All intermediate calculations are performed with arbitrary precision.
         pub fn mulmod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .MULMOD);
+            self.getTracer().before_instruction(self, .MULMOD);
             std.debug.assert(self.stack.size() >= 3); // MULMOD requires 3 stack items
             const factor1 = self.stack.pop_unsafe(); // Top of stack (a)
             const factor2 = self.stack.pop_unsafe(); // Second on stack (b)
@@ -298,7 +298,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// EXP opcode (0x0a) - Exponential operation.
         pub fn exp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .EXP);
+            self.getTracer().before_instruction(self, .EXP);
             // Match REVM operand ordering: treat top-of-stack as base and
             // second-from-top as exponent, computing base^exponent.
             std.debug.assert(self.stack.size() >= 2); // EXP requires 2 stack items
@@ -338,7 +338,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// SIGNEXTEND opcode (0x0b) - Sign extend operation.
         pub fn signextend(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.getTracer().debug_instruction(self, .SIGNEXTEND);
+            self.getTracer().before_instruction(self, .SIGNEXTEND);
             std.debug.assert(self.stack.size() >= 2); // SIGNEXTEND requires 2 stack items
             const ext = self.stack.pop_unsafe(); // Extension byte index (top of stack)
             const value = self.stack.peek_unsafe(); // Value to extend (second element)

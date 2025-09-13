@@ -15,7 +15,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jump_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
-            log.debug_instruction(self, .JUMP_TO_STATIC_LOCATION);
+            log.before_instruction(self, .JUMP_TO_STATIC_LOCATION);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMP_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
 
@@ -29,7 +29,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
-            log.debug_instruction(self, .JUMPI_TO_STATIC_LOCATION);
+            log.before_instruction(self, .JUMPI_TO_STATIC_LOCATION);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMPI_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
 
@@ -82,7 +82,7 @@ pub fn Handlers(comptime FrameType: type) type {
             @branchHint(.likely);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMP_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const dest = op_data.metadata.value.*;
 
@@ -113,7 +113,7 @@ pub fn Handlers(comptime FrameType: type) type {
             @branchHint(.likely);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMPI_INLINE, Dispatch, Dispatch.Item, cursor);
-            
+
             const dest = op_data.metadata.value;
 
             std.debug.assert(self.stack.size() >= 1);
@@ -151,7 +151,7 @@ pub fn Handlers(comptime FrameType: type) type {
             @branchHint(.likely);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMPI_POINTER, Dispatch, Dispatch.Item, cursor);
-            
+
             // Cursor now points to metadata
             const dest = op_data.metadata.value.*;
 
@@ -219,7 +219,6 @@ fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
     frame.code = &[_]u8{};
     return frame;
 }
-
 
 test "jump_to_static_location - direct jump without search" {
     var frame = try createTestFrame(testing.allocator);
@@ -344,4 +343,3 @@ test "jump_to_static_location - performance comparison" {
     const result = TestFrame.JumpSyntheticHandlers.jump_to_static_location(&frame, &cursor);
     try testing.expectError(TestFrame.Error.STOP, result);
 }
-

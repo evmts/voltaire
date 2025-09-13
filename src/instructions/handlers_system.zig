@@ -43,7 +43,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALL opcode (0xf1) - Message-call into an account.
         /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
         pub fn call(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .CALL);
+            log.before_instruction(self, .CALL);
             const dispatch = Dispatch{ .cursor = cursor };
             // Check static context - CALL with non-zero value is not allowed in static context
             // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
@@ -180,7 +180,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLCODE opcode (0xf2) - Message-call with alternative account's code but current context.
         /// Stack: [gas, address, value, input_offset, input_size, output_offset, output_size] → [success]
         pub fn callcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .CALLCODE);
+            log.before_instruction(self, .CALLCODE);
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
             std.debug.assert(self.stack.size() >= 7); // CALLCODE requires 7 stack items
@@ -299,7 +299,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DELEGATECALL opcode (0xf4) - Message-call with alternative account's code but current values.
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .DELEGATECALL);
+            log.before_instruction(self, .DELEGATECALL);
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
             std.debug.assert(self.stack.size() >= 6); // DELEGATECALL requires 6 stack items
@@ -428,7 +428,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// STATICCALL opcode (0xfa) - Static message-call (no state changes allowed).
         /// Stack: [gas, address, input_offset, input_size, output_offset, output_size] → [success]
         pub fn staticcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .STATICCALL);
+            log.before_instruction(self, .STATICCALL);
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
             std.debug.assert(self.stack.size() >= 6); // STATICCALL requires 6 stack items
@@ -556,7 +556,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [value, offset, size] → [address]
         /// EIP-214: CREATE not allowed in static context - handled by host implementation
         pub fn create(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .CREATE);
+            log.before_instruction(self, .CREATE);
             const dispatch = Dispatch{ .cursor = cursor };
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
@@ -629,7 +629,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [value, offset, size, salt] → [address]
         /// EIP-214: CREATE2 not allowed in static context - handled by host implementation
         pub fn create2(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .CREATE2);
+            log.before_instruction(self, .CREATE2);
             const dispatch = Dispatch{ .cursor = cursor };
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
@@ -707,7 +707,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// RETURN opcode (0xf3) - Halt execution returning output data.
         /// Stack: [offset, size] → []
         pub fn @"return"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .RETURN);
+            log.before_instruction(self, .RETURN);
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
 
@@ -764,7 +764,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// REVERT opcode (0xfd) - Halt execution reverting state changes.
         /// Stack: [offset, size] → []
         pub fn revert(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .REVERT);
+            log.before_instruction(self, .REVERT);
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
             std.debug.assert(self.stack.size() >= 2); // REVERT requires 2 stack items
@@ -819,7 +819,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [recipient] → []
         /// EIP-214: STATICCALL prevents SELFDESTRUCT via null self_destruct and static host
         pub fn selfdestruct(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .SELFDESTRUCT);
+            log.before_instruction(self, .SELFDESTRUCT);
             _ = cursor;
             std.debug.assert(self.stack.size() >= 1); // SELFDESTRUCT requires 1 stack item
             const recipient_u256 = self.stack.pop_unsafe();
@@ -841,7 +841,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// STOP opcode (0x00) - Halt execution.
         /// Stack: [] → []
         pub fn stop(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .STOP);
+            log.before_instruction(self, .STOP);
             _ = cursor;
 
             // EIP-3529 gas refund is applied at the transaction level in evm.zig,
@@ -853,7 +853,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// AUTH opcode (0xf6) - EIP-3074: Authorize a trusted invoker
         /// Stack: [authority, commitment, sig_v, sig_r, sig_s] → [success]
         pub fn auth(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .AUTH);
+            log.before_instruction(self, .AUTH);
             const dispatch = Dispatch{ .cursor = cursor };
 
             // Pop authorization parameters from stack
@@ -945,7 +945,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// AUTHCALL opcode (0xf7) - EIP-3074: Make a call as an authorized address
         /// Stack: [gas, to, value, input_offset, input_size, output_offset, output_size, auth] → [success]
         pub fn authcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.debug_instruction(self, .AUTHCALL);
+            log.before_instruction(self, .AUTHCALL);
             const dispatch = Dispatch{ .cursor = cursor };
 
             // Pop call parameters from stack
