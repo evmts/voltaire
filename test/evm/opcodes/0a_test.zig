@@ -388,3 +388,4 @@ test "EXP with JUMP: overflow case" {
 
 test "EXP with JUMP: 10 to the 18" {
     try run_exp_test_with_jump(std.testing.allocator, 10, 18);
+}
