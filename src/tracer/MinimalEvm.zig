@@ -333,8 +333,8 @@ pub const MinimalEvm = struct {
                 // ADD
                 0x01 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const result = a +% b; // Wrapping addition
                     try self.pushStack(result);
                     self.pc += 1;
@@ -343,8 +343,8 @@ pub const MinimalEvm = struct {
                 // MUL
                 0x02 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const result = a *% b; // Wrapping multiplication
                     try self.pushStack(result);
                     self.pc += 1;
@@ -353,9 +353,9 @@ pub const MinimalEvm = struct {
                 // SUB
                 0x03 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
-                    const result = a -% b; // Wrapping subtraction
+                    const b = try self.popStack();
+                    const result = b -% a; // Wrapping subtraction
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -363,9 +363,9 @@ pub const MinimalEvm = struct {
                 // DIV
                 0x04 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
-                    const result = if (b == 0) 0 else a / b;
+                    const b = try self.popStack();
+                    const result = if (a == 0) 0 else b / a;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -373,8 +373,8 @@ pub const MinimalEvm = struct {
                 // SDIV - Signed division
                 0x05 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
 
                     if (b == 0) {
                         try self.pushStack(0);
@@ -383,13 +383,13 @@ pub const MinimalEvm = struct {
                         const NEG_ONE = std.math.maxInt(u256); // -1 in two's complement
 
                         // Special case: MIN_SIGNED / -1 would overflow
-                        if (a == MIN_SIGNED and b == NEG_ONE) {
+                        if (b == MIN_SIGNED and a == NEG_ONE) {
                             try self.pushStack(MIN_SIGNED);
                         } else {
                             // Convert to signed
                             const a_signed = @as(i256, @bitCast(a));
                             const b_signed = @as(i256, @bitCast(b));
-                            const result_signed = @divTrunc(a_signed, b_signed);
+                            const result_signed = @divTrunc(b_signed, a_signed);
                             const result = @as(u256, @bitCast(result_signed));
                             try self.pushStack(result);
                         }
@@ -400,9 +400,9 @@ pub const MinimalEvm = struct {
                 // MOD
                 0x06 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
-                    const result = if (b == 0) 0 else a % b;
+                    const b = try self.popStack();
+                    const result = if (a == 0) 0 else b % a;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -410,15 +410,15 @@ pub const MinimalEvm = struct {
                 // SMOD - Signed modulo
                 0x07 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
 
-                    if (b == 0) {
+                    if (a == 0) {
                         try self.pushStack(0);
                     } else {
                         const a_signed = @as(i256, @bitCast(a));
                         const b_signed = @as(i256, @bitCast(b));
-                        const result_signed = @rem(a_signed, b_signed);
+                        const result_signed = @rem(b_signed, a_signed);
                         const result = @as(u256, @bitCast(result_signed));
                         try self.pushStack(result);
                     }
@@ -467,8 +467,8 @@ pub const MinimalEvm = struct {
 
                 // EXP - Exponential
                 0x0a => {
-                    const exponent = try self.popStack();
                     const base = try self.popStack();
+                    const exponent = try self.popStack();
 
                     // Calculate gas cost for EXP: 10 + 50 * byte_size_of_exponent
                     const byte_size = if (exponent == 0) 0 else (256 - @clz(exponent) + 7) / 8;
@@ -521,9 +521,9 @@ pub const MinimalEvm = struct {
                 // LT - Less than
                 0x10 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
-                    const result: u256 = if (a < b) 1 else 0;
+                    const b = try self.popStack();
+                    const result: u256 = if (b < a) 1 else 0;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -531,9 +531,9 @@ pub const MinimalEvm = struct {
                 // GT - Greater than
                 0x11 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
-                    const result: u256 = if (a > b) 1 else 0;
+                    const b = try self.popStack();
+                    const result: u256 = if (b > a) 1 else 0;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -541,11 +541,11 @@ pub const MinimalEvm = struct {
                 // SLT - Signed less than
                 0x12 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const a_signed = @as(i256, @bitCast(a));
                     const b_signed = @as(i256, @bitCast(b));
-                    const result: u256 = if (a_signed < b_signed) 1 else 0;
+                    const result: u256 = if (b_signed < a_signed) 1 else 0;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -553,11 +553,11 @@ pub const MinimalEvm = struct {
                 // SGT - Signed greater than
                 0x13 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const a_signed = @as(i256, @bitCast(a));
                     const b_signed = @as(i256, @bitCast(b));
-                    const result: u256 = if (a_signed > b_signed) 1 else 0;
+                    const result: u256 = if (b_signed > a_signed) 1 else 0;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -565,8 +565,8 @@ pub const MinimalEvm = struct {
                 // EQ - Equal
                 0x14 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const result: u256 = if (a == b) 1 else 0;
                     try self.pushStack(result);
                     self.pc += 1;
@@ -585,8 +585,8 @@ pub const MinimalEvm = struct {
                 // AND
                 0x16 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const result = a & b;
                     try self.pushStack(result);
                     self.pc += 1;
@@ -595,8 +595,8 @@ pub const MinimalEvm = struct {
                 // OR
                 0x17 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const result = a | b;
                     try self.pushStack(result);
                     self.pc += 1;
@@ -605,8 +605,8 @@ pub const MinimalEvm = struct {
                 // XOR
                 0x18 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const b = try self.popStack();
                     const a = try self.popStack();
+                    const b = try self.popStack();
                     const result = a ^ b;
                     try self.pushStack(result);
                     self.pc += 1;
@@ -624,14 +624,14 @@ pub const MinimalEvm = struct {
                 // BYTE
                 0x1a => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const i = try self.popStack();
                     const x = try self.popStack();
+                    const i = try self.popStack();
 
-                    if (i >= 32) {
+                    if (x >= 32) {
                         try self.pushStack(0);
                     } else {
-                        // Get the i-th byte from the left (big-endian)
-                        const byte_val = (x >> @intCast((31 - i) * 8)) & 0xFF;
+                        // Get the x-th byte from the left (big-endian)
+                        const byte_val = (i >> @intCast((31 - x) * 8)) & 0xFF;
                         try self.pushStack(byte_val);
                     }
                     self.pc += 1;
@@ -640,13 +640,13 @@ pub const MinimalEvm = struct {
                 // SHL - Shift left
                 0x1b => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const shift = try self.popStack();
                     const value = try self.popStack();
+                    const shift = try self.popStack();
 
-                    if (shift >= 256) {
+                    if (value >= 256) {
                         try self.pushStack(0);
                     } else {
-                        const result = value << @intCast(shift);
+                        const result = shift << @intCast(value);
                         try self.pushStack(result);
                     }
                     self.pc += 1;
@@ -655,13 +655,13 @@ pub const MinimalEvm = struct {
                 // SHR - Logical shift right
                 0x1c => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const shift = try self.popStack();
                     const value = try self.popStack();
+                    const shift = try self.popStack();
 
-                    if (shift >= 256) {
+                    if (value >= 256) {
                         try self.pushStack(0);
                     } else {
-                        const result = value >> @intCast(shift);
+                        const result = shift >> @intCast(value);
                         try self.pushStack(result);
                     }
                     self.pc += 1;
@@ -670,17 +670,17 @@ pub const MinimalEvm = struct {
                 // SAR - Arithmetic shift right
                 0x1d => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const shift = try self.popStack();
                     const value = try self.popStack();
+                    const shift = try self.popStack();
 
-                    if (shift >= 256) {
+                    if (value >= 256) {
                         // If negative, result is all 1s, else 0
-                        const sign_bit = value >> 255;
+                        const sign_bit = shift >> 255;
                         const result: u256 = if (sign_bit == 1) std.math.maxInt(u256) else 0;
                         try self.pushStack(result);
                     } else {
-                        const value_signed = @as(i256, @bitCast(value));
-                        const result_signed = value_signed >> @intCast(shift);
+                        const shift_signed = @as(i256, @bitCast(shift));
+                        const result_signed = shift_signed >> @intCast(value);
                         const result = @as(u256, @bitCast(result_signed));
                         try self.pushStack(result);
                     }
