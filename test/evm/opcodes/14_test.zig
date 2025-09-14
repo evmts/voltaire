@@ -1,7 +1,6 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
-const revm = @import("revm");
 const common = @import("common.zig");
 
 fn run_eq_test(allocator: std.mem.Allocator, a: u256, b: u256, expected: u256) !void {

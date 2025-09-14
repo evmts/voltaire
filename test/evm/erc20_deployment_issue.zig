@@ -2,7 +2,6 @@ const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
 const log = std.log;
-const revm = @import("revm");
 
 test {
     std.testing.log_level = .debug;

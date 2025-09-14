@@ -1,7 +1,6 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const guillotine_evm = @import("evm");
-const revm = @import("revm");
 
 // Extract ExecutionTrace type from CallResult
 const ExecutionTrace = @typeInfo(@TypeOf(@as(guillotine_evm.CallResult, undefined).trace)).optional.child;

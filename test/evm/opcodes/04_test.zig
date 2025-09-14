@@ -1,7 +1,6 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
-const revm = @import("revm");
 const common = @import("common.zig");
 
 test "DIV: basic (10 / 2 = 5)" {
