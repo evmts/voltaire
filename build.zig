@@ -73,7 +73,7 @@ pub fn build(b: *std.Build) void {
     const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
 
     // Modules
-    const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, null, foundry_lib);
+    const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
 
     // Executables
     const guillotine_exe = build_pkg.GuillotineExe.createExecutable(b, modules.exe_mod);
@@ -188,7 +188,7 @@ pub fn build(b: *std.Build) void {
     const lib_unit_tests = b.addTest(.{ .root_module = modules.lib_mod });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
-    const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, null, bn254_lib, c_kzg_lib, blst_lib, rust_target);
+    const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, bn254_lib, c_kzg_lib, blst_lib);
     const run_integration_tests = b.addRunArtifact(integration_tests);
 
     // Add test/root.zig tests  
