@@ -139,7 +139,6 @@ fn run_addmod_test(allocator: std.mem.Allocator, a: u256, b: u256, n: u256) !voi
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "ADDMOD: modulo zero ((42 + 58) % 0 = 0)" {
     try run_addmod_test(std.testing.allocator, 42, 58, 0);
@@ -388,7 +387,6 @@ fn run_addmod_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, n: 
     
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
-}
 }
 
 test "ADDMOD with JUMP: basic ((10 + 10) % 8 = 4)" {

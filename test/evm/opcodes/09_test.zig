@@ -139,7 +139,6 @@ fn run_mulmod_test(allocator: std.mem.Allocator, a: u256, b: u256, n: u256) !voi
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "MULMOD: modulo zero ((42 * 58) % 0 = 0)" {
     try run_mulmod_test(std.testing.allocator, 42, 58, 0);
@@ -406,7 +405,6 @@ fn run_mulmod_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, n: 
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "MULMOD with JUMP: basic ((10 * 10) % 8 = 4)" {
     try run_mulmod_test_with_jump(std.testing.allocator, 10, 10, 8);
@@ -427,4 +425,3 @@ test "MULMOD with JUMP: overflow prevention" {
 test "MULMOD with JUMP: near u64 boundary" {
     const near_u64 = @as(u256, std.math.maxInt(u32));
     try run_mulmod_test_with_jump(std.testing.allocator, near_u64, 3, 100);
-}
