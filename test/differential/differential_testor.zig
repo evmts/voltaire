@@ -78,12 +78,10 @@ pub const DifferentialTestConfig = struct {
 };
 
 const TracedEVMType = guillotine_evm.Evm(.{
-    .TracerType = guillotine_evm.tracer.DebuggingTracer,
     .DatabaseType = guillotine_evm.Database,
 });
 
 const NoTraceEVMType = guillotine_evm.Evm(.{
-    .TracerType = guillotine_evm.tracer.DefaultTracer,
     .DatabaseType = guillotine_evm.Database,
 });
 
@@ -117,7 +115,7 @@ pub const DifferentialTestor = struct {
 
         // Setup MinimalEvm for differential testing
         const minimal_evm = try allocator.create(guillotine_evm.tracer.MinimalEvm);
-        minimal_evm.* = guillotine_evm.tracer.MinimalEvm.init(allocator);
+        minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(allocator, &.{}, 0);
 
         // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
@@ -480,11 +478,11 @@ pub const DifferentialTestor = struct {
 
         // Reset MinimalEvm for new execution
         self.minimal_evm.deinit();
-        self.minimal_evm.* = guillotine_evm.tracer.MinimalEvm.init(self.allocator);
+        self.minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(self.allocator, &.{}, 0);
 
         // Set up the bytecode and gas limit
         self.minimal_evm.bytecode = bytecode;
-        self.minimal_evm.gas = gas_limit;
+        self.minimal_evm.gas_remaining = @intCast(gas_limit);
 
         // Set up calldata if provided
         if (input.len > 0) {
@@ -492,16 +490,17 @@ pub const DifferentialTestor = struct {
         }
 
         // Execute the bytecode
-        const success = self.minimal_evm.execute() catch false;
+        self.minimal_evm.execute() catch {};
+        const success = !self.minimal_evm.reverted;
 
         // Get the output
-        const output = if (self.minimal_evm.returndata.len > 0)
-            try self.allocator.dupe(u8, self.minimal_evm.returndata)
+        const output = if (self.minimal_evm.return_data.len > 0)
+            try self.allocator.dupe(u8, self.minimal_evm.return_data)
         else
             try self.allocator.alloc(u8, 0);
 
         // Calculate gas used
-        const gas_used = gas_limit - self.minimal_evm.gas;
+        const gas_used = gas_limit - @as(u64, @intCast(self.minimal_evm.gas_remaining));
 
         // MinimalEvm doesn't provide detailed tracing yet
         const trace: ?ExecutionTrace = null;
@@ -860,15 +859,8 @@ pub const DifferentialTestor = struct {
         // log.debug("REVM trace file content ({} bytes)", .{trace_content.len});
 
         // Simple trace parsing for debugging - just count steps and log key operations
-        var step_count: u32 = 0;
-        var lines = std.mem.splitSequence(u8, trace_content, "\n");
 
         log.info("=== MINIMALEVM EXECUTION TRACE ===", .{});
-
-        // MinimalEvm trace parsing would go here
-        // For now, just count lines
-        _ = trace_content;
-        _ = step_count;
 
         log.info("MinimalEvm trace parsing not yet implemented", .{});
         log.info("=== END MINIMALEVM TRACE ===", .{});
