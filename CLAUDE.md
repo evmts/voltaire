@@ -13,6 +13,7 @@ Unlike typical software where bugs are acceptable and can be patched later, ANY 
 - If sensitive data detected (API keys/passwords/tokens): 1) Abort immediately 2) Explain concern 3) Request sanitized prompt
 - Memory safety is paramount and any allocation should be taken seriously with a plan of who owns the data and who should free it.
 - **ZERO BUGS TOLERANCE**: Any bug can lead to fund loss. Every change must be thoroughly tested and verified.
+- **Instruction Safety**: Use SafetyCounter to prevent infinite loops (300M instruction limit)
 
 ### Mandatory Build Verification
 
@@ -34,6 +35,7 @@ Follow TDD to add any features or fix any bugs
 - ❌ Test failures (fix immediately)
 - ❌ Invalid benchmarks (must measure successful executions only)
 - ❌ Using `std.debug.print` in modules — always use `log.zig` instead
+- ❌ Using `std.debug.assert` — use `tracer.assert()` with descriptive messages
 - ❌ Skipping tests or commenting out problematic code - STOP and ask for help instead!
 - ❌ Fallback/stub implementations of ANY kind - NO stub functions, NO placeholder types, NO `error.NotAvailable` returns - STOP and ask for help!
 
@@ -51,6 +53,8 @@ ANY STUB IMPLEMENTATION WILL RESULT IN IMMEDIATE TERMINATION! Stop and ask for h
 - Always follow any allocation with a defer or errDefer
 - Descriptive variable names (NOT `a`, `b` - use `top`, `value1`, `operand`, etc.)
 - Logging: never call `std.debug.print`; import `log.zig` and use `log.debug`, `log.warn`, etc.
+- Assertions: use `tracer.assert(condition, "message")` for runtime validation with context
+- Stack semantics: LIFO order - first pop gets top of stack (critical for binary operations)
 
 ### Memory Management
 
@@ -99,10 +103,12 @@ The most common error you might see is related to "primitives" package. You must
 
 **Core**: evm.zig, frame.zig, stack.zig, memory.zig, dispatch.zig
 **Handlers**: handlers\_\*.zig (arithmetic, bitwise, comparison, context, jump, keccak, log, memory, stack, storage, system)
+**Synthetic Handlers**: handlers\_\*\_synthetic.zig (fused operations for performance)
 **State**: database.zig, journal.zig, access_list.zig, memory_database.zig
 **External**: precompiles.zig, call_params.zig, call_result.zig
 **Bytecode**: bytecode.zig, bytecode_analyze.zig, bytecode_stats.zig
 **Infrastructure**: tracer.zig, hardfork.zig, eips.zig
+**Tracer Components**: MinimalEvm.zig (65KB standalone EVM), pc_tracker.zig (execution flow), MinimalEvm_c.zig (WASM FFI)
 
 ### Import Rules
 
@@ -122,6 +128,9 @@ zig build test-opcodes      # Test opcode implementations
 zig build test              # Run all tests (may hang - use test-opcodes instead)
 zig build                   # Build project
 zig build build-evm-runner  # Build benchmarks
+zig build test-snailtracer  # Run differential test against MinimalEvm
+zig build wasm              # Build WASM libraries including MinimalEvm
+zig build test-synthetic    # Test synthetic (fused) opcodes
 ```
 
 ## EVM Architecture
@@ -143,10 +152,15 @@ zig build build-evm-runner  # Build benchmarks
 ### Opcode Pattern
 
 ```zig
-pub fn add(self: *Self) Error!void {
-    const b = self.stack.pop_unsafe();
-    const a = self.stack.peek_unsafe();
+pub fn add(self: *Self, cursor: [*]const Dispatch.Item) Error!noreturn {
+    self.beforeInstruction(.ADD, cursor);
+    self.getTracer().assert(self.stack.size() >= 2, "ADD requires 2 stack items");
+    const b = self.stack.pop_unsafe();  // Top of stack
+    const a = self.stack.peek_unsafe(); // Second item
     self.stack.set_top_unsafe(a +% b);
+    const op_data = dispatch.getOpData(.ADD);
+    self.afterInstruction(.ADD, op_data.next_handler, op_data.next_cursor.cursor);
+    return @call(Self.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
 }
 ```
 
@@ -165,10 +179,37 @@ grep -n "pub fn mstore" src/evm/handlers_memory.zig
 grep -n "pub fn call" src/evm/handlers_system.zig
 ```
 
+## Recent Major Updates (2024)
+
+### Tracer System Overhaul
+- Replaced `std.debug.assert` with `tracer.assert()` for better debugging
+- Added comprehensive bytecode analysis lifecycle tracking
+- Implemented cursor-aware dispatch synchronization
+- Fixed MinimalEvm stack semantics (LIFO order critical for binary ops)
+
+### WASM Integration
+- Added C FFI wrapper for MinimalEvm (MinimalEvm_c.zig)
+- Opaque handle pattern for safe cross-language memory management
+- Complete EVM lifecycle support in WASM environments
+
+### Dispatch Optimization
+- Static jump resolution without binary search
+- Dispatch cache for frequently executed bytecode
+- Fusion detection and optimization tracking
+- Instruction execution safety limits (300M instructions)
+
+### Memory Management Improvements
+- Checkpoint system for nested execution contexts
+- Lazy allocation with word-aligned expansion
+- Cached gas cost calculations
+- Borrowed vs owned memory distinction
+
 ## References
 
-- Zig docs: https://ziglang.org/documentation/0.14.1/
+- Zig docs: https://ziglang.org/documentation/0.15.1/
 - revm/: Reference Rust implementation
+- Yellow Paper: Ethereum specification
+- EIPs: Ethereum Improvement Proposals
 
 ## Collaboration
 

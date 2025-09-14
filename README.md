@@ -52,7 +52,7 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 - 📚 **Well documented**
 - 🎨 **Fun** - Guillotine is a fun way to dive into Zig and fun/easy to [contribute](./CONTRIBUTING.md) to
 - 🤖 **LLM-friendly**
-- 🧪 **Robust** - Guillotine takes testing and architecture very seriously with [full unit tests](./src) for all files, a robust [E2E test suite](./test/e2e), [fuzz testing](./test/fuzz), [differential testing vs REVM](./test/differential), and [benchmark testing](./test/benchmark)
+- 🧪 **Robust** - Guillotine takes testing and architecture very seriously with [full unit tests](./src) for all files, a robust [E2E test suite](./test/e2e), [fuzz testing](./test/fuzz), [differential testing](./test/differential) using MinimalEvm, and [benchmark testing](./test/benchmark)
 - ✨ **Useful** - 🚧 Coming soon 🚧 Guillotine is building a powerful [CLI](https://github.com/evmts/Guillotine/issues) and [native app](https://github.com/evmts/Guillotine/issues) that you can think of as a local-first, Tenderly-like tool
 
 ---
@@ -89,13 +89,13 @@ These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/
 - Benchmarking infra can be seen in previous commits but is currently being moved to its [own dedicated repo](https://github.com/evmts/evm-benchmarks).
 - Looking for contributors to help set up easily reproducible benchmarks
 
-| Test Case               | Guillotine | REVM     | Geth     | evmone   |
-| ----------------------- | ---------- | -------- | -------- | -------- |
-| erc20-approval-transfer | 1.59 ms    | 1.67 ms  | 3.65 ms  | 1.56 ms  |
-| erc20-mint              | 4.28 ms    | 5.76 ms  | 12.84 ms | 4.26 ms  |
-| erc20-transfer          | 6.65 ms    | 8.30 ms  | 17.50 ms | 6.01 ms  |
-| ten-thousand-hashes     | 2.46 ms    | 3.31 ms  | 9.36 ms  | 2.90 ms  |
-| snailtracer             | 26.41 ms   | 39.01 ms | 86.02 ms | 27.15 ms |
+| Test Case               | evmone   | Guillotine | REVM     | Geth     |
+| ----------------------- | -------- | ---------- | -------- | -------- |
+| erc20-approval-transfer | 1.56 ms  | 1.59 ms    | 1.67 ms  | 3.65 ms  |
+| erc20-mint              | 4.26 ms  | 4.28 ms    | 5.76 ms  | 12.84 ms |
+| erc20-transfer          | 6.01 ms  | 6.65 ms    | 8.30 ms  | 17.50 ms |
+| ten-thousand-hashes     | 2.90 ms  | 2.46 ms    | 3.31 ms  | 9.36 ms  |
+| snailtracer             | 27.15 ms | 26.41 ms   | 39.01 ms | 86.02 ms |
 
 ---
 
@@ -245,7 +245,7 @@ We deeply appreciate these excellent EVM implementations that served as inspirat
 - **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** – A simple pure JavaScript/TypeScript EVM implementation used by Tevm featuring zero Wasm dependencies
 - **[evmone](https://github.com/ethereum/evmone)** – A hyperoptimized C++ EVM implementation known for its exceptional performance
 - **[Geth](https://github.com/ethereum/go-ethereum)** – The canonical Go Ethereum client. An EVM implementation that perfectly balances performance with simplicity
-- **[REVM](https://github.com/bluealloy/revm)** – A beautifully architected, highly customizable Rust EVM implementation. Used internally for differential tests.
+- **[REVM](https://github.com/bluealloy/revm)** – A beautifully architected, highly customizable Rust EVM implementation.
 
 ---
 
