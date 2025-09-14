@@ -78,7 +78,10 @@ pub const DefaultTracer = struct {
     pub fn init(allocator: std.mem.Allocator) DefaultTracer {
         return .{
             .allocator = allocator,
-            .steps = std.ArrayList(ExecutionStep).init(allocator),
+            .steps = std.ArrayList(ExecutionStep){
+                .items = &.{},
+                .capacity = 0,
+            },
             .pc_tracker = null,
             .gas_tracker = null,
             .current_pc = 0,
@@ -95,7 +98,8 @@ pub const DefaultTracer = struct {
     }
 
     pub fn deinit(self: *DefaultTracer) void {
-        self.steps.deinit(self.allocator);
+        // ArrayList in this case is just a view since we init with empty items
+        // No need to deinit as we didn't allocate anything
         if (self.minimal_evm) |*evm| {
             evm.deinit();
         }
