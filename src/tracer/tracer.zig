@@ -131,8 +131,15 @@ pub const DefaultTracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                // Initialize MinimalEvm with the same bytecode and gas
-                self.minimal_evm = MinimalEvm.init(self.allocator, bytecode, gas_limit) catch null;
+                // Create host interface that reads from the real EVM
+                const main_evm = frame.getEvm();
+                const real_evm_host = RealEvmHost{
+                    .evm = main_evm,
+                };
+                const host_interface = real_evm_host.hostInterface();
+
+                // Initialize MinimalEvm with host interface to read from real EVM
+                self.minimal_evm = MinimalEvm.initWithHost(self.allocator, bytecode, gas_limit, host_interface) catch null;
 
                 if (self.minimal_evm) |*evm| {
                     // Sync initial state from frame
