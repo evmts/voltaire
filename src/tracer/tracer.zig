@@ -314,6 +314,24 @@ pub const DefaultTracer = struct {
     // EVM LIFECYCLE EVENTS
     // ============================================================================
 
+    /// Called when EVM starts executing a call
+    pub fn onCallStart(self: *DefaultTracer, params: anytype, gas: u64) void {
+        _ = self;
+        _ = params;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Call started: gas={}", .{gas});
+        }
+    }
+
+    /// Called when EVM completes a call
+    pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: u64) void {
+        _ = self;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            std.log.debug("[EVM] Call completed: success={}, gas_left={}", .{ success, gas_left });
+        }
+    }
 
     /// Called when frame execution starts
     pub fn onFrameStart(self: *DefaultTracer, code_len: usize, gas: u64, depth: u16) void {
@@ -337,59 +355,11 @@ pub const DefaultTracer = struct {
     // CONTRACT EVENTS
     // ============================================================================
 
-    /// Called when processing beacon root update
-    pub fn onBeaconRootUpdateFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.warn("[EVM] Failed to process beacon root update: {}", .{err});
-        }
-    }
 
-    /// Called when processing historical block hash update
-    pub fn onHistoricalBlockHashUpdateFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.warn("[EVM] Failed to process historical block hash update: {}", .{err});
-        }
-    }
 
-    /// Called when processing validator deposits
-    pub fn onValidatorDepositsFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.warn("[EVM] Failed to process validator deposits: {}", .{err});
-        }
-    }
 
-    /// Called when processing validator withdrawals
-    pub fn onValidatorWithdrawalsFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.warn("[EVM] Failed to process validator withdrawals: {}", .{err});
-        }
-    }
 
-    /// Called when beacon roots contract execution fails
-    pub fn onBeaconRootsContractFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Beacon roots contract failed: {}", .{err});
-        }
-    }
 
-    /// Called when historical block hashes contract execution fails
-    pub fn onHistoricalBlockHashesContractFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Historical block hashes contract failed: {}", .{err});
-        }
-    }
 
     // ============================================================================
     // DELEGATION AND ACCOUNT EVENTS
@@ -404,14 +374,6 @@ pub const DefaultTracer = struct {
         }
     }
 
-    /// Called when failed to get account
-    pub fn onGetAccountFailed(self: *DefaultTracer, address: []const u8, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Failed to get account for address {x}: {}", .{ address, err });
-        }
-    }
 
     /// Called when empty account is accessed
     pub fn onEmptyAccountAccess(self: *DefaultTracer) void {
@@ -426,36 +388,12 @@ pub const DefaultTracer = struct {
     // TRANSFER AND VALUE EVENTS
     // ============================================================================
 
-    /// Called when value transfer fails
-    pub fn onValueTransferFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Call value transfer failed: {}", .{err});
-        }
-    }
 
     // ============================================================================
     // CALL TYPE EVENTS
     // ============================================================================
 
-    /// Called when delegatecall preflight fails
-    pub fn onDelegatecallPreflightFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Delegatecall preflight failed: {}", .{err});
-        }
-    }
 
-    /// Called when staticcall preflight fails
-    pub fn onStaticcallPreflightFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Staticcall preflight failed: {}", .{err});
-        }
-    }
 
     // ============================================================================
     // CREATE CONTRACT EVENTS
@@ -516,13 +454,6 @@ pub const DefaultTracer = struct {
     }
 
     /// Called when init code execution fails
-    pub fn onInitCodeExecutionFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] execute_init_code failed with error: {}", .{err});
-        }
-    }
 
     /// Called when init code fails (success=false)
     pub fn onInitCodeFailed(self: *DefaultTracer) void {
@@ -565,26 +496,12 @@ pub const DefaultTracer = struct {
     }
 
     /// Called when bytecode initialization fails
-    pub fn onBytecodeInitFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.err("[EVM] Frame.interpret_with_tracer: Bytecode init failed: {}", .{err});
-        }
-    }
 
     // ============================================================================
     // BLOCK HASH EVENTS
     // ============================================================================
 
     /// Called when getting block hash from history contract fails
-    pub fn onGetBlockHashFromHistoryFailed(self: *DefaultTracer, err: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Failed to get block hash from history contract: {}", .{err});
-        }
-    }
 
     // ============================================================================
     // JUMP AND CONTROL FLOW EVENTS
@@ -687,11 +604,11 @@ pub const DefaultTracer = struct {
     // ============================================================================
 
     /// Called when SELFDESTRUCT fails
-    pub fn onSelfdestructFailed(self: *DefaultTracer, err: anyerror) void {
+    pub fn onSelfdestructFailed(self: *DefaultTracer, error_val: anyerror) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] SELFDESTRUCT failed with error: {}", .{err});
+            std.log.debug("[EVM] SELFDESTRUCT failed with error: {}", .{error_val});
         }
     }
 
@@ -1185,10 +1102,13 @@ pub const DefaultTracer = struct {
 
     /// Event: Dispatch cache store
     pub fn onDispatchCacheStore(self: *DefaultTracer, bytecode_len: usize, evicted: bool) void {
-        if (self.config.trace_preanalysis and evicted) {
-            self.debug("[Frame] Dispatch cache store with eviction: bytecode_len={}", .{bytecode_len});
-        } else {
-            _ = bytecode_len;
+        _ = self;
+        _ = bytecode_len;
+        if (evicted) {
+            const builtin = @import("builtin");
+            if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+                std.log.debug("[Frame] Dispatch cache store with eviction", .{});
+            }
         }
     }
 
