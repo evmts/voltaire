@@ -176,6 +176,11 @@ pub const DefaultTracer = struct {
                         calldata = frame.calldata_slice;
                     }
 
+                    // Ensure the MinimalEvm knows the code for this address (for inner calls)
+                    if (!std.mem.eql(u8, &address.bytes, &primitives.ZERO_ADDRESS.bytes)) {
+                        evm.setCode(address, bytecode) catch {};
+                    }
+
                     // Create a frame but don't execute it yet - execution will happen step-by-step
                     const frame_gas_remaining = frame.gas_remaining;
 
