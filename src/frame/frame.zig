@@ -528,7 +528,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 } else {
                     self.getTracer().debug("Frame: Cache miss, creating new dispatch", .{});
                     // Cache miss - create new dispatch
-                    var bytecode = Bytecode.init(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer())) catch |e| {
+                    var bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer())) catch |e| {
                         @branchHint(.cold);
                         self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, e);
                         return switch (e) {
@@ -568,7 +568,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             } else {
                 @branchHint(.unlikely);
                 // No cache available - create new dispatch
-                var bytecode = Bytecode.init(allocator, bytecode_raw, null) catch |e| {
+                var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                     @branchHint(.unlikely);
                     // Frame bytecode init failure - already traced by EVM caller
                     return switch (e) {
