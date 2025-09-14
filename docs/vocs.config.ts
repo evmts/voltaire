@@ -39,7 +39,10 @@ export default defineConfig({
   },
   // Minimal sidebar with existing pages only
   sidebar: [
-    { text: 'Overview', items: [ { text: 'Home', link: '/' } ] },
+    { text: 'Overview', items: [
+      { text: 'Home', link: '/' },
+      { text: 'Architecture', link: '/architecture' }
+    ] },
     { text: 'Resources', items: [
       { text: 'Examples', link: '/examples' },
       { text: 'Memory', link: '/memory' },

@@ -41,7 +41,7 @@ Note: Some failures are due to the Python SDK and test infrastructure not being 
 
 **Current Development Focus**: Our primary goal is achieving 100% Ethereum specification compliance while ensuring complete safety, debuggability, and observability through our tracer system ([`src/tracer/tracer.zig`](src/tracer/tracer.zig)). The tracer provides comprehensive execution monitoring, differential testing against a reference implementation, and detailed error reporting for every opcode.
 
-See [test report](specs/test_report.md) for detailed results. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
+See [test report](specs/test_report.md) for detailed results. For an in-depth understanding of Guillotine's design and implementation, see our comprehensive [Architecture Documentation](docs/pages/architecture.mdx). Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
 **Network Support**: Currently only **Ethereum Mainnet** is supported. Planned for Beta:
 
