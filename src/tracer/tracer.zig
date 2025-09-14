@@ -13,6 +13,7 @@ const log = @import("../log.zig");
 const primitives = @import("primitives");
 const pc_tracker_mod = @import("pc_tracker.zig");
 pub const MinimalEvm = @import("minimal_evm.zig").MinimalEvm;
+const Host = @import("minimal_evm.zig").Host;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
@@ -133,7 +134,7 @@ pub const DefaultTracer = struct {
             if (bytecode.len > 0) {
                 // Create host interface that reads from the real EVM
                 const main_evm = frame.getEvm();
-                var real_evm_host = MinimalEvm.Host.init(@ptrCast(main_evm));
+                var real_evm_host = Host.init(@ptrCast(main_evm));
                 const host_interface = real_evm_host.hostInterface();
 
                 // Initialize MinimalEvm with host interface to read from real EVM
@@ -148,7 +149,6 @@ pub const DefaultTracer = struct {
                         evm.caller = frame.caller;
                     }
                     // Get origin from the EVM context, not frame
-                    const main_evm = frame.getEvm();
                     evm.origin = main_evm.get_tx_origin();
                     self.debug("MinimalEvm synced origin from EVM: {any}", .{evm.origin});
                     if (@hasField(@TypeOf(frame.*), "value")) {
