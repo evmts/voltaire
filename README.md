@@ -101,9 +101,25 @@ These benchmarks were taken using the [evm-bench](https://github.com/ziyadedher/
 
 ### Bundle size 🚧
 
-In past commits we reduced the EVM to ~110 KB, with further improvements expected.
+```
+WASM Bundle Sizes
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│ Package         │ Size                                      │ Mode         │ Precompiles   │
+├───────────────────────────────────────────────────────────────────────────────────────────┤
+│ MinimalEvm     │ ▓▓▓ 56KB                                   │ ReleaseSmall │ ✗ Not included│
+│ Guillotine EVM │ ▓▓▓▓▓▓ 119KB                              │ ReleaseSmall │ ✗ Not included│
+│ Primitives     │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 687KB │ ReleaseSmall │ ✗ Not included│
+│ Full Package   │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 1.1MB │ ReleaseFast  │ ✓ Included    │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-- We’re currently focused on `ReleaseFast`; `ReleaseSmall` support returns soon
+- **MinimalEvm**: Minimal implementation focused on tracing (57,641 bytes)
+- **Guillotine EVM**: Core EVM implementation
+- **Primitives**: Complete primitives library
+- **Full Package**: All features including precompiles
+
+Note: Smaller packages use `ReleaseSmall` optimization for size, while the full package uses `ReleaseFast` for performance.
+**ReleaseSafe** builds (recommended for alpha) are larger due to additional safety features and validation overhead.
 
 ---
 
@@ -138,12 +154,34 @@ There are many more optimizations that have not been implemented yet. The bigges
 
 ### How is Guillotine so safe?
 
-Guillotine is not yet “safe”; it’s in early alpha. But we do have features that help improve safety:
+Guillotine is in early alpha, but we prioritize safety through multiple build modes and extensive testing:
 
-- Guillotine can be built in `Debug`, `ReleaseFast`, `ReleaseSmall`, and `ReleaseSafe`.
-- We recommend `ReleaseSafe` while in alpha.
-- `ReleaseSafe` preserves debug‑mode‑only defensive checks, memory safety features, and other safeguards in the final binary.
-- Guillotine also features extensive unit, E2E, fuzz, benchmark, and differential test suites.
+#### Build Modes
+
+- **Debug**: Full debugging symbols and runtime checks
+- **ReleaseFast**: Optimized for maximum performance
+- **ReleaseSmall**: Optimized for minimal bundle size
+- **ReleaseSafe** (⭐ **RECOMMENDED FOR ALPHA**): Our most defensive build mode
+
+#### ReleaseSafe Features
+
+**ReleaseSafe** includes a comprehensive safety system that runs a simplified EVM as a sidecar to validate execution:
+
+- ✅ **Parallel Validation**: Runs a minimal EVM implementation alongside to cross-check results
+- ✅ **Safety Checks**: Validates execution at every step to ensure correctness
+- ✅ **Infinite Loop Protection**: Prevents runaway execution with instruction limits
+- ✅ **Advanced Tracing**: Full event system for monitoring EVM execution
+- ✅ **Debugging Support**: Can run as a debugger with step-by-step execution
+- ✅ **Memory Safety**: Preserves all debug-mode defensive checks
+- ✅ **Comprehensive Logging**: Detailed logging of all EVM operations
+
+While ReleaseSafe has performance overhead compared to ReleaseFast, it provides critical safety guarantees during alpha development.
+
+#### Additional Safety Measures
+
+- Extensive unit, E2E, fuzz, benchmark, and differential test suites
+- Continuous validation against reference implementations
+- Memory safety checks and bounds validation
 
 ---
 
