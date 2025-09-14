@@ -410,8 +410,6 @@ test "EvmConfig - block info config integration" {
 }
 
 test "EvmConfig - complete custom configuration" {
-    const DummyTracer = struct {};
-
     const config = EvmConfig{
         .eips = Eips{ .hardfork = Hardfork.ISTANBUL },
         .max_call_depth = 2000,
@@ -425,7 +423,6 @@ test "EvmConfig - complete custom configuration" {
     try testing.expectEqual(@as(u18, 200000), config.max_input_size);
     try testing.expectEqual(false, config.enable_precompiles);
     try testing.expectEqual(false, config.enable_fusion);
-    try testing.expectEqual(DummyTracer, config.TracerType);
     try testing.expectEqual(u11, config.get_depth_type());
 }
 

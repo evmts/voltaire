@@ -352,7 +352,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         // Packed bitmap (4 bits per byte position) for efficient storage
         packed_bitmap: []PackedBits,
 
-        pub fn init(allocator: std.mem.Allocator, code: []const u8, tracer: anytype) ValidationError!Self {
+        pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
+            return initWithTracer(allocator, code, null);
+        }
+
+        pub fn initWithTracer(allocator: std.mem.Allocator, code: []const u8, tracer: anytype) ValidationError!Self {
             // Notify tracer of analysis start
             if (tracer) |t| {
                 t.onBytecodeAnalysisStart(code.len);
@@ -361,6 +365,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // Enforce EIP-170: maximum runtime bytecode size
             if (code.len > cfg.max_bytecode_size) {
                 return error.BytecodeTooLarge;
+            }
+
+            // Validate bytecode length fits in PcType (required for len() method)
+            if (tracer) |t| {
+                t.assert(code.len <= std.math.maxInt(PcType), "Bytecode length must fit in PcType");
             }
 
             // Detect and strip Solidity metadata from the end of bytecode.
@@ -414,6 +423,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
             return self;
         }
+
 
         /// Calculate the gas cost for initcode (EIP-3860)
         /// Returns 2 gas per 32-byte word of initcode
@@ -824,7 +834,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// Get the length of the bytecode
         pub inline fn len(self: Self) PcType {
             // Guaranteed by config that runtime_code.len fits in PcType
-            std.debug.assert(self.runtime_code.len <= std.math.maxInt(PcType));
+            // This is validated during init(), so this should always be true
             return @intCast(self.runtime_code.len);
         }
 

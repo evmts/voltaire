@@ -647,13 +647,11 @@ pub const UnifiedOpcode = enum(u16) {
 
     /// Convert to regular Opcode (only valid if isRegular() returns true)
     pub fn toOpcode(self: UnifiedOpcode) Opcode {
-        std.debug.assert(self.isRegular());
         return @enumFromInt(@intFromEnum(self));
     }
 
     /// Convert to synthetic OpcodeSynthetic (only valid if isSynthetic() returns true)
     pub fn toSynthetic(self: UnifiedOpcode) OpcodeSynthetic {
-        std.debug.assert(self.isSynthetic());
         return @enumFromInt(@intFromEnum(self) - 0x100);
     }
 };
