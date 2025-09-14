@@ -65,4 +65,28 @@ pub fn createWasmSteps(
 
     const wasm_debug_step = b.step("wasm-debug", "Build debug WASM for analysis");
     wasm_debug_step.dependOn(&wasm_debug_build.install.step);
+
+    // MinimalEvm WASM build
+    {
+        // Create MinimalEvm module with ReleaseSmall optimization
+        const wasm_minimal_evm_mod = wasm.createWasmModule(b, "src/tracer/MinimalEvm_c.zig", wasm_target, .ReleaseSmall);
+        wasm_minimal_evm_mod.addImport("primitives", wasm_primitives_mod);
+
+        const wasm_minimal_evm_build = wasm.buildWasmExecutable(b, .{
+            .name = "minimal-evm",
+            .root_source_file = "src/tracer/MinimalEvm_c.zig",
+            .dest_sub_path = "minimal-evm.wasm",
+        }, wasm_minimal_evm_mod);
+
+        const wasm_minimal_evm_size = wasm.addWasmSizeReportStep(
+            b,
+            &[_][]const u8{"minimal-evm.wasm"},
+            &[_]*std.Build.Step{
+                &wasm_minimal_evm_build.install.step,
+            },
+        );
+
+        const wasm_minimal_evm_step = b.step("wasm-minimal-evm", "Build MinimalEvm WASM and show bundle size");
+        wasm_minimal_evm_step.dependOn(&wasm_minimal_evm_size.step);
+    }
 }
