@@ -22,7 +22,7 @@
 
 **Current Status**: DO NOT USE IN PRODUCTION
 
-Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are known bugs and TODOs. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
+Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are [known bugs](specs/) including 100 failing Ethereum specification tests. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
 **Network Support**: Currently only **Ethereum Mainnet** is supported. Planned for Beta:
 
