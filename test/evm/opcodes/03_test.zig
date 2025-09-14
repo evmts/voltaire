@@ -124,7 +124,6 @@ fn run_sub_test(allocator: std.mem.Allocator, a: u256, b: u256) !void {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "SUB: zero result (5 - 5 = 0)" {
     try run_sub_test(std.testing.allocator, 5, 5);

@@ -425,3 +425,4 @@ test "MULMOD with JUMP: overflow prevention" {
 test "MULMOD with JUMP: near u64 boundary" {
     const near_u64 = @as(u256, std.math.maxInt(u32));
     try run_mulmod_test_with_jump(std.testing.allocator, near_u64, 3, 100);
+}

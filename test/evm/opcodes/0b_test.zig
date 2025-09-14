@@ -124,7 +124,6 @@ fn run_signextend_test(allocator: std.mem.Allocator, byte_num: u256, value: u256
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "SIGNEXTEND: extend byte 0 of 0x7F (positive)" {
     try run_signextend_test(std.testing.allocator, 0, 0x7F);
@@ -369,7 +368,6 @@ fn run_signextend_test_with_jump(allocator: std.mem.Allocator, byte_num: u256, v
     
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
-}
 }
 
 test "SIGNEXTEND with JUMP: basic byte 0 of 0xFF" {

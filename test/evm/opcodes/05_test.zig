@@ -139,7 +139,6 @@ fn run_sdiv_test(allocator: std.mem.Allocator, a: u256, b: u256) !void {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "SDIV: division by zero (-42 / 0 = 0)" {
     try run_sdiv_test(std.testing.allocator, toU256(-42), 0);
@@ -434,7 +433,6 @@ fn run_sdiv_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256) !void
     
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
-}
 }
 
 test "SDIV with JUMP: basic signed division (-20 / 4 = -5)" {

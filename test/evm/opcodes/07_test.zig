@@ -461,3 +461,4 @@ test "SMOD with JUMP: very large 256-bit operations" {
     const massive = (@as(u256, 1) << 240) + (@as(u256, 0xFEEDFACE) << 200);
     const big_mod = (@as(u256, 1) << 190) + (@as(u256, 0xDEADBEEF) << 150);
     try run_smod_test_with_jump(std.testing.allocator, massive, big_mod);
+}

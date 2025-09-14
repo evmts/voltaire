@@ -124,7 +124,6 @@ fn run_mod_test(allocator: std.mem.Allocator, a: u256, b: u256) !void {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "MOD: modulo by zero returns 0 (42 % 0 = 0)" {
     try run_mod_test(std.testing.allocator, 42, 0);
@@ -406,7 +405,6 @@ fn run_mod_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256) !void 
     
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
-}
 }
 
 test "MOD with JUMP: basic (10 % 3 = 1)" {

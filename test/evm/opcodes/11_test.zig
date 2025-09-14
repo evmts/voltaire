@@ -124,7 +124,6 @@ fn run_gt_test(allocator: std.mem.Allocator, a: u256, b: u256) !void {
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "GT: equal values (10 > 10 = 0)" {
     try run_gt_test(std.testing.allocator, 10, 10);
@@ -351,7 +350,6 @@ fn run_gt_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256) !void {
     
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
-}
 }
 
 test "GT with JUMP: basic (10 > 5 = 1)" {
