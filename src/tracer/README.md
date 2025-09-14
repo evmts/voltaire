@@ -402,6 +402,133 @@ for (differences) |diff| {
 }
 ```
 
+## Tracer Events
+
+The DefaultTracer logs comprehensive events throughout EVM execution. These events are crucial for debugging, performance analysis, and validation.
+
+### Lifecycle Events
+
+#### Frame Execution
+- **`onFrameStart(code_len, gas, depth)`** - Frame execution begins
+- **`onFrameComplete(gas_left, output_len)`** - Frame execution completes successfully
+- **`onInterpret(frame, bytecode, gas_limit)`** - Interpreter initialization with MinimalEvm setup
+
+#### Bytecode Analysis
+- **`onBytecodeAnalysisStart(code_len)`** - Bytecode preprocessing begins
+- **`onBytecodeAnalysisComplete(validated_up_to, opcode_count, jumpdest_count)`** - Analysis completed
+- **`onJumpdestFound(pc, count)`** - JUMPDEST instruction detected during analysis
+- **`onInvalidOpcode(pc, opcode)`** - Invalid opcode detected
+- **`onTruncatedPush(pc, push_size, available)`** - PUSH instruction truncated at bytecode end
+
+#### Dispatch Schedule Building
+- **`onScheduleBuildStart(bytecode_len)`** - Dispatch schedule construction begins
+- **`onScheduleBuildComplete(item_count, fusion_count)`** - Schedule built successfully
+- **`onFusionDetected(pc, fusion_type, instruction_count)`** - Bytecode fusion opportunity detected
+- **`onStaticJumpResolved(jump_pc, target_pc)`** - Static jump target resolved
+- **`onInvalidStaticJump(jump_pc, target_pc)`** - Invalid static jump detected
+- **`onJumpTableCreated(jumpdest_count)`** - Jump table constructed
+
+### Instruction Execution Events
+
+#### Per-Instruction Tracking
+- **`before_instruction(frame, opcode, cursor)`** - Called before every instruction execution
+  - Validates handler consistency
+  - Increments instruction counters
+  - Executes MinimalEvm validation
+  - Logs execution details (PC, stack size, gas)
+- **`after_instruction(frame, opcode, next_handler, next_cursor)`** - Called after successful execution
+  - Advances schedule index
+  - Validates next handler
+  - Validates MinimalEvm state
+  - Updates PC tracking
+- **`after_complete(frame, opcode)`** - Called for terminal instructions (STOP, RETURN, REVERT)
+
+### EVM Operation Events
+
+#### Call Operations
+- **`onCallStart(call_type, gas, to, value)`** - CALL/DELEGATECALL/STATICCALL begins
+- **`onCallComplete(success, gas_left, output_len)`** - Call operation completes
+- **`onCallPreflight(call_type, result)`** - Pre-flight validation for calls
+
+#### System Operations
+- **`onEvmInit(gas_price, origin, hardfork)`** - EVM initialization
+- **`onAccountDelegation(account, delegated)`** - Account delegation detected
+- **`onEmptyAccountAccess()`** - Empty account accessed
+- **`onCodeRetrieval(address, code_len, is_empty)`** - Contract code retrieved
+
+#### Protocol Updates
+- **`onBeaconRootUpdate(success, error_val)`** - Beacon root processing (EIP-4788)
+- **`onHistoricalBlockHashUpdate(success, error_val)`** - Block hash update
+- **`onValidatorDeposits(success, error_val)`** - Validator deposit processing
+- **`onValidatorWithdrawals(success, error_val)`** - Validator withdrawal processing
+
+### Memory Management Events
+
+#### Arena Allocator
+- **`onArenaInit(initial_capacity, max_capacity, growth_factor)`** - Arena allocator initialized
+- **`onArenaReset(mode, capacity_before, capacity_after)`** - Arena reset
+- **`onArenaAlloc(size, alignment, current_capacity)`** - Allocation made
+- **`onArenaGrow(old_capacity, new_capacity, requested_size)`** - Arena expanded
+- **`onArenaAllocFailed(size, current_capacity, max_capacity)`** - Allocation failed
+
+### Validation and Debugging
+
+#### Assertion and Error Handling
+- **`assert(condition, message)`** - Runtime assertion with descriptive message
+- **`throwError(format, args)`** - Fatal error with formatted message
+
+#### Logging Functions
+- **`debug(format, args)`** - Debug-level logging
+- **`info(format, args)`** - Info-level logging
+- **`warn(format, args)`** - Warning-level logging
+- **`err(format, args)`** - Error-level logging
+
+### Internal Tracking
+
+The DefaultTracer maintains internal state for validation:
+
+```zig
+// Execution counters
+instruction_count: u64              // Total instructions executed
+schedule_index: u64                 // Current dispatch schedule position
+simple_instruction_count: u64       // Regular opcodes (0x00-0xFF)
+fused_instruction_count: u64        // Synthetic opcodes (>0xFF)
+
+// Safety and validation
+instruction_safety: SafetyCounter   // 300M instruction limit
+pc_tracker: ?PcTracker              // Program counter tracking
+gas_tracker: ?u64                   // Gas consumption tracking
+current_pc: u32                     // Current program counter
+bytecode: []const u8                // Bytecode being executed
+
+// MinimalEvm validation
+minimal_evm: ?MinimalEvm            // Parallel execution for validation
+```
+
+### Event Usage Examples
+
+```zig
+// Frame execution lifecycle
+tracer.onFrameStart(bytecode.len, gas_limit, depth);
+// ... execute frame ...
+tracer.onFrameComplete(gas_remaining, output.len);
+
+// Instruction execution with validation
+tracer.before_instruction(frame, .ADD, cursor);
+// ... execute ADD ...
+tracer.after_instruction(frame, .ADD, next_handler, next_cursor);
+
+// Bytecode analysis tracking
+tracer.onBytecodeAnalysisStart(code.len);
+tracer.onJumpdestFound(pc, jumpdest_count);
+tracer.onFusionDetected(pc, "PUSH_ADD", 2);
+tracer.onBytecodeAnalysisComplete(validated_len, opcode_count, jumpdest_count);
+
+// Error conditions
+tracer.assert(stack.size() >= 2, "ADD requires 2 stack items");
+tracer.err("[DIVERGENCE] Stack size mismatch: MinimalEvm={d}, Frame={d}", .{evm_size, frame_size});
+```
+
 ## Testing Integration
 
 ### Differential Testing

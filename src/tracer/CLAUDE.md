@@ -183,4 +183,85 @@ evm_destroy(evm);
 - Monitor stack operations with LIFO validation
 - Ensure proper error propagation
 
+## Tracer Events Reference
+
+### Critical Execution Events
+
+#### Instruction Lifecycle (MUST be called)
+- **`before_instruction(frame, opcode, cursor)`** - REQUIRED before every handler
+- **`after_instruction(frame, opcode, next_handler, next_cursor)`** - REQUIRED after successful execution
+- **`after_complete(frame, opcode)`** - REQUIRED for terminal states
+
+#### MinimalEvm Synchronization
+- **`onInterpret(frame, bytecode, gas_limit)`** - Initializes parallel MinimalEvm
+- **`executeMinimalEvmForOpcode(evm, opcode, frame, cursor)`** - Executes equivalent operations
+- **`validateMinimalEvmState(frame, opcode)`** - Validates state consistency
+
+### Event Categories
+
+#### Frame Events
+- `onFrameStart` / `onFrameComplete` - Frame lifecycle
+- `onFrameBytecodeInit` - Bytecode initialization
+
+#### Bytecode Analysis
+- `onBytecodeAnalysisStart` / `onBytecodeAnalysisComplete`
+- `onJumpdestFound`, `onInvalidOpcode`, `onTruncatedPush`
+
+#### Dispatch Schedule
+- `onScheduleBuildStart` / `onScheduleBuildComplete`
+- `onFusionDetected`, `onStaticJumpResolved`, `onInvalidStaticJump`
+- `onJumpTableCreated`
+
+#### Call Operations
+- `onCallStart` / `onCallComplete`
+- `onCallPreflight`
+
+#### System Events
+- `onEvmInit`, `onAccountDelegation`, `onEmptyAccountAccess`
+- `onCodeRetrieval`
+
+#### Protocol Updates
+- `onBeaconRootUpdate`, `onHistoricalBlockHashUpdate`
+- `onValidatorDeposits`, `onValidatorWithdrawals`
+
+#### Memory Management
+- `onArenaInit`, `onArenaReset`, `onArenaAlloc`
+- `onArenaGrow`, `onArenaAllocFailed`
+
+#### Logging/Debugging
+- `assert(condition, message)` - Replaces std.debug.assert
+- `debug`, `info`, `warn`, `err` - Logging levels
+- `throwError` - Fatal errors
+
+### Event Implementation Rules
+
+1. **No Side Effects** - Events must NEVER modify execution state
+2. **Fail Gracefully** - Event failures must not crash execution
+3. **Conditional Compilation** - Events only active in Debug/ReleaseSafe
+4. **Zero Overhead** - Events compiled out in ReleaseFast/ReleaseSmall
+
+### Common Event Patterns
+
+```zig
+// Instruction execution pattern
+pub fn some_opcode(self: *Frame, cursor: [*]const Dispatch.Item) Error!noreturn {
+    self.beforeInstruction(.SOME_OPCODE, cursor);  // REQUIRED
+
+    // Opcode implementation
+    const result = doOperation();
+
+    const op_data = dispatch.getOpData(.SOME_OPCODE);
+    self.afterInstruction(.SOME_OPCODE, op_data.next_handler, op_data.next_cursor.cursor);
+    return @call(getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+}
+
+// Terminal instruction pattern
+pub fn stop(self: *Frame, cursor: [*]const Dispatch.Item) Error!noreturn {
+    self.beforeInstruction(.STOP, cursor);
+    // ... implementation ...
+    self.afterComplete(self, .STOP);  // Terminal state
+    return .complete;
+}
+```
+
 Remember: **Tracers are observers, never participants.** They must not influence execution while providing accurate debugging information. The MinimalEvm serves as both a tracer and a reference implementation for testing correctness.
