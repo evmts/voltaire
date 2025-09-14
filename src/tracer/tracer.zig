@@ -314,24 +314,7 @@ pub const DefaultTracer = struct {
     // EVM LIFECYCLE EVENTS
     // ============================================================================
 
-    /// Called when EVM starts executing a call
-    pub fn onCallStart(self: *DefaultTracer, params: anytype, gas: u64) void {
-        _ = self;
-        _ = params;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Call started: gas={}", .{gas});
-        }
-    }
 
-    /// Called when EVM completes a call
-    pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: u64) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Call completed: success={}, gas_left={}", .{ success, gas_left });
-        }
-    }
 
     /// Called when frame execution starts
     pub fn onFrameStart(self: *DefaultTracer, code_len: usize, gas: u64, depth: u16) void {
@@ -453,8 +436,6 @@ pub const DefaultTracer = struct {
         }
     }
 
-    /// Called when init code execution fails
-
     /// Called when init code fails (success=false)
     pub fn onInitCodeFailed(self: *DefaultTracer) void {
         _ = self;
@@ -495,13 +476,9 @@ pub const DefaultTracer = struct {
         }
     }
 
-    /// Called when bytecode initialization fails
-
     // ============================================================================
     // BLOCK HASH EVENTS
     // ============================================================================
-
-    /// Called when getting block hash from history contract fails
 
     // ============================================================================
     // JUMP AND CONTROL FLOW EVENTS
@@ -602,8 +579,6 @@ pub const DefaultTracer = struct {
     // ============================================================================
     // SYSTEM OPERATION EVENTS
     // ============================================================================
-
-    /// Called when SELFDESTRUCT fails
 
     // ============================================================================
     // BYTECODE ANALYSIS EVENTS
@@ -1097,9 +1072,6 @@ pub const DefaultTracer = struct {
     pub fn onDispatchCacheStore(self: *DefaultTracer, bytecode_len: usize, evicted: bool) void {
         if (self.config.trace_preanalysis and evicted) {
             self.debug("[Frame] Dispatch cache store with eviction: bytecode_len={}", .{bytecode_len});
-        } else {
-            _ = self;
-            _ = bytecode_len;
         }
     }
 

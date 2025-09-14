@@ -446,11 +446,11 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Check gas unless disabled
-            const gas = params.getGas();
-            if (!self.disable_gas_checking and gas == 0) return CallResult.failure(0);
+            const call_gas = params.getGas();
+            if (!self.disable_gas_checking and call_gas == 0) return CallResult.failure(0);
 
             // Store initial gas for EIP-3529 calculations
-            const initial_gas = gas;
+            const initial_gas = call_gas;
 
             // Deduct intrinsic gas for top-level calls (transactions)
             const execution_gas = blk: {
@@ -461,14 +461,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
 
                 // Check if we have enough gas for intrinsic cost
-                if (gas < intrinsic_gas) return CallResult.failure(0);
+                if (gas < @as(i64, @intCast(intrinsic_gas))) return CallResult.failure(0);
 
-                break :blk gas - intrinsic_gas;
+                break :blk gas - @as(i64, @intCast(intrinsic_gas));
             };
 
             // Create modified params with reduced gas
             var modified_params = params;
-            modified_params.setGas(execution_gas);
+            modified_params.setGas(@as(u64, @intCast(execution_gas)));
 
             var result = self.inner_call(modified_params);
 
