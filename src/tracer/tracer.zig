@@ -322,17 +322,6 @@ pub const DefaultTracer = struct {
         switch (opcode) {
             // PUSH + arithmetic fusions (2 steps)
             .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => {
-                // Validate: should be PUSHn followed by ADD
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_ADD: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_ADD: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + ADD
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -342,17 +331,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => {
-                // Validate: should be PUSHn followed by MUL
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_MUL: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_MUL: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + MUL
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -362,17 +340,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => {
-                // Validate: should be PUSHn followed by SUB
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_SUB: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_SUB: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + SUB
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -382,17 +349,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => {
-                // Validate: should be PUSHn followed by DIV
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_DIV: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_DIV: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + DIV
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -404,17 +360,6 @@ pub const DefaultTracer = struct {
 
             // Bitwise fusions
             .PUSH_AND_INLINE, .PUSH_AND_POINTER => {
-                // Validate: should be PUSHn followed by AND
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_AND: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_AND: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + AND
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -424,17 +369,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_OR_INLINE, .PUSH_OR_POINTER => {
-                // Validate: should be PUSHn followed by OR
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_OR: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_OR: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + OR
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -444,17 +378,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => {
-                // Validate: should be PUSHn followed by XOR
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_XOR: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_XOR: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + XOR
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -466,17 +389,6 @@ pub const DefaultTracer = struct {
 
             // Memory fusions
             .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => {
-                // Validate: should be PUSHn followed by MLOAD
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_MLOAD: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_MLOAD: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + MLOAD
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
@@ -506,17 +418,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
-                // Validate: should be PUSHn followed by MSTORE8
-                if (evm.pc >= evm.bytecode.len) {
-                    self.err("PUSH_MSTORE8: PC beyond bytecode", .{});
-                    return;
-                }
-                const push_op = evm.bytecode[evm.pc];
-                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
-                    self.err("PUSH_MSTORE8: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
-                    return;
-                }
-
                 // Step twice: PUSH + MSTORE8
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
