@@ -702,6 +702,17 @@ pub fn build(b: *std.Build) void {
         synthetic_step.dependOn(&run_synthetic_test.step);
     }
 
+    // Python specs runner
+    const python_check = b.addSystemCommand(&[_][]const u8{ "which", "python3" });
+    python_check.addCheck(.{ .expect_stdout_match = "python3" });
+
+    const run_specs = b.addSystemCommand(&[_][]const u8{ "python3", "spec_runner.py" });
+    run_specs.setCwd(b.path("specs"));
+    run_specs.step.dependOn(&python_check.step);
+
+    const specs_step = b.step("specs", "Run Python execution specs");
+    specs_step.dependOn(&run_specs.step);
+
     // Language bindings
     build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
     build_pkg.PythonBindings.createPythonSteps(b);
