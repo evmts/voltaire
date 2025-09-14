@@ -1,136 +1,829 @@
 # 🧪 Guillotine EVM Specification Test Report
 
-**Generated**: 2025-09-14 11:33:56
+**Generated**: 2025-09-14 12:07:40
 
 ## 📊 Test Summary
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 100 |
-| **✅ Passed** | 0 |
-| **❌ Failed** | 100 |
-| **📈 Pass Rate** | 0.0% |
-| **⏱️ Total Time** | 0.27s |
-| **🚀 Avg Speed** | 365.3 tests/sec |
+| **Total Tests** | 159 |
+| **✅ Passed** | 35 |
+| **❌ Failed** | 124 |
+| **📈 Pass Rate** | 22.0% |
+| **⏱️ Total Time** | 0.54s |
+| **🚀 Avg Speed** | 296.1 tests/sec |
 
 ## 📁 Test Suite Results
 
-### ❌ sstore_combinations_initial20_2_ParisFiller.json
+### ❌ jumpNonConstFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ jumpiNonConstFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ jumpiFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ jumpToPushFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ jumpFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ stackOverflowM1PUSHFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial20_2_Paris | ❌ FAIL | 0.005s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stackOverflowM1PUSH | ❌ FAIL | 0.009s | `AccountNotFound` |
 
-### ❌ sstore_combinations_initial00_2_ParisFiller.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| sstore_combinations_initial00_2_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
-
-### ❌ sstore_combinations_initial10_ParisFiller.json
+### ❌ stackOverflowM1DUPFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial10_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stackOverflowM1DUP | ❌ FAIL | 0.003s | `AccountNotFound` |
 
-### ❌ sstore_combinations_initial10_2_ParisFiller.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| sstore_combinations_initial10_2_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
-
-### ❌ sstore_combinations_initial21_ParisFiller.json
+### ❌ stacksanitySWAPFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial21_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stacksanitySWAP | ❌ FAIL | 0.004s | `AccountNotFound` |
 
-### ❌ sstore_combinations_initial00_ParisFiller.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| sstore_combinations_initial00_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
-
-### ❌ sstore_combinations_initial11_ParisFiller.json
+### ❌ stackOverflowSWAPFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial11_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stackOverflowSWAP | ❌ FAIL | 0.004s | `AccountNotFound` |
 
-### ❌ sstore_combinations_initial01_ParisFiller.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| sstore_combinations_initial01_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
-
-### ❌ sstore_combinations_initial20_ParisFiller.json
+### ❌ stackOverflowDUPFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial20_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stackOverflowDUP | ❌ FAIL | 0.003s | `AccountNotFound` |
 
-### ❌ sstore_combinations_initial21_2_ParisFiller.json
+### ❌ stackOverflowFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackOverflow | ❌ FAIL | 0.010s | `AccountNotFound` |
+
+### ❌ stackOverflowPUSHFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackOverflowPUSH | ❌ FAIL | 0.004s | `AccountNotFound` |
+
+### ❌ stackOverflowM1Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial21_2_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stackOverflowM1 | ❌ FAIL | 0.003s | `AccountNotFound` |
 
-### ❌ sstore_combinations_initial11_2_ParisFiller.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| sstore_combinations_initial11_2_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
-
-### ❌ sstore_combinations_initial01_2_ParisFiller.json
+### ❌ stackLimitPush32_1023Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| sstore_combinations_initial01_2_Paris | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")` |
+| stackLimitPush32_1023 | ❌ FAIL | 0.005s | `AccountNotFound` |
+
+### ❌ stackLimitGas_1024Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitGas_1024 | ❌ FAIL | 0.004s | `AccountNotFound` |
+
+### ❌ stackLimitGas_1023Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitGas_1023 | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stackLimitPush32_1024Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitPush32_1024 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stackLimitPush31_1025Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitPush31_1025 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stackLimitGas_1025Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitGas_1025 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stackLimitPush31_1023Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitPush31_1023 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stackLimitPush32_1025Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitPush32_1025 | ❌ FAIL | 0.010s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stackLimitPush31_1024Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| stackLimitPush31_1024 | ❌ FAIL | 0.005s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ loop_stacklimitFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 2 column 1 (char 1)` |
+
+### ❌ MCOPY_memory_hashFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ MCOPY_memory_expansion_costFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ RevertPrecompiledTouch_storage_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrecompiledTouch_storage_Paris | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ❌ RevertPrecompiledTouch_noncestorageFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrecompiledTouch_noncestorage | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ❌ storageCostsFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ log1_dejavuFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log1_dejavu | ❌ FAIL | 0.010s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log4_dejavuFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log4_dejavu | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log2_dejavuFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log2_dejavu | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log3_dejavuFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log3_dejavu | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ logInOOG_CallFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| logInOOG_Call | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log1_nonEmptyMemFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log1_nonEmptyMem | ❌ FAIL | 0.010s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log4_logMemsizeZeroFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log4_logMemsizeZero | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log4_logMemsizeTooHighFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log4_logMemsizeTooHigh | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log3_logMemsizeZeroFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log3_logMemsizeZero | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log0_nonEmptyMem_logMemSize1Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log0_nonEmptyMem_logMemSize1 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log0_logMemStartTooHighFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log0_logMemStartTooHigh | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log2_nonEmptyMemFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log2_nonEmptyMem | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log3_nonEmptyMemFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log3_nonEmptyMem | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log1_nonEmptyMem_logMemSize1_logMemStart31Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log1_nonEmptyMem_logMemSize1_logMemStart31 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log1_logMemsizeTooHighFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log1_logMemsizeTooHigh | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log4_nonEmptyMemFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log4_nonEmptyMem | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log3_nonEmptyMem_logMemSize1_logMemStart31Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log3_nonEmptyMem_logMemSize1_logMemStart31 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log1_logMemStartTooHighFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log1_logMemStartTooHigh | ❌ FAIL | 0.005s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log1_logMemsizeZeroFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log1_logMemsizeZero | ❌ FAIL | 0.005s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ log0_nonEmptyMemFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| log0_nonEmptyMem | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ stDelegatecallTestHomestead
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: [Errno 21] Is a directory: '/Users/williamcory/guillotine/specs/execution...` |
+
+### ❌ 14_revertAfterNestedStaticcallFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ callToNonExistentFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callToNonExistent | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ❌ extCodeHashSubcallOOGFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ extCodeHashSubcallSuicideCancunFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ callToSuicideThenExtcodehashFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callToSuicideThenExtcodehash | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ❌ extCodeHashSubcallSuicideFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ✅ staticcall_createfailsFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| staticcall_createfails | ✅ PASS | 0.004s | Gas: 1,158,648 |
+
+### ✅ delegatecallAtTransitionFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| delegatecallAtTransition | ✅ PASS | 0.003s | Gas: 50,310,648 |
+
+### ✅ delegatecallAfterTransitionFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| delegatecallAfterTransition | ✅ PASS | 0.003s | Gas: 50,310,648 |
+
+### ✅ delegatecallBeforeTransitionFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| delegatecallBeforeTransition | ✅ PASS | 0.009s | Gas: 50,310,648 |
+
+### ✅ callcodecallcall_100Filler.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcodecallcall_100 | ✅ PASS | 0.003s | Gas: 50,310,648 |
+
+### ✅ callcallcodecallcode_011_SuicideEndFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcallcodecallcode_011_SuicideEnd | ✅ PASS | 0.003s | Gas: 50,310,648 |
+
+### ✅ callcodecallcodecallcode_111_OOGEFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcodecallcodecallcode_111_OOGE | ✅ PASS | 0.003s | Gas: 16,756,216 |
+
+### ✅ callcallcodecallcode_ABCB_RECURSIVEFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcallcodecallcode_ABCB_RECURSIVE | ✅ PASS | 0.003s | Gas: 6,270,456 |
+
+### ✅ callcodecallcode_11Filler.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcodecallcode_11 | ✅ PASS | 0.009s | Gas: 50,310,648 |
+
+### ✅ callcallcodecallcode_011_OOGMAfterFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcallcodecallcode_011_OOGMAfter | ✅ PASS | 0.005s | Gas: 16,756,216 |
+
+### ✅ callcallcall_000_OOGEFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcallcall_000_OOGE | ✅ PASS | 0.003s | Gas: 16,756,216 |
+
+### ✅ callcallcodecallcode_011_SuicideMiddleFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcallcodecallcode_011_SuicideMiddle | ✅ PASS | 0.003s | Gas: 50,310,648 |
+
+### ✅ callcodecallcodecallcode_111_OOGMBeforeFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| callcodecallcodecallcode_111_OOGMBefore | ✅ PASS | 0.003s | Gas: 16,756,216 |
+
+### ❌ createInitCodeSizeLimitFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ create2InitCodeSizeLimitFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ createLargeResultFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ CREATE_AcreateB_BSuicide_BStoreFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| CREATE_AcreateB_BSuicide_BStore | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ❌ createFailResultFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ❌ createBlobhashTxFiller.yml
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| file_parsing | ❌ FAIL | 0.000s | `Failed to parse test file: Expecting value: line 1 column 1 (char 0)` |
+
+### ✅ createEmptyThenExtcodehashFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createEmptyThenExtcodehash | ✅ PASS | 0.008s | Gas: 3,124,728 |
+
+### ✅ staticcall_createfailsFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| staticcall_createfails | ✅ PASS | 0.004s | Gas: 1,158,648 |
+
+### ❌ createNameRegistratorPerTxsAfterFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createNameRegistratorPerTxsAfter | ❌ FAIL | 0.004s | `AccountNotFound` |
+
+### ❌ createNameRegistratorPerTxsAtFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createNameRegistratorPerTxsAt | ❌ FAIL | 0.003s | `AccountNotFound` |
+
+### ❌ createNameRegistratorPerTxsBeforeFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createNameRegistratorPerTxsBefore | ❌ FAIL | 0.010s | `AccountNotFound` |
+
+### ✅ createNameRegistratorPreStore1NotEnoughGasFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createNameRegistratorPreStore1NotEnoughGas | ✅ PASS | 0.004s | Gas: 450,153 |
+
+### ❌ createJS_ExampleContractFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createJS_ExampleContract | ❌ FAIL | 0.003s | `AccountNotFound` |
+
+### ❌ createInitFailBadJumpDestinationFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createInitFailBadJumpDestination | ❌ FAIL | 0.002s | `AccountNotFound` |
+
+### ❌ createJS_NoCollisionFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createJS_NoCollision | ❌ FAIL | 0.002s | `AccountNotFound` |
+
+### ❌ createInitFailStackUnderflowFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createInitFailStackUnderflow | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ✅ createInitFail_OOGduringInit2Filler.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createInitFail_OOGduringInit2 | ✅ PASS | 0.003s | Gas: 16,756,216 |
+
+### ✅ createInitFail_OOGduringInitFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createInitFail_OOGduringInit | ✅ PASS | 0.002s | Gas: 319,001 |
+
+### ❌ createNameRegistratorPerTxsFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createNameRegistratorPerTxs | ❌ FAIL | 0.004s | `AccountNotFound` |
+
+### ❌ createInitFailStackSizeLargerThan1024Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| createInitFailStackSizeLargerThan1024 | ❌ FAIL | 0.003s | `AccountNotFound` |
+
+### ✅ create_callprecompile_returndatasizeFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| create_callprecompile_returndatasize | ✅ PASS | 0.009s | Gas: 79,000 |
 
 ### ❌ randomStatetest121Filler.json
 
 **Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+**Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest121 | ❌ FAIL | 0.001s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
+| randomStatetest121 | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
 
 ### ❌ randomStatetest116Filler.json
 
@@ -139,16 +832,16 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest116 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 424... (at "<string>")` |
+| randomStatetest116 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 424` |
 
 ### ❌ randomStatetest248Filler.json
 
 **Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
+**Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest248 | ❌ FAIL | 0.005s |  |
+| randomStatetest248 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest143Filler.json
 
@@ -157,7 +850,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest143 | ❌ FAIL | 0.004s |  |
+| randomStatetest143 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest174Filler.json
 
@@ -166,7 +859,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest174 | ❌ FAIL | 0.004s |  |
+| randomStatetest174 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest309Filler.json
 
@@ -175,7 +868,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest309 | ❌ FAIL | 0.005s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
 ### ❌ randomStatetest59Filler.json
 
@@ -184,7 +877,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest59 | ❌ FAIL | 0.005s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
 ### ❌ randomStatetest280Filler.json
 
@@ -193,7 +886,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest280 | ❌ FAIL | 0.005s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
 ### ❌ randomStatetest263Filler.json
 
@@ -202,7 +895,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest263 | ❌ FAIL | 0.004s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
 ### ❌ randomStatetest254Filler.json
 
@@ -211,25 +904,25 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest254 | ❌ FAIL | 0.005s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
 ### ❌ randomStatetest340Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest340 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 158... (at "<string>")` |
-
-### ❌ randomStatetest201Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest201 | ❌ FAIL | 0.005s |  |
+| randomStatetest340 | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
+
+### ❌ randomStatetest201Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| randomStatetest201 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest236Filler.json
 
@@ -238,7 +931,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest236 | ❌ FAIL | 0.004s |  |
+| randomStatetest236 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest315Filler.json
 
@@ -247,7 +940,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest315 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 158... (at "<string>")` |
+| randomStatetest315 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
 
 ### ❌ randomStatetest322Filler.json
 
@@ -256,16 +949,16 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest322 | ❌ FAIL | 0.003s |  |
+| randomStatetest322 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest72Filler.json
 
 **Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+**Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest72 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 226... (at "<string>")` |
+| randomStatetest72 | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 226` |
 
 ### ❌ randomStatetest45Filler.json
 
@@ -274,25 +967,25 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest45 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
+| randomStatetest45 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
 
 ### ❌ randomStatetest197Filler.json
 
 **Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+**Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest197 | ❌ FAIL | 0.004s |  |
+| randomStatetest197 | ❌ FAIL | 0.006s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest4Filler.json
 
 **Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+**Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest4 | ❌ FAIL | 0.003s |  |
+| randomStatetest4 | ❌ FAIL | 0.006s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest10Filler.json
 
@@ -301,667 +994,505 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest10 | ❌ FAIL | 0.004s |  |
+| randomStatetest10 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
-### ❌ randomStatetest27Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest27 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
-
-### ❌ randomStatetest36Filler.json
+### ❌ sstore_combinations_initial20_2_ParisFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest36 | ❌ FAIL | 0.004s |  |
+| sstore_combinations_initial20_2_Paris | ❌ FAIL | 0.004s | `Assembly syntax not supported` |
 
-### ❌ randomStatetest54Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest54 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
-
-### ❌ randomStatetest63Filler.json
+### ❌ sstore_combinations_initial00_2_ParisFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest63 | ❌ FAIL | 0.004s |  |
+| sstore_combinations_initial00_2_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
 
-### ❌ randomStatetest333Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest333 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 224... (at "<string>")` |
-
-### ❌ randomStatetest179Filler.json
+### ❌ sstore_combinations_initial10_ParisFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest179 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 92... (at "<string>")` |
+| sstore_combinations_initial10_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
 
-### ❌ randomStatetest304Filler.json
+### ❌ sstore_combinations_initial10_2_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial10_2_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial21_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial21_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial00_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial00_Paris | ❌ FAIL | 0.005s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial11_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial11_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial01_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial01_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial20_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial20_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial21_2_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial21_2_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial11_2_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial11_2_Paris | ❌ FAIL | 0.005s | `Assembly syntax not supported` |
+
+### ❌ sstore_combinations_initial01_2_ParisFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| sstore_combinations_initial01_2_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
+
+### ❌ RevertOpcodeDirectCallFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcodeDirectCall | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ✅ TouchToEmptyAccountRevert2_ParisFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| TouchToEmptyAccountRevert2_Paris | ✅ PASS | 0.003s | Gas: 16,756,216 |
+
+### ✅ RevertPrefoundCallOOGFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrefoundCallOOG | ✅ PASS | 0.003s | Gas: 384,504 |
+
+### ❌ PythonRevertTestTue201814-1430Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest304 | ❌ FAIL | 0.005s |  |
+| PythonRevertTestTue201814-1430 | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
 
-### ❌ randomStatetest227Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest227 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 158... (at "<string>")` |
-
-### ❌ randomStatetest210Filler.json
+### ❌ RevertInCreateInInit_ParisFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest210 | ❌ FAIL | 0.004s |  |
+| RevertInCreateInInit_Paris | ❌ FAIL | 0.000s | `Assembly syntax not supported` |
 
-### ❌ randomStatetest351Filler.json
+### ✅ RevertPrefoundEmptyCallOOG_ParisFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrefoundEmptyCallOOG_Paris | ✅ PASS | 0.003s | Gas: 384,504 |
+
+### ❌ LoopCallsDepthThenRevert3Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest351 | ❌ FAIL | 0.004s |  |
+| LoopCallsDepthThenRevert3 | ❌ FAIL | 0.000s | `int too big to convert` |
 
-### ❌ randomStatetest366Filler.json
+### ✅ RevertDepthCreateOOGFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertDepthCreateOOG | ✅ PASS | 0.003s | Gas: 1,093,112 |
+
+### ❌ RevertOnEmptyStackFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest366 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
-### ❌ randomStatetest245Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest245 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
-
-### ❌ randomStatetest291Filler.json
+### ❌ NashatyrevSuicideRevertFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest291 | ❌ FAIL | 0.005s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
-### ❌ randomStatetest48Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest48 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest9Filler.json
+### ❌ RevertDepth2Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest9 | ❌ FAIL | 0.004s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
-### ❌ randomStatetest318Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest318 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 160... (at "<string>")` |
-
-### ❌ randomStatetest80Filler.json
+### ❌ LoopDelegateCallsDepthThenRevertFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest80 | ❌ FAIL | 0.003s |  |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
-### ❌ randomStatetest259Filler.json
+### ❌ LoopCallsDepthThenRevertFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest259 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 92... (at "<string>")` |
+| batch_crash | ❌ FAIL | 0.000s | `Batch crashed: No results file generated. stdout: , stderr: debug: [EVM2] [ARENA] Initialized: initi...` |
 
-### ❌ randomStatetest107Filler.json
+### ✅ RevertPrefoundCallFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrefoundCall | ✅ PASS | 0.009s | Gas: 585,208 |
+
+### ✅ TouchToEmptyAccountRevert3_ParisFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| TouchToEmptyAccountRevert3_Paris | ✅ PASS | 0.003s | Gas: 2,076,152 |
+
+### ❌ RevertOpcodeMultipleSubCallsFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcodeMultipleSubCalls | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ✅ RevertOpcodeInCreateReturnsFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcodeInCreateReturns | ✅ PASS | 0.003s | Gas: 1,027,576 |
+
+### ❌ RevertSubCallStorageOOG2Filler.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertSubCallStorageOOG2 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+
+### ✅ RevertOpcodeCreateFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcodeCreate | ✅ PASS | 0.008s | Gas: 4,566,520 |
+
+### ✅ RevertInStaticCallFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertInStaticCall | ✅ PASS | 0.003s | Gas: 1,048,124 |
+
+### ✅ RevertPrefoundEmptyOOG_ParisFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrefoundEmptyOOG_Paris | ✅ PASS | 0.003s | Gas: 9,612,792 |
+
+### ❌ RevertPrecompiledTouch_nonceFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrecompiledTouch_nonce | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ❌ RevertOpcodeReturnFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcodeReturn | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ❌ LoopCallsDepthThenRevert2Filler.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest107 | ❌ FAIL | 0.010s |  |
+| LoopCallsDepthThenRevert2 | ❌ FAIL | 0.006s | `int too big to convert` |
 
-### ❌ randomStatetest130Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest130 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 226... (at "<string>")` |
-
-### ❌ randomStatetest215Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest215 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 158... (at "<string>")` |
-
-### ❌ randomStatetest222Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest222 | ❌ FAIL | 0.003s |  |
-
-### ❌ randomStatetest301Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest301 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest336Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest336 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest363Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest363 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
-
-### ❌ randomStatetest129Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest129 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 356... (at "<string>")` |
-
-### ❌ randomStatetest354Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest354 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 92... (at "<string>")` |
-
-### ❌ randomStatetest33Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest33 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest288Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest288 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest66Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest66 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest51Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest51 | ❌ FAIL | 0.005s |  |
-
-### ❌ randomStatetest183Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest183 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 290... (at "<string>")` |
-
-### ❌ randomStatetest85Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest85 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 290... (at "<string>")` |
-
-### ❌ randomStatetest157Filler.json
+### ❌ RevertOpcodeWithBigOutputInInitFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest157 | ❌ FAIL | 0.006s |  |
+| RevertOpcodeWithBigOutputInInit | ❌ FAIL | 0.005s | `AccountNotFound` |
 
-### ❌ randomStatetest209Filler.json
+### ❌ RevertSubCallStorageOOGFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertSubCallStorageOOG | ❌ FAIL | 0.004s | `AccountNotFound` |
+
+### ❌ RevertOpcodeFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcode | ❌ FAIL | 0.005s | `AccountNotFound` |
+
+### ❌ RevertOpcodeInCallsOnNonEmptyReturnDataFiller.json
+
+**Results**: 0/1 passed (0.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertOpcodeInCallsOnNonEmptyReturnData | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
+
+### ✅ RevertPrefoundOOGFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.01s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrefoundOOG | ✅ PASS | 0.015s | Gas: 9,612,792 |
+
+### ❌ RevertDepthCreateAddressCollisionFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest209 | ❌ FAIL | 0.006s |  |
+| RevertDepthCreateAddressCollision | ❌ FAIL | 0.005s | `EVM execution failed (success=False, gas_left=0)` |
 
-### ❌ randomStatetest135Filler.json
+### ✅ RevertPrefoundFiller.json
+
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
+
+| Test | Status | Time | Details |
+|------|--------|------|----------|
+| RevertPrefound | ✅ PASS | 0.005s | Gas: 17,018,360 |
+
+### ❌ RevertOpcodeInInitFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest135 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 226... (at "<string>")` |
+| RevertOpcodeInInit | ❌ FAIL | 0.004s | `AccountNotFound` |
 
-### ❌ randomStatetest348Filler.json
+### ✅ RevertPrefoundEmpty_ParisFiller.json
 
-**Results**: 0/1 passed (0.0%)
+**Results**: 1/1 passed (100.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest348 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 224... (at "<string>")` |
+| RevertPrefoundEmpty_Paris | ✅ PASS | 0.004s | Gas: 9,678,328 |
 
-### ❌ randomStatetest102Filler.json
+### ✅ LoopCallsThenRevertFiller.json
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest102 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 28... (at "<string>")` |
-
-### ❌ randomStatetest294Filler.json
-
-**Results**: 0/1 passed (0.0%)
+**Results**: 1/1 passed (100.0%)
 **Time**: 0.01s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest294 | ❌ FAIL | 0.006s |  |
+| LoopCallsThenRevert | ✅ PASS | 0.010s | Gas: 268,414,456 |
 
-### ❌ randomStatetest380Filler.json
+### ✅ RevertPrecompiledTouchExactOOG_ParisFiller.json
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest380 | ❌ FAIL | 0.006s |  |
-
-### ❌ randomStatetest18Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest18 | ❌ FAIL | 0.006s |  |
+| RevertPrecompiledTouchExactOOG_Paris | ✅ PASS | 0.004s | Gas: 119,544 |
 
-### ❌ randomStatetest285Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest285 | ❌ FAIL | 0.006s |  |
-
-### ❌ randomStatetest124Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest124 | ❌ FAIL | 0.005s |  |
-
-### ❌ randomStatetest359Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest359 | ❌ FAIL | 0.005s |  |
-
-### ❌ randomStatetest171Filler.json
+### ❌ RevertPrecompiledTouch_ParisFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest171 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 292... (at "<string>")` |
+| RevertPrecompiledTouch_Paris | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
 
-### ❌ randomStatetest146Filler.json
+### ✅ RevertInCallCodeFiller.json
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
+**Results**: 1/1 passed (100.0%)
+**Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest146 | ❌ FAIL | 0.005s |  |
+| RevertInCallCode | ✅ PASS | 0.003s | Gas: 1,048,124 |
 
-### ❌ randomStatetest192Filler.json
+### ❌ RevertOpcodeCallsFiller.json
 
 **Results**: 0/1 passed (0.0%)
 **Time**: 0.00s
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest192 | ❌ FAIL | 0.005s |  |
+| RevertOpcodeCalls | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 24` |
 
-### ❌ randomStatetest1Filler.json
+## ❌ Failed Tests (124)
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+### file_parsing
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest1 | ❌ FAIL | 0.005s |  |
+**Error**: `Failed to parse test file: Expecting value: line 1 column 1 (char 0)`
 
-### ❌ randomStatetest77Filler.json
+### file_parsing
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+**Error**: `Failed to parse test file: Expecting value: line 1 column 1 (char 0)`
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest77 | ❌ FAIL | 0.005s |  |
+### file_parsing
 
-### ❌ randomStatetest299Filler.json
+**Error**: `Failed to parse test file: Expecting value: line 1 column 1 (char 0)`
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+### file_parsing
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest299 | ❌ FAIL | 0.004s |  |
+**Error**: `Failed to parse test file: Expecting value: line 1 column 1 (char 0)`
 
-### ❌ randomStatetest22Filler.json
+### file_parsing
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+**Error**: `Failed to parse test file: Expecting value: line 1 column 1 (char 0)`
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest22 | ❌ FAIL | 0.004s |  |
+### stackOverflowM1PUSH
 
-### ❌ randomStatetest15Filler.json
+**Error**: `AccountNotFound`
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+### stackOverflowM1DUP
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest15 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 92... (at "<string>")` |
+**Error**: `AccountNotFound`
 
-### ❌ randomStatetest138Filler.json
+### stacksanitySWAP
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.01s
+**Error**: `AccountNotFound`
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest138 | ❌ FAIL | 0.006s |  |
+### stackOverflowSWAP
 
-### ❌ randomStatetest345Filler.json
+**Error**: `AccountNotFound`
 
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
+### stackOverflowDUP
 
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest345 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest372Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest372 | ❌ FAIL | 0.003s |  |
-
-### ❌ randomStatetest251Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest251 | ❌ FAIL | 0.003s |  |
-
-### ❌ randomStatetest266Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest266 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest327Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest327 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest88Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest88 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 26... (at "<string>")` |
-
-### ❌ randomStatetest310Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest310 | ❌ FAIL | 0.003s |  |
-
-### ❌ randomStatetest233Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest233 | ❌ FAIL | 0.003s |  |
-
-### ❌ randomStatetest204Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest204 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 158... (at "<string>")` |
-
-### ❌ randomStatetest261Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest261 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 358... (at "<string>")` |
-
-### ❌ randomStatetest342Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest342 | ❌ FAIL | 0.004s |  |
-
-### ❌ randomStatetest108Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest108 | ❌ FAIL | 0.005s |  |
-
-### ❌ randomStatetest320Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest320 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 92... (at "<string>")` |
-
-### ❌ randomStatetest195Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest195 | ❌ FAIL | 0.003s |  |
-
-### ❌ randomStatetest6Filler.json
-
-**Results**: 0/1 passed (0.0%)
-**Time**: 0.00s
-
-| Test | Status | Time | Details |
-|------|--------|------|----------|
-| randomStatetest6 | ❌ FAIL | 0.000s | `non-hexadecimal number found in fromhex() arg at position 290... (at "<string>")` |
-
-## ❌ Failed Tests (100)
-
-### sstore_combinations_initial20_2_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial00_2_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial10_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial10_2_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial21_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial00_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial11_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial01_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial20_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
-
-### sstore_combinations_initial21_2_Paris
-
-**Error**: `non-hexadecimal number found in fromhex() arg at position 0... (at "<string>")`
+**Error**: `AccountNotFound`
 
 ## ⚡ Performance Insights
 
 - **Average test time**: 0.003s
-- **Slowest test**: randomStatetest107 (0.010s)
-- **Throughput**: 365.3 tests/second
+- **Slowest test**: RevertPrefoundOOG (0.015s)
+- **Throughput**: 296.1 tests/second
 
 ---
 *Report generated by Guillotine EVM Spec Test Runner*

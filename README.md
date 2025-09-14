@@ -22,7 +22,22 @@
 
 **Current Status**: DO NOT USE IN PRODUCTION
 
-Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental. There are [known bugs](specs/) including 100 failing Ethereum specification tests. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
+Guillotine is not suitable for production use at this time. Any use of Guillotine should be considered purely experimental.
+
+### 📊 Ethereum Specification Test Results
+
+**Latest Test Run**: 159 tests executed
+- ✅ **35 passing** (22.0% pass rate)
+- ❌ **124 failing** (78.0% fail rate)
+
+**Failure Categories**:
+- `AccountNotFound` errors: ~30% of failures (account state management issues)
+- `EVM execution failed`: ~25% of failures (gas/execution issues)
+- Assembly syntax tests: ~20% of failures (not supported)
+- Invalid hex data: ~15% of failures (spec runner issues)
+- File parsing errors: ~10% of failures (YAML test format not supported)
+
+See [test report](specs/test_report.md) for detailed results. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
 **Network Support**: Currently only **Ethereum Mainnet** is supported. Planned for Beta:
 
