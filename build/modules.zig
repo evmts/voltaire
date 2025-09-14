@@ -4,7 +4,6 @@ pub const ModuleSet = struct {
     lib_mod: *std.Build.Module,
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
-    utils_mod: *std.Build.Module,
     trie_mod: *std.Build.Module,
     provider_mod: *std.Build.Module,
     evm_mod: *std.Build.Module,
@@ -54,13 +53,6 @@ pub fn createModules(
     crypto_mod.addImport("build_options", build_options_mod);
     primitives_mod.addImport("crypto", crypto_mod);
 
-    // Utils module
-    const utils_mod = b.createModule(.{
-        .root_source_file = b.path("src/utils.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
     // Trie module
     const trie_mod = b.createModule(.{
         .root_source_file = b.path("src/trie/root.zig"),
@@ -68,7 +60,6 @@ pub fn createModules(
         .optimize = optimize,
     });
     trie_mod.addImport("primitives", primitives_mod);
-    trie_mod.addImport("utils", utils_mod);
 
     // Provider module
     const provider_mod = b.createModule(.{
@@ -105,7 +96,7 @@ pub fn createModules(
     });
     compilers_mod.addImport("primitives", primitives_mod);
     compilers_mod.addImport("evm", evm_mod);
-    
+
     // Link with foundry library if available
     if (foundry_lib) |lib| {
         compilers_mod.linkLibrary(lib);
@@ -129,18 +120,13 @@ pub fn createModules(
     // REVM import removed - using MinimalEvm for differential testing
 
     // Executable module
-    const exe_mod = b.createModule(.{ 
-        .root_source_file = b.path("src/main.zig"), 
-        .target = target, 
-        .optimize = optimize 
-    });
+    const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);
 
     return ModuleSet{
         .lib_mod = lib_mod,
         .primitives_mod = primitives_mod,
         .crypto_mod = crypto_mod,
-        .utils_mod = utils_mod,
         .trie_mod = trie_mod,
         .provider_mod = provider_mod,
         .evm_mod = evm_mod,

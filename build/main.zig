@@ -3,7 +3,7 @@ const std = @import("std");
 // Build configuration and options
 pub const Config = @import("config.zig");
 
-// Module definitions  
+// Module definitions
 pub const Modules = @import("modules.zig");
 
 // Executables
@@ -30,6 +30,3 @@ pub const TypeScriptBindings = @import("bindings/typescript.zig");
 pub const RustBuild = @import("steps/rust_build.zig");
 pub const AssetGenerator = @import("steps/asset_generator.zig");
 pub const Tests = @import("steps/tests_integration.zig");
-
-// Utilities
-pub const Utils = @import("utils.zig");
