@@ -23,68 +23,6 @@ description: Short, functional answers for common build and usage questions.
 - Ops tests hang: run a single step to isolate (e.g., `zig build test-opcodes-0x01`)
 - Silent tests: passing tests print nothing (expected)
 
-## Memory Management
-
-### Allocation Patterns
-
-Guillotine uses arena allocation for transaction-scoped memory:
-
-```zig
-var arena = std.heap.ArenaAllocator.init(allocator);
-defer arena.deinit(); // Auto-cleanup at transaction end
-
-// All EVM memory allocations use the arena
-const evm_memory = try arena.alloc(u8, initial_size);
-// No individual frees needed - arena handles it
-```
-
-### Database Pattern
-
-```zig
-var db = Database.init(allocator);
-defer db.deinit(); // Cleanup database resources
-
-// Set account data
-try db.set_account(address.bytes, .{
-    .balance = 1000,
-    .nonce = 1,
-    .code_hash = code_hash,
-    .storage_root = [_]u8{0} ** 32,
-});
-```
-
-### EVM Lifecycle
-
-```zig
-// Create EVM with block/tx context
-var evm = try DefaultEvm.init(allocator, &db, block, tx, gas_price, origin, hardfork);
-defer evm.deinit(); // Critical - prevents memory leaks
-
-// Execute calls
-const result = evm.call(params);
-// EVM cleans up frame stack automatically
-```
-
-## Architecture Details
-
-### Gas Accounting
-
-- Gas checked on every operation: `if (self.gas_remaining < cost) return Error.OutOfGas`
-- Memory expansion uses quadratic gas formula from Yellow Paper
-- Storage operations differentiate cold/warm access costs
-
-### Stack Operations
-
-- Max 1024 items (EVM limit)
-- Operations use `_unsafe` variants after size validation for performance
-- Pattern: `std.debug.assert(stack.size() >= N)` then `pop_unsafe()`
-
-### Dispatch System
-
-- Tail-call optimization eliminates function call overhead
-- Bytecode analysis pre-computes jump targets
-- Opcode fusion combines common patterns (PUSH+ADD → single operation)
-
 ## Enable Debug Logs in Tests
 
 ```zig
@@ -93,28 +31,9 @@ test {
 }
 ```
 
-## Common Issues
+## Memory & Ownership
 
-### Memory Errors
-- Always pair allocations with `defer` or `errdefer`
-- Use arena allocators for transaction-scoped memory
-- Database must be deinitialized to prevent leaks
-
-### Gas Calculation Bugs
-- Gas costs must match Yellow Paper exactly
-- Memory expansion: `(size² / 512) + (3 * size)`
-- Storage: 20000 for new slots, 5000 for modifications
-
-### Stack Violations
-- Check stack size before `_unsafe` operations
-- Stack overflow at 1024 items
-- Stack underflow when size < required operands
-
-## Performance Notes
-
-- Compile with `-Doptimize=ReleaseFast` for benchmarks
-- Use `-Devm-disable-gas=true` only for testing (never production)
-- Memory limit default: 16MB (configurable via `-Devm-memory-limit`)
+See the Memory page for allocation/ownership rules: `/memory`.
 
 ## Reporting Issues
 
@@ -123,5 +42,4 @@ Open a GitHub issue with:
 - Minimal reproduction (code/command)
 - Expected vs. actual behavior
 
-That's it—keep it factual and reproducible.
-
+That’s it—keep it factual and reproducible.
