@@ -13,6 +13,7 @@ const log = @import("../log.zig");
 const primitives = @import("primitives");
 const pc_tracker_mod = @import("pc_tracker.zig");
 pub const MinimalEvm = @import("minimal_evm.zig").MinimalEvm;
+const MinimalFrame = @import("minimal_frame.zig").MinimalFrame;
 const Host = @import("minimal_evm.zig").Host;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
@@ -114,6 +115,7 @@ pub const DefaultTracer = struct {
 
     /// Initialize MinimalEvm as a sidecar validator when frame starts interpretation
     pub fn onInterpret(self: *DefaultTracer, frame: anytype, bytecode: []const u8, gas_limit: i64) void {
+        _ = gas_limit;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             // Cleanup any existing MinimalEvm
@@ -132,31 +134,12 @@ pub const DefaultTracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                // Create host interface that reads from the real EVM
-                const main_evm = frame.getEvm();
-                var real_evm_host = Host.init(@ptrCast(main_evm));
-                const host_interface = real_evm_host.hostInterface();
-
-                // Initialize MinimalEvm with host interface to read from real EVM
-                self.minimal_evm = MinimalEvm.initWithHost(self.allocator, bytecode, gas_limit, host_interface) catch null;
+                // Initialize MinimalEvm orchestrator
+                self.minimal_evm = MinimalEvm.init(self.allocator) catch null;
 
                 if (self.minimal_evm) |*evm| {
-                    // Sync initial state from frame
-                    if (@hasField(@TypeOf(frame.*), "contract_address")) {
-                        evm.address = frame.contract_address;
-                    }
-                    if (@hasField(@TypeOf(frame.*), "caller")) {
-                        evm.caller = frame.caller;
-                    }
-                    // Get origin from the EVM context, not frame
-                    evm.origin = main_evm.get_tx_origin();
-                    self.debug("MinimalEvm synced origin from EVM: {any}", .{evm.origin});
-                    if (@hasField(@TypeOf(frame.*), "value")) {
-                        evm.value = frame.value;
-                    }
-                    if (@hasField(@TypeOf(frame.*), "calldata_slice")) {
-                        evm.calldata = frame.calldata_slice;
-                    }
+                    // Get the main EVM for context
+                    const main_evm = frame.getEvm();
 
                     // Sync blockchain context from EVM
                     const block_info = main_evm.get_block_info();
@@ -171,21 +154,54 @@ pub const DefaultTracer = struct {
                         block_info.blob_base_fee
                     );
 
-                    // Set gas to match frame's CURRENT gas remaining
-                    // Frame may have already consumed gas for static blocks by this point
+                    // Set transaction context
+                    evm.setTransactionContext(main_evm.get_tx_origin(), main_evm.gas_price);
+
+                    // Get frame context for call
+                    var caller = primitives.ZERO_ADDRESS;
+                    var address = primitives.ZERO_ADDRESS;
+                    var value: u256 = 0;
+                    var calldata: []const u8 = &[_]u8{};
+
+                    if (@hasField(@TypeOf(frame.*), "contract_address")) {
+                        address = frame.contract_address;
+                    }
+                    if (@hasField(@TypeOf(frame.*), "caller")) {
+                        caller = frame.caller;
+                    }
+                    if (@hasField(@TypeOf(frame.*), "value")) {
+                        value = frame.value;
+                    }
+                    if (@hasField(@TypeOf(frame.*), "calldata_slice")) {
+                        calldata = frame.calldata_slice;
+                    }
+
+                    // Create a frame but don't execute it yet - execution will happen step-by-step
                     const frame_gas_remaining = frame.gas_remaining;
-                    evm.gas_remaining = @intCast(frame_gas_remaining);
-                    evm.gas_used = @intCast(@as(i64, @intCast(gas_limit)) - frame_gas_remaining);
 
-                    self.debug("SYNC: MinimalEvm initialized with Frame's current gas state", .{});
+                    // Create the frame directly
+                    const minimal_frame = self.allocator.create(MinimalFrame) catch return;
+                    minimal_frame.* = MinimalFrame.init(
+                        self.allocator,
+                        bytecode,
+                        @intCast(frame_gas_remaining),
+                        caller,
+                        address,
+                        value,
+                        calldata,
+                        @as(*anyopaque, @ptrCast(evm)),
+                    ) catch {
+                        self.allocator.destroy(minimal_frame);
+                        return;
+                    };
 
-                    self.debug("MinimalEvm initialized: bytecode_len={d}, frame_gas={d}, synced_gas={d}", .{
+                    // Set as current frame
+                    evm.current_frame = minimal_frame;
+
+                    self.debug("MinimalEvm initialized with bytecode_len={d}, gas={d}", .{
                         bytecode.len,
                         frame_gas_remaining,
-                        evm.gas_remaining,
                     });
-                    self.debug("MinimalEvm gas_remaining={d}, gas_used={d}", .{evm.gas_remaining, evm.gas_used});
-                    self.debug("MinimalEvm bytecode: {x}", .{bytecode});
                 }
             }
         }
@@ -207,10 +223,12 @@ pub const DefaultTracer = struct {
 
                 // Debug logging to understand execution order
                 if (self.minimal_evm) |*evm| {
+                    const pc = evm.getPC();
+                    const bytecode = evm.getBytecode();
                     log.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{
                         opcode_name,
-                        evm.pc,
-                        if (evm.pc < evm.bytecode.len) evm.bytecode[evm.pc] else 0
+                        pc,
+                        if (pc < bytecode.len) bytecode[pc] else 0
                     });
                 }
 
@@ -239,10 +257,12 @@ pub const DefaultTracer = struct {
 
                 // Execute MinimalEvm steps for validation
                 if (self.minimal_evm) |*evm| {
-                    if (!evm.stopped and !evm.reverted) {
-                        // Sync gas before executing - Frame may have consumed block gas
-                        // but we need to track the difference to understand block vs opcode charging
-                        self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
+                    if (evm.current_frame != null) {
+                        if (evm.current_frame.?.stopped == false and evm.current_frame.?.reverted == false) {
+                            // Sync gas before executing - Frame may have consumed block gas
+                            // but we need to track the difference to understand block vs opcode charging
+                            self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
+                        }
                     }
                 }
 
@@ -303,7 +323,7 @@ pub const DefaultTracer = struct {
                 // Note: PC synchronization between Frame dispatch and MinimalEvm sequential
                 // execution is complex due to synthetic opcodes, so we track separately
                 if (self.minimal_evm) |*evm| {
-                    self.current_pc = evm.pc;
+                    self.current_pc = evm.getPC();
                 }
 
                 // Log completion
@@ -347,14 +367,16 @@ pub const DefaultTracer = struct {
         // Log what we're about to execute
         self.debug("=====================================", .{});
         self.debug("Frame executing: {s}", .{@tagName(opcode)});
-        self.debug("  MinimalEvm PC: {d}", .{evm.pc});
+        self.debug("  MinimalEvm PC: {d}", .{evm.getPC()});
         self.debug("  Frame stack size: {d}", .{frame.stack.size()});
-        self.debug("  MinimalEvm stack size: {d}", .{evm.stack.items.len});
+        if (evm.current_frame) |minimal_frame| {
+            self.debug("  MinimalEvm stack size: {d}", .{minimal_frame.stack.items.len});
+        }
 
         // For regular opcodes (0x00-0xFF), execute exactly 1 opcode in MinimalEvm
         if (opcode_value <= 0xff) {
-            // Execute the same opcode the Frame just executed
-            evm.executeOpcode(@intCast(opcode_value)) catch |e| {
+            // Execute a single step in MinimalEvm (delegates to current frame)
+            evm.step() catch |e| {
                 self.err("MinimalEvm exec error op=0x{x:0>2}: {any}", .{ opcode_value, e });
             };
             return;
@@ -453,21 +475,21 @@ pub const DefaultTracer = struct {
 
                 // Debug: Log current MinimalEvm state before execution
                 self.err("DEBUG PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
-                    evm.pc, evm.stack.items.len, frame.stack.size()
+                    evm.getPC(), (evm.current_frame orelse unreachable).stack.items.len, frame.stack.size()
                 });
 
                 // Execute the 2-step sequence: PUSH1 + MSTORE
                 // First, check if we're at the right bytecode position for PUSH1+MSTORE
-                if (evm.pc + 2 < evm.bytecode.len and
-                    evm.bytecode[evm.pc] == 0x60 and      // PUSH1
-                    evm.bytecode[evm.pc + 2] == 0x52) {   // MSTORE (after PUSH1 + 1 byte immediate)
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
+                    evm.getBytecode()[evm.getPC() + 2] == 0x52) {   // MSTORE (after PUSH1 + 1 byte immediate)
 
-                    self.err("DEBUG PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.pc});
+                    self.err("DEBUG PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.getPC()});
 
                     // Execute PUSH1 + MSTORE
                     inline for (0..2) |step_num| {
-                        const current_opcode = evm.bytecode[evm.pc];
-                        self.err("DEBUG PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.pc});
+                        const current_opcode = evm.getBytecode()[evm.getPC()];
+                        self.err("DEBUG PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
 
                         evm.step() catch |e| {
                             self.err("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
@@ -476,8 +498,8 @@ pub const DefaultTracer = struct {
                     }
                 } else {
                     // Not a PUSH1+MSTORE sequence - this is a mis-identified synthetic opcode
-                    self.err("DEBUG PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.pc,
-                        if (evm.pc < evm.bytecode.len) evm.bytecode[evm.pc] else 0});
+                    self.err("DEBUG PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
+                        if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
 
                     // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
                     // Frame will handle the actual opcode, MinimalEvm should remain unchanged
@@ -497,18 +519,18 @@ pub const DefaultTracer = struct {
 
                 // Debug: Log current MinimalEvm state before execution
                 self.debug("PUSH_MSTORE8_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
-                    evm.pc, evm.stack.items.len, frame.stack.size()
+                    evm.getPC(), (evm.current_frame orelse unreachable).stack.items.len, frame.stack.size()
                 });
 
                 // Execute the 2-step sequence: PUSH1 + MSTORE8
                 inline for (0..2) |step_num| {
-                    if (evm.pc >= evm.bytecode.len) {
-                        self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.pc, evm.bytecode.len});
+                    if (evm.getPC() >= evm.getBytecode().len) {
+                        self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.getPC(), evm.getBytecode().len});
                         return;
                     }
 
-                    const current_opcode = evm.bytecode[evm.pc];
-                    self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.pc});
+                    const current_opcode = evm.getBytecode()[evm.getPC()];
+                    self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
 
                     evm.step() catch |e| {
                         self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
@@ -671,7 +693,7 @@ pub const DefaultTracer = struct {
 
             else => {
                 // Unknown synthetic opcode - just step once
-                if (evm.pc < evm.bytecode.len) {
+                if (evm.getPC() < evm.getBytecode().len) {
                     evm.step() catch |e| {
                         self.err("MinimalEvm step failed for synthetic opcode: {any}", .{e});
                     };
@@ -703,7 +725,7 @@ pub const DefaultTracer = struct {
 
             // Compare stack sizes
             const frame_stack_size = frame.stack.size();
-            const evm_stack_size = evm.stack.items.len;
+            const evm_stack_size = (evm.current_frame orelse unreachable).stack.items.len;
 
             if (evm_stack_size != frame_stack_size) {
                 self.err("[DIVERGENCE] Stack size mismatch after {s}:", .{opcode_name});
@@ -712,7 +734,7 @@ pub const DefaultTracer = struct {
                 // Show top elements for debugging
                 if (evm_stack_size > 0) {
                     self.err("  MinimalEvm top: 0x{x}", .{
-                        evm.stack.items[evm_stack_size - 1]
+                        (evm.current_frame orelse unreachable).stack.items[evm_stack_size - 1]
                     });
                 }
                 if (frame_stack_size > 0) {
@@ -722,7 +744,7 @@ pub const DefaultTracer = struct {
                 // Compare stack contents
                 const frame_stack = frame.stack.get_slice();
                 for (0..evm_stack_size) |i| {
-                    const evm_val = evm.stack.items[evm_stack_size - 1 - i];
+                    const evm_val = (evm.current_frame orelse unreachable).stack.items[evm_stack_size - 1 - i];
                     const frame_val = frame_stack[i];
                     if (evm_val != frame_val) {
                         self.err("[DIVERGENCE] Stack content mismatch at position {d}:", .{i});
@@ -734,7 +756,7 @@ pub const DefaultTracer = struct {
             // Compare memory sizes
             const frame_memory_size = if (@hasField(@TypeOf(frame.*), "memory"))
                 frame.memory.size() else 0;
-            const evm_memory_size = evm.memory_size;
+            const evm_memory_size = (evm.current_frame orelse unreachable).memory_size;
 
             if (evm_memory_size != frame_memory_size) {
                 self.warn("[DIVERGENCE] Memory size mismatch:", .{});
@@ -743,7 +765,7 @@ pub const DefaultTracer = struct {
 
             // Gas validation - different rules for different opcode types
             const frame_gas_remaining = frame.gas_remaining;
-            const evm_gas_remaining = evm.gas_remaining;
+            const evm_gas_remaining = (evm.current_frame orelse unreachable).gas_remaining;
 
             // Check if this is a jump/terminal opcode that should have exact gas match
             const is_terminal_opcode = switch (opcode) {
