@@ -198,6 +198,7 @@ pub const MinimalEvm = struct {
     // Host interface for system operations
     host: ?HostInterface,
 
+
     // Storage slot key for access tracking
     pub const StorageSlotKey = struct {
         address: Address,
