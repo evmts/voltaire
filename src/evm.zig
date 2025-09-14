@@ -11,7 +11,7 @@
 //! This module provides the entry point for all EVM operations,
 //! coordinating between Frames, the Planner, and state storage.
 //!
-//! The EVM utilizes Planners to analyze bytecode and produce optimized execution data structures
+//! The EVM utilizes a Preanalysis phase to analyze bytecode and produce optimized execution data structures
 //! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
 //! EVM passes itself as an *anyopaque pointer to Frame for accessing external data and executing inner calls
 const std = @import("std");
@@ -33,38 +33,27 @@ const call_result_module = @import("frame/call_result.zig");
 const call_params_module = @import("frame/call_params.zig");
 
 /// Creates a configured EVM instance type.
-///
-/// The EVM is parameterized by compile-time configuration for optimal
-/// performance and minimal runtime overhead. Configuration controls
-/// stack size, memory limits, call depth, and optimization strategies.
 pub fn Evm(comptime config: EvmConfig) type {
     return struct {
         const Self = @This();
 
-        // Generic types specialized for this configuration
+        pub const Frame = @import("frame/frame.zig").Frame(config.frame_config());
+
         pub const CallResult = call_result_module.CallResult(config);
         pub const CallParams = call_params_module.CallParams(config);
 
-        /// Frame type for the evm
-        pub const Frame = @import("frame/frame.zig").Frame(config.frame_config());
-        /// Static wrappers for EIP-214 (STATICCALL) constraint enforcement
-        const static_wrappers = @import("storage/static_wrappers.zig");
-        const StaticDatabase = static_wrappers.StaticDatabase;
-        /// Bytecode type for bytecode analysis
-        pub const BytecodeFactory = @import("bytecode/bytecode.zig").Bytecode;
-        pub const Bytecode = BytecodeFactory(.{
+        const StaticDatabase = @import("storage/static_wrappers.zig").StaticDatabase;
+
+        pub const Bytecode = @import("bytecode/bytecode.zig").Bytecode(.{
             .max_bytecode_size = config.max_bytecode_size,
             .fusions_enabled = !config.disable_fusion,
         });
-        /// Journal handles reverting state when state needs to be reverted
         pub const Journal: type = @import("storage/journal.zig").Journal(.{
             .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,
             .WordType = config.WordType,
             .NonceType = u64,
             .initial_capacity = 128,
         });
-
-        /// Call stack entry to track caller and value for DELEGATECALL
         const CallStackEntry = struct {
             caller: primitives.Address,
             value: config.WordType,
@@ -75,7 +64,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             Stop,
             Return,
             SelfDestruct,
-            Jump, // Added for fusion support
         };
 
         pub const Error = error{
@@ -95,7 +83,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             InvalidOpcode,
             RevertExecution,
             OutOfMemory,
-            // Removed Stop error - it's a success case
             AllocationError,
             AccountNotFound,
             InvalidJumpDestination,
@@ -107,15 +94,19 @@ pub fn Evm(comptime config: EvmConfig) type {
             BytecodeTooLarge,
         };
 
-        // OPTIMIZED CACHE LINE LAYOUT
         // Cache line 1 (64 bytes) - EXECUTION CONTROL: Accessed frequently during execution
+        // TODO: Depth should be removed in favor of just doing self.call_stack.len
         /// Current call depth (0 = root call)
         depth: config.get_depth_type(), // 1-2 bytes (u8 or u11)
         /// Disable gas checking (for testing/debugging)
+        // TODO: We should remove this and access this via the comptime config it should not be stored on frame itself only on FrameType so it is comptime only!
         disable_gas_checking: bool, // 1 byte
+        // TODO: We shouldn't add padding ourselves let zig do it
         _padding1: [5]u8 = undefined, // 5-6 bytes padding for alignment
+        // TODO: This is stored on frame now and this can be removed.
         /// Current call input data (slice: ptr + len)
         current_input: []const u8, // 16 bytes
+        // TODO: This is stored on frame now and this can be removed in favor of just returning the data in our SuccessResult or storing on frame depending on context
         /// Current return data (slice: ptr + len)
         return_data: []const u8, // 16 bytes
         /// Allocator for dynamic memory
@@ -125,8 +116,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         // Cache line 2 (64+ bytes) - STORAGE OPERATIONS: All accessed together for SLOAD/SSTORE
         /// Database interface for state storage
         database: *Database, // 8 bytes
-        /// Access list for tracking warm/cold access (EIP-2929)
+        // Access list for tracking warm/cold access (EIP-2929)
         access_list: AccessList, // ~40 bytes (2 hashmaps)
+        // TODO: This should be stored on Journal
         /// Current snapshot ID for the active call frame
         current_snapshot_id: Journal.SnapshotIdType, // 1-2 bytes (u8 or u16)
         /// Gas refund counter for SSTORE operations
@@ -140,6 +132,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         logs: std.ArrayList(@import("frame/call_result.zig").Log),
         /// Tracks contracts created in current transaction (EIP-6780)
         created_contracts: CreatedContracts,
+        // TODO: This should be in coldest cache line since self destruct is only old hardforks
         /// Contracts marked for self-destruction
         self_destruct: SelfDestruct,
 
@@ -160,6 +153,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         // Cache line 5+ - COLD PATH: Large data structures accessed infrequently
         /// Growing arena allocator for per-call temporary allocations with 50% growth strategy
         call_arena: GrowingArenaAllocator,
+        // TODO this replaces depth so should be moved up a bit towards depth
         /// Call stack - tracks caller and value for each call depth (accessed on depth changes)
         call_stack: [config.max_call_depth]CallStackEntry,
 
@@ -173,35 +167,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
         pub fn init(allocator: std.mem.Allocator, database: *Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
-            // Process beacon root update for EIP-4788 if applicable
-            const beacon_roots = @import("eips_and_hardforks/beacon_roots.zig");
-            beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch {
-                // Will be traced later when tracer is initialized
-            };
-
-            // Process historical block hash update for EIP-2935 if applicable
-            const historical_block_hashes = @import("eips_and_hardforks/historical_block_hashes.zig");
-            historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch {
-                // Will be traced later when tracer is initialized
-            };
-
-            // Process validator deposits for EIP-6110 if applicable
-            const validator_deposits = @import("eips_and_hardforks/validator_deposits.zig");
-            validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch {
-                // Will be traced later when tracer is initialized
-            };
-
-            // Process validator withdrawals for EIP-7002 if applicable
-            const validator_withdrawals = @import("eips_and_hardforks/validator_withdrawals.zig");
-            validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch {
-                // Will be traced later when tracer is initialized
-            };
-
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
-            // Initialize growing arena allocator first (without tracer for now)
-            // This avoids repeated allocations from the underlying allocator during execution
             const arena = try GrowingArenaAllocator.initWithMaxCapacity(
                 allocator,
                 config.arena_capacity_limit,
@@ -210,73 +178,55 @@ pub fn Evm(comptime config: EvmConfig) type {
             );
 
             var self = Self{
-                // Cache line 1 - EXECUTION CONTROL
                 .depth = 0,
                 .disable_gas_checking = false,
                 ._padding1 = undefined,
                 .current_input = &.{},
                 .return_data = &.{},
                 .allocator = allocator,
-                // Cache line 2 - STORAGE OPERATIONS
                 .database = database,
                 .access_list = access_list,
                 .current_snapshot_id = 0,
                 .gas_refund_counter = 0,
-                // Cache line 3+ - STATE TRACKING
                 .journal = Journal.init(allocator),
                 .logs = .empty,
                 .created_contracts = CreatedContracts.init(allocator),
                 .self_destruct = SelfDestruct.init(allocator),
-                // Cache line 4+ - TRANSACTION CONTEXT
                 .block_info = block_info,
                 .context = context,
                 .gas_price = gas_price,
                 .origin = origin,
                 .hardfork_config = hardfork_config,
                 .eips = (eips.Eips{ .hardfork = hardfork_config }).get_evm_config(),
-                // Cache line 5+ - COLD PATH
                 .call_arena = arena,
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
-
-                // Initialize tracer
                 .tracer = @import("tracer/tracer.zig").DefaultTracer.init(allocator),
             };
 
-            // Now update the arena allocator to use the tracer
             self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
-
-            // Trace arena initialization
             self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
-
-            // Trace EVM initialization
             self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
-
-            // Trace any initialization errors that occurred before tracer was ready
-            beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
+            // TODO: BeaconRoots should be moved to be part of the comptime config in evm_config.zig
+            // // They should be comptime known but optional and here we should only process them if they are configured
+            // Process beacon root update for EIP-4788 if applicable
+            @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
                 self.tracer.onBeaconRootUpdate(false, err);
             };
-            historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
+            @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
                 self.tracer.onHistoricalBlockHashUpdate(false, err);
             };
-            validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
+            @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
                 self.tracer.onValidatorDeposits(false, err);
             };
-            validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
+            @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
                 self.tracer.onValidatorWithdrawals(false, err);
             };
-
             return self;
         }
 
-        /// Clean up all resources.
         pub fn deinit(self: *Self) void {
-            // Deinit tracer
             self.tracer.deinit();
-
-            // Free return_data if it was allocated
-            if (self.return_data.len > 0) {
-                self.allocator.free(self.return_data);
-            }
+            if (self.return_data.len > 0) self.allocator.free(self.return_data);
             self.journal.deinit();
             self.created_contracts.deinit();
             self.self_destruct.deinit();
@@ -285,27 +235,17 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.call_arena.deinit();
         }
 
-        /// Get the arena allocator for temporary allocations during the current call.
-        /// This allocator is reset after each root call completes.
-        pub fn getCallArenaAllocator(self: *Self) std.mem.Allocator {
-            return self.call_arena.allocator();
-        }
-
         /// Transfer value between accounts with proper balance checks and error handling
-        fn doTransfer(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
+        fn transferWithBalanceChecks(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
             var from_account = try self.database.get_account(from.bytes) orelse Account.zero();
-            // Skip balance check if disabled in config
             if (comptime !config.disable_balance_checks) {
                 if (from_account.balance < value) return error.InsufficientBalance;
             }
-
-            // Self-transfer is a no-op
             if (from.equals(to)) return;
             var to_account = try self.database.get_account(to.bytes) orelse Account.zero();
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
 
-            // Self-transfer is a no-op for balance updates
             if (std.mem.eql(u8, &from.bytes, &to.bytes)) return;
 
             from_account.balance -= value;
@@ -320,26 +260,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// returning the result as if the call had been executed. Useful for
         /// gas estimation, testing outcomes, or previewing transaction effects.
         pub fn simulate(self: *Self, params: CallParams) CallResult {
-            // Create a snapshot before execution
             const snapshot_id = self.journal.create_snapshot();
-
-            // For top-level simulations, we need to clear the access list
-            // to ensure consistent gas costs across multiple simulations
-            const is_top_level = self.depth == 0;
-            if (is_top_level) {
-                self.access_list.clear();
-            }
-
-            // Always revert database state changes
             defer {
-                // For simulate, we don't need to apply individual reverts since
-                // we're discarding all state anyway. Just truncate the journal.
-                // This avoids potential stack overflow with large numbers of entries.
                 self.journal.revert_to_snapshot(snapshot_id);
             }
-
-            // Execute the call normally and return its result
-            // Note: call() will also try to clear for top-level, but that's OK - clearing twice is safe
             return self.call(params);
         }
 
@@ -349,12 +273,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// on the operation type (CALL, CREATE, etc). Manages transaction-level
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) CallResult {
-            // This should only be called at the top level
             self.tracer.assert(self.depth == 0, "call() should only be called at top level");
 
-            // Extract call parameters based on the union type
-            const call_type = @tagName(params);
-            const gas = @as(i64, @intCast(params.getGas()));
+            // TODO: We should just pass in the params to onCallStart instead of having to convert it here convert it internally
             const to_address = switch (params) {
                 .call => |p| p.to,
                 .callcode => |p| p.to,
@@ -371,13 +292,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create => |p| p.value,
                 .create2 => |p| p.value,
             };
-            self.tracer.onCallStart(call_type, gas, to_address, value);
+            self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
 
+            // TODO return more debuggable error and debug log
             params.validate() catch return CallResult.failure(0);
 
             defer {
-
-                // Cleanup after transaction completes
+                // TODO some of these can be removed like depth and return_data
                 self.depth = 0;
                 self.current_input = &.{};
                 // Note: return_data is not freed here because it's returned as part of CallResult
@@ -404,11 +325,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // This prevents memory buildup while keeping the grown capacity for better performance
                 // on subsequent transactions that need similar memory amounts
                 self.call_arena.resetRetainCapacity() catch {
+                    // TODO: we should pass this tracer and error log it
                     // If reset fails, the allocator will still be usable but may not have optimal capacity
                     // This is acceptable in a defer context where we can't propagate errors
                 };
             }
 
+            // TODO: There should be a params.get_to method. Check to see if that method or a different named
+            // //  but same exists. Otherwise make it and have it return the to address or null and here we can do orelse ZERO_ADDRESS
             // Pre-warm addresses for top-level calls (EIP-2929)
             // Get the target address from params
             const target_address = switch (params) {
@@ -419,40 +343,39 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .callcode => |p| p.to,
             };
 
+            // TODO: MOve all eip logic to eip.zig and call the method you moved there here
             // Pre-warm: tx.origin, target, and coinbase (EIP-3651 for Shanghai+)
             // Build a small array of addresses to warm (max 3: origin, target, coinbase)
             var warm_addresses: [3]primitives.Address = undefined;
             var warm_count: usize = 0;
-
+            // TODO: MOve all eip logic to eip.zig and call the method you moved there here
             // Always warm origin
             warm_addresses[warm_count] = self.origin;
             warm_count += 1;
-
+            // TODO: MOve all eip logic to eip.zig and call the method you moved there here
             // Warm target if it's not a create operation
             if (!std.mem.eql(u8, &target_address.bytes, &primitives.Address.ZERO_ADDRESS.bytes)) {
                 warm_addresses[warm_count] = target_address;
                 warm_count += 1;
             }
-
+            // TODO: MOve all eip logic to eip.zig and call the method you moved there here
             // EIP-3651: Warm coinbase for Shanghai+
             if (self.hardfork_config.isAtLeast(.SHANGHAI)) {
                 warm_addresses[warm_count] = self.block_info.coinbase;
                 warm_count += 1;
             }
 
+            // TODO: MOve all eip logic to eip.zig and call the method you moved there here
             // Pre-warm all addresses
             if (warm_count > 0) {
                 self.access_list.pre_warm_addresses(warm_addresses[0..warm_count]) catch {};
             }
 
-            // Check gas unless disabled
             const call_gas = params.getGas();
             if (!self.disable_gas_checking and call_gas == 0) return CallResult.failure(0);
 
-            // Store initial gas for EIP-3529 calculations
             const initial_gas = call_gas;
 
-            // Deduct intrinsic gas for top-level calls (transactions)
             const execution_gas = blk: {
                 const GasConstants = primitives.GasConstants;
                 const intrinsic_gas = switch (params) {
@@ -461,12 +384,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
 
                 // Check if we have enough gas for intrinsic cost
-                if (gas < @as(i64, @intCast(intrinsic_gas))) return CallResult.failure(0);
+                if (params.getGas() < @as(i64, @intCast(intrinsic_gas))) return CallResult.failure(0);
 
-                break :blk gas - @as(i64, @intCast(intrinsic_gas));
+                break :blk params.getGas() - @as(i64, @intCast(intrinsic_gas));
             };
 
-            // Create modified params with reduced gas
             var modified_params = params;
             modified_params.setGas(@as(u64, @intCast(execution_gas)));
 
@@ -474,6 +396,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             self.tracer.onCallComplete(result.success, @as(i64, @intCast(result.gas_left)), result.output.len);
 
+            // TODO: MOve all eip logic to eip.zig and call the method you moved there here
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
                 const gas_used = initial_gas - result.gas_left;
@@ -486,20 +409,19 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Reset refund counter for next transaction
                 self.gas_refund_counter = 0;
             }
-            // Only extract logs for top-level calls
-            // For nested calls, leave logs in the EVM's list to accumulate
-            result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
-            // IMPORTANT: Reinitialize logs after toOwnedSlice() to maintain allocator reference
-            // toOwnedSlice() takes ownership and leaves the ArrayList in an undefined state
+
+            result.logs = try self.logs.toOwnedSlice(self.allocator);
+
             self.logs = .empty;
             result.selfdestructs = &.{};
             result.accessed_addresses = &.{};
             result.accessed_storage = &.{};
-            // Reset internal accumulators (logs already transferred)
             self.self_destruct.clear();
             self.access_list.clear();
+
             return result;
         }
+
         /// Execute a nested EVM call - used for calls from within the EVM.
         /// This handles nested calls and manages depth tracking.
         pub fn inner_call(self: *Self, params: CallParams) CallResult {
@@ -508,35 +430,28 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             if (!self.disable_gas_checking and params.getGas() == 0) return CallResult.failure(0);
 
+            // TODO: We can just track depth by the stack
             self.depth += 1;
             defer self.depth -= 1;
 
             if (self.depth >= config.max_call_depth) return CallResult.failure(0);
 
-            // Get gas for execution
             const execution_gas = params.getGas();
 
-            // Optimized dispatch with branch hints - ordered by frequency
             var result = switch (params) {
-                // CALL is most common operation
                 .call => |p| blk: {
                     @branchHint(.likely);
                     break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch {
                         return CallResult.failure(0);
                     };
                 },
-                // STATICCALL is second most common (view functions)
                 .staticcall => |p| blk: {
                     @branchHint(.likely);
                     break :blk self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0);
                 },
-                // DELEGATECALL used for proxy patterns
                 .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0),
-                // CREATE operations
                 .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch CallResult.failure(0),
-                // CREATE2 operations
                 .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch CallResult.failure(0),
-                // CALLCODE (deprecated and rarely used)
                 .callcode => |p| blk: {
                     @branchHint(.cold);
                     break :blk self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch CallResult.failure(0);
@@ -560,7 +475,6 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Perform pre-flight checks common to all call operations
         fn performCallPreflight(self: *Self, to: primitives.Address, input: []const u8, gas: u64, is_static: bool, snapshot_id: Journal.SnapshotIdType) !PreflightResult {
-            // Handle precompiles
             if (config.enable_precompiles and precompiles.is_precompile(to)) {
                 const result = self.executePrecompileInline(to, input, gas, is_static, snapshot_id) catch {
                     self.journal.revert_to_snapshot(snapshot_id);
@@ -569,6 +483,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return PreflightResult{ .precompile_result = result };
             }
 
+            // TODO: MOve all EIP related logic to eips.zig
             // Handle EIP-4788 beacon roots contract
             const beacon_roots = @import("eips_and_hardforks/beacon_roots.zig");
             const historical_block_hashes = @import("eips_and_hardforks/historical_block_hashes.zig");
@@ -599,6 +514,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 } };
             }
 
+            // TODO: MOve all EIP related logic to eips.zig
             // Handle EIP-2935 historical block hashes contract
             if (std.mem.eql(u8, &to.bytes, &historical_block_hashes.HISTORY_CONTRACT_ADDRESS.bytes)) {
                 var contract = historical_block_hashes.HistoricalBlockHashesContract{ .database = self.database };
@@ -627,12 +543,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 } };
             }
 
+            // TODO: MOve all EIP related logic to eips.zig
             // Check for EIP-7702 delegation first
             const account = self.database.get_account(to.bytes) catch |err| {
                 log.debug("Failed to get account for address {x}: {}", .{ to.bytes, err });
                 return PreflightResult{ .precompile_result = CallResult.failure(0) };
             };
 
+            // TODO: MOve all EIP related logic to eips.zig
             // Get the effective code address (handles delegation)
             const code_address = if (account) |acc| blk: {
                 if (acc.get_effective_code_address()) |delegated| {
@@ -642,6 +560,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 break :blk to;
             } else to;
 
+            // TODO: MOve all EIP related logic to eips.zig
             // Get contract code (from delegated address if applicable)
             // log.debug("Attempting to get code for address: {x}", .{code_address.bytes});
             const code = self.database.get_code_by_address(code_address.bytes) catch |err| {
@@ -663,14 +582,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return PreflightResult{ .precompile_result = CallResult.failure_with_error(0, error_str) };
             };
 
-            // log.debug("Got code for address, length: {}", .{code.len});
-
             if (code.len == 0) {
                 log.debug("Code is empty, returning empty account result", .{});
                 return PreflightResult{ .empty_account = gas };
             }
 
-            // log.debug("Returning code for execution, code_len={}", .{code.len});
             return PreflightResult{ .execute_with_code = code };
         }
 
@@ -683,19 +599,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             @branchHint(.likely);
-            // log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
             const snapshot_id = self.journal.create_snapshot();
 
-            // Transfer value if needed
             if (params.value > 0) {
-                self.doTransfer(params.caller, params.to, params.value, snapshot_id) catch |err| {
+                self.transferWithBalanceChecks(params.caller, params.to, params.value, snapshot_id) catch |err| {
                     log.debug("Call value transfer failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
                 };
             }
 
-            // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
                 self.tracer.onCallPreflight("CALL", @errorName(err));
                 self.journal.revert_to_snapshot(snapshot_id);
@@ -718,7 +631,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         params.to,
                         params.caller,
                         params.value,
-                        false, // is_static
+                        false,
                         snapshot_id,
                     ) catch |err| {
                         log.debug("EXECUTE_CALL: execute_frame failed with error: {}", .{err});
@@ -742,16 +655,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
 
-            // Check balance for value transfer
             if (params.value > 0) {
-                // Skip balance check if disabled in config
                 if (comptime !config.disable_balance_checks) {
                     const caller_account = self.database.get_account(params.caller.bytes) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
                         return CallResult.failure(0);
                     };
-
                     if (caller_account == null or caller_account.?.balance < params.value) {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
@@ -766,13 +676,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult.success_empty(params.gas);
             }
 
-            // CALLCODE executes target's code in caller's context
             const result = self.execute_frame(
                 code,
                 params.input,
                 params.gas,
-                params.caller, // Execute in caller's context
-                params.caller, // msg.sender is still the caller
+                params.caller,
+                params.caller,
                 params.value,
                 false,
                 snapshot_id,
@@ -798,7 +707,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
 
-            // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
                 @branchHint(.cold);
                 log.debug("Delegatecall preflight failed: {}", .{err});
@@ -810,15 +718,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| return CallResult.success_empty(gas),
                 .execute_with_code => |code| {
-                    // DELEGATECALL preserves caller and value from parent context
                     const current_value = if (self.depth > 0) self.call_stack[self.depth - 1].value else 0;
                     const result = self.execute_frame(
                         code,
                         params.input,
                         params.gas,
                         params.caller,
-                        params.caller, // Preserve original caller
-                        current_value, // Preserve value from parent context
+                        params.caller,
+                        current_value,
                         false,
                         snapshot_id,
                     ) catch {
@@ -845,7 +752,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
 
-            // Perform pre-flight checks
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, true, snapshot_id) catch |err| {
                 @branchHint(.cold);
                 log.debug("Staticcall preflight failed: {}", .{err});
@@ -857,15 +763,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| return CallResult.success_empty(gas),
                 .execute_with_code => |code| {
-                    // Execute in static mode
                     const result = self.execute_frame(
                         code,
                         params.input,
                         params.gas,
                         params.to,
                         params.caller,
-                        0, // No value in static call
-                        true, // is_static = true
+                        0,
+                        true,
                         snapshot_id,
                     ) catch {
                         @branchHint(.cold);
@@ -888,22 +793,18 @@ pub fn Evm(comptime config: EvmConfig) type {
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
 
-            // Get caller account
             var caller_account = self.database.get_account(params.caller.bytes) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             } orelse Account.zero();
 
-            // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
 
-            // Calculate contract address from sender and nonce
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
 
-            // Pre-increment caller nonce (journaled)
             try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
@@ -919,9 +820,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return CallResult.failure(0);
                 }
             }
-            // Delegate to unified helper
             const GasConstants = primitives.GasConstants;
-            const create_overhead = GasConstants.CreateGas; // 32000
+            const create_overhead = GasConstants.CreateGas;
             if (params.gas < create_overhead) {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
@@ -937,7 +837,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .existed_before = existed_before,
             }) catch return CallResult.failure(0);
 
-            // Add the created contract address to the result
             result.created_address = contract_address;
             return result;
         }
@@ -950,9 +849,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             salt: u256,
             gas: u64,
         }) !CallResult {
-            // debug: CREATE2 invocation context (disabled by default)
             log.debug("CREATE2: gas={}, init_len={}, value={}", .{ params.gas, params.init_code.len, params.value });
-            // Check depth
             if (self.depth >= config.max_call_depth) {
                 log.debug("CREATE2: depth exceeded", .{});
                 return CallResult.failure(0);
@@ -966,14 +863,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return CallResult.failure(0);
             } orelse Account.zero();
 
-            // Check if caller has sufficient balance
             if (caller_account.balance < params.value) {
                 log.debug("CREATE2: insufficient balance", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             }
 
-            // Calculate contract address from sender, salt, and init code hash
             const keccak_asm = @import("crypto").keccak_asm;
             var init_code_hash_bytes: [32]u8 = undefined;
             try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
@@ -991,9 +886,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }
             }
 
-            // Gas cost for CREATE2
             const GasConstants = primitives.GasConstants;
-            const create_overhead = GasConstants.CreateGas; // 32000
+            const create_overhead = GasConstants.CreateGas;
             const hash_cost = @as(u64, @intCast(params.init_code.len)) * GasConstants.Keccak256WordGas / 32;
             const total_overhead = create_overhead + hash_cost;
             if (params.gas < total_overhead) {
@@ -1013,7 +907,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .existed_before = existed_before,
             }) catch return CallResult.failure(0);
 
-            // Add the created contract address to the result
             result.created_address = contract_address;
             return result;
         }
@@ -1027,22 +920,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             snapshot_id: Journal.SnapshotIdType,
             existed_before: bool,
         }) !CallResult {
-            // Reduce log noise: omit verbose create trace
-
-            // Track created contract for EIP-6780
             try self.created_contracts.mark_created(args.contract_address);
-
-            // Transfer value to the new contract before executing init code (per spec)
             if (args.value > 0) {
-                // Reduce log noise
-                self.doTransfer(args.caller, args.contract_address, args.value, args.snapshot_id) catch {
-                    // Reduce log noise
+                self.transferWithBalanceChecks(args.caller, args.contract_address, args.value, args.snapshot_id) catch {
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 };
             }
-
-            // Execute initialization code
             const result = self.execute_init_code(
                 args.init_code,
                 args.gas_left,
@@ -1058,9 +942,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return result;
             }
-            // Reduce log noise
-
-            // Ensure contract account exists and set nonce/code
             var contract_account = self.database.get_account(args.contract_address.bytes) catch {
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return CallResult.failure(0);
@@ -1073,31 +954,24 @@ pub fn Evm(comptime config: EvmConfig) type {
                 contract_account.nonce = 1;
             }
             if (result.output.len > 0) {
+                // TODO: handle in eip.zig
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
                 if (self.eips.eip_3541_enabled and result.output[0] == 0xEF) {
-                    // No need to free - using arena allocator
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }
-                // Store the code in the database - database will make its own copy
                 const stored_hash = self.database.set_code(result.output) catch {
-                    // No need to free - using arena allocator
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 };
                 try self.journal.record_code_change(args.snapshot_id, args.contract_address, contract_account.code_hash);
                 contract_account.code_hash = stored_hash;
-                // Don't free result.output here - we'll return it
             }
             self.database.set_account(args.contract_address.bytes, contract_account) catch {
-                // No need to free - using arena allocator
                 self.journal.revert_to_snapshot(args.snapshot_id);
                 return CallResult.failure(0);
             };
 
-            // Return the deployed bytecode as output for CREATE/CREATE2
-            // This matches the expected behavior where CREATE returns the runtime code
-            // Don't free the output here - it will be owned by the CallResult
             var final_result = if (result.output.len > 0)
                 CallResult.success_with_output(result.gas_left, result.output)
             else
@@ -1110,9 +984,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("frame/call_result.zig").ExecutionTrace {
             const call_result = @import("frame/call_result.zig");
 
-            // Check if tracer has trace_steps field (only JSONRPCTracer does)
             if (!@hasField(@TypeOf(tracer.*), "trace_steps")) {
-                // Return empty trace for non-tracing tracers
                 return call_result.ExecutionTrace{
                     .steps = &[_]call_result.TraceStep{},
                     .allocator = allocator,
@@ -1125,10 +997,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             var allocated_count: usize = 0;
             errdefer {
-                // Clean up any partially allocated trace steps
-                for (trace_steps[0..allocated_count]) |*step| {
-                    step.deinit(allocator);
-                }
+                for (trace_steps[0..allocated_count]) |*step| step.deinit(allocator);
             }
 
             for (tracer_steps, 0..) |tracer_step, i| {
@@ -1182,55 +1051,31 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             self.call_stack[self.depth - 1] = CallStackEntry{ .caller = caller, .value = value, .is_static = is_static };
 
-            // Base transaction gas cost (21,000 gas) - only charge for real transactions, not test calls
-            // Test calls start at depth 0, real transactions have depth >= 1 with is_transaction flag
             const gas_after_base = gas;
 
             const max_gas = @as(u64, @intCast(std.math.maxInt(Frame.GasType)));
             const gas_cast = @as(Frame.GasType, @intCast(@min(gas_after_base, max_gas)));
 
-            // log.debug("DEBUG: About to call Frame.init\n", .{});
-            // Use arena allocator for all frame allocations
-            const arena_allocator = self.getCallArenaAllocator();
+            const arena_allocator = self.call_arena.allocator();
             var frame = try Frame.init(arena_allocator, gas_cast, caller, value, input, @as(*anyopaque, @ptrCast(self)));
             frame.contract_address = address;
             defer frame.deinit(arena_allocator);
 
+            // TODO: Handle in eip.zig
             // EIP-2929: Warm the contract address being executed
             _ = self.access_list.access_address(address) catch {};
 
-            // log.debug("DEBUG: Frame created, gas_remaining={}, about to interpret bytecode\n", .{frame.gas_remaining});
-
-            // DEBUG: Log first few bytes of bytecode for JUMPI test
-            // if (code.len == 22) {
-            //     log.err("DEBUG: This looks like JUMPI test bytecode, first 8 bytes: {x}", .{code[0..8]});
-            // }
-
-            // Execute with tracing if tracer type is configured
             var execution_trace: ?@import("frame/call_result.zig").ExecutionTrace = null;
             const Termination = error{ Stop, Return, SelfDestruct };
             var termination_reason: ?Termination = null;
 
-            // Tracer is now part of the EVM struct
-
-            // Frame.interpret returns Error!void and uses errors for success termination
-            // reduce tracer call logging noise
             frame.interpret_with_tracer(code, @TypeOf(self.tracer), &self.tracer) catch |err| switch (err) {
-                error.Stop => {
-                    termination_reason = error.Stop;
-                },
-                error.Return => {
-                    termination_reason = error.Return;
-                },
-                error.SelfDestruct => {
-                    log.debug("execute_frame: termination SelfDestruct (traced)", .{});
-                    termination_reason = error.SelfDestruct;
-                },
+                error.Stop => termination_reason = error.Stop,
+                error.Return => termination_reason = error.Return,
+                error.SelfDestruct => termination_reason = error.SelfDestruct,
                 error.REVERT => {
-                    // REVERT is a special case - it's a successful termination but indicates failure
                     execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
                     const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                    // Copy revert data to avoid double-free with frame.deinit
                     const out_len = frame.output.len;
                     const out_copy = if (out_len > 0) blk: {
                         const buf = try self.allocator.alloc(u8, out_len);
@@ -1242,9 +1087,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return result;
                 },
                 else => {
-                    // Actual errors - but still extract trace for debugging
                     log.debug("Frame execution with tracer failed: {}", .{err});
-                    // Extract trace even on failure for debugging
                     execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
                     var failure = CallResult.failure(0);
                     failure.trace = execution_trace;
@@ -1252,61 +1095,39 @@ pub fn Evm(comptime config: EvmConfig) type {
                 },
             };
 
-            // Extract trace data before tracer is destroyed (for success cases)
             execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
 
-            // Map frame outcome to CallResult
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-            // log.debug("Frame execution complete. gas_remaining={d}, gas_left={d}", .{frame.gas_remaining, gas_left});
             const out_items = frame.output;
-            // log.debug("Frame execution complete. Output length: {d}", .{out_items.len});
-            if (out_items.len > 0) {
-                // log.debug("Output data: {x}", .{out_items});
-            }
             const out_buf = if (out_items.len > 0) blk: {
                 const b = try self.allocator.alloc(u8, out_items.len);
                 @memcpy(b, out_items);
                 break :blk b;
             } else &.{};
 
-            // Free old return_data before setting new one
-            if (self.return_data.len > 0) {
-                self.allocator.free(self.return_data);
-            }
+            if (self.return_data.len > 0) self.allocator.free(self.return_data);
             self.return_data = out_buf;
 
-            // Logs are now written directly to EVM during opcode execution
-            // No need to transfer them from frame
-
-            // Handle different termination reasons appropriately
             var result: CallResult = undefined;
             if (termination_reason) |reason| {
                 switch (reason) {
                     error.Stop => {
-                        // STOP opcode should return empty output regardless of frame output
-                        if (out_buf.len > 0) {
-                            self.allocator.free(out_buf); // Free the allocated output since we won't use it
-                        }
-                        // Ensure return_data matches empty output semantics
+                        if (out_buf.len > 0) self.allocator.free(out_buf);
                         self.return_data = &.{};
                         result = CallResult.success_with_output(gas_left, &.{});
                     },
                     error.Return => {
-                        // RETURN opcode should return the frame's output
                         result = CallResult.success_with_output(gas_left, out_buf);
                     },
                     error.SelfDestruct => {
-                        // SELFDESTRUCT should return empty output
                         if (out_buf.len > 0) {
-                            self.allocator.free(out_buf); // Free the allocated output since we won't use it
+                            self.allocator.free(out_buf);
                         }
-                        // Ensure return_data matches empty output semantics
                         self.return_data = &.{};
                         result = CallResult.success_with_output(gas_left, &.{});
                     },
                 }
             } else {
-                // This should not happen in normal execution
                 result = CallResult.success_with_output(gas_left, out_buf);
             }
             result.trace = execution_trace;
@@ -1320,48 +1141,35 @@ pub fn Evm(comptime config: EvmConfig) type {
             address: primitives.Address,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            // Reduce log noise for init code execution
-            // Check initcode size limit (EIP-3860)
             if (self.eips.eip_3860_enabled and code.len > 49152) {
                 log.debug("Init code too large: {} > 49152", .{code.len});
                 return CallResult.failure(0);
             }
-            // Simply delegate to execute_frame with no input
-            // Init code execution is the same as regular execution
-            // but the output becomes the deployed contract code
-            // Reduce log noise
             const result = self.execute_frame(
                 code,
-                &.{}, // No input for init code
+                &.{},
                 gas,
                 address,
-                address, // Contract is its own caller during init
-                0, // No value during init
-                false, // Not static during init
+                address,
+                0,
+                false,
                 snapshot_id,
             ) catch |err| {
                 log.debug("execute_frame failed with error: {}", .{err});
                 return err;
             };
-            // Reduce log noise
             return result;
         }
 
         /// Execute a precompile call (inlined)
         fn executePrecompileInline(self: *Self, address: primitives.Address, input: []const u8, gas: u64, is_static: bool, snapshot_id: Journal.SnapshotIdType) !CallResult {
-            _ = snapshot_id; // TODO: implement snapshot usage
-            _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
+            _ = snapshot_id;
+            _ = is_static;
+            if (!precompiles.is_precompile(address)) return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
 
-            if (!precompiles.is_precompile(address)) {
-                return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
-            }
+            const precompile_id = address.bytes[19];
+            if (precompile_id < 1 or precompile_id > 10) return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
 
-            const precompile_id = address.bytes[19]; // Last byte is the precompile ID
-            if (precompile_id < 1 or precompile_id > 10) {
-                return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
-            }
-
-            // Execute precompile using main allocator so tests can free outputs
             const result = precompiles.execute_precompile(self.allocator, address, input, gas) catch {
                 return CallResult{
                     .success = false,
@@ -1370,23 +1178,14 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             };
 
-            // Transfer ownership of precompile output directly (both use same allocator)
             const out_slice = result.output;
-            if (result.success) {
-                return CallResult{ .success = true, .gas_left = gas - result.gas_used, .output = out_slice };
-            } else {
-                return CallResult{ .success = false, .gas_left = 0, .output = out_slice };
-            }
+            if (result.success) return CallResult{ .success = true, .gas_left = gas - result.gas_used, .output = out_slice };
+            return CallResult{ .success = false, .gas_left = 0, .output = out_slice };
         }
-
-        // ===== Host Interface Implementation =====
 
         /// Get account balance
         pub fn get_balance(self: *Self, address: primitives.Address) u256 {
-            // Return 0 for all balance checks if disabled in config
-            if (comptime config.disable_balance_checks) {
-                return 0;
-            }
+            if (comptime config.disable_balance_checks) return 0;
             return self.database.get_balance(address.bytes) catch 0;
         }
 
@@ -1407,12 +1206,10 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Emit log event
         pub fn emit_log(self: *Self, contract_address: primitives.Address, topics: []const u256, data: []const u8) void {
+            // TODO: move to eip.zig
             // EIP-214: Prevent log emission in static context
-            if (self.is_static_context()) {
-                return; // Silently fail in static context
-            }
+            if (self.is_static_context()) return;
 
-            // Allocate copies with the main allocator so tests can free via evm.allocator
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
 
@@ -1426,11 +1223,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Take ownership of the accumulated logs and clear internal storage
         pub fn takeLogs(self: *Self) []@import("frame/call_result.zig").Log {
             return self.logs.toOwnedSlice(self.allocator) catch &.{};
-        }
-
-        /// Execute nested EVM call - for Host interface
-        pub fn host_inner_call(self: *Self, params: CallParams) CallResult {
-            return self.inner_call(params);
         }
 
         /// Register a contract as created in the current transaction
@@ -1453,7 +1245,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Optimized to avoid allocations: iterate journal entries in reverse
         /// before truncating, applying all reverts in-place.
         pub fn revert_to_snapshot(self: *Self, snapshot_id: Journal.SnapshotIdType) void {
-            // Find first index whose snapshot_id >= target
             var start_index: ?usize = null;
             for (self.journal.entries.items, 0..) |entry, i| {
                 if (entry.snapshot_id >= snapshot_id) {
@@ -1461,7 +1252,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                     break;
                 }
             }
-
             if (start_index) |start| {
                 var i = self.journal.entries.items.len;
                 while (i > start) : (i -= 1) {
@@ -1471,8 +1261,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                     };
                 }
             }
-
-            // Finally, truncate the journal entries to the snapshot boundary
             self.journal.revert_to_snapshot(snapshot_id);
         }
 
@@ -1480,13 +1268,10 @@ pub fn Evm(comptime config: EvmConfig) type {
         fn apply_journal_entry_revert(self: *Self, entry: Journal.EntryType) !void {
             switch (entry.data) {
                 .storage_change => |sc| {
-                    // Revert storage to original value
                     try self.database.set_storage(sc.address.bytes, sc.key, sc.original_value);
                 },
                 .balance_change => |bc| {
-                    // Revert balance to original value
                     var account = (try self.database.get_account(bc.address.bytes)) orelse {
-                        // If account doesn't exist, create it with the original balance
                         const reverted_account = Account{
                             .balance = bc.original_balance,
                             .nonce = 0,
@@ -1499,24 +1284,19 @@ pub fn Evm(comptime config: EvmConfig) type {
                     try self.database.set_account(bc.address.bytes, account);
                 },
                 .nonce_change => |nc| {
-                    // Revert nonce to original value
                     var account = (try self.database.get_account(nc.address.bytes)) orelse return;
                     account.nonce = nc.original_nonce;
                     try self.database.set_account(nc.address.bytes, account);
                 },
                 .code_change => |cc| {
-                    // Revert code to original value
                     var account = (try self.database.get_account(cc.address.bytes)) orelse return;
                     account.code_hash = cc.original_code_hash;
                     try self.database.set_account(cc.address.bytes, account);
                 },
                 .account_created => |ac| {
-                    // Remove created account
                     try self.database.delete_account(ac.address.bytes);
                 },
                 .account_destroyed => |ad| {
-                    // Restore destroyed account
-                    // Note: This is a simplified restoration - in practice we'd need full account state
                     const restored_account = Account{
                         .balance = ad.balance,
                         .nonce = 0,
@@ -1535,7 +1315,6 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get the original storage value from the journal
         pub fn get_original_storage(self: *Self, address: primitives.Address, slot: u256) ?u256 {
-            // Use journal's built-in method to get original storage
             return self.journal.get_original_storage(address, slot);
         }
 
@@ -1554,9 +1333,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Mark a contract for destruction
         pub fn mark_for_destruction(self: *Self, contract_address: primitives.Address, recipient: primitives.Address) !void {
             // EIP-214: Prevent self-destruction in static context
-            if (self.is_static_context()) {
-                return error.StaticCallViolation;
-            }
+            if (self.is_static_context()) return error.StaticCallViolation;
 
             // EIP-6780: SELFDESTRUCT only actually destroys the contract if it was created in the same transaction
             // Otherwise, it only transfers the balance but keeps the code and storage
@@ -1587,7 +1364,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                             try self.database.set_account(recipient.bytes, recipient_account);
                         }
                     }
-                    // Don't mark for destruction - contract persists
                 }
             } else {
                 // Pre-Cancun: always mark for full destruction
@@ -1645,11 +1421,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Set storage value
         pub fn set_storage(self: *Self, address: primitives.Address, slot: u256, value: u256) !void {
-            // EIP-214: Prevent storage writes in static context
-            if (self.is_static_context()) {
-                return error.StaticCallViolation;
-            }
-            // Record original value for journal
+            // TODO: We should be using the static database instead of this to remove branching
+            if (self.is_static_context()) return error.StaticCallViolation;
             const original_value = self.get_storage(address, slot);
             try self.record_storage_change(address, slot, original_value);
             try self.database.set_storage(address.bytes, slot, value);
@@ -1743,10 +1516,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get blob hash for the given index (EIP-4844)
         pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
-            // Convert index to usize, return null if out of bounds
-            if (index >= self.context.blob_versioned_hashes.len) {
-                return null;
-            }
+            if (index >= self.context.blob_versioned_hashes.len) return null;
             const idx = @as(usize, @intCast(index));
             return self.context.blob_versioned_hashes[idx];
         }
