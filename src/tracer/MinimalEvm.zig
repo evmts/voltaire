@@ -1287,9 +1287,9 @@ pub const MinimalEvm = struct {
                 // MCOPY - Memory copy (EIP-5656)
                 0x5e => {
                     try self.consumeGas(GasConstants.GasFastestStep); // Base cost
-                    const size = try self.popStack();
-                    const src_offset = try self.popStack();
-                    const dest_offset = try self.popStack();
+                    const dest_offset = try self.popStack();  // Top of stack
+                    const src_offset = try self.popStack();   // Second
+                    const size = try self.popStack();         // Third
 
                     // Check if size is 0 (no-op)
                     if (size == 0) {

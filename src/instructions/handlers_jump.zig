@@ -589,7 +589,7 @@ test "JUMP opcode - invalid destination should revert" {
         0x5b, // JUMPDEST at position 5
         0x00, // STOP
     };
-    var bytecode = try TestBytecode.init(testing.allocator, &bytecode_data);
+    var bytecode = try TestBytecode.init(testing.allocator, &bytecode_data, null);
     defer bytecode.deinit();
 
     // Create dispatch with jump table
@@ -636,7 +636,7 @@ test "JUMPI opcode - invalid destination should revert when taken" {
         0x5b, // JUMPDEST at position 6
         0x00, // STOP
     };
-    var bytecode = try TestBytecode.init(testing.allocator, &bytecode_data);
+    var bytecode = try TestBytecode.init(testing.allocator, &bytecode_data, null);
     defer bytecode.deinit();
 
     // Create dispatch with jump table

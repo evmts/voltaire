@@ -352,11 +352,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         // Packed bitmap (4 bits per byte position) for efficient storage
         packed_bitmap: []PackedBits,
 
-        pub fn init(allocator: std.mem.Allocator, code: []const u8) ValidationError!Self {
-            return initWithTracer(allocator, code, null);
-        }
-
-        pub fn initWithTracer(allocator: std.mem.Allocator, code: []const u8, tracer: anytype) ValidationError!Self {
+        pub fn init(allocator: std.mem.Allocator, code: []const u8, tracer: anytype) ValidationError!Self {
             // Notify tracer of analysis start
             if (tracer) |t| {
                 t.onBytecodeAnalysisStart(code.len);
@@ -391,7 +387,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             std.mem.startsWith(u8, metadata_slice, bzzr1_pattern))
                         {
                             runtime_code = code[0..metadata_start_idx];
-                            log.debug("Detected Solidity metadata, trimming bytecode from {} to {} bytes", .{ code.len, runtime_code.len });
+                            if (tracer) |t| {
+                                t.debug("Detected Solidity metadata, trimming bytecode from {} to {} bytes", .{ code.len, runtime_code.len });
+                            }
                         }
                     }
                 }
@@ -1059,7 +1057,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                             // Case 1: PUSH + JUMP (for fusion optimization)
                             if (next_op == @intFromEnum(Opcode.JUMP)) {
-                                log.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
+                                if (tracer) |t| {
+                                    t.debug("Detected PUSH + JUMP fusion opportunity at pc={}, push_value={}, next_op={x}", .{ i, push_value, next_op });
+                                }
                                 // Note: We do NOT validate jump targets here - that happens at runtime
                                 // This is only for marking fusion opportunities
                             }
@@ -1071,7 +1071,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             {
                                 // We have PUSH(dest) + PUSH(cond) + JUMPI pattern
                                 const jump_dest = last_push_value.?;
-                                log.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
+                                if (tracer) |t| {
+                                    t.debug("Detected PUSH + PUSH + JUMPI fusion opportunity at pc={}, jump_dest={}, next_op={x}", .{ i, jump_dest, next_op });
+                                }
                                 // Note: We do NOT validate jump targets here - that happens at runtime
                             }
                         }
@@ -1362,7 +1364,7 @@ test "pretty_print: should format bytecode with colors and metadata" {
 
     for (expected_parts) |part| {
         std.testing.expect(std.mem.indexOf(u8, formatted, part) != null) catch |err| {
-            log.debug("Expected to find '{s}' in:\n{s}\n", .{ part, formatted });
+            std.debug.print("Expected to find '{s}' in:\n{s}\n", .{ part, formatted });
             return err;
         };
     }
@@ -1623,7 +1625,7 @@ test "Fusion candidate detection" {
         .fusions_enabled = true,
     };
     const TestBytecode = Bytecode(config);
-    var bytecode = try TestBytecode.init(allocator, &code);
+    var bytecode = try TestBytecode.init(allocator, &code, null);
     defer bytecode.deinit();
 
     // PUSH1 at PC 0 followed by ADD should be fusion candidate

@@ -795,6 +795,94 @@ pub const DefaultTracer = struct {
             }
         }
     }
+
+    /// Called when bytecode analysis starts
+    pub fn onBytecodeAnalysisStart(self: *DefaultTracer, code_len: usize) void {
+        _ = self;
+        _ = code_len;
+        // No-op in default tracer
+    }
+
+    /// Called when bytecode analysis completes
+    pub fn onBytecodeAnalysisComplete(self: *DefaultTracer, validated_up_to: usize, opcode_count: usize, jumpdest_count: usize) void {
+        _ = self;
+        _ = validated_up_to;
+        _ = opcode_count;
+        _ = jumpdest_count;
+        // No-op in default tracer
+    }
+
+    /// Called when an invalid opcode is found during analysis
+    pub fn onInvalidOpcode(self: *DefaultTracer, pc: usize, opcode: u8) void {
+        _ = self;
+        _ = pc;
+        _ = opcode;
+        // No-op in default tracer
+    }
+
+    /// Called when a JUMPDEST is found during analysis
+    pub fn onJumpdestFound(self: *DefaultTracer, pc: usize, count: usize) void {
+        _ = self;
+        _ = pc;
+        _ = count;
+        // No-op in default tracer
+    }
+
+    /// Called when dispatch schedule build starts
+    pub fn onScheduleBuildStart(self: *DefaultTracer, bytecode_len: usize) void {
+        _ = self;
+        _ = bytecode_len;
+        // No-op in default tracer
+    }
+
+    /// Called when a fusion optimization is detected
+    pub fn onFusionDetected(self: *DefaultTracer, pc: usize, fusion_type: []const u8, instruction_count: usize) void {
+        _ = self;
+        _ = pc;
+        _ = fusion_type;
+        _ = instruction_count;
+        // No-op in default tracer
+    }
+
+    /// Called when an invalid static jump is detected
+    pub fn onInvalidStaticJump(self: *DefaultTracer, jump_pc: usize, target_pc: usize) void {
+        _ = self;
+        _ = jump_pc;
+        _ = target_pc;
+        // No-op in default tracer
+    }
+
+    /// Called when a static jump is resolved
+    pub fn onStaticJumpResolved(self: *DefaultTracer, jump_pc: usize, target_pc: usize) void {
+        _ = self;
+        _ = jump_pc;
+        _ = target_pc;
+        // No-op in default tracer
+    }
+
+    /// Called when a truncated PUSH instruction is detected
+    pub fn onTruncatedPush(self: *DefaultTracer, pc: usize, push_size: u8, available: usize) void {
+        _ = self;
+        _ = pc;
+        _ = push_size;
+        _ = available;
+        // No-op in default tracer
+    }
+
+    /// Called when dispatch schedule build completes
+    pub fn onScheduleBuildComplete(self: *DefaultTracer, item_count: usize, fusion_count: usize) void {
+        _ = self;
+        _ = item_count;
+        _ = fusion_count;
+        // No-op in default tracer
+    }
+
+    /// Called when a jump table is created
+    pub fn onJumpTableCreated(self: *DefaultTracer, jumpdest_count: usize) void {
+        _ = self;
+        _ = jumpdest_count;
+        // No-op in default tracer
+    }
 };
 
 // Helper function to get opcode name
