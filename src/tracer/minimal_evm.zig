@@ -69,22 +69,89 @@ pub const Host = struct {
     }
 
     pub fn innerCall(ptr: *anyopaque, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: HostInterface.CallType) HostInterface.CallResult {
-        _ = ptr;
-        _ = address;
-        _ = value;
-        _ = input;
-        _ = call_type;
+        const self: *Self = @ptrCast(@alignCast(ptr));
 
-        // For MinimalEvm, simplify CALL operations to avoid infinite recursion
-        // Just return success with consumed gas like the Frame implementation would
-        // This maintains the same stack effects without the complexity
-        const gas_consumed: u64 = 700; // Approximate gas cost for simple call
-        const remaining_gas = if (gas > gas_consumed) gas - gas_consumed else 0;
+        // Get the EVM to access code
+        const EvmType = @import("../evm.zig").DefaultEvm;
+        const evm: *EvmType = @ptrCast(@alignCast(self.evm));
+
+        std.log.debug("MinimalEvm.Host.innerCall: address={x}, gas={}, call_type={s}", .{ address.bytes, gas, @tagName(call_type) });
+
+        // Get code for the target address
+        const code = evm.get_code(address);
+        std.log.debug("MinimalEvm.Host.innerCall: code_len={}", .{code.len});
+        if (code.len == 0) {
+            // Empty account - return success with no gas consumed
+            return .{
+                .success = true,
+                .gas_left = gas,
+                .output = &.{},
+            };
+        }
+
+        // Create a new MinimalEvm instance for the inner call
+        // Use the same host interface (self) for nested calls
+        var inner_evm = MinimalEvm.initWithHost(evm.allocator, code, @intCast(gas), self.hostInterface()) catch |err| {
+            std.log.debug("MinimalEvm.Host.innerCall: Failed to create inner EVM: {}", .{err});
+            return .{
+                .success = false,
+                .gas_left = 0,
+                .output = &.{},
+            };
+        };
+        defer inner_evm.deinit();
+
+        // For now, use simplified context setup
+        // In a real implementation, we'd get this from the parent EVM's context
+        const caller_address = if (evm.depth > 0) evm.call_stack[evm.depth - 1].caller else evm.origin;
+
+        const call_address = switch (call_type) {
+            .Call, .StaticCall => address,
+            .CallCode, .DelegateCall => caller_address, // Execute in caller's context
+            else => address,
+        };
+
+        const call_value = switch (call_type) {
+            .Call, .CallCode => value,
+            .DelegateCall => if (evm.depth > 0) evm.call_stack[evm.depth - 1].value else 0, // Preserve original value
+            .StaticCall => 0,
+            else => 0,
+        };
+
+        inner_evm.setCallContext(caller_address, call_address, evm.origin, call_value, input);
+
+        // Copy blockchain context from parent EVM
+        inner_evm.setBlockchainContext(
+            evm.block_info.chain_id,
+            evm.block_info.number,
+            evm.block_info.timestamp,
+            evm.block_info.difficulty,
+            evm.block_info.coinbase,
+            evm.block_info.gas_limit,
+            evm.block_info.base_fee,
+            evm.context.blob_base_fee,
+        );
+
+        // Execute the inner call
+        inner_evm.execute() catch {
+            return .{
+                .success = false,
+                .gas_left = 0,
+                .output = &.{},
+            };
+        };
+
+        // Prepare output
+        const output = if (inner_evm.return_data.len > 0) blk: {
+            const out = evm.allocator.alloc(u8, inner_evm.return_data.len) catch break :blk &[_]u8{};
+            @memcpy(out, inner_evm.return_data);
+            break :blk out;
+        } else &[_]u8{};
 
         return .{
-            .success = true,
-            .gas_left = remaining_gas,
-            .output = &.{},
+            .success = !inner_evm.reverted,
+            .gas_left = @intCast(@max(inner_evm.gas_remaining, 0)),
+            .output = output,
         };
     }
 
