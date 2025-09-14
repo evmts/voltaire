@@ -68,13 +68,12 @@ pub fn build(b: *std.Build) void {
     const blst_lib = build_pkg.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = build_pkg.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
 
-    const rust_build_step = build_pkg.RevmLib.createRustBuildStep(b, optimize, rust_target);
+    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b);
     const bn254_lib = build_pkg.Bn254Lib.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
-    const revm_lib = build_pkg.RevmLib.createRevmLibrary(b, target, optimize, rust_build_step, rust_target);
     const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
 
     // Modules
-    const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, revm_lib, foundry_lib);
+    const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, null, foundry_lib);
 
     // Executables
     const guillotine_exe = build_pkg.GuillotineExe.createExecutable(b, modules.exe_mod);
@@ -189,7 +188,7 @@ pub fn build(b: *std.Build) void {
     const lib_unit_tests = b.addTest(.{ .root_module = modules.lib_mod });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
-    const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, revm_lib, bn254_lib, c_kzg_lib, blst_lib, rust_target);
+    const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, null, bn254_lib, c_kzg_lib, blst_lib, rust_target);
     const run_integration_tests = b.addRunArtifact(integration_tests);
 
     // Add test/root.zig tests  
@@ -207,16 +206,10 @@ pub fn build(b: *std.Build) void {
     root_tests.root_module.addImport("provider", modules.provider_mod);
     root_tests.root_module.addImport("trie", modules.trie_mod);
     root_tests.root_module.addImport("Guillotine_lib", modules.lib_mod);
-    if (modules.revm_mod) |revm_mod| {
-        root_tests.root_module.addImport("revm", revm_mod);
-    }
+    // Using MinimalEvm for differential testing (REVM removed)
     root_tests.linkLibrary(c_kzg_lib);
     root_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| root_tests.linkLibrary(bn254);
-    if (revm_lib) |revm| {
-        root_tests.linkLibrary(revm);
-        root_tests.addIncludePath(b.path("lib/revm"));
-    }
     root_tests.linkLibC();
     const run_root_tests = b.addRunArtifact(root_tests);
 
@@ -369,27 +362,7 @@ pub fn build(b: *std.Build) void {
         .optimize = .Debug,
     }));
     
-    // Add REVM module and library for differential testing
-    if (modules.revm_mod) |revm_mod| {
-        erc20_deployment_test.root_module.addImport("revm", revm_mod);
-        if (revm_lib) |revm| {
-            erc20_deployment_test.linkLibrary(revm);
-            erc20_deployment_test.addIncludePath(b.path("lib/revm"));
-            
-            if (target.result.os.tag == .linux) {
-                erc20_deployment_test.linkSystemLibrary("m");
-                erc20_deployment_test.linkSystemLibrary("pthread");
-                erc20_deployment_test.linkSystemLibrary("dl");
-            } else if (target.result.os.tag == .macos) {
-                erc20_deployment_test.linkSystemLibrary("c++");
-                erc20_deployment_test.linkFramework("Security");
-                erc20_deployment_test.linkFramework("SystemConfiguration");
-                erc20_deployment_test.linkFramework("CoreFoundation");
-            }
-            
-            erc20_deployment_test.step.dependOn(&revm.step);
-        }
-    }
+    // Using MinimalEvm for differential testing (REVM removed)
     
     erc20_deployment_test.linkLibrary(c_kzg_lib);
     erc20_deployment_test.linkLibrary(blst_lib);
@@ -415,27 +388,7 @@ pub fn build(b: *std.Build) void {
     fixtures_differential_test.root_module.addImport("build_options", config.options_mod);
     fixtures_differential_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
     
-    // Add REVM module and library for differential testing
-    if (modules.revm_mod) |revm_mod| {
-        fixtures_differential_test.root_module.addImport("revm", revm_mod);
-        if (revm_lib) |revm| {
-            fixtures_differential_test.linkLibrary(revm);
-            fixtures_differential_test.addIncludePath(b.path("lib/revm"));
-            
-            if (target.result.os.tag == .linux) {
-                fixtures_differential_test.linkSystemLibrary("m");
-                fixtures_differential_test.linkSystemLibrary("pthread");
-                fixtures_differential_test.linkSystemLibrary("dl");
-            } else if (target.result.os.tag == .macos) {
-                fixtures_differential_test.linkSystemLibrary("c++");
-                fixtures_differential_test.linkFramework("Security");
-                fixtures_differential_test.linkFramework("SystemConfiguration");
-                fixtures_differential_test.linkFramework("CoreFoundation");
-            }
-            
-            fixtures_differential_test.step.dependOn(&revm.step);
-        }
-    }
+    // Using MinimalEvm for differential testing (REVM removed)
     
     fixtures_differential_test.linkLibrary(c_kzg_lib);
     fixtures_differential_test.linkLibrary(blst_lib);
@@ -461,27 +414,7 @@ pub fn build(b: *std.Build) void {
     snailtracer_test.root_module.addImport("build_options", config.options_mod);
     snailtracer_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
     
-    // Add REVM module and library for differential testing
-    if (modules.revm_mod) |revm_mod| {
-        snailtracer_test.root_module.addImport("revm", revm_mod);
-        if (revm_lib) |revm| {
-            snailtracer_test.linkLibrary(revm);
-            snailtracer_test.addIncludePath(b.path("lib/revm"));
-            
-            if (target.result.os.tag == .linux) {
-                snailtracer_test.linkSystemLibrary("m");
-                snailtracer_test.linkSystemLibrary("pthread");
-                snailtracer_test.linkSystemLibrary("dl");
-            } else if (target.result.os.tag == .macos) {
-                snailtracer_test.linkSystemLibrary("c++");
-                snailtracer_test.linkFramework("Security");
-                snailtracer_test.linkFramework("SystemConfiguration");
-                snailtracer_test.linkFramework("CoreFoundation");
-            }
-            
-            snailtracer_test.step.dependOn(&revm.step);
-        }
-    }
+    // Using MinimalEvm for differential testing (REVM removed)
     
     snailtracer_test.linkLibrary(c_kzg_lib);
     snailtracer_test.linkLibrary(blst_lib);
@@ -553,26 +486,7 @@ pub fn build(b: *std.Build) void {
             if (bn254_lib) |bn254| t.linkLibrary(bn254);
             t.linkLibC();
 
-            // Add REVM integration for differential tests
-            if (modules.revm_mod) |revm_mod| {
-                t.root_module.addImport("revm", revm_mod);
-                if (revm_lib) |revm| {
-                    t.linkLibrary(revm);
-                    t.addIncludePath(b.path("lib/revm"));
-
-                    if (target.result.os.tag == .linux) {
-                        t.linkSystemLibrary("m");
-                        t.linkSystemLibrary("pthread");
-                        t.linkSystemLibrary("dl");
-                    } else if (target.result.os.tag == .macos) {
-                        t.linkSystemLibrary("c++");
-                        t.linkFramework("Security");
-                        t.linkFramework("SystemConfiguration");
-                        t.linkFramework("CoreFoundation");
-                    }
-                    t.step.dependOn(&revm.step);
-                }
-            }
+            // Using MinimalEvm for differential testing (REVM removed)
 
             const run_t = b.addRunArtifact(t);
             
@@ -601,27 +515,7 @@ pub fn build(b: *std.Build) void {
         erc20_mint_test.root_module.addImport("primitives", modules.primitives_mod);
         erc20_mint_test.root_module.addImport("crypto", modules.crypto_mod);
         
-        // Add REVM module and library for differential testing
-        if (modules.revm_mod) |revm_mod| {
-            erc20_mint_test.root_module.addImport("revm", revm_mod);
-            if (revm_lib) |revm| {
-                erc20_mint_test.linkLibrary(revm);
-                erc20_mint_test.addIncludePath(b.path("lib/revm"));
-                
-                if (target.result.os.tag == .linux) {
-                    erc20_mint_test.linkSystemLibrary("m");
-                    erc20_mint_test.linkSystemLibrary("pthread");
-                    erc20_mint_test.linkSystemLibrary("dl");
-                } else if (target.result.os.tag == .macos) {
-                    erc20_mint_test.linkSystemLibrary("c++");
-                    erc20_mint_test.linkFramework("Security");
-                    erc20_mint_test.linkFramework("SystemConfiguration");
-                    erc20_mint_test.linkFramework("CoreFoundation");
-                }
-                
-                erc20_mint_test.step.dependOn(&revm.step);
-            }
-        }
+        // Using MinimalEvm for differential testing (REVM removed)
         
         // Link other required libraries
         erc20_mint_test.linkLibrary(c_kzg_lib);
@@ -869,13 +763,7 @@ pub fn build(b: *std.Build) void {
         fusions_diff_toggle.root_module.addImport("crypto", modules.crypto_mod);
         fusions_diff_toggle.root_module.addImport("build_options", config.options_mod);
         fusions_diff_toggle.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
-        if (modules.revm_mod) |revm_mod| {
-            fusions_diff_toggle.root_module.addImport("revm", revm_mod);
-            if (revm_lib) |revm| {
-                fusions_diff_toggle.linkLibrary(revm);
-                fusions_diff_toggle.addIncludePath(b.path("lib/revm"));
-            }
-        }
+        // Using MinimalEvm for differential testing (REVM removed)
         fusions_diff_toggle.linkLibrary(c_kzg_lib);
         fusions_diff_toggle.linkLibrary(blst_lib);
         if (bn254_lib) |bn254| fusions_diff_toggle.linkLibrary(bn254);
