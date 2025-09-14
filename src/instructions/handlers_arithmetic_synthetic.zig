@@ -21,8 +21,8 @@ pub fn Handlers(comptime FrameType: type) type {
 
         /// Validate stack constraints
         pub inline fn validate_stack(self: *FrameType) void {
-            std.debug.assert(self.stack.size() >= 1);
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity);
+            self.getTracer().assert(self.stack.size() >= 1, "Arithmetic operation requires at least 1 stack item");
+            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Arithmetic operation requires stack space");
         }
 
         /// PUSH_ADD_INLINE - Fused PUSH+ADD with inline value (≤8 bytes).
@@ -102,7 +102,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_DIV_POINTER, Dispatch, Dispatch.Item, cursor);
             const dividend = self.u256_constants[op_data.metadata.index];
 
-            std.debug.assert(self.stack.size() >= 1); // PUSH_DIV_POINTER requires 1 stack item
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_DIV_POINTER requires 1 stack item");
             const divisor = self.stack.peek_unsafe();
 
             // Convert to U256 for optimized division
@@ -124,7 +124,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.PUSH_SUB_INLINE, cursor);
             const op_data = dispatch_opcode_data.getOpData(.PUSH_SUB_INLINE, Dispatch, Dispatch.Item, cursor);
             const push_value = op_data.metadata.value;
-            std.debug.assert(self.stack.size() >= 1); // PUSH_SUB_INLINE requires 1 stack item
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_SUB_INLINE requires 1 stack item");
             const top = self.stack.peek_unsafe();
             const result = push_value -% top;
             self.stack.set_top_unsafe(result);
@@ -135,7 +135,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn push_sub_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.PUSH_SUB_POINTER, cursor);
             const op_data = dispatch_opcode_data.getOpData(.PUSH_SUB_POINTER, Dispatch, Dispatch.Item, cursor);
-            std.debug.assert(self.stack.size() >= 1);
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_SUB_POINTER requires 1 stack item");
             const top = self.stack.peek_unsafe();
             const result = self.u256_constants[op_data.metadata.index] -% top;
             self.stack.set_top_unsafe(result);

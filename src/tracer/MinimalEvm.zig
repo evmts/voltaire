@@ -1284,6 +1284,70 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
 
+                // MCOPY - Memory copy (EIP-5656)
+                0x5e => {
+                    try self.consumeGas(GasConstants.GasFastestStep); // Base cost
+                    const size = try self.popStack();
+                    const src_offset = try self.popStack();
+                    const dest_offset = try self.popStack();
+
+                    // Check if size is 0 (no-op)
+                    if (size == 0) {
+                        self.pc += 1;
+                        return;
+                    }
+
+                    // Calculate dynamic gas cost
+                    const words = (size + 31) / 32;
+                    const copy_gas = words * GasConstants.CopyGas;
+                    try self.consumeGas(@intCast(copy_gas));
+
+                    // Calculate memory expansion for both source and destination
+                    const src_end = src_offset + size;
+                    const dest_end = dest_offset + size;
+
+                    // Check bounds
+                    if (src_end > MAX_MEMORY_SIZE or dest_end > MAX_MEMORY_SIZE) {
+                        return error.OutOfBounds;
+                    }
+
+                    // Expand memory if needed and charge gas
+                    const max_end = @max(src_end, dest_end);
+                    if (max_end > self.memory_size) {
+                        const old_size_words = (self.memory_size + 31) / 32;
+                        const new_size_words = (max_end + 31) / 32;
+
+                        // Memory expansion gas cost
+                        const old_cost = old_size_words * GasConstants.MemoryGas + (old_size_words * old_size_words) / 512;
+                        const new_cost = new_size_words * GasConstants.MemoryGas + (new_size_words * new_size_words) / 512;
+                        const expansion_cost = new_cost - old_cost;
+                        try self.consumeGas(@intCast(expansion_cost));
+
+                        self.memory_size = @intCast(max_end);
+                    }
+
+                    // Copy memory (handle overlapping regions correctly)
+                    // First, read all source bytes into a temporary buffer
+                    var temp_buffer = std.ArrayList(u8){};
+                    defer temp_buffer.deinit(self.allocator);
+
+                    var i: u256 = 0;
+                    while (i < size) : (i += 1) {
+                        const src_addr = @as(u32, @intCast((src_offset + i) & 0xFFFFFFFF));
+                        const byte = self.memory.get(src_addr) orelse 0;
+                        try temp_buffer.append(self.allocator, byte);
+                    }
+
+                    // Then write to destination
+                    i = 0;
+                    while (i < size) : (i += 1) {
+                        const dest_addr = @as(u32, @intCast((dest_offset + i) & 0xFFFFFFFF));
+                        try self.memory.put(dest_addr, temp_buffer.items[@intCast(i)]);
+                    }
+
+                    self.pc += 1;
+                },
+
                 // PUSH0
                 0x5f => {
                     try self.consumeGas(GasConstants.GasQuickStep);

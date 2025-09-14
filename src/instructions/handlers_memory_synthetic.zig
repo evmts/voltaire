@@ -51,7 +51,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
+            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
             self.stack.push_unsafe(value);
 
             self.afterInstruction(.PUSH_MLOAD_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
@@ -95,7 +95,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
-            std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
+            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
             self.stack.push_unsafe(value);
 
             self.afterInstruction(.PUSH_MLOAD_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
@@ -114,7 +114,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = op_data.metadata.value;
 
             // Pop the value to store
-            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
@@ -159,10 +159,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = self.u256_constants[op_data.metadata.index];
 
             // Pop the value to store
-            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE requires 1 stack item
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
             const value = self.stack.pop_unsafe();
 
-            std.debug.assert(offset <= std.math.maxInt(usize));
+            self.getTracer().assert(offset <= std.math.maxInt(usize), "PUSH_MSTORE offset must fit in usize");
             const offset_usize = @as(usize, @intCast(offset));
 
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
@@ -200,7 +200,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = op_data.metadata.value;
 
             // Pop the value to store
-            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE8 requires 1 stack item
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize
@@ -245,7 +245,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = self.u256_constants[op_data.metadata.index];
 
             // Pop the value to store
-            std.debug.assert(self.stack.size() >= 1); // PUSH_MSTORE8 requires 1 stack item
+            self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
             const value = self.stack.pop_unsafe();
 
             // Check if offset fits in usize

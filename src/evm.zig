@@ -350,7 +350,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) CallResult {
             // This should only be called at the top level
-            std.debug.assert(self.depth == 0);
+            self.tracer.assert(self.depth == 0, "call() should only be called at top level");
 
             // Extract call parameters based on the union type
             const call_type = @tagName(params);

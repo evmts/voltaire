@@ -657,7 +657,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             self.getTracer().debug("Frame: Starting opcode execution, first_item_type={s}", .{@tagName(self.dispatch.cursor[0])});
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
-            unreachable; // Handlers never return normally
+            self.getTracer().assert(false, "Handlers should never return normally");
         }
 
         /// Create a deep copy of the frame.

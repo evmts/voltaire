@@ -782,6 +782,19 @@ pub const DefaultTracer = struct {
             });
         }
     }
+
+    /// Assert with error message - replaces std.debug.assert
+    pub fn assert(self: *DefaultTracer, condition: bool, comptime message: []const u8) void {
+        if (!condition) {
+            self.err("ASSERTION FAILED: {s}", .{message});
+            const builtin = @import("builtin");
+            if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
+                unreachable;
+            } else {
+                @panic(message);
+            }
+        }
+    }
 };
 
 // Helper function to get opcode name
@@ -930,6 +943,20 @@ pub const DebuggingTracer = struct {
         _ = frame;
         _ = opcode;
     }
+
+    /// Assert with error message - replaces std.debug.assert
+    pub fn assert(self: *DebuggingTracer, condition: bool, comptime message: []const u8) void {
+        _ = self;
+        if (!condition) {
+            std.log.err("ASSERTION FAILED: {s}", .{message});
+            const builtin = @import("builtin");
+            if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
+                unreachable;
+            } else {
+                @panic(message);
+            }
+        }
+    }
 };
 
 pub const LoggingTracer = struct {
@@ -960,6 +987,20 @@ pub const LoggingTracer = struct {
         _ = frame;
         std.log.info("[LOG] Terminal {s}", .{@tagName(opcode)});
     }
+
+    /// Assert with error message - replaces std.debug.assert
+    pub fn assert(self: *LoggingTracer, condition: bool, comptime message: []const u8) void {
+        _ = self;
+        if (!condition) {
+            std.log.err("ASSERTION FAILED: {s}", .{message});
+            const builtin = @import("builtin");
+            if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
+                unreachable;
+            } else {
+                @panic(message);
+            }
+        }
+    }
 };
 
 pub const FileTracer = struct {
@@ -988,5 +1029,19 @@ pub const FileTracer = struct {
         _ = self;
         _ = frame;
         _ = opcode;
+    }
+
+    /// Assert with error message - replaces std.debug.assert
+    pub fn assert(self: *FileTracer, condition: bool, comptime message: []const u8) void {
+        _ = self;
+        if (!condition) {
+            std.log.err("ASSERTION FAILED: {s}", .{message});
+            const builtin = @import("builtin");
+            if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
+                unreachable;
+            } else {
+                @panic(message);
+            }
+        }
     }
 };
