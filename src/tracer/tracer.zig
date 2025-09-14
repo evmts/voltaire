@@ -542,14 +542,17 @@ pub const DefaultTracer = struct {
             }
 
             // Compare gas (allow small differences)
-            const frame_gas = @max(frame.gas_remaining, 0);
-            const evm_gas = @max(evm.gas_remaining, 0);
+            const frame_gas_i64 = frame.gas_remaining;
+            const evm_gas_i64 = evm.gas_remaining;
 
-            if (@abs(@as(i64, evm_gas) - @as(i64, frame_gas)) > 100) {
+            // Calculate difference safely
+            const diff_abs = @abs(frame_gas_i64 - evm_gas_i64);
+
+            if (diff_abs > 100) {
                 self.warn("[DIVERGENCE] Gas mismatch:", .{});
-                const diff = @as(i64, frame_gas) - @as(i64, evm_gas);
+                const diff = frame_gas_i64 - evm_gas_i64;
                 self.warn("  MinimalEvm: {d}, Frame: {d}, Diff: {d}", .{
-                    evm_gas, frame_gas, diff
+                    evm_gas_i64, frame_gas_i64, diff
                 });
             }
         }
