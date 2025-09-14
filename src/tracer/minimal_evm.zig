@@ -59,22 +59,37 @@ pub const HostInterface = struct {
     }
 };
 
-/// Mock host implementation for testing
-pub const MockHost = struct {
+/// Host implementation that reads from real EVM
+pub const Host = struct {
     const Self = @This();
-    allocator: std.mem.Allocator,
+    evm: *anyopaque,
 
-    pub fn init(allocator: std.mem.Allocator) Self {
-        return .{ .allocator = allocator };
+    pub fn init(evm: *anyopaque) Self {
+        return .{ .evm = evm };
     }
 
     pub fn innerCall(ptr: *anyopaque, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: HostInterface.CallType) HostInterface.CallResult {
-        _ = ptr;
+        const self: *Self = @ptrCast(@alignCast(ptr));
+        const evm: *anyopaque = self.evm;
+
+        // Create call params based on call type
+        const call_params = switch (call_type) {
+            .Call => @panic("CALL not implemented in MinimalEvm host"),
+            .CallCode => @panic("CALLCODE not implemented in MinimalEvm host"),
+            .DelegateCall => @panic("DELEGATECALL not implemented in MinimalEvm host"),
+            .StaticCall => @panic("STATICCALL not implemented in MinimalEvm host"),
+            .Create => @panic("CREATE not implemented in MinimalEvm host"),
+            .Create2 => @panic("CREATE2 not implemented in MinimalEvm host"),
+        };
+
+        _ = evm;
+        _ = gas;
         _ = address;
         _ = value;
         _ = input;
-        _ = call_type;
-        // Mock implementation: always return success
+        _ = call_params;
+
+        // For now, return mock success until we implement proper call delegation
         return .{
             .success = true,
             .gas_left = gas,
@@ -83,25 +98,27 @@ pub const MockHost = struct {
     }
 
     pub fn getBalance(ptr: *anyopaque, address: primitives.Address.Address) u256 {
-        _ = ptr;
-        _ = address;
-        // Mock implementation: return 0 balance
-        return 0;
+        const self: *Self = @ptrCast(@alignCast(ptr));
+        // Cast to EVM type and call get_balance
+        const EvmType = @import("../evm.zig").DefaultEvm;
+        const evm: *EvmType = @ptrCast(@alignCast(self.evm));
+        return evm.get_balance(address);
     }
 
     pub fn getCode(ptr: *anyopaque, address: primitives.Address.Address) []const u8 {
-        _ = ptr;
-        _ = address;
-        // Mock implementation: return empty code
-        return &.{};
+        const self: *Self = @ptrCast(@alignCast(ptr));
+        // Cast to EVM type and call get_code
+        const EvmType = @import("../evm.zig").DefaultEvm;
+        const evm: *EvmType = @ptrCast(@alignCast(self.evm));
+        return evm.get_code(address);
     }
 
     pub fn getStorage(ptr: *anyopaque, address: primitives.Address.Address, slot: u256) u256 {
-        _ = ptr;
-        _ = address;
-        _ = slot;
-        // Mock implementation: return 0 for all storage
-        return 0;
+        const self: *Self = @ptrCast(@alignCast(ptr));
+        // Cast to EVM type and call get_storage
+        const EvmType = @import("../evm.zig").DefaultEvm;
+        const evm: *EvmType = @ptrCast(@alignCast(self.evm));
+        return evm.get_storage(address, slot);
     }
 
     pub fn setStorage(ptr: *anyopaque, address: primitives.Address.Address, slot: u256, value: u256) void {
@@ -109,7 +126,7 @@ pub const MockHost = struct {
         _ = address;
         _ = slot;
         _ = value;
-        // Mock implementation: no-op
+        // MinimalEvm should never write to storage - read-only
     }
 
     pub fn hostInterface(self: *Self) HostInterface {
@@ -2024,8 +2041,9 @@ test "MinimalEvm: with host interface" {
     const allocator = std.testing.allocator;
     const bytecode = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
 
-    var mock_host = MockHost.init(allocator);
-    const host_interface = mock_host.hostInterface();
+    // For testing, we can pass null as the EVM pointer since we're not actually calling host methods
+    var host = Host.init(@ptrFromInt(0x1000)); // Use dummy non-null pointer for test
+    const host_interface = host.hostInterface();
 
     var evm = try MinimalEvm.initWithHost(allocator, &bytecode, 100000, host_interface);
     defer evm.deinit();

@@ -133,9 +133,7 @@ pub const DefaultTracer = struct {
             if (bytecode.len > 0) {
                 // Create host interface that reads from the real EVM
                 const main_evm = frame.getEvm();
-                const real_evm_host = RealEvmHost{
-                    .evm = main_evm,
-                };
+                var real_evm_host = MinimalEvm.Host.init(@ptrCast(main_evm));
                 const host_interface = real_evm_host.hostInterface();
 
                 // Initialize MinimalEvm with host interface to read from real EVM
