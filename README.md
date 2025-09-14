@@ -39,7 +39,7 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 
 Note: Some failures are due to the Python SDK and test infrastructure not being fully spec-compliant yet, rather than issues in the core Zig EVM implementation.
 
-**Current Development Focus**: Our primary goal is achieving 100% Ethereum specification compliance while ensuring complete safety, debuggability, and observability through our tracer system (`src/tracer/tracer.zig`). The tracer provides comprehensive execution monitoring, differential testing against a reference implementation, and detailed error reporting for every opcode.
+**Current Development Focus**: Our primary goal is achieving 100% Ethereum specification compliance while ensuring complete safety, debuggability, and observability through our tracer system ([`src/tracer/tracer.zig`](src/tracer/tracer.zig)). The tracer provides comprehensive execution monitoring, differential testing against a reference implementation, and detailed error reporting for every opcode.
 
 See [test report](specs/test_report.md) for detailed results. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
