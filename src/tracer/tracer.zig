@@ -407,24 +407,19 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
-                // Step 2 times: PUSH + MSTORE
-                // The offset is inline metadata, not from bytecode
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_MSTORE step failed: {any}", .{e});
-                        return;
-                    };
-                }
+                // Step once through the bytecode - the synthetic operation handles the rest
+                evm.step() catch |e| {
+                    self.err("PUSH_MSTORE step failed: {any}", .{e});
+                    return;
+                };
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
-                // Step 2 times: PUSH + MSTORE8
-                // The offset is inline metadata, not from bytecode
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_MSTORE8 step failed: {any}", .{e});
-                        return;
-                    };
-                }
+                // This is a metadata-driven synthetic operation
+                // Similar to PUSH_MSTORE_INLINE - just step once
+                evm.step() catch |e| {
+                    self.err("PUSH_MSTORE8 step failed: {any}", .{e});
+                    return;
+                };
             },
 
             // Control flow fusions
