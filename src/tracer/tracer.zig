@@ -377,7 +377,20 @@ pub const DefaultTracer = struct {
         if (opcode_value <= 0xff) {
             // Execute a single step in MinimalEvm (delegates to current frame)
             evm.step() catch |e| {
-                self.err("MinimalEvm exec error op=0x{x:0>2}: {any}", .{ opcode_value, e });
+                // Get actual opcode from MinimalEvm to see what it was trying to execute
+                var actual_opcode: u8 = 0;
+                if (evm.current_frame) |mf| {
+                    if (mf.pc < mf.bytecode.len) {
+                        actual_opcode = mf.bytecode[mf.pc];
+                    }
+                }
+                log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{
+                    if (evm.current_frame) |mf| mf.pc else 0,
+                    actual_opcode,
+                    opcode_value,
+                    e
+                });
+                @panic("MinimalEvm execution error");
             };
             return;
         }
@@ -728,9 +741,8 @@ pub const DefaultTracer = struct {
             const evm_stack_size = (evm.current_frame orelse unreachable).stack.items.len;
 
             if (evm_stack_size != frame_stack_size) {
-                self.err("[DIVERGENCE] Stack size mismatch after {s}:", .{opcode_name});
-                self.err("  MinimalEvm: {d}, Frame: {d}", .{evm_stack_size, frame_stack_size});
-
+                log.err("[EVM2] [DIVERGENCE] Stack size mismatch after {s}:", .{opcode_name});
+                log.err("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{evm_stack_size, frame_stack_size});
                 // Show top elements for debugging
                 if (evm_stack_size > 0) {
                     self.err("  MinimalEvm top: 0x{x}", .{
@@ -740,6 +752,7 @@ pub const DefaultTracer = struct {
                 if (frame_stack_size > 0) {
                     self.err("  Frame top: 0x{x}", .{frame.stack.peek_unsafe()});
                 }
+                @panic("Stack divergence");
             } else if (evm_stack_size > 0) {
                 // Compare stack contents
                 const frame_stack = frame.stack.get_slice();
@@ -747,8 +760,9 @@ pub const DefaultTracer = struct {
                     const evm_val = (evm.current_frame orelse unreachable).stack.items[evm_stack_size - 1 - i];
                     const frame_val = frame_stack[i];
                     if (evm_val != frame_val) {
-                        self.err("[DIVERGENCE] Stack content mismatch at position {d}:", .{i});
-                        self.err("  MinimalEvm: 0x{x}, Frame: 0x{x}", .{evm_val, frame_val});
+                        log.err("[EVM2] [DIVERGENCE] Stack content mismatch at position {d}:", .{i});
+                        log.err("[EVM2]   MinimalEvm: 0x{x}, Frame: 0x{x}", .{evm_val, frame_val});
+                        @panic("Stack content divergence");
                     }
                 }
             }
@@ -759,8 +773,9 @@ pub const DefaultTracer = struct {
             const evm_memory_size = (evm.current_frame orelse unreachable).memory_size;
 
             if (evm_memory_size != frame_memory_size) {
-                self.warn("[DIVERGENCE] Memory size mismatch:", .{});
-                self.warn("  MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
+                // Memory size mismatch is not critical, just debug log
+                log.debug("[EVM2] [DIVERGENCE] Memory size mismatch:", .{});
+                log.debug("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
             }
 
             // Gas validation - different rules for different opcode types
@@ -777,10 +792,11 @@ pub const DefaultTracer = struct {
                 // For jump/terminal opcodes, gas should match exactly
                 // because both EVMs should have consumed the same amount
                 if (frame_gas_remaining != evm_gas_remaining) {
-                    self.warn("[GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
-                    self.warn("  Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    self.warn("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.warn("  Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
+                    // Gas divergence at terminal state, debug log only
+                    log.debug("[EVM2] [GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
+                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    log.debug("[EVM2]   Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
                 }
             } else {
                 // For regular opcodes, allow reasonable gas differences due to block vs opcode charging
@@ -797,14 +813,15 @@ pub const DefaultTracer = struct {
                 // This accounts for Frame's pre-charging strategy
                 const tolerance = expected_first_block_gas + 50;
                 if (gas_diff > tolerance) {
-                    self.warn("[GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
-                    self.warn("  Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    self.warn("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.warn("  Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
+                    // Gas divergence during execution, debug log only
+                    log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
+                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    log.debug("[EVM2]   Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
                 } else if (gas_diff < -20) {
-                    self.warn("[GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
-                    self.warn("  Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    self.warn("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
+                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
                     self.warn("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
                 }
             }
@@ -823,6 +840,7 @@ pub const DefaultTracer = struct {
     pub fn err(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         log.err(format, args);
+        @panic("Tracer error - see log above");
     }
 
     pub fn warn(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
