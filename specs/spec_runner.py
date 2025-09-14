@@ -305,9 +305,9 @@ class SpecTestRunner:
 | **Total Tests** | {total_tests} |
 | **✅ Passed** | {passed_tests} |
 | **❌ Failed** | {failed_tests} |
-| **📈 Pass Rate** | {(passed_tests/total_tests*100):.1f}% |
+| **📈 Pass Rate** | {(passed_tests/total_tests*100) if total_tests > 0 else 0.0:.1f}% |
 | **⏱️ Total Time** | {total_time:.2f}s |
-| **🚀 Avg Speed** | {total_tests/total_time:.1f} tests/sec |
+| **🚀 Avg Speed** | {(total_tests/total_time) if total_time > 0 else 0.0:.1f} tests/sec |
 
 """
 
@@ -320,7 +320,7 @@ class SpecTestRunner:
             status_icon = "✅" if suite_passed == suite_total else "❌"
 
             report += f"### {status_icon} {suite.name}\n\n"
-            report += f"**Results**: {suite_passed}/{suite_total} passed ({(suite_passed/suite_total*100):.1f}%)\n"
+            report += f"**Results**: {suite_passed}/{suite_total} passed ({(suite_passed/suite_total*100) if suite_total > 0 else 0.0:.1f}%)\n"
             report += f"**Time**: {suite.total_time:.2f}s\n\n"
 
             # Individual test results
@@ -376,6 +376,97 @@ class SpecTestRunner:
         return report
 
 
+def run_batch_subprocess(specs_dir: Path, test_files: List[Path], batch_id: int) -> Dict:
+    """Run a batch of tests in a subprocess to isolate crashes."""
+    import subprocess
+    import tempfile
+    import pickle
+
+    # Create a temporary script to run the batch
+    sdk_path = str(Path(__file__).parent.parent / "sdks" / "python")
+    batch_script = f'''
+import sys
+import json
+import pickle
+from pathlib import Path
+sys.path.insert(0, "{sdk_path}")
+
+from guillotine_evm import EVM, Address, U256, Hash, Bytes, BlockInfo, CallParams, CallType
+from guillotine_evm.exceptions import GuillotineError
+
+# Import the runner class
+exec(open("{Path(__file__)}").read().split("def run_batch_subprocess")[0])
+
+def run_batch():
+    specs_dir = Path("{specs_dir}")
+    test_files = {[str(f) for f in test_files]}
+
+    runner = SpecTestRunner(specs_dir)
+    results = []
+
+    for test_file_str in test_files:
+        test_file = Path(test_file_str)
+        try:
+            suite = runner.run_test_file(test_file)
+            results.append(suite)
+        except Exception as e:
+            # Create a failed test result for crashes
+            from datetime import datetime
+            results.append(TestSuite(
+                name=test_file.name,
+                results=[TestResult(
+                    name="batch_crash",
+                    passed=False,
+                    execution_time=0.0,
+                    error=f"Batch crashed: {{str(e)}}"
+                )],
+                total_time=0.0
+            ))
+
+    return results
+
+if __name__ == "__main__":
+    try:
+        batch_results = run_batch()
+        with open("batch_{batch_id}_results.pkl", "wb") as f:
+            pickle.dump(batch_results, f)
+        print(f"Batch {batch_id} completed successfully")
+    except Exception as e:
+        print(f"Batch {batch_id} failed: {{e}}")
+        sys.exit(1)
+'''
+
+    # Write and run the batch script
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write(batch_script)
+        batch_script_path = f.name
+
+    try:
+        # Run the batch in a subprocess with timeout
+        result = subprocess.run([
+            sys.executable, batch_script_path
+        ], capture_output=True, text=True, timeout=120)
+
+        # Load results if successful
+        results_file = f"batch_{batch_id}_results.pkl"
+        if os.path.exists(results_file):
+            with open(results_file, 'rb') as f:
+                batch_results = pickle.load(f)
+            os.unlink(results_file)
+            return {"success": True, "results": batch_results, "stdout": result.stdout, "stderr": result.stderr}
+        else:
+            return {"success": False, "error": f"No results file generated. stdout: {result.stdout}, stderr: {result.stderr}"}
+
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "Batch timed out"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        # Clean up
+        if os.path.exists(batch_script_path):
+            os.unlink(batch_script_path)
+
+
 def main():
     """Main entry point."""
     import argparse
@@ -389,6 +480,8 @@ def main():
                        help='Quick test mode: run only Random tests (equivalent to --pattern "*Random*.json" --max-files 5)')
     parser.add_argument('--comprehensive', '-c', action='store_true',
                        help='Comprehensive test mode: run all tests (equivalent to --max-files -1)')
+    parser.add_argument('--batch-size', '-b', type=int, default=50,
+                       help='Number of tests per batch (default: 50, smaller batches are more crash-resistant)')
 
     args = parser.parse_args()
 
@@ -396,12 +489,15 @@ def main():
     if args.quick:
         pattern = "*Random*.json"
         max_files = 5
+        batch_size = 5  # Small batches for quick mode
     elif args.comprehensive:
         pattern = args.pattern
         max_files = -1
+        batch_size = args.batch_size
     else:
         pattern = args.pattern
         max_files = args.max_files
+        batch_size = args.batch_size
 
     specs_dir = Path(__file__).parent / "execution-specs" / "tests" / "eest" / "static" / "state_tests"
 
@@ -409,15 +505,48 @@ def main():
         print(f"Error: Specs directory not found: {specs_dir}")
         sys.exit(1)
 
-    runner = SpecTestRunner(specs_dir)
-
-    print(f"🧪 Running tests with pattern: {pattern}")
+    # Get all test files
+    all_test_files = list(specs_dir.rglob(pattern))
     if max_files == -1:
-        print("📂 Running ALL matching test files")
+        test_files = all_test_files
+        print(f"🧪 Running tests with pattern: {pattern}")
+        print(f"📂 Running ALL {len(test_files)} test files in batches of {batch_size}")
     else:
-        print(f"📂 Running up to {max_files} test files")
+        test_files = all_test_files[:max_files]
+        print(f"🧪 Running tests with pattern: {pattern}")
+        print(f"📂 Running {len(test_files)} of {len(all_test_files)} test files in batches of {batch_size}")
 
-    runner.run_tests(pattern=pattern, max_files=max_files)
+    # Run tests in batches
+    runner = SpecTestRunner(specs_dir)
+    batch_count = (len(test_files) + batch_size - 1) // batch_size
+
+    for batch_idx in range(batch_count):
+        start_idx = batch_idx * batch_size
+        end_idx = min(start_idx + batch_size, len(test_files))
+        batch_files = test_files[start_idx:end_idx]
+
+        print(f"\n🔄 Running batch {batch_idx + 1}/{batch_count} ({len(batch_files)} tests)...")
+
+        # Run batch in subprocess for crash isolation
+        batch_result = run_batch_subprocess(specs_dir, batch_files, batch_idx)
+
+        if batch_result["success"]:
+            runner.test_results.extend(batch_result["results"])
+            print(f"✅ Batch {batch_idx + 1} completed successfully")
+        else:
+            print(f"❌ Batch {batch_idx + 1} failed: {batch_result['error']}")
+            # Add failed results for the batch
+            for test_file in batch_files:
+                runner.test_results.append(TestSuite(
+                    name=test_file.name,
+                    results=[TestResult(
+                        name="batch_crash",
+                        passed=False,
+                        execution_time=0.0,
+                        error=f"Batch failed: {batch_result['error']}"
+                    )],
+                    total_time=0.0
+                ))
 
     # Generate and save report
     report = runner.generate_report()
