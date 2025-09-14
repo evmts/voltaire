@@ -58,6 +58,9 @@ class SpecTestRunner:
 
     def parse_address(self, addr_str: str) -> Address:
         """Parse address from various formats."""
+        if addr_str is None:
+            raise ValueError("addr_str cannot be None")
+
         # Handle contract references like "<contract:0x...>"
         if addr_str.startswith('<') and addr_str.endswith('>'):
             # Extract hex part
@@ -135,19 +138,36 @@ class SpecTestRunner:
                 if tx:
                     # Parse transaction parameters
                     to_addr = None
-                    if 'to' in tx and tx['to']:
-                        to_addr = self.parse_address(tx['to'])
+                    to_field = tx.get('to', '')
+                    if to_field and to_field.strip():  # Handle empty strings and whitespace
+                        to_addr = self.parse_address(to_field)
 
                     from_addr = self.parse_address(tx.get('caller', tx.get('origin', '0x0000000000000000000000000000000000000000')))
-                    value = U256(self.parse_hex_value(tx.get('value', '0')))
-                    gas_limit = self.parse_hex_value(tx.get('gasLimit', tx.get('gas', '100000')))
+
+                    # Parse value (can be a list)
+                    value_val = tx.get('value', '0')
+                    if isinstance(value_val, list):
+                        value_val = value_val[0] if value_val else '0'
+                    value = U256(self.parse_hex_value(value_val))
+
+                    # Parse gas limit (can be a list)
+                    gas_limit_val = tx.get('gasLimit', tx.get('gas', '100000'))
+                    if isinstance(gas_limit_val, list):
+                        gas_limit_val = gas_limit_val[0] if gas_limit_val else '100000'
+                    gas_limit = self.parse_hex_value(gas_limit_val)
 
                     # Parse data
                     data = tx.get('data', '')
                     if isinstance(data, list):
                         data = data[0] if data else ''
-                    if isinstance(data, str) and data.startswith('0x'):
-                        data = data[2:]
+
+                    # Handle :raw prefix in data
+                    if isinstance(data, str):
+                        if data.startswith(':raw '):
+                            data = data[5:]  # Remove ":raw " prefix
+                        if data.startswith('0x'):
+                            data = data[2:]
+
                     call_data = bytes.fromhex(data) if data else b''
 
                     # Execute call
