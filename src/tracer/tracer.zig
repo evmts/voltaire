@@ -436,31 +436,76 @@ pub const DefaultTracer = struct {
                 // - Uses metadata offset (doesn't push offset to stack)
                 // - Stores value at that memory offset
                 // MinimalEvm must emulate the same net stack effect (pop 1, push 0)
-                // PUSH_MSTORE_INLINE fuses PUSH+MSTORE operations:
-                // Frame: takes offset from metadata, pops value, stores at memory[offset]
-                // MinimalEvm: needs to advance PC by 2 instructions (PUSH1+MSTORE) and have same effect
 
-                // Execute PUSH1 + MSTORE sequence in MinimalEvm
-                evm.step() catch |e| {
-                    self.err("PUSH_MSTORE step 1 (PUSH) failed: {any}", .{e});
-                    return;
-                };
-                evm.step() catch |e| {
-                    self.err("PUSH_MSTORE step 2 (MSTORE) failed: {any}", .{e});
-                    return;
-                };
+                // PUSH_MSTORE_INLINE synthetic opcodes will be handled by sequential bytecode execution
+
+                // PUSH_MSTORE_INLINE represents PUSH1 + MSTORE sequence in bytecode
+                // MinimalEvm should execute these 2 sequential operations
+
+                // Debug: Log current MinimalEvm state before execution
+                self.err("DEBUG PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
+                    evm.pc, evm.stack.items.len, frame.stack.size()
+                });
+
+                // Execute the 2-step sequence: PUSH1 + MSTORE
+                // First, check if we're at the right bytecode position for PUSH1+MSTORE
+                if (evm.pc + 2 < evm.bytecode.len and
+                    evm.bytecode[evm.pc] == 0x60 and      // PUSH1
+                    evm.bytecode[evm.pc + 2] == 0x52) {   // MSTORE (after PUSH1 + 1 byte immediate)
+
+                    self.err("DEBUG PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.pc});
+
+                    // Execute PUSH1 + MSTORE
+                    inline for (0..2) |step_num| {
+                        const current_opcode = evm.bytecode[evm.pc];
+                        self.err("DEBUG PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.pc});
+
+                        evm.step() catch |e| {
+                            self.err("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
+                            return;
+                        };
+                    }
+                } else {
+                    // Not a PUSH1+MSTORE sequence - this is a mis-identified synthetic opcode
+                    self.err("DEBUG PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.pc,
+                        if (evm.pc < evm.bytecode.len) evm.bytecode[evm.pc] else 0});
+
+                    // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
+                    // Frame will handle the actual opcode, MinimalEvm should remain unchanged
+                    self.err("DEBUG PUSH_MSTORE_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
+                }
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
-                // PUSH_MSTORE8_INLINE fuses PUSH+MSTORE8 operations
-                // Execute PUSH1 + MSTORE8 sequence in MinimalEvm
-                evm.step() catch |e| {
-                    self.err("PUSH_MSTORE8 step 1 (PUSH) failed: {any}", .{e});
-                    return;
-                };
-                evm.step() catch |e| {
-                    self.err("PUSH_MSTORE8 step 2 (MSTORE8) failed: {any}", .{e});
-                    return;
-                };
+                // PUSH_MSTORE8_INLINE synthetic operation in Frame:
+                // - Pops 1 value from stack (the value to store)
+                // - Uses metadata offset (doesn't push offset to stack)
+                // - Stores LSB of value at that memory offset
+
+                // PUSH_MSTORE8_INLINE synthetic opcodes will be handled by sequential bytecode execution
+
+                // PUSH_MSTORE8_INLINE represents PUSH1 + MSTORE8 sequence in bytecode
+                // MinimalEvm should execute these 2 sequential operations
+
+                // Debug: Log current MinimalEvm state before execution
+                self.debug("PUSH_MSTORE8_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
+                    evm.pc, evm.stack.items.len, frame.stack.size()
+                });
+
+                // Execute the 2-step sequence: PUSH1 + MSTORE8
+                inline for (0..2) |step_num| {
+                    if (evm.pc >= evm.bytecode.len) {
+                        self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.pc, evm.bytecode.len});
+                        return;
+                    }
+
+                    const current_opcode = evm.bytecode[evm.pc];
+                    self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.pc});
+
+                    evm.step() catch |e| {
+                        self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
+                        return;
+                    };
+                }
             },
 
             // Control flow fusions
