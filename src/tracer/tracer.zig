@@ -154,6 +154,7 @@ pub const DefaultTracer = struct {
                         gas_limit,
                         evm.address,
                     });
+                    self.debug("MinimalEvm bytecode: {x}", .{bytecode});
                 }
             }
         }
@@ -173,6 +174,17 @@ pub const DefaultTracer = struct {
                 const opcode_name = comptime @tagName(opcode);
                 const opcode_value = @intFromEnum(opcode);
 
+                // Validate cursor points to expected handler for regular opcodes
+                if (opcode_value <= 0xff) {
+                    const expected_handler = @TypeOf(frame.*).opcode_handlers[opcode_value];
+                    const actual_handler = cursor[0].opcode_handler;
+                    if (actual_handler != expected_handler) {
+                        self.err("[HANDLER] Handler mismatch for {s}: expected={*}, actual={*}", .{
+                            opcode_name, expected_handler, actual_handler
+                        });
+                    }
+                }
+
                 // Increment instruction counts
                 self.instruction_count += 1;
                 if (opcode_value > 0xff) {
@@ -186,12 +198,9 @@ pub const DefaultTracer = struct {
                 self.instruction_safety.inc();
 
                 // Execute MinimalEvm steps for validation
-                // TEMPORARILY SKIP for final test without MinimalEvm interference
-                if (false) {
-                    if (self.minimal_evm) |*evm| {
-                        if (!evm.stopped and !evm.reverted) {
-                            self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
-                        }
+                if (self.minimal_evm) |*evm| {
+                    if (!evm.stopped and !evm.reverted) {
+                        self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
                     }
                 }
 
@@ -229,11 +238,28 @@ pub const DefaultTracer = struct {
                     self.err("[SCHEDULE] Next handler mismatch at sched_idx={d}", .{self.schedule_index});
                 }
 
-                // Validate MinimalEvm state
-                // TEMPORARILY SKIP for final test
-                // self.validateMinimalEvmState(frame, opcode);
+                // Validate next handler points to expected handler for regular opcodes
+                if (next_cursor[0] == .opcode_handler) {
+                    // Extract the opcode from the next handler if it's a regular opcode
+                    const next_opcode_value = self.getOpcodeFromHandler(@TypeOf(frame.*), next_handler);
+                    if (next_opcode_value) |opcode_int| {
+                        if (opcode_int <= 0xff) {
+                            const expected_next_handler = @TypeOf(frame.*).opcode_handlers[opcode_int];
+                            if (next_handler != expected_next_handler) {
+                                self.err("[HANDLER] Next handler mismatch: opcode=0x{x:0>2}, expected={*}, actual={*}", .{
+                                    opcode_int, expected_next_handler, next_handler
+                                });
+                            }
+                        }
+                    }
+                }
 
-                // Update current PC
+                // Validate MinimalEvm state
+                self.validateMinimalEvmState(frame, opcode);
+
+                // Update current PC tracking
+                // Note: PC synchronization between Frame dispatch and MinimalEvm sequential
+                // execution is complex due to synthetic opcodes, so we track separately
                 if (self.minimal_evm) |*evm| {
                     self.current_pc = evm.pc;
                 }
@@ -273,6 +299,7 @@ pub const DefaultTracer = struct {
         frame: anytype,
         cursor: [*]const @TypeOf(frame.*).Dispatch.Item
     ) void {
+        _ = cursor;
         const opcode_value = @intFromEnum(opcode);
 
         // Log what we're about to execute
@@ -282,224 +309,373 @@ pub const DefaultTracer = struct {
         self.debug("  Frame stack size: {d}", .{frame.stack.size()});
         self.debug("  MinimalEvm stack size: {d}", .{evm.stack.items.len});
 
-        // For regular opcodes (0x00-0xFF), execute one step
+        // For regular opcodes (0x00-0xFF), execute exactly 1 opcode in MinimalEvm
         if (opcode_value <= 0xff) {
-            // SKIP bytecode verification for now since synthetic opcodes can cause PC misalignment
-            // TODO: Fix PC synchronization between Frame synthetic operations and MinimalEvm sequential execution
-            evm.step() catch |e| {
-                self.err("MinimalEvm step failed: {any}", .{e});
+            // Execute the same opcode the Frame just executed
+            evm.executeOpcode(@intCast(opcode_value)) catch |e| {
+                self.err("MinimalEvm exec error op=0x{x:0>2}: {any}", .{ opcode_value, e });
             };
             return;
         }
 
-        // Handle fused opcodes
+        // Handle fused opcodes by validating bytecode and stepping
         switch (opcode) {
             // PUSH + arithmetic fusions (2 steps)
             .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.ADD));
+                // Validate: should be PUSHn followed by ADD
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_ADD: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_ADD: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + ADD
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_ADD step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.MUL));
+                // Validate: should be PUSHn followed by MUL
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_MUL: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_MUL: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + MUL
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_MUL step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.SUB));
+                // Validate: should be PUSHn followed by SUB
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_SUB: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_SUB: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + SUB
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_SUB step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.DIV));
+                // Validate: should be PUSHn followed by DIV
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_DIV: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_DIV: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + DIV
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_DIV step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
 
             // Bitwise fusions
             .PUSH_AND_INLINE, .PUSH_AND_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.AND));
+                // Validate: should be PUSHn followed by AND
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_AND: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_AND: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + AND
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_AND step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_OR_INLINE, .PUSH_OR_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.OR));
+                // Validate: should be PUSHn followed by OR
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_OR: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_OR: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + OR
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_OR step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.XOR));
+                // Validate: should be PUSHn followed by XOR
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_XOR: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_XOR: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + XOR
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_XOR step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
 
             // Memory fusions
             .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.MLOAD));
+                // Validate: should be PUSHn followed by MLOAD
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_MLOAD: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_MLOAD: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
+                    return;
+                }
+
+                // Step twice: PUSH + MLOAD
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_MLOAD step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
-                // PUSH_MSTORE_INLINE: pushes offset then pops value and stores it
-                // This is different from PUSH+MSTORE - it doesn't push the offset to stack
-                // Instead it uses the offset directly and just pops the value
-
-                // The Frame implementation pops one value (the data to store) and uses
-                // the offset from metadata directly. We need to simulate this correctly.
-                if (evm.stack.items.len == 0) {
-                    self.err("PUSH_MSTORE requires 1 stack item but stack is empty", .{});
+                // Validate: should be PUSHn followed by MSTORE
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_MSTORE: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_MSTORE: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
                     return;
                 }
 
-                // Get the offset from metadata (like Frame does)
-                var offset: u256 = 0;
-                if (cursor[1] == .push_inline) {
-                    offset = cursor[1].push_inline.value;
-                } else if (cursor[1] == .push_pointer) {
-                    const idx = cursor[1].push_pointer.index;
-                    offset = frame.u256_constants[idx];
-                }
-
-                // Pop the value to store (like Frame does)
-                const value = evm.popStack() catch {
-                    self.err("PUSH_MSTORE failed to pop value", .{});
-                    return;
-                };
-
-                // Execute MSTORE with offset and value
-                if (offset <= std.math.maxInt(u32)) {
-                    const off = @as(u32, @intCast(offset));
-                    evm.writeMemoryWord(off, value) catch |e| {
-                        self.err("MinimalEvm memory write failed: {any}", .{e});
+                // Step twice: PUSH + MSTORE
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_MSTORE step failed: {any}", .{e});
+                        return;
                     };
-                    // Update PC and consume gas like MSTORE does
-                    evm.consumeGas(primitives.GasConstants.GasFastestStep) catch {};
-                    // Memory expansion gas
-                    const new_mem_size = off + 32;
-                    if (new_mem_size > evm.memory_size) {
-                        const expansion = new_mem_size - evm.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch 0;
-                        evm.consumeGas(gas_cost) catch {};
-                    }
-                    // Don't advance PC - this is handled by the Frame's next instruction
                 }
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
-                // Similar logic for MSTORE8
-                if (evm.stack.items.len == 0) {
-                    self.err("PUSH_MSTORE8 requires 1 stack item but stack is empty", .{});
+                // Validate: should be PUSHn followed by MSTORE8
+                if (evm.pc >= evm.bytecode.len) {
+                    self.err("PUSH_MSTORE8: PC beyond bytecode", .{});
+                    return;
+                }
+                const push_op = evm.bytecode[evm.pc];
+                if (!(push_op >= 0x5f and push_op <= 0x7f)) {
+                    self.err("PUSH_MSTORE8: Expected PUSHx at PC={d}, found 0x{x:0>2}", .{ evm.pc, push_op });
                     return;
                 }
 
-                // Get the offset from metadata
-                var offset: u256 = 0;
-                if (cursor[1] == .push_inline) {
-                    offset = cursor[1].push_inline.value;
-                } else if (cursor[1] == .push_pointer) {
-                    const idx = cursor[1].push_pointer.index;
-                    offset = frame.u256_constants[idx];
-                }
-
-                // Pop the value to store
-                const value = evm.popStack() catch {
-                    self.err("PUSH_MSTORE8 failed to pop value", .{});
-                    return;
-                };
-
-                // Execute MSTORE8 with offset and value
-                if (offset <= std.math.maxInt(u32)) {
-                    const off = @as(u32, @intCast(offset));
-                    const byte_val = @as(u8, @truncate(value & 0xFF));
-                    evm.writeMemory(off, byte_val) catch |e| {
-                        self.err("MinimalEvm memory write failed: {any}", .{e});
+                // Step twice: PUSH + MSTORE8
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_MSTORE8 step failed: {any}", .{e});
+                        return;
                     };
-                    // Update gas like MSTORE8 does
-                    evm.consumeGas(primitives.GasConstants.GasFastestStep) catch {};
-                    // Memory expansion gas
-                    const new_mem_size = off + 1;
-                    if (new_mem_size > evm.memory_size) {
-                        const expansion = new_mem_size - evm.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch 0;
-                        evm.consumeGas(gas_cost) catch {};
-                    }
                 }
             },
 
             // Control flow fusions
             .JUMP_TO_STATIC_LOCATION => {
-                self.executePushFromPc(evm);
-                self.executeOpcode(evm, @intFromEnum(Opcode.JUMP));
+                // Step twice: PUSH + JUMP
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .JUMPI_TO_STATIC_LOCATION => {
-                self.executePushFromPc(evm);
-                self.executeOpcode(evm, @intFromEnum(Opcode.JUMPI));
+                // Step twice: PUSH + JUMPI
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("JUMPI_TO_STATIC_LOCATION step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
 
             // Multi-push/pop fusions
             .MULTI_PUSH_2 => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executePushWithMetadata(evm, frame, cursor + 1);
+                // Step twice: PUSH + PUSH
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("MULTI_PUSH_2 step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .MULTI_PUSH_3 => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executePushWithMetadata(evm, frame, cursor + 1);
-                self.executePushWithMetadata(evm, frame, cursor + 2);
+                // Step 3 times: PUSH + PUSH + PUSH
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("MULTI_PUSH_3 step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .MULTI_POP_2 => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.POP));
-                self.executeOpcode(evm, @intFromEnum(Opcode.POP));
+                // Step twice: POP + POP
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                        self.err("MULTI_POP_2 step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .MULTI_POP_3 => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.POP));
-                self.executeOpcode(evm, @intFromEnum(Opcode.POP));
-                self.executeOpcode(evm, @intFromEnum(Opcode.POP));
+                // Step 3 times: POP + POP + POP
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("MULTI_POP_3 step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
 
             // Three-operation fusions
             .DUP2_MSTORE_PUSH => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP2));
-                self.executeOpcode(evm, @intFromEnum(Opcode.MSTORE));
-                self.executePushFromPc(evm);
+                // Step 3 times: DUP2 + MSTORE + PUSH
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("DUP2_MSTORE_PUSH step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .DUP3_ADD_MSTORE => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP3));
-                self.executeOpcode(evm, @intFromEnum(Opcode.ADD));
-                self.executeOpcode(evm, @intFromEnum(Opcode.MSTORE));
+                // Step 3 times: DUP3 + ADD + MSTORE
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("DUP3_ADD_MSTORE step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .SWAP1_DUP2_ADD => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.SWAP1));
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP2));
-                self.executeOpcode(evm, @intFromEnum(Opcode.ADD));
+                // Step 3 times: SWAP1 + DUP2 + ADD
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("SWAP1_DUP2_ADD step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_DUP3_ADD => {
-                self.executePushFromPc(evm);
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP3));
-                self.executeOpcode(evm, @intFromEnum(Opcode.ADD));
+                // Step 3 times: PUSH + DUP3 + ADD
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_DUP3_ADD step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH_ADD_DUP1 => {
-                self.executePushWithMetadata(evm, frame, cursor);
-                self.executeOpcode(evm, @intFromEnum(Opcode.ADD));
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP1));
+                // Step 3 times: PUSH + ADD + DUP1
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH_ADD_DUP1 step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .MLOAD_SWAP1_DUP2 => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.MLOAD));
-                self.executeOpcode(evm, @intFromEnum(Opcode.SWAP1));
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP2));
+                // Step 3 times: MLOAD + SWAP1 + DUP2
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("MLOAD_SWAP1_DUP2 step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .ISZERO_JUMPI => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.ISZERO));
-                self.executePushFromPc(evm);
-                self.executeOpcode(evm, @intFromEnum(Opcode.JUMPI));
+                // Step 3 times: ISZERO + PUSH + JUMPI
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("ISZERO_JUMPI step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .CALLVALUE_CHECK => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.CALLVALUE));
-                self.executeOpcode(evm, @intFromEnum(Opcode.DUP1));
-                self.executeOpcode(evm, @intFromEnum(Opcode.ISZERO));
+                // Step 3 times: CALLVALUE + DUP1 + ISZERO
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("CALLVALUE_CHECK step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
             .PUSH0_REVERT => {
-                self.executeOpcode(evm, @intFromEnum(Opcode.PUSH0));
-                self.executeOpcode(evm, @intFromEnum(Opcode.PUSH0));
-                self.executeOpcode(evm, @intFromEnum(Opcode.REVERT));
+                // Step 3 times: PUSH0 + PUSH0 + REVERT
+                inline for (0..3) |_| {
+                    evm.step() catch |e| {
+                        self.err("PUSH0_REVERT step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
 
             // Four-operation fusion
             .FUNCTION_DISPATCH => {
-                self.executePushFromPc(evm); // PUSH4 function selector
-                self.executeOpcode(evm, @intFromEnum(Opcode.EQ));
-                self.executePushFromPc(evm); // PUSH jump destination
-                self.executeOpcode(evm, @intFromEnum(Opcode.JUMPI));
+                // Step 4 times: PUSH4 + EQ + PUSH + JUMPI
+                inline for (0..4) |_| {
+                    evm.step() catch |e| {
+                        self.err("FUNCTION_DISPATCH step failed: {any}", .{e});
+                        return;
+                    };
+                }
             },
 
             else => {
@@ -513,67 +689,16 @@ pub const DefaultTracer = struct {
         }
     }
 
-    /// Execute a single opcode in MinimalEvm
-    fn executeOpcode(self: *DefaultTracer, evm: *MinimalEvm, opcode: u8) void {
-        evm.executeOpcode(opcode) catch |e| {
-            self.err("MinimalEvm exec error op=0x{x:0>2} at pc={d}: {any}", .{
-                opcode, evm.pc, e
-            });
-        };
-    }
 
-    /// Execute a PUSH from current PC
-    fn executePushFromPc(self: *DefaultTracer, evm: *MinimalEvm) void {
-        if (evm.pc >= evm.bytecode.len) return;
-        const op = evm.bytecode[evm.pc];
-        if (!(op >= 0x5f and op <= 0x7f)) {
-            self.warn("Expected PUSHx at pc={d}, found 0x{x:0>2}", .{ evm.pc, op });
-        }
-        self.executeOpcode(evm, op);
-    }
-
-    /// Execute a PUSH using dispatch metadata
-    fn executePushWithMetadata(
-        self: *DefaultTracer,
-        evm: *MinimalEvm,
-        frame: anytype,
-        cursor: [*]const @TypeOf(frame.*).Dispatch.Item
-    ) void {
-        // Extract value and size from dispatch metadata
-        var value: u256 = 0;
-        var size: u8 = 0;
-
-        if (cursor[1] == .push_inline) {
-            value = cursor[1].push_inline.value;
-            // Infer minimal size for inline values
-            size = 1;
-            var tmp: u256 = value;
-            while ((tmp >> 8) != 0 and size < 8) : (size += 1) {
-                tmp >>= 8;
+    /// Helper to get opcode number from handler pointer by searching opcode_handlers array
+    fn getOpcodeFromHandler(self: *DefaultTracer, comptime FrameType: type, handler: FrameType.OpcodeHandler) ?u8 {
+        _ = self;
+        inline for (0..256) |i| {
+            if (FrameType.opcode_handlers[i] == handler) {
+                return @intCast(i);
             }
-        } else if (cursor[1] == .push_pointer) {
-            const idx = cursor[1].push_pointer.index;
-            value = frame.u256_constants[idx];
-            // Compute size as minimal bytes to encode value
-            if (value == 0) {
-                size = 0; // PUSH0
-            } else {
-                const bits: u16 = @intCast(256 - @clz(value));
-                size = @intCast((bits + 7) / 8);
-            }
-        } else {
-            // Not push metadata, fallback to PC-based push
-            self.executePushFromPc(evm);
-            return;
         }
-
-        // Execute the push in MinimalEvm
-        evm.consumeGas(primitives.GasConstants.GasFastestStep) catch {};
-        evm.pushStack(value) catch |e| {
-            self.warn("MinimalEvm push failed: {any}", .{e});
-        };
-        // Advance PC as if we executed PUSH{size}
-        evm.pc += 1 + size;
+        return null;
     }
 
     /// Validate MinimalEvm state against Frame state
