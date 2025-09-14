@@ -156,23 +156,32 @@ pub fn Memory(comptime config: MemoryConfig) type {
             // Use ensureTotalCapacity + manual growth to control zeroing
             try self.buffer_ptr.*.ensureTotalCapacity(allocator, required_total);
             self.buffer_ptr.*.items.len = required_total;
-            
+
             // Zero only the new portion with SIMD if applicable
             if (comptime (config.vector_length > 1)) {
                 const slice = self.buffer_ptr.*.items[old_len..required_total];
                 if (slice.len >= config.vector_length * 4) { // Only use SIMD for larger buffers
-                    const VectorType = @Vector(config.vector_length, u8);
-                    const zero_vec: VectorType = @splat(0);
-                    
-                    // SIMD-aligned chunks
-                    var i: usize = 0;
-                    while (i + config.vector_length <= slice.len) : (i += config.vector_length) {
-                        const ptr: *VectorType = @ptrCast(@alignCast(slice.ptr + i));
-                        ptr.* = zero_vec;
-                    }
-                    // Handle remainder
-                    if (i < slice.len) {
-                        @memset(slice[i..], 0);
+                    // Check alignment before attempting SIMD
+                    const ptr_addr = @intFromPtr(slice.ptr);
+                    const alignment_ok = (ptr_addr % @alignOf(@Vector(config.vector_length, u8))) == 0;
+
+                    if (alignment_ok) {
+                        const VectorType = @Vector(config.vector_length, u8);
+                        const zero_vec: VectorType = @splat(0);
+
+                        // SIMD-aligned chunks
+                        var i: usize = 0;
+                        while (i + config.vector_length <= slice.len) : (i += config.vector_length) {
+                            const ptr: *VectorType = @ptrCast(@alignCast(slice.ptr + i));
+                            ptr.* = zero_vec;
+                        }
+                        // Handle remainder
+                        if (i < slice.len) {
+                            @memset(slice[i..], 0);
+                        }
+                    } else {
+                        // Fallback to scalar if not aligned
+                        @memset(slice, 0);
                     }
                 } else {
                     @memset(slice, 0);
@@ -195,19 +204,30 @@ pub fn Memory(comptime config: MemoryConfig) type {
             // Use SIMD for copying if vector_length > 1 and data is large enough
             if (comptime (config.vector_length > 1)) {
                 if (data.len >= config.vector_length * 4) { // Only use SIMD for larger copies
-                    const VectorType = @Vector(config.vector_length, u8);
                     const dst = self.buffer_ptr.*.items[start_idx .. start_idx + data.len];
-                    
-                    // SIMD-aligned chunks
-                    var i: usize = 0;
-                    while (i + config.vector_length <= data.len) : (i += config.vector_length) {
-                        const src_vec: VectorType = data[i..][0..config.vector_length].*;
-                        const dst_ptr: *VectorType = @ptrCast(@alignCast(dst.ptr + i));
-                        dst_ptr.* = src_vec;
-                    }
-                    // Handle remainder
-                    if (i < data.len) {
-                        @memcpy(dst[i..], data[i..]);
+                    // Check alignment before attempting SIMD
+                    const dst_addr = @intFromPtr(dst.ptr);
+                    const src_addr = @intFromPtr(data.ptr);
+                    const alignment_ok = (dst_addr % @alignOf(@Vector(config.vector_length, u8))) == 0 and
+                                        (src_addr % @alignOf(@Vector(config.vector_length, u8))) == 0;
+
+                    if (alignment_ok) {
+                        const VectorType = @Vector(config.vector_length, u8);
+
+                        // SIMD-aligned chunks
+                        var i: usize = 0;
+                        while (i + config.vector_length <= data.len) : (i += config.vector_length) {
+                            const src_vec: VectorType = data[i..][0..config.vector_length].*;
+                            const dst_ptr: *VectorType = @ptrCast(@alignCast(dst.ptr + i));
+                            dst_ptr.* = src_vec;
+                        }
+                        // Handle remainder
+                        if (i < data.len) {
+                            @memcpy(dst[i..], data[i..]);
+                        }
+                    } else {
+                        // Fallback to scalar if not aligned
+                        @memcpy(self.buffer_ptr.*.items[start_idx .. start_idx + data.len], data);
                     }
                 } else {
                     @memcpy(self.buffer_ptr.*.items[start_idx .. start_idx + data.len], data);

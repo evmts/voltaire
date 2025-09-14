@@ -44,9 +44,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
                 return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
             }
-            // Continue to next instruction - advance past metadata
-            self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, cursor[1].opcode_handler, cursor + 2);
-            return @call(FrameType.getTailCallModifier(), cursor[1].opcode_handler, .{ self, cursor + 2 });
+            // Continue to next instruction - use the pre-computed next_handler and next_cursor from op_data
+            self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, op_data.next_handler, op_data.next_cursor.cursor);
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_JUMP_INLINE - Fused PUSH+JUMP with inline destination (≤8 bytes).

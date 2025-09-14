@@ -483,6 +483,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
             @branchHint(.likely);
+
+
             self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
 
             if (bytecode_raw.len > config.max_bytecode_size) {
