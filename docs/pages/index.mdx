@@ -1,202 +1,96 @@
 ---
-layout: landing
-title: Guillotine - The Ultrafast EVM for Every Language
-description: High-performance Ethereum Virtual Machine implementation in Zig with extreme speed, minimal bundle size, and universal language support.
+title: Guillotine Docs
+description: Minimal, functional documentation for building, testing, and using the Zig EVM.
 ---
 
-import { HomePage, Button, Callout } from 'vocs/components'
+# Guillotine Docs (Alpha)
 
-<HomePage.Root>
-  <div style={{ 
-    position: 'absolute', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    height: '600px',
-    background: 'radial-gradient(ellipse at top, rgba(234, 88, 12, 0.1) 0%, transparent 50%)',
-    pointerEvents: 'none'
-  }} />
-  
-  <div style={{ position: 'relative', zIndex: 1 }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
-      <span className="version-badge">v0.1.0-alpha</span>
-    </div>
-    
-    <h1 style={{
-      fontSize: '4rem',
-      fontWeight: '900',
-      letterSpacing: '-0.04em',
-      lineHeight: '1',
-      marginBottom: '1.5rem',
-      background: 'linear-gradient(135deg, #EA580C 0%, #DC2626 100%)',
-      WebkitBackgroundClip: 'text',
-      backgroundClip: 'text',
-      WebkitTextFillColor: 'transparent'
-    }}>
-      ⚔️ Guillotine
-    </h1>
-    
-    <HomePage.Tagline style={{ fontSize: '1.5rem', fontWeight: '500', marginBottom: '1rem' }}>
-      The ultrafast EVM for every language and platform
-    </HomePage.Tagline>
-    
-    <HomePage.Description style={{ fontSize: '1.125rem', maxWidth: '700px', margin: '0 auto 2rem' }}>
-      Blazingly fast Ethereum Virtual Machine implementation written in Zig, featuring extreme performance, 
-      minimal bundle size, and universal language support. Built with data-oriented design for maximum efficiency.
-    </HomePage.Description>
-    
-    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '3rem' }}>
-      <HomePage.Button href="/getting-started/installation" variant="accent" style={{ padding: '0.75rem 2rem', fontSize: '1.125rem' }}>
-        Get Started →
-      </HomePage.Button>
-      <HomePage.Button href="https://github.com/evmts/Guillotine" style={{ padding: '0.75rem 2rem', fontSize: '1.125rem' }}>
-        View on GitHub
-      </HomePage.Button>
-    </div>
-    
-    <div style={{ 
-      background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.05), rgba(220, 38, 38, 0.02))',
-      border: '1px solid rgba(234, 88, 12, 0.2)',
-      borderRadius: '12px',
-      padding: '1.5rem',
-      marginBottom: '3rem',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      <div style={{ 
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, #EA580C, #DC2626)'
-      }} />
-      <code style={{ fontSize: '1.125rem', fontFamily: 'var(--font-mono)' }}>
-        <span style={{ color: '#666' }}>$ </span>
-        <span style={{ color: '#EA580C' }}>zig</span> build <span style={{ color: '#666' }}>&& </span>
-        <span style={{ color: '#EA580C' }}>zig</span> build test
-      </code>
-    </div>
-  </div>
-</HomePage.Root>
+Purely functional docs. No marketing. If anything is unclear or wrong, open an issue.
 
-## 🚀 Performance Benchmarks
+## Quick Start
 
-<div style={{ 
-  display: 'grid', 
-  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-  gap: '1.5rem',
-  marginBottom: '3rem'
-}}>
-  <div style={{
-    padding: '1.5rem',
-    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    borderRadius: '12px'
-  }}>
-    <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#10B981' }}>35%</div>
-    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Faster than Revm</div>
-    <div style={{ fontSize: '0.875rem', color: '#666' }}>On average across all benchmarks</div>
-  </div>
-  
-  <div style={{
-    padding: '1.5rem',
-    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05))',
-    border: '1px solid rgba(59, 130, 246, 0.3)',
-    borderRadius: '12px'
-  }}>
-    <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#3B82F6' }}>~110KB</div>
-    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Bundle Size</div>
-    <div style={{ fontSize: '0.875rem', color: '#666' }}>Minimal footprint with full features</div>
-  </div>
-  
-  <div style={{
-    padding: '1.5rem',
-    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(139, 92, 246, 0.05))',
-    border: '1px solid rgba(168, 85, 247, 0.3)',
-    borderRadius: '12px'
-  }}>
-    <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#A855F7' }}>1.59ms</div>
-    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>ERC20 Transfer</div>
-    <div style={{ fontSize: '0.875rem', color: '#666' }}>Industry-leading execution speed</div>
-  </div>
-</div>
+- Prerequisites: Zig 0.15.1+, Git
+- Build: `zig build`
+- Verify: `zig build && zig build test-opcodes`
+- Full test suite: `zig build test` (slower)
 
-## ✨ Key Features
+## Core Commands
 
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-  <div>
-    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-      ⚡ Extreme Performance
-    </h3>
-    <p style={{ color: '#666' }}>
-      Data-oriented design with indirect threading, optimized opcode dispatch, and minimal branch prediction misses.
-    </p>
-  </div>
-  
-  <div>
-    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-      🌐 Universal Support
-    </h3>
-    <p style={{ color: '#666' }}>
-      Native bindings for Go, C, TypeScript, Python, Rust, Swift, Kotlin, and WASM. Use Guillotine everywhere.
-    </p>
-  </div>
-  
-  <div>
-    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-      📦 Minimal Bundle
-    </h3>
-    <p style={{ color: '#666' }}>
-      Comptime configuration means you only pay for features you use. Skip precompiles or hardforks without overhead.
-    </p>
-  </div>
-  
-  <div>
-    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-      🔒 Type Safe
-    </h3>
-    <p style={{ color: '#666' }}>
-      Strong typing throughout with Zig's compile-time guarantees. Catch errors at build time, not runtime.
-    </p>
-  </div>
-  
-  <div>
-    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-      🧪 Battle Tested
-    </h3>
-    <p style={{ color: '#666' }}>
-      Comprehensive test suite with unit tests, e2e tests, fuzz testing, and differential testing against Revm.
-    </p>
-  </div>
-  
-  <div>
-    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-      🎨 Customizable
-    </h3>
-    <p style={{ color: '#666' }}>
-      Add custom opcodes, precompiles, and hardforks. Create your own EVM with zero-cost compile-time abstractions.
-    </p>
-  </div>
-</div>
+- `zig build`: Build project
+- `zig build test-opcodes`: Run opcode differential tests
+- `zig build test`: Run all tests
+- `zig build --list-steps`: Show available steps
 
-## 📊 Benchmark Results
+## Minimal Example
 
-Performance comparison against leading EVM implementations:
+This example executes a STOP-only contract at a fixed address.
 
-| Test Case | Guillotine | REVM | Geth | evmone |
-|-----------|------------|------|------|--------|
-| **ERC20 Approval** | <span style={{color: '#10B981', fontWeight: 'bold'}}>1.59ms</span> | 1.67ms | 3.65ms | 1.56ms |
-| **ERC20 Mint** | <span style={{color: '#10B981', fontWeight: 'bold'}}>4.28ms</span> | 5.76ms | 12.84ms | 4.26ms |
-| **ERC20 Transfer** | <span style={{color: '#10B981', fontWeight: 'bold'}}>6.65ms</span> | 8.30ms | 17.50ms | 6.01ms |
-| **10K Hashes** | <span style={{color: '#10B981', fontWeight: 'bold'}}>2.46ms</span> | 3.31ms | 9.36ms | 2.90ms |
-| **Snailtracer** | <span style={{color: '#10B981', fontWeight: 'bold'}}>26.41ms</span> | 39.01ms | 86.02ms | 27.15ms |
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const DefaultEvm = @import("evm").DefaultEvm;
+const Database = @import("storage/database.zig").Database;
+const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo;
+const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
 
-<Callout type="success">
-  **35% faster than Revm** on average • **65% faster than Geth** • Performance on par with evmone
-</Callout>
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-## 🏗️ Architecture
+    var db = Database.init(allocator);
+    defer db.deinit();
+
+    const block = BlockInfo{
+        .number = 1,
+        .timestamp = 1,
+        .difficulty = 0,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const tx = TransactionContext{
+        .gas_limit = 1_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm = try DefaultEvm.init(allocator, &db, block, tx, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+
+    const addr: primitives.Address = .{ .bytes = [_]u8{0x12} ++ [_]u8{0} ** 19 };
+    const bytecode = [_]u8{0x00}; // STOP
+    const code_hash = try db.set_code(&bytecode);
+    try db.set_account(addr.bytes, .{ .balance = 0, .nonce = 0, .code_hash = code_hash, .storage_root = [_]u8{0} ** 32 });
+
+    const params = DefaultEvm.CallParams{ .call = .{
+        .caller = primitives.ZERO_ADDRESS,
+        .to = addr,
+        .value = 0,
+        .input = &.{},
+        .gas = 100_000,
+    } };
+
+    const result = evm.call(params);
+    if (!result.success) return error.ExecutionFailed;
+}
+```
+
+## Notes
+
+- Alpha quality; interfaces can change.
+- Tests print nothing on success by design.
+- For debug logs in tests:
+
+```zig
+test {
+    std.testing.log_level = .debug;
+}
+```
+
+Report issues and gaps on GitHub.
 
 <div style={{ 
   background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.03), rgba(220, 38, 38, 0.01))',

@@ -1,36 +1,17 @@
 ---
 title: Project Status
-description: Current maturity, guarantees, and expectations
+description: Alpha status and expectations.
 ---
 
 # Project Status
 
-Guillotine is currently in early alpha. It is not production ready and interfaces may change.
+- Alpha; not production-ready
+- Interfaces may change
+- Correctness over performance
 
-## What this means
+What to expect:
+- Passing tests are silent by design
+- Run `zig build && zig build test-opcodes` before/after changes
+- Report failures with exact command and code
 
-- Public API is still evolving; expect breaking changes
-- Performance is a priority but correctness comes first
-- Documentation aims for accuracy; report gaps or errors
-
-## Network Support
-
-- **Currently supported**: Ethereum Mainnet only
-- **Planned for Beta**:
-  - OP Stack support (Optimism, Base, etc.)
-  - Arbitrum Nitro support
-
-## Near-term focus
-
-- Tightening EVM core correctness across forks
-- Differential tests and fuzzing improvements
-- Stabilizing the `Evm.init`/`Evm.call` surface
-
-## How to help
-
-- Try the examples and report issues
-- Contribute unit tests and spec references
-- Propose ergonomics for common tasks (calldata building, result helpers)
-
-See the [Roadmap](/roadmap) for more details.
-
+For milestones, see the Roadmap and GitHub.
