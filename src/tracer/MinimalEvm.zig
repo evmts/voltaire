@@ -9,6 +9,122 @@ const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 
+/// Host interface for system operations
+pub const HostInterface = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const VTable = struct {
+        inner_call: *const fn (ptr: *anyopaque, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: CallType) CallResult,
+        get_balance: *const fn (ptr: *anyopaque, address: primitives.Address.Address) u256,
+        get_code: *const fn (ptr: *anyopaque, address: primitives.Address.Address) []const u8,
+        get_storage: *const fn (ptr: *anyopaque, address: primitives.Address.Address, slot: u256) u256,
+        set_storage: *const fn (ptr: *anyopaque, address: primitives.Address.Address, slot: u256, value: u256) void,
+    };
+
+    pub const CallType = enum {
+        Call,
+        CallCode,
+        DelegateCall,
+        StaticCall,
+        Create,
+        Create2,
+    };
+
+    pub const CallResult = struct {
+        success: bool,
+        gas_left: u64,
+        output: []const u8,
+    };
+
+    pub fn innerCall(self: HostInterface, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: CallType) CallResult {
+        return self.vtable.inner_call(self.ptr, gas, address, value, input, call_type);
+    }
+
+    pub fn getBalance(self: HostInterface, address: primitives.Address.Address) u256 {
+        return self.vtable.get_balance(self.ptr, address);
+    }
+
+    pub fn getCode(self: HostInterface, address: primitives.Address.Address) []const u8 {
+        return self.vtable.get_code(self.ptr, address);
+    }
+
+    pub fn getStorage(self: HostInterface, address: primitives.Address.Address, slot: u256) u256 {
+        return self.vtable.get_storage(self.ptr, address, slot);
+    }
+
+    pub fn setStorage(self: HostInterface, address: primitives.Address.Address, slot: u256, value: u256) void {
+        self.vtable.set_storage(self.ptr, address, slot, value);
+    }
+};
+
+/// Mock host implementation for testing
+pub const MockHost = struct {
+    const Self = @This();
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator) Self {
+        return .{ .allocator = allocator };
+    }
+
+    pub fn innerCall(ptr: *anyopaque, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: HostInterface.CallType) HostInterface.CallResult {
+        _ = ptr;
+        _ = address;
+        _ = value;
+        _ = input;
+        _ = call_type;
+        // Mock implementation: always return success
+        return .{
+            .success = true,
+            .gas_left = gas,
+            .output = &.{},
+        };
+    }
+
+    pub fn getBalance(ptr: *anyopaque, address: primitives.Address.Address) u256 {
+        _ = ptr;
+        _ = address;
+        // Mock implementation: return 0 balance
+        return 0;
+    }
+
+    pub fn getCode(ptr: *anyopaque, address: primitives.Address.Address) []const u8 {
+        _ = ptr;
+        _ = address;
+        // Mock implementation: return empty code
+        return &.{};
+    }
+
+    pub fn getStorage(ptr: *anyopaque, address: primitives.Address.Address, slot: u256) u256 {
+        _ = ptr;
+        _ = address;
+        _ = slot;
+        // Mock implementation: return 0 for all storage
+        return 0;
+    }
+
+    pub fn setStorage(ptr: *anyopaque, address: primitives.Address.Address, slot: u256, value: u256) void {
+        _ = ptr;
+        _ = address;
+        _ = slot;
+        _ = value;
+        // Mock implementation: no-op
+    }
+
+    pub fn hostInterface(self: *Self) HostInterface {
+        return .{
+            .ptr = @ptrCast(self),
+            .vtable = &.{
+                .inner_call = innerCall,
+                .get_balance = getBalance,
+                .get_code = getCode,
+                .get_storage = getStorage,
+                .set_storage = setStorage,
+            },
+        };
+    }
+};
+
 pub const MinimalEvm = struct {
     const Self = @This();
 
@@ -47,7 +163,7 @@ pub const MinimalEvm = struct {
     calldata: []const u8,
 
     // Return data
-    return_data: std.ArrayList(u8),
+    return_data: []const u8,
 
     // Execution status
     stopped: bool,
@@ -56,14 +172,22 @@ pub const MinimalEvm = struct {
     // Allocator
     allocator: std.mem.Allocator,
 
+    // Host interface for system operations
+    host: ?HostInterface,
+
     // Storage slot key for access tracking
     pub const StorageSlotKey = struct {
         address: Address,
         slot: u256,
     };
 
-    /// Initialize a new MinimalEvm instance
+    /// Initialize a new MinimalEvm instance with optional host interface
     pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_limit: i64) !Self {
+        return initWithHost(allocator, bytecode, gas_limit, null);
+    }
+
+    /// Initialize a new MinimalEvm instance with a host interface
+    pub fn initWithHost(allocator: std.mem.Allocator, bytecode: []const u8, gas_limit: i64, host: ?HostInterface) !Self {
         var storage_map = std.AutoHashMap(Address, std.AutoHashMap(u256, u256)).init(allocator);
         errdefer storage_map.deinit();
 
@@ -72,9 +196,6 @@ pub const MinimalEvm = struct {
 
         var memory_map = std.AutoHashMap(u32, u8).init(allocator);
         errdefer memory_map.deinit();
-
-        var return_data = std.ArrayList(u8).initCapacity(allocator, 0) catch unreachable;
-        errdefer return_data.deinit(allocator);
 
         var accessed_storage = std.AutoHashMap(StorageSlotKey, void).init(allocator);
         errdefer accessed_storage.deinit();
@@ -98,13 +219,14 @@ pub const MinimalEvm = struct {
             .address = ZERO_ADDRESS,
             .value = 0,
             .calldata = &[_]u8{},
-            .return_data = return_data,
+            .return_data = &[_]u8{},
             .stopped = false,
             .reverted = false,
             .accessed_storage_slots = accessed_storage,
             .accessed_addresses = accessed_addrs,
             .original_storage = original_storage,
             .allocator = allocator,
+            .host = host,
         };
     }
 
@@ -124,7 +246,9 @@ pub const MinimalEvm = struct {
         self.accessed_addresses.deinit();
         self.original_storage.deinit();
 
-        self.return_data.deinit(self.allocator);
+        if (self.return_data.len > 0) {
+            self.allocator.free(self.return_data);
+        }
     }
 
     /// Set call context
@@ -950,7 +1074,7 @@ pub const MinimalEvm = struct {
                 // RETURNDATASIZE
                 0x3d => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    try self.pushStack(self.return_data.items.len);
+                    try self.pushStack(self.return_data.len);
                     self.pc += 1;
                 },
 
@@ -973,7 +1097,7 @@ pub const MinimalEvm = struct {
                     const dst_off = @as(u32, @intCast(dest_offset));
 
                     // Check bounds
-                    if (src_off + len > self.return_data.items.len) {
+                    if (src_off + len > self.return_data.len) {
                         return error.InvalidMemoryAccess;
                     }
 
@@ -988,7 +1112,7 @@ pub const MinimalEvm = struct {
                     // Copy return data
                     var i: u32 = 0;
                     while (i < len) : (i += 1) {
-                        const byte = self.return_data.items[src_off + i];
+                        const byte = self.return_data[src_off + i];
                         try self.writeMemory(dst_off + i, byte);
                     }
 
@@ -1437,24 +1561,83 @@ pub const MinimalEvm = struct {
                 },
                 0xf1 => { // CALL
                     const gas = try self.popStack();
-                    const address = try self.popStack();
+                    const address_u256 = try self.popStack();
                     const value = try self.popStack();
                     const in_offset = try self.popStack();
                     const in_length = try self.popStack();
                     const out_offset = try self.popStack();
                     const out_length = try self.popStack();
 
-                    _ = gas;
-                    _ = address;
-                    _ = value;
-                    _ = in_offset;
-                    _ = in_length;
-                    _ = out_offset;
-                    _ = out_length;
+                    // Convert address from u256 to Address
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+                    }
+                    const address = Address{ .bytes = addr_bytes };
 
-                    // Simplified: push 1 for success
-                    try self.pushStack(1);
-                    try self.consumeGas(700);
+                    // If host is available, use it for the call
+                    if (self.host) |host| {
+                        // Read input data from memory
+                        var input_data: []const u8 = &.{};
+                        if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                            const in_off = @as(u32, @intCast(in_offset));
+                            const in_len = @as(u32, @intCast(in_length));
+                            // Ensure memory expansion
+                            const new_mem_size = in_off + in_len;
+                            if (new_mem_size > self.memory_size) {
+                                const expansion = new_mem_size - self.memory_size;
+                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
+                                try self.consumeGas(gas_cost);
+                            }
+                            // Read bytes from memory
+                            var data = try self.allocator.alloc(u8, in_len);
+                            defer self.allocator.free(data);
+                            var j: u32 = 0;
+                            while (j < in_len) : (j += 1) {
+                                data[j] = self.readMemory(in_off + j);
+                            }
+                            input_data = data;
+                        }
+
+                        // Make the call through host
+                        const result = host.innerCall(@intCast(gas), address, value, input_data, .Call);
+
+                        // Write output to memory if requested
+                        if (result.success and out_length > 0 and result.output.len > 0) {
+                            const out_off = @as(u32, @intCast(out_offset));
+                            const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                            // Ensure memory expansion for output
+                            const new_mem_size = out_off + copy_len;
+                            if (new_mem_size > self.memory_size) {
+                                const expansion = new_mem_size - self.memory_size;
+                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
+                                try self.consumeGas(gas_cost);
+                            }
+                            // Write output to memory
+                            var k: u32 = 0;
+                            while (k < copy_len) : (k += 1) {
+                                try self.writeMemory(out_off + k, result.output[k]);
+                            }
+                        }
+
+                        // Store return data
+                        if (self.return_data.len > 0) {
+                            self.allocator.free(self.return_data);
+                        }
+                        self.return_data = try self.allocator.dupe(u8, result.output);
+
+                        // Push success status
+                        try self.pushStack(if (result.success) 1 else 0);
+
+                        // Consume gas
+                        const gas_used = @as(u64, @intCast(gas)) - result.gas_left;
+                        try self.consumeGas(gas_used);
+                    } else {
+                        // Fallback to mock behavior
+                        try self.pushStack(1);
+                        try self.consumeGas(700);
+                    }
                     self.pc += 1;
                 },
                 0xf2 => { // CALLCODE
@@ -1505,22 +1688,82 @@ pub const MinimalEvm = struct {
                 },
                 0xf4 => { // DELEGATECALL
                     const gas = try self.popStack();
-                    const address = try self.popStack();
+                    const address_u256 = try self.popStack();
                     const in_offset = try self.popStack();
                     const in_length = try self.popStack();
                     const out_offset = try self.popStack();
                     const out_length = try self.popStack();
 
-                    _ = gas;
-                    _ = address;
-                    _ = in_offset;
-                    _ = in_length;
-                    _ = out_offset;
-                    _ = out_length;
+                    // Convert address from u256 to Address
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+                    }
+                    const address = Address{ .bytes = addr_bytes };
 
-                    // Simplified: push 1 for success
-                    try self.pushStack(1);
-                    try self.consumeGas(700);
+                    // If host is available, use it for the call
+                    if (self.host) |host| {
+                        // Read input data from memory
+                        var input_data: []const u8 = &.{};
+                        if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                            const in_off = @as(u32, @intCast(in_offset));
+                            const in_len = @as(u32, @intCast(in_length));
+                            // Ensure memory expansion
+                            const new_mem_size = in_off + in_len;
+                            if (new_mem_size > self.memory_size) {
+                                const expansion = new_mem_size - self.memory_size;
+                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
+                                try self.consumeGas(gas_cost);
+                            }
+                            // Read bytes from memory
+                            var data = try self.allocator.alloc(u8, in_len);
+                            defer self.allocator.free(data);
+                            var j: u32 = 0;
+                            while (j < in_len) : (j += 1) {
+                                data[j] = self.readMemory(in_off + j);
+                            }
+                            input_data = data;
+                        }
+
+                        // Make the delegatecall through host (no value parameter)
+                        const result = host.innerCall(@intCast(gas), address, 0, input_data, .DelegateCall);
+
+                        // Write output to memory if requested
+                        if (result.success and out_length > 0 and result.output.len > 0) {
+                            const out_off = @as(u32, @intCast(out_offset));
+                            const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                            // Ensure memory expansion for output
+                            const new_mem_size = out_off + copy_len;
+                            if (new_mem_size > self.memory_size) {
+                                const expansion = new_mem_size - self.memory_size;
+                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
+                                try self.consumeGas(gas_cost);
+                            }
+                            // Write output to memory
+                            var k: u32 = 0;
+                            while (k < copy_len) : (k += 1) {
+                                try self.writeMemory(out_off + k, result.output[k]);
+                            }
+                        }
+
+                        // Store return data
+                        if (self.return_data.len > 0) {
+                            self.allocator.free(self.return_data);
+                        }
+                        self.return_data = try self.allocator.dupe(u8, result.output);
+
+                        // Push success status
+                        try self.pushStack(if (result.success) 1 else 0);
+
+                        // Consume gas
+                        const gas_used = @as(u64, @intCast(gas)) - result.gas_left;
+                        try self.consumeGas(gas_used);
+                    } else {
+                        // Fallback to mock behavior
+                        try self.pushStack(1);
+                        try self.consumeGas(700);
+                    }
                     self.pc += 1;
                 },
                 0xf5 => { // CREATE2
@@ -1541,22 +1784,82 @@ pub const MinimalEvm = struct {
                 },
                 0xfa => { // STATICCALL
                     const gas = try self.popStack();
-                    const address = try self.popStack();
+                    const address_u256 = try self.popStack();
                     const in_offset = try self.popStack();
                     const in_length = try self.popStack();
                     const out_offset = try self.popStack();
                     const out_length = try self.popStack();
 
-                    _ = gas;
-                    _ = address;
-                    _ = in_offset;
-                    _ = in_length;
-                    _ = out_offset;
-                    _ = out_length;
+                    // Convert address from u256 to Address
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+                    }
+                    const address = Address{ .bytes = addr_bytes };
 
-                    // Simplified: push 1 for success
-                    try self.pushStack(1);
-                    try self.consumeGas(700);
+                    // If host is available, use it for the call
+                    if (self.host) |host| {
+                        // Read input data from memory
+                        var input_data: []const u8 = &.{};
+                        if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                            const in_off = @as(u32, @intCast(in_offset));
+                            const in_len = @as(u32, @intCast(in_length));
+                            // Ensure memory expansion
+                            const new_mem_size = in_off + in_len;
+                            if (new_mem_size > self.memory_size) {
+                                const expansion = new_mem_size - self.memory_size;
+                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
+                                try self.consumeGas(gas_cost);
+                            }
+                            // Read bytes from memory
+                            var data = try self.allocator.alloc(u8, in_len);
+                            defer self.allocator.free(data);
+                            var j: u32 = 0;
+                            while (j < in_len) : (j += 1) {
+                                data[j] = self.readMemory(in_off + j);
+                            }
+                            input_data = data;
+                        }
+
+                        // Make the static call through host (no value, read-only)
+                        const result = host.innerCall(@intCast(gas), address, 0, input_data, .StaticCall);
+
+                        // Write output to memory if requested
+                        if (result.success and out_length > 0 and result.output.len > 0) {
+                            const out_off = @as(u32, @intCast(out_offset));
+                            const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                            // Ensure memory expansion for output
+                            const new_mem_size = out_off + copy_len;
+                            if (new_mem_size > self.memory_size) {
+                                const expansion = new_mem_size - self.memory_size;
+                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
+                                try self.consumeGas(gas_cost);
+                            }
+                            // Write output to memory
+                            var k: u32 = 0;
+                            while (k < copy_len) : (k += 1) {
+                                try self.writeMemory(out_off + k, result.output[k]);
+                            }
+                        }
+
+                        // Store return data
+                        if (self.return_data.len > 0) {
+                            self.allocator.free(self.return_data);
+                        }
+                        self.return_data = try self.allocator.dupe(u8, result.output);
+
+                        // Push success status
+                        try self.pushStack(if (result.success) 1 else 0);
+
+                        // Consume gas
+                        const gas_used = @as(u64, @intCast(gas)) - result.gas_left;
+                        try self.consumeGas(gas_used);
+                    } else {
+                        // Fallback to mock behavior
+                        try self.pushStack(1);
+                        try self.consumeGas(700);
+                    }
                     self.pc += 1;
                 },
                 0xfd => { // REVERT
@@ -1634,6 +1937,23 @@ test "MinimalEvm: basic initialization" {
     try std.testing.expectEqual(@as(u32, 0), evm.pc);
     try std.testing.expectEqual(@as(i64, 100000), evm.gas_remaining);
     try std.testing.expectEqual(@as(usize, 0), evm.stack.items.len);
+    try std.testing.expect(evm.host == null);
+}
+
+test "MinimalEvm: with host interface" {
+    const allocator = std.testing.allocator;
+    const bytecode = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
+
+    var mock_host = MockHost.init(allocator);
+    const host_interface = mock_host.hostInterface();
+
+    var evm = try MinimalEvm.initWithHost(allocator, &bytecode, 100000, host_interface);
+    defer evm.deinit();
+
+    try std.testing.expectEqual(@as(u32, 0), evm.pc);
+    try std.testing.expectEqual(@as(i64, 100000), evm.gas_remaining);
+    try std.testing.expectEqual(@as(usize, 0), evm.stack.items.len);
+    try std.testing.expect(evm.host != null);
 }
 
 test "MinimalEvm: stack operations" {
