@@ -15,7 +15,7 @@ from .exceptions import (
     MemoryError,
     GuillotineError
 )
-from ._ffi import lib, ffi, is_ffi_available, require_ffi
+from ._ffi_ffi import lib, ffi, is_ffi_available, require_ffi
 
 
 class EvmError(Enum):
