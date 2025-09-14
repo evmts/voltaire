@@ -1,24 +1,16 @@
 /// Configurable execution tracing system for EVM debugging and analysis
 ///
 /// Provides multiple tracer implementations with compile-time selection:
-/// - `DefaultTracer`: Zero runtime overhead (default for production)
-/// - `DebuggingTracer`: Step-by-step debugging with breakpoints
-/// - `LoggingTracer`: Structured logging to stdout
-/// - `FileTracer`: High-performance file output
-/// - Custom tracers can be implemented by following the interface
+/// - `DefaultTracer`: Validates execution in debug/safe builds
+/// - `DebuggingTracer`: Step-by-step debugging (no-op implementation)
+/// - `LoggingTracer`: Structured logging to stdout (minimal)
+/// - `FileTracer`: File output (skeleton)
 ///
 /// Tracers are selected at compile time for zero-cost abstractions.
 /// Enable tracing by configuring the Frame with a specific TracerType.
 const std = @import("std");
 const log = @import("../log.zig");
-const frame_mod = @import("../frame/frame_c.zig");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
-const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
-const block_info_mod = @import("../block/block_info.zig");
-const call_params_mod = @import("../frame/call_params.zig");
-const call_result_mod = @import("../frame/call_result.zig");
-const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 const pc_tracker_mod = @import("pc_tracker.zig");
 const MinimalEvm = @import("MinimalEvm.zig").MinimalEvm;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
@@ -35,6 +27,7 @@ const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 // For this reason, the tracer is intentionally decoupled from the EVM and is expected to share
 // minimal code with it.
 pub const DefaultTracer = struct {
+    allocator: std.mem.Allocator,
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
 
@@ -83,9 +76,9 @@ pub const DefaultTracer = struct {
     };
 
     pub fn init(allocator: std.mem.Allocator) DefaultTracer {
-        _ = allocator;
         return .{
-            .steps = std.ArrayList(ExecutionStep){},
+            .allocator = allocator,
+            .steps = std.ArrayList(ExecutionStep).init(allocator),
             .pc_tracker = null,
             .gas_tracker = null,
             .current_pc = 0,
@@ -102,7 +95,7 @@ pub const DefaultTracer = struct {
     }
 
     pub fn deinit(self: *DefaultTracer) void {
-        self.steps.deinit(std.heap.c_allocator);
+        self.steps.deinit(self.allocator);
         if (self.minimal_evm) |*evm| {
             evm.deinit();
         }
@@ -135,7 +128,7 @@ pub const DefaultTracer = struct {
 
             if (bytecode.len > 0) {
                 // Initialize MinimalEvm with the same bytecode and gas
-                self.minimal_evm = MinimalEvm.init(std.heap.c_allocator, bytecode, gas_limit) catch null;
+                self.minimal_evm = MinimalEvm.init(self.allocator, bytecode, gas_limit) catch null;
 
                 if (self.minimal_evm) |*evm| {
                     // Sync initial state from frame
@@ -197,7 +190,7 @@ pub const DefaultTracer = struct {
 
                 // Log execution
                 const stack_size = frame.stack.size();
-                std.log.debug("[EVM2] EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
+                log.debug("EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
                     self.instruction_count,
                     opcode_name,
                     self.current_pc,
@@ -238,7 +231,7 @@ pub const DefaultTracer = struct {
                 }
 
                 // Log completion
-                std.log.debug("[EVM2] DONE[{d}]: {s} | PC={d}", .{
+                log.debug("DONE[{d}]: {s} | PC={d}", .{
                     self.instruction_count,
                     opcode_name,
                     self.current_pc,
@@ -457,7 +450,7 @@ pub const DefaultTracer = struct {
         if (evm.pc >= evm.bytecode.len) return;
         const op = evm.bytecode[evm.pc];
         if (!(op >= 0x5f and op <= 0x7f)) {
-            self.warn("Expected PUSHx at pc={d}, found 0x{x:0>2}", .{evm.pc, op});
+            self.warn("Expected PUSHx at pc={d}, found 0x{x:0>2}", .{ evm.pc, op });
         }
         self.executeOpcode(evm, op);
     }
@@ -552,9 +545,7 @@ pub const DefaultTracer = struct {
 
             if (evm_memory_size != frame_memory_size) {
                 self.warn("[DIVERGENCE] Memory size mismatch:", .{});
-                self.warn("  MinimalEvm: {d}, Frame: {d}", .{
-                    evm_memory_size, frame_memory_size
-                });
+                self.warn("  MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
             }
 
             // Compare gas (allow small differences)
@@ -567,9 +558,7 @@ pub const DefaultTracer = struct {
             if (diff_abs > 100) {
                 self.warn("[DIVERGENCE] Gas mismatch:", .{});
                 const diff = frame_gas_i64 - evm_gas_i64;
-                self.warn("  MinimalEvm: {d}, Frame: {d}, Diff: {d}", .{
-                    evm_gas_i64, frame_gas_i64, diff
-                });
+                self.warn("  MinimalEvm: {d}, Frame: {d}, Diff: {d}", .{ evm_gas_i64, frame_gas_i64, diff });
             }
         }
     }
@@ -580,42 +569,28 @@ pub const DefaultTracer = struct {
 
     pub fn debug(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-                std.log.debug("[EVM2] " ++ format, args);
-            }
-        }
+        log.debug(format, args);
     }
 
     pub fn err(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
-        const builtin = @import("builtin");
-        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-            std.log.err("[EVM2] " ++ format, args);
-        }
+        log.err(format, args);
     }
 
     pub fn warn(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
-        const builtin = @import("builtin");
-        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-            std.log.warn("[EVM2] " ++ format, args);
-        }
+        log.warn(format, args);
     }
 
     pub fn info(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
         _ = self;
-        const builtin = @import("builtin");
-        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-            std.log.info("[EVM2] " ++ format, args);
-        }
+        log.info(format, args);
     }
 
     pub fn throwError(self: *DefaultTracer, comptime format: []const u8, args: anytype) noreturn {
         _ = self;
         const builtin = @import("builtin");
-        std.log.err("[EVM2] FATAL: " ++ format, args);
+        log.err("FATAL: " ++ format, args);
         if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
             @panic("EVM execution error");
         } else {
@@ -631,9 +606,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Frame execution started: code_len={}, gas={}, depth={}", .{
-                code_len, gas, depth
-            });
+            log.debug("[EVM] Frame execution started: code_len={}, gas={}, depth={}", .{ code_len, gas, depth });
         }
     }
 
@@ -641,9 +614,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Frame execution completed: gas_left={}, output_len={}", .{
-                gas_left, output_len
-            });
+            log.debug("[EVM] Frame execution completed: gas_left={}, output_len={}", .{ gas_left, output_len });
         }
     }
 
@@ -651,7 +622,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Account {x} has delegation to {x}", .{account, delegated});
+            log.debug("[EVM] Account {x} has delegation to {x}", .{ account, delegated });
         }
     }
 
@@ -659,7 +630,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] Empty account access", .{});
+            log.debug("[EVM] Empty account access", .{});
         }
     }
 
@@ -668,11 +639,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[ARENA] Initialized: initial={d}, max={d}, growth={d}%", .{
-                initial_capacity,
-                max_capacity,
-                growth_factor,
-            });
+            log.debug("[ARENA] Initialized: initial={d}, max={d}, growth={d}%", .{ initial_capacity, max_capacity, growth_factor });
         }
     }
 
@@ -698,11 +665,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[ARENA] Reset ({s}): capacity {d} -> {d}", .{
-                mode,
-                capacity_before,
-                capacity_after,
-            });
+            log.debug("[ARENA] Reset ({s}): capacity {d} -> {d}", .{ mode, capacity_before, capacity_after });
         }
     }
 
@@ -778,11 +741,7 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[ARENA] Growing: {d} -> {d} bytes (requested={d})", .{
-                old_capacity,
-                new_capacity,
-                requested_size,
-            });
+            log.debug("[ARENA] Growing: {d} -> {d} bytes (requested={d})", .{ old_capacity, new_capacity, requested_size });
         }
     }
 
@@ -791,18 +750,14 @@ pub const DefaultTracer = struct {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.warn("[ARENA] Allocation failed: size={d}, current={d}, max={d}", .{
-                size,
-                current_capacity,
-                max_capacity,
-            });
+            log.warn("[ARENA] Allocation failed: size={d}, current={d}, max={d}", .{ size, current_capacity, max_capacity });
         }
     }
 
     /// Assert with error message - replaces std.debug.assert
     pub fn assert(self: *DefaultTracer, condition: bool, comptime message: []const u8) void {
         if (!condition) {
-            self.err("ASSERTION FAILED: {s}", .{message});
+            self.err("ASSERTION FAILED: {s}", .{ message });
             const builtin = @import("builtin");
             if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
                 unreachable;
@@ -1052,7 +1007,7 @@ pub const DebuggingTracer = struct {
     pub fn assert(self: *DebuggingTracer, condition: bool, comptime message: []const u8) void {
         _ = self;
         if (!condition) {
-            std.log.err("ASSERTION FAILED: {s}", .{message});
+            log.err("ASSERTION FAILED: {s}", .{ message });
             const builtin = @import("builtin");
             if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
                 unreachable;
@@ -1075,7 +1030,7 @@ pub const LoggingTracer = struct {
 
     pub fn before_instruction(self: *LoggingTracer, _: anytype, comptime opcode: UnifiedOpcode, _: anytype) void {
         _ = self;
-        std.log.info("[LOG] Executing {s}", .{@tagName(opcode)});
+        log.info("[LOG] Executing {s}", .{ @tagName(opcode) });
     }
 
     pub fn after_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: UnifiedOpcode, next_handler: anytype, next_cursor: anytype) void {
@@ -1083,20 +1038,20 @@ pub const LoggingTracer = struct {
         _ = frame;
         _ = next_handler;
         _ = next_cursor;
-        std.log.info("[LOG] Completed {s}", .{@tagName(opcode)});
+        log.info("[LOG] Completed {s}", .{ @tagName(opcode) });
     }
 
     pub fn after_complete(self: *LoggingTracer, frame: anytype, comptime opcode: UnifiedOpcode) void {
         _ = self;
         _ = frame;
-        std.log.info("[LOG] Terminal {s}", .{@tagName(opcode)});
+        log.info("[LOG] Terminal {s}", .{ @tagName(opcode) });
     }
 
     /// Assert with error message - replaces std.debug.assert
     pub fn assert(self: *LoggingTracer, condition: bool, comptime message: []const u8) void {
         _ = self;
         if (!condition) {
-            std.log.err("ASSERTION FAILED: {s}", .{message});
+            log.err("ASSERTION FAILED: {s}", .{ message });
             const builtin = @import("builtin");
             if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
                 unreachable;
@@ -1139,7 +1094,7 @@ pub const FileTracer = struct {
     pub fn assert(self: *FileTracer, condition: bool, comptime message: []const u8) void {
         _ = self;
         if (!condition) {
-            std.log.err("ASSERTION FAILED: {s}", .{message});
+            log.err("ASSERTION FAILED: {s}", .{ message });
             const builtin = @import("builtin");
             if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
                 unreachable;
