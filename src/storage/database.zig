@@ -368,9 +368,10 @@ pub const Database = struct {
     /// Clear delegation for an EOA
     pub fn clear_delegation(self: *Database, eoa_address: [20]u8) Error!void {
         
-        if (try self.get_account(eoa_address)) |*account| {
-            account.clear_delegation();
-            try self.set_account(eoa_address, account.*);
+        if (try self.get_account(eoa_address)) |account| {
+            var mutable_account = account;
+            mutable_account.clear_delegation();
+            try self.set_account(eoa_address, mutable_account);
             log.debug("clear_delegation: Cleared delegation for EOA {x}", .{eoa_address});
         }
     }
@@ -965,7 +966,7 @@ test "Database large values" {
 
     const addr = [_]u8{0xFF} ** 20;
     const large_value: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-    const large_key: u256 = 0x123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF12345;
+    const large_key: u256 = 0x123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF1234;
     
     // Test with maximum values
     const account = Account{

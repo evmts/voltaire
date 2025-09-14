@@ -515,10 +515,10 @@ fn createTestEvm(allocator: std.mem.Allocator) !TestEvm {
     const block_info = @import("../block/block_info.zig").DefaultBlockInfo.init();
     const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
-        .coinbase = [_]u8{0} ** 20,
+        .coinbase = primitives.Address.ZERO_ADDRESS,
         .chain_id = 1,
     };
-    evm_ptr.* = try @import("../evm.zig").DefaultEvm.init(allocator, memory_db, block_info, tx_context, 0, [_]u8{0} ** 20, .CANCUN);
+    evm_ptr.* = try @import("../evm.zig").DefaultEvm.init(allocator, memory_db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .CANCUN);
     
     return TestEvm{ .evm = evm_ptr, .memory_db = memory_db };
 }
