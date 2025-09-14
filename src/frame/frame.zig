@@ -625,15 +625,22 @@ pub fn Frame(comptime config: FrameConfig) type {
             var start_index: usize = 0;
             var first_block_gas_amount: u32 = 0;
             if (schedule.len > 0) {
+                self.getTracer().debug("Frame: schedule[0] type = {s}", .{@tagName(schedule[0])});
+                if (schedule.len > 1) {
+                    self.getTracer().debug("Frame: schedule[1] type = {s}", .{@tagName(schedule[1])});
+                }
                 switch (schedule[0]) {
                     .first_block_gas => |meta| {
+                        self.getTracer().debug("Frame: Found first_block_gas with gas={d}, skipping to index 1", .{meta.gas});
                         if (meta.gas > 0) {
                             first_block_gas_amount = meta.gas;
                             try self.consumeGasChecked(@intCast(meta.gas));
                         }
                         start_index = 1;
                     },
-                    else => {},
+                    else => {
+                        self.getTracer().debug("Frame: No first_block_gas, starting at index 0", .{});
+                    },
                 }
             }
 
@@ -670,6 +677,25 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             self.getTracer().debug("Frame: Starting opcode execution, first_item_type={s}", .{@tagName(self.dispatch.cursor[0])});
+
+            // Debug: Check what handler we're about to call
+            if (self.dispatch.cursor[0] == .opcode_handler) {
+                const handler = self.dispatch.cursor[0].opcode_handler;
+                // Check if it's a regular opcode handler
+                inline for (0..256) |i| {
+                    if (Self.opcode_handlers[i] == handler) {
+                        self.getTracer().debug("Frame: About to execute regular opcode 0x{x:0>2} handler", .{i});
+                        break;
+                    }
+                }
+                // Check if it's PUSH_MSTORE_INLINE specifically (the problematic one)
+                const handlers_mod = @import("frame_handlers.zig");
+                const push_mstore_inline_handler = handlers_mod.getSyntheticHandler(Self, @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
+                if (handler == push_mstore_inline_handler) {
+                    self.getTracer().debug("Frame: About to execute PUSH_MSTORE_INLINE handler!", .{});
+                }
+            }
+
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
             self.getTracer().assert(false, "Handlers should never return normally");
         }

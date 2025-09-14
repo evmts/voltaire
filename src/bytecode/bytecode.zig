@@ -169,7 +169,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 if (fusions_enabled and packed_bits.is_fusion_candidate) {
                     log.debug("  Checking for fusion at PC={d}", .{iterator.pc});
                     const fusion_data = iterator.bytecode.getFusionData(iterator.pc);
-                    log.debug("  Fusion detected: {s}", .{@tagName(fusion_data)});
+                    log.debug("  Fusion detected: {any}", .{fusion_data});
                     // Advance PC properly for fusion opcodes
                     switch (fusion_data) {
                         // 2-opcode fusions: PUSH + op
@@ -743,6 +743,17 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             const opcode = self.get_unsafe(pc);
             log.debug("  Checking fusion for opcode 0x{x:0>2} at PC={d}", .{opcode, pc});
 
+            // Special debug for PC=0
+            if (pc == 0) {
+                log.debug("    Debug PC=0: Bytecode[0]=0x{x:0>2} (PUSH0=0x5f)", .{opcode});
+                if (self.runtime_code.len > 1) {
+                    log.debug("    Debug PC=1: Bytecode[1]=0x{x:0>2}", .{self.get_unsafe(1)});
+                }
+                if (self.runtime_code.len > 2) {
+                    log.debug("    Debug PC=2: Bytecode[2]=0x{x:0>2}", .{self.get_unsafe(2)});
+                }
+            }
+
             // Check advanced fusion patterns in priority order (longest first)
 
             // Check function dispatch pattern first (can be 8+ bytes)
@@ -813,6 +824,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             }
 
             const first_op = self.get_unsafe(pc);
+            log.debug("  First opcode at PC={d}: 0x{x:0>2} (PUSH range: 0x60-0x7F, PUSH0=0x5F)", .{pc, first_op});
 
             // Check for existing 2-opcode fusions (PUSH + op)
             if (first_op >= 0x60 and first_op <= 0x7F) { // PUSH opcode
@@ -845,7 +857,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     0x52 => {
                         log.debug("    FUSION: PUSH_MSTORE_FUSION with value={d}", .{value});
                         return OpcodeData{ .push_mstore_fusion = .{ .value = value } };
-                    }
+                    },
                     0x53 => return OpcodeData{ .push_mstore8_fusion = .{ .value = value } }, // MSTORE8
                     0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
                     0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
@@ -855,8 +867,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     },
                 }
             }
-            
+
             // No fusion pattern detected, return regular opcode
+            log.debug("  No fusion detected for opcode 0x{x:0>2}, returning regular", .{first_op});
             return OpcodeData{ .regular = .{ .opcode = first_op } };
         }
 
@@ -1046,7 +1059,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             };
 
                             if (is_fusable) {
-                                log.debug("Marking PC={d} as fusion candidate (PUSH{d} + 0x{x:0>2})", .{i, push_size, second_op});
+                                log.debug("Marking PC={d} as fusion candidate (PUSH{d} + 0x{x:0>2})", .{i, push_size, next_op});
                                 self.packed_bitmap[i].is_fusion_candidate = true;
                             }
                         }

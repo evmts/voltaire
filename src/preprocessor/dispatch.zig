@@ -537,8 +537,13 @@ pub fn Dispatch(comptime FrameType: type) type {
                 const op_data = maybe.?;
                 opcode_count += 1;
 
+                log.debug("Dispatch build: PC={d}, op_type={s}", .{instr_pc, @tagName(op_data)});
+
                 switch (op_data) {
                     .regular => |data| {
+                        if (data.opcode == 0x5f) { // PUSH0
+                            log.debug("Building dispatch: PUSH0 at PC={d}, schedule_index={d}", .{instr_pc, schedule_items.items.len});
+                        }
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[data.opcode] });
                     },
                     .pc => |data| {
@@ -608,6 +613,7 @@ pub fn Dispatch(comptime FrameType: type) type {
                         try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mload, &u256_storage);
                     },
                     .push_mstore_fusion => |data| {
+                        log.debug("Building dispatch: PUSH_MSTORE_FUSION at PC={d}, schedule_index={d}", .{instr_pc, schedule_items.items.len});
                         try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore, &u256_storage);
                     },
                     .push_mstore8_fusion => |data| {
