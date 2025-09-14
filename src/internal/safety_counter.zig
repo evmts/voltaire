@@ -27,10 +27,11 @@ pub fn SafetyCounter(comptime T: type, comptime mode: Mode) type {
             self.count += 1;
             if (self.count >= self.limit) {
                 log.err("SafetyCounter limit reached: count={d}, limit={d}", .{ self.count, self.limit });
+                log.err("Either bytecode is executing way more instructions than normal for an EVM contract, or there is a bug in the EVM causing an infinite loop", .{});
                 if (builtin.target.cpu.arch == .wasm32) {
                     unreachable;
                 } else {
-                    @panic("SafetyCounter limit exceeded");
+                    @panic("EVM instruction limit exceeded - possible infinite loop or excessive bytecode execution");
                 }
             }
         }
@@ -41,10 +42,11 @@ pub fn SafetyCounter(comptime T: type, comptime mode: Mode) type {
             self.count = count;
             if (self.count >= self.limit) {
                 log.err("SafetyCounter limit reached via set: count={d}, limit={d}", .{ self.count, self.limit });
+                log.err("Either bytecode is executing way more instructions than normal for an EVM contract, or there is a bug in the EVM causing an infinite loop", .{});
                 if (builtin.target.cpu.arch == .wasm32) {
                     unreachable;
                 } else {
-                    @panic("SafetyCounter limit exceeded");
+                    @panic("EVM instruction limit exceeded - possible infinite loop or excessive bytecode execution");
                 }
             }
         }

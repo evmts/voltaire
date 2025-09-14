@@ -23,6 +23,7 @@ const pc_tracker_mod = @import("pc_tracker.zig");
 const MinimalEvm = @import("MinimalEvm.zig").MinimalEvm;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
+const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 
 // ============================================================================
 // DEFAULT TRACER
@@ -58,6 +59,11 @@ pub const DefaultTracer = struct {
     simple_instruction_count: u64 = 0,  // Instructions in simple interpreter
     fused_instruction_count: u64 = 0,  // Instructions in fused interpreter
 
+    // Safety counter to prevent infinite loops
+    // Limit is 10x the block gas limit (30M gas * 10 = 300M instructions)
+    // This is very generous - normal contracts execute far fewer instructions
+    instruction_safety: SafetyCounter(u64, .enabled),
+
     // Internal representation of an execution step
     pub const ExecutionStep = struct {
         step_number: u64,
@@ -89,6 +95,9 @@ pub const DefaultTracer = struct {
             .schedule_index = 0,
             .simple_instruction_count = 0,
             .fused_instruction_count = 0,
+            // 300M instructions is ~10x the block gas limit
+            // Normal contracts execute far fewer instructions
+            .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
         };
     }
 
@@ -120,6 +129,9 @@ pub const DefaultTracer = struct {
             self.schedule_index = 0;
             self.simple_instruction_count = 0;
             self.fused_instruction_count = 0;
+
+            // Reset the instruction safety counter for the new frame
+            self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
                 // Initialize MinimalEvm with the same bytecode and gas
@@ -171,6 +183,10 @@ pub const DefaultTracer = struct {
                 } else {
                     self.simple_instruction_count += 1;
                 }
+
+                // Increment safety counter - will panic if limit exceeded
+                // with message about potential infinite loop or excessive instructions
+                self.instruction_safety.inc();
 
                 // Execute MinimalEvm steps for validation
                 if (self.minimal_evm) |*evm| {
