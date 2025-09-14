@@ -175,30 +175,26 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn init(allocator: std.mem.Allocator, database: *Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
             // Process beacon root update for EIP-4788 if applicable
             const beacon_roots = @import("eips_and_hardforks/beacon_roots.zig");
-            beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
+            beacon_roots.BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch {
                 // Will be traced later when tracer is initialized
-                _ = err;
             };
 
             // Process historical block hash update for EIP-2935 if applicable
             const historical_block_hashes = @import("eips_and_hardforks/historical_block_hashes.zig");
-            historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
+            historical_block_hashes.HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch {
                 // Will be traced later when tracer is initialized
-                _ = err;
             };
 
             // Process validator deposits for EIP-6110 if applicable
             const validator_deposits = @import("eips_and_hardforks/validator_deposits.zig");
-            validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
+            validator_deposits.ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch {
                 // Will be traced later when tracer is initialized
-                _ = err;
             };
 
             // Process validator withdrawals for EIP-7002 if applicable
             const validator_withdrawals = @import("eips_and_hardforks/validator_withdrawals.zig");
-            validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
+            validator_withdrawals.ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch {
                 // Will be traced later when tracer is initialized
-                _ = err;
             };
 
             var access_list = AccessList.init(allocator);
@@ -356,7 +352,26 @@ pub fn Evm(comptime config: EvmConfig) type {
             // This should only be called at the top level
             std.debug.assert(self.depth == 0);
 
-            self.tracer.onCallStart(params, params.getGas());
+            // Extract call parameters based on the union type
+            const call_type = @tagName(params);
+            const gas = @as(i64, @intCast(params.getGas()));
+            const to_address = switch (params) {
+                .call => |p| p.to,
+                .callcode => |p| p.to,
+                .delegatecall => |p| p.to,
+                .staticcall => |p| p.to,
+                .create => primitives.ZERO_ADDRESS,
+                .create2 => primitives.ZERO_ADDRESS,
+            };
+            const value = switch (params) {
+                .call => |p| p.value,
+                .callcode => |p| p.value,
+                .delegatecall => 0,
+                .staticcall => 0,
+                .create => |p| p.value,
+                .create2 => |p| p.value,
+            };
+            self.tracer.onCallStart(call_type, gas, to_address, value);
 
             params.validate() catch return CallResult.failure(0);
 
@@ -457,7 +472,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             var result = self.inner_call(modified_params);
 
-            self.tracer.onCallComplete(result.success, result.gas_left);
+            self.tracer.onCallComplete(result.success, @as(i64, @intCast(result.gas_left)), result.output.len);
 
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
@@ -668,7 +683,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             @branchHint(.likely);
-            self.tracer.onCallStart("CALL", @intCast(params.gas), params.to, params.value);
+            // log.debug("DEBUG: executeCall entered, gas={}\n", .{params.gas});
             const snapshot_id = self.journal.create_snapshot();
 
             // Transfer value if needed
