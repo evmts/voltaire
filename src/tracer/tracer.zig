@@ -407,17 +407,34 @@ pub const DefaultTracer = struct {
                 }
             },
             .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
-                // Step once through the bytecode - the synthetic operation handles the rest
+                // PUSH_MSTORE_INLINE synthetic operation in Frame:
+                // - Pops 1 value from stack (the value to store)
+                // - Uses metadata offset (doesn't push offset to stack)
+                // - Stores value at that memory offset
+                // MinimalEvm must emulate the same net stack effect (pop 1, push 0)
+                // PUSH_MSTORE_INLINE fuses PUSH+MSTORE operations:
+                // Frame: takes offset from metadata, pops value, stores at memory[offset]
+                // MinimalEvm: needs to advance PC by 2 instructions (PUSH1+MSTORE) and have same effect
+
+                // Execute PUSH1 + MSTORE sequence in MinimalEvm
                 evm.step() catch |e| {
-                    self.err("PUSH_MSTORE step failed: {any}", .{e});
+                    self.err("PUSH_MSTORE step 1 (PUSH) failed: {any}", .{e});
+                    return;
+                };
+                evm.step() catch |e| {
+                    self.err("PUSH_MSTORE step 2 (MSTORE) failed: {any}", .{e});
                     return;
                 };
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
-                // This is a metadata-driven synthetic operation
-                // Similar to PUSH_MSTORE_INLINE - just step once
+                // PUSH_MSTORE8_INLINE fuses PUSH+MSTORE8 operations
+                // Execute PUSH1 + MSTORE8 sequence in MinimalEvm
                 evm.step() catch |e| {
-                    self.err("PUSH_MSTORE8 step failed: {any}", .{e});
+                    self.err("PUSH_MSTORE8 step 1 (PUSH) failed: {any}", .{e});
+                    return;
+                };
+                evm.step() catch |e| {
+                    self.err("PUSH_MSTORE8 step 2 (MSTORE8) failed: {any}", .{e});
                     return;
                 };
             },
