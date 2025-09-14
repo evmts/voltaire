@@ -193,6 +193,46 @@ Handlers organized by type:
 - Cached gas calculations
 - Borrowed vs owned memory
 
+## Tracer System Architecture: Execution Synchronization
+
+The tracer system in `@src/tracer/tracer.zig` provides sophisticated execution synchronization between Frame (optimized) and MinimalEvm (reference) implementations:
+
+### How Synchronization Works
+
+**Every instruction handler MUST call `self.beforeInstruction(opcode, cursor)`** which:
+1. Executes the equivalent operation(s) in MinimalEvm
+2. Validates that both implementations reach identical state
+3. Handles synthetic opcode fusion by executing the correct number of MinimalEvm steps
+
+### Instruction Handler Pattern
+```zig
+pub fn some_opcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+    self.beforeInstruction(.SOME_OPCODE, cursor);  // ← REQUIRED!
+    // ... opcode implementation ...
+    return next_instruction(self, cursor, .SOME_OPCODE);
+}
+```
+
+**CRITICAL**: Missing `beforeInstruction()` calls cause test failures because MinimalEvm gets out of sync.
+
+### Synthetic Opcode Handling
+
+The tracer automatically handles synthetic opcodes in `executeMinimalEvmForOpcode()`:
+- **Regular opcodes**: Execute exactly 1 MinimalEvm step
+- **PUSH_MSTORE_INLINE**: Execute 2 steps (PUSH1 + MSTORE)
+- **FUNCTION_DISPATCH**: Execute 4 steps (PUSH4 + EQ + PUSH + JUMPI)
+- **etc.**
+
+This is NOT a divergence issue - it's the designed synchronization mechanism.
+
+### Common Test Failure Root Causes
+
+1. **Missing beforeInstruction() calls** - Handler doesn't synchronize MinimalEvm
+2. **MinimalEvm context mismatch** - Hardcoded values don't match Frame's blockchain context
+3. **Implementation bugs** - Logic errors in either Frame or MinimalEvm
+
+**The solution is NOT to change synthetic opcode handling - the tracer system is designed correctly. The solution is to ensure all handlers call `beforeInstruction()` and MinimalEvm has matching context.**
+
 ## References
 
 - Zig docs: https://ziglang.org/documentation/0.15.1/
