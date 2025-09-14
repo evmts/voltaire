@@ -507,8 +507,9 @@ test "Database code operations" {
     defer db.deinit();
 
     const test_code = "608060405234801561001057600080fd5b50";
-    const test_bytes = std.fmt.hexToBytes(allocator, test_code) catch unreachable;
+    const test_bytes = try allocator.alloc(u8, test_code.len / 2);
     defer allocator.free(test_bytes);
+    _ = try std.fmt.hexToBytes(test_bytes, test_code);
 
     // Store code and get hash
     const code_hash = try db.set_code(test_bytes);
