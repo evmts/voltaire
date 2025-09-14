@@ -83,7 +83,6 @@ pub const Host = struct {
         };
 
         _ = evm;
-        _ = gas;
         _ = address;
         _ = value;
         _ = input;

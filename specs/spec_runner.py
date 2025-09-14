@@ -65,9 +65,15 @@ class SpecTestRunner:
             if hex_part:
                 addr_str = hex_part.group()
 
-        # Ensure proper format
+        # Ensure proper format and length
         if not addr_str.startswith('0x'):
             addr_str = '0x' + addr_str
+
+        # Pad to 40 hex chars (20 bytes) if needed
+        if len(addr_str) < 42:
+            addr_str = '0x' + addr_str[2:].zfill(40)
+        elif len(addr_str) > 42:
+            addr_str = addr_str[:42]  # Truncate if too long
 
         return Address(addr_str)
 
