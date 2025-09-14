@@ -472,14 +472,30 @@ pub const MinimalEvm = struct {
         return self.original_storage.get(key);
     }
 
+    /// Calculate gas cost for memory expansion (EVM spec)
+    pub fn calculateMemoryExpansionGas(self: *Self, new_size: u32) u64 {
+        if (new_size <= self.memory_size) return 0;
+
+        const old_words = (self.memory_size + 31) / 32;
+        const new_words = (new_size + 31) / 32;
+
+        const old_cost = old_words * GasConstants.MemoryGas + (old_words * old_words) / 512;
+        const new_cost = new_words * GasConstants.MemoryGas + (new_words * new_words) / 512;
+
+        return new_cost - old_cost;
+    }
+
     /// Consume gas
     pub fn consumeGas(self: *Self, amount: u64) !void {
+        std.log.debug("MinimalEvm: consumeGas {d}, current={d}", .{amount, self.gas_remaining});
         if (self.gas_remaining < @as(i64, @intCast(amount))) {
+            std.log.err("MinimalEvm: OutOfGas! Tried to consume {d}, only have {d}", .{amount, self.gas_remaining});
             self.gas_remaining = 0;
             return error.OutOfGas;
         }
         self.gas_remaining -= @intCast(amount);
         self.gas_used += amount;
+        std.log.debug("MinimalEvm: Gas consumed, remaining={d}, used={d}", .{self.gas_remaining, self.gas_used});
     }
 
     /// Get current opcode
@@ -506,6 +522,7 @@ pub const MinimalEvm = struct {
 
     /// Execute a single opcode
     pub fn executeOpcode(self: *Self, opcode: u8) !void {
+        std.log.debug("MinimalEvm: executeOpcode 0x{x:0>2} at pc={d}, gas={d}, stack_size={d}", .{opcode, self.pc, self.gas_remaining, self.stack.items.len});
 
         // Giant switch statement for all opcodes
         switch (opcode) {
@@ -1648,6 +1665,7 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
                 0xf1 => { // CALL
+                    // Pop all 7 arguments for CALL (in reverse order)
                     const gas = try self.popStack();
                     const address_u256 = try self.popStack();
                     const value = try self.popStack();
@@ -1664,26 +1682,98 @@ pub const MinimalEvm = struct {
                     }
                     const address = Address{ .bytes = addr_bytes };
 
-                    // Simplified CALL implementation to avoid gas issues
-                    // Just consume basic gas and push success without complex logic
-                    const base_gas_cost: u64 = 700;
-                    try self.consumeGas(base_gas_cost);
+                    // CALL gas cost calculation (matching Frame implementation)
+                    // Base cost for CALL operation
+                    var gas_cost: u64 = GasConstants.CallGas; // 40 gas
+
+                    // Additional cost for value transfer
+                    if (value > 0) {
+                        gas_cost += GasConstants.CallValueTransferGas; // 9000 gas
+                    }
+
+                    // Memory expansion cost for input
+                    if (in_length > 0) {
+                        const in_end = in_offset + in_length;
+                        if (in_end > self.memory_size) {
+                            const memory_gas = self.calculateMemoryExpansionGas(@intCast(in_end));
+                            gas_cost += memory_gas;
+                        }
+                    }
+
+                    // Memory expansion cost for output
+                    if (out_length > 0) {
+                        const out_end = out_offset + out_length;
+                        if (out_end > self.memory_size) {
+                            const memory_gas = self.calculateMemoryExpansionGas(@intCast(out_end));
+                            gas_cost += memory_gas;
+                        }
+                    }
+
+                    // Consume gas for CALL operation
+                    try self.consumeGas(gas_cost);
 
                     // If host is available, use it for the call
                     if (self.host) |host| {
-                        // Simplified: don't read memory, just use empty input
-                        const result = host.innerCall(@intCast(@min(gas, 1000000)), address, value, &.{}, .Call);
-                        try self.pushStack(if (result.success) 1 else 0);
-                    } else {
-                        // Fallback: just push success
-                        try self.pushStack(1);
-                    }
+                        // Read input data from memory if needed
+                        var input_data: []const u8 = &.{};
+                        if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                            const in_off = @as(u32, @intCast(in_offset));
+                            const in_len = @as(u32, @intCast(in_length));
 
-                    // Don't consume additional gas from host result to avoid OutOfGas
-                    _ = in_offset;
-                    _ = in_length;
-                    _ = out_offset;
-                    _ = out_length;
+                            // Expand memory if needed
+                            const new_mem_size = in_off + in_len;
+                            if (new_mem_size > self.memory_size) {
+                                self.memory_size = new_mem_size;
+                            }
+
+                            // Read bytes from memory
+                            var data = try self.allocator.alloc(u8, in_len);
+                            defer self.allocator.free(data);
+                            var j: u32 = 0;
+                            while (j < in_len) : (j += 1) {
+                                data[j] = self.readMemory(in_off + j);
+                            }
+                            input_data = data;
+                        }
+
+                        // Make the call through host
+                        const available_gas = @min(gas, @as(u64, @intCast(self.gas_remaining)));
+                        const result = host.innerCall(available_gas, address, value, input_data, .Call);
+
+                        // Write output to memory if requested
+                        if (result.success and out_length > 0 and result.output.len > 0) {
+                            const out_off = @as(u32, @intCast(out_offset));
+                            const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+
+                            // Expand memory if needed
+                            const new_mem_size = out_off + copy_len;
+                            if (new_mem_size > self.memory_size) {
+                                self.memory_size = new_mem_size;
+                            }
+
+                            // Write output to memory
+                            var k: u32 = 0;
+                            while (k < copy_len) : (k += 1) {
+                                try self.writeMemory(out_off + k, result.output[k]);
+                            }
+                        }
+
+                        // Store return data
+                        if (self.return_data.len > 0) {
+                            self.allocator.free(self.return_data);
+                        }
+                        self.return_data = try self.allocator.dupe(u8, result.output);
+
+                        // Push success status
+                        try self.pushStack(if (result.success) 1 else 0);
+
+                        // Consume gas used by the call
+                        const gas_used = available_gas - result.gas_left;
+                        try self.consumeGas(gas_used);
+                    } else {
+                        // No host interface - return failure
+                        try self.pushStack(0);
+                    }
 
                     self.pc += 1;
                 },
