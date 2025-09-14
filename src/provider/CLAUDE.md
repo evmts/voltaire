@@ -1,49 +1,46 @@
-# CLAUDE.md - Provider Module AI Context
+# CLAUDE.md - Provider Module
 
 ## MISSION CRITICAL: Data Provider Abstraction
+**Provider bugs cause stale data, consensus failures, incorrect execution.**
 
-The provider module abstracts data access for blockchain state, transactions, and blocks. **Provider bugs can lead to stale data, consensus failures, or incorrect execution.** Data consistency and accuracy are paramount.
+## Provider Types
+- **State Provider**: Account/storage data access
+- **Block Provider**: Historical block/transaction data
+- **Network Provider**: Real-time blockchain synchronization
+- **Cache Provider**: Performance optimization with consistency
 
-## Critical Implementation Details
+## Key Responsibilities
+- **Data Integrity**: Consistent, validated data
+- **Caching Strategy**: Balance performance with freshness
+- **Error Handling**: Graceful degradation on failures
+- **State Sync**: Keep local state synchronized
+- **Historical Access**: Past blockchain states
 
-### Provider Interface Abstraction
-- **State Provider**: Account and storage data access
-- **Block Provider**: Historical block and transaction data
-- **Network Provider**: Real-time blockchain data synchronization
-- **Cache Provider**: Performance optimization with consistency guarantees
+## Critical Safety
+- Validate all external data
+- Handle network failures gracefully
+- Maintain consistency across updates
+- Prevent stale data affecting consensus
+- Retry mechanisms with backoff
 
-### Key Responsibilities
-- **Data Integrity**: Ensure all provided data is consistent and validated
-- **Caching Strategy**: Balance performance with data freshness
-- **Error Handling**: Graceful degradation on data source failures
-- **State Synchronization**: Keep local state in sync with network
-- **Historical Data**: Provide access to past blockchain states
-
-### Critical Safety Requirements
-- Validate all data from external sources
-- Handle network failures and timeouts gracefully
-- Maintain data consistency across provider updates
-- Prevent stale data from affecting consensus decisions
-- Implement proper retry mechanisms with backoff
-
-### Performance Optimization
-- Intelligent caching with TTL and invalidation
-- Batch operations for multiple data requests
+## Performance
+- Intelligent caching with TTL/invalidation
+- Batch operations for multiple requests
 - Connection pooling for network providers
-- Lazy loading of expensive data structures
+- Lazy loading of expensive structures
 
-### Data Validation
-- Merkle proof verification for state data
-- Block header validation for historical data
+## Data Validation
+- Merkle proof verification for state
+- Block header validation
 - Transaction signature verification
 - Gas calculation validation
 - State root consistency checks
 
-### Emergency Procedures
-- Fallback to alternative data sources
-- Data corruption detection and recovery
+## Emergency Procedures
+- Fallback to alternative sources
+- Data corruption detection/recovery
 - Network partition handling
-- Cache invalidation on consistency errors
-- Safe degradation modes for partial failures
+- Cache invalidation on errors
+- Safe degradation modes
 
-Remember: **Providers are the foundation of data integrity.** Any incorrect or stale data can propagate through the entire system causing consensus failures.
+**Providers are foundation of data integrity. Incorrect/stale data propagates system-wide.**

@@ -76,7 +76,9 @@ return thing;
 - NO helpers - self-contained tests
 - Test failures = fix immediately
 - Evidence-based debugging only
-- Zig tests output NOTHING when passing
+- **CRITICAL**: Zig tests output NOTHING when passing (no output = success)
+- If tests produce no output, they PASSED successfully
+- Only failed tests produce output
 
 ### Debug Logging in Tests
 
@@ -86,6 +88,8 @@ test {
     std.testing.log_level = .debug;
 }
 ```
+
+**IMPORTANT**: Even with `std.testing.log_level = .debug`, if the test passes, you will see NO OUTPUT. This is normal Zig behavior. No output means the test passed.
 
 ## Project Architecture
 
@@ -121,15 +125,53 @@ const Contract = @import("../frame/contract.zig");
 
 ## Commands
 
-```bash
-zig build test-opcodes      # Test opcodes
-zig build                   # Build
-zig build test-snailtracer  # Differential test
-zig build wasm              # WASM build
-zig build test-synthetic    # Synthetic opcodes
-```
+`zig build test-opcodes` (test), `zig build` (build), `zig build test-snailtracer` (differential), `zig build wasm` (WASM), `zig build test-synthetic` (synthetic)
 
 ## EVM Architecture
+
+### CRITICAL: Dispatch-Based Execution Model
+
+**Guillotine uses a revolutionary dispatch-based execution model, NOT a traditional interpreter!**
+
+#### Traditional Interpreter (MinimalEvm)
+```
+Bytecode: [0x60, 0x01, 0x60, 0x02, 0x01, 0x56, 0x5b, 0x00]
+           PUSH1  1   PUSH1  2   ADD  JUMP JUMPDEST STOP
+
+Execution: while (pc < bytecode.len) {
+    opcode = bytecode[pc]
+    switch(opcode) { ... }  // Big switch statement
+    pc++
+}
+```
+
+#### Dispatch-Based Execution (Frame)
+```
+Bytecode: [0x60, 0x01, 0x60, 0x02, 0x01, 0x56, 0x5b, 0x00]
+
+Dispatch Schedule (preprocessed):
+[0] = first_block_gas { gas: 15 }     // Metadata for basic block
+[1] = &push_handler                   // Function pointer
+[2] = push_inline { value: 1 }        // Inline metadata
+[3] = &push_handler                   // Function pointer
+[4] = push_inline { value: 2 }        // Inline metadata
+[5] = &add_handler                    // Function pointer
+[6] = &jump_handler                   // Function pointer
+[7] = &jumpdest_handler               // Function pointer
+[8] = jump_dest { gas: 3, min: 0 }    // Gas for next block
+[9] = &stop_handler                   // Function pointer
+
+Execution: cursor[0].opcode_handler(frame, cursor) → tail calls
+```
+
+**Key Differences:**
+1. **No PC in Frame**: Frame uses cursor (pointer into dispatch schedule)
+2. **No Switch Statement**: Direct function pointer calls with tail-call optimization
+3. **Preprocessed**: Bytecode analyzed once, schedule reused
+4. **Inline Metadata**: Data embedded directly in schedule (no bytecode reads)
+5. **Gas Batching**: Gas calculated per basic block, not per instruction
+
+**Schedule Index ≠ PC**: Schedule[0] might be metadata, not the PC=0 instruction!
 
 ### Design Patterns
 
@@ -137,12 +179,12 @@ zig build test-synthetic    # Synthetic opcodes
 2. Unsafe ops for performance (pre-validated)
 3. Cache-conscious struct layout
 4. Handler tables for O(1) dispatch
-5. Bytecode optimization via Planner
+5. Bytecode optimization via Dispatch
 
 ### Key Separations
 
-- **Frame**: Executes opcodes
-- **Plan**: Manages PC/jumps
+- **Frame**: Executes dispatch schedule (NOT bytecode)
+- **Dispatch**: Builds optimized schedule from bytecode
 - **Host**: External operations
 
 ### Opcode Pattern
@@ -199,10 +241,18 @@ The tracer system in `@src/tracer/tracer.zig` provides sophisticated execution s
 
 ### How Synchronization Works
 
+**Frame executes a dispatch schedule, MinimalEvm executes bytecode sequentially.**
+
 **Every instruction handler MUST call `self.beforeInstruction(opcode, cursor)`** which:
 1. Executes the equivalent operation(s) in MinimalEvm
-2. Validates that both implementations reach identical state
-3. Handles synthetic opcode fusion by executing the correct number of MinimalEvm steps
+2. For regular opcodes: Execute 1 MinimalEvm step
+3. For synthetic opcodes: Execute N MinimalEvm steps (where N = number of fused operations)
+4. Validates that both implementations reach identical state
+
+**CRITICAL**: Frame's cursor is an index into the dispatch schedule, NOT a PC!
+- Schedule[0] might be `first_block_gas` metadata, not PC=0
+- Schedule indices do NOT correspond to bytecode PCs
+- Synthetic handlers in schedule represent multiple bytecode operations
 
 ### Instruction Handler Pattern
 ```zig
@@ -227,11 +277,16 @@ This is NOT a divergence issue - it's the designed synchronization mechanism.
 
 ### Common Test Failure Root Causes
 
-1. **Missing beforeInstruction() calls** - Handler doesn't synchronize MinimalEvm
-2. **MinimalEvm context mismatch** - Hardcoded values don't match Frame's blockchain context
-3. **Implementation bugs** - Logic errors in either Frame or MinimalEvm
+1. **Dispatch Schedule Misalignment** - Schedule[0] contains metadata, not PC=0 handler
+2. **Missing beforeInstruction() calls** - Handler doesn't synchronize MinimalEvm
+3. **MinimalEvm context mismatch** - Hardcoded values don't match Frame's blockchain context
+4. **Implementation bugs** - Logic errors in either Frame or MinimalEvm
 
-**The solution is NOT to change synthetic opcode handling - the tracer system is designed correctly. The solution is to ensure all handlers call `beforeInstruction()` and MinimalEvm has matching context.**
+**Key Debugging Points:**
+- Frame cursor != PC (cursor is dispatch schedule index)
+- Schedule may start with metadata items (first_block_gas)
+- Synthetic opcodes in Frame = multiple steps in MinimalEvm
+- The tracer's `executeMinimalEvmForOpcode()` handles fusion → sequential mapping correctly
 
 ## References
 

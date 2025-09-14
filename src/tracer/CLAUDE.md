@@ -1,267 +1,127 @@
 # CLAUDE.md - Tracer Module
 
 ## MISSION CRITICAL: Execution Monitoring
-
 **Tracer bugs hide critical issues.** Tracing must be accurate without affecting execution.
 
-## How MinimalEvm Validation Works
+## Understanding Frame vs MinimalEvm Execution Models
 
-The tracer validates Frame execution using a **parallel MinimalEvm** that executes the same logical operations:
+### Frame: Dispatch-Based Execution
+```
+Dispatch Schedule: [handler_ptr, metadata, handler_ptr, ...]
+Execution: cursor[0].opcode_handler(frame, cursor) → tail calls
+No PC, no switch statement, preprocessed schedule
+```
 
-### Execution Flow
-1. **before_instruction()** - Called before every Frame handler executes
-2. **executeMinimalEvmForOpcode()** - Executes equivalent operations in MinimalEvm
-3. **after_instruction()** - Validates Frame and MinimalEvm states match
-4. **validateMinimalEvmState()** - Compares stack, memory, gas between implementations
+### MinimalEvm: Traditional Interpreter
+```
+Bytecode: [0x60, 0x01, 0x01, 0x56, ...]
+Execution: while(pc < len) { switch(bytecode[pc]) {...} }
+PC-based, giant switch statement, runtime validation
+```
 
-### Opcode Mapping
-- **Regular opcodes (0x00-0xFF)**: Execute exactly 1 operation in MinimalEvm using `executeOpcode()`
-- **Synthetic opcodes (>0xFF)**: Execute N sequential operations using `step()` where N = fusion count
+## Synchronizing Two Different Execution Models
 
-### Synthetic Opcode Examples
+The tracer **synchronizes** these fundamentally different execution models:
+
+### The Challenge
+- **Frame**: Executes dispatch schedule (function pointers + metadata)
+- **MinimalEvm**: Executes bytecode (opcodes + immediates)
+- **Frame cursor ≠ MinimalEvm PC**: They track different things!
+
+### The Solution: beforeInstruction()
+
+**Execution Flow**:
+1. `beforeInstruction(opcode, cursor)` - Called by Frame handler
+2. `executeMinimalEvmForOpcode(opcode)` - Executes N MinimalEvm steps
+3. `validateMinimalEvmState()` - Verifies identical state
+
+**Key Insight**: Frame's synthetic opcodes = Multiple MinimalEvm steps
+
+**Opcode Mapping**:
+- **Regular opcodes** (ADD, MUL, etc.): 1 Frame op = 1 MinimalEvm step
+- **PUSH opcodes**: 1 Frame op (handler + metadata) = 1 MinimalEvm step
+- **Synthetic opcodes**: 1 Frame op = N MinimalEvm steps
+
+**Synthetic Examples**:
 ```zig
-// Frame executes PUSH_ADD_INLINE (single fused operation)
-// MinimalEvm executes 2 steps: PUSH + ADD
+// Frame: Single synthetic opcode
 .PUSH_ADD_INLINE => {
-    inline for (0..2) |_| {
-        evm.step() catch |e| { ... };
-    }
+    // MinimalEvm: Two sequential operations
+    for (0..2) evm.step();  // Step 1: PUSH1, Step 2: ADD
 }
 
-// Frame executes FUNCTION_DISPATCH (complex fusion)
-// MinimalEvm executes 4 steps: PUSH4 + EQ + PUSH + JUMPI
+// Frame: Complex fusion
 .FUNCTION_DISPATCH => {
-    inline for (0..4) |_| {
-        evm.step() catch |e| { ... };
-    }
+    // MinimalEvm: Four operations
+    for (0..4) evm.step();  // PUSH4 + EQ + PUSH + JUMPI
 }
 ```
 
-### Key Principle
-**Frame uses optimized dispatch, MinimalEvm uses sequential bytecode execution.** The tracer ensures both reach the same logical state by executing the correct number of equivalent operations.
+### Critical Synchronization Points
 
-## Module Components
+1. **Schedule vs Bytecode Index**:
+   - Frame: Schedule[0] might be `first_block_gas` metadata
+   - MinimalEvm: Bytecode[0] is always first opcode
+   - **Solution**: Tracer tracks mapping separately
 
-### Core Files
-- **`tracer.zig`** - Main tracer with DefaultTracer
-- **`MinimalEvm.zig`** - Standalone EVM (65KB)
-- **`MinimalEvm_c.zig`** - C FFI wrapper for WASM
-- **`pc_tracker.zig`** - Program counter tracking
-- **`spec.md`** - Tracer spec
+2. **Jump Destinations**:
+   - Frame: Pre-resolved dispatch pointers
+   - MinimalEvm: Runtime PC validation
+   - **Solution**: Both must reach same logical destination
 
-## Recent Changes
+3. **Gas Calculation**:
+   - Frame: Batched per basic block (at JUMPDEST)
+   - MinimalEvm: Per instruction
+   - **Solution**: Compare total gas consumed, not per-op
 
-### Tracer Assertion System
-- Replaced `std.debug.assert` with `tracer.assert()`
-- Added descriptive assertion messages
-- Integrated assertion tracking
+## Core Files
+- `tracer.zig` - Main DefaultTracer
+- `MinimalEvm.zig` - Standalone EVM (65KB)
+- `MinimalEvm_c.zig` - C FFI for WASM
+- `pc_tracker.zig` - Program counter tracking
 
-### Enhanced Interface
-- Bytecode analysis lifecycle methods
-- Improved gas tracking
-- Cursor-aware dispatch synchronization
+## Key Features
 
-### MinimalEvm
-- **CRITICAL FIX**: Stack operand order for binary ops
-- Fixed LIFO semantics (first pop = top)
-- Complete WASM C FFI interface
+**Architecture**: EIP-2929 access tracking, opcode tracing, stack/memory monitoring
+**Types**: DefaultTracer (production), MinimalEvm (differential), Custom
+**WASM**: Opaque handle pattern, complete lifecycle, state inspection
 
-### WASM Integration
-- Opaque handle pattern
-- Complete EVM lifecycle
-- State inspection
-- u256 byte array conversion
-
-## Critical Implementation Details
-
-### Architecture
-- EIP-2929 access tracking
-- Opcode-level tracing
-- Stack/memory monitoring
-- Gas consumption analysis
-- Call frame tracing
-- Bytecode analysis
-
-### Responsibilities
-- Execution tracing
-- State change monitoring
-- Performance analysis
-- Debug information
-- Error analysis
-- Validation
-
-### Tracer Types
-- **DefaultTracer**: Production minimal overhead
-- **MinimalEvm**: Standalone for differential testing
-- **Structural**: Basic flow and state
-- **Call**: Call/return patterns
-- **Custom**: User-defined via interface
-
-### Safety Requirements
-- NEVER modify execution state during tracing
-- Perfect isolation between tracer and EVM
-- Handle failures gracefully
-- No tracing overhead on gas calculations
-- Descriptive assertion messages
-- Proper WASM memory boundaries
-
-### MinimalEvm Stack Semantics (CRITICAL)
+## Critical Stack Semantics
 ```zig
-// CORRECT - Stack is LIFO, first pop gets top
+// CORRECT LIFO - first pop = top
 pub fn add(self: *MinimalEvm) !void {
-    const a = try self.popStack(); // Top of stack
-    const b = try self.popStack(); // Second item
+    const a = try self.popStack(); // Top
+    const b = try self.popStack(); // Second
     try self.pushStack(a +% b);
 }
-
-// CORRECT - For SUB: a - b where a is top
-pub fn sub(self: *MinimalEvm) !void {
-    const a = try self.popStack(); // Top (subtrahend)
-    const b = try self.popStack(); // Second (minuend)
-    try self.pushStack(b -% a);    // b - a
-}
 ```
 
-### WASM C Interface Pattern
-```c
-// Create EVM instance
-void* evm = evm_create(bytecode, bytecode_len, gas_limit);
+## Safety Requirements
+- NEVER modify execution state during tracing
+- Perfect EVM isolation
+- Handle failures gracefully
+- No gas calculation overhead
+- Descriptive assertion messages
 
-// Set call context
-evm_set_call_context(evm, caller, address, value, calldata, calldata_len);
+## Event Categories
 
-// Execute
-bool success = evm_execute(evm);
+**Critical Events** (REQUIRED):
+- `before_instruction(opcode, cursor)` - Before every handler
+- `after_instruction(opcode, next_handler, next_cursor)` - After success
+- `after_complete(opcode)` - Terminal states
 
-// Inspect state
-uint64_t gas_used = evm_get_gas_used(evm);
-uint32_t pc = evm_get_pc(evm);
-
-// Cleanup
-evm_destroy(evm);
-```
-
-### Performance
-- Conditional tracing per opcode type
-- Efficient data structures
-- Memory pooling
-- Lazy evaluation
-- Zero-cost abstractions
-- Optimized WASM builds
-
-### Testing
-- Differential testing against revm
-- MinimalEvm ground truth
-- Comprehensive assertions
-- WASM via C FFI
-- Gas accuracy verification
-
-### Emergency Procedures
-- Disable on memory exhaustion
-- Handle crashes gracefully
-- Validate trace data
-- Fallback to minimal tracing
-- Clear error messages
-
-## Integration
-
-### Dispatch System
-- Assertions replace debug assertions
-- Cursor-aware dispatch tracking
-- Fusion detection
-- Jump table validation
-
-### Bytecode Analysis
-- Track metadata detection
-- Monitor JUMPDEST analysis
-- Record fusion opportunities
-- Validate preprocessing
-
-### With Frame Execution
-- Pass tracer through bytecode initialization
-- Track frame lifecycle and gas accounting
-- Monitor stack operations with LIFO validation
-- Ensure proper error propagation
-
-## Tracer Events Reference
-
-### Critical Execution Events
-
-#### Instruction Lifecycle (MUST be called)
-- **`before_instruction(frame, opcode, cursor)`** - REQUIRED before every handler
-- **`after_instruction(frame, opcode, next_handler, next_cursor)`** - REQUIRED after successful execution
-- **`after_complete(frame, opcode)`** - REQUIRED for terminal states
-
-#### MinimalEvm Synchronization
-- **`onInterpret(frame, bytecode, gas_limit)`** - Initializes parallel MinimalEvm
-- **`executeMinimalEvmForOpcode(evm, opcode, frame, cursor)`** - Executes equivalent operations
-- **`validateMinimalEvmState(frame, opcode)`** - Validates state consistency
-
-### Event Categories
-
-#### Frame Events
-- `onFrameStart` / `onFrameComplete` - Frame lifecycle
-- `onFrameBytecodeInit` - Bytecode initialization
-
-#### Bytecode Analysis
-- `onBytecodeAnalysisStart` / `onBytecodeAnalysisComplete`
-- `onJumpdestFound`, `onInvalidOpcode`, `onTruncatedPush`
-
-#### Dispatch Schedule
-- `onScheduleBuildStart` / `onScheduleBuildComplete`
-- `onFusionDetected`, `onStaticJumpResolved`, `onInvalidStaticJump`
-- `onJumpTableCreated`
-
-#### Call Operations
-- `onCallStart` / `onCallComplete`
-- `onCallPreflight`
-
-#### System Events
-- `onEvmInit`, `onAccountDelegation`, `onEmptyAccountAccess`
-- `onCodeRetrieval`
-
-#### Protocol Updates
-- `onBeaconRootUpdate`, `onHistoricalBlockHashUpdate`
-- `onValidatorDeposits`, `onValidatorWithdrawals`
-
-#### Memory Management
-- `onArenaInit`, `onArenaReset`, `onArenaAlloc`
-- `onArenaGrow`, `onArenaAllocFailed`
-
-#### Logging/Debugging
-- `assert(condition, message)` - Replaces std.debug.assert
-- `debug`, `info`, `warn`, `err` - Logging levels
-- `throwError` - Fatal errors
-
-### Event Implementation Rules
-
-1. **No Side Effects** - Events must NEVER modify execution state
-2. **Fail Gracefully** - Event failures must not crash execution
-3. **Conditional Compilation** - Events only active in Debug/ReleaseSafe
-4. **Zero Overhead** - Events compiled out in ReleaseFast/ReleaseSmall
-
-### Common Event Patterns
+**System Events**: Frame lifecycle, bytecode analysis, dispatch, calls, memory
+**Implementation Rules**: No side effects, fail gracefully, conditional compilation
 
 ```zig
-// Instruction execution pattern
-pub fn some_opcode(self: *Frame, cursor: [*]const Dispatch.Item) Error!noreturn {
-    self.beforeInstruction(.SOME_OPCODE, cursor);  // REQUIRED
-
-    // Opcode implementation
-    const result = doOperation();
-
-    const op_data = dispatch.getOpData(.SOME_OPCODE);
-    self.afterInstruction(.SOME_OPCODE, op_data.next_handler, op_data.next_cursor.cursor);
-    return @call(getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-}
-
-// Terminal instruction pattern
-pub fn stop(self: *Frame, cursor: [*]const Dispatch.Item) Error!noreturn {
-    self.beforeInstruction(.STOP, cursor);
+// Required pattern
+pub fn opcode_handler(self: *Frame, cursor: [*]const Dispatch.Item) Error!noreturn {
+    self.beforeInstruction(.OPCODE, cursor);  // REQUIRED
     // ... implementation ...
-    self.afterComplete(self, .STOP);  // Terminal state
-    return .complete;
+    const op_data = dispatch.getOpData(.OPCODE);
+    self.afterInstruction(.OPCODE, op_data.next_handler, op_data.next_cursor.cursor);
+    return @call(getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
 }
 ```
 
-Remember: **Tracers are observers, never participants.** They must not influence execution while providing accurate debugging information. The MinimalEvm serves as both a tracer and a reference implementation for testing correctness.
+**Principle**: Tracers observe, never participate. MinimalEvm serves as tracer and reference implementation.
