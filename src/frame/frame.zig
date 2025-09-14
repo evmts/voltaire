@@ -797,11 +797,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             next_handler: OpcodeHandler,
             next_cursor: [*]const Dispatch.Item,
         ) void {
-            _ = next_handler; // Will be used for advanced tracing
-            _ = next_cursor; // Will be used for advanced tracing
-
-            // Call tracer's after_instruction
-            self.getTracer().after_instruction(self, opcode);
+            // Call tracer's after_instruction with next handler and cursor to validate schedule alignment
+            self.getTracer().after_instruction(self, opcode, next_handler, next_cursor);
         }
 
         /// Called when an instruction completes with a terminal state
@@ -810,8 +807,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             self: *Self,
             comptime opcode: Dispatch.UnifiedOpcode,
         ) void {
-            // Call tracer's after_instruction for terminal states
-            self.getTracer().after_instruction(self, opcode);
+            // Notify tracer about terminal states
+            self.getTracer().after_complete(self, opcode);
         }
 
         /// Pretty print the frame state for debugging and visualization.

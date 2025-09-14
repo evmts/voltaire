@@ -62,6 +62,7 @@ pub const DefaultTracer = struct {
 
     // Execution tracking
     instruction_count: u64 = 0,  // Total instructions executed
+    schedule_index: u64 = 0,     // Current dispatch schedule index (UnifiedOpcode count)
     simple_instruction_count: u64 = 0,  // Instructions in simple interpreter
     fused_instruction_count: u64 = 0,  // Instructions in fused interpreter
 
@@ -93,6 +94,7 @@ pub const DefaultTracer = struct {
             .bytecode = &[_]u8{},
             .minimal_evm = null, // Will be initialized when bytecode is available
             .instruction_count = 0,
+            .schedule_index = 0,
             .simple_instruction_count = 0,
             .fused_instruction_count = 0,
         };
@@ -137,6 +139,7 @@ pub const DefaultTracer = struct {
 
             // Reset execution counters
             self.instruction_count = 0;
+            self.schedule_index = 0;
             self.simple_instruction_count = 0;
             self.fused_instruction_count = 0;
 
@@ -224,8 +227,9 @@ pub const DefaultTracer = struct {
                 0x57 => blk: { // JUMPI
                     if (frame.stack.size() >= 2) {
                         const stack_slice = frame.stack.get_slice();
-                        const dest = stack_slice[stack_slice.len - 1];
-                        const condition = stack_slice[stack_slice.len - 2];
+                        // get_slice returns top-first
+                        const dest = stack_slice[0];
+                        const condition = stack_slice[1];
                         if (condition != 0) {
                             break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
                         }
@@ -1095,6 +1099,19 @@ pub const DefaultTracer = struct {
                     const frame_stack = frame.stack.get_slice();
                     const evm_stack = evm.stack.items;
 
+                    // Early visibility for first few steps
+                    if (self.instruction_count <= 5) {
+                        const frame_top: u256 = if (frame_stack.len > 0) frame_stack[0] else 0;
+                        const evm_top: u256 = if (evm_stack.len > 0) evm_stack[evm_stack.len - 1] else 0;
+                        self.warn("[TRACE] Step #{d} PC={d} opcode={s} | tops: MinimalEvm=0x{x}, Frame=0x{x}", .{
+                            self.instruction_count,
+                            self.current_pc,
+                            opcode_name,
+                            evm_top,
+                            frame_top,
+                        });
+                    }
+
                     if (evm_stack.len != frame_stack.len) {
                         has_mismatch = true;
                         self.err(
@@ -1117,11 +1134,12 @@ pub const DefaultTracer = struct {
                             self.err("  MinimalEvm stack top: 0x{x}", .{evm_stack[evm_stack.len - 1]});
                         }
                         if (frame_stack.len > 0) {
-                            self.err("  Frame stack top: 0x{x}", .{frame_stack[frame_stack.len - 1]});
+                            self.err("  Frame stack top: 0x{x}", .{frame_stack[0]});
                         }
                     } else {
-                        // Check stack values match
-                        for (evm_stack, 0..) |evm_val, i| {
+                        // Check stack values match (map MinimalEvm top-last to Frame top-first)
+                        for (0..evm_stack.len) |i| {
+                            const evm_val = evm_stack[evm_stack.len - 1 - i];
                             const frame_val = frame_stack[i];
                             if (evm_val != frame_val) {
                                 has_mismatch = true;
@@ -1276,35 +1294,24 @@ pub const DefaultTracer = struct {
                     self.simple_instruction_count += 1;
                 }
 
-                // Sync state from Frame to MinimalEvm BEFORE execution
+                // Align current_pc with MinimalEvm's PC for accurate tracing
                 if (self.minimal_evm) |*evm| {
-                    // Sync stack state
-                    if (@hasField(@TypeOf(frame.*), "stack")) {
-                        evm.stack.clearRetainingCapacity();
-                        const stack_slice = frame.stack.get_slice();
-                        for (stack_slice) |value| {
-                            evm.stack.append(evm.allocator, value) catch break;
+                    self.current_pc = evm.pc;
+                }
+
+                // Execute the equivalent base opcodes for this instruction in MinimalEvm
+                if (self.minimal_evm) |*evm| {
+                    if (!evm.stopped and !evm.reverted) {
+                        const steps: u8 = minimalStepsFor(opcode);
+                        var i: u8 = 0;
+                        while (i < steps) : (i += 1) {
+                            if (evm.stopped or evm.reverted or evm.pc >= evm.bytecode.len) break;
+                            const minimal_opcode = evm.bytecode[evm.pc];
+                            evm.executeOpcode(@intCast(minimal_opcode)) catch |exec_err| {
+                                self.warn("MinimalEvm execution failed at PC={d}: {any}", .{ evm.pc, exec_err });
+                                break;
+                            };
                         }
-                    }
-
-                    // Sync gas
-                    if (@hasField(@TypeOf(frame.*), "gas_remaining")) {
-                        evm.gas_remaining = @intCast(frame.gas_remaining);
-                    }
-
-                    // Sync memory size
-                    if (@hasField(@TypeOf(frame.*), "memory")) {
-                        evm.memory_size = @as(u32, @intCast(frame.memory.size()));
-                    }
-
-                    // Now execute the opcode in MinimalEvm
-                    if (opcode_value <= 0xff and evm.pc < evm.bytecode.len) {
-                        const minimal_opcode = evm.bytecode[evm.pc];
-
-                        // Execute the opcode in MinimalEvm
-                        evm.executeOpcode(@intCast(minimal_opcode)) catch |exec_err| {
-                            self.warn("MinimalEvm execution failed at PC={d}: {any}", .{ evm.pc, exec_err });
-                        };
                     }
                 }
 
@@ -1356,36 +1363,90 @@ pub const DefaultTracer = struct {
         }
     }
 
-    pub fn after_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    /// Determine how many base (non-synthetic) EVM opcodes the given UnifiedOpcode represents.
+    inline fn minimalStepsFor(comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) u8 {
+        return switch (opcode) {
+            // Regular opcodes always execute exactly one base opcode
+            inline else => |op| if (@intFromEnum(op) <= 0xff) 1 else switch (opcode) {
+                // Simple two-op fusions
+                .PUSH_ADD_INLINE, .PUSH_ADD_POINTER,
+                .PUSH_MUL_INLINE, .PUSH_MUL_POINTER,
+                .PUSH_DIV_INLINE, .PUSH_DIV_POINTER,
+                .PUSH_SUB_INLINE, .PUSH_SUB_POINTER,
+                .PUSH_AND_INLINE, .PUSH_AND_POINTER,
+                .PUSH_OR_INLINE, .PUSH_OR_POINTER,
+                .PUSH_XOR_INLINE, .PUSH_XOR_POINTER,
+                .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER,
+                .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER,
+                .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => 2,
+
+                // Multi-push/pop
+                .MULTI_PUSH_2 => 2,
+                .MULTI_PUSH_3 => 3,
+                .MULTI_POP_2 => 2,
+                .MULTI_POP_3 => 3,
+
+                // Control-flow fusion (PUSH + JUMP/I)
+                .JUMP_TO_STATIC_LOCATION => 2,
+                .JUMPI_TO_STATIC_LOCATION => 2,
+
+                // Advanced 3-op patterns
+                .DUP2_MSTORE_PUSH => 3,
+                .DUP3_ADD_MSTORE => 3,
+                .SWAP1_DUP2_ADD => 3,
+                .PUSH_DUP3_ADD => 3,
+                .MLOAD_SWAP1_DUP2 => 3,
+
+                // Function dispatch (PUSH4 + EQ + PUSH + JUMPI)
+                .FUNCTION_DISPATCH => 4,
+
+                // Payable check: CALLVALUE + DUP1 + ISZERO
+                .CALLVALUE_CHECK => 3,
+
+                // Error pattern: PUSH0 + PUSH0 + REVERT
+                .PUSH0_REVERT => 3,
+
+                // Default fallback for any synthetic we missed
+                else => 1,
+            },
+        };
+    }
+
+    pub fn after_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, next_handler: anytype, next_cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
                 const opcode_name = comptime @tagName(opcode);
 
-                // NOW validate MinimalEvm state AFTER both have executed
+                // Advance schedule index and validate next handler consistency
+                self.schedule_index += 1;
+                if (next_cursor[0] != .opcode_handler or next_cursor[0].opcode_handler != next_handler) {
+                    self.err("[SCHEDULE] Next handler mismatch at sched_idx={d}", .{ self.schedule_index });
+                }
+
+                // Validate MinimalEvm state AFTER both have executed
                 self.validateMinimalEvmState(frame, opcode);
 
-                // Calculate what the next PC should be based on the opcode
-                const next_pc = self.calculateNextPc(frame, opcode);
+                // Maintain current_pc as MinimalEvm's PC for tracing
+                if (self.minimal_evm) |*evm| {
+                    self.current_pc = evm.pc;
+                }
 
-                // Log the instruction completion with PC update
-                std.log.debug("[EVM2] DONE[{d}]: {s} | PC: {d} -> {d}", .{
+                // Log the instruction completion
+                std.log.debug("[EVM2] DONE[{d}]: {s} | PC={d}", .{
                     self.instruction_count,
                     opcode_name,
                     self.current_pc,
-                    next_pc,
                 });
-
-                // Update the current PC for the next instruction
-                self.current_pc = next_pc;
-
-                // Update MinimalEvm PC for next instruction if not stopped
-                if (self.minimal_evm) |*evm| {
-                    if (!evm.stopped and !evm.reverted) {
-                        evm.pc = next_pc;
-                    }
-                }
             }
+        }
+    }
+
+    pub fn after_complete(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // Final validation for terminal states
+            self.validateMinimalEvmState(frame, opcode);
         }
     }
 };

@@ -4,6 +4,7 @@
 /// and debugging, not performance.
 const std = @import("std");
 const primitives = @import("primitives");
+const GasConstants = primitives.GasConstants;
 
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
@@ -25,6 +26,13 @@ pub const MinimalEvm = struct {
 
     // Storage as nested hashmaps: address -> (slot -> value)
     storage: std.AutoHashMap(Address, std.AutoHashMap(u256, u256)),
+
+    // Access list tracking for EIP-2929 (cold/warm storage)
+    accessed_storage_slots: std.AutoHashMap(StorageSlotKey, void),
+    accessed_addresses: std.AutoHashMap(Address, void),
+
+    // Original storage values for gas refund calculations
+    original_storage: std.AutoHashMap(StorageSlotKey, u256),
 
     // Execution state
     pc: u32,
@@ -48,6 +56,12 @@ pub const MinimalEvm = struct {
     // Allocator
     allocator: std.mem.Allocator,
 
+    // Storage slot key for access tracking
+    pub const StorageSlotKey = struct {
+        address: Address,
+        slot: u256,
+    };
+
     /// Initialize a new MinimalEvm instance
     pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_limit: i64) !Self {
         var storage_map = std.AutoHashMap(Address, std.AutoHashMap(u256, u256)).init(allocator);
@@ -61,6 +75,15 @@ pub const MinimalEvm = struct {
 
         var return_data = std.ArrayList(u8).initCapacity(allocator, 0) catch unreachable;
         errdefer return_data.deinit(allocator);
+
+        var accessed_storage = std.AutoHashMap(StorageSlotKey, void).init(allocator);
+        errdefer accessed_storage.deinit();
+
+        var accessed_addrs = std.AutoHashMap(Address, void).init(allocator);
+        errdefer accessed_addrs.deinit();
+
+        var original_storage = std.AutoHashMap(StorageSlotKey, u256).init(allocator);
+        errdefer original_storage.deinit();
 
         return Self{
             .stack = stack,
@@ -78,6 +101,9 @@ pub const MinimalEvm = struct {
             .return_data = return_data,
             .stopped = false,
             .reverted = false,
+            .accessed_storage_slots = accessed_storage,
+            .accessed_addresses = accessed_addrs,
+            .original_storage = original_storage,
             .allocator = allocator,
         };
     }
@@ -93,6 +119,10 @@ pub const MinimalEvm = struct {
             entry.value_ptr.deinit();
         }
         self.storage.deinit();
+
+        self.accessed_storage_slots.deinit();
+        self.accessed_addresses.deinit();
+        self.original_storage.deinit();
 
         self.return_data.deinit(self.allocator);
     }
@@ -200,6 +230,32 @@ pub const MinimalEvm = struct {
         }
     }
 
+    /// Access a storage slot and return the gas cost (cold vs warm)
+    pub fn accessStorageSlot(self: *Self, address: Address, slot: u256) !u64 {
+        const key = StorageSlotKey{ .address = address, .slot = slot };
+
+        // Check if already accessed (warm)
+        if (self.accessed_storage_slots.contains(key)) {
+            return GasConstants.WarmStorageReadCost; // 100 gas for warm access
+        }
+
+        // Mark as accessed for future warm access
+        try self.accessed_storage_slots.put(key, {});
+        return GasConstants.ColdSloadCost; // 2100 gas for cold access
+    }
+
+    /// Access an address and return the gas cost (cold vs warm)
+    pub fn accessAddress(self: *Self, address: Address) !u64 {
+        // Check if already accessed (warm)
+        if (self.accessed_addresses.contains(address)) {
+            return GasConstants.WarmStorageReadCost; // 100 gas for warm access
+        }
+
+        // Mark as accessed for future warm access
+        try self.accessed_addresses.put(address, {});
+        return GasConstants.ColdAccountAccessCost; // 2600 gas for cold access
+    }
+
     /// Read from storage
     pub fn readStorage(self: *Self, address: Address, slot: u256) !u256 {
         const account_storage = self.storage.get(address) orelse return 0;
@@ -208,6 +264,13 @@ pub const MinimalEvm = struct {
 
     /// Write to storage
     pub fn writeStorage(self: *Self, address: Address, slot: u256, value: u256) !void {
+        // Record original value if this is the first write to this slot
+        const key = StorageSlotKey{ .address = address, .slot = slot };
+        if (!self.original_storage.contains(key)) {
+            const current = try self.readStorage(address, slot);
+            try self.original_storage.put(key, current);
+        }
+
         var account_storage = self.storage.getPtr(address) orelse blk: {
             const new_storage = std.AutoHashMap(u256, u256).init(self.allocator);
             try self.storage.put(address, new_storage);
@@ -215,6 +278,12 @@ pub const MinimalEvm = struct {
         };
 
         try account_storage.put(slot, value);
+    }
+
+    /// Get original storage value (for gas calculation)
+    pub fn getOriginalStorage(self: *Self, address: Address, slot: u256) ?u256 {
+        const key = StorageSlotKey{ .address = address, .slot = slot };
+        return self.original_storage.get(key);
     }
 
     /// Consume gas
@@ -251,19 +320,19 @@ pub const MinimalEvm = struct {
 
     /// Execute a single opcode
     pub fn executeOpcode(self: *Self, opcode: u8) !void {
-        // Base gas cost (will be refined per opcode)
-        try self.consumeGas(3);
 
         // Giant switch statement for all opcodes
         switch (opcode) {
                 // STOP
                 0x00 => {
+                    // STOP has no gas cost beyond the intrinsic transaction cost
                     self.stopped = true;
                     return;
                 },
 
                 // ADD
                 0x01 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = a +% b; // Wrapping addition
@@ -273,6 +342,7 @@ pub const MinimalEvm = struct {
 
                 // MUL
                 0x02 => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = a *% b; // Wrapping multiplication
@@ -282,6 +352,7 @@ pub const MinimalEvm = struct {
 
                 // SUB
                 0x03 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = a -% b; // Wrapping subtraction
@@ -291,6 +362,7 @@ pub const MinimalEvm = struct {
 
                 // DIV
                 0x04 => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = if (b == 0) 0 else a / b;
@@ -300,6 +372,7 @@ pub const MinimalEvm = struct {
 
                 // SDIV - Signed division
                 0x05 => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
 
@@ -326,6 +399,7 @@ pub const MinimalEvm = struct {
 
                 // MOD
                 0x06 => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = if (b == 0) 0 else a % b;
@@ -335,6 +409,7 @@ pub const MinimalEvm = struct {
 
                 // SMOD - Signed modulo
                 0x07 => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
 
@@ -352,9 +427,10 @@ pub const MinimalEvm = struct {
 
                 // ADDMOD
                 0x08 => {
-                    const N = try self.popStack();
-                    const b = try self.popStack();
+                    try self.consumeGas(GasConstants.GasMidStep);
                     const a = try self.popStack();
+                    const b = try self.popStack();
+                    const N = try self.popStack();
 
                     if (N == 0) {
                         try self.pushStack(0);
@@ -371,9 +447,10 @@ pub const MinimalEvm = struct {
 
                 // MULMOD
                 0x09 => {
-                    const N = try self.popStack();
-                    const b = try self.popStack();
+                    try self.consumeGas(GasConstants.GasMidStep);
                     const a = try self.popStack();
+                    const b = try self.popStack();
+                    const N = try self.popStack();
 
                     if (N == 0) {
                         try self.pushStack(0);
@@ -393,9 +470,9 @@ pub const MinimalEvm = struct {
                     const exponent = try self.popStack();
                     const base = try self.popStack();
 
-                    // Calculate gas cost for EXP
-                    const byte_size = (256 - @clz(exponent)) / 8 + 1;
-                    try self.consumeGas(50 * byte_size);
+                    // Calculate gas cost for EXP: 10 + 50 * byte_size_of_exponent
+                    const byte_size = if (exponent == 0) 0 else (256 - @clz(exponent) + 7) / 8;
+                    try self.consumeGas(10 + 50 * byte_size);
 
                     var result: u256 = 1;
                     var b = base;
@@ -414,6 +491,7 @@ pub const MinimalEvm = struct {
 
                 // SIGNEXTEND
                 0x0b => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     const byte_num = try self.popStack();
                     const value = try self.popStack();
 
@@ -442,6 +520,7 @@ pub const MinimalEvm = struct {
                 // Comparison operations (0x10-0x15)
                 // LT - Less than
                 0x10 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result: u256 = if (a < b) 1 else 0;
@@ -451,6 +530,7 @@ pub const MinimalEvm = struct {
 
                 // GT - Greater than
                 0x11 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result: u256 = if (a > b) 1 else 0;
@@ -460,6 +540,7 @@ pub const MinimalEvm = struct {
 
                 // SLT - Signed less than
                 0x12 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const a_signed = @as(i256, @bitCast(a));
@@ -471,6 +552,7 @@ pub const MinimalEvm = struct {
 
                 // SGT - Signed greater than
                 0x13 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const a_signed = @as(i256, @bitCast(a));
@@ -482,6 +564,7 @@ pub const MinimalEvm = struct {
 
                 // EQ - Equal
                 0x14 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result: u256 = if (a == b) 1 else 0;
@@ -491,6 +574,7 @@ pub const MinimalEvm = struct {
 
                 // ISZERO
                 0x15 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const a = try self.popStack();
                     const result: u256 = if (a == 0) 1 else 0;
                     try self.pushStack(result);
@@ -500,6 +584,7 @@ pub const MinimalEvm = struct {
                 // Bitwise operations (0x16-0x1d)
                 // AND
                 0x16 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = a & b;
@@ -509,6 +594,7 @@ pub const MinimalEvm = struct {
 
                 // OR
                 0x17 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = a | b;
@@ -518,6 +604,7 @@ pub const MinimalEvm = struct {
 
                 // XOR
                 0x18 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const b = try self.popStack();
                     const a = try self.popStack();
                     const result = a ^ b;
@@ -527,6 +614,7 @@ pub const MinimalEvm = struct {
 
                 // NOT
                 0x19 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const a = try self.popStack();
                     const result = ~a;
                     try self.pushStack(result);
@@ -535,6 +623,7 @@ pub const MinimalEvm = struct {
 
                 // BYTE
                 0x1a => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const i = try self.popStack();
                     const x = try self.popStack();
 
@@ -550,6 +639,7 @@ pub const MinimalEvm = struct {
 
                 // SHL - Shift left
                 0x1b => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const shift = try self.popStack();
                     const value = try self.popStack();
 
@@ -564,6 +654,7 @@ pub const MinimalEvm = struct {
 
                 // SHR - Logical shift right
                 0x1c => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const shift = try self.popStack();
                     const value = try self.popStack();
 
@@ -578,6 +669,7 @@ pub const MinimalEvm = struct {
 
                 // SAR - Arithmetic shift right
                 0x1d => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const shift = try self.popStack();
                     const value = try self.popStack();
 
@@ -599,6 +691,10 @@ pub const MinimalEvm = struct {
                 0x20 => {
                     const length = try self.popStack();
                     const offset = try self.popStack();
+
+                    // Calculate gas cost: base + word cost
+                    const word_count = @as(u64, @intCast((length + 31) / 32));
+                    try self.consumeGas(GasConstants.Keccak256Gas + word_count * GasConstants.Keccak256WordGas);
 
                     // Read data from memory
                     if (length > std.math.maxInt(u32)) {
@@ -642,6 +738,7 @@ pub const MinimalEvm = struct {
                 // Environmental operations (0x30-0x3f)
                 // ADDRESS
                 0x30 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     const addr_int = @as(u256, @bitCast(@as([32]u8, self.address.bytes ++ [_]u8{0} ** 12)));
                     try self.pushStack(addr_int);
                     self.pc += 1;
@@ -649,19 +746,33 @@ pub const MinimalEvm = struct {
 
                 // BALANCE - For simplicity, return 0 (would need host interface in real implementation)
                 0x31 => {
-                    _ = try self.popStack(); // Pop address
+                    const addr_int = try self.popStack();
+                    // Convert u256 to address by taking the lower 20 bytes
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(addr_int >> @intCast(i * 8)));
+                    }
+                    const addr = Address{ .bytes = addr_bytes };
+
+                    // Access address and get gas cost (cold vs warm)
+                    const access_cost = try self.accessAddress(addr);
+                    try self.consumeGas(access_cost);
+
                     try self.pushStack(0); // Return 0 balance
                     self.pc += 1;
                 },
 
                 // ORIGIN - For simplicity, return zero address
                 0x32 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // CALLER
                 0x33 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     const caller_int = @as(u256, @bitCast(@as([32]u8, self.caller.bytes ++ [_]u8{0} ** 12)));
                     try self.pushStack(caller_int);
                     self.pc += 1;
@@ -669,12 +780,14 @@ pub const MinimalEvm = struct {
 
                 // CALLVALUE
                 0x34 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(self.value);
                     self.pc += 1;
                 },
 
                 // CALLDATALOAD
                 0x35 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const offset = try self.popStack();
 
                     if (offset > std.math.maxInt(u32)) {
@@ -697,6 +810,7 @@ pub const MinimalEvm = struct {
 
                 // CALLDATASIZE
                 0x36 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(self.calldata.len);
                     self.pc += 1;
                 },
@@ -706,6 +820,10 @@ pub const MinimalEvm = struct {
                     const length = try self.popStack();
                     const offset = try self.popStack();
                     const dest_offset = try self.popStack();
+
+                    // Static gas cost: 3 + 3 * word_count
+                    const word_count = @as(u64, @intCast((length + 31) / 32));
+                    try self.consumeGas(GasConstants.GasFastestStep + GasConstants.GasFastestStep * word_count);
 
                     if (length > std.math.maxInt(u32)) {
                         return error.OutOfGas;
@@ -735,6 +853,7 @@ pub const MinimalEvm = struct {
 
                 // CODESIZE
                 0x38 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(self.bytecode.len);
                     self.pc += 1;
                 },
@@ -744,6 +863,10 @@ pub const MinimalEvm = struct {
                     const length = try self.popStack();
                     const offset = try self.popStack();
                     const dest_offset = try self.popStack();
+
+                    // Static gas cost: 3 + 3 * word_count
+                    const word_count = @as(u64, @intCast((length + 31) / 32));
+                    try self.consumeGas(GasConstants.GasFastestStep + GasConstants.GasFastestStep * word_count);
 
                     if (length > std.math.maxInt(u32)) {
                         return error.OutOfGas;
@@ -773,28 +896,60 @@ pub const MinimalEvm = struct {
 
                 // GASPRICE - Return 0 for simplicity
                 0x3a => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // EXTCODESIZE - Return 0 for simplicity
                 0x3b => {
-                    _ = try self.popStack(); // Pop address
+                    const addr_int = try self.popStack();
+                    // Convert u256 to address by taking the lower 20 bytes
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(addr_int >> @intCast(i * 8)));
+                    }
+                    const addr = Address{ .bytes = addr_bytes };
+
+                    // Access address and get gas cost (cold vs warm)
+                    const access_cost = try self.accessAddress(addr);
+                    try self.consumeGas(access_cost);
+
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // EXTCODECOPY - No-op for simplicity
                 0x3c => {
-                    _ = try self.popStack(); // address
-                    _ = try self.popStack(); // dest_offset
-                    _ = try self.popStack(); // offset
-                    _ = try self.popStack(); // length
+                    const addr_int = try self.popStack();
+                    const dest_offset = try self.popStack();
+                    const offset = try self.popStack();
+                    const length = try self.popStack();
+
+                    // Convert u256 to address by taking the lower 20 bytes
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(addr_int >> @intCast(i * 8)));
+                    }
+                    const addr = Address{ .bytes = addr_bytes };
+
+                    // Access address and get gas cost (cold vs warm)
+                    const access_cost = try self.accessAddress(addr);
+
+                    // Gas cost: address access + 3 * word_count
+                    const word_count = @as(u64, @intCast((length + 31) / 32));
+                    try self.consumeGas(access_cost + GasConstants.GasFastestStep * word_count);
+
+                    _ = dest_offset;
+                    _ = offset;
                     self.pc += 1;
                 },
 
                 // RETURNDATASIZE
                 0x3d => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(self.return_data.items.len);
                     self.pc += 1;
                 },
@@ -804,6 +959,10 @@ pub const MinimalEvm = struct {
                     const length = try self.popStack();
                     const offset = try self.popStack();
                     const dest_offset = try self.popStack();
+
+                    // Static gas cost: 3 + 3 * word_count
+                    const word_count = @as(u64, @intCast((length + 31) / 32));
+                    try self.consumeGas(GasConstants.GasFastestStep + GasConstants.GasFastestStep * word_count);
 
                     if (length > std.math.maxInt(u32)) {
                         return error.OutOfGas;
@@ -838,7 +997,19 @@ pub const MinimalEvm = struct {
 
                 // EXTCODEHASH - Return 0 for simplicity
                 0x3f => {
-                    _ = try self.popStack(); // Pop address
+                    const addr_int = try self.popStack();
+                    // Convert u256 to address by taking the lower 20 bytes
+                    var addr_bytes: [20]u8 = undefined;
+                    var i: usize = 0;
+                    while (i < 20) : (i += 1) {
+                        addr_bytes[19 - i] = @as(u8, @truncate(addr_int >> @intCast(i * 8)));
+                    }
+                    const addr = Address{ .bytes = addr_bytes };
+
+                    // Access address and get gas cost (cold vs warm)
+                    const access_cost = try self.accessAddress(addr);
+                    try self.consumeGas(access_cost);
+
                     try self.pushStack(0);
                     self.pc += 1;
                 },
@@ -846,6 +1017,7 @@ pub const MinimalEvm = struct {
                 // Block operations (0x40-0x48)
                 // BLOCKHASH - Return 0 for simplicity
                 0x40 => {
+                    try self.consumeGas(GasConstants.GasExtStep);
                     _ = try self.popStack(); // Pop block number
                     try self.pushStack(0);
                     self.pc += 1;
@@ -853,54 +1025,63 @@ pub const MinimalEvm = struct {
 
                 // COINBASE - Return zero address
                 0x41 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // TIMESTAMP - Return 0
                 0x42 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // NUMBER - Return 0
                 0x43 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // DIFFICULTY/PREVRANDAO - Return 0
                 0x44 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // GASLIMIT - Return max gas
                 0x45 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(30_000_000);
                     self.pc += 1;
                 },
 
                 // CHAINID - Return 1 (mainnet)
                 0x46 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(1);
                     self.pc += 1;
                 },
 
                 // SELFBALANCE - Return 0
                 0x47 => {
+                    try self.consumeGas(GasConstants.GasFastStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // BASEFEE - Return 0
                 0x48 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // BLOBHASH - Return 0
                 0x49 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     _ = try self.popStack(); // Pop index
                     try self.pushStack(0);
                     self.pc += 1;
@@ -908,18 +1089,21 @@ pub const MinimalEvm = struct {
 
                 // BLOBBASEFEE - Return 0
                 0x4a => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // Stack, Memory, Storage operations (0x50-0x5b)
                 0x50 => { // POP
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     _ = try self.popStack();
                     self.pc += 1;
                 },
 
                 // MLOAD
                 0x51 => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const offset = try self.popStack();
 
                     if (offset > std.math.maxInt(u32)) {
@@ -943,8 +1127,10 @@ pub const MinimalEvm = struct {
 
                 // MSTORE
                 0x52 => {
-                    const value = try self.popStack();
+                    try self.consumeGas(GasConstants.GasFastestStep);
+                    // EVM expects offset first, then value on stack
                     const offset = try self.popStack();
+                    const value = try self.popStack();
 
                     if (offset > std.math.maxInt(u32)) {
                         return error.OutOfGas;
@@ -966,8 +1152,10 @@ pub const MinimalEvm = struct {
 
                 // MSTORE8
                 0x53 => {
-                    const value = try self.popStack();
+                    try self.consumeGas(GasConstants.GasFastestStep);
+                    // EVM expects offset first, then value on stack
                     const offset = try self.popStack();
+                    const value = try self.popStack();
 
                     if (offset > std.math.maxInt(u32)) {
                         return error.OutOfGas;
@@ -991,23 +1179,43 @@ pub const MinimalEvm = struct {
                 // SLOAD
                 0x54 => {
                     const slot = try self.popStack();
+
+                    // Access storage slot and get gas cost (cold vs warm)
+                    const access_cost = try self.accessStorageSlot(self.address, slot);
+                    try self.consumeGas(access_cost);
+
                     const value = try self.readStorage(self.address, slot);
                     try self.pushStack(value);
-                    try self.consumeGas(100); // Simplified gas cost
                     self.pc += 1;
                 },
 
                 // SSTORE
                 0x55 => {
-                    const value = try self.popStack();
                     const slot = try self.popStack();
+                    const value = try self.popStack();
+
+                    // Get current value for gas calculation
+                    const current_value = try self.readStorage(self.address, slot);
+
+                    // Access storage slot to warm it and get cost
+                    const access_cost = try self.accessStorageSlot(self.address, slot);
+                    const is_cold = access_cost == GasConstants.ColdSloadCost;
+
+                    // Get original value (or use current if not set)
+                    const original_value = self.getOriginalStorage(self.address, slot) orelse current_value;
+
+                    // Calculate SSTORE gas cost using proper EIP-2200 logic
+                    const total_gas_cost = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
+                    try self.consumeGas(total_gas_cost);
+
+                    // Write the new value
                     try self.writeStorage(self.address, slot, value);
-                    try self.consumeGas(20000); // Simplified gas cost
                     self.pc += 1;
                 },
 
                 // JUMP
                 0x56 => {
+                    try self.consumeGas(GasConstants.GasMidStep);
                     const dest = try self.popStack();
 
                     if (dest > std.math.maxInt(u32)) {
@@ -1026,6 +1234,7 @@ pub const MinimalEvm = struct {
 
                 // JUMPI
                 0x57 => {
+                    try self.consumeGas(GasConstants.GasSlowStep);
                     const condition = try self.popStack();
                     const dest = try self.popStack();
 
@@ -1049,12 +1258,14 @@ pub const MinimalEvm = struct {
 
                 // PC
                 0x58 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(self.pc);
                     self.pc += 1;
                 },
 
                 // MSIZE
                 0x59 => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     // Round up to nearest multiple of 32
                     const msize = ((self.memory_size + 31) / 32) * 32;
                     try self.pushStack(msize);
@@ -1063,23 +1274,26 @@ pub const MinimalEvm = struct {
 
                 // GAS
                 0x5a => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     const gas = @max(self.gas_remaining, 0);
                     try self.pushStack(@intCast(gas));
                     self.pc += 1;
                 },
                 0x5b => { // JUMPDEST
-                    // No operation, just a jump target
+                    try self.consumeGas(1); // JUMPDEST has a cost of 1 gas
                     self.pc += 1;
                 },
 
                 // PUSH0
                 0x5f => {
+                    try self.consumeGas(GasConstants.GasQuickStep);
                     try self.pushStack(0);
                     self.pc += 1;
                 },
 
                 // PUSH operations (0x60-0x7f)
                 0x60...0x7f => {
+                    try self.consumeGas(GasConstants.GasFastestStep);
                     const push_size = opcode - 0x5f;
                     const value = self.readImmediate(push_size) orelse return error.InvalidPush;
                     try self.pushStack(value);
@@ -1088,15 +1302,17 @@ pub const MinimalEvm = struct {
 
                 // DUP operations (0x80-0x8f)
                 0x80...0x8f => {
-                    const dup_index = opcode - 0x80;
-                    try self.dupStack(dup_index);
+                    try self.consumeGas(GasConstants.GasFastestStep);
+                    const dup_index = opcode - 0x7f; // DUP1 = 0x80, so index should be 1
+                    try self.dupStack(dup_index - 1); // -1 because we use 0-based indexing
                     self.pc += 1;
                 },
 
                 // SWAP operations (0x90-0x9f)
                 0x90...0x9f => {
-                    const swap_index = opcode - 0x90;
-                    try self.swapStack(swap_index);
+                    try self.consumeGas(GasConstants.GasFastestStep);
+                    const swap_index = opcode - 0x8f; // SWAP1 = 0x90, so index should be 1
+                    try self.swapStack(swap_index - 1); // -1 because we use 0-based indexing
                     self.pc += 1;
                 },
 
