@@ -174,8 +174,6 @@ pub const DefaultTracer = struct {
     }
 
     pub fn beforeOp(self: *DefaultTracer, pc: u32, opcode: UnifiedOpcode, comptime FrameType: type, frame: *const FrameType) void {
-        _ = pc;
-        _ = frame;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .ReleaseFast or builtin.mode == .ReleaseSmall)) {
             return;
@@ -185,6 +183,28 @@ pub const DefaultTracer = struct {
         if (self.minimal_evm) |*evm| {
             if (evm.stopped or evm.reverted) {
                 return;
+            }
+
+            // Log what the Frame is about to execute
+            self.warn("=====================================", .{});
+            self.warn("Frame executing: {s} (UnifiedOpcode.{s})", .{@tagName(opcode), @tagName(opcode)});
+            self.warn("  Frame PC reported: {d}", .{pc});
+            self.warn("  MinimalEvm PC: {d}", .{evm.pc});
+            self.warn("  Frame stack size: {d}", .{@constCast(&frame.stack).size()});
+            self.warn("  MinimalEvm stack size: {d}", .{evm.stack.items.len});
+
+            // Show stack tops before execution
+            if (@constCast(&frame.stack).size() > 0) {
+                self.debug("  Frame stack top: 0x{x}", .{frame.stack.peek_unsafe()});
+            }
+            if (evm.stack.items.len > 0) {
+                self.debug("  MinimalEvm stack top: 0x{x}", .{evm.stack.items[evm.stack.items.len - 1]});
+            }
+
+            // Show what bytecode MinimalEvm sees at its PC
+            if (evm.pc < evm.bytecode.len) {
+                const next_opcode = evm.bytecode[evm.pc];
+                self.debug("  MinimalEvm next bytecode: 0x{x:0>2} ({s})", .{next_opcode, getOpcodeName(next_opcode)});
             }
 
             switch(opcode) {
@@ -547,43 +567,91 @@ pub const DefaultTracer = struct {
     pub fn afterOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            // Update PC based on the opcode that just executed
-            // We need to determine the UnifiedOpcode from the u8 value
-            const next_pc = switch (opcode) {
-                0x56 => blk: { // JUMP
-                    if (frame.stack.size() > 0) {
-                        const dest = frame.stack.peek_unsafe();
-                        break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
+            // Validate state between MinimalEvm and Frame
+            if (self.minimal_evm) |*evm| {
+                self.instruction_count += 1;
+
+                // Get opcode name for logging
+                const opcode_name = getOpcodeName(opcode);
+
+                // Log current state
+                self.debug("After UnifiedOpcode execution (reported as 0x{x:0>2} {s}):", .{opcode, opcode_name});
+                self.debug("  MinimalEvm PC: {d}, gas: {d}", .{evm.pc, evm.gas_remaining});
+                self.debug("  Frame reports PC: {d}, gas: {d}", .{pc, frame.gas_remaining});
+
+                // Compare stack
+                const frame_stack_size = frame.stack.size();
+                const evm_stack_size = evm.stack.items.len;
+
+                self.debug("  Stack sizes - MinimalEvm: {d}, Frame: {d}", .{evm_stack_size, frame_stack_size});
+
+                if (evm_stack_size != frame_stack_size) {
+                    self.err("[DIVERGENCE] Stack size mismatch after {s} @ PC={d}:", .{opcode_name, evm.pc});
+                    self.err("  MinimalEvm stack size: {d}", .{evm_stack_size});
+                    self.err("  Frame stack size: {d}", .{frame_stack_size});
+
+                    // Show top elements
+                    if (evm_stack_size > 0) {
+                        self.err("  MinimalEvm stack top: 0x{x}", .{evm.stack.items[evm_stack_size - 1]});
                     }
-                    break :blk self.current_pc + 1;
-                },
-                0x57 => blk: { // JUMPI
-                    if (frame.stack.size() >= 2) {
-                        const stack_slice = frame.stack.get_slice();
-                        // get_slice returns top-first
-                        const dest = stack_slice[0];
-                        const condition = stack_slice[1];
-                        if (condition != 0) {
-                            break :blk @as(u32, @intCast(dest & 0xFFFFFFFF));
+                    if (frame_stack_size > 0) {
+                        self.err("  Frame stack top: 0x{x}", .{frame.stack.peek_unsafe()});
+                    }
+
+                    // Show full stacks for debugging
+                    self.err("  MinimalEvm full stack:", .{});
+                    for (evm.stack.items, 0..) |val, i| {
+                        self.err("    [{d}]: 0x{x}", .{i, val});
+                    }
+
+                    self.err("  Frame full stack:", .{});
+                    const frame_stack = frame.stack.get_slice();
+                    for (frame_stack, 0..) |val, i| {
+                        self.err("    [{d}]: 0x{x}", .{i, val});
+                    }
+                } else if (evm_stack_size > 0) {
+                    // Compare stack contents
+                    const frame_stack = frame.stack.get_slice();
+                    var mismatch = false;
+
+                    for (0..evm_stack_size) |i| {
+                        const evm_val = evm.stack.items[evm_stack_size - 1 - i];
+                        const frame_val = frame_stack[i];
+                        if (evm_val != frame_val) {
+                            if (!mismatch) {
+                                self.err("[DIVERGENCE] Stack content mismatch after {s} @ PC={d}:", .{opcode_name, evm.pc});
+                                mismatch = true;
+                            }
+                            self.err("  Position {d}: MinimalEvm=0x{x}, Frame=0x{x}", .{i, evm_val, frame_val});
                         }
                     }
-                    break :blk self.current_pc + 1;
-                },
-                0x60...0x7f => blk: { // PUSH1-PUSH32
-                    const push_size = (opcode - 0x5f);
-                    break :blk self.current_pc + 1 + push_size;
-                },
-                0x5f => self.current_pc + 1, // PUSH0
-                else => self.current_pc + 1,
-            };
+                }
 
-            std.log.debug("[EVM2] afterOp: opcode=0x{x:0>2} PC: {d} -> {d}", .{
-                opcode,
-                pc,
-                next_pc,
-            });
+                // Compare memory size
+                const frame_memory_size = if (@hasField(FrameType, "memory")) @constCast(&frame.memory).size() else 0;
+                const evm_memory_size = evm.memory_size;
 
-            self.current_pc = next_pc;
+                self.debug("  Memory sizes - MinimalEvm: {d}, Frame: {d}", .{evm_memory_size, frame_memory_size});
+
+                if (evm_memory_size != frame_memory_size) {
+                    self.err("[DIVERGENCE] Memory size mismatch after {s} @ PC={d}:", .{opcode_name, evm.pc});
+                    self.err("  MinimalEvm memory: {d} bytes", .{evm_memory_size});
+                    self.err("  Frame memory: {d} bytes", .{frame_memory_size});
+                }
+
+                // Compare gas
+                const frame_gas = @max(frame.gas_remaining, 0);
+                const evm_gas = @max(evm.gas_remaining, 0);
+
+                self.debug("  Gas remaining - MinimalEvm: {d}, Frame: {d}", .{evm_gas, frame_gas});
+
+                if (@abs(evm_gas - frame_gas) > 100) { // Allow small differences
+                    self.warn("[DIVERGENCE] Gas mismatch after {s} @ PC={d}:", .{opcode_name, evm.pc});
+                    self.warn("  MinimalEvm gas: {d}", .{evm_gas});
+                    self.warn("  Frame gas: {d}", .{frame_gas});
+                    self.warn("  Difference: {d}", .{frame_gas - evm_gas});
+                }
+            }
         }
     }
 
