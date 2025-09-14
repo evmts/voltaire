@@ -159,6 +159,7 @@ pub const MinimalEvm = struct {
     // Call context
     caller: Address,
     address: Address,
+    origin: Address,
     value: u256,
     calldata: []const u8,
 
@@ -217,6 +218,7 @@ pub const MinimalEvm = struct {
             .bytecode = bytecode,
             .caller = ZERO_ADDRESS,
             .address = ZERO_ADDRESS,
+            .origin = Address{ .bytes = [_]u8{0x10} ++ [_]u8{0x00} ** 18 ++ [_]u8{0x01} }, // Default test origin
             .value = 0,
             .calldata = &[_]u8{},
             .return_data = &[_]u8{},
@@ -256,11 +258,13 @@ pub const MinimalEvm = struct {
         self: *Self,
         caller: Address,
         address: Address,
+        origin: Address,
         value: u256,
         calldata: []const u8,
     ) void {
         self.caller = caller;
         self.address = address;
+        self.origin = origin;
         self.value = value;
         self.calldata = calldata;
     }
@@ -487,9 +491,9 @@ pub const MinimalEvm = struct {
                 // DIV
                 0x04 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const top = try self.popStack();
-                    const second = try self.popStack();
-                    const result = if (top == 0) 0 else second / top;
+                    const a = try self.popStack();     // First operand (dividend)
+                    const b = try self.popStack();     // Second operand (divisor)
+                    const result = if (b == 0) 0 else a / b;  // a / b, division by zero = 0
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -497,23 +501,23 @@ pub const MinimalEvm = struct {
                 // SDIV - Signed division
                 0x05 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const top = try self.popStack();
-                    const second = try self.popStack();
+                    const a = try self.popStack();     // First operand (dividend)
+                    const b = try self.popStack();     // Second operand (divisor)
 
-                    if (second == 0) {
+                    if (b == 0) {
                         try self.pushStack(0);
                     } else {
                         const MIN_SIGNED: u256 = 1 << 255;
                         const NEG_ONE = std.math.maxInt(u256); // -1 in two's complement
 
                         // Special case: MIN_SIGNED / -1 would overflow
-                        if (top == MIN_SIGNED and second == NEG_ONE) {
+                        if (a == MIN_SIGNED and b == NEG_ONE) {
                             try self.pushStack(MIN_SIGNED);
                         } else {
-                            // Convert to signed
-                            const top_signed = @as(i256, @bitCast(top));
-                            const second_signed = @as(i256, @bitCast(second));
-                            const result_signed = @divTrunc(top_signed, second_signed);
+                            // Convert to signed and perform a / b
+                            const a_signed = @as(i256, @bitCast(a));
+                            const b_signed = @as(i256, @bitCast(b));
+                            const result_signed = @divTrunc(a_signed, b_signed);
                             const result = @as(u256, @bitCast(result_signed));
                             try self.pushStack(result);
                         }
@@ -524,9 +528,9 @@ pub const MinimalEvm = struct {
                 // MOD
                 0x06 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const top = try self.popStack();
-                    const second = try self.popStack();
-                    const result = if (second == 0) 0 else top % second;
+                    const a = try self.popStack();     // First operand
+                    const b = try self.popStack();     // Second operand (modulus)
+                    const result = if (b == 0) 0 else a % b;  // a % b
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -534,15 +538,15 @@ pub const MinimalEvm = struct {
                 // SMOD - Signed modulo
                 0x07 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const top = try self.popStack();
-                    const second = try self.popStack();
+                    const a = try self.popStack();     // First operand
+                    const b = try self.popStack();     // Second operand (modulus)
 
-                    if (second == 0) {
+                    if (b == 0) {
                         try self.pushStack(0);
                     } else {
-                        const top_signed = @as(i256, @bitCast(top));
-                        const second_signed = @as(i256, @bitCast(second));
-                        const result_signed = @rem(top_signed, second_signed);
+                        const a_signed = @as(i256, @bitCast(a));
+                        const b_signed = @as(i256, @bitCast(b));
+                        const result_signed = @rem(a_signed, b_signed);  // a % b
                         const result = @as(u256, @bitCast(result_signed));
                         try self.pushStack(result);
                     }
@@ -887,10 +891,11 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
 
-                // ORIGIN - For simplicity, return zero address
+                // ORIGIN
                 0x32 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    try self.pushStack(0);
+                    const origin_int = @as(u256, @bitCast(@as([32]u8, self.origin.bytes ++ [_]u8{0} ** 12)));
+                    try self.pushStack(origin_int);
                     self.pc += 1;
                 },
 

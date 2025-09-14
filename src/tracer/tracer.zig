@@ -142,6 +142,9 @@ pub const DefaultTracer = struct {
                     if (@hasField(@TypeOf(frame.*), "caller")) {
                         evm.caller = frame.caller;
                     }
+                    if (@hasField(@TypeOf(frame.*), "origin")) {
+                        evm.origin = frame.origin;
+                    }
                     if (@hasField(@TypeOf(frame.*), "value")) {
                         evm.value = frame.value;
                     }
@@ -149,10 +152,11 @@ pub const DefaultTracer = struct {
                         evm.calldata = frame.calldata_slice;
                     }
 
-                    self.debug("MinimalEvm initialized: bytecode_len={d}, gas={d}, address={any}", .{
+                    self.debug("MinimalEvm initialized: bytecode_len={d}, gas={d}, address={any}, origin={any}", .{
                         bytecode.len,
                         gas_limit,
                         evm.address,
+                        evm.origin,
                     });
                     self.debug("MinimalEvm bytecode: {x}", .{bytecode});
                 }
