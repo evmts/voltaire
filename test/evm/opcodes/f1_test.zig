@@ -4,6 +4,7 @@ const primitives = @import("primitives");
 const common = @import("common.zig");
 
 test "opcode 0xf1 differential test" {
+    std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
     
     // Build bytecode for this opcode
