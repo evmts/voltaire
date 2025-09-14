@@ -655,6 +655,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DIFFICULTY opcode (0x44) - Get the current block's difficulty.
         /// Stack: [] → [difficulty]
         pub fn difficulty(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            self.beforeInstruction(.PREVRANDAO, cursor);
             // DIFFICULTY costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -735,7 +736,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBHASH opcode (0x49) - Get versioned hashes of blob transactions.
         /// Stack: [index] → [hash]
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .BLOBHASH);
+            self.beforeInstruction(.BLOBHASH, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             self.getTracer().assert(self.stack.size() >= 1, "BLOBHASH requires 1 stack item");
             const index = self.stack.peek_unsafe();
