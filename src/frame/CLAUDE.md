@@ -1,26 +1,24 @@
-# CLAUDE.md - Frame Module AI Context
+# CLAUDE.md - Frame Module
 
 ## MISSION CRITICAL: Execution Context Integrity
 
-The frame module manages EVM execution contexts including call frames, execution state, and opcode dispatch. **ANY bug in frame management can cause incorrect execution, consensus failures, or fund loss.** Execution context must be maintained with absolute precision.
+**Frame bugs cause execution errors, consensus failures, fund loss.**
 
-## Critical Implementation Details
+### EVM Frame Specs
 
-### EVM Frame Specifications (IMMUTABLE REQUIREMENTS)
+- **Call Depth**: Max 1024 nested calls
+- **Context**: Isolated stack/memory/storage per frame
+- **Gas**: Precise accounting and forwarding
+- **Return Data**: Proper call return handling
+- **Exceptions**: Correct revert/failure propagation
 
-**Call Depth**: Maximum 1024 nested calls
-**Execution Context**: Isolated stack, memory, and storage per frame
-**Gas Management**: Precise gas accounting and forwarding
-**Return Data**: Proper handling of call return values
-**Exception Handling**: Correct revert and failure propagation
+### Core Files
 
-### Core Files and Critical Responsibilities
-
-**File: `frame.zig`** - Main execution frame implementation
-**File: `call_params.zig`** - Call parameter structures and validation
-**File: `call_result.zig`** - Call result handling and propagation
-**File: `frame_handlers.zig`** - Opcode dispatch and execution logic
-**File: `frame_config.zig`** - Frame configuration and limits
+- **`frame.zig`** - Main execution frame
+- **`call_params.zig`** - Call parameters/validation
+- **`call_result.zig`** - Call result handling
+- **`frame_handlers.zig`** - Opcode dispatch
+- **`frame_config.zig`** - Configuration/limits
 
 ## Frame Lifecycle Management
 
