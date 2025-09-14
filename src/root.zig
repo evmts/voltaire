@@ -46,7 +46,7 @@ pub const LoggingTracer = @import("tracer/tracer.zig").LoggingTracer;
 pub const FileTracer = @import("tracer/tracer.zig").FileTracer;
 pub const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
 pub const DebuggingTracer = @import("tracer/tracer.zig").DebuggingTracer;
-pub const differential_tracer = @import("_test_utils/differential_tracer.zig");
+// differential_tracer removed - using MinimalEvm for differential testing
 pub const trace_comparer = @import("_test_utils/trace_comparer.zig");
 pub const JSONRPCTracer = @import("tracer/tracer.zig").JSONRPCTracer;
 
