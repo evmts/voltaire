@@ -39,15 +39,11 @@ Current pages:
 
 For anything broader, open an issue first.
 
-## 📞 Support
+## Support
 
-For questions about the documentation:
+- **GitHub Issues** — Report documentation bugs or requests
 
-- **GitHub Issues** - Report documentation bugs or requests
-- **Discord** - Join the community for help
-- **Telegram** - Real-time community support
-
-## 🔗 External Links
+## Links
 
 - **GitHub Repository** - [evmts/Guillotine](https://github.com/evmts/Guillotine)
 - **Live Documentation** - [guillotine.dev](https://guillotine.dev)

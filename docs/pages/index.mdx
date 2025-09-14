@@ -78,47 +78,10 @@ pub fn main() !void {
 }
 ```
 
-## Architecture Overview
-
-### Memory Management
-- **Arena allocation**: Transaction-scoped memory with automatic cleanup
-- **Database lifecycle**: Always pair `Database.init()` with `defer db.deinit()`
-- **EVM frame stack**: Managed internally, requires `evm.deinit()`
-
-### Performance Features
-- **Tail-call dispatch**: Eliminates function call overhead (~25% speedup)
-- **Opcode fusion**: Common patterns like PUSH+ADD become single operations
-- **Unsafe operations**: `_unsafe` variants skip bounds checks after validation
-- **Pre-computed jumps**: Bytecode analysis caches JUMPDEST locations
-
-### Gas System
-- Exact Yellow Paper compliance for all operations
-- Memory expansion: quadratic cost `(size² / 512) + (3 * size)`
-- Storage tiers: 20000 (new), 5000 (existing), 2100 (cold), 100 (warm)
-- Stack limit: 1024 items maximum
-
-### Build Configuration
-
-Key compile-time options:
-
-```bash
-# Performance modes
-zig build -Doptimize=ReleaseFast    # Benchmarking
-zig build -Doptimize=ReleaseSafe    # Alpha testing
-zig build -Doptimize=ReleaseSmall   # Size-optimized
-
-# EVM configuration
--Devm-hardfork=CANCUN              # Hardfork selection
--Devm-disable-gas=true             # Testing only (never production)
--Devm-memory-limit=16777215        # Memory limit (16MB default)
--Devm-stack-size=1024              # Stack size (EVM standard)
-```
-
 ## Notes
 
-- Alpha quality; interfaces can change
-- Tests print nothing on success by design
-- All allocation patterns require `defer` cleanup
+- Alpha quality; interfaces can change.
+- Tests print nothing on success by design.
 - For debug logs in tests:
 
 ```zig
@@ -128,4 +91,3 @@ test {
 ```
 
 Report issues and gaps on GitHub.
-

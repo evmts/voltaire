@@ -3,7 +3,7 @@ import { defineConfig } from 'vocs'
 export default defineConfig({
   title: 'Guillotine',
   titleTemplate: '%s - Guillotine Docs',
-  description: 'The ultrafast EVM for every language and platform. High-performance Ethereum Virtual Machine implementation in Zig with extreme speed, minimal bundle size, and universal language support.',
+  description: 'Minimal, functional docs for building, testing, and using the Zig EVM.',
   rootDir: '.',
   baseUrl: 'https://guillotine.dev',
   logoUrl: {
@@ -26,45 +26,10 @@ export default defineConfig({
     }
   },
   
-  // Top navigation for better organization
+  // Minimal top navigation
   topNav: [
-    { 
-      text: 'Guide', 
-      link: '/getting-started/installation',
-      match: '/getting-started'
-    },
-    { 
-      text: 'API', 
-      link: '/api/evm',
-      match: '/api'
-    },
-    { 
-      text: 'Architecture', 
-      link: '/advanced/architecture/overview',
-      match: '/advanced/architecture'
-    },
-    { 
-      text: 'Examples', 
-      link: '/examples',
-      match: '/examples'
-    },
-    {
-      text: 'v0.1.0-alpha',
-      items: [
-        {
-          text: '🎯 Roadmap',
-          link: '/roadmap'
-        },
-        {
-          text: '📝 Changelog',
-          link: 'https://github.com/evmts/Guillotine/blob/main/CHANGELOG.md'
-        },
-        {
-          text: '🚀 Releases',
-          link: 'https://github.com/evmts/Guillotine/releases'
-        }
-      ]
-    }
+    { text: 'Docs', link: '/', match: '/' },
+    { text: 'Examples', link: '/examples', match: '/examples' },
   ],
   
   // Edit link for contributions
@@ -72,255 +37,19 @@ export default defineConfig({
     pattern: 'https://github.com/evmts/Guillotine/edit/main/docs/pages/:path',
     text: 'Edit this page on GitHub'
   },
+  // Minimal sidebar with existing pages only
   sidebar: [
-    {
-      text: '🚀 Getting Started',
-      items: [
-        {
-          text: 'Installation',
-          link: '/getting-started/installation',
-        },
-        {
-          text: 'Quick Start',
-          link: '/getting-started/quick-start',
-        },
-        {
-          text: 'Basic Example',
-          link: '/getting-started/basic-example',
-        },
-      ],
-    },
-    {
-      text: '📖 Usage',
-      items: [
-        {
-          text: 'Basic Execution',
-          link: '/usage/basic-execution',
-        },
-        {
-          text: 'Configuration',
-          link: '/usage/configuration',
-        },
-        {
-          text: 'Error Handling',
-          link: '/usage/error-handling',
-        },
-      ],
-    },
-    {
-      text: '📝 API Reference',
-      items: [
-        {
-          text: 'EVM',
-          link: '/api/evm',
-        },
-        {
-          text: 'State',
-          link: '/api/state',
-        },
-        {
-          text: 'Types',
-          link: '/api/types',
-        },
-      ],
-    },
-    {
-      text: '📦 SDKs',
-      items: [
-        {
-          text: 'Overview',
-          link: '/sdks',
-        },
-        {
-          text: 'Go',
-          link: '/sdks/go',
-        },
-        {
-          text: 'Rust',
-          link: '/sdks/rust',
-        },
-        {
-          text: 'Python',
-          link: '/sdks/python',
-        },
-        {
-          text: 'TypeScript',
-          link: '/sdks/typescript',
-        },
-        {
-          text: 'Bun',
-          link: '/sdks/bun',
-        },
-        {
-          text: 'Swift',
-          link: '/sdks/swift',
-        },
-        {
-          text: 'C',
-          link: '/sdks/c',
-        },
-      ],
-    },
-    {
-      text: '🔧 Advanced',
-      collapsed: true,
-      items: [
-        {
-          text: 'Language Bindings',
-          items: [
-            {
-              text: 'C API',
-              link: '/advanced/bindings/c-api',
-            },
-            {
-              text: 'Go (Coming Soon)',
-              link: '/advanced/bindings/go',
-            },
-            {
-              text: 'TypeScript (Coming Soon)',
-              link: '/advanced/bindings/typescript',
-            },
-          ],
-        },
-        {
-          text: 'Performance',
-          items: [
-            {
-              text: 'Benchmarks',
-              link: '/advanced/performance/benchmarks',
-            },
-            {
-              text: 'Optimization Guide',
-              link: '/advanced/performance/optimization',
-            },
-            {
-              text: 'Memory Management',
-              link: '/advanced/performance/memory',
-            },
-          ],
-        },
-        {
-          text: 'Customization',
-          items: [
-            {
-              text: 'Compile-time Config',
-              link: '/advanced/customization/comptime-config',
-            },
-            {
-              text: 'Custom Hardforks',
-              link: '/advanced/customization/hardforks',
-            },
-            {
-              text: 'Custom Opcodes',
-              link: '/advanced/customization/opcodes',
-            },
-            {
-              text: 'Custom Precompiles',
-              link: '/advanced/customization/precompiles',
-            },
-          ],
-        },
-        {
-          text: 'Architecture',
-          items: [
-            {
-              text: 'Overview',
-              link: '/advanced/architecture/overview',
-            },
-            {
-              text: 'Design Principles',
-              link: '/advanced/architecture/design',
-            },
-            {
-              text: 'EVM Core',
-              link: '/advanced/architecture/evm-core',
-            },
-            {
-              text: 'Bytecode Analysis',
-              link: '/advanced/architecture/bytecode',
-            },
-            {
-              text: 'State Management',
-              link: '/advanced/architecture/state',
-            },
-          ],
-        },
-        {
-          text: 'Testing',
-          items: [
-            {
-              text: 'Unit Tests',
-              link: '/advanced/testing/unit',
-            },
-            {
-              text: 'Differential Testing',
-              link: '/advanced/testing/differential',
-            },
-            {
-              text: 'Fuzzing',
-              link: '/advanced/testing/fuzzing',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      text: '📚 Resources',
-      items: [
-        {
-          text: 'Examples',
-          link: '/examples',
-        },
-        {
-          text: 'FAQ',
-          link: '/faq',
-        },
-        {
-          text: 'Status',
-          link: '/status',
-        },
-        {
-          text: 'Roadmap',
-          link: '/roadmap',
-        },
-      ],
-    },
-    {
-      text: '🤝 Contributing',
-      items: [
-        {
-          text: 'Development Setup',
-          link: '/contributing/setup',
-        },
-        {
-          text: 'Code Guidelines',
-          link: '/contributing/guidelines',
-        },
-        {
-          text: 'Testing Requirements',
-          link: '/contributing/testing',
-        },
-      ],
-    },
+    { text: 'Overview', items: [ { text: 'Home', link: '/' } ] },
+    { text: 'Resources', items: [
+      { text: 'Examples', link: '/examples' },
+      { text: 'Memory', link: '/memory' },
+      { text: 'Compatibility', link: '/compatibility' },
+      { text: 'FAQ', link: '/faq' },
+      { text: 'Status', link: '/status' },
+      { text: 'Roadmap', link: '/roadmap' },
+    ] },
   ],
-  socials: [
-    {
-      icon: 'github',
-      link: 'https://github.com/evmts/Guillotine',
-    },
-    {
-      icon: 'telegram',
-      link: 'https://t.me/+ANThR9bHDLAwMjUx',
-    },
-    {
-      icon: 'discord',
-      link: 'https://discord.gg/guillotine',
-    },
-    {
-      icon: 'x',
-      link: 'https://x.com/guillotinevm',
-    },
-  ],
+  socials: [ { icon: 'github', link: 'https://github.com/evmts/Guillotine' } ],
   
   // Professional theme configuration inspired by Stripe & Vercel
   theme: {
