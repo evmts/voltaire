@@ -171,7 +171,8 @@ pub const DefaultTracer = struct {
                         block_info.blob_base_fee
                     );
 
-                    // Set gas to match frame's remaining gas
+                    // Set gas to match frame's INITIAL gas (not current remaining)
+                    // Frame starts with gas_limit, so MinimalEvm should too
                     evm.gas_remaining = @intCast(gas_limit);
                     evm.gas_used = 0;
 
@@ -181,6 +182,7 @@ pub const DefaultTracer = struct {
                         evm.address,
                         evm.origin,
                     });
+                    self.debug("MinimalEvm gas_remaining={d}, gas_used={d}", .{evm.gas_remaining, evm.gas_used});
                     self.debug("MinimalEvm bytecode: {x}", .{bytecode});
                 }
             }
@@ -681,9 +683,35 @@ pub const DefaultTracer = struct {
                 self.warn("  MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
             }
 
-            // Skip gas validation for now - MinimalEvm uses simplified gas model
-            // const frame_gas_i64 = frame.gas_remaining;
-            // const evm_gas_i64 = evm.gas_remaining;
+            // Gas validation - different rules for different opcode types
+            const frame_gas_remaining = frame.gas_remaining;
+            const evm_gas_remaining = evm.gas_remaining;
+
+            // Check if this is a jump/terminal opcode that should have exact gas match
+            const is_terminal_opcode = switch (opcode) {
+                .JUMP, .JUMPI, .STOP, .RETURN, .REVERT, .SELFDESTRUCT => true,
+                else => false,
+            };
+
+            if (is_terminal_opcode) {
+                // For jump/terminal opcodes, gas should match exactly
+                // because both EVMs should have consumed the same amount
+                if (frame_gas_remaining != evm_gas_remaining) {
+                    self.err("[GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
+                    self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.err("  Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
+                }
+            } else {
+                // For regular opcodes, MinimalEvm should have consumed <= Frame gas
+                // Frame may show higher consumption due to static block gas consumption
+                if (evm_gas_remaining > frame_gas_remaining) {
+                    self.err("[GAS DIVERGENCE] MinimalEvm consumed less gas than Frame after {s}:", .{opcode_name});
+                    self.err("  Frame gas_remaining: {d} (more consumed)", .{frame_gas_remaining});
+                    self.err("  MinimalEvm gas_remaining: {d} (less consumed)", .{evm_gas_remaining});
+                    self.err("  MinimalEvm under-consumed by: {d}", .{evm_gas_remaining - frame_gas_remaining});
+                }
+            }
         }
     }
 
