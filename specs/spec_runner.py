@@ -65,17 +65,16 @@ class SpecTestRunner:
             if hex_part:
                 addr_str = hex_part.group()
 
-        # Ensure proper format and length
-        if not addr_str.startswith('0x'):
-            addr_str = '0x' + addr_str
+        # Remove 0x prefix if present for processing
+        if addr_str.startswith('0x'):
+            addr_str = addr_str[2:]
 
-        # Pad to 40 hex chars (20 bytes) if needed
-        if len(addr_str) < 42:
-            addr_str = '0x' + addr_str[2:].zfill(40)
-        elif len(addr_str) > 42:
-            addr_str = addr_str[:42]  # Truncate if too long
+        # Pad to 40 hex chars (20 bytes) if needed, truncate if too long
+        if len(addr_str) < 40:
+            addr_str = addr_str.zfill(40)
+        elif len(addr_str) > 40:
+            addr_str = addr_str[:40]
 
-        print(f"DEBUG: Parsing address '{addr_str}', length: {len(addr_str)}")
         return Address.from_hex(addr_str)
 
     def setup_initial_state(self, evm: EVM, pre_state: Dict) -> None:
