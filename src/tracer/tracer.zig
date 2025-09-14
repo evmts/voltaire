@@ -177,12 +177,12 @@ pub const DefaultTracer = struct {
                     evm.gas_remaining = @intCast(frame_gas_remaining);
                     evm.gas_used = @intCast(@as(i64, @intCast(gas_limit)) - frame_gas_remaining);
 
-                    self.debug("MinimalEvm initialized: bytecode_len={d}, frame_gas={d}, synced_gas={d}, address={any}, origin={any}", .{
+                    self.debug("SYNC: MinimalEvm initialized with Frame's current gas state", .{});
+
+                    self.debug("MinimalEvm initialized: bytecode_len={d}, frame_gas={d}, synced_gas={d}", .{
                         bytecode.len,
                         frame_gas_remaining,
                         evm.gas_remaining,
-                        evm.address,
-                        evm.origin,
                     });
                     self.debug("MinimalEvm gas_remaining={d}, gas_used={d}", .{evm.gas_remaining, evm.gas_used});
                     self.debug("MinimalEvm bytecode: {x}", .{bytecode});
@@ -711,13 +711,20 @@ pub const DefaultTracer = struct {
                 // Frame may consume gas in larger chunks at block boundaries
                 const gas_diff = @as(i64, evm_gas_remaining) - @as(i64, frame_gas_remaining);
 
-                // Allow Frame to consume up to 50 gas more than MinimalEvm (block overhead)
-                // But MinimalEvm should never consume significantly more than Frame
-                if (gas_diff > 50) {
+                // Get expected first_block_gas for this frame to adjust tolerance
+                const expected_first_block_gas = if (@hasField(@TypeOf(frame.*), "first_block_gas_charged"))
+                    @as(i64, frame.first_block_gas_charged)
+                else
+                    0;
+
+                // Allow Frame to consume first_block_gas + 50 more than MinimalEvm
+                // This accounts for Frame's pre-charging strategy
+                const tolerance = expected_first_block_gas + 50;
+                if (gas_diff > tolerance) {
                     self.err("[GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
                     self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
                     self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.err("  Gas difference: {d} (exceeds 50 gas tolerance)", .{gas_diff});
+                    self.err("  Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
                 } else if (gas_diff < -20) {
                     self.err("[GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
                     self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});

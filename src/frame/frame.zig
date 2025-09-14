@@ -407,6 +407,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Loop safety counter for preventing infinite dispatch loops
         instruction_counter: config.createLoopSafetyCounter(),
 
+        // First block gas amount that was pre-charged (for tracer synchronization)
+        first_block_gas_charged: u32 = 0,
+
         //
         /// Initialize a new execution frame.
         ///
@@ -455,6 +458,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .authorized_address = null,
                 // Initialize the instruction counter
                 .instruction_counter = config.createLoopSafetyCounter().init(config.loop_quota orelse 0),
+                .first_block_gas_charged = 0,
             };
         }
         /// Clean up all frame resources.
@@ -619,10 +623,12 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Handle first_block_gas
             var start_index: usize = 0;
+            var first_block_gas_amount: u32 = 0;
             if (schedule.len > 0) {
                 switch (schedule[0]) {
                     .first_block_gas => |meta| {
                         if (meta.gas > 0) {
+                            first_block_gas_amount = meta.gas;
                             try self.consumeGasChecked(@intCast(meta.gas));
                         }
                         start_index = 1;
@@ -635,6 +641,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.dispatch = Dispatch{
                 .cursor = schedule.ptr + start_index,
             };
+
+            // Store the first_block_gas_amount for tracer synchronization
+            self.first_block_gas_charged = first_block_gas_amount;
 
             // Store u256_constants slice for Frame access
             self.u256_constants = if (owned_schedule) |s| s.u256_values else &[_]WordType{};
@@ -714,6 +723,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .calldata_slice = self.calldata_slice,
                 .code = self.code,
                 .authorized_address = self.authorized_address,
+                .instruction_counter = self.instruction_counter,
+                .first_block_gas_charged = self.first_block_gas_charged,
             };
         }
 
