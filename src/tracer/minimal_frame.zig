@@ -85,6 +85,9 @@ pub const MinimalFrame = struct {
         if (self.output.len > 0) {
             self.allocator.free(self.output);
         }
+        if (self.return_data.len > 0) {
+            self.allocator.free(@constCast(self.return_data));
+        }
     }
 
     /// Get the MinimalEvm instance
@@ -129,6 +132,13 @@ pub const MinimalFrame = struct {
         if (offset >= self.memory_size) {
             self.memory_size = offset + 1;
         }
+    }
+
+    inline fn wordCount(bytes: u64) u64 { return (bytes + 31) / 32; }
+
+    fn memoryExpansionCost(self: *const Self, end_bytes: u64) u64 {
+        const current_size = @as(u64, self.memory_size);
+        return GasConstants.memory_gas_cost(current_size, end_bytes);
     }
 
     /// Consume gas
@@ -478,8 +488,10 @@ pub const MinimalFrame = struct {
                     const offset_u32 = @as(u32, @intCast(offset));
                     const size_u32 = @as(u32, @intCast(size));
 
-                    // Ensure memory is expanded
+                    // Charge memory expansion to cover [offset, offset+size)
                     const end_addr = offset_u32 + size_u32;
+                    const mem_cost = self.memoryExpansionCost(end_addr);
+                    try self.consumeGas(mem_cost);
                     if (end_addr > self.memory_size) {
                         self.memory_size = end_addr;
                     }
@@ -580,7 +592,6 @@ pub const MinimalFrame = struct {
 
             // CALLDATACOPY
             0x37 => {
-                try self.consumeGas(GasConstants.GasFastestStep);
                 const dest_offset = try self.popStack();
                 const offset = try self.popStack();
                 const length = try self.popStack();
@@ -592,6 +603,13 @@ pub const MinimalFrame = struct {
                 const dest_off = @as(u32, @intCast(dest_offset));
                 const src_off = @as(u32, @intCast(offset));
                 const len = @as(u32, @intCast(length));
+
+                // Charge base + memory expansion + copy per word
+                const end_bytes_copy: u64 = @as(u64, dest_off) + @as(u64, len);
+                const mem_cost4 = self.memoryExpansionCost(end_bytes_copy);
+                const copy_words = wordCount(@as(u64, len));
+                const copy_cost = GasConstants.CopyGas * copy_words;
+                try self.consumeGas(GasConstants.GasFastestStep + mem_cost4 + copy_cost);
 
                 // Copy calldata to memory
                 var i: u32 = 0;
@@ -612,7 +630,6 @@ pub const MinimalFrame = struct {
 
             // CODECOPY
             0x39 => {
-                try self.consumeGas(GasConstants.GasFastestStep);
                 const dest_offset = try self.popStack();
                 const offset = try self.popStack();
                 const length = try self.popStack();
@@ -624,6 +641,12 @@ pub const MinimalFrame = struct {
                 const dest_off = @as(u32, @intCast(dest_offset));
                 const src_off = @as(u32, @intCast(offset));
                 const len = @as(u32, @intCast(length));
+
+                const end_bytes_code: u64 = @as(u64, dest_off) + @as(u64, len);
+                const mem_cost5 = self.memoryExpansionCost(end_bytes_code);
+                const copy_words2 = wordCount(@as(u64, len));
+                const copy_cost2 = GasConstants.CopyGas * copy_words2;
+                try self.consumeGas(GasConstants.GasFastestStep + mem_cost5 + copy_cost2);
 
                 // Copy code to memory
                 var i: u32 = 0;
@@ -651,7 +674,6 @@ pub const MinimalFrame = struct {
 
             // RETURNDATACOPY
             0x3e => {
-                try self.consumeGas(GasConstants.GasFastestStep);
                 const dest_offset = try self.popStack();
                 const offset = try self.popStack();
                 const length = try self.popStack();
@@ -668,6 +690,12 @@ pub const MinimalFrame = struct {
                 if (src_off + len > self.return_data.len) {
                     return error.InvalidOpcode;  // Use a valid error type
                 }
+
+                const end_bytes_ret: u64 = @as(u64, dest_off) + @as(u64, len);
+                const mem_cost6 = self.memoryExpansionCost(end_bytes_ret);
+                const copy_words3 = wordCount(@as(u64, len));
+                const copy_cost3 = GasConstants.CopyGas * copy_words3;
+                try self.consumeGas(GasConstants.GasFastestStep + mem_cost6 + copy_cost3);
 
                 // Copy return data to memory
                 var i: u32 = 0;
@@ -777,12 +805,17 @@ pub const MinimalFrame = struct {
 
             // MLOAD
             0x51 => {
-                try self.consumeGas(GasConstants.GasFastestStep);
                 const offset = try self.popStack();
                 if (offset > std.math.maxInt(u32)) {
                     return error.OutOfGas;
                 }
                 const off = @as(u32, @intCast(offset));
+
+                // Charge base + memory expansion for reading 32 bytes
+                const end_bytes: u64 = @as(u64, off) + 32;
+                const mem_cost = self.memoryExpansionCost(end_bytes);
+                try self.consumeGas(GasConstants.GasFastestStep + mem_cost);
+                if (end_bytes > self.memory_size) self.memory_size = @intCast(end_bytes);
 
                 // Read word from memory
                 var result: u256 = 0;
@@ -797,7 +830,6 @@ pub const MinimalFrame = struct {
 
             // MSTORE
             0x52 => {
-                try self.consumeGas(GasConstants.GasFastestStep);
                 const offset = try self.popStack();
                 const value = try self.popStack();
 
@@ -806,6 +838,11 @@ pub const MinimalFrame = struct {
                 }
 
                 const off = @as(u32, @intCast(offset));
+
+                // Charge base + memory expansion for writing 32 bytes
+                const end_bytes2: u64 = @as(u64, off) + 32;
+                const mem_cost2 = self.memoryExpansionCost(end_bytes2);
+                try self.consumeGas(GasConstants.GasFastestStep + mem_cost2);
 
                 // Write word to memory
                 var idx: u32 = 0;
@@ -818,7 +855,6 @@ pub const MinimalFrame = struct {
 
             // MSTORE8
             0x53 => {
-                try self.consumeGas(GasConstants.GasFastestStep);
                 const offset = try self.popStack();
                 const value = try self.popStack();
 
@@ -827,6 +863,9 @@ pub const MinimalFrame = struct {
                 }
 
                 const off = @as(u32, @intCast(offset));
+                const end_bytes3: u64 = @as(u64, off) + 1;
+                const mem_cost3 = self.memoryExpansionCost(end_bytes3);
+                try self.consumeGas(GasConstants.GasFastestStep + mem_cost3);
                 const byte_value = @as(u8, @truncate(value));
                 try self.writeMemory(off, byte_value);
                 self.pc += 1;
@@ -1088,6 +1127,13 @@ pub const MinimalFrame = struct {
                     const out_off = @as(u32, @intCast(out_offset));
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
+                    // Charge memory expansion + copy per word for copying return data
+                    const end_bytes_callcopy: u64 = @as(u64, out_off) + @as(u64, copy_len);
+                    const mem_cost_out = self.memoryExpansionCost(end_bytes_callcopy);
+                    const copy_words_out = wordCount(@as(u64, copy_len));
+                    const copy_cost_out = GasConstants.CopyGas * copy_words_out;
+                    try self.consumeGas(mem_cost_out + copy_cost_out);
+
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
                         try self.writeMemory(out_off + k, result.output[k]);
@@ -1095,8 +1141,10 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data (make a copy as result will be cleaned up)
-                if (self.return_data.len > 0) {
-                    self.allocator.free(self.return_data);
+                // Only free if we previously allocated (not pointing to empty slice)
+                const empty_slice = &[_]u8{};
+                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice.ptr) {
+                    self.allocator.free(@constCast(self.return_data));
                 }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
@@ -1186,6 +1234,12 @@ pub const MinimalFrame = struct {
                     const out_off = @as(u32, @intCast(out_offset));
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
+                    const end_bytes_callcode: u64 = @as(u64, out_off) + @as(u64, copy_len);
+                    const mem_cost_out2 = self.memoryExpansionCost(end_bytes_callcode);
+                    const copy_words_out2 = wordCount(@as(u64, copy_len));
+                    const copy_cost_out2 = GasConstants.CopyGas * copy_words_out2;
+                    try self.consumeGas(mem_cost_out2 + copy_cost_out2);
+
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
                         try self.writeMemory(out_off + k, result.output[k]);
@@ -1193,8 +1247,10 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                if (self.return_data.len > 0) {
-                    self.allocator.free(self.return_data);
+                // Only free if we previously allocated (not pointing to empty slice)
+                const empty_slice_2 = &[_]u8{};
+                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice_2.ptr) {
+                    self.allocator.free(@constCast(self.return_data));
                 }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
@@ -1298,6 +1354,12 @@ pub const MinimalFrame = struct {
                     const out_off = @as(u32, @intCast(out_offset));
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
+                    const end_bytes_delegate: u64 = @as(u64, out_off) + @as(u64, copy_len);
+                    const mem_cost_out3 = self.memoryExpansionCost(end_bytes_delegate);
+                    const copy_words_out3 = wordCount(@as(u64, copy_len));
+                    const copy_cost_out3 = GasConstants.CopyGas * copy_words_out3;
+                    try self.consumeGas(mem_cost_out3 + copy_cost_out3);
+
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
                         try self.writeMemory(out_off + k, result.output[k]);
@@ -1305,8 +1367,10 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                if (self.return_data.len > 0) {
-                    self.allocator.free(self.return_data);
+                // Only free if we previously allocated (not pointing to empty slice)
+                const empty_slice_2 = &[_]u8{};
+                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice_2.ptr) {
+                    self.allocator.free(@constCast(self.return_data));
                 }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
@@ -1408,6 +1472,12 @@ pub const MinimalFrame = struct {
                     const out_off = @as(u32, @intCast(out_offset));
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
+                    const end_bytes_static: u64 = @as(u64, out_off) + @as(u64, copy_len);
+                    const mem_cost_out4 = self.memoryExpansionCost(end_bytes_static);
+                    const copy_words_out4 = wordCount(@as(u64, copy_len));
+                    const copy_cost_out4 = GasConstants.CopyGas * copy_words_out4;
+                    try self.consumeGas(mem_cost_out4 + copy_cost_out4);
+
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
                         try self.writeMemory(out_off + k, result.output[k]);
@@ -1415,8 +1485,10 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                if (self.return_data.len > 0) {
-                    self.allocator.free(self.return_data);
+                // Only free if we previously allocated (not pointing to empty slice)
+                const empty_slice_2 = &[_]u8{};
+                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice_2.ptr) {
+                    self.allocator.free(@constCast(self.return_data));
                 }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
@@ -1432,6 +1504,55 @@ pub const MinimalFrame = struct {
                 // Update gas
                 const gas_used = available_gas - result.gas_left;
                 self.gas_remaining -= @intCast(gas_used);
+
+                self.pc += 1;
+            },
+
+            // MCOPY (EIP-5656)
+            0x5e => {
+                // Stack order: [dest, src, len]
+                const len = try self.popStack();
+                const src = try self.popStack();
+                const dest = try self.popStack();
+
+                // Fast path: zero length does nothing
+                if (len == 0) {
+                    self.pc += 1;
+                    return;
+                }
+
+                // Bounds and type conversions (clamp to u64 before u32/u24 style ops)
+                const max_u32 = std.math.maxInt(u32);
+                if (dest > max_u32 or src > max_u32 or len > max_u32) {
+                    return error.OutOfGas; // treat as fault in minimal tracer
+                }
+
+                const dest_u32: u32 = @intCast(dest);
+                const src_u32: u32 = @intCast(src);
+                const len_u32: u32 = @intCast(len);
+
+                // Gas: memory expansion + copy gas (CopyGas per 32-byte word)
+                const end_src: u64 = @as(u64, src_u32) + @as(u64, len_u32);
+                const end_dest: u64 = @as(u64, dest_u32) + @as(u64, len_u32);
+                const mem_cost_src = self.memoryExpansionCost(end_src);
+                const mem_cost_dest = self.memoryExpansionCost(end_dest);
+                const mem_cost = @max(mem_cost_src, mem_cost_dest);
+                const words: u64 = wordCount(@as(u64, len_u32));
+                const copy_cost: u64 = GasConstants.CopyGas * words;
+                try self.consumeGas(mem_cost + copy_cost);
+
+                // Copy via temporary buffer to handle overlapping regions
+                const tmp = try self.allocator.alloc(u8, len_u32);
+                defer self.allocator.free(tmp);
+
+                var i: u32 = 0;
+                while (i < len_u32) : (i += 1) {
+                    tmp[i] = self.readMemory(src_u32 + i);
+                }
+                i = 0;
+                while (i < len_u32) : (i += 1) {
+                    try self.writeMemory(dest_u32 + i, tmp[i]);
+                }
 
                 self.pc += 1;
             },

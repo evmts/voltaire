@@ -162,10 +162,25 @@ pub const MinimalEvm = struct {
 
     /// Clean up resources
     pub fn deinit(self: *Self) void {
-        // Clean up all frames
+        // Clean up all frames owned by the stack
         for (self.frames.items) |frame| {
             frame.deinit();
             self.allocator.destroy(frame);
+        }
+        // If a current_frame exists but is not part of the frames stack
+        // (e.g., created directly by the tracer), clean it up as well
+        if (self.current_frame) |cf| {
+            var found = false;
+            for (self.frames.items) |f| {
+                if (f == cf) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                cf.deinit();
+                self.allocator.destroy(cf);
+            }
         }
         self.frames.deinit(self.allocator);
         self.storage.deinit();
@@ -251,13 +266,12 @@ pub const MinimalEvm = struct {
 
         // Push frame onto stack
         try self.frames.append(self.allocator, frame);
-        errdefer _ = self.frames.pop();
 
         // Set as current frame
         self.current_frame = frame;
 
         // Execute the frame
-        try frame.execute();
+        const exec_result = frame.execute();
 
         // Pop frame from stack
         _ = self.frames.pop();
@@ -269,9 +283,24 @@ pub const MinimalEvm = struct {
             self.current_frame = null;
         }
 
+        // Handle execution error
+        if (exec_result) |_| {
+            // Success case
+        } else |_| {
+            // Error case - clean up and return failure
+            frame.deinit();
+            self.allocator.destroy(frame);
+            return CallResult{
+                .success = false,
+                .gas_left = 0,
+                .output = &[_]u8{},
+            };
+        }
+
         // Store return data
         if (frame.output.len > 0) {
-            if (self.return_data.len > 0) {
+            const empty = &[_]u8{};
+            if (self.return_data.len > 0 and self.return_data.ptr != empty.ptr) {
                 self.allocator.free(self.return_data);
             }
             const output_copy = try self.allocator.alloc(u8, frame.output.len);
@@ -326,15 +355,74 @@ pub const MinimalEvm = struct {
         // Get caller from current frame
         const caller = if (self.current_frame) |frame| frame.address else self.origin;
 
-        // Execute in new frame
-        return self.execute(
+        // Create a new frame for the inner call
+        const frame = try self.allocator.create(MinimalFrame);
+        errdefer self.allocator.destroy(frame);
+
+        frame.* = try MinimalFrame.init(
+            self.allocator,
             code,
             @intCast(gas),
             caller,
             address,
             value,
             input,
+            @as(*anyopaque, @ptrCast(self)),
         );
+        errdefer frame.deinit();
+
+        // Push frame onto stack
+        try self.frames.append(self.allocator, frame);
+        errdefer _ = self.frames.pop();
+
+        // Set as current frame
+        const previous_frame = self.current_frame;
+        self.current_frame = frame;
+        defer {
+            // Restore previous frame after execution
+            self.current_frame = previous_frame;
+        }
+
+        // Execute the frame
+        frame.execute() catch {
+            // Pop frame on error
+            _ = self.frames.pop();
+            frame.deinit();
+            self.allocator.destroy(frame);
+            return CallResult{
+                .success = false,
+                .gas_left = 0,
+                .output = &[_]u8{},
+            };
+        };
+
+        // Pop frame from stack
+        _ = self.frames.pop();
+
+        // Store return data
+        if (frame.output.len > 0) {
+            if (self.return_data.len > 0) {
+                self.allocator.free(self.return_data);
+            }
+            const output_copy = try self.allocator.alloc(u8, frame.output.len);
+            @memcpy(output_copy, frame.output);
+            self.return_data = output_copy;
+        } else {
+            self.return_data = &[_]u8{};
+        }
+
+        // Return result
+        const result = CallResult{
+            .success = !frame.reverted,
+            .gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0))),
+            .output = self.return_data,
+        };
+
+        // Clean up frame
+        frame.deinit();
+        self.allocator.destroy(frame);
+
+        return result;
     }
 
     /// Get balance of an address (called by frame)
