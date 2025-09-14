@@ -31,11 +31,15 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 - ❌ **124 failing** (78.0% fail rate)
 
 **Failure Categories**:
-- `AccountNotFound` errors: ~30% of failures (account state management issues)
-- `EVM execution failed`: ~25% of failures (gas/execution issues)
-- Assembly syntax tests: ~20% of failures (not supported)
-- Invalid hex data: ~15% of failures (spec runner issues)
-- File parsing errors: ~10% of failures (YAML test format not supported)
+- `AccountNotFound` errors: ~30% of failures (account state management issues in Zig EVM)
+- `EVM execution failed`: ~25% of failures (gas/execution issues in Zig EVM)
+- Assembly syntax tests: ~20% of failures (Python test infrastructure limitation - not yet implemented)
+- Invalid hex data: ~15% of failures (Python SDK spec compatibility issue)
+- File parsing errors: ~10% of failures (Python test infrastructure - YAML format not yet supported)
+
+Note: Some failures are due to the Python SDK and test infrastructure not being fully spec-compliant yet, rather than issues in the core Zig EVM implementation.
+
+**Current Development Focus**: Our primary goal is achieving 100% Ethereum specification compliance while ensuring complete safety, debuggability, and observability through our tracer system (`src/tracer/tracer.zig`). The tracer provides comprehensive execution monitoring, differential testing against a reference implementation, and detailed error reporting for every opcode.
 
 See [test report](specs/test_report.md) for detailed results. Follow the [issue tracker](https://github.com/evmts/Guillotine/issues) for features planned for Beta.
 
