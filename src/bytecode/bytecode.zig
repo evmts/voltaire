@@ -155,9 +155,21 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
                 const packed_bits = iterator.bytecode.packed_bitmap[iterator.pc];
 
+                // Debug logging for observability
+                log.debug("Iterator.next: PC={d}, opcode=0x{x:0>2}, packed_bits={{push_data={}, op_start={}, jumpdest={}, fusion={}}}", .{
+                    iterator.pc,
+                    opcode,
+                    packed_bits.is_push_data,
+                    packed_bits.is_op_start,
+                    packed_bits.is_jumpdest,
+                    packed_bits.is_fusion_candidate,
+                });
+
                 // Handle fusion opcodes first (only if fusions are enabled)
                 if (fusions_enabled and packed_bits.is_fusion_candidate) {
+                    log.debug("  Checking for fusion at PC={d}", .{iterator.pc});
                     const fusion_data = iterator.bytecode.getFusionData(iterator.pc);
+                    log.debug("  Fusion detected: {s}", .{@tagName(fusion_data)});
                     // Advance PC properly for fusion opcodes
                     switch (fusion_data) {
                         // 2-opcode fusions: PUSH + op
@@ -721,12 +733,21 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
         /// Get fusion data for a bytecode position marked as fusion candidate
         /// This method checks for advanced patterns first (in priority order)
         pub fn getFusionData(self: *const Self, pc: PcType) OpcodeData {
-            if (pc >= self.len()) return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
+            log.debug("getFusionData called at PC={d}", .{pc});
+            if (pc >= self.len()) {
+                log.debug("  PC out of bounds, returning STOP", .{});
+                return OpcodeData{ .regular = .{ .opcode = 0x00 } }; // STOP fallback
+            }
+
+            // Log what opcodes we're looking at for fusion
+            const opcode = self.get_unsafe(pc);
+            log.debug("  Checking fusion for opcode 0x{x:0>2} at PC={d}", .{opcode, pc});
 
             // Check advanced fusion patterns in priority order (longest first)
-            
+
             // Check function dispatch pattern first (can be 8+ bytes)
             if (self.checkFunctionDispatchPattern(pc)) |fusion| {
+                log.debug("  Found FUNCTION_DISPATCH fusion", .{});
                 return fusion;
             }
             
@@ -795,6 +816,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
             // Check for existing 2-opcode fusions (PUSH + op)
             if (first_op >= 0x60 and first_op <= 0x7F) { // PUSH opcode
+                log.debug("  Checking PUSH fusion: PUSH{d} at PC={d}", .{first_op - 0x5F, pc});
                 const push_size = first_op - 0x5F;
                 var value: u256 = 0;
                 const end_pc = @min(pc + 1 + push_size, self.len());
@@ -805,10 +827,14 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 // The second opcode comes AFTER the push data
                 const second_op_pc = pc + 1 + push_size;
                 const second_op = if (second_op_pc < self.len()) self.get_unsafe(second_op_pc) else 0x00;
+                log.debug("    Second opcode at PC={d}: 0x{x:0>2}", .{second_op_pc, second_op});
 
                 // Return appropriate fusion type based on second opcode
                 switch (second_op) {
-                    0x01 => return OpcodeData{ .push_add_fusion = .{ .value = value } }, // ADD
+                    0x01 => {
+                        log.debug("    FUSION: PUSH_ADD_FUSION", .{});
+                        return OpcodeData{ .push_add_fusion = .{ .value = value } };
+                    },
                     0x02 => return OpcodeData{ .push_mul_fusion = .{ .value = value } }, // MUL
                     0x03 => return OpcodeData{ .push_sub_fusion = .{ .value = value } }, // SUB
                     0x04 => return OpcodeData{ .push_div_fusion = .{ .value = value } }, // DIV
@@ -816,7 +842,10 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     0x17 => return OpcodeData{ .push_or_fusion = .{ .value = value } }, // OR
                     0x18 => return OpcodeData{ .push_xor_fusion = .{ .value = value } }, // XOR
                     0x51 => return OpcodeData{ .push_mload_fusion = .{ .value = value } }, // MLOAD
-                    0x52 => return OpcodeData{ .push_mstore_fusion = .{ .value = value } }, // MSTORE
+                    0x52 => {
+                        log.debug("    FUSION: PUSH_MSTORE_FUSION with value={d}", .{value});
+                        return OpcodeData{ .push_mstore_fusion = .{ .value = value } };
+                    }
                     0x53 => return OpcodeData{ .push_mstore8_fusion = .{ .value = value } }, // MSTORE8
                     0x56 => return OpcodeData{ .push_jump_fusion = .{ .value = value } }, // JUMP
                     0x57 => return OpcodeData{ .push_jumpi_fusion = .{ .value = value } }, // JUMPI
@@ -1017,6 +1046,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             };
 
                             if (is_fusable) {
+                                log.debug("Marking PC={d} as fusion candidate (PUSH{d} + 0x{x:0>2})", .{i, push_size, second_op});
                                 self.packed_bitmap[i].is_fusion_candidate = true;
                             }
                         }
@@ -1386,6 +1416,54 @@ test "pretty_print: should format bytecode with colors and metadata" {
 // Additional comprehensive test coverage for bytecode.zig
 
 const testing = std.testing;
+
+test "debug: fusion detection for CALL bytecode" {
+    std.testing.log_level = .debug;
+    const allocator = testing.allocator;
+
+    // The exact bytecode from failing CALL test
+    const test_bytecode = &[_]u8{
+        0x5f, // PC=0: PUSH0
+        0x5f, // PC=1: PUSH0
+        0x5f, // PC=2: PUSH0
+        0x5f, // PC=3: PUSH0
+        0x5f, // PC=4: PUSH0
+        0x30, // PC=5: ADDRESS
+        0x61, // PC=6: PUSH2
+        0x27, // PC=7: value byte 1
+        0x10, // PC=8: value byte 2
+        0xf1, // PC=9: CALL
+        0x60, // PC=10: PUSH1
+        0x00, // PC=11: value 0
+        0x52, // PC=12: MSTORE
+        0x60, // PC=13: PUSH1
+        0x20, // PC=14: value 32
+        0x60, // PC=15: PUSH1
+        0x00, // PC=16: value 0
+        0xf3, // PC=17: RETURN
+    };
+
+    const BytecodeType = Bytecode(.{
+        .max_bytecode_size = 24576,
+        .pc_type = u16,
+        .fusions_enabled = true,
+    });
+
+    log.debug("\n=== Creating bytecode object ===", .{});
+    var bytecode = try BytecodeType.init(allocator, test_bytecode);
+    defer bytecode.deinit();
+
+    log.debug("\n=== Testing iterator ===", .{});
+    var iter = bytecode.createIterator();
+    var op_count: usize = 0;
+
+    while (iter.next()) |op_data| {
+        log.debug("\nOp {d}: PC={d}, type={s}", .{op_count, iter.pc, @tagName(op_data)});
+        op_count += 1;
+    }
+
+    log.debug("\nTotal operations: {d}", .{op_count});
+}
 
 test "Bytecode init - valid simple bytecode" {
     const allocator = testing.allocator;
