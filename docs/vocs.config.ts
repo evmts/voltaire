@@ -150,9 +150,6 @@ export default defineConfig({
   // Search configuration for better discoverability
   search: {
     boostDocument(documentId) {
-      // Prioritize important pages in search results
-      if (documentId.includes('getting-started')) return 2
-      if (documentId.includes('api')) return 1.5
       if (documentId.includes('examples')) return 1.5
       return 1
     }
