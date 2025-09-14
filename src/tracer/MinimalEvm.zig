@@ -1519,11 +1519,19 @@ pub const MinimalEvm = struct {
         }
     }
 
+    /// Execute a single step (one opcode)
+    pub fn step(self: *Self) !void {
+        if (self.stopped or self.reverted or self.pc >= self.bytecode.len) {
+            return;
+        }
+        const opcode = self.getCurrentOpcode() orelse return;
+        try self.executeOpcode(opcode);
+    }
+
     /// Main execution loop
     pub fn execute(self: *Self) !void {
         while (!self.stopped and !self.reverted and self.pc < self.bytecode.len) {
-            const opcode = self.getCurrentOpcode() orelse break;
-            try self.executeOpcode(opcode);
+            try self.step();
         }
     }
 

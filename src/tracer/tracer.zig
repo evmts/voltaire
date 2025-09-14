@@ -21,6 +21,7 @@ const call_result_mod = @import("../frame/call_result.zig");
 const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
 const pc_tracker_mod = @import("pc_tracker.zig");
 const MinimalEvm = @import("MinimalEvm.zig").MinimalEvm;
+const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 // const Host = @import("host.zig").Host; // Only needed for tests which are commented out
 
 // ============================================================================
@@ -172,43 +173,375 @@ pub const DefaultTracer = struct {
         }
     }
 
-    pub fn beforeOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
-        _ = self; // Will be used when PC validation is re-enabled
+    pub fn beforeOp(self: *DefaultTracer, pc: u32, opcode: UnifiedOpcode, comptime FrameType: type, frame: *const FrameType) void {
+        _ = pc;
+        _ = frame;
         const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            // TODO: Re-enable PC validation once we properly integrate with dispatch
-            // The issue is that dispatch pre-processes PUSH instructions and changes the execution order
-            // making our simple PC tracking incorrect. This needs deeper integration.
-            //
-            // // Validate PC matches our tracked PC
-            // if (self.bytecode.len > 0) {
-            //     if (pc != self.current_pc) {
-            //         self.throwError(
-            //             "PC tracking error: expected PC={d} but got PC={d} for opcode 0x{x:0>2}",
-            //             .{ self.current_pc, pc, opcode }
-            //         );
-            //     }
-            //
-            //     // Validate opcode at this PC
-            //     if (self.current_pc < self.bytecode.len) {
-            //         const expected_opcode = self.bytecode[self.current_pc];
-            //         if (expected_opcode != opcode) {
-            //             self.throwError(
-            //                 "Opcode mismatch at PC={d}: expected 0x{x:0>2} but got 0x{x:0>2}",
-            //                 .{ pc, expected_opcode, opcode }
-            //             );
-            //         }
-            //     }
-            // }
-
-            // Log execution
-            const stack_size = frame.stack.size();
-            std.log.debug("[EVM2] beforeOp: opcode=0x{x:0>2} PC={d} stack={d}", .{
-                opcode,
-                pc,
-                stack_size,
-            });
+        if (comptime (builtin.mode == .ReleaseFast or builtin.mode == .ReleaseSmall)) {
+            return;
         }
+
+        // Execute MinimalEvm steps if available
+        if (self.minimal_evm) |*evm| {
+            if (evm.stopped or evm.reverted) {
+                return;
+            }
+
+            switch(opcode) {
+                // Regular opcodes (0x00-0xFF) - verify and execute exactly one step
+                .STOP, .ADD, .MUL, .SUB, .DIV, .SDIV, .MOD, .SMOD, .ADDMOD, .MULMOD, .EXP, .SIGNEXTEND,
+                .LT, .GT, .SLT, .SGT, .EQ, .ISZERO, .AND, .OR, .XOR, .NOT, .BYTE,
+                .SHL, .SHR, .SAR, .KECCAK256, .ADDRESS, .BALANCE, .ORIGIN, .CALLER,
+                .CALLVALUE, .CALLDATALOAD, .CALLDATASIZE, .CALLDATACOPY, .CODESIZE,
+                .CODECOPY, .GASPRICE, .EXTCODESIZE, .EXTCODECOPY, .RETURNDATASIZE,
+                .RETURNDATACOPY, .EXTCODEHASH, .BLOCKHASH, .COINBASE, .TIMESTAMP,
+                .NUMBER, .PREVRANDAO, .GASLIMIT, .CHAINID, .SELFBALANCE, .BASEFEE,
+                .BLOBHASH, .BLOBBASEFEE, .POP, .MLOAD, .MSTORE, .MSTORE8, .SLOAD,
+                .SSTORE, .JUMP, .JUMPI, .PC, .MSIZE, .GAS, .JUMPDEST, .TLOAD, .TSTORE,
+                .MCOPY, .PUSH0, .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
+                .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
+                .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
+                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31,
+                .PUSH32, .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8, .DUP9,
+                .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16, .SWAP1, .SWAP2,
+                .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8, .SWAP9, .SWAP10, .SWAP11,
+                .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16, .LOG0, .LOG1, .LOG2, .LOG3,
+                .LOG4, .CREATE,
+                .CALL, .CALLCODE, .RETURN, .DELEGATECALL, .CREATE2,
+                .STATICCALL, .REVERT,
+                .INVALID, .SELFDESTRUCT, .AUTH, .AUTHCALL => {
+                    // Verify bytecode matches expected opcode
+                    if (evm.pc < evm.bytecode.len) {
+                        const expected = @intFromEnum(opcode);
+                        const actual = evm.bytecode[evm.pc];
+                        if (actual != expected) {
+                            self.err("Opcode mismatch at PC={d}: expected 0x{x:0>2}, got 0x{x:0>2}", .{evm.pc, expected, actual});
+                        }
+                    }
+                    evm.step() catch |e| {
+                        self.err("MinimalEvm step failed: {any}", .{e});
+                    };
+                },
+
+                // PUSH + arithmetic fusions (2 steps)
+                .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => {
+                    self.executePushOpFusion(evm, 0x01); // ADD
+                },
+                .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => {
+                    self.executePushOpFusion(evm, 0x02); // MUL
+                },
+                .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => {
+                    self.executePushOpFusion(evm, 0x03); // SUB
+                },
+                .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => {
+                    self.executePushOpFusion(evm, 0x04); // DIV
+                },
+                .PUSH_AND_INLINE, .PUSH_AND_POINTER => {
+                    self.executePushOpFusion(evm, 0x16); // AND
+                },
+                .PUSH_OR_INLINE, .PUSH_OR_POINTER => {
+                    self.executePushOpFusion(evm, 0x17); // OR
+                },
+                .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => {
+                    self.executePushOpFusion(evm, 0x18); // XOR
+                },
+
+                // PUSH + memory fusions (2 steps)
+                .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => {
+                    self.executePushOpFusion(evm, 0x51); // MLOAD
+                },
+                .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
+                    self.executePushOpFusion(evm, 0x52); // MSTORE
+                },
+                .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
+                    self.executePushOpFusion(evm, 0x53); // MSTORE8
+                },
+
+                // PUSH + control flow fusions (2 steps)
+                .JUMP_TO_STATIC_LOCATION => {
+                    self.executePushOpFusion(evm, 0x56); // JUMP
+                },
+                .JUMPI_TO_STATIC_LOCATION => {
+                    self.executePushOpFusion(evm, 0x57); // JUMPI
+                },
+
+                // Multi-push/pop fusions
+                .MULTI_PUSH_2 => {
+                    self.executeMultiPush(evm, 2);
+                },
+                .MULTI_PUSH_3 => {
+                    self.executeMultiPush(evm, 3);
+                },
+                .MULTI_POP_2 => {
+                    self.executeMultiPop(evm, 2);
+                },
+                .MULTI_POP_3 => {
+                    self.executeMultiPop(evm, 3);
+                },
+
+                // Three-operation fusions
+                .DUP2_MSTORE_PUSH => {
+                    self.executeThreeOpFusion(evm, 0x81, 0x52, null); // DUP2 + MSTORE + PUSH
+                },
+                .DUP3_ADD_MSTORE => {
+                    self.executeThreeOpFusion(evm, 0x82, 0x01, 0x52); // DUP3 + ADD + MSTORE
+                },
+                .SWAP1_DUP2_ADD => {
+                    self.executeThreeOpFusion(evm, 0x90, 0x81, 0x01); // SWAP1 + DUP2 + ADD
+                },
+                .PUSH_DUP3_ADD => {
+                    self.executePushThenTwoOps(evm, 0x82, 0x01); // PUSH + DUP3 + ADD
+                },
+                .MLOAD_SWAP1_DUP2 => {
+                    self.executeThreeOpFusion(evm, 0x51, 0x90, 0x81); // MLOAD + SWAP1 + DUP2
+                },
+                .ISZERO_JUMPI => {
+                    self.executeConditionalJumpFusion(evm, 0x15); // ISZERO + PUSH + JUMPI
+                },
+                .CALLVALUE_CHECK => {
+                    self.executeThreeOpFusion(evm, 0x34, 0x80, 0x15); // CALLVALUE + DUP1 + ISZERO
+                },
+                .PUSH0_REVERT => {
+                    self.executeThreeOpFusion(evm, 0x5F, 0x5F, 0xFD); // PUSH0 + PUSH0 + REVERT
+                },
+                .PUSH_ADD_DUP1 => {
+                    self.executePushThenTwoOps(evm, 0x01, 0x80); // PUSH + ADD + DUP1
+                },
+
+                // Four-operation fusion
+                .FUNCTION_DISPATCH => {
+                    self.executeFunctionDispatch(evm);
+                },
+            }
+        }
+    }
+
+    // Helper functions for fusion validation and execution
+    fn executePushOpFusion(self: *DefaultTracer, evm: *MinimalEvm, expected_op: u8) void {
+        // Step 1: Verify and execute PUSH
+        if (evm.pc < evm.bytecode.len) {
+            const push_opcode = evm.bytecode[evm.pc];
+            if (push_opcode < 0x5F or push_opcode > 0x7F) { // PUSH0 through PUSH32
+                self.err("Expected PUSH at PC={d}, got 0x{x:0>2}", .{evm.pc, push_opcode});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 1 (PUSH) failed: {any}", .{e});
+            return;
+        };
+
+        // Step 2: Verify and execute operation
+        if (evm.pc < evm.bytecode.len) {
+            const actual_op = evm.bytecode[evm.pc];
+            if (actual_op != expected_op) {
+                self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{expected_op, evm.pc, actual_op});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 2 failed: {any}", .{e});
+        };
+    }
+
+    fn executeMultiPush(self: *DefaultTracer, evm: *MinimalEvm, count: u8) void {
+        var i: u8 = 0;
+        while (i < count) : (i += 1) {
+            if (evm.pc < evm.bytecode.len) {
+                const opcode = evm.bytecode[evm.pc];
+                if (opcode < 0x5F or opcode > 0x7F) {
+                    self.err("Expected PUSH at PC={d}, got 0x{x:0>2}", .{evm.pc, opcode});
+                }
+            }
+            evm.step() catch |e| {
+                self.err("MinimalEvm PUSH #{d} failed: {any}", .{i + 1, e});
+                return;
+            };
+        }
+    }
+
+    fn executeMultiPop(self: *DefaultTracer, evm: *MinimalEvm, count: u8) void {
+        var i: u8 = 0;
+        while (i < count) : (i += 1) {
+            if (evm.pc < evm.bytecode.len) {
+                const opcode = evm.bytecode[evm.pc];
+                if (opcode != 0x50) { // POP
+                    self.err("Expected POP at PC={d}, got 0x{x:0>2}", .{evm.pc, opcode});
+                }
+            }
+            evm.step() catch |e| {
+                self.err("MinimalEvm POP #{d} failed: {any}", .{i + 1, e});
+                return;
+            };
+        }
+    }
+
+    fn executeThreeOpFusion(self: *DefaultTracer, evm: *MinimalEvm, op1: u8, op2: u8, op3: ?u8) void {
+        // Step 1
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != op1) {
+                self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{op1, evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 1 failed: {any}", .{e});
+            return;
+        };
+
+        // Step 2
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != op2) {
+                self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{op2, evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 2 failed: {any}", .{e});
+            return;
+        };
+
+        // Step 3 (if specified, otherwise it's a PUSH)
+        if (op3) |expected| {
+            if (evm.pc < evm.bytecode.len) {
+                const actual = evm.bytecode[evm.pc];
+                if (actual != expected) {
+                    self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{expected, evm.pc, actual});
+                }
+            }
+        } else {
+            // It's a PUSH
+            if (evm.pc < evm.bytecode.len) {
+                const opcode = evm.bytecode[evm.pc];
+                if (opcode < 0x5F or opcode > 0x7F) {
+                    self.err("Expected PUSH at PC={d}, got 0x{x:0>2}", .{evm.pc, opcode});
+                }
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 3 failed: {any}", .{e});
+        };
+    }
+
+    fn executePushThenTwoOps(self: *DefaultTracer, evm: *MinimalEvm, op1: u8, op2: u8) void {
+        // Step 1: PUSH
+        if (evm.pc < evm.bytecode.len) {
+            const opcode = evm.bytecode[evm.pc];
+            if (opcode < 0x5F or opcode > 0x7F) {
+                self.err("Expected PUSH at PC={d}, got 0x{x:0>2}", .{evm.pc, opcode});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm PUSH failed: {any}", .{e});
+            return;
+        };
+
+        // Step 2: op1
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != op1) {
+                self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{op1, evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 2 failed: {any}", .{e});
+            return;
+        };
+
+        // Step 3: op2
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != op2) {
+                self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{op2, evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm step 3 failed: {any}", .{e});
+        };
+    }
+
+    fn executeConditionalJumpFusion(self: *DefaultTracer, evm: *MinimalEvm, condition_op: u8) void {
+        // Step 1: Condition opcode (ISZERO or EQ)
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != condition_op) {
+                self.err("Expected opcode 0x{x:0>2} at PC={d}, got 0x{x:0>2}", .{condition_op, evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm condition failed: {any}", .{e});
+            return;
+        };
+
+        // Step 2: PUSH destination
+        if (evm.pc < evm.bytecode.len) {
+            const opcode = evm.bytecode[evm.pc];
+            if (opcode < 0x5F or opcode > 0x7F) {
+                self.err("Expected PUSH at PC={d}, got 0x{x:0>2}", .{evm.pc, opcode});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm PUSH failed: {any}", .{e});
+            return;
+        };
+
+        // Step 3: JUMPI
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != 0x57) {
+                self.err("Expected JUMPI at PC={d}, got 0x{x:0>2}", .{evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm JUMPI failed: {any}", .{e});
+        };
+    }
+
+    fn executeFunctionDispatch(self: *DefaultTracer, evm: *MinimalEvm) void {
+        // Step 1: PUSH4
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != 0x63) {
+                self.err("Expected PUSH4 at PC={d}, got 0x{x:0>2}", .{evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm PUSH4 failed: {any}", .{e});
+            return;
+        };
+
+        // Step 2: EQ
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != 0x14) {
+                self.err("Expected EQ at PC={d}, got 0x{x:0>2}", .{evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm EQ failed: {any}", .{e});
+            return;
+        };
+
+        // Step 3: PUSH destination
+        if (evm.pc < evm.bytecode.len) {
+            const opcode = evm.bytecode[evm.pc];
+            if (opcode < 0x5F or opcode > 0x7F) {
+                self.err("Expected PUSH at PC={d}, got 0x{x:0>2}", .{evm.pc, opcode});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm PUSH failed: {any}", .{e});
+            return;
+        };
+
+        // Step 4: JUMPI
+        if (evm.pc < evm.bytecode.len) {
+            const actual = evm.bytecode[evm.pc];
+            if (actual != 0x57) {
+                self.err("Expected JUMPI at PC={d}, got 0x{x:0>2}", .{evm.pc, actual});
+            }
+        }
+        evm.step() catch |e| {
+            self.err("MinimalEvm JUMPI failed: {any}", .{e});
+        };
     }
 
     pub fn afterOp(self: *DefaultTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
@@ -1276,7 +1609,7 @@ pub const DefaultTracer = struct {
         };
     }
 
-    pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+    pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -1299,12 +1632,8 @@ pub const DefaultTracer = struct {
                     self.current_pc = evm.pc;
                 }
 
-                // Execute the equivalent base opcode sequence for this UnifiedOpcode in MinimalEvm
-                if (self.minimal_evm) |*evm| {
-                    if (!evm.stopped and !evm.reverted) {
-                        self.execute_for_unified_opcode_with_cursor(evm, opcode, frame, cursor);
-                    }
-                }
+                // Execute MinimalEvm using the beforeOp function
+                self.beforeOp(@intCast(self.current_pc), opcode, @TypeOf(frame.*), frame);
 
                 // TODO: Re-enable PC validation once we properly integrate with dispatch
                 // The issue is that dispatch pre-processes PUSH instructions and changes the execution order
@@ -1924,9 +2253,8 @@ pub const DebuggingTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 
@@ -2212,9 +2540,8 @@ pub const JSONRPCTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 
@@ -2668,9 +2995,8 @@ pub const FileTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+    pub fn before_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 
@@ -2741,9 +3067,8 @@ pub const LoggingTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+    pub fn before_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
         _ = self;
-        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 };

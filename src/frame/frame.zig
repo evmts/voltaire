@@ -782,8 +782,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             comptime opcode: Dispatch.UnifiedOpcode,
             cursor: [*]const Dispatch.Item,
         ) void {
-            // Call tracer's before_instruction with cursor so sidecar can mirror schedule precisely
-            self.getTracer().before_instruction(self, opcode, cursor);
+            // Call tracer's before_instruction
+            self.getTracer().before_instruction(self, opcode);
 
             // Validate opcode handler (only in debug/safe builds)
             self.validateOpcodeHandler(opcode, cursor);
