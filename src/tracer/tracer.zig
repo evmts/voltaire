@@ -205,6 +205,15 @@ pub const DefaultTracer = struct {
                 const opcode_name = comptime @tagName(opcode);
                 const opcode_value = @intFromEnum(opcode);
 
+                // Debug logging to understand execution order
+                if (self.minimal_evm) |*evm| {
+                    log.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{
+                        opcode_name,
+                        evm.pc,
+                        if (evm.pc < evm.bytecode.len) evm.bytecode[evm.pc] else 0
+                    });
+                }
+
                 // Validate cursor points to expected handler for regular opcodes
                 if (opcode_value <= 0xff) {
                     const expected_handler = @TypeOf(frame.*).opcode_handlers[opcode_value];
