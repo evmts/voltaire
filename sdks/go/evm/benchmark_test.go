@@ -10,16 +10,6 @@ import (
 	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
-// Test constants
-const (
-	DefaultBalance = 1000000
-	StandardGas = 100000
-	HighGas = 200000
-	VeryHighGas = 1000000
-	ExtremeGas = 30000000
-	CallValue = 1000
-	LargeBalance = 10000000
-)
 
 func BenchmarkArithmeticOperations(b *testing.B) {
 	benchmarks := []struct {

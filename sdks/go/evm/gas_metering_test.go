@@ -10,14 +10,6 @@ import (
 	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
-// Test constants
-const (
-	DefaultBalance = 1000000
-	StandardGas = 100000
-	HighGas = 200000
-	VeryHighGas = 1000000
-	LargeBalance = 10000000
-)
 
 func TestGasMetering(t *testing.T) {
 	t.Run("Basic gas consumption", func(t *testing.T) {

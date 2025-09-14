@@ -9,14 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test constants
-const (
-	StandardGas = 100000
-	HighGas = 200000
-	VeryHighGas = 1000000
-	LargeBalance = 10000000
-	CallValue = 1000
-)
 
 func TestCallTypes(t *testing.T) {
 	t.Run("CALL with value transfer", func(t *testing.T) {

@@ -9,13 +9,6 @@ import (
 	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
-// Test constants
-const (
-	StandardGas = 100000
-	HighGas = 200000
-	VeryHighGas = 1000000
-	LargeBalance = 10000000
-)
 
 func TestContractCreation(t *testing.T) {
 	t.Run("CREATE opcode basic deployment", func(t *testing.T) {

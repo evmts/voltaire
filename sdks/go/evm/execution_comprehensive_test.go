@@ -11,13 +11,6 @@ import (
 	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
-// Test constants
-const (
-	DefaultBalance = 1000000
-	StandardGas = 100000
-	HighGas = 200000
-	VeryHighGas = 1000000
-)
 
 func TestComprehensiveArithmeticOperations(t *testing.T) {
 	tests := []struct {
