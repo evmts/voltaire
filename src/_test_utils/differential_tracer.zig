@@ -23,7 +23,7 @@ pub const DifferentialConfig = struct {
 pub fn DifferentialTracer(comptime revm_module: type) type {
     return struct {
         allocator: std.mem.Allocator,
-        guillotine_evm: *evm.Evm(.{ .TracerType = evm.tracer.JSONRPCTracer }),
+        guillotine_evm: *evm.Evm(.{}),
         revm_vm: *revm_module.Revm,
         config: DifferentialConfig,
 
@@ -53,10 +53,10 @@ pub fn DifferentialTracer(comptime revm_module: type) type {
             config: DifferentialConfig,
         ) !@This() {
             // Create Guillotine EVM with JSON-RPC tracing
-            const guillotine = try allocator.create(evm.Evm(.{ .TracerType = evm.tracer.JSONRPCTracer }));
+            const guillotine = try allocator.create(evm.Evm(.{}));
             errdefer allocator.destroy(guillotine);
 
-            guillotine.* = try evm.Evm(.{ .TracerType = evm.tracer.JSONRPCTracer }).init(
+            guillotine.* = try evm.Evm(.{}).init(
                 allocator,
                 database,
                 block_info,

@@ -1,9 +1,7 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
-const revm = @import("revm");
 
-const DifferentialTracer = @import("evm").differential_tracer.DifferentialTracer;
 const Address = primitives.Address.Address;
 
 // Enable debug logging for the test
@@ -163,27 +161,21 @@ test "snailtracer differential test" {
         .chain_id = 1,
     };
     
-    // Create differential tracer with tracing enabled
-    // (snailtracer produces huge traces - 192MB)
-    std.debug.print("Creating differential tracer...\n", .{});
-    const config = evm.differential_tracer.DifferentialConfig{
-        .write_trace_files = true,  // Enable trace file writing
-        .context_before = 5,
-        .context_after = 5,
-        .max_differences = 5,
-    };
-    
-    var tracer = try DifferentialTracer(revm).init(
+    // Create EVM with default tracer
+    std.debug.print("Creating EVM with default tracer...\n", .{});
+
+    var vm = try evm.DefaultEvm.init(
         allocator,
         &database,
         block_info,
         tx_context,
-        caller_address,
-        config,
+        0, // gas_price
+        caller_address, // origin
+        evm.Hardfork.CANCUN, // hardfork_config
     );
-    defer tracer.deinit();
-    std.debug.print("Differential tracer created\n", .{});
-    
+    defer vm.deinit();
+    std.debug.print("EVM created\n", .{});
+
     // Setup call parameters
     const call_params = evm.CallParams{
         .call = .{
@@ -194,12 +186,22 @@ test "snailtracer differential test" {
             .gas = 30_000_000,
         },
     };
-    
-    // Run differential test  
-    std.debug.print("Starting differential test call...\n", .{});
-    var result = try tracer.call(call_params);
+
+    // Run test
+    std.debug.print("Starting EVM call...\n", .{});
+
+    // Add timeout panic for debugging
+    const start_time = std.time.milliTimestamp();
+
+    var result = vm.call(call_params);
     defer result.deinit(allocator);
-    std.debug.print("Differential test complete, success={}\n", .{result.success});
+
+    const end_time = std.time.milliTimestamp();
+    if (end_time - start_time > 5000) {
+        @panic("EVM call took more than 5 seconds - likely infinite loop");
+    }
+
+    std.debug.print("EVM call complete, success={}\n", .{result.success});
     
     // Verify result
     try std.testing.expect(result.success);
