@@ -75,7 +75,8 @@ class SpecTestRunner:
         elif len(addr_str) > 42:
             addr_str = addr_str[:42]  # Truncate if too long
 
-        return Address(addr_str)
+        print(f"DEBUG: Parsing address '{addr_str}', length: {len(addr_str)}")
+        return Address.from_hex(addr_str)
 
     def setup_initial_state(self, evm: EVM, pre_state: Dict) -> None:
         """Setup EVM initial state from test pre conditions."""
