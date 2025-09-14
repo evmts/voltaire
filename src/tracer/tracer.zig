@@ -604,13 +604,6 @@ pub const DefaultTracer = struct {
     // ============================================================================
 
     /// Called when SELFDESTRUCT fails
-    pub fn onSelfdestructFailed(self: *DefaultTracer, error_val: anyerror) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            std.log.debug("[EVM] SELFDESTRUCT failed with error: {}", .{error_val});
-        }
-    }
 
     // ============================================================================
     // BYTECODE ANALYSIS EVENTS
@@ -1102,13 +1095,11 @@ pub const DefaultTracer = struct {
 
     /// Event: Dispatch cache store
     pub fn onDispatchCacheStore(self: *DefaultTracer, bytecode_len: usize, evicted: bool) void {
-        _ = self;
-        _ = bytecode_len;
-        if (evicted) {
-            const builtin = @import("builtin");
-            if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-                std.log.debug("[Frame] Dispatch cache store with eviction", .{});
-            }
+        if (self.config.trace_preanalysis and evicted) {
+            self.debug("[Frame] Dispatch cache store with eviction: bytecode_len={}", .{bytecode_len});
+        } else {
+            _ = self;
+            _ = bytecode_len;
         }
     }
 
