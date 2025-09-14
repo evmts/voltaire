@@ -1276,7 +1276,7 @@ pub const DefaultTracer = struct {
         };
     }
 
-    pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -1299,19 +1299,10 @@ pub const DefaultTracer = struct {
                     self.current_pc = evm.pc;
                 }
 
-                // Execute the equivalent base opcodes for this instruction in MinimalEvm
+                // Execute the equivalent base opcode sequence for this UnifiedOpcode in MinimalEvm
                 if (self.minimal_evm) |*evm| {
                     if (!evm.stopped and !evm.reverted) {
-                        const steps: u8 = minimalStepsFor(opcode);
-                        var i: u8 = 0;
-                        while (i < steps) : (i += 1) {
-                            if (evm.stopped or evm.reverted or evm.pc >= evm.bytecode.len) break;
-                            const minimal_opcode = evm.bytecode[evm.pc];
-                            evm.executeOpcode(@intCast(minimal_opcode)) catch |exec_err| {
-                                self.warn("MinimalEvm execution failed at PC={d}: {any}", .{ evm.pc, exec_err });
-                                break;
-                            };
-                        }
+                        self.execute_for_unified_opcode_with_cursor(evm, opcode, frame, cursor);
                     }
                 }
 
@@ -1410,6 +1401,241 @@ pub const DefaultTracer = struct {
                 else => 1,
             },
         };
+    }
+
+    /// Execute MinimalEvm for the exact base-op sequence corresponding to the given UnifiedOpcode.
+    /// This does not infer semantics from Frame/PC; it maps opcode→base sequence explicitly.
+    inline fn execute_for_unified_opcode_with_cursor(self: *DefaultTracer, evm: *MinimalEvm, comptime uop: @import("../opcodes/opcode.zig").UnifiedOpcode, frame: anytype, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+        const Opcode = @import("../opcodes/opcode.zig").Opcode;
+
+        // Mapping
+        switch (uop) {
+            // Regular 0x00-0xFF opcodes: one-to-one mapping
+            inline else => |op_tag| {
+                const v = @intFromEnum(op_tag);
+                if (v <= 0xff) {
+                    // Special handling for PUSH0..PUSH32 to use schedule metadata (not raw PC)
+                    if (v == 0x5f or (v >= 0x60 and v <= 0x7f)) {
+                        const push_size: u8 = if (v == 0x5f) 0 else @intCast(v - 0x5f);
+                        self.exec_push_with_metadata(evm, frame, cursor, push_size);
+                        return;
+                    }
+                    self.exec(evm, @intCast(v));
+                    return;
+                }
+
+                // Synthetic opcodes below
+                switch (uop) {
+                    // Arithmetic fusions: PUSH + OP
+                    .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0); // size from metadata
+                        self.exec(evm, @intFromEnum(Opcode.ADD));
+                    },
+                    .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.MUL));
+                    },
+                    .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.DIV));
+                    },
+                    .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.SUB));
+                    },
+
+                    // Bitwise fusions
+                    .PUSH_AND_INLINE, .PUSH_AND_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.AND));
+                    },
+                    .PUSH_OR_INLINE, .PUSH_OR_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.OR));
+                    },
+                    .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.XOR));
+                    },
+
+                    // Memory fusions
+                    .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.MLOAD));
+                    },
+                    .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.MSTORE));
+                    },
+                    .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec(evm, @intFromEnum(Opcode.MSTORE8));
+                    },
+
+                    // Static jump fusions (expect immediate destination in code)
+                    .JUMP_TO_STATIC_LOCATION => {
+                        self.exec_push_from_pc(evm);
+                        self.exec(evm, @intFromEnum(Opcode.JUMP));
+                    },
+                    .JUMPI_TO_STATIC_LOCATION => {
+                        self.exec_push_from_pc(evm);
+                        self.exec(evm, @intFromEnum(Opcode.JUMPI));
+                    },
+
+                    // Multi pushes/pops
+                    .MULTI_PUSH_2 => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        // Second push metadata is immediately after first; use the subsequent item
+                        self.exec_push_with_metadata_second(evm, frame, cursor);
+                    },
+                    .MULTI_PUSH_3 => {
+                        self.exec_push_with_metadata(evm, frame, cursor, 0);
+                        self.exec_push_with_metadata_second(evm, frame, cursor);
+                        self.exec_push_with_metadata_third(evm, frame, cursor);
+                    },
+                    .MULTI_POP_2 => {
+                        self.exec(evm, @intFromEnum(Opcode.POP));
+                        self.exec(evm, @intFromEnum(Opcode.POP));
+                    },
+                    .MULTI_POP_3 => {
+                        self.exec(evm, @intFromEnum(Opcode.POP));
+                        self.exec(evm, @intFromEnum(Opcode.POP));
+                        self.exec(evm, @intFromEnum(Opcode.POP));
+                    },
+
+                    // Composite patterns observed in tests
+                    .ISZERO_JUMPI => {
+                        self.exec(evm, @intFromEnum(Opcode.ISZERO));
+                        self.exec_push_from_pc(evm);
+                        self.exec(evm, @intFromEnum(Opcode.JUMPI));
+                    },
+                    .DUP2_MSTORE_PUSH => {
+                        self.exec(evm, @intFromEnum(Opcode.DUP2));
+                        self.exec(evm, @intFromEnum(Opcode.MSTORE));
+                        self.exec_push_from_pc(evm);
+                    },
+                    .DUP3_ADD_MSTORE => {
+                        self.exec(evm, @intFromEnum(Opcode.DUP3));
+                        self.exec(evm, @intFromEnum(Opcode.ADD));
+                        self.exec(evm, @intFromEnum(Opcode.MSTORE));
+                    },
+                    .SWAP1_DUP2_ADD => {
+                        self.exec(evm, @intFromEnum(Opcode.SWAP1));
+                        self.exec(evm, @intFromEnum(Opcode.DUP2));
+                        self.exec(evm, @intFromEnum(Opcode.ADD));
+                    },
+                    .PUSH_DUP3_ADD => {
+                        self.exec_push_from_pc(evm);
+                        self.exec(evm, @intFromEnum(Opcode.DUP3));
+                        self.exec(evm, @intFromEnum(Opcode.ADD));
+                    },
+                    .MLOAD_SWAP1_DUP2 => {
+                        self.exec(evm, @intFromEnum(Opcode.MLOAD));
+                        self.exec(evm, @intFromEnum(Opcode.SWAP1));
+                        self.exec(evm, @intFromEnum(Opcode.DUP2));
+                    },
+                    .FUNCTION_DISPATCH => {
+                        // PUSH4 selector, EQ, PUSH dest, JUMPI
+                        self.exec_push_from_pc(evm);
+                        self.exec(evm, @intFromEnum(Opcode.EQ));
+                        self.exec_push_from_pc(evm);
+                        self.exec(evm, @intFromEnum(Opcode.JUMPI));
+                    },
+                    .CALLVALUE_CHECK => {
+                        // CALLVALUE, DUP1, ISZERO
+                        self.exec(evm, @intFromEnum(Opcode.CALLVALUE));
+                        self.exec(evm, @intFromEnum(Opcode.DUP1));
+                        self.exec(evm, @intFromEnum(Opcode.ISZERO));
+                    },
+                    .PUSH0_REVERT => {
+                        self.exec(evm, @intFromEnum(Opcode.PUSH0));
+                        self.exec(evm, @intFromEnum(Opcode.PUSH0));
+                        self.exec(evm, @intFromEnum(Opcode.REVERT));
+                    },
+
+                    // Fallback: if we reach here, treat as a single base step from current PC
+                    else => {
+                        if (evm.pc < evm.bytecode.len) {
+                            self.exec(evm, evm.bytecode[evm.pc]);
+                        }
+                    },
+                }
+            },
+        }
+    }
+
+    // Execute a single base opcode with logging on failure.
+    inline fn exec(self: *DefaultTracer, evm: *MinimalEvm, op: u8) void {
+        evm.executeOpcode(op) catch |e| {
+            self.warn("MinimalEvm exec error op=0x{x:0>2} at pc={d}: {any}", .{ op, evm.pc, e });
+        };
+    }
+
+    // Expect current PC to point at a PUSHx and execute it; otherwise step current opcode.
+    inline fn exec_push_from_pc(self: *DefaultTracer, evm: *MinimalEvm) void {
+        if (evm.pc >= evm.bytecode.len) return;
+        const op = evm.bytecode[evm.pc];
+        if (!(op >= 0x5f and op <= 0x7f)) {
+            self.warn("Expected PUSHx at pc={d}, found 0x{x:0>2}; stepping anyway", .{ evm.pc, op });
+            self.exec(evm, op);
+            return;
+        }
+        self.exec(evm, op);
+    }
+
+    // Execute a PUSH using dispatch metadata and adjust MinimalEvm's PC accordingly.
+    inline fn exec_push_with_metadata(self: *DefaultTracer, evm: *MinimalEvm, frame: anytype, cursor: [*]const @TypeOf(frame.*).Dispatch.Item, explicit_size: u8) void {
+        // Expect cursor[1] to be push_inline or push_pointer
+        var value: u256 = 0;
+        var size: u8 = explicit_size;
+        if (cursor[1] == .push_inline) {
+            value = cursor[1].push_inline.value;
+            if (size == 0) {
+                // Infer minimal size (1..8) for inline
+                size = 1;
+                var tmp: u256 = value;
+                while ((tmp >> 8) != 0 and size < 8) : (size += 1) {
+                    tmp >>= 8;
+                }
+            }
+        } else if (cursor[1] == .push_pointer) {
+            const idx = cursor[1].push_pointer.index;
+            value = frame.u256_constants[idx];
+            if (size == 0) {
+                // Compute size as minimal bytes to encode value (1..32), 0 means PUSH0
+                if (value == 0) {
+                    size = 0;
+                } else {
+                    const bits: u16 = @intCast(256 - @clz(value));
+                    size = @intCast((bits + 7) / 8);
+                }
+            }
+        } else {
+            // Not a push metadata; fallback to current opcode
+            self.exec_push_from_pc(evm);
+            return;
+        }
+
+        // Gas cost for PUSH is "fastest step"
+        evm.consumeGas(@import("primitives").GasConstants.GasFastestStep) catch {};
+        // Perform the push
+        evm.pushStack(value) catch |e| {
+            self.warn("MinimalEvm push failed: {any}", .{e});
+        };
+        // Advance PC as if we executed PUSH{size}
+        evm.pc += 1 + size;
+    }
+
+    // Helpers for MULTI_PUSH_N to read subsequent metadata entries
+    inline fn exec_push_with_metadata_second(self: *DefaultTracer, evm: *MinimalEvm, frame: anytype, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+        // For MULTI_PUSH_2 the second metadata slot is at cursor[2]
+        const fake_cursor = cursor + 1; // second push's metadata is next item
+        self.exec_push_with_metadata(evm, frame, fake_cursor, 0);
+    }
+    inline fn exec_push_with_metadata_third(self: *DefaultTracer, evm: *MinimalEvm, frame: anytype, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
+        // Third push metadata starts two items after first
+        const fake_cursor = cursor + 2;
+        self.exec_push_with_metadata(evm, frame, fake_cursor, 0);
     }
 
     pub fn after_instruction(self: *DefaultTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, next_handler: anytype, next_cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
@@ -1698,8 +1924,9 @@ pub const DebuggingTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         _ = self;
+        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 
@@ -1985,8 +2212,9 @@ pub const JSONRPCTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *Self, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         _ = self;
+        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 
@@ -2440,8 +2668,9 @@ pub const FileTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *FileTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         _ = self;
+        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 
@@ -2512,8 +2741,9 @@ pub const LoggingTracer = struct {
         log.info(format, args);
     }
 
-    pub fn before_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode) void {
+    pub fn before_instruction(self: *LoggingTracer, frame: anytype, comptime opcode: @import("../opcodes/opcode.zig").UnifiedOpcode, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         _ = self;
+        _ = cursor;
         log.before_instruction(frame, opcode);
     }
 };
