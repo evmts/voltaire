@@ -918,9 +918,10 @@ pub const MinimalFrame = struct {
             0x5c => {
                 try self.consumeGas(GasConstants.WarmStorageReadCost);
                 const key = try self.popStack();
-                _ = key; // Transient storage not implemented yet
-                // For now, transient storage always returns 0 (not persisted between calls)
-                try self.pushStack(0);
+                // For MinimalEvm tracer, we use regular storage for transient storage
+                // In a real implementation, this would be separate
+                const value = self.getEvm().get_storage(self.address, key);
+                try self.pushStack(value);
                 self.pc += 1;
             },
 
@@ -929,9 +930,9 @@ pub const MinimalFrame = struct {
                 try self.consumeGas(GasConstants.WarmStorageReadCost); // Use same as TLOAD for now
                 const key = try self.popStack();
                 const value = try self.popStack();
-                // Transient storage is not persisted, so we ignore the write
-                _ = key;
-                _ = value;
+                // For MinimalEvm tracer, we can just track transient storage in the EVM
+                // Transient storage behaves like regular storage but is cleared after tx
+                try self.getEvm().set_storage(self.address, key, value);
                 self.pc += 1;
             },
 
@@ -1043,23 +1044,38 @@ pub const MinimalFrame = struct {
                 }
                 try self.consumeGas(gas_cost);
 
-                // Read input data
+                // Read input data from memory
+                var input_data_buffer: [1024]u8 = undefined; // Static buffer for small calls
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
                     const in_off = @as(u32, @intCast(in_offset));
                     const in_len = @as(u32, @intCast(in_length));
 
-                    var data = try self.allocator.alloc(u8, in_len);
-                    defer self.allocator.free(data);
-                    var j: u32 = 0;
-                    while (j < in_len) : (j += 1) {
-                        data[j] = self.readMemory(in_off + j);
+                    // Use static buffer for small calls, allocate for large ones
+                    if (in_len <= input_data_buffer.len) {
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            input_data_buffer[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = input_data_buffer[0..in_len];
+                    } else {
+                        const data = try self.allocator.alloc(u8, in_len);
+                        defer self.allocator.free(data);
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            data[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = data;
                     }
-                    input_data = data;
                 }
 
+                // Calculate available gas (all gas or up to 63/64 of remaining)
+                const gas_limit = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
+                const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+                const max_gas = remaining_gas - (remaining_gas / 64);
+                const available_gas = @min(gas_limit, max_gas);
+
                 // Make the call through EVM
-                const available_gas = @min(gas, @as(u64, @intCast(self.gas_remaining)));
                 const result = try evm.inner_call(
                     call_address,
                     value_arg,
@@ -1068,7 +1084,105 @@ pub const MinimalFrame = struct {
                 );
 
                 // Write output to memory
-                if (result.success and out_length > 0 and result.output.len > 0) {
+                if (out_length > 0 and result.output.len > 0) {
+                    const out_off = @as(u32, @intCast(out_offset));
+                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+
+                    var k: u32 = 0;
+                    while (k < copy_len) : (k += 1) {
+                        try self.writeMemory(out_off + k, result.output[k]);
+                    }
+                }
+
+                // Store return data (make a copy as result will be cleaned up)
+                if (self.return_data.len > 0) {
+                    self.allocator.free(self.return_data);
+                }
+                if (result.output.len > 0) {
+                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
+                    @memcpy(return_data_copy, result.output);
+                    self.return_data = return_data_copy;
+                } else {
+                    self.return_data = &[_]u8{};
+                }
+
+                // Push success status
+                try self.pushStack(if (result.success) 1 else 0);
+
+                // Update gas: deduct the gas used
+                const gas_used = available_gas - result.gas_left;
+                self.gas_remaining -= @intCast(gas_used);
+
+                self.pc += 1;
+            },
+
+            // CALLCODE
+            0xf2 => {
+                // Similar to CALL but executes code in current context
+                // Pop all 7 arguments
+                const gas = try self.popStack();
+                const address_u256 = try self.popStack();
+                const value_arg = try self.popStack();
+                const in_offset = try self.popStack();
+                const in_length = try self.popStack();
+                const out_offset = try self.popStack();
+                const out_length = try self.popStack();
+
+                // Convert address
+                var addr_bytes: [20]u8 = undefined;
+                var i: usize = 0;
+                while (i < 20) : (i += 1) {
+                    addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+                }
+                const call_address = Address{ .bytes = addr_bytes };
+
+                // Base gas cost
+                var gas_cost: u64 = GasConstants.CallGas;
+                if (value_arg > 0) {
+                    gas_cost += GasConstants.CallValueTransferGas;
+                }
+                try self.consumeGas(gas_cost);
+
+                // Read input data from memory
+                var input_data_buffer: [1024]u8 = undefined;
+                var input_data: []const u8 = &.{};
+                if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                    const in_off = @as(u32, @intCast(in_offset));
+                    const in_len = @as(u32, @intCast(in_length));
+
+                    if (in_len <= input_data_buffer.len) {
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            input_data_buffer[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = input_data_buffer[0..in_len];
+                    } else {
+                        const data = try self.allocator.alloc(u8, in_len);
+                        defer self.allocator.free(data);
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            data[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = data;
+                    }
+                }
+
+                // Calculate available gas
+                const gas_limit = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
+                const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+                const max_gas = remaining_gas - (remaining_gas / 64);
+                const available_gas = @min(gas_limit, max_gas);
+
+                // CALLCODE: Execute target code but in current context
+                const result = try evm.inner_call(
+                    call_address,
+                    value_arg,
+                    input_data,
+                    available_gas,
+                );
+
+                // Write output to memory
+                if (out_length > 0 and result.output.len > 0) {
                     const out_off = @as(u32, @intCast(out_offset));
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
@@ -1079,40 +1193,24 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                self.return_data = result.output;
+                if (self.return_data.len > 0) {
+                    self.allocator.free(self.return_data);
+                }
+                if (result.output.len > 0) {
+                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
+                    @memcpy(return_data_copy, result.output);
+                    self.return_data = return_data_copy;
+                } else {
+                    self.return_data = &[_]u8{};
+                }
 
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Consume gas used by call
+                // Update gas
                 const gas_used = available_gas - result.gas_left;
-                try self.consumeGas(gas_used);
+                self.gas_remaining -= @intCast(gas_used);
 
-                self.pc += 1;
-            },
-
-            // CALLCODE
-            0xf2 => {
-                // Similar to CALL but different context
-                // Pop all 7 arguments
-                const gas = try self.popStack();
-                const address = try self.popStack();
-                const value_arg = try self.popStack();
-                const in_offset = try self.popStack();
-                const in_length = try self.popStack();
-                const out_offset = try self.popStack();
-                const out_length = try self.popStack();
-
-                _ = gas;
-                _ = address;
-                _ = value_arg;
-                _ = in_offset;
-                _ = in_length;
-                _ = out_offset;
-                _ = out_length;
-
-                try self.consumeGas(700);
-                try self.pushStack(1); // Success
                 self.pc += 1;
             },
 
@@ -1140,21 +1238,91 @@ pub const MinimalFrame = struct {
             0xf4 => {
                 // Pop all 6 arguments (no value)
                 const gas = try self.popStack();
-                const address = try self.popStack();
+                const address_u256 = try self.popStack();
                 const in_offset = try self.popStack();
                 const in_length = try self.popStack();
                 const out_offset = try self.popStack();
                 const out_length = try self.popStack();
 
-                _ = gas;
-                _ = address;
-                _ = in_offset;
-                _ = in_length;
-                _ = out_offset;
-                _ = out_length;
+                // Convert address
+                var addr_bytes: [20]u8 = undefined;
+                var i: usize = 0;
+                while (i < 20) : (i += 1) {
+                    addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+                }
+                const call_address = Address{ .bytes = addr_bytes };
 
-                try self.consumeGas(700);
-                try self.pushStack(1); // Success
+                // Base gas cost
+                try self.consumeGas(GasConstants.CallGas);
+
+                // Read input data from memory
+                var input_data_buffer: [1024]u8 = undefined;
+                var input_data: []const u8 = &.{};
+                if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                    const in_off = @as(u32, @intCast(in_offset));
+                    const in_len = @as(u32, @intCast(in_length));
+
+                    if (in_len <= input_data_buffer.len) {
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            input_data_buffer[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = input_data_buffer[0..in_len];
+                    } else {
+                        const data = try self.allocator.alloc(u8, in_len);
+                        defer self.allocator.free(data);
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            data[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = data;
+                    }
+                }
+
+                // Calculate available gas
+                const gas_limit = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
+                const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+                const max_gas = remaining_gas - (remaining_gas / 64);
+                const available_gas = @min(gas_limit, max_gas);
+
+                // DELEGATECALL: use current contract value, not passed value
+                const result = try evm.inner_call(
+                    call_address,
+                    self.value,  // Use current frame's value
+                    input_data,
+                    available_gas,
+                );
+
+                // Write output to memory
+                if (out_length > 0 and result.output.len > 0) {
+                    const out_off = @as(u32, @intCast(out_offset));
+                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+
+                    var k: u32 = 0;
+                    while (k < copy_len) : (k += 1) {
+                        try self.writeMemory(out_off + k, result.output[k]);
+                    }
+                }
+
+                // Store return data
+                if (self.return_data.len > 0) {
+                    self.allocator.free(self.return_data);
+                }
+                if (result.output.len > 0) {
+                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
+                    @memcpy(return_data_copy, result.output);
+                    self.return_data = return_data_copy;
+                } else {
+                    self.return_data = &[_]u8{};
+                }
+
+                // Push success status
+                try self.pushStack(if (result.success) 1 else 0);
+
+                // Update gas
+                const gas_used = available_gas - result.gas_left;
+                self.gas_remaining -= @intCast(gas_used);
+
                 self.pc += 1;
             },
 
@@ -1180,26 +1348,110 @@ pub const MinimalFrame = struct {
             0xfa => {
                 // Pop all 6 arguments (no value for static call)
                 const gas = try self.popStack();
-                const address = try self.popStack();
+                const address_u256 = try self.popStack();
                 const in_offset = try self.popStack();
                 const in_length = try self.popStack();
                 const out_offset = try self.popStack();
                 const out_length = try self.popStack();
 
-                _ = gas;
-                _ = address;
-                _ = in_offset;
-                _ = in_length;
-                _ = out_offset;
-                _ = out_length;
+                // Convert address
+                var addr_bytes: [20]u8 = undefined;
+                var i: usize = 0;
+                while (i < 20) : (i += 1) {
+                    addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
+                }
+                const call_address = Address{ .bytes = addr_bytes };
 
-                try self.consumeGas(700);
-                try self.pushStack(1); // Success
+                // Base gas cost
+                try self.consumeGas(GasConstants.CallGas);
+
+                // Read input data from memory
+                var input_data_buffer: [1024]u8 = undefined;
+                var input_data: []const u8 = &.{};
+                if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
+                    const in_off = @as(u32, @intCast(in_offset));
+                    const in_len = @as(u32, @intCast(in_length));
+
+                    if (in_len <= input_data_buffer.len) {
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            input_data_buffer[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = input_data_buffer[0..in_len];
+                    } else {
+                        const data = try self.allocator.alloc(u8, in_len);
+                        defer self.allocator.free(data);
+                        var j: u32 = 0;
+                        while (j < in_len) : (j += 1) {
+                            data[j] = self.readMemory(in_off + j);
+                        }
+                        input_data = data;
+                    }
+                }
+
+                // Calculate available gas
+                const gas_limit = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
+                const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
+                const max_gas = remaining_gas - (remaining_gas / 64);
+                const available_gas = @min(gas_limit, max_gas);
+
+                // STATICCALL: no value transfer allowed (value = 0)
+                const result = try evm.inner_call(
+                    call_address,
+                    0,  // Static calls have no value
+                    input_data,
+                    available_gas,
+                );
+
+                // Write output to memory
+                if (out_length > 0 and result.output.len > 0) {
+                    const out_off = @as(u32, @intCast(out_offset));
+                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+
+                    var k: u32 = 0;
+                    while (k < copy_len) : (k += 1) {
+                        try self.writeMemory(out_off + k, result.output[k]);
+                    }
+                }
+
+                // Store return data
+                if (self.return_data.len > 0) {
+                    self.allocator.free(self.return_data);
+                }
+                if (result.output.len > 0) {
+                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
+                    @memcpy(return_data_copy, result.output);
+                    self.return_data = return_data_copy;
+                } else {
+                    self.return_data = &[_]u8{};
+                }
+
+                // Push success status
+                try self.pushStack(if (result.success) 1 else 0);
+
+                // Update gas
+                const gas_used = available_gas - result.gas_left;
+                self.gas_remaining -= @intCast(gas_used);
+
                 self.pc += 1;
             },
 
             // REVERT
             0xfd => {
+                const offset = try self.popStack();
+                const length = try self.popStack();
+
+                if (length > 0) {
+                    const off = @as(u32, @intCast(offset));
+                    const len = @as(u32, @intCast(length));
+
+                    self.output = try self.allocator.alloc(u8, len);
+                    var idx: u32 = 0;
+                    while (idx < len) : (idx += 1) {
+                        self.output[idx] = self.readMemory(off + idx);
+                    }
+                }
+
                 self.reverted = true;
                 return;
             },
@@ -1230,9 +1482,6 @@ pub const MinimalFrame = struct {
             return;
         }
         const opcode = self.getCurrentOpcode() orelse return;
-        // Debug: Log what opcode we're about to execute
-        const log = @import("../log.zig");
-        log.debug("[MinimalFrame] Executing opcode 0x{x:0>2} at PC={d}", .{opcode, self.pc});
         try self.executeOpcode(opcode);
     }
 
