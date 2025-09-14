@@ -867,9 +867,10 @@ pub const DefaultTracer = struct {
 
     /// Event: EVM initialization started
     pub fn onEvmInit(self: *DefaultTracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Initializing: gas_price={}, origin={x}, hardfork={s}", .{ gas_price, origin.bytes, hardfork });
-        }
+        _ = self;
+        _ = gas_price;
+        _ = origin;
+        _ = hardfork;
     }
 
     /// Event: Beacon root update processing
@@ -902,16 +903,19 @@ pub const DefaultTracer = struct {
 
     /// Event: Call operation started
     pub fn onCallStart(self: *DefaultTracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Starting {s}: gas={}, to={x}, value={}", .{ call_type, gas, to.bytes, value });
-        }
+        _ = self;
+        _ = call_type;
+        _ = gas;
+        _ = to;
+        _ = value;
     }
 
     /// Event: Call operation completed
     pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: i64, output_len: usize) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Call complete: success={}, gas_left={}, output_len={}", .{ success, gas_left, output_len });
-        }
+        _ = self;
+        _ = success;
+        _ = gas_left;
+        _ = output_len;
     }
 
     /// Event: Call value transfer
@@ -923,28 +927,25 @@ pub const DefaultTracer = struct {
 
     /// Event: Preflight check for call
     pub fn onCallPreflight(self: *DefaultTracer, call_type: []const u8, result: []const u8) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] {s} preflight: {s}", .{ call_type, result });
-        }
+        _ = self;
+        _ = call_type;
+        _ = result;
     }
 
     /// Event: Account lookup
     pub fn onAccountLookup(self: *DefaultTracer, address: anytype, found: bool, has_delegation: bool) void {
+        _ = self;
+        _ = address;
         _ = found;
-        if (self.config.trace_preanalysis and has_delegation) {
-            self.debug("[EVM] Account {x} has delegation", .{address.bytes});
-        }
+        _ = has_delegation;
     }
 
     /// Event: Code retrieval
     pub fn onCodeRetrieval(self: *DefaultTracer, address: anytype, code_len: usize, is_empty: bool) void {
-        if (self.config.trace_preanalysis) {
-            if (is_empty) {
-                self.debug("[EVM] Code is empty for address {x}", .{address.bytes});
-            } else {
-                self.debug("[EVM] Retrieved code: address={x}, length={}", .{ address.bytes, code_len });
-            }
-        }
+        _ = self;
+        _ = address;
+        _ = code_len;
+        _ = is_empty;
     }
 
     /// Event: CREATE/CREATE2 operation started
@@ -976,21 +977,20 @@ pub const DefaultTracer = struct {
 
     /// Event: Init code execution
     pub fn onInitCodeExecution(self: *DefaultTracer, code_len: usize, gas: i64) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Executing init code: len={}, gas={}", .{ code_len, gas });
-        }
+        _ = self;
+        _ = code_len;
+        _ = gas;
     }
 
     /// Event: Init code result
     pub fn onInitCodeResult(self: *DefaultTracer, success: bool, output_len: usize, error_val: ?anyerror) void {
+        _ = output_len;
         if (!success) {
             if (error_val) |e| {
                 self.debug("[EVM] Init code execution failed: {}", .{e});
             } else {
                 self.debug("[EVM] Init code execution failed, success=false", .{});
             }
-        } else if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Init code succeeded: output_len={}", .{output_len});
         }
     }
 
@@ -1008,9 +1008,10 @@ pub const DefaultTracer = struct {
 
     /// Event: Frame execution completed
     pub fn onFrameExecutionComplete(self: *DefaultTracer, gas_remaining: i64, output_len: usize, termination: []const u8) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Frame complete: gas_remaining={}, output_len={}, termination={s}", .{ gas_remaining, output_len, termination });
-        }
+        _ = self;
+        _ = gas_remaining;
+        _ = output_len;
+        _ = termination;
     }
 
     /// Event: Frame execution error
@@ -1020,9 +1021,9 @@ pub const DefaultTracer = struct {
 
     /// Event: Journal operation
     pub fn onJournalOperation(self: *DefaultTracer, operation: []const u8, snapshot_id: anytype) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[EVM] Journal {s}: snapshot_id={}", .{ operation, snapshot_id });
-        }
+        _ = self;
+        _ = operation;
+        _ = snapshot_id;
     }
 
     /// Event: Journal revert error
@@ -1042,9 +1043,11 @@ pub const DefaultTracer = struct {
 
     /// Event: Frame initialization
     pub fn onFrameInit(self: *DefaultTracer, gas: i64, caller: anytype, value: u256, calldata_len: usize) void {
-        if (self.config.trace_preanalysis) {
-            self.debug("[Frame] Init: gas={}, caller={x}, value={}, calldata_len={}", .{ gas, caller.bytes, value, calldata_len });
-        }
+        _ = self;
+        _ = gas;
+        _ = caller;
+        _ = value;
+        _ = calldata_len;
     }
 
     /// Event: Frame initialization error
@@ -1062,17 +1065,16 @@ pub const DefaultTracer = struct {
 
     /// Event: Dispatch cache lookup
     pub fn onDispatchCacheLookup(self: *DefaultTracer, bytecode_len: usize, hit: bool) void {
-        if (self.config.trace_preanalysis) {
-            const result = if (hit) "hit" else "miss";
-            self.debug("[Frame] Dispatch cache {s}: bytecode_len={}", .{ result, bytecode_len });
-        }
+        _ = self;
+        _ = bytecode_len;
+        _ = hit;
     }
 
     /// Event: Dispatch cache store
     pub fn onDispatchCacheStore(self: *DefaultTracer, bytecode_len: usize, evicted: bool) void {
-        if (self.config.trace_preanalysis and evicted) {
-            self.debug("[Frame] Dispatch cache store with eviction: bytecode_len={}", .{bytecode_len});
-        }
+        _ = self;
+        _ = bytecode_len;
+        _ = evicted;
     }
 
     /// Event: Performance warning
