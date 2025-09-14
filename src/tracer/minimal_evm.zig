@@ -61,7 +61,7 @@ pub const CallResult = struct {
 };
 
 /// Storage slot key for tracking
-const StorageSlotKey = struct {
+pub const StorageSlotKey = struct {
     address: Address,
     slot: u256,
 };
@@ -81,11 +81,11 @@ pub const MinimalEvmError = error{
 pub const MinimalEvm = struct {
     const Self = @This();
 
-    // Currently executing frame
-    current_frame: ?*MinimalFrame,
+    // Frame stack - manages nested calls
+    frames: std.ArrayList(*MinimalFrame),
 
-    // Call depth
-    depth: u8,
+    // Currently executing frame (points to top of frames stack)
+    current_frame: ?*MinimalFrame,
 
     // Return data from last call
     return_data: []const u8,
@@ -129,9 +129,11 @@ pub const MinimalEvm = struct {
         var code_map = std.AutoHashMap(Address, []const u8).init(allocator);
         errdefer code_map.deinit();
 
+        const frames_list = std.ArrayList(*MinimalFrame){};
+
         return Self{
+            .frames = frames_list,
             .current_frame = null,
-            .depth = 0,
             .return_data = &[_]u8{},
             .storage = storage_map,
             .balances = balances_map,
@@ -160,10 +162,12 @@ pub const MinimalEvm = struct {
 
     /// Clean up resources
     pub fn deinit(self: *Self) void {
-        if (self.current_frame) |frame| {
+        // Clean up all frames
+        for (self.frames.items) |frame| {
             frame.deinit();
             self.allocator.destroy(frame);
         }
+        self.frames.deinit(self.allocator);
         self.storage.deinit();
         self.balances.deinit();
 
@@ -245,17 +249,25 @@ pub const MinimalEvm = struct {
         );
         errdefer frame.deinit();
 
+        // Push frame onto stack
+        try self.frames.append(self.allocator, frame);
+        errdefer _ = self.frames.pop();
+
         // Set as current frame
-        const prev_frame = self.current_frame;
         self.current_frame = frame;
-        defer {
-            self.current_frame = prev_frame;
-            frame.deinit();
-            self.allocator.destroy(frame);
-        }
 
         // Execute the frame
         try frame.execute();
+
+        // Pop frame from stack
+        _ = self.frames.pop();
+
+        // Restore previous frame if any
+        if (self.frames.items.len > 0) {
+            self.current_frame = self.frames.items[self.frames.items.len - 1];
+        } else {
+            self.current_frame = null;
+        }
 
         // Store return data
         if (frame.output.len > 0) {
@@ -270,11 +282,17 @@ pub const MinimalEvm = struct {
         }
 
         // Return result
-        return CallResult{
+        const result = CallResult{
             .success = !frame.reverted,
             .gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0))),
             .output = self.return_data,
         };
+
+        // Clean up frame
+        frame.deinit();
+        self.allocator.destroy(frame);
+
+        return result;
     }
 
     /// Handle inner call from frame (like evm.inner_call)
@@ -285,17 +303,14 @@ pub const MinimalEvm = struct {
         input: []const u8,
         gas: u64,
     ) MinimalEvmError!CallResult {
-        // Check depth
-        if (self.depth >= 1024) {
+        // Check depth (frames.items.len is the depth)
+        if (self.frames.items.len >= 1024) {
             return CallResult{
                 .success = false,
                 .gas_left = 0,
                 .output = &[_]u8{},
             };
         }
-
-        self.depth += 1;
-        defer self.depth -= 1;
 
         // Get code for the target address
         const code = self.get_code(address);
