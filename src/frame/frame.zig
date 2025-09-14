@@ -500,7 +500,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.getTracer().initPcTracker(bytecode_raw);
 
             // Initialize MinimalEvm sidecar for validation (only in Debug/ReleaseSafe)
-            self.getTracer().onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
+            // CRITICAL: Pass the Frame's CURRENT gas_remaining as MinimalEvm's starting gas
+            // This ensures both start with identical gas amounts for proper differential testing
+            const initial_gas_for_minimal_evm = @as(i64, @intCast(self.gas_remaining));
+            self.getTracer().onInterpret(self, bytecode_raw, initial_gas_for_minimal_evm);
 
             const allocator = self.getAllocator();
 

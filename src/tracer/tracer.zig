@@ -171,14 +171,16 @@ pub const DefaultTracer = struct {
                         block_info.blob_base_fee
                     );
 
-                    // Set gas to match frame's INITIAL gas (not current remaining)
-                    // Frame starts with gas_limit, so MinimalEvm should too
-                    evm.gas_remaining = @intCast(gas_limit);
-                    evm.gas_used = 0;
+                    // Set gas to match frame's CURRENT gas remaining
+                    // Frame may have already consumed gas for static blocks by this point
+                    const frame_gas_remaining = frame.gas_remaining;
+                    evm.gas_remaining = @intCast(frame_gas_remaining);
+                    evm.gas_used = @intCast(@as(i64, @intCast(gas_limit)) - frame_gas_remaining);
 
-                    self.debug("MinimalEvm initialized: bytecode_len={d}, gas={d}, address={any}, origin={any}", .{
+                    self.debug("MinimalEvm initialized: bytecode_len={d}, frame_gas={d}, synced_gas={d}, address={any}, origin={any}", .{
                         bytecode.len,
-                        gas_limit,
+                        frame_gas_remaining,
+                        evm.gas_remaining,
                         evm.address,
                         evm.origin,
                     });
@@ -229,6 +231,8 @@ pub const DefaultTracer = struct {
                 // Execute MinimalEvm steps for validation
                 if (self.minimal_evm) |*evm| {
                     if (!evm.stopped and !evm.reverted) {
+                        // Sync gas before executing - Frame may have consumed block gas
+                        // but we need to track the difference to understand block vs opcode charging
                         self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
                     }
                 }
