@@ -910,9 +910,8 @@ pub const MinimalEvm = struct {
                     // Calculate memory expansion cost
                     const new_mem_size = off + len;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     // Read bytes from memory
@@ -1040,9 +1039,8 @@ pub const MinimalEvm = struct {
                     // Memory expansion
                     const new_mem_size = dst_off + len;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     // Copy data
@@ -1083,9 +1081,8 @@ pub const MinimalEvm = struct {
                     // Memory expansion
                     const new_mem_size = dst_off + len;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     // Copy code
@@ -1184,9 +1181,8 @@ pub const MinimalEvm = struct {
                     // Memory expansion
                     const new_mem_size = dst_off + len;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     // Copy return data
@@ -1317,12 +1313,11 @@ pub const MinimalEvm = struct {
 
                     const off = @as(u32, @intCast(offset));
 
-                    // Memory expansion
+                    // Memory expansion using proper EVM gas calculation
                     const new_mem_size = off + 32;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     const word = self.readMemoryWord(off);
@@ -1343,12 +1338,11 @@ pub const MinimalEvm = struct {
 
                     const off = @as(u32, @intCast(offset));
 
-                    // Memory expansion
+                    // Memory expansion using proper EVM gas calculation
                     const new_mem_size = off + 32;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     try self.writeMemoryWord(off, value);
@@ -1369,12 +1363,11 @@ pub const MinimalEvm = struct {
                     const off = @as(u32, @intCast(offset));
                     const byte_val = @as(u8, @truncate(value & 0xFF));
 
-                    // Memory expansion
+                    // Memory expansion using proper EVM gas calculation
                     const new_mem_size = off + 1;
                     if (new_mem_size > self.memory_size) {
-                        const expansion = new_mem_size - self.memory_size;
-                        const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                        const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                        try self.consumeGas(expansion_gas);
                     }
 
                     try self.writeMemory(off, byte_val);
@@ -1633,9 +1626,8 @@ pub const MinimalEvm = struct {
                         // Memory expansion
                         const new_mem_size = off + len;
                         if (new_mem_size > self.memory_size) {
-                            const expansion = new_mem_size - self.memory_size;
-                            const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                            const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                            try self.consumeGas(expansion_gas);
                         }
 
                         // Note: In a real implementation, we'd emit the log event here
@@ -1814,9 +1806,8 @@ pub const MinimalEvm = struct {
                     if (len > 0) {
                         const new_mem_size = off + len;
                         if (new_mem_size > self.memory_size) {
-                            const expansion = new_mem_size - self.memory_size;
-                            const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                        try self.consumeGas(gas_cost);
+                            const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                            try self.consumeGas(expansion_gas);
                         }
                     }
 
@@ -1849,9 +1840,8 @@ pub const MinimalEvm = struct {
                             // Ensure memory expansion
                             const new_mem_size = in_off + in_len;
                             if (new_mem_size > self.memory_size) {
-                                const expansion = new_mem_size - self.memory_size;
-                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                                try self.consumeGas(gas_cost);
+                                const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                                try self.consumeGas(expansion_gas);
                             }
                             // Read bytes from memory
                             var data = try self.allocator.alloc(u8, in_len);
@@ -1873,9 +1863,8 @@ pub const MinimalEvm = struct {
                             // Ensure memory expansion for output
                             const new_mem_size = out_off + copy_len;
                             if (new_mem_size > self.memory_size) {
-                                const expansion = new_mem_size - self.memory_size;
-                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                                try self.consumeGas(gas_cost);
+                                const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                                try self.consumeGas(expansion_gas);
                             }
                             // Write output to memory
                             var k: u32 = 0;
@@ -1945,9 +1934,8 @@ pub const MinimalEvm = struct {
                             // Ensure memory expansion
                             const new_mem_size = in_off + in_len;
                             if (new_mem_size > self.memory_size) {
-                                const expansion = new_mem_size - self.memory_size;
-                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                                try self.consumeGas(gas_cost);
+                                const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                                try self.consumeGas(expansion_gas);
                             }
                             // Read bytes from memory
                             var data = try self.allocator.alloc(u8, in_len);
@@ -1969,9 +1957,8 @@ pub const MinimalEvm = struct {
                             // Ensure memory expansion for output
                             const new_mem_size = out_off + copy_len;
                             if (new_mem_size > self.memory_size) {
-                                const expansion = new_mem_size - self.memory_size;
-                                const gas_cost = std.math.mul(u64, expansion, 3) catch return error.OutOfGas;
-                                try self.consumeGas(gas_cost);
+                                const expansion_gas = self.calculateMemoryExpansionGas(new_mem_size);
+                                try self.consumeGas(expansion_gas);
                             }
                             // Write output to memory
                             var k: u32 = 0;
