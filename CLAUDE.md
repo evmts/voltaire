@@ -220,8 +220,16 @@ Key Steps:
   test-opcodes                 Run all per-opcode differential tests
   test-snailtracer             Run snailtracer differential test
   test-synthetic               Test synthetic opcodes
-  wasm                         Build all WASM libraries
   test-fixtures-differential   Run differential tests
+  wasm                         Build WASM library and show bundle size
+  wasm-minimal-evm             Build MinimalEvm WASM and show bundle size
+  wasm-debug                   Build debug WASM for analysis
+  test-fusions                 Run focused fusion tests (unit + dispatch + differential)
+  devtool                      Build and run the Ethereum devtool
+  python                       Build Python bindings
+  swift                        Build Swift bindings
+  go                           Build Go bindings
+  ts                           Build TypeScript bindings
 
 Options:
   --release[=mode]             Release mode: fast, safe, small
@@ -229,3 +237,5 @@ Options:
   -Devm-hardfork=[string]      FRONTIER, HOMESTEAD, BYZANTIUM, BERLIN, LONDON, SHANGHAI, CANCUN (default: CANCUN)
   -Devm-disable-gas=[bool]     Disable gas checks (testing only)
   -Devm-enable-fusion=[bool]   Enable bytecode fusion (default: true)
+  -Devm-optimize=[string]      EVM optimization strategy: fast, small, or safe (default: safe)
+  -Dno_precompiles=[bool]      Disable all EVM precompiles for minimal build
