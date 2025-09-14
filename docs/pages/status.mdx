@@ -9,9 +9,17 @@ description: Alpha status and expectations.
 - Interfaces may change
 - Correctness over performance
 
-What to expect:
+## Build Modes
+
+- **Debug**: Full debugging symbols and runtime checks
+- **ReleaseFast**: Optimized for maximum performance
+- **ReleaseSmall**: Optimized for minimal bundle size
+- **ReleaseSafe** (⭐ **RECOMMENDED FOR ALPHA**): Includes parallel validation EVM, safety checks, and comprehensive logging
+
+## What to expect:
 - Passing tests are silent by design
 - Run `zig build && zig build test-opcodes` before/after changes
 - Report failures with exact command and code
+- Use ReleaseSafe mode for development and testing
 
 For milestones, see the Roadmap and GitHub.
