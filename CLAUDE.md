@@ -70,6 +70,39 @@ thing.* = try Thing.init(allocator);
 return thing;
 ```
 
+### ArrayList API (Zig 0.15.1)
+
+**CRITICAL**: In Zig 0.15.1, `std.ArrayList(T)` returns an UNMANAGED type that requires allocator for all operations!
+
+```zig
+// CORRECT: std.ArrayList is UNMANAGED (no internal allocator)
+var list = std.ArrayList(T){};  // Default initialization
+// OR
+const list = std.ArrayList(T).empty;  // Empty constant
+// OR with capacity
+var list = try std.ArrayList(T).initCapacity(allocator, 100);
+
+// All operations REQUIRE allocator:
+defer list.deinit(allocator);  // ✅ allocator REQUIRED
+try list.append(allocator, item);  // ✅ allocator REQUIRED
+try list.ensureCapacity(allocator, 100);  // ✅ allocator REQUIRED
+_ = list.pop();  // No allocator needed for pop
+
+// Direct access (no allocator needed):
+list.items[0] = value;
+list.items.len = 0;
+
+// WRONG - This does NOT work in Zig 0.15.1:
+var list = std.ArrayList(T).init(allocator);  // ❌ No init() method!
+list.deinit();  // ❌ Missing required allocator
+try list.append(item);  // ❌ Missing required allocator
+
+// For managed ArrayList with internal allocator, use array_list module directly:
+const array_list = @import("std").array_list;
+var list = array_list.AlignedManaged(T, null).init(allocator);
+defer list.deinit();  // No allocator needed for managed version
+```
+
 ## Testing Philosophy
 
 - NO abstractions - copy/paste setup
