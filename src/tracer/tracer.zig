@@ -707,13 +707,22 @@ pub const DefaultTracer = struct {
                     self.err("  Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
                 }
             } else {
-                // For regular opcodes, MinimalEvm should have consumed <= Frame gas
-                // Frame may show higher consumption due to static block gas consumption
-                if (evm_gas_remaining > frame_gas_remaining) {
-                    self.err("[GAS DIVERGENCE] MinimalEvm consumed less gas than Frame after {s}:", .{opcode_name});
-                    self.err("  Frame gas_remaining: {d} (more consumed)", .{frame_gas_remaining});
-                    self.err("  MinimalEvm gas_remaining: {d} (less consumed)", .{evm_gas_remaining});
-                    self.err("  MinimalEvm under-consumed by: {d}", .{evm_gas_remaining - frame_gas_remaining});
+                // For regular opcodes, allow reasonable gas differences due to block vs opcode charging
+                // Frame may consume gas in larger chunks at block boundaries
+                const gas_diff = @as(i64, evm_gas_remaining) - @as(i64, frame_gas_remaining);
+
+                // Allow Frame to consume up to 50 gas more than MinimalEvm (block overhead)
+                // But MinimalEvm should never consume significantly more than Frame
+                if (gas_diff > 50) {
+                    self.err("[GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
+                    self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.err("  Gas difference: {d} (exceeds 50 gas tolerance)", .{gas_diff});
+                } else if (gas_diff < -20) {
+                    self.err("[GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
+                    self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.err("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
                 }
             }
         }
