@@ -38,8 +38,11 @@ Follow TDD
 ❌ `std.debug.assert` (use `tracer.assert()`)
 ❌ Skipping/commenting tests
 ❌ Any stub/fallback implementations
+❌ **Swallowing errors with `catch` (e.g., `catch {}`, `catch &.{}`, `catch null`)**
 
 **STOP and ask for help rather than stubbing.**
+
+**NEVER swallow errors! Every error must be explicitly handled or propagated. Using `catch` to ignore errors can cause silent failures and fund loss.**
 
 ## Coding Standards
 

@@ -217,6 +217,17 @@ pub fn CallParams(comptime config: anytype) type {
             .create2 => |params| allocator.free(params.init_code),
         }
     }
+
+    /// Get the target address for the call (returns null for CREATE operations)
+    pub fn get_to(self: @This()) ?primitives.Address {
+        return switch (self) {
+            .call => |p| p.to,
+            .callcode => |p| p.to,
+            .delegatecall => |p| p.to,
+            .staticcall => |p| p.to,
+            .create, .create2 => null,
+        };
+    }
     };
 }
 
