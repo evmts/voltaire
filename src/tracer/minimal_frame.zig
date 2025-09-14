@@ -200,6 +200,310 @@ pub const MinimalFrame = struct {
                 self.pc += 1;
             },
 
+            // DIV
+            0x04 => {
+                try self.consumeGas(GasConstants.GasFastStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                const result = if (b == 0) 0 else a / b;
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SDIV
+            0x05 => {
+                try self.consumeGas(GasConstants.GasFastStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                const a_signed = @as(i256, @bitCast(a));
+                const b_signed = @as(i256, @bitCast(b));
+                const result = if (b == 0) 0 else @as(u256, @bitCast(@divTrunc(a_signed, b_signed)));
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // MOD
+            0x06 => {
+                try self.consumeGas(GasConstants.GasFastStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                const result = if (b == 0) 0 else a % b;
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SMOD
+            0x07 => {
+                try self.consumeGas(GasConstants.GasFastStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                const a_signed = @as(i256, @bitCast(a));
+                const b_signed = @as(i256, @bitCast(b));
+                const result = if (b == 0) 0 else @as(u256, @bitCast(@rem(a_signed, b_signed)));
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // ADDMOD
+            0x08 => {
+                try self.consumeGas(GasConstants.GasMidStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                const n = try self.popStack();
+                const result = if (n == 0) 0 else blk: {
+                    // Use u512 to avoid overflow
+                    const a_wide = @as(u512, a);
+                    const b_wide = @as(u512, b);
+                    const n_wide = @as(u512, n);
+                    break :blk @as(u256, @truncate((a_wide + b_wide) % n_wide));
+                };
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // MULMOD
+            0x09 => {
+                try self.consumeGas(GasConstants.GasMidStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                const n = try self.popStack();
+                const result = if (n == 0) 0 else blk: {
+                    // Use u512 to avoid overflow
+                    const a_wide = @as(u512, a);
+                    const b_wide = @as(u512, b);
+                    const n_wide = @as(u512, n);
+                    break :blk @as(u256, @truncate((a_wide * b_wide) % n_wide));
+                };
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // EXP
+            0x0a => {
+                try self.consumeGas(GasConstants.GasSlowStep);
+                const base = try self.popStack();
+                const exp = try self.popStack();
+                var result: u256 = 1;
+                var b = base;
+                var e = exp;
+                while (e > 0) : (e >>= 1) {
+                    if (e & 1 == 1) {
+                        result *%= b;
+                    }
+                    b *%= b;
+                }
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SIGNEXTEND
+            0x0b => {
+                try self.consumeGas(GasConstants.GasFastStep);
+                const byte_num = try self.popStack();
+                const value = try self.popStack();
+
+                const result = if (byte_num >= 31) value else blk: {
+                    const bit_index = @as(u8, @intCast(byte_num)) * 8 + 7;
+                    const bit = (value >> @intCast(bit_index)) & 1;
+                    const mask = (@as(u256, 1) << @intCast(bit_index + 1)) - 1;
+                    if (bit == 1) {
+                        break :blk value | ~mask;
+                    } else {
+                        break :blk value & mask;
+                    }
+                };
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // LT
+            0x10 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const top = try self.popStack();     // Top of stack
+                const second = try self.popStack();  // Second from top
+                try self.pushStack(if (second < top) 1 else 0);  // Compare second < top
+                self.pc += 1;
+            },
+
+            // GT
+            0x11 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const top = try self.popStack();     // Top of stack
+                const second = try self.popStack();  // Second from top
+                try self.pushStack(if (second > top) 1 else 0);  // Compare second > top
+                self.pc += 1;
+            },
+
+            // SLT
+            0x12 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const top = try self.popStack();     // Top of stack
+                const second = try self.popStack();  // Second from top
+                const top_signed = @as(i256, @bitCast(top));
+                const second_signed = @as(i256, @bitCast(second));
+                try self.pushStack(if (second_signed < top_signed) 1 else 0);  // Compare second < top (signed)
+                self.pc += 1;
+            },
+
+            // SGT
+            0x13 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const top = try self.popStack();     // Top of stack
+                const second = try self.popStack();  // Second from top
+                const top_signed = @as(i256, @bitCast(top));
+                const second_signed = @as(i256, @bitCast(second));
+                try self.pushStack(if (second_signed > top_signed) 1 else 0);  // Compare second > top (signed)
+                self.pc += 1;
+            },
+
+            // EQ
+            0x14 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const top = try self.popStack();
+                const second = try self.popStack();
+                try self.pushStack(if (top == second) 1 else 0);  // EQ is symmetric
+                self.pc += 1;
+            },
+
+            // ISZERO
+            0x15 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const a = try self.popStack();
+                try self.pushStack(if (a == 0) 1 else 0);
+                self.pc += 1;
+            },
+
+            // AND
+            0x16 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                try self.pushStack(a & b);
+                self.pc += 1;
+            },
+
+            // OR
+            0x17 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                try self.pushStack(a | b);
+                self.pc += 1;
+            },
+
+            // XOR
+            0x18 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const a = try self.popStack();
+                const b = try self.popStack();
+                try self.pushStack(a ^ b);
+                self.pc += 1;
+            },
+
+            // NOT
+            0x19 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const a = try self.popStack();
+                try self.pushStack(~a);
+                self.pc += 1;
+            },
+
+            // BYTE
+            0x1a => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const i = try self.popStack();
+                const x = try self.popStack();
+                const result = if (i >= 32) 0 else (x >> @intCast(8 * (31 - i))) & 0xff;
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SHL
+            0x1b => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const shift = try self.popStack();
+                const value = try self.popStack();
+                const result = if (shift >= 256) 0 else value << @intCast(shift);
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SHR
+            0x1c => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const shift = try self.popStack();
+                const value = try self.popStack();
+                const result = if (shift >= 256) 0 else value >> @intCast(shift);
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SAR
+            0x1d => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const shift = try self.popStack();
+                const value = try self.popStack();
+                const value_signed = @as(i256, @bitCast(value));
+                const result = if (shift >= 256) blk: {
+                    break :blk if (value_signed < 0) @as(u256, @bitCast(@as(i256, -1))) else 0;
+                } else blk: {
+                    break :blk @as(u256, @bitCast(value_signed >> @intCast(shift)));
+                };
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
+            // SHA3/KECCAK256
+            0x20 => {
+                const offset = try self.popStack();
+                const size = try self.popStack();
+
+                // Gas cost: 30 + 6 * ((size + 31) / 32)
+                const words = @as(u64, @intCast((size + 31) / 32));
+                const gas_cost = GasConstants.Keccak256Gas + words * GasConstants.Keccak256WordGas;
+                try self.consumeGas(gas_cost);
+
+                // Handle empty data case
+                if (size == 0) {
+                    // Keccak-256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+                    const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+                    try self.pushStack(empty_hash);
+                    self.pc += 1;
+                } else {
+                    // Check bounds
+                    if (offset > std.math.maxInt(u32) or size > std.math.maxInt(u32)) {
+                        return error.OutOfGas;
+                    }
+
+                    const offset_u32 = @as(u32, @intCast(offset));
+                    const size_u32 = @as(u32, @intCast(size));
+
+                    // Ensure memory is expanded
+                    const end_addr = offset_u32 + size_u32;
+                    if (end_addr > self.memory_size) {
+                        self.memory_size = end_addr;
+                    }
+
+                    // Read data from memory
+                    var data = try self.allocator.alloc(u8, size_u32);
+                    defer self.allocator.free(data);
+
+                    var i: u32 = 0;
+                    while (i < size_u32) : (i += 1) {
+                        data[i] = self.readMemory(offset_u32 + i);
+                    }
+
+                    // Compute Keccak-256 hash using std library
+                    var hash_bytes: [32]u8 = undefined;
+                    std.crypto.hash.sha3.Keccak256.hash(data, &hash_bytes, .{});
+
+                    // Convert hash bytes to u256 (big-endian)
+                    const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
+                    try self.pushStack(hash_u256);
+                    self.pc += 1;
+                }
+            },
+
             // ADDRESS
             0x30 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
@@ -224,6 +528,273 @@ pub const MinimalFrame = struct {
                 self.pc += 1;
             },
 
+            // ORIGIN
+            0x32 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                const origin_u256 = primitives.Address.to_u256(self.getEvm().origin);
+                try self.pushStack(origin_u256);
+                self.pc += 1;
+            },
+
+            // CALLER
+            0x33 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                const caller_u256 = primitives.Address.to_u256(self.caller);
+                try self.pushStack(caller_u256);
+                self.pc += 1;
+            },
+
+            // CALLVALUE
+            0x34 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.value);
+                self.pc += 1;
+            },
+
+            // CALLDATALOAD
+            0x35 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const offset = try self.popStack();
+                if (offset > std.math.maxInt(u32)) {
+                    try self.pushStack(0);
+                } else {
+                    const off = @as(u32, @intCast(offset));
+                    var result: u256 = 0;
+                    var i: u32 = 0;
+                    while (i < 32) : (i += 1) {
+                        const idx = off + i;
+                        const byte = if (idx < self.calldata.len) self.calldata[idx] else 0;
+                        result = (result << 8) | byte;
+                    }
+                    try self.pushStack(result);
+                }
+                self.pc += 1;
+            },
+
+            // CALLDATASIZE
+            0x36 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.calldata.len);
+                self.pc += 1;
+            },
+
+            // CALLDATACOPY
+            0x37 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const dest_offset = try self.popStack();
+                const offset = try self.popStack();
+                const length = try self.popStack();
+
+                if (dest_offset > std.math.maxInt(u32) or offset > std.math.maxInt(u32) or length > std.math.maxInt(u32)) {
+                    return error.OutOfGas;
+                }
+
+                const dest_off = @as(u32, @intCast(dest_offset));
+                const src_off = @as(u32, @intCast(offset));
+                const len = @as(u32, @intCast(length));
+
+                // Copy calldata to memory
+                var i: u32 = 0;
+                while (i < len) : (i += 1) {
+                    const src_idx = src_off + i;
+                    const byte = if (src_idx < self.calldata.len) self.calldata[src_idx] else 0;
+                    try self.writeMemory(dest_off + i, byte);
+                }
+                self.pc += 1;
+            },
+
+            // CODESIZE
+            0x38 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.bytecode.len);
+                self.pc += 1;
+            },
+
+            // CODECOPY
+            0x39 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const dest_offset = try self.popStack();
+                const offset = try self.popStack();
+                const length = try self.popStack();
+
+                if (dest_offset > std.math.maxInt(u32) or offset > std.math.maxInt(u32) or length > std.math.maxInt(u32)) {
+                    return error.OutOfGas;
+                }
+
+                const dest_off = @as(u32, @intCast(dest_offset));
+                const src_off = @as(u32, @intCast(offset));
+                const len = @as(u32, @intCast(length));
+
+                // Copy code to memory
+                var i: u32 = 0;
+                while (i < len) : (i += 1) {
+                    const src_idx = src_off + i;
+                    const byte = if (src_idx < self.bytecode.len) self.bytecode[src_idx] else 0;
+                    try self.writeMemory(dest_off + i, byte);
+                }
+                self.pc += 1;
+            },
+
+            // GASPRICE
+            0x3a => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().gas_price);
+                self.pc += 1;
+            },
+
+            // RETURNDATASIZE
+            0x3d => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.return_data.len);
+                self.pc += 1;
+            },
+
+            // RETURNDATACOPY
+            0x3e => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const dest_offset = try self.popStack();
+                const offset = try self.popStack();
+                const length = try self.popStack();
+
+                if (dest_offset > std.math.maxInt(u32) or offset > std.math.maxInt(u32) or length > std.math.maxInt(u32)) {
+                    return error.OutOfGas;
+                }
+
+                const dest_off = @as(u32, @intCast(dest_offset));
+                const src_off = @as(u32, @intCast(offset));
+                const len = @as(u32, @intCast(length));
+
+                // Check bounds
+                if (src_off + len > self.return_data.len) {
+                    return error.InvalidOpcode;  // Use a valid error type
+                }
+
+                // Copy return data to memory
+                var i: u32 = 0;
+                while (i < len) : (i += 1) {
+                    const byte = self.return_data[src_off + i];
+                    try self.writeMemory(dest_off + i, byte);
+                }
+                self.pc += 1;
+            },
+
+            // BLOCKHASH
+            0x40 => {
+                try self.consumeGas(GasConstants.GasExtStep);
+                const block_number = try self.popStack();
+                // Simple mock: return a hash based on block number
+                const current_block = self.getEvm().block_number;
+                if (block_number >= current_block or current_block > block_number + 256) {
+                    try self.pushStack(0);
+                } else {
+                    // Mock hash based on block number
+                    try self.pushStack(block_number * 0x123456789abcdef);
+                }
+                self.pc += 1;
+            },
+
+            // COINBASE
+            0x41 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                const coinbase_u256 = primitives.Address.to_u256(self.getEvm().block_coinbase);
+                try self.pushStack(coinbase_u256);
+                self.pc += 1;
+            },
+
+            // TIMESTAMP
+            0x42 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().block_timestamp);
+                self.pc += 1;
+            },
+
+            // NUMBER
+            0x43 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().block_number);
+                self.pc += 1;
+            },
+
+            // DIFFICULTY/PREVRANDAO
+            0x44 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().block_difficulty);
+                self.pc += 1;
+            },
+
+            // GASLIMIT
+            0x45 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().block_gas_limit);
+                self.pc += 1;
+            },
+
+            // CHAINID
+            0x46 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().chain_id);
+                self.pc += 1;
+            },
+
+            // SELFBALANCE
+            0x47 => {
+                try self.consumeGas(GasConstants.GasFastStep);
+                const balance = self.getEvm().get_balance(self.address);
+                try self.pushStack(balance);
+                self.pc += 1;
+            },
+
+            // BASEFEE
+            0x48 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().block_base_fee);
+                self.pc += 1;
+            },
+
+            // BLOBHASH
+            0x49 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const index = try self.popStack();
+                _ = index;
+                // For now, return zero (no blob hashes in test context)
+                try self.pushStack(0);
+                self.pc += 1;
+            },
+
+            // BLOBBASEFEE
+            0x4a => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.getEvm().blob_base_fee);
+                self.pc += 1;
+            },
+
+            // POP
+            0x50 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                _ = try self.popStack();
+                self.pc += 1;
+            },
+
+            // MLOAD
+            0x51 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const offset = try self.popStack();
+                if (offset > std.math.maxInt(u32)) {
+                    return error.OutOfGas;
+                }
+                const off = @as(u32, @intCast(offset));
+
+                // Read word from memory
+                var result: u256 = 0;
+                var idx: u32 = 0;
+                while (idx < 32) : (idx += 1) {
+                    const byte = self.readMemory(off + idx);
+                    result = (result << 8) | byte;
+                }
+                try self.pushStack(result);
+                self.pc += 1;
+            },
+
             // MSTORE
             0x52 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
@@ -242,6 +813,46 @@ pub const MinimalFrame = struct {
                     const byte = @as(u8, @truncate(value >> @intCast((31 - idx) * 8)));
                     try self.writeMemory(off + idx, byte);
                 }
+                self.pc += 1;
+            },
+
+            // MSTORE8
+            0x53 => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const offset = try self.popStack();
+                const value = try self.popStack();
+
+                if (offset > std.math.maxInt(u32)) {
+                    return error.OutOfGas;
+                }
+
+                const off = @as(u32, @intCast(offset));
+                const byte_value = @as(u8, @truncate(value));
+                try self.writeMemory(off, byte_value);
+                self.pc += 1;
+            },
+
+            // SLOAD
+            0x54 => {
+                const key = try self.popStack();
+
+                // Gas cost - warm vs cold access
+                try self.consumeGas(GasConstants.WarmStorageReadCost);
+
+                const value = self.getEvm().get_storage(self.address, key);
+                try self.pushStack(value);
+                self.pc += 1;
+            },
+
+            // SSTORE
+            0x55 => {
+                const key = try self.popStack();
+                const value = try self.popStack();
+
+                // Simplified gas cost (actual is complex with refunds)
+                try self.consumeGas(GasConstants.SstoreResetGas);
+
+                try self.getEvm().set_storage(self.address, key, value);
                 self.pc += 1;
             },
 
@@ -273,9 +884,54 @@ pub const MinimalFrame = struct {
                 }
             },
 
+            // PC
+            0x58 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(self.pc);
+                self.pc += 1;
+            },
+
+            // MSIZE
+            0x59 => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                // Memory size is tracked in memory_size field (word-aligned)
+                const size_in_words = (self.memory_size + 31) / 32;
+                const size_in_bytes = size_in_words * 32;
+                try self.pushStack(size_in_bytes);
+                self.pc += 1;
+            },
+
+            // GAS
+            0x5a => {
+                try self.consumeGas(GasConstants.GasQuickStep);
+                try self.pushStack(@intCast(self.gas_remaining));
+                self.pc += 1;
+            },
+
             // JUMPDEST
             0x5b => {
                 try self.consumeGas(GasConstants.JumpdestGas);
+                self.pc += 1;
+            },
+
+            // TLOAD
+            0x5c => {
+                try self.consumeGas(GasConstants.WarmStorageReadCost);
+                const key = try self.popStack();
+                _ = key; // Transient storage not implemented yet
+                // For now, transient storage always returns 0 (not persisted between calls)
+                try self.pushStack(0);
+                self.pc += 1;
+            },
+
+            // TSTORE
+            0x5d => {
+                try self.consumeGas(GasConstants.WarmStorageReadCost); // Use same as TLOAD for now
+                const key = try self.popStack();
+                const value = try self.popStack();
+                // Transient storage is not persisted, so we ignore the write
+                _ = key;
+                _ = value;
                 self.pc += 1;
             },
 
@@ -293,6 +949,72 @@ pub const MinimalFrame = struct {
                 const value = self.readImmediate(push_size) orelse return error.InvalidPush;
                 try self.pushStack(value);
                 self.pc += 1 + push_size;
+            },
+
+            // DUP1-DUP16
+            0x80...0x8f => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const n = opcode - 0x7f;
+                if (self.stack.items.len < n) {
+                    return error.StackUnderflow;
+                }
+                const value = self.stack.items[self.stack.items.len - n];
+                try self.pushStack(value);
+                self.pc += 1;
+            },
+
+            // SWAP1-SWAP16
+            0x90...0x9f => {
+                try self.consumeGas(GasConstants.GasFastestStep);
+                const n = opcode - 0x8f;
+                if (self.stack.items.len <= n) {
+                    return error.StackUnderflow;
+                }
+                const top_idx = self.stack.items.len - 1;
+                const swap_idx = self.stack.items.len - 1 - n;
+                const temp = self.stack.items[top_idx];
+                self.stack.items[top_idx] = self.stack.items[swap_idx];
+                self.stack.items[swap_idx] = temp;
+                self.pc += 1;
+            },
+
+            // LOG0-LOG4
+            0xa0...0xa4 => {
+                const topic_count = opcode - 0xa0;
+                const offset = try self.popStack();
+                const length = try self.popStack();
+
+                // Pop topics
+                var i: u8 = 0;
+                while (i < topic_count) : (i += 1) {
+                    _ = try self.popStack();
+                }
+
+                // Gas cost
+                const byte_cost = @as(u64, @intCast(8 * length));
+                const topic_cost = @as(u64, 375) * @as(u64, topic_count);
+                try self.consumeGas(375 + byte_cost + topic_cost);
+
+                // In minimal implementation, we don't actually emit logs
+                _ = offset;
+                self.pc += 1;
+            },
+
+            // CREATE
+            0xf0 => {
+                const value = try self.popStack();
+                const offset = try self.popStack();
+                const length = try self.popStack();
+
+                // Gas cost
+                try self.consumeGas(32000);
+
+                // In minimal implementation, just return a dummy address
+                _ = value;
+                _ = offset;
+                _ = length;
+                try self.pushStack(0); // Dummy created address
+                self.pc += 1;
             },
 
             // CALL
@@ -369,6 +1091,31 @@ pub const MinimalFrame = struct {
                 self.pc += 1;
             },
 
+            // CALLCODE
+            0xf2 => {
+                // Similar to CALL but different context
+                // Pop all 7 arguments
+                const gas = try self.popStack();
+                const address = try self.popStack();
+                const value_arg = try self.popStack();
+                const in_offset = try self.popStack();
+                const in_length = try self.popStack();
+                const out_offset = try self.popStack();
+                const out_length = try self.popStack();
+
+                _ = gas;
+                _ = address;
+                _ = value_arg;
+                _ = in_offset;
+                _ = in_length;
+                _ = out_offset;
+                _ = out_length;
+
+                try self.consumeGas(700);
+                try self.pushStack(1); // Success
+                self.pc += 1;
+            },
+
             // RETURN
             0xf3 => {
                 const offset = try self.popStack();
@@ -389,10 +1136,86 @@ pub const MinimalFrame = struct {
                 return;
             },
 
+            // DELEGATECALL
+            0xf4 => {
+                // Pop all 6 arguments (no value)
+                const gas = try self.popStack();
+                const address = try self.popStack();
+                const in_offset = try self.popStack();
+                const in_length = try self.popStack();
+                const out_offset = try self.popStack();
+                const out_length = try self.popStack();
+
+                _ = gas;
+                _ = address;
+                _ = in_offset;
+                _ = in_length;
+                _ = out_offset;
+                _ = out_length;
+
+                try self.consumeGas(700);
+                try self.pushStack(1); // Success
+                self.pc += 1;
+            },
+
+            // CREATE2
+            0xf5 => {
+                const value = try self.popStack();
+                const offset = try self.popStack();
+                const length = try self.popStack();
+                const salt = try self.popStack();
+
+                // Gas cost
+                const word_count = @as(u64, @intCast((length + 31) / 32));
+                try self.consumeGas(32000 + 6 * word_count);
+
+                _ = value;
+                _ = offset;
+                _ = salt;
+                try self.pushStack(0); // Dummy created address
+                self.pc += 1;
+            },
+
+            // STATICCALL
+            0xfa => {
+                // Pop all 6 arguments (no value for static call)
+                const gas = try self.popStack();
+                const address = try self.popStack();
+                const in_offset = try self.popStack();
+                const in_length = try self.popStack();
+                const out_offset = try self.popStack();
+                const out_length = try self.popStack();
+
+                _ = gas;
+                _ = address;
+                _ = in_offset;
+                _ = in_length;
+                _ = out_offset;
+                _ = out_length;
+
+                try self.consumeGas(700);
+                try self.pushStack(1); // Success
+                self.pc += 1;
+            },
+
             // REVERT
             0xfd => {
                 self.reverted = true;
                 return;
+            },
+
+            // INVALID
+            0xfe => {
+                // INVALID opcode always fails
+                return error.InvalidOpcode;
+            },
+
+            // SELFDESTRUCT
+            0xff => {
+                const beneficiary = try self.popStack();
+                _ = beneficiary;
+                try self.consumeGas(5000);
+                self.stopped = true;
             },
 
             else => {
@@ -407,6 +1230,9 @@ pub const MinimalFrame = struct {
             return;
         }
         const opcode = self.getCurrentOpcode() orelse return;
+        // Debug: Log what opcode we're about to execute
+        const log = @import("../log.zig");
+        log.debug("[MinimalFrame] Executing opcode 0x{x:0>2} at PC={d}", .{opcode, self.pc});
         try self.executeOpcode(opcode);
     }
 
