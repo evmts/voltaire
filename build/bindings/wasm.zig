@@ -69,12 +69,12 @@ pub fn createWasmSteps(
     // MinimalEvm WASM build
     {
         // Create MinimalEvm module with ReleaseSmall optimization
-        const wasm_minimal_evm_mod = wasm.createWasmModule(b, "src/tracer/MinimalEvm_c.zig", wasm_target, .ReleaseSmall);
+        const wasm_minimal_evm_mod = wasm.createWasmModule(b, "src/tracer/minimal_evm_c.zig", wasm_target, .ReleaseSmall);
         wasm_minimal_evm_mod.addImport("primitives", wasm_primitives_mod);
 
         const wasm_minimal_evm_build = wasm.buildWasmExecutable(b, .{
             .name = "minimal-evm",
-            .root_source_file = "src/tracer/MinimalEvm_c.zig",
+            .root_source_file = "src/tracer/minimal_evm_c.zig",
             .dest_sub_path = "minimal-evm.wasm",
         }, wasm_minimal_evm_mod);
 

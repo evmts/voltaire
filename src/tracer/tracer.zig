@@ -12,7 +12,7 @@ const std = @import("std");
 const log = @import("../log.zig");
 const primitives = @import("primitives");
 const pc_tracker_mod = @import("pc_tracker.zig");
-pub const MinimalEvm = @import("MinimalEvm.zig").MinimalEvm;
+pub const MinimalEvm = @import("minimal_evm.zig").MinimalEvm;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
@@ -142,15 +142,20 @@ pub const DefaultTracer = struct {
                     if (@hasField(@TypeOf(frame.*), "caller")) {
                         evm.caller = frame.caller;
                     }
-                    if (@hasField(@TypeOf(frame.*), "origin")) {
-                        evm.origin = frame.origin;
-                    }
+                    // Get origin from the EVM context, not frame
+                    const main_evm = frame.getEvm();
+                    evm.origin = main_evm.get_tx_origin();
+                    self.debug("MinimalEvm synced origin from EVM: {any}", .{evm.origin});
                     if (@hasField(@TypeOf(frame.*), "value")) {
                         evm.value = frame.value;
                     }
                     if (@hasField(@TypeOf(frame.*), "calldata_slice")) {
                         evm.calldata = frame.calldata_slice;
                     }
+
+                    // Set gas to match frame's remaining gas
+                    evm.gas_remaining = @intCast(gas_limit);
+                    evm.gas_used = 0;
 
                     self.debug("MinimalEvm initialized: bytecode_len={d}, gas={d}, address={any}, origin={any}", .{
                         bytecode.len,

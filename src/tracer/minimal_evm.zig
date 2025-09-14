@@ -8,6 +8,7 @@ const GasConstants = primitives.GasConstants;
 
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+const to_u256 = primitives.Address.to_u256;
 
 /// Host interface for system operations
 pub const HostInterface = struct {
@@ -218,7 +219,7 @@ pub const MinimalEvm = struct {
             .bytecode = bytecode,
             .caller = ZERO_ADDRESS,
             .address = ZERO_ADDRESS,
-            .origin = Address{ .bytes = [_]u8{0x10} ++ [_]u8{0x00} ** 18 ++ [_]u8{0x01} }, // Default test origin
+            .origin = ZERO_ADDRESS,
             .value = 0,
             .calldata = &[_]u8{},
             .return_data = &[_]u8{},
@@ -817,8 +818,8 @@ pub const MinimalEvm = struct {
 
                 // SHA3 / KECCAK256
                 0x20 => {
-                    const length = try self.popStack();
-                    const offset = try self.popStack();
+                    const offset = try self.popStack();  // Top of stack is offset
+                    const length = try self.popStack(); // Second is size
 
                     // Calculate gas cost: base + word cost
                     const word_count = @as(u64, @intCast((length + 31) / 32));
@@ -867,8 +868,8 @@ pub const MinimalEvm = struct {
                 // ADDRESS
                 0x30 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    const addr_int = @as(u256, @bitCast(@as([32]u8, self.address.bytes ++ [_]u8{0} ** 12)));
-                    try self.pushStack(addr_int);
+                    const addr_u256 = to_u256(self.address);
+                    try self.pushStack(addr_u256);
                     self.pc += 1;
                 },
 
@@ -894,16 +895,16 @@ pub const MinimalEvm = struct {
                 // ORIGIN
                 0x32 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    const origin_int = @as(u256, @bitCast(@as([32]u8, self.origin.bytes ++ [_]u8{0} ** 12)));
-                    try self.pushStack(origin_int);
+                    const origin_u256 = to_u256(self.origin);
+                    try self.pushStack(origin_u256);
                     self.pc += 1;
                 },
 
                 // CALLER
                 0x33 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    const caller_int = @as(u256, @bitCast(@as([32]u8, self.caller.bytes ++ [_]u8{0} ** 12)));
-                    try self.pushStack(caller_int);
+                    const caller_u256 = to_u256(self.caller);
+                    try self.pushStack(caller_u256);
                     self.pc += 1;
                 },
 

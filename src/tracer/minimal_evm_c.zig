@@ -1,6 +1,6 @@
 /// C wrapper for MinimalEvm - minimal interface for WASM
 const std = @import("std");
-const MinimalEvm = @import("MinimalEvm.zig").MinimalEvm;
+const MinimalEvm = @import("minimal_evm.zig").MinimalEvm;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
