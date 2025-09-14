@@ -16,7 +16,7 @@ pub const BenchmarksExe = @import("executables/benchmarks.zig");
 pub const BlstLib = @import("libraries/blst.zig");
 pub const CKzgLib = @import("libraries/c_kzg.zig");
 pub const Bn254Lib = @import("libraries/bn254.zig");
-pub const RevmLib = @import("libraries/revm.zig");
+// RevmLib removed - using MinimalEvm for differential testing
 pub const FoundryLib = @import("libraries/foundry.zig");
 
 // Language bindings
