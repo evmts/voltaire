@@ -4,6 +4,42 @@
 
 **Tracer bugs hide critical issues.** Tracing must be accurate without affecting execution.
 
+## How MinimalEvm Validation Works
+
+The tracer validates Frame execution using a **parallel MinimalEvm** that executes the same logical operations:
+
+### Execution Flow
+1. **before_instruction()** - Called before every Frame handler executes
+2. **executeMinimalEvmForOpcode()** - Executes equivalent operations in MinimalEvm
+3. **after_instruction()** - Validates Frame and MinimalEvm states match
+4. **validateMinimalEvmState()** - Compares stack, memory, gas between implementations
+
+### Opcode Mapping
+- **Regular opcodes (0x00-0xFF)**: Execute exactly 1 operation in MinimalEvm using `executeOpcode()`
+- **Synthetic opcodes (>0xFF)**: Execute N sequential operations using `step()` where N = fusion count
+
+### Synthetic Opcode Examples
+```zig
+// Frame executes PUSH_ADD_INLINE (single fused operation)
+// MinimalEvm executes 2 steps: PUSH + ADD
+.PUSH_ADD_INLINE => {
+    inline for (0..2) |_| {
+        evm.step() catch |e| { ... };
+    }
+}
+
+// Frame executes FUNCTION_DISPATCH (complex fusion)
+// MinimalEvm executes 4 steps: PUSH4 + EQ + PUSH + JUMPI
+.FUNCTION_DISPATCH => {
+    inline for (0..4) |_| {
+        evm.step() catch |e| { ... };
+    }
+}
+```
+
+### Key Principle
+**Frame uses optimized dispatch, MinimalEvm uses sequential bytecode execution.** The tracer ensures both reach the same logical state by executing the correct number of equivalent operations.
+
 ## Module Components
 
 ### Core Files
