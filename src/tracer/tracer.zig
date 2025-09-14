@@ -474,7 +474,7 @@ pub const DefaultTracer = struct {
                 // MinimalEvm should execute these 2 sequential operations
 
                 // Debug: Log current MinimalEvm state before execution
-                self.err("DEBUG PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
+                self.debug("PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
                     evm.getPC(), (evm.current_frame orelse unreachable).stack.items.len, frame.stack.size()
                 });
 
@@ -484,12 +484,12 @@ pub const DefaultTracer = struct {
                     evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
                     evm.getBytecode()[evm.getPC() + 2] == 0x52) {   // MSTORE (after PUSH1 + 1 byte immediate)
 
-                    self.err("DEBUG PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.getPC()});
+                    self.debug("PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.getPC()});
 
                     // Execute PUSH1 + MSTORE
                     inline for (0..2) |step_num| {
                         const current_opcode = evm.getBytecode()[evm.getPC()];
-                        self.err("DEBUG PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
+                        self.debug("PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
 
                         evm.step() catch |e| {
                             self.err("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
@@ -498,12 +498,12 @@ pub const DefaultTracer = struct {
                     }
                 } else {
                     // Not a PUSH1+MSTORE sequence - this is a mis-identified synthetic opcode
-                    self.err("DEBUG PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
+                    self.debug("PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
                         if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
 
                     // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
                     // Frame will handle the actual opcode, MinimalEvm should remain unchanged
-                    self.err("DEBUG PUSH_MSTORE_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
+                    self.debug("PUSH_MSTORE_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
                 }
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
@@ -777,10 +777,10 @@ pub const DefaultTracer = struct {
                 // For jump/terminal opcodes, gas should match exactly
                 // because both EVMs should have consumed the same amount
                 if (frame_gas_remaining != evm_gas_remaining) {
-                    self.err("[GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
-                    self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.err("  Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
+                    self.warn("[GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
+                    self.warn("  Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.warn("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.warn("  Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
                 }
             } else {
                 // For regular opcodes, allow reasonable gas differences due to block vs opcode charging
@@ -797,15 +797,15 @@ pub const DefaultTracer = struct {
                 // This accounts for Frame's pre-charging strategy
                 const tolerance = expected_first_block_gas + 50;
                 if (gas_diff > tolerance) {
-                    self.err("[GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
-                    self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.err("  Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
+                    self.warn("[GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
+                    self.warn("  Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.warn("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.warn("  Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
                 } else if (gas_diff < -20) {
-                    self.err("[GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
-                    self.err("  Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    self.err("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.err("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
+                    self.warn("[GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
+                    self.warn("  Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.warn("  MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.warn("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
                 }
             }
         }
