@@ -17,7 +17,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset and immediately loads from that memory location.
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mload_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PUSH_MLOAD_INLINE);
+            self.beforeInstruction(.PUSH_MLOAD_INLINE, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -27,6 +27,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.PUSH_MLOAD_INLINE);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -35,22 +36,32 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Read 32 bytes from memory
             const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.OutOfBounds => {
+                    self.afterComplete(.PUSH_MLOAD_INLINE);
+                    return Error.OutOfBounds;
+                },
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.PUSH_MLOAD_INLINE);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.PUSH_MLOAD_INLINE);
+                    return Error.AllocationError;
+                },
             };
 
             const value = @as(WordType, @truncate(value_u256));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(value);
 
+            self.afterInstruction(.PUSH_MLOAD_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MLOAD_POINTER - Fused PUSH+MLOAD with pointer offset (>8 bytes).
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mload_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PUSH_MLOAD_POINTER);
+            self.beforeInstruction(.PUSH_MLOAD_POINTER, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MLOAD_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -60,6 +71,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.PUSH_MLOAD_POINTER);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -68,15 +80,25 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Read 32 bytes from memory
             const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.OutOfBounds => {
+                    self.afterComplete(.PUSH_MLOAD_POINTER);
+                    return Error.OutOfBounds;
+                },
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.PUSH_MLOAD_POINTER);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.PUSH_MLOAD_POINTER);
+                    return Error.AllocationError;
+                },
             };
 
             const value = @as(WordType, @truncate(value_u256));
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // Ensure space for push
             self.stack.push_unsafe(value);
 
+            self.afterInstruction(.PUSH_MLOAD_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
@@ -84,7 +106,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores it at that offset.
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PUSH_MSTORE_INLINE);
+            self.beforeInstruction(.PUSH_MSTORE_INLINE, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -98,6 +120,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.PUSH_MSTORE_INLINE);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -107,18 +130,28 @@ pub fn Handlers(comptime FrameType: type) type {
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
             self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.OutOfBounds => {
+                    self.afterComplete(.PUSH_MSTORE_INLINE);
+                    return Error.OutOfBounds;
+                },
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.PUSH_MSTORE_INLINE);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.PUSH_MSTORE_INLINE);
+                    return Error.AllocationError;
+                },
             };
 
+            self.afterInstruction(.PUSH_MSTORE_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PUSH_MSTORE_POINTER);
+            self.beforeInstruction(.PUSH_MSTORE_POINTER, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -137,11 +170,21 @@ pub fn Handlers(comptime FrameType: type) type {
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
             self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.OutOfBounds => {
+                    self.afterComplete(.PUSH_MSTORE_POINTER);
+                    return Error.OutOfBounds;
+                },
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.PUSH_MSTORE_POINTER);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.PUSH_MSTORE_POINTER);
+                    return Error.AllocationError;
+                },
             };
 
+            self.afterInstruction(.PUSH_MSTORE_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
@@ -149,7 +192,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Pushes an offset, then pops a value and stores the least significant byte.
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore8_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PUSH_MSTORE8_INLINE);
+            self.beforeInstruction(.PUSH_MSTORE8_INLINE, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -163,6 +206,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.PUSH_MSTORE8_INLINE);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -172,18 +216,28 @@ pub fn Handlers(comptime FrameType: type) type {
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
             self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.OutOfBounds => {
+                    self.afterComplete(.PUSH_MSTORE8_INLINE);
+                    return Error.OutOfBounds;
+                },
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.PUSH_MSTORE8_INLINE);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.PUSH_MSTORE8_INLINE);
+                    return Error.AllocationError;
+                },
             };
 
+            self.afterInstruction(.PUSH_MSTORE8_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
         /// Gas costs are pre-calculated statically in dispatch.
         pub fn push_mstore8_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PUSH_MSTORE8_POINTER);
+            self.beforeInstruction(.PUSH_MSTORE8_POINTER, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_MSTORE8_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -197,6 +251,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
                 @branchHint(.cold);
+                self.afterComplete(.PUSH_MSTORE8_POINTER);
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -206,11 +261,21 @@ pub fn Handlers(comptime FrameType: type) type {
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
             self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
-                memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.OutOfBounds => {
+                    self.afterComplete(.PUSH_MSTORE8_POINTER);
+                    return Error.OutOfBounds;
+                },
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.PUSH_MSTORE8_POINTER);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.PUSH_MSTORE8_POINTER);
+                    return Error.AllocationError;
+                },
             };
 
+            self.afterInstruction(.PUSH_MSTORE8_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };

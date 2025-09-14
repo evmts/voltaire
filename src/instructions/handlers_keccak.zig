@@ -19,6 +19,14 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
+        const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+
+        /// Continue to next instruction with afterInstruction tracking
+        pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item, comptime opcode: Dispatch.UnifiedOpcode) Error!noreturn {
+            const op_data = dispatch_opcode_data.getOpData(opcode, Dispatch, Dispatch.Item, cursor);
+            self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
 
         /// KECCAK256 opcode (0x20) - Compute keccak hash
         /// Pops offset and size from stack, reads data from memory, and pushes hash.
@@ -28,15 +36,15 @@ pub fn Handlers(comptime FrameType: type) type {
         /// - For standard EVM (u256), uses Keccak-256
         /// - For smaller word types, may use different variants or truncate
         pub fn keccak(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .KECCAK256);
+            self.beforeInstruction(.KECCAK256, cursor);
             self.validateOpcodeHandler(.KECCAK256, cursor);
-            const dispatch = Dispatch{ .cursor = cursor };
             const offset = self.stack.pop_unsafe(); // Top of stack is offset
             const size = self.stack.pop_unsafe(); // Second is size
 
             // Check bounds
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.KECCAK256);
                 return Error.OutOfBounds;
             }
 
@@ -47,6 +55,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Note: JUMPDEST doesn't properly calculate block gas yet
                 self.gas_remaining -= @intCast(GasConstants.Keccak256Gas);
                 if (self.gas_remaining < 0) {
+                    self.afterComplete(.KECCAK256);
                     return Error.OutOfGas;
                 }
 
@@ -74,9 +83,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     },
                 };
                 self.stack.push_unsafe(empty_hash);
-                const op_data = dispatch.getOpData(.KECCAK256);
-                // Use op_data.next_handler and op_data.next_cursor directly
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return next_instruction(self, cursor, .KECCAK256);
             }
 
             const offset_usize = @as(usize, @intCast(offset));
@@ -90,23 +97,34 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(gas_cost);
             if (self.gas_remaining < 0) {
+                self.afterComplete(.KECCAK256);
                 return Error.OutOfGas;
             }
 
             // Check for overflow
             const end = std.math.add(usize, offset_usize, size_usize) catch {
                 @branchHint(.unlikely);
+                self.afterComplete(.KECCAK256);
                 return Error.OutOfBounds;
             };
 
             // Ensure memory is available
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(end))) catch |err| switch (err) {
-                memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
-                else => return Error.AllocationError,
+                memory_mod.MemoryError.MemoryOverflow => {
+                    self.afterComplete(.KECCAK256);
+                    return Error.OutOfBounds;
+                },
+                else => {
+                    self.afterComplete(.KECCAK256);
+                    return Error.AllocationError;
+                },
             };
 
             // Get data from memory
-            const data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch return Error.OutOfBounds;
+            const data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
+                self.afterComplete(.KECCAK256);
+                return Error.OutOfBounds;
+            };
 
             // Compute hash using appropriate Keccak variant based on WordType
             const result_word = switch (@bitSizeOf(WordType)) {
@@ -114,9 +132,18 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Standard Keccak-256 for u256
                     var hash_bytes: [32]u8 = undefined;
                     keccak_asm.keccak256(data, &hash_bytes) catch |err| switch (err) {
-                        keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
-                        keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
-                        else => return Error.AllocationError,
+                        keccak_asm.KeccakError.InvalidInput => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.OutOfBounds;
+                        },
+                        keccak_asm.KeccakError.MemoryError => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
+                        else => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
                     };
 
                     const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
@@ -126,9 +153,18 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Keccak-512 for u64 (can hold full 64 bytes)
                     var hash_bytes: [64]u8 = undefined;
                     keccak_asm.keccak512(data, &hash_bytes) catch |err| switch (err) {
-                        keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
-                        keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
-                        else => return Error.AllocationError,
+                        keccak_asm.KeccakError.InvalidInput => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.OutOfBounds;
+                        },
+                        keccak_asm.KeccakError.MemoryError => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
+                        else => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
                     };
 
                     // Take first 8 bytes for u64
@@ -139,9 +175,18 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Keccak-224 for u32 (28 bytes output)
                     var hash_bytes: [28]u8 = undefined;
                     keccak_asm.keccak224(data, &hash_bytes) catch |err| switch (err) {
-                        keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
-                        keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
-                        else => return Error.AllocationError,
+                        keccak_asm.KeccakError.InvalidInput => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.OutOfBounds;
+                        },
+                        keccak_asm.KeccakError.MemoryError => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
+                        else => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
                     };
 
                     // Take first 4 bytes for u32
@@ -152,9 +197,18 @@ pub fn Handlers(comptime FrameType: type) type {
                     // For other sizes, use Keccak-256 and truncate
                     var hash_bytes: [32]u8 = undefined;
                     keccak_asm.keccak256(data, &hash_bytes) catch |err| switch (err) {
-                        keccak_asm.KeccakError.InvalidInput => return Error.OutOfBounds,
-                        keccak_asm.KeccakError.MemoryError => return Error.AllocationError,
-                        else => return Error.AllocationError,
+                        keccak_asm.KeccakError.InvalidInput => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.OutOfBounds;
+                        },
+                        keccak_asm.KeccakError.MemoryError => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
+                        else => {
+                            self.afterComplete(.KECCAK256);
+                            return Error.AllocationError;
+                        },
                     };
 
                     const hash_u256 = std.mem.readInt(u256, &hash_bytes, .big);
@@ -164,9 +218,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             self.stack.push_unsafe(result_word);
 
-            const op_data = dispatch.getOpData(.KECCAK256);
-            // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .KECCAK256);
         }
     };
 }

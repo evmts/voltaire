@@ -14,6 +14,14 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
+        const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
+
+        /// Continue to next instruction with afterInstruction tracking
+        pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item, comptime opcode: Dispatch.UnifiedOpcode) Error!noreturn {
+            const op_data = dispatch_opcode_data.getOpData(opcode, Dispatch, Dispatch.Item, cursor);
+            self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
 
         /// Generate a log handler for LOG0-LOG4
         pub fn generateLogHandler(comptime topic_count: u8) FrameType.OpcodeHandler {
@@ -31,7 +39,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         4 => .LOG4,
                         else => unreachable,
                     };
-                    log.before_instruction(self, unified_opcode);
+                    self.beforeInstruction(unified_opcode, cursor);
 
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
@@ -50,6 +58,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
                     // Check bounds
                     if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
+                        self.afterComplete(unified_opcode);
                         return Error.OutOfBounds;
                     }
 
@@ -61,6 +70,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     if (length_usize > 0) {
                         const end_offset = offset_usize + length_usize;
                         if (end_offset > std.math.maxInt(u24)) {
+                            self.afterComplete(unified_opcode);
                             return Error.OutOfBounds;
                         }
                         memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(end_offset)));
@@ -74,18 +84,25 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Use negative gas pattern for single-branch out-of-gas detection
                     self.gas_remaining -= @intCast(total_dynamic_gas);
                     if (self.gas_remaining < 0) {
+                        self.afterComplete(unified_opcode);
                         return Error.OutOfGas;
                     }
 
                     // Ensure memory capacity
                     if (length_usize > 0) {
                         const memory_end = offset_usize + length_usize;
-                        self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
+                        self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch {
+                            self.afterComplete(unified_opcode);
+                            return Error.OutOfBounds;
+                        };
                     }
 
                     // Get data from memory
                     const data = if (length_usize > 0)
-                        self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(length_usize))) catch return Error.OutOfBounds
+                        self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(length_usize))) catch {
+                            self.afterComplete(unified_opcode);
+                            return Error.OutOfBounds;
+                        }
                     else
                         &[_]u8{};
 
@@ -94,13 +111,17 @@ pub fn Handlers(comptime FrameType: type) type {
 
                     // Use EVM's main allocator (not arena) for log data that will be freed later
                     const data_copy = if (data.len > 0)
-                        evm.allocator.dupe(u8, data) catch return Error.AllocationError
+                        evm.allocator.dupe(u8, data) catch {
+                            self.afterComplete(unified_opcode);
+                            return Error.AllocationError;
+                        }
                     else
                         &[_]u8{};
 
                     const topics_array = if (topic_count > 0) blk: {
                         const arr = evm.allocator.alloc(u256, topic_count) catch {
                             if (data_copy.len > 0) evm.allocator.free(data_copy);
+                            self.afterComplete(unified_opcode);
                             return Error.AllocationError;
                         };
                         for (0..topic_count) |j| {
@@ -109,6 +130,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         break :blk arr;
                     } else evm.allocator.alloc(u256, 0) catch {
                         if (data_copy.len > 0) evm.allocator.free(data_copy);
+                        self.afterComplete(unified_opcode);
                         return Error.AllocationError;
                     };
 
@@ -121,35 +143,31 @@ pub fn Handlers(comptime FrameType: type) type {
                         // Clean up on failure
                         if (topics_array.len > 0) evm.allocator.free(topics_array);
                         if (data_copy.len > 0) evm.allocator.free(data_copy);
+                        self.afterComplete(unified_opcode);
                         return Error.AllocationError;
                     };
 
                     // Map topic_count to the appropriate LOG opcode
                     switch (topic_count) {
                         0 => {
-                            const op_data = dispatch.getOpData(.LOG0);
-                            // Use op_data.next_handler and op_data.next_cursor directly
-                            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                            self.afterInstruction(.LOG0, dispatch.getOpData(.LOG0).next_handler, dispatch.getOpData(.LOG0).next_cursor.cursor);
+                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG0).next_handler, .{ self, dispatch.getOpData(.LOG0).next_cursor.cursor });
                         },
                         1 => {
-                            const op_data = dispatch.getOpData(.LOG1);
-                            // Use op_data.next_handler and op_data.next_cursor directly
-                            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                            self.afterInstruction(.LOG1, dispatch.getOpData(.LOG1).next_handler, dispatch.getOpData(.LOG1).next_cursor.cursor);
+                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG1).next_handler, .{ self, dispatch.getOpData(.LOG1).next_cursor.cursor });
                         },
                         2 => {
-                            const op_data = dispatch.getOpData(.LOG2);
-                            // Use op_data.next_handler and op_data.next_cursor directly
-                            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                            self.afterInstruction(.LOG2, dispatch.getOpData(.LOG2).next_handler, dispatch.getOpData(.LOG2).next_cursor.cursor);
+                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG2).next_handler, .{ self, dispatch.getOpData(.LOG2).next_cursor.cursor });
                         },
                         3 => {
-                            const op_data = dispatch.getOpData(.LOG3);
-                            // Use op_data.next_handler and op_data.next_cursor directly
-                            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                            self.afterInstruction(.LOG3, dispatch.getOpData(.LOG3).next_handler, dispatch.getOpData(.LOG3).next_cursor.cursor);
+                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG3).next_handler, .{ self, dispatch.getOpData(.LOG3).next_cursor.cursor });
                         },
                         4 => {
-                            const op_data = dispatch.getOpData(.LOG4);
-                            // Use op_data.next_handler and op_data.next_cursor directly
-                            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                            self.afterInstruction(.LOG4, dispatch.getOpData(.LOG4).next_handler, dispatch.getOpData(.LOG4).next_cursor.cursor);
+                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG4).next_handler, .{ self, dispatch.getOpData(.LOG4).next_cursor.cursor });
                         },
                         else => unreachable,
                     }

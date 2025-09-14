@@ -15,13 +15,14 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jump_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
-            log.before_instruction(self, .JUMP_TO_STATIC_LOCATION);
+            self.beforeInstruction(.JUMP_TO_STATIC_LOCATION, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMP_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
 
             // The dispatch pointer already points to the JUMPDEST handler location
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
             // Call the handler at that location, passing cursor pointing to the handler itself
+            self.afterInstruction(.JUMP_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
             return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
         }
 
@@ -29,7 +30,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
-            log.before_instruction(self, .JUMPI_TO_STATIC_LOCATION);
+            self.beforeInstruction(.JUMPI_TO_STATIC_LOCATION, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMPI_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
 
@@ -40,9 +41,11 @@ pub fn Handlers(comptime FrameType: type) type {
             if (condition != 0) {
                 @branchHint(.unlikely);
                 // Call the handler at that location, passing cursor pointing to that slot
+                self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
                 return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
             }
             // Continue to next instruction - advance past metadata
+            self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, cursor[1].opcode_handler, cursor + 2);
             return @call(FrameType.getTailCallModifier(), cursor[1].opcode_handler, .{ self, cursor + 2 });
         }
 
@@ -51,6 +54,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// @deprecated Use jump_to_static_location for better performance
         pub fn push_jump_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            self.beforeInstruction(.PUSH_JUMP_INLINE, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMP_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -60,6 +64,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Validate jump destination range
             if (dest > std.math.maxInt(FrameType.PcType)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.PUSH_JUMP_INLINE);
                 return Error.InvalidJump;
             }
 
@@ -69,9 +74,11 @@ pub fn Handlers(comptime FrameType: type) type {
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
+                self.afterInstruction(.PUSH_JUMP_INLINE, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
             } else {
                 // Not a valid JUMPDEST
+                self.afterComplete(.PUSH_JUMP_INLINE);
                 return Error.InvalidJump;
             }
         }
@@ -80,6 +87,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// @deprecated Use jump_to_static_location for better performance
         pub fn push_jump_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            self.beforeInstruction(.PUSH_JUMP_POINTER, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMP_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -89,6 +97,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Validate jump destination range
             if (dest > std.math.maxInt(FrameType.PcType)) {
                 @branchHint(.unlikely);
+                self.afterComplete(.PUSH_JUMP_POINTER);
                 return Error.InvalidJump;
             }
 
@@ -99,9 +108,11 @@ pub fn Handlers(comptime FrameType: type) type {
             if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                 @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
+                self.afterInstruction(.PUSH_JUMP_POINTER, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
                 return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
             } else {
                 // Not a valid JUMPDEST
+                self.afterComplete(.PUSH_JUMP_POINTER);
                 return Error.InvalidJump;
             }
         }
@@ -111,6 +122,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// @deprecated Use jumpi_to_static_location for better performance
         pub fn push_jumpi_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            self.beforeInstruction(.PUSH_JUMPI_INLINE, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMPI_INLINE, Dispatch, Dispatch.Item, cursor);
 
@@ -124,6 +136,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Take the jump - validate destination range
                 if (dest > std.math.maxInt(FrameType.PcType)) {
                     @branchHint(.unlikely);
+                    self.afterComplete(.PUSH_JUMPI_INLINE);
                     return Error.InvalidJump;
                 }
 
@@ -134,13 +147,16 @@ pub fn Handlers(comptime FrameType: type) type {
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
+                    self.afterInstruction(.PUSH_JUMPI_INLINE, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
                 } else {
                     // Not a valid JUMPDEST
+                    self.afterComplete(.PUSH_JUMPI_INLINE);
                     return Error.InvalidJump;
                 }
             } else {
                 // Continue to next instruction
+                self.afterInstruction(.PUSH_JUMPI_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
                 return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
         }
@@ -149,6 +165,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// @deprecated Use jumpi_to_static_location for better performance
         pub fn push_jumpi_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            self.beforeInstruction(.PUSH_JUMPI_POINTER, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.PUSH_JUMPI_POINTER, Dispatch, Dispatch.Item, cursor);
 
@@ -164,6 +181,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 // Take the jump - validate destination range
                 if (dest > std.math.maxInt(FrameType.PcType)) {
                     @branchHint(.unlikely);
+                    self.afterComplete(.PUSH_JUMPI_POINTER);
                     return Error.InvalidJump;
                 }
 
@@ -174,13 +192,16 @@ pub fn Handlers(comptime FrameType: type) type {
                 if (jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
+                    self.afterInstruction(.PUSH_JUMPI_POINTER, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
                     return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
                 } else {
                     // Not a valid JUMPDEST
+                    self.afterComplete(.PUSH_JUMPI_POINTER);
                     return Error.InvalidJump;
                 }
             } else {
                 // Continue to next instruction
+                self.afterInstruction(.PUSH_JUMPI_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
                 return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
         }

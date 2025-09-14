@@ -111,11 +111,13 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLVALUE opcode (0x34) - Get deposited value by the instruction/transaction responsible for this execution.
         /// Stack: [] → [value]
         pub fn callvalue(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.beforeInstruction(.CALLVALUE, cursor);
+            log.before_instruction(self, .CALLVALUE);
+            const dispatch = Dispatch{ .cursor = cursor };
             const value = self.value;
             std.debug.assert(self.stack.size() < @TypeOf(self.stack).stack_capacity); // CALLVALUE requires stack space
             self.stack.push_unsafe(value);
-            return next_instruction(self, cursor, .CALLVALUE);
+            const op_data = dispatch.getOpData(.CALLVALUE); // Use op_data.next_handler and op_data.next_cursor directly
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// CALLDATALOAD opcode (0x35) - Get input data of current environment.

@@ -11,38 +11,40 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const WordType = FrameType.WordType;
         const dispatch = @import("../preprocessor/dispatch_opcode_data.zig");
 
+        /// Continue to next instruction with afterInstruction tracking
+        pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item, comptime opcode: Dispatch.UnifiedOpcode) Error!noreturn {
+            const op_data = dispatch.getOpData(opcode, Dispatch, Dispatch.Item, cursor);
+            self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);
+            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+        }
+
         /// LT opcode (0x10) - Less than comparison.
         pub fn lt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .LT);
-            self.validateOpcodeHandler(.LT, cursor);
+            self.beforeInstruction(.LT, cursor);
             // EVM: pops top, then second; pushes (top < second)
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
                     return @intFromBool(top < second);
                 }
             }.op);
-            const op_data = dispatch.getOpData(.LT, Dispatch, Dispatch.Item, cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .LT);
         }
 
         /// GT opcode (0x11) - Greater than comparison.
         pub fn gt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .GT);
-            self.validateOpcodeHandler(.GT, cursor);
+            self.beforeInstruction(.GT, cursor);
             // EVM: pops top, then second; pushes (top > second)
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
                     return @intFromBool(top > second);
                 }
             }.op);
-            const op_data = dispatch.getOpData(.GT, Dispatch, Dispatch.Item, cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .GT);
         }
 
         /// SLT opcode (0x12) - Signed less than comparison.
         pub fn slt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .SLT);
-            self.validateOpcodeHandler(.SLT, cursor);
+            self.beforeInstruction(.SLT, cursor);
             const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
             const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
             const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
@@ -50,14 +52,12 @@ pub fn Handlers(comptime FrameType: type) type {
             // EVM: pops a (top), then b; pushes (a < b) with signed comparison
             const result: WordType = @intFromBool(a_signed < b_signed);
             self.stack.set_top_unsafe(result);
-            const op_data = dispatch.getOpData(.SLT, Dispatch, Dispatch.Item, cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .SLT);
         }
 
         /// SGT opcode (0x13) - Signed greater than comparison.
         pub fn sgt(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .SGT);
-            self.validateOpcodeHandler(.SGT, cursor);
+            self.beforeInstruction(.SGT, cursor);
             const a = self.stack.pop_unsafe(); // Top of stack (second pushed value)
             const b = self.stack.peek_unsafe(); // Second from top (first pushed value)
             const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
@@ -65,33 +65,28 @@ pub fn Handlers(comptime FrameType: type) type {
             // EVM: pops a (top), then b; pushes (a > b) with signed comparison
             const result: WordType = @intFromBool(a_signed > b_signed);
             self.stack.set_top_unsafe(result);
-            const op_data = dispatch.getOpData(.SGT, Dispatch, Dispatch.Item, cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .SGT);
         }
 
         /// EQ opcode (0x14) - Equality comparison.
         pub fn eq(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .EQ);
-            self.validateOpcodeHandler(.EQ, cursor);
+            self.beforeInstruction(.EQ, cursor);
             // EVM: pops top, then second, and pushes (top == second)
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
                     return @intFromBool(top == second);
                 }
             }.op);
-            const op_data = dispatch.getOpData(.EQ, Dispatch, Dispatch.Item, cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .EQ);
         }
 
         /// ISZERO opcode (0x15) - Check if value is zero.
         pub fn iszero(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .ISZERO);
-            self.validateOpcodeHandler(.ISZERO, cursor);
+            self.beforeInstruction(.ISZERO, cursor);
             const value = self.stack.peek_unsafe();
             const result: WordType = @intFromBool(value == 0);
             self.stack.set_top_unsafe(result);
-            const op_data = dispatch.getOpData(.ISZERO, Dispatch, Dispatch.Item, cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .ISZERO);
         }
     };
 }
