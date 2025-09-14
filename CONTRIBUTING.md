@@ -44,6 +44,7 @@ If your contribution is large please open a discussion to chat about the change 
 **⚠️ WARNING: This is mission-critical financial infrastructure.** ANY bug can result in catastrophic loss of funds. Please follow these requirements:
 
 ### Zero Tolerance Policy
+
 - ❌ **NO** broken builds or failing tests
 - ❌ **NO** stub implementations (`error.NotImplemented`)
 - ❌ **NO** commented-out code (use Git for history)
@@ -51,12 +52,14 @@ If your contribution is large please open a discussion to chat about the change 
 - ❌ **NO** skipping tests or disabling problematic code
 
 ### Memory Safety
+
 - **Always** pair allocations with `defer` or `errdefer`
 - **Always** validate memory bounds before access
 - **Always** zero-initialize expanded memory regions
 - **Never** leak memory - proper cleanup is mandatory
 
 ### Testing Requirements
+
 - **Every** code change must pass `zig build test-opcodes`
 - **Critical** changes require differential testing against revm
 - **Gas costs** must match Yellow Paper specification exactly
@@ -113,8 +116,7 @@ build/
 ├── executables/        # Executable targets
 ├── libraries/          # Library dependencies (BN254, REVM)
 ├── modules.zig         # Module definitions
-├── steps/              # Build step definitions
-└── utils.zig           # Build utilities
+└── steps/              # Build step definitions
 ```
 
 ### Key Files
@@ -131,12 +133,14 @@ build/
 ## Code Quality Standards
 
 ### Assertion and Error Handling
+
 - Use `tracer.assert()` with descriptive messages for runtime validation
 - Provide clear error messages that help debugging
 - Handle all error cases explicitly - no silent failures
 - Use `errdefer` for cleanup on error paths
 
 ### Documentation
+
 - Each module should have a CLAUDE.md file documenting:
   - Mission-critical aspects
   - Implementation details
@@ -145,6 +149,7 @@ build/
 - Keep documentation close to code for maintainability
 
 ### Performance Considerations
+
 - Use `_unsafe` operations only after validation
 - Implement tail call optimization for opcode dispatch
 - Cache frequently accessed data
@@ -218,6 +223,7 @@ zig build test-opcodes
    }
    ```
 3. **Use tracer assertions** for debugging instead of `std.debug.assert`:
+
    ```zig
    // Good - provides context on failure
    self.getTracer().assert(condition, "descriptive message");
@@ -225,6 +231,7 @@ zig build test-opcodes
    // Avoid - no context on failure
    std.debug.assert(condition);
    ```
+
 4. **Test against MinimalEvm** for correctness verification:
    ```bash
    zig build test-snailtracer  # Differential testing
