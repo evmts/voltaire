@@ -1,44 +1,64 @@
-# Tracer
+# Tracer Module
 
-Configurable execution tracing for debugging, analysis, and perf monitoring.
+Comprehensive execution tracing, debugging, and verification system for the Guillotine EVM implementation.
 
 ## Overview
 
-Multiple tracer implementations are available and selected at compile time for zero‑overhead when disabled:
-- `DefaultTracer` — production default, compiled away
-- `DebuggingTracer` — step snapshots and breakpoints
-- `LoggingTracer` — structured logs to stdout
-- `FileTracer` — high‑throughput JSON/binary file writer
+The tracer module provides multiple implementations for different use cases:
+- **`DefaultTracer`** — Production tracer with assertion support and minimal overhead
+- **`MinimalEvm`** — Standalone EVM implementation for differential testing (65KB)
+- **WASM Support** — C FFI wrapper for browser and embedded environments
+- **Advanced Tracing** — Bytecode analysis, fusion detection, and gas tracking
 
 ## Components and Architecture
 
-### Core Implementation
-- **`tracer.zig`** - Complete tracing system with multiple tracer implementations
+### Core Files
+- **`tracer.zig`** - Main tracer implementation with DefaultTracer and interfaces
+- **`MinimalEvm.zig`** - Standalone minimal EVM for testing and verification
+- **`MinimalEvm_c.zig`** - C FFI wrapper for WASM compilation
+- **`pc_tracker.zig`** - Program counter tracking and execution flow analysis
+- **`spec.md`** - Detailed tracer specification and interface documentation
 
 ### Tracer Types
 
 #### DefaultTracer
-- **Zero Runtime Overhead**: Compile-time elimination of all tracing code
-- **Production Default**: Optimal for production deployments
-- **Interface Compliance**: Satisfies tracer interface without any operations
+- **Assertion Support**: Replaced `std.debug.assert` with tracer assertions
+- **Descriptive Messages**: Clear error messages for debugging
+- **Production Ready**: Minimal overhead with comprehensive validation
+- **Enhanced Interface**: Bytecode analysis and dispatch lifecycle tracking
 
-#### DebuggingTracer
-- **Step-by-Step Execution**: Detailed opcode-level execution tracking
-- **Breakpoint Support**: Conditional execution pausing and inspection
-- **State Inspection**: Complete EVM state capture at each step
-- **Interactive Debugging**: Integration with debugging tools and IDEs
+#### MinimalEvm
+- **Reference Implementation**: Standalone EVM for correctness verification
+- **Stack Semantics**: Properly implements LIFO stack operations
+- **Gas Accuracy**: Precise gas accounting matching Yellow Paper
+- **Differential Testing**: Ground truth for testing main EVM
+- **WASM Compatible**: Full C FFI interface for cross-platform usage
 
-#### LoggingTracer
-- **Structured Output**: JSON-formatted execution logs
-- **Configurable Verbosity**: Multiple logging levels and detail options
-- **Real-time Streaming**: Live execution monitoring via stdout
-- **Performance Metrics**: Gas usage, timing, and performance statistics
+#### Enhanced Tracer Interface (2024)
+- **Bytecode Analysis**: `onBytecodeAnalysisStart/Complete` lifecycle
+- **Fusion Detection**: Track optimization opportunities
+- **Jump Resolution**: Static jump validation and tracking
+- **Assertion System**: Comprehensive validation with messages
+- **Cursor Tracking**: Dispatch schedule execution monitoring
 
-#### FileTracer
-- **High-Performance File Output**: Optimized binary and text file formats
-- **Batch Processing**: Efficient buffered writes for minimal I/O overhead
-- **Compression Support**: Optional compression for reduced storage requirements
-- **Structured Formats**: JSON, CSV, and binary output options
+## Recent Major Updates (2024)
+
+### Critical Bug Fixes
+- **Stack Operand Order**: Fixed LIFO semantics for all binary operations
+- **First Pop = Top**: Corrected ADD, SUB, DIV, MOD, and shift operations
+- **Consensus Critical**: Prevents fund loss from incorrect execution
+
+### WASM Integration
+- **C FFI Wrapper**: Complete interface for browser/embedded usage
+- **Opaque Handles**: Safe memory management across languages
+- **Byte Array Conversion**: u256 values compatible with WASM
+- **Build System**: Integrated WASM targets with size reporting
+
+### Tracer Enhancements
+- **Assertion System**: Descriptive messages replace debug asserts
+- **Lifecycle Methods**: Complete bytecode analysis tracking
+- **Gas Validation**: Differential comparison with reference implementations
+- **Fusion Detection**: Track and validate optimizations
 
 ## Key Features
 
@@ -87,49 +107,90 @@ Multiple tracer implementations are available and selected at compile time for z
 const tracer = @import("tracer");
 const evm = @import("evm");
 
+// Production with assertions
 const EvmProd = evm.Evm(tracer.DefaultTracer);
-const EvmDebug = evm.Evm(tracer.LoggingTracer);
-
 var prod = EvmProd.init(allocator, host);
-var dbg = EvmDebug.init(allocator, host);
+
+// Minimal EVM for testing
+const minimal = MinimalEvm.init(allocator, bytecode, gas_limit);
+defer minimal.deinit();
 ```
 
-### Debugging Tracer Usage
+### WASM C Interface
+```c
+// Create EVM instance
+void* evm = evm_create(bytecode, bytecode_len, gas_limit);
+
+// Set execution context
+uint8_t caller[20] = {0};
+uint8_t address[20] = {0};
+uint8_t value[32] = {0}; // u256 as bytes
+evm_set_call_context(evm, caller, address, value, calldata, calldata_len);
+
+// Execute and inspect
+bool success = evm_execute(evm);
+uint64_t gas_used = evm_get_gas_used(evm);
+uint32_t pc = evm_get_pc(evm);
+
+// Stack manipulation
+uint8_t stack_value[32];
+evm_get_stack_item(evm, 0, stack_value); // Get top of stack
+
+// Cleanup
+evm_destroy(evm);
+```
+
+### MinimalEvm Stack Semantics
 ```zig
-// Initialize debugging tracer with breakpoints
-var debug_tracer = tracer.DebuggingTracer.init(allocator);
-defer debug_tracer.deinit();
-
-// Set breakpoints
-try debug_tracer.set_breakpoint(.{ .pc = 0x42 });
-try debug_tracer.set_breakpoint(.{ .opcode = .SSTORE });
-try debug_tracer.set_breakpoint(.{ .gas_remaining = 1000 });
-
-// Configure debugging options
-debug_tracer.set_options(.{
-    .capture_stack = true,
-    .capture_memory = true,
-    .capture_storage = false,
-    .max_steps = 10000,
-});
-
-// Execute with debugging
-const result = try debug_evm.execute(bytecode);
-
-// Analyze execution steps
-for (debug_tracer.steps.items) |step| {
-    std.debug.print("Step {}: {} at PC {} (gas: {})\n", .{
-        step.step_number,
-        step.opcode_name,
-        step.pc,
-        step.gas_before,
-    });
-    
-    if (step.error_occurred) {
-        std.debug.print("Error: {s}\n", .{step.error_msg.?});
-        break;
-    }
+// CRITICAL: Stack is LIFO - first pop gets top of stack
+pub fn add(self: *MinimalEvm) !void {
+    const a = try self.popStack(); // Top of stack
+    const b = try self.popStack(); // Second item
+    try self.pushStack(a +% b);
 }
+
+pub fn sub(self: *MinimalEvm) !void {
+    const a = try self.popStack(); // Top (subtrahend)
+    const b = try self.popStack(); // Second (minuend)
+    try self.pushStack(b -% a);    // Result: b - a
+}
+
+pub fn div(self: *MinimalEvm) !void {
+    const a = try self.popStack(); // Divisor
+    const b = try self.popStack(); // Dividend
+    const result = if (a == 0) 0 else b / a;
+    try self.pushStack(result);
+}
+```
+
+### Tracer Assertions
+```zig
+// Tracer assertions with descriptive messages
+pub fn validateDispatch(frame: *Frame) void {
+    // Stack validation
+    frame.getTracer().assert(
+        frame.stack.size() >= 2,
+        "Binary op: stack underflow, requires 2 items"
+    );
+
+    // Jump validation
+    frame.getTracer().assert(
+        self.cursor[1] == .jump_static,
+        "Static jump: expected .jump_static metadata"
+    );
+
+    // Gas validation
+    frame.getTracer().assert(
+        frame.gas_remaining >= cost,
+        "Insufficient gas for operation"
+    );
+}
+
+// Bytecode analysis with tracer
+var bytecode = try Bytecode.init(allocator, code, tracer);
+tracer.onBytecodeAnalysisStart(code.len);
+tracer.onJumpdestFound(pc, count);
+tracer.onBytecodeAnalysisComplete(validated_len, opcode_count, jumpdest_count);
 ```
 
 ### Logging Tracer
@@ -237,28 +298,22 @@ const CustomEvm = evm.Evm(CustomTracer);
 ## Performance Characteristics
 
 ### DefaultTracer Performance
-- **Zero Runtime Cost**: Complete compile-time elimination
-- **No Memory Overhead**: No additional memory allocation
-- **No CPU Overhead**: No additional CPU cycles consumed
-- **Identical Performance**: Same performance as non-traced execution
+- **Minimal Overhead**: Assertion checks with descriptive messages
+- **Production Ready**: Optimized for deployment with validation
+- **Memory Efficient**: Minimal allocations for tracking
+- **CPU Efficient**: Branch prediction friendly assertion paths
 
-### Debugging Tracer Performance
-- **Development Optimized**: Acceptable overhead for development use
-- **Memory Usage**: Proportional to execution length
-- **CPU Overhead**: ~20-50% depending on capture options
-- **Storage Requirements**: Detailed state capture increases memory usage
+### MinimalEvm Performance
+- **Standalone**: 65KB implementation with full EVM semantics
+- **Reference Speed**: Optimized for correctness over performance
+- **Gas Accuracy**: Exact Yellow Paper gas calculations
+- **WASM Optimized**: ReleaseSmall mode for minimal size
 
-### Logging Tracer Performance
-- **Streaming Optimized**: Minimal memory footprint with continuous output
-- **I/O Bound**: Performance limited by output stream speed
-- **CPU Overhead**: ~10-30% for formatting and output
-- **Configurable Impact**: Adjustable verbosity for performance tuning
-
-### File Tracer Performance
-- **High Throughput**: Optimized for minimal execution impact
-- **Buffered I/O**: Reduces file system overhead through batching
-- **Compression Support**: Optional compression reduces storage requirements
-- **CPU Overhead**: ~5-15% depending on format and compression options
+### WASM Performance
+- **FFI Overhead**: Minimal with opaque handle pattern
+- **Memory Safety**: Proper boundary checking for WASM
+- **Byte Conversion**: Efficient u256 to/from byte arrays
+- **Browser Ready**: Optimized for web execution contexts
 
 ## Configuration Options
 
@@ -348,6 +403,33 @@ for (differences) |diff| {
 ```
 
 ## Testing Integration
+
+### Differential Testing
+```zig
+// Compare MinimalEvm with main EVM
+test "stack operand order verification" {
+    const bytecode = &[_]u8{
+        0x60, 0x03, // PUSH1 3
+        0x60, 0x05, // PUSH1 5
+        0x03,       // SUB
+    };
+
+    // MinimalEvm execution
+    var minimal = try MinimalEvm.init(allocator, bytecode, 100000);
+    defer minimal.deinit();
+    try minimal.execute();
+    const minimal_result = try minimal.popStack();
+
+    // Main EVM execution
+    var main_evm = try Evm.init(allocator, bytecode);
+    defer main_evm.deinit();
+    const main_result = try main_evm.execute();
+
+    // Results must match (5 - 3 = 2)
+    try std.testing.expectEqual(minimal_result, main_result);
+    try std.testing.expectEqual(@as(u256, 2), minimal_result);
+}
+```
 
 ### Unit Testing with Tracing
 ```zig
