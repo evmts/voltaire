@@ -457,9 +457,9 @@ pub const MinimalEvm = struct {
                 // ADD
                 0x01 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const a = try self.popStack();
-                    const b = try self.popStack();
-                    const result = a +% b; // Wrapping addition
+                    const top = try self.popStack();
+                    const second = try self.popStack();
+                    const result = top +% second; // Wrapping addition
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -467,9 +467,9 @@ pub const MinimalEvm = struct {
                 // MUL
                 0x02 => {
                     try self.consumeGas(GasConstants.GasFastStep);
-                    const a = try self.popStack();
-                    const b = try self.popStack();
-                    const result = a *% b; // Wrapping multiplication
+                    const top = try self.popStack();
+                    const second = try self.popStack();
+                    const result = top *% second; // Wrapping multiplication
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -477,9 +477,9 @@ pub const MinimalEvm = struct {
                 // SUB
                 0x03 => {
                     try self.consumeGas(GasConstants.GasFastestStep);
-                    const a = try self.popStack();
-                    const b = try self.popStack();
-                    const result = b -% a; // Wrapping subtraction
+                    const top = try self.popStack();     // µs[0] (first popped)
+                    const second = try self.popStack();  // µs[1] (second popped)
+                    const result = top -% second;       // SUB: µs[0] - µs[1] = top - second
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -489,7 +489,7 @@ pub const MinimalEvm = struct {
                     try self.consumeGas(GasConstants.GasFastStep);
                     const top = try self.popStack();
                     const second = try self.popStack();
-                    const result = if (second == 0) 0 else top / second;
+                    const result = if (top == 0) 0 else second / top;
                     try self.pushStack(result);
                     self.pc += 1;
                 },
@@ -1334,6 +1334,27 @@ pub const MinimalEvm = struct {
 
                     // Write the new value
                     try self.writeStorage(self.address, slot, value);
+                    self.pc += 1;
+                },
+
+                // TLOAD - Transient storage load
+                0x5c => {
+                    try self.consumeGas(GasConstants.WarmStorageReadCost);
+                    const slot = try self.popStack();
+                    // For MinimalEvm, transient storage always returns 0 (simplified)
+                    _ = slot;
+                    try self.pushStack(0);
+                    self.pc += 1;
+                },
+
+                // TSTORE - Transient storage store
+                0x5d => {
+                    try self.consumeGas(GasConstants.WarmStorageReadCost);
+                    const slot = try self.popStack();
+                    const value = try self.popStack();
+                    // For MinimalEvm, transient storage is no-op (simplified)
+                    _ = slot;
+                    _ = value;
                     self.pc += 1;
                 },
 
