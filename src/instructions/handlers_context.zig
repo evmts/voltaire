@@ -121,7 +121,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLDATALOAD opcode (0x35) - Get input data of current environment.
         /// Stack: [offset] → [data]
         pub fn calldataload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .CALLDATALOAD);
+            self.beforeInstruction(.CALLDATALOAD, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             self.getTracer().assert(self.stack.size() >= 1, "CALLDATALOAD requires 1 stack item");
             const offset = self.stack.peek_unsafe();
@@ -155,7 +155,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLDATASIZE opcode (0x36) - Get size of input data in current environment.
         /// Stack: [] → [size]
         pub fn calldatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .CALLDATASIZE);
+            self.beforeInstruction(.CALLDATASIZE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             const calldata = self.calldata();
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
@@ -168,7 +168,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CALLDATACOPY opcode (0x37) - Copy input data in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn calldatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .CALLDATACOPY);
+            self.beforeInstruction(.CALLDATACOPY, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             self.getTracer().assert(self.stack.size() >= 3, "CALLDATACOPY requires 3 stack items");
             const length = self.stack.pop_unsafe(); // Top of stack
@@ -229,7 +229,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODESIZE opcode (0x38) - Get size of code running in current environment.
         /// Stack: [] → [size]
         pub fn codesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .CODESIZE);
+            self.beforeInstruction(.CODESIZE, cursor);
             // Get codesize from frame's code
             const bytecode_len = @as(WordType, @intCast(self.code.len));
             self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CODESIZE requires stack space");
@@ -241,7 +241,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CODECOPY opcode (0x39) - Copy code running in current environment to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .CODECOPY);
+            self.beforeInstruction(.CODECOPY, cursor);
             // EVM stack order: [destOffset, offset, length] with dest on top
             self.getTracer().assert(self.stack.size() >= 3, "CODECOPY requires 3 stack items");
             const dest_offset = self.stack.pop_unsafe(); // Top of stack
@@ -555,7 +555,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOCKHASH opcode (0x40) - Get the hash of one of the 256 most recent complete blocks.
         /// Stack: [block_number] → [hash]
         pub fn blockhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .BLOCKHASH);
+            self.beforeInstruction(.BLOCKHASH, cursor);
             // BLOCKHASH costs 20 gas
             const gas_cost = 20;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -591,7 +591,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// COINBASE opcode (0x41) - Get the current block's beneficiary address.
         /// Stack: [] → [coinbase]
         pub fn coinbase(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .COINBASE);
+            self.beforeInstruction(.COINBASE, cursor);
             // COINBASE costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -675,7 +675,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// PREVRANDAO opcode - Alias for DIFFICULTY post-merge.
         /// Stack: [] → [prevrandao]
         pub fn prevrandao(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PREVRANDAO);
+            self.beforeInstruction(.PREVRANDAO, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             return difficulty(self, dispatch);
         }
@@ -696,7 +696,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// CHAINID opcode (0x46) - Get the chain ID.
         /// Stack: [] → [chain_id]
         pub fn chainid(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .CHAINID);
+            self.beforeInstruction(.CHAINID, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
