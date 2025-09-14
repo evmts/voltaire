@@ -245,6 +245,40 @@ pub const MinimalFrame = struct {
                 self.pc += 1;
             },
 
+            // JUMP
+            0x56 => {
+                try self.consumeGas(GasConstants.GasMidStep);
+                const dest = try self.popStack();
+                if (dest > std.math.maxInt(u32)) {
+                    return error.InvalidJump;
+                }
+                // In a real implementation, we'd validate the jump destination
+                // For now, just set PC
+                self.pc = @intCast(dest);
+            },
+
+            // JUMPI
+            0x57 => {
+                try self.consumeGas(GasConstants.GasSlowStep);
+                const dest = try self.popStack();
+                const condition = try self.popStack();
+
+                if (condition != 0) {
+                    if (dest > std.math.maxInt(u32)) {
+                        return error.InvalidJump;
+                    }
+                    self.pc = @intCast(dest);
+                } else {
+                    self.pc += 1;
+                }
+            },
+
+            // JUMPDEST
+            0x5b => {
+                try self.consumeGas(GasConstants.JumpdestGas);
+                self.pc += 1;
+            },
+
             // PUSH0
             0x5f => {
                 try self.consumeGas(GasConstants.GasQuickStep);
