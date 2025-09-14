@@ -363,7 +363,6 @@ fn run_mul_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256) !void 
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
 }
-}
 
 test "MUL with JUMP: basic (5 * 2 = 10)" {
     try run_mul_test_with_jump(std.testing.allocator, 5, 2);

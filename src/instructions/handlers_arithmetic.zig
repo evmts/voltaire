@@ -51,7 +51,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
-                    return top -% second;
+                    return second -% top;
                 }
             }.op);
 

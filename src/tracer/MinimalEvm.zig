@@ -595,7 +595,7 @@ pub const MinimalEvm = struct {
                     const exponent = try self.popStack();
 
                     // Calculate gas cost for EXP: 10 + 50 * byte_size_of_exponent
-                    const byte_size = if (exponent == 0) 0 else (256 - @clz(exponent) + 7) / 8;
+                    const byte_size: u64 = if (exponent == 0) 0 else @as(u64, (256 - @as(u16, @clz(exponent)) + 7) / 8);
                     try self.consumeGas(10 + 50 * byte_size);
 
                     var result: u256 = 1;
