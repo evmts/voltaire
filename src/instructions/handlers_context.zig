@@ -768,7 +768,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// BLOBBASEFEE opcode (0x4a) - Get the current block's blob base fee.
         /// Stack: [] → [blob_base_fee]
         pub fn blobbasefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .BLOBBASEFEE);
+            self.beforeInstruction(.BLOBBASEFEE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const blob_base_fee = block_info.blob_base_fee;
