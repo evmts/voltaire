@@ -4,6 +4,20 @@ EVM Specification Test Runner
 
 Runs Ethereum execution spec tests against Guillotine EVM implementation.
 Generates a comprehensive test report showing pass/fail status with detailed analysis.
+
+Usage Examples:
+  python3 spec_runner.py                           # Run 100 tests (default)
+  python3 spec_runner.py --quick                   # Quick test: only Random tests
+  python3 spec_runner.py --comprehensive           # Run ALL tests (2000+ tests)
+  python3 spec_runner.py --pattern "*Random*"      # Run only Random pattern tests
+  python3 spec_runner.py --max-files 50            # Run up to 50 test files
+  python3 spec_runner.py -p "*opcodes*" -m 20      # Short form: opcodes pattern, 20 files
+
+Available Test Patterns:
+  - "*Random*" - Quick random tests (3 files)
+  - "*opcodes*" - Opcode-specific tests
+  - "*precompile*" - Precompile contract tests
+  - "*.json" - All tests (2200+ files)
 """
 
 import json
@@ -98,8 +112,14 @@ class SpecTestRunner:
                     if code.startswith('0x'):
                         code = code[2:]
 
-                    if code:  # Only set if non-empty
-                        evm.set_code(address, bytes.fromhex(code))
+                    # Skip non-hex code formats (like EVM assembly syntax)
+                    if code and not code.startswith('{'):  # Skip assembly-like syntax
+                        try:
+                            evm.set_code(address, bytes.fromhex(code))
+                        except ValueError as hex_error:
+                            print(f"Warning: Invalid hex code for {addr_str}: {hex_error}")
+                    elif code.startswith('{'):
+                        print(f"Warning: Skipping non-hex code format for {addr_str}: assembly syntax not supported")
 
                 # Note: Storage setup not supported by current EVM API
 
@@ -252,9 +272,14 @@ class SpecTestRunner:
 
     def run_tests(self, pattern: str = "*.json", max_files: int = 10) -> None:
         """Run specification tests matching pattern."""
-        test_files = list(self.specs_dir.rglob(pattern))[:max_files]
+        all_test_files = list(self.specs_dir.rglob(pattern))
 
-        print(f"Found {len(test_files)} test files, running first {max_files}...")
+        if max_files == -1:
+            test_files = all_test_files
+            print(f"Found {len(all_test_files)} test files, running ALL...")
+        else:
+            test_files = all_test_files[:max_files]
+            print(f"Found {len(all_test_files)} test files, running first {len(test_files)}...")
 
         for i, test_file in enumerate(test_files, 1):
             print(f"[{i}/{len(test_files)}] Running {test_file.name}...")
@@ -353,6 +378,31 @@ class SpecTestRunner:
 
 def main():
     """Main entry point."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run Ethereum execution spec tests against Guillotine EVM')
+    parser.add_argument('--pattern', '-p', default='*.json',
+                       help='Pattern to match test files (default: *.json for all tests)')
+    parser.add_argument('--max-files', '-m', type=int, default=100,
+                       help='Maximum number of test files to run (default: 100, use -1 for all)')
+    parser.add_argument('--quick', '-q', action='store_true',
+                       help='Quick test mode: run only Random tests (equivalent to --pattern "*Random*.json" --max-files 5)')
+    parser.add_argument('--comprehensive', '-c', action='store_true',
+                       help='Comprehensive test mode: run all tests (equivalent to --max-files -1)')
+
+    args = parser.parse_args()
+
+    # Handle mode shortcuts
+    if args.quick:
+        pattern = "*Random*.json"
+        max_files = 5
+    elif args.comprehensive:
+        pattern = args.pattern
+        max_files = -1
+    else:
+        pattern = args.pattern
+        max_files = args.max_files
+
     specs_dir = Path(__file__).parent / "execution-specs" / "tests" / "eest" / "static" / "state_tests"
 
     if not specs_dir.exists():
@@ -361,8 +411,13 @@ def main():
 
     runner = SpecTestRunner(specs_dir)
 
-    # Run a sample of tests (limit for reasonable execution time)
-    runner.run_tests(pattern="*Random*.json", max_files=5)
+    print(f"🧪 Running tests with pattern: {pattern}")
+    if max_files == -1:
+        print("📂 Running ALL matching test files")
+    else:
+        print(f"📂 Running up to {max_files} test files")
+
+    runner.run_tests(pattern=pattern, max_files=max_files)
 
     # Generate and save report
     report = runner.generate_report()
