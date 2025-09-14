@@ -151,6 +151,9 @@ pub const MinimalEvm = struct {
     // Original storage values for gas refund calculations
     original_storage: std.AutoHashMap(StorageSlotKey, u256),
 
+    // Transient storage (cleared after each transaction)
+    transient_storage: std.AutoHashMap(StorageSlotKey, u256),
+
     // Execution state
     pc: u32,
     gas_remaining: i64,
@@ -163,6 +166,16 @@ pub const MinimalEvm = struct {
     origin: Address,
     value: u256,
     calldata: []const u8,
+
+    // Blockchain context (set from EVM)
+    chain_id: u64,
+    block_number: u64,
+    block_timestamp: u64,
+    block_difficulty: u256,
+    block_coinbase: Address,
+    block_gas_limit: u64,
+    block_base_fee: u256,
+    blob_base_fee: u256,
 
     // Return data
     return_data: []const u8,
@@ -208,6 +221,9 @@ pub const MinimalEvm = struct {
         var original_storage = std.AutoHashMap(StorageSlotKey, u256).init(allocator);
         errdefer original_storage.deinit();
 
+        var transient_storage = std.AutoHashMap(StorageSlotKey, u256).init(allocator);
+        errdefer transient_storage.deinit();
+
         return Self{
             .stack = stack,
             .memory = memory_map,
@@ -222,12 +238,22 @@ pub const MinimalEvm = struct {
             .origin = ZERO_ADDRESS,
             .value = 0,
             .calldata = &[_]u8{},
+            // Initialize blockchain context with default values
+            .chain_id = 1,
+            .block_number = 0,
+            .block_timestamp = 0,
+            .block_difficulty = 0,
+            .block_coinbase = ZERO_ADDRESS,
+            .block_gas_limit = 30_000_000,
+            .block_base_fee = 0,
+            .blob_base_fee = 0,
             .return_data = &[_]u8{},
             .stopped = false,
             .reverted = false,
             .accessed_storage_slots = accessed_storage,
             .accessed_addresses = accessed_addrs,
             .original_storage = original_storage,
+            .transient_storage = transient_storage,
             .allocator = allocator,
             .host = host,
         };
@@ -248,6 +274,7 @@ pub const MinimalEvm = struct {
         self.accessed_storage_slots.deinit();
         self.accessed_addresses.deinit();
         self.original_storage.deinit();
+        self.transient_storage.deinit();
 
         if (self.return_data.len > 0) {
             self.allocator.free(self.return_data);
@@ -268,6 +295,28 @@ pub const MinimalEvm = struct {
         self.origin = origin;
         self.value = value;
         self.calldata = calldata;
+    }
+
+    /// Set blockchain context
+    pub fn setBlockchainContext(
+        self: *Self,
+        chain_id: u64,
+        block_number: u64,
+        block_timestamp: u64,
+        block_difficulty: u256,
+        block_coinbase: Address,
+        block_gas_limit: u64,
+        block_base_fee: u256,
+        blob_base_fee: u256,
+    ) void {
+        self.chain_id = chain_id;
+        self.block_number = block_number;
+        self.block_timestamp = block_timestamp;
+        self.block_difficulty = block_difficulty;
+        self.block_coinbase = block_coinbase;
+        self.block_gas_limit = block_gas_limit;
+        self.block_base_fee = block_base_fee;
+        self.blob_base_fee = blob_base_fee;
     }
 
     /// Validate stack doesn't overflow or underflow
@@ -1153,10 +1202,11 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
 
-                // COINBASE - Return zero address
+                // COINBASE - Return configured coinbase address
                 0x41 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    try self.pushStack(0);
+                    const coinbase_u256 = to_u256(self.block_coinbase);
+                    try self.pushStack(coinbase_u256);
                     self.pc += 1;
                 },
 
@@ -1174,10 +1224,10 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
 
-                // DIFFICULTY/PREVRANDAO - Return 0
+                // DIFFICULTY/PREVRANDAO - Return configured difficulty
                 0x44 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    try self.pushStack(0);
+                    try self.pushStack(self.block_difficulty);
                     self.pc += 1;
                 },
 
@@ -1188,10 +1238,10 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
 
-                // CHAINID - Return 1 (mainnet)
+                // CHAINID - Return configured chain ID
                 0x46 => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    try self.pushStack(1);
+                    try self.pushStack(self.chain_id);
                     self.pc += 1;
                 },
 
@@ -1217,10 +1267,10 @@ pub const MinimalEvm = struct {
                     self.pc += 1;
                 },
 
-                // BLOBBASEFEE - Return 0
+                // BLOBBASEFEE - Return configured blob base fee
                 0x4a => {
                     try self.consumeGas(GasConstants.GasQuickStep);
-                    try self.pushStack(0);
+                    try self.pushStack(self.blob_base_fee);
                     self.pc += 1;
                 },
 
@@ -1347,9 +1397,11 @@ pub const MinimalEvm = struct {
                 0x5c => {
                     try self.consumeGas(GasConstants.WarmStorageReadCost);
                     const slot = try self.popStack();
-                    // For MinimalEvm, transient storage always returns 0 (simplified)
-                    _ = slot;
-                    try self.pushStack(0);
+
+                    // Load from transient storage
+                    const key = StorageSlotKey{ .address = self.address, .slot = slot };
+                    const value = self.transient_storage.get(key) orelse 0;
+                    try self.pushStack(value);
                     self.pc += 1;
                 },
 
@@ -1358,9 +1410,10 @@ pub const MinimalEvm = struct {
                     try self.consumeGas(GasConstants.WarmStorageReadCost);
                     const slot = try self.popStack();
                     const value = try self.popStack();
-                    // For MinimalEvm, transient storage is no-op (simplified)
-                    _ = slot;
-                    _ = value;
+
+                    // Store in transient storage
+                    const key = StorageSlotKey{ .address = self.address, .slot = slot };
+                    try self.transient_storage.put(key, value);
                     self.pc += 1;
                 },
 

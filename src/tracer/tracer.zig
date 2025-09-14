@@ -153,6 +153,19 @@ pub const DefaultTracer = struct {
                         evm.calldata = frame.calldata_slice;
                     }
 
+                    // Sync blockchain context from EVM
+                    const block_info = main_evm.get_block_info();
+                    evm.setBlockchainContext(
+                        main_evm.get_chain_id(),
+                        block_info.number,
+                        block_info.timestamp,
+                        block_info.difficulty,
+                        block_info.coinbase,
+                        block_info.gas_limit,
+                        block_info.base_fee,
+                        block_info.blob_base_fee
+                    );
+
                     // Set gas to match frame's remaining gas
                     evm.gas_remaining = @intCast(gas_limit);
                     evm.gas_used = 0;
