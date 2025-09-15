@@ -174,6 +174,38 @@ func main() {
 				},
 				Action: commands.RunCompile,
 			},
+			{
+				Name:  "bench",
+				Usage: "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
+				ArgsUsage: "[fixture-path]",
+				Flags: []cli.Flag{
+					// Call parameters (same as call command)
+					&cli.StringFlag{Name: "caller", Usage: "Caller address"},
+					&cli.StringFlag{Name: "to", Usage: "Target contract address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value to transfer"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
+					
+					// Hyperfine parameters
+					&cli.IntFlag{Name: "warmup", Value: 3, Usage: "Number of warmup runs before benchmarking"},
+					&cli.IntFlag{Name: "runs", Usage: "Number of runs (default: automatic)"},
+					&cli.IntFlag{Name: "min-runs", Value: 10, Usage: "Minimum number of runs"},
+					&cli.IntFlag{Name: "max-runs", Usage: "Maximum number of runs"},
+					&cli.StringFlag{Name: "prepare", Usage: "Command to run before each benchmark run"},
+					&cli.StringFlag{Name: "cleanup", Usage: "Command to run after each benchmark run"},
+					&cli.StringFlag{Name: "parameter-scan", Usage: "Perform parameter scan (e.g., '1 100' for gas)"},
+					&cli.IntFlag{Name: "parameter-step", Usage: "Parameter step size for scan"},
+					&cli.StringFlag{Name: "parameter-list", Usage: "Comma-separated list of parameter values"},
+					&cli.BoolFlag{Name: "show-output", Usage: "Show command output"},
+					&cli.StringFlag{Name: "export-json", Usage: "Export results to JSON file"},
+					&cli.StringFlag{Name: "export-csv", Usage: "Export results to CSV file"},
+					&cli.StringFlag{Name: "export-markdown", Usage: "Export results to Markdown file"},
+					&cli.StringFlag{Name: "time-unit", Value: "millisecond", Usage: "Time unit: millisecond, second"},
+					&cli.StringFlag{Name: "compare", Usage: "Command to compare against"},
+				},
+				Action: commands.ExecuteBench,
+			},
 		},
 	}
 
