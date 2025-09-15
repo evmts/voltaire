@@ -1586,6 +1586,38 @@ pub const MinimalFrame = struct {
                 return;
             },
 
+            // AUTH (EIP-3074)
+            0xf6 => {
+                // AUTH opcode from EIP-3074
+                // Stack: [authority, commitment, sig_v, sig_r, sig_s] → [success]
+                // Stack order (top to bottom): sig_s, sig_r, sig_v, commitment, authority
+                try self.consumeGas(3100); // Base cost for AUTH
+
+                // Pop 5 values from stack in correct order (top first)
+                const sig_s = try self.popStack();
+                const sig_r = try self.popStack();
+                const sig_v = try self.popStack();
+                const commitment = try self.popStack();
+                const authority = try self.popStack();
+
+                // Basic validation as per spec
+                // sig_v must be 27 or 28, sig_r and sig_s must be non-zero
+                if (sig_v > 28 or sig_r == 0 or sig_s == 0) {
+                    // Invalid signature components, push failure
+                    try self.pushStack(0);
+                    self.pc += 1;
+                    return;
+                }
+
+                // For MinimalFrame, we don't implement actual signature recovery
+                // Just simulate a failed authentication (which is safe for testing)
+                _ = authority;
+                _ = commitment;
+
+                try self.pushStack(0); // Always return failure for AUTH in MinimalFrame
+                self.pc += 1;
+            },
+
             // INVALID
             0xfe => {
                 // INVALID opcode always fails
