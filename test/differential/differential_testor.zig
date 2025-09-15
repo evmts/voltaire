@@ -488,14 +488,14 @@ pub const DifferentialTestor = struct {
             primitives.Address.ZERO_ADDRESS, // contract
             0, // value
             input
-        ) catch |err| {
+        ) catch {
             // On error, create a failed result
-            _ = @as(anyerror, err);
             return ExecutionResultWithTrace{
                 .success = false,
                 .gas_used = gas_limit,
                 .output = try self.allocator.alloc(u8, 0),
                 .trace = null,
+                .allocator = self.allocator,
             };
         };
         const success = result.success;

@@ -29,10 +29,6 @@ const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 // For this reason, the tracer is intentionally decoupled from the EVM and is expected to share
 // minimal code with it.
 pub const DefaultTracer = struct {
-    // Base allocator passed from outside
-    base_allocator: std.mem.Allocator,
-    // Arena allocator for simplified memory management
-    arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
@@ -82,13 +78,8 @@ pub const DefaultTracer = struct {
     };
 
     pub fn init(allocator: std.mem.Allocator) DefaultTracer {
-        var arena = std.heap.ArenaAllocator.init(allocator);
-        const arena_allocator = arena.allocator();
-
         return .{
-            .base_allocator = allocator,
-            .arena = arena,
-            .allocator = arena_allocator,
+            .allocator = allocator,
             .steps = std.ArrayList(ExecutionStep){
                 .items = &.{},
                 .capacity = 0,
@@ -109,8 +100,10 @@ pub const DefaultTracer = struct {
     }
 
     pub fn deinit(self: *DefaultTracer) void {
-        // Arena allocator cleans up everything at once
-        self.arena.deinit();
+        // Clean up MinimalEvm if it exists
+        if (self.minimal_evm) |*evm| {
+            evm.deinit();
+        }
     }
 
     /// Initialize PC tracker with bytecode (called when frame starts interpretation)
@@ -137,8 +130,8 @@ pub const DefaultTracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                // Initialize MinimalEvm orchestrator with base allocator to avoid nested arenas
-                self.minimal_evm = MinimalEvm.init(self.base_allocator) catch null;
+                // Initialize MinimalEvm orchestrator
+                self.minimal_evm = MinimalEvm.init(self.allocator) catch null;
 
                 if (self.minimal_evm) |*evm| {
                     // Get the main EVM for context
