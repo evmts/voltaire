@@ -19,6 +19,544 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// ========================
+// Shared Utilities
+// ========================
+
+// parseAddress converts a hex string to an Address
+func parseAddress(s string) (primitives.Address, error) {
+	return primitives.AddressFromHex(s)
+}
+
+// parseBigInt converts a string to a big.Int (supports decimal and hex with 0x prefix)
+func parseBigInt(s string) (*big.Int, error) {
+	if s == "" {
+		return big.NewInt(0), nil
+	}
+	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
+		// Parse as hex
+		s = s[2:]
+		n := new(big.Int)
+		_, ok := n.SetString(s, 16)
+		if !ok {
+			return nil, fmt.Errorf("invalid hex number: %s", s)
+		}
+		return n, nil
+	}
+	// Parse as decimal
+	n := new(big.Int)
+	_, ok := n.SetString(s, 10)
+	if !ok {
+		return nil, fmt.Errorf("invalid decimal number: %s", s)
+	}
+	return n, nil
+}
+
+// parseGas converts a string to uint64 gas value
+func parseGas(s string) (uint64, error) {
+	n, err := parseBigInt(s)
+	if err != nil {
+		return 0, err
+	}
+	if !n.IsUint64() {
+		return 0, fmt.Errorf("gas value too large: %s", s)
+	}
+	return n.Uint64(), nil
+}
+
+// setupEVM creates and initializes an EVM instance with proper state
+func setupEVM(c *cli.Context) (*evm.EVM, error) {
+	vm, err := evm.New()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create EVM: %w", err)
+	}
+	
+	// TODO: Setup initial state from flags if needed
+	// For now, we'll use defaults
+	
+	return vm, nil
+}
+
+// outputResult formats and outputs the CallResult based on format flag
+func outputResult(c *cli.Context, result *guillotine.CallResult) error {
+	format := c.String("format")
+	
+	// Check for execution failure
+	if !result.Success {
+		if result.ErrorInfo != "" {
+			return fmt.Errorf("execution failed: %s", result.ErrorInfo)
+		}
+		if len(result.Output) > 0 {
+			// Revert with data
+			return fmt.Errorf("execution reverted: 0x%x", result.Output)
+		}
+		return fmt.Errorf("execution failed")
+	}
+	
+	switch format {
+	case "hex":
+		// For create operations, output the created address
+		if result.CreatedAddress != nil {
+			fmt.Printf("%s\n", result.CreatedAddress.Hex())
+		} else if len(result.Output) > 0 {
+			fmt.Printf("0x%x\n", result.Output)
+		} else {
+			fmt.Printf("0x\n")
+		}
+	case "json":
+		// TODO: Implement JSON output
+		return fmt.Errorf("JSON output not yet implemented")
+	default:
+		return fmt.Errorf("unknown format: %s", format)
+	}
+	
+	return nil
+}
+
+// ========================
+// Parameter Parsing Helpers (Rule of 3 - used in multiple commands)
+// ========================
+
+type CommonParams struct {
+	Caller primitives.Address
+	Gas    uint64
+}
+
+type CallParams struct {
+	CommonParams
+	To    primitives.Address
+	Value *big.Int
+	Input []byte
+}
+
+type CreateParams struct {
+	CommonParams
+	Value    *big.Int
+	InitCode []byte
+	Salt     *big.Int // Only for CREATE2
+}
+
+// parseCommonParams extracts caller and gas parameters (used by all commands)
+func parseCommonParams(c *cli.Context) (CommonParams, error) {
+	caller, err := parseAddress(c.String("caller"))
+	if err != nil {
+		return CommonParams{}, fmt.Errorf("invalid caller address: %w", err)
+	}
+	
+	gas, err := parseGas(c.String("gas"))
+	if err != nil {
+		return CommonParams{}, fmt.Errorf("invalid gas: %w", err)
+	}
+	
+	return CommonParams{Caller: caller, Gas: gas}, nil
+}
+
+// parseCallParams extracts parameters for CALL-like operations
+func parseCallParams(c *cli.Context, needValue bool) (CallParams, error) {
+	common, err := parseCommonParams(c)
+	if err != nil {
+		return CallParams{}, err
+	}
+	
+	to, err := parseAddress(c.String("to"))
+	if err != nil {
+		return CallParams{}, fmt.Errorf("invalid to address: %w", err)
+	}
+	
+	var value *big.Int
+	if needValue {
+		value, err = parseBigInt(c.String("value"))
+		if err != nil {
+			return CallParams{}, fmt.Errorf("invalid value: %w", err)
+		}
+	} else {
+		value = big.NewInt(0)
+	}
+	
+	input, err := parseHex(c.String("input"))
+	if err != nil {
+		return CallParams{}, fmt.Errorf("invalid input data: %w", err)
+	}
+	
+	return CallParams{
+		CommonParams: common,
+		To:          to,
+		Value:       value,
+		Input:       input,
+	}, nil
+}
+
+// parseCreateParams extracts parameters for CREATE operations
+func parseCreateParams(c *cli.Context, needSalt bool) (CreateParams, error) {
+	common, err := parseCommonParams(c)
+	if err != nil {
+		return CreateParams{}, err
+	}
+	
+	value, err := parseBigInt(c.String("value"))
+	if err != nil {
+		return CreateParams{}, fmt.Errorf("invalid value: %w", err)
+	}
+	
+	initCode, err := parseHex(c.String("init-code"))
+	if err != nil {
+		return CreateParams{}, fmt.Errorf("invalid init code: %w", err)
+	}
+	
+	var salt *big.Int
+	if needSalt {
+		salt, err = parseBigInt(c.String("salt"))
+		if err != nil {
+			return CreateParams{}, fmt.Errorf("invalid salt: %w", err)
+		}
+	}
+	
+	return CreateParams{
+		CommonParams: common,
+		Value:       value,
+		InitCode:    initCode,
+		Salt:        salt,
+	}, nil
+}
+
+// executeWithBalance ensures the caller has sufficient balance before execution
+func executeWithBalance(vm *evm.EVM, caller primitives.Address, value *big.Int) error {
+	if value != nil && value.Sign() > 0 {
+		// Ensure caller has sufficient balance
+		balance := new(big.Int).Add(value, big.NewInt(1000000000000000000))
+		if err := vm.SetBalance(caller, balance); err != nil {
+			return fmt.Errorf("failed to set caller balance: %w", err)
+		}
+	}
+	return nil
+}
+
+// ========================
+// Command Implementations
+// ========================
+
+func executeCall(c *cli.Context) error {
+	params, err := parseCallParams(c, true) // needValue = true
+	if err != nil {
+		return err
+	}
+	
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	if err := executeWithBalance(vm, params.Caller, params.Value); err != nil {
+		return err
+	}
+	
+	result, err := vm.Call(evm.Call{
+		Caller: params.Caller,
+		To:     params.To,
+		Value:  params.Value,
+		Input:  params.Input,
+		Gas:    params.Gas,
+	})
+	if err != nil {
+		return fmt.Errorf("call execution failed: %w", err)
+	}
+	
+	return outputResult(c, result)
+}
+
+func executeCallcode(c *cli.Context) error {
+	params, err := parseCallParams(c, true) // needValue = true
+	if err != nil {
+		return err
+	}
+	
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	if err := executeWithBalance(vm, params.Caller, params.Value); err != nil {
+		return err
+	}
+	
+	result, err := vm.Call(evm.Callcode{
+		Caller: params.Caller,
+		To:     params.To,
+		Value:  params.Value,
+		Input:  params.Input,
+		Gas:    params.Gas,
+	})
+	if err != nil {
+		return fmt.Errorf("callcode execution failed: %w", err)
+	}
+	
+	return outputResult(c, result)
+}
+
+func executeDelegatecall(c *cli.Context) error {
+	params, err := parseCallParams(c, false) // needValue = false
+	if err != nil {
+		return err
+	}
+	
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	result, err := vm.Call(evm.Delegatecall{
+		Caller: params.Caller,
+		To:     params.To,
+		Input:  params.Input,
+		Gas:    params.Gas,
+	})
+	if err != nil {
+		return fmt.Errorf("delegatecall execution failed: %w", err)
+	}
+	
+	return outputResult(c, result)
+}
+
+func executeStaticcall(c *cli.Context) error {
+	params, err := parseCallParams(c, false) // needValue = false
+	if err != nil {
+		return err
+	}
+	
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	result, err := vm.Call(evm.Staticcall{
+		Caller: params.Caller,
+		To:     params.To,
+		Input:  params.Input,
+		Gas:    params.Gas,
+	})
+	if err != nil {
+		return fmt.Errorf("staticcall execution failed: %w", err)
+	}
+	
+	return outputResult(c, result)
+}
+
+func executeCreate(c *cli.Context) error {
+	params, err := parseCreateParams(c, false) // needSalt = false
+	if err != nil {
+		return err
+	}
+	
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	if err := executeWithBalance(vm, params.Caller, params.Value); err != nil {
+		return err
+	}
+	
+	result, err := vm.Call(evm.Create{
+		Caller:   params.Caller,
+		Value:    params.Value,
+		InitCode: params.InitCode,
+		Gas:      params.Gas,
+	})
+	if err != nil {
+		return fmt.Errorf("create execution failed: %w", err)
+	}
+	
+	return outputResult(c, result)
+}
+
+func executeCreate2(c *cli.Context) error {
+	params, err := parseCreateParams(c, true) // needSalt = true
+	if err != nil {
+		return err
+	}
+	
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	if err := executeWithBalance(vm, params.Caller, params.Value); err != nil {
+		return err
+	}
+	
+	result, err := vm.Call(evm.Create2{
+		Caller:   params.Caller,
+		Value:    params.Value,
+		InitCode: params.InitCode,
+		Salt:     params.Salt,
+		Gas:      params.Gas,
+	})
+	if err != nil {
+		return fmt.Errorf("create2 execution failed: %w", err)
+	}
+	
+	return outputResult(c, result)
+}
+
+// ========================
+// JSON-RPC Compatible Commands
+// ========================
+
+func executeEstimateGas(c *cli.Context) error {
+	// Parse JSON-RPC style parameters
+	from, err := parseAddress(c.String("from"))
+	if err != nil {
+		return fmt.Errorf("invalid from address: %w", err)
+	}
+	
+	var to primitives.Address
+	if c.IsSet("to") {
+		to, err = parseAddress(c.String("to"))
+		if err != nil {
+			return fmt.Errorf("invalid to address: %w", err)
+		}
+	}
+	
+	value, err := parseBigInt(c.String("value"))
+	if err != nil {
+		return fmt.Errorf("invalid value: %w", err)
+	}
+	
+	data, err := parseHex(c.String("data"))
+	if err != nil {
+		return fmt.Errorf("invalid data: %w", err)
+	}
+	
+	// Setup EVM
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	// Ensure from has balance
+	if err := executeWithBalance(vm, from, value); err != nil {
+		return err
+	}
+	
+	// Use a high gas limit for estimation
+	const estimateGasLimit uint64 = 10000000
+	
+	// Determine if this is a create or call
+	var result *guillotine.CallResult
+	var zeroAddr primitives.Address
+	if !c.IsSet("to") || to == zeroAddr {
+		// CREATE operation
+		result, err = vm.Call(evm.Create{
+			Caller:   from,
+			Value:    value,
+			InitCode: data,
+			Gas:      estimateGasLimit,
+		})
+	} else {
+		// CALL operation
+		result, err = vm.Call(evm.Call{
+			Caller: from,
+			To:     to,
+			Value:  value,
+			Input:  data,
+			Gas:    estimateGasLimit,
+		})
+	}
+	
+	if err != nil {
+		return fmt.Errorf("gas estimation failed: %w", err)
+	}
+	
+	// Calculate gas used
+	gasUsed := estimateGasLimit - result.GasLeft
+	
+	// Output in JSON-RPC hex format
+	fmt.Printf("0x%x\n", gasUsed)
+	return nil
+}
+
+func executeAccessList(c *cli.Context) error {
+	// Parse JSON-RPC style parameters
+	from, err := parseAddress(c.String("from"))
+	if err != nil {
+		return fmt.Errorf("invalid from address: %w", err)
+	}
+	
+	var to primitives.Address
+	if c.IsSet("to") {
+		to, err = parseAddress(c.String("to"))
+		if err != nil {
+			return fmt.Errorf("invalid to address: %w", err)
+		}
+	}
+	
+	value, err := parseBigInt(c.String("value"))
+	if err != nil {
+		return fmt.Errorf("invalid value: %w", err)
+	}
+	
+	data, err := parseHex(c.String("data"))
+	if err != nil {
+		return fmt.Errorf("invalid data: %w", err)
+	}
+	
+	gas, err := parseGas(c.String("gas"))
+	if err != nil {
+		return fmt.Errorf("invalid gas: %w", err)
+	}
+	
+	// Setup EVM with access list tracking
+	vm, err := setupEVM(c)
+	if err != nil {
+		return err
+	}
+	defer vm.Destroy()
+	
+	// Ensure from has balance
+	if err := executeWithBalance(vm, from, value); err != nil {
+		return err
+	}
+	
+	// Execute the call to collect access list
+	var result *guillotine.CallResult
+	var zeroAddr primitives.Address
+	if !c.IsSet("to") || to == zeroAddr {
+		result, err = vm.Call(evm.Create{
+			Caller:   from,
+			Value:    value,
+			InitCode: data,
+			Gas:      gas,
+		})
+	} else {
+		result, err = vm.Call(evm.Call{
+			Caller: from,
+			To:     to,
+			Value:  value,
+			Input:  data,
+			Gas:    gas,
+		})
+	}
+	
+	if err != nil {
+		return fmt.Errorf("access list generation failed: %w", err)
+	}
+	
+	// Format as JSON-RPC eth_createAccessList response
+	// Note: The actual accessed addresses and storage would come from result.AccessedAddresses
+	// and result.AccessedStorage, but these fields may not be populated yet in the SDK
+	
+	// For now, return a minimal access list format
+	fmt.Printf(`{"accessList":[],"gasUsed":"0x%x"}`+"\n", gas - result.GasLeft)
+	return nil
+}
+
 func main() {
 	app := &cli.App{
 		Name:  "guillotine-bench",
@@ -34,33 +572,105 @@ func main() {
 					return runTUI()
 				},
 			},
+			// Core EVM operations matching CallParams variants
 			{
-				Name:  "run",
-				Usage: "Execute EVM bytecode",
+				Name:  "call",
+				Usage: "Execute a CALL operation",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "codefile",
-						Usage: "Path to file containing bytecode (hex format)",
-					},
-					&cli.StringFlag{
-						Name:     "gas",
-						Usage:    "Gas limit for execution",
-						Required: true,
-					},
-					&cli.StringFlag{
-						Name:  "input",
-						Usage: "Calldata/input data in hex format",
-						Value: "",
-					},
-					&cli.BoolFlag{
-						Name:  "deploy",
-						Usage: "Deploy the bytecode first (for constructor bytecode)",
-						Value: false,
-					},
+					&cli.StringFlag{Name: "caller", Required: true, Usage: "Caller address"},
+					&cli.StringFlag{Name: "to", Required: true, Usage: "Target contract address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value to transfer"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Required: true, Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
 				},
-				Action: func(c *cli.Context) error {
-					return runBytecode(c)
+				Action: executeCall,
+			},
+			{
+				Name:  "callcode",
+				Usage: "Execute a CALLCODE operation",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "caller", Required: true, Usage: "Caller address"},
+					&cli.StringFlag{Name: "to", Required: true, Usage: "Target contract address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value to transfer"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Required: true, Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
 				},
+				Action: executeCallcode,
+			},
+			{
+				Name:  "delegatecall",
+				Usage: "Execute a DELEGATECALL operation",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "caller", Required: true, Usage: "Caller address"},
+					&cli.StringFlag{Name: "to", Required: true, Usage: "Target contract address"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Required: true, Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
+				},
+				Action: executeDelegatecall,
+			},
+			{
+				Name:  "staticcall",
+				Usage: "Execute a STATICCALL operation",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "caller", Required: true, Usage: "Caller address"},
+					&cli.StringFlag{Name: "to", Required: true, Usage: "Target contract address"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Required: true, Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
+				},
+				Action: executeStaticcall,
+			},
+			{
+				Name:  "create",
+				Usage: "Execute a CREATE operation",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "caller", Required: true, Usage: "Caller address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value to transfer"},
+					&cli.StringFlag{Name: "init-code", Required: true, Usage: "Initialization code (hex)"},
+					&cli.StringFlag{Name: "gas", Required: true, Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
+				},
+				Action: executeCreate,
+			},
+			{
+				Name:  "create2",
+				Usage: "Execute a CREATE2 operation",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "caller", Required: true, Usage: "Caller address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value to transfer"},
+					&cli.StringFlag{Name: "init-code", Required: true, Usage: "Initialization code (hex)"},
+					&cli.StringFlag{Name: "salt", Required: true, Usage: "Salt value (hex)"},
+					&cli.StringFlag{Name: "gas", Required: true, Usage: "Gas limit"},
+					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
+				},
+				Action: executeCreate2,
+			},
+			// JSON-RPC compatible commands
+			{
+				Name:  "estimategas",
+				Usage: "Estimate gas for a transaction (eth_estimateGas compatible)",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "from", Required: true, Usage: "From address"},
+					&cli.StringFlag{Name: "to", Usage: "To address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value"},
+					&cli.StringFlag{Name: "data", Value: "", Usage: "Input data (hex)"},
+				},
+				Action: executeEstimateGas,
+			},
+			{
+				Name:  "accesslist", 
+				Usage: "Get access list for a transaction (eth_createAccessList compatible)",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "from", Required: true, Usage: "From address"},
+					&cli.StringFlag{Name: "to", Usage: "To address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value"},
+					&cli.StringFlag{Name: "data", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Value: "10000000", Usage: "Gas limit"},
+				},
+				Action: executeAccessList,
 			},
 			{
 				Name:  "trace",
@@ -135,7 +745,7 @@ func runTUI() error {
 	return nil
 }
 
-func runBytecode(c *cli.Context) error {
+func callBytecode(c *cli.Context) error {
 	var bytecode []byte
 	var err error
 
