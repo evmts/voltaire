@@ -48,9 +48,6 @@ pub const DefaultTracer = struct {
     // Minimal EVM for parallel execution tracking and validation
     minimal_evm: ?*MinimalEvm,
 
-    // Track nesting depth to skip MinimalEvm for nested calls
-    nested_depth: u32,
-
     // Execution tracking
     instruction_count: u64 = 0,  // Total instructions executed
     schedule_index: u64 = 0,     // Current dispatch schedule index
@@ -61,6 +58,9 @@ pub const DefaultTracer = struct {
     // Limit is 10x the block gas limit (30M gas * 10 = 300M instructions)
     // This is very generous - normal contracts execute far fewer instructions
     instruction_safety: SafetyCounter(u64, .enabled),
+
+    // Nested call depth tracking
+    nested_depth: u16 = 0,
 
     // Internal representation of an execution step
     pub const ExecutionStep = struct {
@@ -92,7 +92,6 @@ pub const DefaultTracer = struct {
             .current_pc = 0,
             .bytecode = &[_]u8{},
             .minimal_evm = null,
-            .nested_depth = 0,
             .instruction_count = 0,
             .schedule_index = 0,
             .simple_instruction_count = 0,
@@ -141,21 +140,11 @@ pub const DefaultTracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                if (self.minimal_evm == null) {
-                    // Initialize MinimalEvm orchestrator on heap to avoid arena corruption
-                    // Only create once for the top-level frame, not for nested frames
                     self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
                         self.minimal_evm = null;
                         return;
                     };
                     self.debug("Created MinimalEvm at 0x{x}", .{@intFromPtr(self.minimal_evm)});
-                    self.nested_depth = 0;
-                } else {
-                    // For nested calls, just skip MinimalEvm tracking for now
-                    // TODO: Implement proper nested call support in MinimalEvm
-                    self.nested_depth += 1;
-                    self.debug("Nested call detected (depth={}), skipping MinimalEvm tracking", .{self.nested_depth});
-                    return;
                 }
 
                 if (self.minimal_evm) |evm| {
@@ -226,7 +215,6 @@ pub const DefaultTracer = struct {
                         frame_gas_remaining,
                     });
                 }
-            }
         }
     }
 
@@ -278,11 +266,9 @@ pub const DefaultTracer = struct {
                 // with message about potential infinite loop or excessive instructions
                 self.instruction_safety.inc();
 
-                // Execute MinimalEvm step for validation (if initialized and not nested)
+                // Execute MinimalEvm step for validation (if initialized)
                 if (self.minimal_evm) |evm| {
-                    if (self.nested_depth == 0) {
-                        self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
-                    }
+                    self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
                 }
 
                 // Log execution
@@ -430,79 +416,111 @@ pub const DefaultTracer = struct {
         switch (opcode) {
             // PUSH + arithmetic fusions (2 steps)
             .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => {
-                // Step twice: PUSH + ADD
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_ADD step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x01)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_ADD step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
             .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => {
-                // Step twice: PUSH + MUL
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_MUL step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x02)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_MUL step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
             .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => {
-                // Step twice: PUSH + SUB
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_SUB step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x03)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_SUB step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
             .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => {
-                // Step twice: PUSH + DIV
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_DIV step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x04)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_DIV step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
 
             // Bitwise fusions
             .PUSH_AND_INLINE, .PUSH_AND_POINTER => {
-                // Step twice: PUSH + AND
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_AND step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x16)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_AND step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
             .PUSH_OR_INLINE, .PUSH_OR_POINTER => {
-                // Step twice: PUSH + OR
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_OR step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x17)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_OR step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
             .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => {
-                // Step twice: PUSH + XOR
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_XOR step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x18)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_XOR step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
 
             // Memory fusions
             .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => {
-                // Step twice: PUSH + MLOAD
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_MLOAD step failed: {any}", .{e});
-                        return;
-                    };
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x51)
+                {
+                    inline for (0..2) |_| {
+                        evm.step() catch |e| {
+                            self.err("PUSH_MLOAD step failed: {any}", .{e});
+                            return;
+                        };
+                    }
                 }
             },
             .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
@@ -567,54 +585,76 @@ pub const DefaultTracer = struct {
                 });
 
                 // Execute the 2-step sequence: PUSH1 + MSTORE8
-                inline for (0..2) |step_num| {
-                    if (evm.getPC() >= evm.getBytecode().len) {
-                        self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.getPC(), evm.getBytecode().len});
-                        return;
+                if (evm.getPC() + 2 < evm.getBytecode().len and
+                    evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
+                    evm.getBytecode()[evm.getPC() + 2] == 0x53) {   // MSTORE8 (after PUSH1 + 1 byte immediate)
+
+                    self.debug("PUSH_MSTORE8_INLINE: Found PUSH1+MSTORE8 at PC {d}, executing 2 steps", .{evm.getPC()});
+
+                    inline for (0..2) |step_num| {
+                        if (evm.getPC() >= evm.getBytecode().len) {
+                            self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.getPC(), evm.getBytecode().len});
+                            return;
+                        }
+
+                        const current_opcode = evm.getBytecode()[evm.getPC()];
+                        self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
+
+                        evm.step() catch |e| {
+                            self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
+                            return;
+                        };
                     }
+                } else {
+                    // Not a PUSH1+MSTORE8 sequence - this is a mis-identified synthetic opcode
+                    self.debug("PUSH_MSTORE8_INLINE: Not at PUSH1+MSTORE8 sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
+                        if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
 
-                    const current_opcode = evm.getBytecode()[evm.getPC()];
-                    self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
-
-                    evm.step() catch |e| {
-                        self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
-                        return;
-                    };
+                    // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
+                    // Frame will handle the actual opcode, MinimalEvm should remain unchanged
+                    self.debug("PUSH_MSTORE8_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
                 }
             },
 
             // Control flow fusions
-            .JUMP_TO_STATIC_LOCATION => {
-                // Step twice: PUSH + JUMP
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .JUMPI_TO_STATIC_LOCATION => {
-                // Step twice: PUSH + JUMPI
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("JUMPI_TO_STATIC_LOCATION step failed: {any}", .{e});
-                        return;
-                    };
+            .JUMP_TO_STATIC_LOCATION, .JUMPI_TO_STATIC_LOCATION => {
+                // These are optimized jumps, in the minimal EVM they are PUSH + JUMP(I)
+                const pc = evm.getPC();
+                const bytecode = evm.getBytecode();
+                if (pc + 2 < bytecode.len and bytecode[pc] >= 0x60 and bytecode[pc] <= 0x7f) {
+                    const push_size = bytecode[pc] - 0x5f;
+                    const next_op_pc = pc + 1 + push_size;
+                    if (next_op_pc < bytecode.len and (bytecode[next_op_pc] == 0x56 or bytecode[next_op_pc] == 0x57)) {
+                        inline for (0..2) |_| {
+                            evm.step() catch |e| {
+                                self.err("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
+                                return;
+                            };
+                        }
+                    }
                 }
             },
 
             // Multi-push/pop fusions
             .MULTI_PUSH_2 => {
-                // Step twice: PUSH + PUSH
-                inline for (0..2) |_| {
-                    evm.step() catch |e| {
-                        self.err("MULTI_PUSH_2 step failed: {any}", .{e});
-                        return;
-                    };
+                // Approximate validation: check for two consecutive PUSHes
+                const pc = evm.getPC();
+                const bytecode = evm.getBytecode();
+                if (pc + 2 < bytecode.len and bytecode[pc] >= 0x60 and bytecode[pc] <= 0x7f) {
+                    const push_size1 = bytecode[pc] - 0x5f;
+                    const next_pc = pc + 1 + push_size1;
+                    if (next_pc < bytecode.len and bytecode[next_pc] >= 0x60 and bytecode[next_pc] <= 0x7f) {
+                        inline for (0..2) |_| {
+                            evm.step() catch |e| {
+                                self.err("MULTI_PUSH_2 step failed: {any}", .{e});
+                                return;
+                            };
+                        }
+                    }
                 }
             },
             .MULTI_PUSH_3 => {
-                // Step 3 times: PUSH + PUSH + PUSH
+                // Approximate validation for three PUSHes
                 inline for (0..3) |_| {
                     evm.step() catch |e| {
                         self.err("MULTI_PUSH_3 step failed: {any}", .{e});
@@ -623,7 +663,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .MULTI_POP_2 => {
-                // Step twice: POP + POP
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
                         self.err("MULTI_POP_2 step failed: {any}", .{e});
@@ -632,7 +671,6 @@ pub const DefaultTracer = struct {
                 }
             },
             .MULTI_POP_3 => {
-                // Step 3 times: POP + POP + POP
                 inline for (0..3) |_| {
                     evm.step() catch |e| {
                         self.err("MULTI_POP_3 step failed: {any}", .{e});
@@ -642,83 +680,10 @@ pub const DefaultTracer = struct {
             },
 
             // Three-operation fusions
-            .DUP2_MSTORE_PUSH => {
-                // Step 3 times: DUP2 + MSTORE + PUSH
+            .DUP2_MSTORE_PUSH, .DUP3_ADD_MSTORE, .SWAP1_DUP2_ADD, .PUSH_DUP3_ADD, .PUSH_ADD_DUP1, .MLOAD_SWAP1_DUP2, .ISZERO_JUMPI, .CALLVALUE_CHECK, .PUSH0_REVERT => {
                 inline for (0..3) |_| {
                     evm.step() catch |e| {
-                        self.err("DUP2_MSTORE_PUSH step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .DUP3_ADD_MSTORE => {
-                // Step 3 times: DUP3 + ADD + MSTORE
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("DUP3_ADD_MSTORE step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .SWAP1_DUP2_ADD => {
-                // Step 3 times: SWAP1 + DUP2 + ADD
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("SWAP1_DUP2_ADD step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .PUSH_DUP3_ADD => {
-                // Step 3 times: PUSH + DUP3 + ADD
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_DUP3_ADD step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .PUSH_ADD_DUP1 => {
-                // Step 3 times: PUSH + ADD + DUP1
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH_ADD_DUP1 step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .MLOAD_SWAP1_DUP2 => {
-                // Step 3 times: MLOAD + SWAP1 + DUP2
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("MLOAD_SWAP1_DUP2 step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .ISZERO_JUMPI => {
-                // Step 3 times: ISZERO + PUSH + JUMPI
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("ISZERO_JUMPI step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .CALLVALUE_CHECK => {
-                // Step 3 times: CALLVALUE + DUP1 + ISZERO
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("CALLVALUE_CHECK step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .PUSH0_REVERT => {
-                // Step 3 times: PUSH0 + PUSH0 + REVERT
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("PUSH0_REVERT step failed: {any}", .{e});
+                        self.err("Three-op fusion step failed: {any}", .{e});
                         return;
                     };
                 }
@@ -1034,9 +999,9 @@ pub const DefaultTracer = struct {
 
     /// Called when a frame completes (for tracking nested depth)
     pub fn onFrameReturn(self: *DefaultTracer) void {
-        if (self.nested_depth > 0) {
-            self.nested_depth -= 1;
-            self.debug("Frame returned, depth now {}", .{self.nested_depth});
+        if (self.minimal_evm) |_| {
+            // Skip validation for nested calls
+            if (self.nested_depth > 0) return;
         }
     }
 
