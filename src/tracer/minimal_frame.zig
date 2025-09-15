@@ -1122,7 +1122,10 @@ pub const MinimalFrame = struct {
                     available_gas,
                 ) catch {
                     // Call failed - push 0 and continue
-                    try self.pushStack(0);
+                    self.pushStack(0) catch {
+                        // Stack overflow - this shouldn't happen but handle gracefully
+                        return error.StackOverflow;
+                    };
                     self.pc += 1;
                     return;
                 };
@@ -1234,7 +1237,10 @@ pub const MinimalFrame = struct {
                     available_gas,
                 ) catch {
                     // Call failed - push 0 and continue
-                    try self.pushStack(0);
+                    self.pushStack(0) catch {
+                        // Stack overflow - this shouldn't happen but handle gracefully
+                        return error.StackOverflow;
+                    };
                     self.pc += 1;
                     return;
                 };
@@ -1359,7 +1365,10 @@ pub const MinimalFrame = struct {
                     available_gas,
                 ) catch {
                     // Call failed - push 0 and continue
-                    try self.pushStack(0);
+                    self.pushStack(0) catch {
+                        // Stack overflow - this shouldn't happen but handle gracefully
+                        return error.StackOverflow;
+                    };
                     self.pc += 1;
                     return;
                 };
@@ -1482,7 +1491,10 @@ pub const MinimalFrame = struct {
                     available_gas,
                 ) catch {
                     // Call failed - push 0 and continue
-                    try self.pushStack(0);
+                    self.pushStack(0) catch {
+                        // Stack overflow - this shouldn't happen but handle gracefully
+                        return error.StackOverflow;
+                    };
                     self.pc += 1;
                     return;
                 };
