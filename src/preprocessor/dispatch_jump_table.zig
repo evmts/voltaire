@@ -64,9 +64,10 @@ pub fn JumpTable(comptime FrameType: type, comptime DispatchType: type) type {
             }
 
             // Standard binary search from the adjusted bounds
-            var loop_counter = FrameType.frame_config.createLoopSafetyCounter().init(FrameType.frame_config.loop_quota orelse 0);
+            const has_frame_config = @hasField(FrameType, "frame_config");
+            var loop_counter = if (has_frame_config) FrameType.frame_config.createLoopSafetyCounter().init(FrameType.frame_config.loop_quota orelse 0) else {};
             while (left < right) {
-                loop_counter.inc();
+                if (has_frame_config) loop_counter.inc();
                 const mid = left + (right - left) / 2;
                 const entry = self.entries[mid];
 
