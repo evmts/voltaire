@@ -463,7 +463,7 @@ test "AccessList - memory stress test with many addresses" {
     // Test with many unique addresses to stress hash map
     var addresses: [1000]Address = undefined;
     for (0..1000) |i| {
-        addresses[i] = Address{ .bytes = std.mem.toBytes(@as(u160, @intCast(i + 1))) ++ [_]u8{0} ** 12 };
+        addresses[i] = Address{ .bytes = std.mem.toBytes(@as(u160, @intCast(i + 1))) };
         const cost = try access_list.access_address(addresses[i]);
         try testing.expectEqual(AccessList.COLD_ACCOUNT_ACCESS_COST, cost);
     }
@@ -600,7 +600,7 @@ test "AccessList - clear preserves capacity" {
 
     // Fill with many entries to grow internal capacity
     for (0..100) |i| {
-        const address = Address{ .bytes = std.mem.toBytes(@as(u160, @intCast(i + 1))) ++ [_]u8{0} ** 12 };
+        const address = Address{ .bytes = std.mem.toBytes(@as(u160, @intCast(i + 1))) };
         _ = try access_list.access_address(address);
         _ = try access_list.access_storage_slot(address, @intCast(i));
     }
