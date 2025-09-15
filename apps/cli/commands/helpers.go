@@ -85,13 +85,10 @@ func ParseGas(s string) (uint64, error) {
 
 // ParseHex converts a hex string to bytes
 func ParseHex(s string) ([]byte, error) {
-	original := s
 	s = strings.TrimSpace(s)
 	s = strings.TrimPrefix(s, "0x")
 	s = strings.TrimPrefix(s, "0X")
 	
-	// Debug logging
-	fmt.Fprintf(os.Stderr, "parseHex: original len=%d, after trim len=%d\n", len(original), len(s))
 	if len(s) % 2 != 0 {
 		fmt.Fprintf(os.Stderr, "WARNING: Odd number of hex chars: %d\n", len(s))
 		// Pad with a zero if odd
