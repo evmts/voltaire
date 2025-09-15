@@ -56,7 +56,9 @@ pub const MinimalFrame = struct {
         calldata: []const u8,
         evm_ptr: *anyopaque,
     ) !Self {
-        var stack = try std.ArrayList(u256).initCapacity(allocator, 1024);
+        // In Zig 0.15.1, std.ArrayList is unmanaged
+        var stack = std.ArrayList(u256){};
+        try stack.ensureTotalCapacity(allocator, 1024);
         errdefer stack.deinit(allocator);
 
         var memory_map = std.AutoHashMap(u32, u8).init(allocator);
@@ -1004,8 +1006,8 @@ pub const MinimalFrame = struct {
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const push_size = opcode - 0x5f;
 
-                // Check bounds
-                if (self.pc + push_size >= self.bytecode.len) {
+                // Check bounds - need to read push_size bytes after the opcode
+                if (self.pc + push_size > self.bytecode.len) {
                     return error.InvalidPush;
                 }
 
@@ -1231,11 +1233,9 @@ pub const MinimalFrame = struct {
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas - only consume gas if call succeeded
-                if (!depth_exceeded) {
-                    const gas_used = available_gas - result.gas_left;
-                    self.gas_remaining -= @intCast(gas_used);
-                }
+                // Update gas
+                const gas_used = available_gas - result.gas_left;
+                self.gas_remaining -= @intCast(gas_used);
 
                 self.pc += 1;
             },

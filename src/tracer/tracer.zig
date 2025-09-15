@@ -268,7 +268,23 @@ pub const DefaultTracer = struct {
 
                 // Execute MinimalEvm step for validation (if initialized)
                 if (self.minimal_evm) |evm| {
+                    // Log stack state before execution
+                    if (evm.current_frame) |mf| {
+                        log.debug("Before executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
+                            opcode_name,
+                            mf.stack.items.len,
+                            frame.stack.size(),
+                        });
+                    }
                     self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
+                    // Log stack state after execution
+                    if (evm.current_frame) |mf| {
+                        log.debug("After executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
+                            opcode_name,
+                            mf.stack.items.len,
+                            frame.stack.size(),
+                        });
+                    }
                 }
 
                 // Log execution
@@ -322,6 +338,15 @@ pub const DefaultTracer = struct {
                 }
 
                 // Validate MinimalEvm state
+                log.debug("afterInstruction: Validating state after {s}", .{opcode_name});
+                if (self.minimal_evm) |evm| {
+                    if (evm.current_frame) |mf| {
+                        log.debug("  MinimalEvm stack={d}, Frame stack={d}", .{
+                            mf.stack.items.len,
+                            frame.stack.size(),
+                        });
+                    }
+                }
                 self.validateMinimalEvmState(frame, opcode);
 
                 // Update current PC tracking
@@ -393,6 +418,11 @@ pub const DefaultTracer = struct {
                 }
             }
             // Execute a single step in MinimalEvm (delegates to current frame)
+            // Debug: Check if MinimalEvm has a current frame
+            if (evm.current_frame == null) {
+                log.err("[EVM2] MinimalEvm has no current frame when trying to execute opcode 0x{x:0>2}", .{opcode_value});
+                @panic("MinimalEvm not initialized");
+            }
             evm.step() catch |e| {
                 // Get actual opcode from MinimalEvm to see what it was trying to execute
                 var actual_opcode: u8 = 0;
