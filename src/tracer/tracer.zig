@@ -48,6 +48,9 @@ pub const DefaultTracer = struct {
     // Minimal EVM for parallel execution tracking and validation
     minimal_evm: ?*MinimalEvm,
 
+    // Track nesting depth to skip MinimalEvm for nested calls
+    nested_depth: u32,
+
     // Execution tracking
     instruction_count: u64 = 0,  // Total instructions executed
     schedule_index: u64 = 0,     // Current dispatch schedule index
@@ -89,14 +92,14 @@ pub const DefaultTracer = struct {
             .current_pc = 0,
             .bytecode = &[_]u8{},
             .minimal_evm = null,
+            .nested_depth = 0,
             .instruction_count = 0,
             .schedule_index = 0,
             .simple_instruction_count = 0,
             .fused_instruction_count = 0,
             // 300M instructions is ~10x the block gas limit
             // Normal contracts execute far fewer instructions
-            // Temporarily reduce for debugging
-            .instruction_safety = SafetyCounter(u64, .enabled).init(10_000),
+            .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
         };
     }
 
@@ -137,14 +140,23 @@ pub const DefaultTracer = struct {
             // Reset the instruction safety counter for the new frame
             self.instruction_safety.count = 0;
 
-            if (bytecode.len > 0 and self.minimal_evm == null) {
-                // Initialize MinimalEvm orchestrator on heap to avoid arena corruption
-                // Only create once for the top-level frame, not for nested frames
-                self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
-                    self.minimal_evm = null;
+            if (bytecode.len > 0) {
+                if (self.minimal_evm == null) {
+                    // Initialize MinimalEvm orchestrator on heap to avoid arena corruption
+                    // Only create once for the top-level frame, not for nested frames
+                    self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
+                        self.minimal_evm = null;
+                        return;
+                    };
+                    self.debug("Created MinimalEvm at 0x{x}", .{@intFromPtr(self.minimal_evm)});
+                    self.nested_depth = 0;
+                } else {
+                    // For nested calls, just skip MinimalEvm tracking for now
+                    // TODO: Implement proper nested call support in MinimalEvm
+                    self.nested_depth += 1;
+                    self.debug("Nested call detected (depth={}), skipping MinimalEvm tracking", .{self.nested_depth});
                     return;
-                };
-                self.debug("Created MinimalEvm at 0x{x}", .{@intFromPtr(self.minimal_evm)});
+                }
 
                 if (self.minimal_evm) |evm| {
                     // Get the main EVM for context
@@ -266,9 +278,11 @@ pub const DefaultTracer = struct {
                 // with message about potential infinite loop or excessive instructions
                 self.instruction_safety.inc();
 
-                // Execute MinimalEvm step for validation (if initialized)
+                // Execute MinimalEvm step for validation (if initialized and not nested)
                 if (self.minimal_evm) |evm| {
-                    self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
+                    if (self.nested_depth == 0) {
+                        self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
+                    }
                 }
 
                 // Log execution
@@ -751,6 +765,8 @@ pub const DefaultTracer = struct {
         comptime opcode: UnifiedOpcode
     ) void {
         if (self.minimal_evm) |evm| {
+            // Skip validation for nested calls
+            if (self.nested_depth > 0) return;
             const opcode_name = @tagName(opcode);
 
             // Compare stack sizes
@@ -1014,6 +1030,14 @@ pub const DefaultTracer = struct {
         _ = size;
         _ = alignment;
         _ = current_capacity;
+    }
+
+    /// Called when a frame completes (for tracking nested depth)
+    pub fn onFrameReturn(self: *DefaultTracer) void {
+        if (self.nested_depth > 0) {
+            self.nested_depth -= 1;
+            self.debug("Frame returned, depth now {}", .{self.nested_depth});
+        }
     }
 
     /// Event: Frame bytecode initialization
