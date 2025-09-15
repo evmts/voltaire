@@ -13,3 +13,6 @@
 [submodule "specs/execution-specs"]
 	path = specs/execution-specs
 	url = https://github.com/ethereum/execution-specs
+[submodule "lib/zig"]
+	path = lib/zig
+	url = https://github.com/ziglang/zig
