@@ -114,8 +114,7 @@ pub const DifferentialTestor = struct {
         const contract = try primitives.Address.from_hex("0xc0de000000000000000000000000000000000000");
 
         // Setup MinimalEvm for differential testing
-        const minimal_evm = try allocator.create(guillotine_evm.tracer.MinimalEvm);
-        minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(allocator);
+        const minimal_evm = try guillotine_evm.tracer.MinimalEvm.initPtr(allocator);
 
         // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
@@ -265,8 +264,7 @@ pub const DifferentialTestor = struct {
     }
 
     pub fn deinit(self: *DifferentialTestor) void {
-        self.minimal_evm.deinit();
-        self.allocator.destroy(self.minimal_evm);
+        self.minimal_evm.deinitPtr(self.allocator);
         if (self.guillotine_instance_traced) |*inst| {
             inst.deinit();
         }
