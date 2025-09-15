@@ -1001,7 +1001,18 @@ pub const MinimalFrame = struct {
             0x60...0x7f => {
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const push_size = opcode - 0x5f;
-                const value = self.readImmediate(push_size) orelse return error.InvalidPush;
+
+                // Check bounds
+                if (self.pc + push_size >= self.bytecode.len) {
+                    return error.InvalidPush;
+                }
+
+                // Read immediate value from bytecode
+                var value: u256 = 0;
+                for (0..push_size) |i| {
+                    value = (value << 8) | self.bytecode[self.pc + 1 + i];
+                }
+
                 try self.pushStack(value);
                 self.pc += 1 + push_size;
             },
@@ -1241,10 +1252,15 @@ pub const MinimalFrame = struct {
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // CALLCODE: For MinimalFrame, simulate success
+                // CALLCODE: Check call depth limit using real EVM depth and config
+                const real_evm = @as(*@import("../evm.zig").Evm(.{}), @ptrCast(@alignCast(self.evm_ptr)));
+                const config = @import("../evm_config.zig").EvmConfig{};
+                const depth_exceeded = real_evm.depth >= config.max_call_depth;
+
+                // For MinimalFrame, simulate success only if depth limit not exceeded
                 const result = .{
-                    .success = true,
-                    .gas_left = available_gas - 1000,
+                    .success = !depth_exceeded,
+                    .gas_left = if (!depth_exceeded and available_gas >= 1000) available_gas - 1000 else 0,
                     .output = &[_]u8{},
                 };
                 if (false) {
@@ -1286,9 +1302,11 @@ pub const MinimalFrame = struct {
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas
-                const gas_used = available_gas - result.gas_left;
-                self.gas_remaining -= @intCast(gas_used);
+                // Update gas - only consume gas if call succeeded
+                if (!depth_exceeded) {
+                    const gas_used = available_gas - result.gas_left;
+                    self.gas_remaining -= @intCast(gas_used);
+                }
 
                 self.pc += 1;
             },
@@ -1365,10 +1383,15 @@ pub const MinimalFrame = struct {
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // DELEGATECALL: For MinimalFrame, simulate success
+                // DELEGATECALL: Check call depth limit using real EVM depth and config
+                const real_evm = @as(*@import("../evm.zig").Evm(.{}), @ptrCast(@alignCast(self.evm_ptr)));
+                const config = @import("../evm_config.zig").EvmConfig{};
+                const depth_exceeded = real_evm.depth >= config.max_call_depth;
+
+                // For MinimalFrame, simulate success only if depth limit not exceeded
                 const result = .{
-                    .success = true,
-                    .gas_left = available_gas - 1000,
+                    .success = !depth_exceeded,
+                    .gas_left = if (!depth_exceeded and available_gas >= 1000) available_gas - 1000 else 0,
                     .output = &[_]u8{},
                 };
                 if (false) {
@@ -1410,9 +1433,11 @@ pub const MinimalFrame = struct {
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas
-                const gas_used = available_gas - result.gas_left;
-                self.gas_remaining -= @intCast(gas_used);
+                // Update gas - only consume gas if call succeeded
+                if (!depth_exceeded) {
+                    const gas_used = available_gas - result.gas_left;
+                    self.gas_remaining -= @intCast(gas_used);
+                }
 
                 self.pc += 1;
             },
@@ -1487,10 +1512,15 @@ pub const MinimalFrame = struct {
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // STATICCALL: For MinimalFrame, simulate success
+                // STATICCALL: Check call depth limit using real EVM depth and config
+                const real_evm = @as(*@import("../evm.zig").Evm(.{}), @ptrCast(@alignCast(self.evm_ptr)));
+                const config = @import("../evm_config.zig").EvmConfig{};
+                const depth_exceeded = real_evm.depth >= config.max_call_depth;
+
+                // For MinimalFrame, simulate success only if depth limit not exceeded
                 const result = .{
-                    .success = true,
-                    .gas_left = available_gas - 1000,
+                    .success = !depth_exceeded,
+                    .gas_left = if (!depth_exceeded and available_gas >= 1000) available_gas - 1000 else 0,
                     .output = &[_]u8{},
                 };
                 if (false) {
@@ -1532,9 +1562,11 @@ pub const MinimalFrame = struct {
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas
-                const gas_used = available_gas - result.gas_left;
-                self.gas_remaining -= @intCast(gas_used);
+                // Update gas - only consume gas if call succeeded
+                if (!depth_exceeded) {
+                    const gas_used = available_gas - result.gas_left;
+                    self.gas_remaining -= @intCast(gas_used);
+                }
 
                 self.pc += 1;
             },
