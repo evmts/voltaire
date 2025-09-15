@@ -112,6 +112,13 @@ pub const EvmConfig = struct {
     /// null = disabled (default for optimized builds)
     /// value = maximum iterations before panic (default for debug/safe builds)
     loop_quota: ?u32 = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 1_000_000 else null,
+    
+    /// Enable system contract updates (EIP-4788 beacon roots, EIP-2935 historical block hashes)
+    /// When true, these contracts are updated at the start of each transaction
+    enable_beacon_roots: bool = true,
+    enable_historical_block_hashes: bool = true,
+    enable_validator_deposits: bool = true,
+    enable_validator_withdrawals: bool = true,
 
     /// Get the effective SIMD vector length for the current target
     pub fn getVectorLength(self: EvmConfig) comptime_int {

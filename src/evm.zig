@@ -188,21 +188,32 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
             self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
             self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
-            // TODO: BeaconRoots should be moved to be part of the comptime config in evm_config.zig
-            // // They should be comptime known but optional and here we should only process them if they are configured
-            // Process beacon root update for EIP-4788 if applicable
-            @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
-                self.tracer.onBeaconRootUpdate(false, err);
-            };
-            @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
-                self.tracer.onHistoricalBlockHashUpdate(false, err);
-            };
-            @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
-                self.tracer.onValidatorDeposits(false, err);
-            };
-            @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
-                self.tracer.onValidatorWithdrawals(false, err);
-            };
+            
+            // Process system contract updates based on configuration
+            if (comptime config.enable_beacon_roots) {
+                // Process beacon root update for EIP-4788 if applicable
+                @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
+                    self.tracer.onBeaconRootUpdate(false, err);
+                };
+            }
+            
+            if (comptime config.enable_historical_block_hashes) {
+                @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
+                    self.tracer.onHistoricalBlockHashUpdate(false, err);
+                };
+            }
+            
+            if (comptime config.enable_validator_deposits) {
+                @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
+                    self.tracer.onValidatorDeposits(false, err);
+                };
+            }
+            
+            if (comptime config.enable_validator_withdrawals) {
+                @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
+                    self.tracer.onValidatorWithdrawals(false, err);
+                };
+            }
             return self;
         }
 
@@ -275,7 +286,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
 
             params.validate() catch |err| {
-                self.tracer.onError("CallParams validation failed", @errorName(err));
+                log.err("CallParams validation failed: {s}", .{@errorName(err)});
                 return CallResult.failure(0);
             };
 
@@ -305,7 +316,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // This prevents memory buildup while keeping the grown capacity for better performance
                 // on subsequent transactions that need similar memory amounts
                 self.call_arena.resetRetainCapacity() catch |err| {
-                    self.tracer.onError("Arena reset failed", @errorName(err));
+                    log.warn("Arena reset failed: {s}", .{@errorName(err)});
                     // If reset fails, the allocator will still be usable but may not have optimal capacity
                     // This is acceptable in a defer context where we can't propagate errors
                 };
@@ -899,9 +910,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                 contract_account.nonce = 1;
             }
             if (result.output.len > 0) {
-                // TODO: handle in eip.zig
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
-                if (self.eips.eip_3541_enabled and result.output[0] == 0xEF) {
+                const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
+                if (eips_instance.should_reject_create_with_ef_bytecode(result.output)) {
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }
@@ -1004,9 +1015,9 @@ pub fn Evm(comptime config: EvmConfig) type {
             frame.contract_address = address;
             defer frame.deinit(arena_allocator);
 
-            // TODO: Handle in eip.zig
             // EIP-2929: Warm the contract address being executed
-            _ = self.access_list.access_address(address) catch {};
+            const eips_for_warm = eips.Eips{ .hardfork = self.hardfork_config };
+            eips_for_warm.warm_contract_for_execution(&self.access_list, address) catch {};
 
             var execution_trace: ?@import("frame/call_result.zig").ExecutionTrace = null;
             const Termination = error{ Stop, Return, SelfDestruct };
@@ -1149,9 +1160,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Emit log event
         pub fn emit_log(self: *Self, contract_address: primitives.Address, topics: []const u256, data: []const u8) void {
-            // TODO: move to eip.zig
             // EIP-214: Prevent log emission in static context
-            if (self.is_static_context()) return;
+            if (!eips.Eips.is_log_emission_allowed(self.is_static_context())) return;
 
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
@@ -1278,40 +1288,18 @@ pub fn Evm(comptime config: EvmConfig) type {
             // EIP-214: Prevent self-destruction in static context
             if (self.is_static_context()) return error.StaticCallViolation;
 
-            // EIP-6780: SELFDESTRUCT only actually destroys the contract if it was created in the same transaction
-            // Otherwise, it only transfers the balance but keeps the code and storage
-            if (self.eips.eip_6780_enabled) {
-                // Check if contract was created in the current transaction
-                const created_in_tx = self.created_contracts.was_created_in_tx(contract_address);
-
-                if (created_in_tx) {
-                    // Full destruction: transfer balance and mark for deletion
-                    try self.self_destruct.mark_for_destruction(contract_address, recipient);
-                } else {
-                    // Only transfer balance, don't destroy the contract
-                    // Get the contract's balance
-                    const contract_account = try self.database.get_account(contract_address.bytes);
-                    if (contract_account) |account| {
-                        if (account.balance > 0) {
-                            // Transfer balance to recipient
-                            try self.journal.record_balance_change(self.current_snapshot_id, contract_address, account.balance);
-                            try self.journal.record_balance_change(self.current_snapshot_id, recipient, 0);
-
-                            // Update balances
-                            var sender_account = account;
-                            sender_account.balance = 0;
-                            try self.database.set_account(contract_address.bytes, sender_account);
-
-                            var recipient_account = (try self.database.get_account(recipient.bytes)) orelse Account.zero();
-                            recipient_account.balance +%= account.balance;
-                            try self.database.set_account(recipient.bytes, recipient_account);
-                        }
-                    }
-                }
-            } else {
-                // Pre-Cancun: always mark for full destruction
-                try self.self_destruct.mark_for_destruction(contract_address, recipient);
-            }
+            // EIP-6780: Handle SELFDESTRUCT based on creation in same transaction
+            const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
+            const created_in_tx = self.created_contracts.was_created_in_tx(contract_address);
+            try eips_instance.handle_selfdestruct(
+                created_in_tx,
+                contract_address,
+                recipient,
+                &self.self_destruct,
+                self.database,
+                &self.journal,
+                self.current_snapshot_id,
+            );
         }
 
         /// Get current call input/calldata
@@ -1365,7 +1353,8 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Set storage value
         pub fn set_storage(self: *Self, address: primitives.Address, slot: u256, value: u256) !void {
-            // TODO: We should be using the static database instead of this to remove branching
+            // In static context, storage writes are not allowed per EIP-214
+            // This check is critical for security and cannot be removed
             if (self.is_static_context()) return error.StaticCallViolation;
             const original_value = self.get_storage(address, slot);
             try self.record_storage_change(address, slot, original_value);
