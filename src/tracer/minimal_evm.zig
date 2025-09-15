@@ -156,6 +156,39 @@ pub const MinimalEvm = struct {
         };
     }
 
+    /// Initialize as a pointer to avoid arena corruption from struct copies
+    pub fn initPtr(allocator: std.mem.Allocator) !*Self {
+        const self = try allocator.create(Self);
+        errdefer allocator.destroy(self);
+
+        // Initialize arena in place
+        self.arena = std.heap.ArenaAllocator.init(allocator);
+        errdefer self.arena.deinit();
+
+        const arena_allocator = self.arena.allocator();
+
+        self.frames = std.ArrayList(*MinimalFrame){};
+        self.current_frame = null;
+        self.return_data = &[_]u8{};
+        self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
+        self.balances = std.AutoHashMap(Address, u256).init(arena_allocator);
+        self.code = std.AutoHashMap(Address, []const u8).init(arena_allocator);
+        self.chain_id = 1;
+        self.block_number = 0;
+        self.block_timestamp = 0;
+        self.block_difficulty = 0;
+        self.block_coinbase = ZERO_ADDRESS;
+        self.block_gas_limit = 30_000_000;
+        self.block_base_fee = 0;
+        self.blob_base_fee = 0;
+        self.origin = ZERO_ADDRESS;
+        self.gas_price = 0;
+        self.host = null;
+        self.allocator = arena_allocator;
+
+        return self;
+    }
+
     /// Initialize with a host interface
     pub fn initWithHost(allocator: std.mem.Allocator, host: HostInterface) !Self {
         var self = try init(allocator);
@@ -167,6 +200,12 @@ pub const MinimalEvm = struct {
     pub fn deinit(self: *Self) void {
         // Arena allocator cleans up everything at once
         self.arena.deinit();
+    }
+
+    /// Clean up pointer-allocated MinimalEvm
+    pub fn deinitPtr(self: *Self, allocator: std.mem.Allocator) void {
+        self.deinit();
+        allocator.destroy(self);
     }
 
     /// Set blockchain context

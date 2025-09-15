@@ -46,7 +46,7 @@ pub const DefaultTracer = struct {
     bytecode: []const u8,
 
     // Minimal EVM for parallel execution tracking and validation
-    minimal_evm: ?MinimalEvm,
+    minimal_evm: ?*MinimalEvm,
 
     // Execution tracking
     instruction_count: u64 = 0,  // Total instructions executed
@@ -101,8 +101,11 @@ pub const DefaultTracer = struct {
 
     pub fn deinit(self: *DefaultTracer) void {
         // Clean up MinimalEvm if it exists
-        if (self.minimal_evm) |*evm| {
-            evm.deinit();
+        if (self.minimal_evm) |evm| {
+            // The arena allocator in MinimalEvm will clean up all MinimalFrame allocations
+            // when deinit is called, so we don't need to manually clean up frames
+            evm.deinitPtr(self.allocator);
+            self.minimal_evm = null;
         }
     }
 
@@ -130,10 +133,13 @@ pub const DefaultTracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                // Initialize MinimalEvm orchestrator
-                self.minimal_evm = MinimalEvm.init(self.allocator) catch null;
+                // Initialize MinimalEvm orchestrator on heap to avoid arena corruption
+                self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
+                    self.minimal_evm = null;
+                    return;
+                };
 
-                if (self.minimal_evm) |*evm| {
+                if (self.minimal_evm) |evm| {
                     // Get the main EVM for context
                     const main_evm = frame.getEvm();
 
@@ -180,7 +186,7 @@ pub const DefaultTracer = struct {
                     // Create a frame but don't execute it yet - execution will happen step-by-step
                     const frame_gas_remaining = frame.gas_remaining;
 
-                    // Create the frame directly using MinimalEvm's allocator
+                    // Create the frame directly using MinimalEvm's arena allocator
                     const minimal_frame = evm.allocator.create(MinimalFrame) catch return;
                     minimal_frame.* = MinimalFrame.init(
                         evm.allocator,
@@ -220,7 +226,7 @@ pub const DefaultTracer = struct {
                 const opcode_value = @intFromEnum(opcode);
 
                 // Debug logging to understand execution order
-                if (self.minimal_evm) |*evm| {
+                if (self.minimal_evm) |evm| {
                     const pc = evm.getPC();
                     const bytecode = evm.getBytecode();
                     log.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{
@@ -254,7 +260,7 @@ pub const DefaultTracer = struct {
                 self.instruction_safety.inc();
 
                 // Execute MinimalEvm step for validation (if initialized)
-                if (self.minimal_evm) |*evm| {
+                if (self.minimal_evm) |evm| {
                     self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
                 }
 
@@ -314,7 +320,7 @@ pub const DefaultTracer = struct {
                 // Update current PC tracking
                 // Note: PC synchronization between Frame dispatch and MinimalEvm sequential
                 // execution is complex due to synthetic opcodes, so we track separately
-                if (self.minimal_evm) |*evm| {
+                if (self.minimal_evm) |evm| {
                     self.current_pc = evm.getPC();
                 }
 
@@ -737,7 +743,7 @@ pub const DefaultTracer = struct {
         frame: anytype,
         comptime opcode: UnifiedOpcode
     ) void {
-        if (self.minimal_evm) |*evm| {
+        if (self.minimal_evm) |evm| {
             const opcode_name = @tagName(opcode);
 
             // Compare stack sizes
