@@ -180,10 +180,10 @@ pub const DefaultTracer = struct {
                     // Create a frame but don't execute it yet - execution will happen step-by-step
                     const frame_gas_remaining = frame.gas_remaining;
 
-                    // Create the frame directly
-                    const minimal_frame = self.allocator.create(MinimalFrame) catch return;
+                    // Create the frame directly using MinimalEvm's allocator
+                    const minimal_frame = evm.allocator.create(MinimalFrame) catch return;
                     minimal_frame.* = MinimalFrame.init(
-                        self.allocator,
+                        evm.allocator,
                         bytecode,
                         @intCast(frame_gas_remaining),
                         caller,
