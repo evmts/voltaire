@@ -124,6 +124,17 @@ pub const DefaultTracer = struct {
         _ = gas_limit;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // Get EVM depth to check if this is an inner call
+            const main_evm = frame.getEvm();
+            const depth = main_evm.depth;
+            
+            // Only create/reset MinimalEvm for the outermost frame (depth 1)
+            // Inner frames (depth > 1) will be handled by MinimalEvm's inner_call
+            if (depth > 1) {
+                self.debug("Skipping MinimalEvm init for inner frame at depth {d}", .{depth});
+                return;
+            }
+            
             // Clean up any existing MinimalEvm before resetting
             if (self.minimal_evm) |evm| {
                 evm.deinitPtr(self.allocator);
@@ -148,13 +159,13 @@ pub const DefaultTracer = struct {
                 }
 
                 if (self.minimal_evm) |evm| {
-                    // Get the main EVM for context
-                    const main_evm = frame.getEvm();
+                    // Get the main EVM for context  
+                    const evm_instance = frame.getEvm();
 
                     // Sync blockchain context from EVM
-                    const block_info = main_evm.get_block_info();
+                    const block_info = evm_instance.get_block_info();
                     evm.setBlockchainContext(
-                        main_evm.get_chain_id(),
+                        evm_instance.get_chain_id(),
                         block_info.number,
                         block_info.timestamp,
                         block_info.difficulty,
@@ -165,7 +176,7 @@ pub const DefaultTracer = struct {
                     );
 
                     // Set transaction context
-                    evm.setTransactionContext(main_evm.get_tx_origin(), main_evm.gas_price);
+                    evm.setTransactionContext(evm_instance.get_tx_origin(), evm_instance.gas_price);
 
                     // Get frame context for call
                     var caller = primitives.ZERO_ADDRESS;
@@ -229,6 +240,11 @@ pub const DefaultTracer = struct {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+                // Skip validation for inner frames (depth > 1)
+                const main_evm = frame.getEvm();
+                if (main_evm.depth > 1) {
+                    return;
+                }
                 const opcode_name = comptime @tagName(opcode);
                 const opcode_value = @intFromEnum(opcode);
 
@@ -311,6 +327,11 @@ pub const DefaultTracer = struct {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+                // Skip validation for inner frames (depth > 1)
+                const main_evm = frame.getEvm();
+                if (main_evm.depth > 1) {
+                    return;
+                }
                 const opcode_name = comptime @tagName(opcode);
 
                 // Advance schedule index
@@ -374,6 +395,11 @@ pub const DefaultTracer = struct {
     ) void {
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+            // Skip validation for inner frames (depth > 1)
+            const main_evm = frame.getEvm();
+            if (main_evm.depth > 1) {
+                return;
+            }
             // Final validation for terminal states
             self.validateMinimalEvmState(frame, opcode);
         }
@@ -802,6 +828,18 @@ pub const DefaultTracer = struct {
                     if (evm_val != frame_val) {
                         log.err("[EVM2] [DIVERGENCE] Stack content mismatch at position {d}:", .{i});
                         log.err("[EVM2]   MinimalEvm: 0x{x}, Frame: 0x{x}", .{evm_val, frame_val});
+                        log.err("[EVM2]   Opcode: {s}, MinimalEvm PC: {d}", .{opcode_name, if (evm.current_frame) |f| f.pc else 0});
+                        // Print full stack contents
+                        log.err("[EVM2]   MinimalEvm stack (top first):", .{});
+                        if (evm.current_frame) |f| {
+                            for (0..@min(10, f.stack.items.len)) |j| {
+                                log.err("[EVM2]     [{d}]: 0x{x}", .{j, f.stack.items[f.stack.items.len - 1 - j]});
+                            }
+                        }
+                        log.err("[EVM2]   Frame stack (top first):", .{});
+                        for (0..@min(10, frame_stack.len)) |j| {
+                            log.err("[EVM2]     [{d}]: 0x{x}", .{j, frame_stack[j]});
+                        }
                         @panic("Stack content divergence");
                     }
                 }
