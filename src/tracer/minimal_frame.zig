@@ -287,9 +287,21 @@ pub const MinimalFrame = struct {
 
             // EXP
             0x0a => {
-                try self.consumeGas(GasConstants.GasSlowStep);
                 const base = try self.popStack();
                 const exp = try self.popStack();
+
+                // EIP-160: Dynamic gas cost for EXP
+                // Gas cost = 10 + 50 * (number of bytes in exponent)
+                var exp_bytes: u32 = 0;
+                if (exp > 0) {
+                    var temp_exp = exp;
+                    while (temp_exp > 0) : (temp_exp >>= 8) {
+                        exp_bytes += 1;
+                    }
+                }
+                const gas_cost = GasConstants.GasSlowStep + 50 * exp_bytes;
+                try self.consumeGas(gas_cost);
+
                 var result: u256 = 1;
                 var b = base;
                 var e = exp;
@@ -1586,8 +1598,70 @@ pub const MinimalFrame = struct {
                 return;
             },
 
-            // AUTH (EIP-3074)
-            0xf6 => {
+            // EXTCODESIZE
+            0x3b => {
+                // Get code size of external account
+                try self.consumeGas(GasConstants.WarmStorageReadCost);
+                const addr_int = try self.popStack();
+
+                // For MinimalFrame, we don't have access to external code
+                // Just return 0 for now
+                _ = addr_int;
+                try self.pushStack(0);
+                self.pc += 1;
+            },
+
+            // EXTCODECOPY
+            0x3c => {
+                // Copy external account code to memory
+                const addr_int = try self.popStack();
+                const dest_offset = try self.popStack();
+                const offset = try self.popStack();
+                const size = try self.popStack();
+
+                // Gas cost calculation
+                if (size > 0) {
+                    const words = (size + 31) / 32;
+                    const copy_cost = GasConstants.CopyGas * words;
+                    try self.consumeGas(GasConstants.WarmStorageReadCost + copy_cost);
+
+                    // Memory expansion cost
+                    if (dest_offset > std.math.maxInt(u32) or size > std.math.maxInt(u32)) {
+                        return error.OutOfGas;
+                    }
+                    const dest = @as(u32, @intCast(dest_offset));
+                    const len = @as(u32, @intCast(size));
+                    const end = dest + len;
+                    const mem_cost = self.memoryExpansionCost(end);
+                    try self.consumeGas(mem_cost);
+
+                    // For MinimalFrame, just write zeros to memory
+                    _ = addr_int;
+                    _ = offset;
+                    var i: u32 = 0;
+                    while (i < len) : (i += 1) {
+                        try self.writeMemory(dest + i, 0);
+                    }
+                } else {
+                    try self.consumeGas(GasConstants.WarmStorageReadCost);
+                }
+                self.pc += 1;
+            },
+
+            // EXTCODEHASH
+            0x3f => {
+                // Get code hash of external account
+                try self.consumeGas(GasConstants.WarmStorageReadCost);
+                const addr_int = try self.popStack();
+
+                // For MinimalFrame, return empty code hash
+                _ = addr_int;
+                // Empty code hash = keccak256("")
+                const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+                try self.pushStack(empty_hash);
+                self.pc += 1;
+            },
+
                 // AUTH opcode from EIP-3074
                 // Stack: [authority, commitment, sig_v, sig_r, sig_s] → [success]
                 // Stack order (top to bottom): sig_s, sig_r, sig_v, commitment, authority
@@ -1615,6 +1689,36 @@ pub const MinimalFrame = struct {
                 _ = commitment;
 
                 try self.pushStack(0); // Always return failure for AUTH in MinimalFrame
+                self.pc += 1;
+            },
+
+            // AUTHCALL (EIP-3074)
+            0xf7 => {
+                // AUTHCALL opcode from EIP-3074
+                // Stack: [gas, to, value, in_offset, in_size, out_offset, out_size, auth] → [success]
+                try self.consumeGas(GasConstants.WarmStorageReadCost);
+
+                // Pop 8 values from stack
+                const auth_flag = try self.popStack();
+                const out_size = try self.popStack();
+                const out_offset = try self.popStack();
+                const in_size = try self.popStack();
+                const in_offset = try self.popStack();
+                const value = try self.popStack();
+                const to_addr = try self.popStack();
+                const gas_param = try self.popStack();
+
+                // For MinimalFrame, just return failure
+                _ = auth_flag;
+                _ = out_size;
+                _ = out_offset;
+                _ = in_size;
+                _ = in_offset;
+                _ = value;
+                _ = to_addr;
+                _ = gas_param;
+
+                try self.pushStack(0); // Always return failure for AUTHCALL in MinimalFrame
                 self.pc += 1;
             },
 
