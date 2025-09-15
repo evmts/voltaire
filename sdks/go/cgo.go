@@ -654,4 +654,3 @@ func Bytes32ToBigInt(bytes [32]byte) *big.Int {
 	// SetBytes expects big-endian, which is what we have
 	return new(big.Int).SetBytes(bytes[start:])
 }
-

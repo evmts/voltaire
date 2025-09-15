@@ -1,7 +1,10 @@
 package types
 
 import (
+	"time"
+
 	"guillotine-cli/internal/config"
+
 	guillotine "github.com/evmts/guillotine/sdks/go"
 )
 
@@ -23,34 +26,65 @@ type CallParametersStrings struct {
 
 // GetParams returns parameter list for UI display based on call type
 func (cp *CallParametersStrings) GetParams() []CallParameter {
-	params := []CallParameter{
-		{Name: config.CallParamCallType, Value: cp.CallType},
-		{Name: config.CallParamCaller, Value: cp.Caller},
+	// Define parameter visibility rules based on call type
+	paramConfig := []struct {
+		name      string
+		value     string
+		showWhen  func(string) bool
+		nameFunc  func(string) string
+	}{
+		{
+			name:     config.CallParamCallType,
+			value:    cp.CallType,
+			showWhen: func(t string) bool { return true },
+		},
+		{
+			name:     config.CallParamCaller,
+			value:    cp.Caller,
+			showWhen: func(t string) bool { return true },
+		},
+		{
+			name:     config.CallParamTarget,
+			value:    cp.Target,
+			showWhen: func(t string) bool { return t != config.CallTypeCreate && t != config.CallTypeCreate2 },
+		},
+		{
+			name:     config.CallParamValue,
+			value:    cp.Value,
+			showWhen: func(t string) bool { return t != config.CallTypeStaticCall },
+		},
+		{
+			name:     config.CallParamGasLimit,
+			value:    cp.GasLimit,
+			showWhen: func(t string) bool { return true },
+		},
+		{
+			name:     config.CallParamInput,
+			value:    cp.InputData,
+			showWhen: func(t string) bool { return true },
+			nameFunc: func(t string) string {
+				if t == config.CallTypeCreate || t == config.CallTypeCreate2 {
+					return config.CallParamInputDeploy
+				}
+				return config.CallParamInput
+			},
+		},
+		{
+			name:     config.CallParamSalt,
+			value:    cp.Salt,
+			showWhen: func(t string) bool { return t == config.CallTypeCreate2 },
+		},
 	}
 	
-	// Hide target address for CREATE and CREATE2
-	if cp.CallType != config.CallTypeCreate && cp.CallType != config.CallTypeCreate2 {
-		params = append(params, CallParameter{Name: config.CallParamTarget, Value: cp.Target})
-	}
-	
-	// Hide value for STATICCALL
-	if cp.CallType != config.CallTypeStaticCall {
-		params = append(params, CallParameter{Name: config.CallParamValue, Value: cp.Value})
-	}
-	
-	// Always show gas limit
-	params = append(params, CallParameter{Name: config.CallParamGasLimit, Value: cp.GasLimit})
-	
-	// Show input data with context-aware label
-	inputDataLabel := config.CallParamInput
-	if cp.CallType == config.CallTypeCreate || cp.CallType == config.CallTypeCreate2 {
-		inputDataLabel = config.CallParamInputDeploy
-	}
-	params = append(params, CallParameter{Name: inputDataLabel, Value: cp.InputData})
-	
-	// Show salt only for CREATE2
-	if cp.CallType == config.CallTypeCreate2 {
-		params = append(params, CallParameter{Name: config.CallParamSalt, Value: cp.Salt})
+	params := []CallParameter{}
+	for _, cfg := range paramConfig {
+		if cfg.showWhen(cp.CallType) {
+			paramName := cfg.name
+			if cfg.nameFunc != nil {
+				paramName = cfg.nameFunc(cp.CallType)
+			}
+			params = append(params, CallParameter{Name: paramName, Value: cfg.value})
+		}
 	}
 	
 	return params
@@ -85,7 +119,7 @@ func NewCallParametersStrings() CallParametersStrings {
 		Target:     defaults.TargetAddr,
 		Value:      defaults.Value,
 		InputData:  defaults.InputData,
-		GasLimit:   "100000",
+		GasLimit:   config.DefaultGasLimit,
 		Salt:       defaults.Salt,
 	}
 }
@@ -140,4 +174,17 @@ func CallTypeToString(ct guillotine.CallType) string {
 	default:
 		return config.CallTypeCall
 	}
+}
+
+type CallHistoryEntry struct {
+	ID         string
+	Timestamp  time.Time
+	Parameters CallParametersStrings
+	Result     *guillotine.CallResult
+}
+
+type DeployedContract struct {
+	Address   string
+	Bytecode  []byte
+	Timestamp time.Time
 }
