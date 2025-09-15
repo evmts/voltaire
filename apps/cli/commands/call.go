@@ -9,12 +9,13 @@ import (
 
 // ExecuteCall executes a CALL operation
 func ExecuteCall(c *cli.Context) error {
-	params, err := ParseCallParams(c, true)
+	params, err := ParseCallParams(c, true) // needValue = true
 	if err != nil {
 		return err
 	}
 
-	vm, err := SetupEVM(c)
+	// Use SetupEVMWithFixture to potentially load fixture state
+	vm, err := SetupEVMWithFixture(c)
 	if err != nil {
 		return err
 	}

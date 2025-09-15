@@ -425,6 +425,295 @@ func OutputResult(c *cli.Context, result *guillotine.CallResult) error {
 }
 
 // ========================
+// Fixture Support
+// ========================
+
+// FixtureData represents the structure of a test fixture
+type FixtureData struct {
+	Pre       map[string]AccountState `json:"pre"`
+	Blocks    []BlockData             `json:"blocks"`
+	PostState map[string]AccountState `json:"postState"`
+}
+
+// AccountState represents an account in the fixture
+type AccountState struct {
+	Balance string            `json:"balance"`
+	Code    string            `json:"code"`
+	Nonce   string            `json:"nonce"`
+	Storage map[string]string `json:"storage"`
+}
+
+// BlockData represents a block in the fixture
+type BlockData struct {
+	Transactions []TransactionData `json:"transactions"`
+}
+
+// TransactionData represents a transaction in the fixture
+type TransactionData struct {
+	Data     string `json:"data"`
+	GasLimit string `json:"gasLimit"`
+	Value    string `json:"value"`
+	To       string `json:"to"`
+	From     string `json:"sender"`
+}
+
+// LoadCallParamsFromFixture loads call parameters from a fixture file
+func LoadCallParamsFromFixture(fixturePath string) (CallParams, error) {
+	// Resolve fixture path
+	resolvedPath := resolveFixturePath(fixturePath)
+	
+	// Check if it's a simple bytecode/calldata pair or full fixture
+	if strings.Contains(fixturePath, "bytecode") || strings.Contains(fixturePath, "runtime") {
+		// Simple bytecode file
+		return loadSimpleBytecodeFixture(resolvedPath)
+	}
+	
+	// Try to load as JSON fixture
+	data, err := os.ReadFile(resolvedPath)
+	if err != nil {
+		return CallParams{}, fmt.Errorf("failed to read fixture: %w", err)
+	}
+	
+	// Try to parse as a full test fixture
+	var fixtures map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fixtures); err != nil {
+		// Maybe it's a simple hex file
+		return loadSimpleBytecodeFixture(resolvedPath)
+	}
+	
+	// Get the first test from the fixture
+	for _, testData := range fixtures {
+		var test struct {
+			Pre    map[string]AccountState `json:"pre"`
+			Blocks []BlockData             `json:"blocks"`
+		}
+		if err := json.Unmarshal(testData, &test); err != nil {
+			continue
+		}
+		
+		// Extract bytecode and calldata from the first transaction
+		if len(test.Blocks) > 0 && len(test.Blocks[0].Transactions) > 0 {
+			tx := test.Blocks[0].Transactions[0]
+			
+			params := CallParams{
+				CommonParams: CommonParams{
+					Gas: 10000000, // Default gas
+				},
+				Value: big.NewInt(0),
+			}
+			
+			// Parse transaction data
+			if tx.Data != "" {
+				params.Input, _ = ParseHex(tx.Data)
+			}
+			
+			if tx.GasLimit != "" {
+				if gas, err := ParseBigInt(tx.GasLimit); err == nil {
+					params.Gas = gas.Uint64()
+				}
+			}
+			
+			if tx.Value != "" {
+				params.Value, _ = ParseBigInt(tx.Value)
+			}
+			
+			if tx.To != "" && tx.To != "0x" {
+				params.To, _ = ParseAddress(tx.To)
+			}
+			
+			if tx.From != "" {
+				params.Caller, _ = ParseAddress(tx.From)
+			} else {
+				// Default caller
+				params.Caller, _ = ParseAddress("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+			}
+			
+			// If there's a contract in pre-state, deploy it first
+			for addr, account := range test.Pre {
+				if account.Code != "" && account.Code != "0x" {
+					// This is a contract that needs to be deployed
+					if params.To.Hex() == "0x0000000000000000000000000000000000000000" {
+						// If no 'to' address, use this contract address
+						params.To, _ = ParseAddress(addr)
+					}
+				}
+			}
+			
+			return params, nil
+		}
+	}
+	
+	return CallParams{}, fmt.Errorf("no valid test data found in fixture")
+}
+
+// loadSimpleBytecodeFixture loads bytecode and calldata from simple files
+func loadSimpleBytecodeFixture(path string) (CallParams, error) {
+	// Try to find bytecode and calldata files
+	dir := filepath.Dir(path)
+	base := filepath.Base(path)
+	
+	var bytecodeFile, calldataFile string
+	
+	// Look for companion files
+	if strings.Contains(base, "bytecode") || strings.Contains(base, "runtime") {
+		bytecodeFile = path
+		// Look for calldata file
+		calldataFile = filepath.Join(dir, "calldata.txt")
+		if _, err := os.Stat(calldataFile); err != nil {
+			calldataFile = filepath.Join(dir, "calldata.hex")
+		}
+	} else if strings.Contains(base, "calldata") {
+		calldataFile = path
+		// Look for bytecode file
+		bytecodeFile = filepath.Join(dir, "runtime_clean.txt")
+		if _, err := os.Stat(bytecodeFile); err != nil {
+			bytecodeFile = filepath.Join(dir, "bytecode.hex")
+		}
+	}
+	
+	params := CallParams{
+		CommonParams: CommonParams{
+			Caller: primitives.Address{}, // Will be set to default
+			Gas:    10000000,
+		},
+		Value: big.NewInt(0),
+	}
+	
+	// Load calldata if found
+	if calldataFile != "" {
+		if data, err := os.ReadFile(calldataFile); err == nil {
+			params.Input, _ = ParseHex(string(data))
+		}
+	}
+	
+	// For bytecode, we'd need to deploy it first, but for now just note it
+	if bytecodeFile != "" {
+		fmt.Fprintf(os.Stderr, "Note: Bytecode file found at %s\n", bytecodeFile)
+	}
+	
+	// Set defaults
+	params.Caller, _ = ParseAddress("0x1000000000000000000000000000000000000000")
+	params.To, _ = ParseAddress("0x1000000000000000000000000000000000000001")
+	
+	return params, nil
+}
+
+// resolveFixturePath resolves a fixture name or path to an actual file
+func resolveFixturePath(input string) string {
+	// If it's already a valid path, return it
+	if _, err := os.Stat(input); err == nil {
+		return input
+	}
+	
+	// Try to find it in the test fixtures directory
+	projectRoot := os.Getenv("GUILLOTINE_ROOT")
+	if projectRoot == "" {
+		// Try to find project root
+		if cwd, err := os.Getwd(); err == nil {
+			// Look for cli.sh to identify project root
+			for dir := cwd; dir != "/"; dir = filepath.Dir(dir) {
+				if _, err := os.Stat(filepath.Join(dir, "cli.sh")); err == nil {
+					projectRoot = dir
+					break
+				}
+			}
+		}
+	}
+	
+	if projectRoot != "" {
+		// Look in test fixtures
+		fixturesDir := filepath.Join(projectRoot, "test", "official", "fixtures")
+		
+		// Try direct path
+		testPath := filepath.Join(fixturesDir, input)
+		if _, err := os.Stat(testPath); err == nil {
+			return testPath
+		}
+		
+		// Try with .json extension
+		testPath = filepath.Join(fixturesDir, input+".json")
+		if _, err := os.Stat(testPath); err == nil {
+			return testPath
+		}
+		
+		// Search recursively for a matching file
+		var found string
+		filepath.Walk(fixturesDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return nil
+			}
+			if strings.Contains(filepath.Base(path), input) {
+				found = path
+				return filepath.SkipAll
+			}
+			return nil
+		})
+		if found != "" {
+			return found
+		}
+	}
+	
+	return input
+}
+
+// SetupEVMWithFixture creates an EVM and loads state from a fixture
+func SetupEVMWithFixture(c *cli.Context) (*evm.EVM, error) {
+	vm, err := evm.New()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create EVM: %w", err)
+	}
+	
+	// Check if a fixture is provided
+	if c.Args().Len() > 0 {
+		fixturePath := c.Args().First()
+		resolvedPath := resolveFixturePath(fixturePath)
+		
+		// Try to load fixture and set up state
+		if data, err := os.ReadFile(resolvedPath); err == nil {
+			var fixtures map[string]json.RawMessage
+			if err := json.Unmarshal(data, &fixtures); err == nil {
+				// Load pre-state from first test
+				for _, testData := range fixtures {
+					var test struct {
+						Pre map[string]AccountState `json:"pre"`
+					}
+					if err := json.Unmarshal(testData, &test); err == nil {
+						// Set up pre-state accounts
+						for addr, account := range test.Pre {
+							address, _ := ParseAddress(addr)
+							
+							// Set balance
+							if account.Balance != "" {
+								balance, _ := ParseBigInt(account.Balance)
+								vm.SetBalance(address, balance)
+							}
+							
+							// Set code
+							if account.Code != "" && account.Code != "0x" {
+								code, _ := ParseHex(account.Code)
+								vm.SetCode(address, code)
+							}
+							
+							// Set storage
+							for key, value := range account.Storage {
+								storageKey, _ := ParseBigInt(key)
+								storageValue, _ := ParseBigInt(value)
+								vm.SetStorage(address, storageKey, storageValue)
+							}
+						}
+						
+						fmt.Fprintf(os.Stderr, "Loaded pre-state from fixture with %d accounts\n", len(test.Pre))
+						break
+					}
+				}
+			}
+		}
+	}
+	
+	return vm, nil
+}
+
+// ========================
 // Math Helpers
 // ========================
 
