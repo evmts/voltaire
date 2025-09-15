@@ -39,7 +39,7 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const opcode = switch (push_n) {
-                        1 => Dispatch.UnifiedOpcode.PUSH1,
+                        1 => @import("../opcodes/opcode.zig").UnifiedOpcode.PUSH1,
                         2 => .PUSH2,
                         3 => .PUSH3,
                         4 => .PUSH4,
@@ -134,7 +134,7 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const opcode = switch (dup_n) {
-                        1 => Dispatch.UnifiedOpcode.DUP1,
+                        1 => @import("../opcodes/opcode.zig").UnifiedOpcode.DUP1,
                         2 => .DUP2,
                         3 => .DUP3,
                         4 => .DUP4,
@@ -187,7 +187,7 @@ pub fn Handlers(comptime FrameType: type) type {
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const opcode = switch (swap_n) {
-                        1 => Dispatch.UnifiedOpcode.SWAP1,
+                        1 => @import("../opcodes/opcode.zig").UnifiedOpcode.SWAP1,
                         2 => .SWAP2,
                         3 => .SWAP3,
                         4 => .SWAP4,
@@ -252,7 +252,6 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
-    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

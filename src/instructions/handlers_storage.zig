@@ -297,11 +297,11 @@ const MockEvm = struct {
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: *MockEvm) !TestFrame {
-    const database = try @import("../storage/memory_database.zig").MemoryDatabase.init(allocator);
+    _ = @import("../storage/memory_database.zig").MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrCast(evm));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
+    var frame = try TestFrame.init(allocator, 1_000_000, Address.ZERO_ADDRESS, value.*, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

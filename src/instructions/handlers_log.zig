@@ -283,7 +283,7 @@ test "LOG0 opcode - empty data" {
     defer mock_evm.deinit();
 
     const evm = &mock_evm;
-    const test_address = Address.fromBytes([_]u8{0x12} ++ [_]u8{0} ** 19) catch unreachable;
+    const test_address = Address.fromBytes(&([_]u8{0x12} ++ [_]u8{0} ** 19)) catch unreachable;
     var frame = try createTestFrame(testing.allocator, evm);
     defer frame.deinit(testing.allocator);
     frame.contract_address = test_address;
@@ -307,7 +307,7 @@ test "LOG0 opcode - with data" {
     defer mock_evm.deinit();
 
     const evm = &mock_evm;
-    const test_address = Address.fromBytes([_]u8{0x34} ++ [_]u8{0} ** 19) catch unreachable;
+    const test_address = Address.fromBytes(&([_]u8{0x34} ++ [_]u8{0} ** 19)) catch unreachable;
     var frame = try createTestFrame(testing.allocator, evm);
     defer frame.deinit(testing.allocator);
     frame.contract_address = test_address;
@@ -770,8 +770,8 @@ test "LOG opcodes - contract address tracking" {
     // Test different contract addresses
     const addresses = [_]Address{
         Address.zero(),
-        Address.fromBytes([_]u8{0xFF} ** 20) catch unreachable,
-        Address.fromBytes([_]u8{ 0x12, 0x34, 0x56 } ++ [_]u8{0} ** 17) catch unreachable,
+        Address.fromBytes(&([_]u8{0xFF} ** 20)) catch unreachable,
+        Address.fromBytes(&([_]u8{ 0x12, 0x34, 0x56 } ++ [_]u8{0} ** 17)) catch unreachable,
     };
 
     for (addresses) |addr| {
@@ -863,11 +863,11 @@ test "LOG opcodes - static context protection for all variants" {
         handler: *const TestFrame.OpcodeHandler,
         stack_items: u8,
     }{
-        .{ .handler = TestFrame.LogHandlers.log0, .stack_items = 2 },
-        .{ .handler = TestFrame.LogHandlers.log1, .stack_items = 3 },
-        .{ .handler = TestFrame.LogHandlers.log2, .stack_items = 4 },
-        .{ .handler = TestFrame.LogHandlers.log3, .stack_items = 5 },
-        .{ .handler = TestFrame.LogHandlers.log4, .stack_items = 6 },
+        .{ .handler = &TestFrame.LogHandlers.log0, .stack_items = 2 },
+        .{ .handler = &TestFrame.LogHandlers.log1, .stack_items = 3 },
+        .{ .handler = &TestFrame.LogHandlers.log2, .stack_items = 4 },
+        .{ .handler = &TestFrame.LogHandlers.log3, .stack_items = 5 },
+        .{ .handler = &TestFrame.LogHandlers.log4, .stack_items = 6 },
     };
 
     for (log_handlers) |lh| {
@@ -926,11 +926,11 @@ test "LOG opcodes - WordType smaller than u256" {
     defer mock_evm.deinit();
 
     const evm = &mock_evm;
-    const database = MemoryDatabase.init(testing.allocator);
+    _ = MemoryDatabase.init(testing.allocator);
     const value = try testing.allocator.create(u64);
     defer testing.allocator.destroy(value);
     value.* = 0;
-    var frame = try SmallFrame.init(testing.allocator, @intCast(1_000_000), database, Address.ZERO_ADDRESS, value, &[_]u8{}, @as(*anyopaque, @ptrCast(evm)));
+    var frame = try SmallFrame.init(testing.allocator, @intCast(1_000_000), Address.ZERO_ADDRESS, value.*, &[_]u8{}, @as(*anyopaque, @ptrCast(evm)));
     defer frame.deinit(testing.allocator);
 
     // Test LOG2 with u64 topics

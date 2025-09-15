@@ -299,7 +299,6 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = MemoryDatabase,
-    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -307,11 +306,11 @@ const test_config = FrameConfig{
 const TestFrame = Frame(test_config);
 
 fn createTestFrame(allocator: std.mem.Allocator) !TestFrame {
-    const database = MemoryDatabase.init(allocator);
+    _ = MemoryDatabase.init(allocator);
     const value = try allocator.create(u256);
     value.* = 0;
     const evm_ptr = @as(*anyopaque, @ptrFromInt(0x1000));
-    var frame = try TestFrame.init(allocator, 1_000_000, database, Address.ZERO_ADDRESS, value, &[_]u8{}, evm_ptr);
+    var frame = try TestFrame.init(allocator, 1_000_000, Address.ZERO_ADDRESS, value.*, &[_]u8{}, evm_ptr);
     frame.code = &[_]u8{};
     return frame;
 }

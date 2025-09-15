@@ -1093,7 +1093,6 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = @import("../storage/memory_database.zig").MemoryDatabase,
-    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -1104,8 +1103,17 @@ const TestFrame = Frame(test_config);
 const MockEvm = struct {
     allocator: std.mem.Allocator,
     is_static: bool = false,
-    call_result: call_params_mod.CallResult,
-    create_result: call_params_mod.CreateResult,
+    call_result: struct {
+        success: bool,
+        gas_left: u64,
+        output: []const u8,
+    },
+    create_result: struct {
+        success: bool,
+        gas_left: u64,
+        output: []const u8,
+        created_address: ?Address,
+    },
 
     pub fn init(allocator: std.mem.Allocator) MockEvm {
         return .{
