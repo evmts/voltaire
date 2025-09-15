@@ -11,7 +11,7 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:  "guillotine-bench",
+		Name:  "guil",
 		Usage: "Guillotine EVM CLI and benchmarking tool",
 		Action: func(c *cli.Context) error {
 			return commands.RunTUI(c)

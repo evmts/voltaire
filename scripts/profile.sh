@@ -29,7 +29,7 @@ profile_benchmark() {
         echo "Running perf profiling on Linux..."
         sudo perf record -F 997 -g --call-graph dwarf \
             -o "perf-$output_name.data" \
-            ./zig-out/bin/guillotine-bench --profile "$benchmark"
+            ./zig-out/bin/guil --profile "$benchmark"
         
         echo "Generating flamegraph..."
         flamegraph --perfdata "perf-$output_name.data" \
@@ -37,7 +37,7 @@ profile_benchmark() {
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Running profiling on macOS..."
         flamegraph -o "flamegraph-$output_name.svg" \
-            -- ./zig-out/bin/guillotine-bench --profile "$benchmark"
+            -- ./zig-out/bin/guil --profile "$benchmark"
     fi
     
     echo "Flamegraph saved to: flamegraph-$output_name.svg"
