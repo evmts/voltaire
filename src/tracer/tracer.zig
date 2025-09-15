@@ -29,6 +29,10 @@ const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 // For this reason, the tracer is intentionally decoupled from the EVM and is expected to share
 // minimal code with it.
 pub const DefaultTracer = struct {
+    // Base allocator passed from outside
+    base_allocator: std.mem.Allocator,
+    // Arena allocator for simplified memory management
+    arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
@@ -78,8 +82,13 @@ pub const DefaultTracer = struct {
     };
 
     pub fn init(allocator: std.mem.Allocator) DefaultTracer {
+        var arena = std.heap.ArenaAllocator.init(allocator);
+        const arena_allocator = arena.allocator();
+
         return .{
-            .allocator = allocator,
+            .base_allocator = allocator,
+            .arena = arena,
+            .allocator = arena_allocator,
             .steps = std.ArrayList(ExecutionStep){
                 .items = &.{},
                 .capacity = 0,
@@ -100,11 +109,8 @@ pub const DefaultTracer = struct {
     }
 
     pub fn deinit(self: *DefaultTracer) void {
-        // ArrayList in this case is just a view since we init with empty items
-        // No need to deinit as we didn't allocate anything
-        if (self.minimal_evm) |*evm| {
-            evm.deinit();
-        }
+        // Arena allocator cleans up everything at once
+        self.arena.deinit();
     }
 
     /// Initialize PC tracker with bytecode (called when frame starts interpretation)
@@ -118,11 +124,8 @@ pub const DefaultTracer = struct {
         _ = gas_limit;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            // Cleanup any existing MinimalEvm
-            if (self.minimal_evm) |*evm| {
-                evm.deinit();
-                self.minimal_evm = null;
-            }
+            // Reset any existing MinimalEvm
+            self.minimal_evm = null;
 
             // Reset execution counters
             self.instruction_count = 0;
@@ -134,8 +137,8 @@ pub const DefaultTracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                // Initialize MinimalEvm orchestrator
-                self.minimal_evm = MinimalEvm.init(self.allocator) catch null;
+                // Initialize MinimalEvm orchestrator with base allocator to avoid nested arenas
+                self.minimal_evm = MinimalEvm.init(self.base_allocator) catch null;
 
                 if (self.minimal_evm) |*evm| {
                     // Get the main EVM for context
@@ -195,10 +198,7 @@ pub const DefaultTracer = struct {
                         value,
                         calldata,
                         @as(*anyopaque, @ptrCast(evm)),
-                    ) catch {
-                        self.allocator.destroy(minimal_frame);
-                        return;
-                    };
+                    ) catch return;
 
                     // Set as current frame
                     evm.current_frame = minimal_frame;

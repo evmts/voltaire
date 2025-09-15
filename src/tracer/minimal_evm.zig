@@ -116,19 +116,21 @@ pub const MinimalEvm = struct {
     // Host interface (if provided)
     host: ?HostInterface,
 
+    // Arena allocator for simplified memory management
+    arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
 
     /// Initialize a new MinimalEvm (orchestrator)
     pub fn init(allocator: std.mem.Allocator) !Self {
-        var storage_map = std.AutoHashMap(StorageSlotKey, u256).init(allocator);
-        errdefer storage_map.deinit();
+        // Create arena allocator for simplified memory management
+        var arena = std.heap.ArenaAllocator.init(allocator);
+        errdefer arena.deinit();
 
-        var balances_map = std.AutoHashMap(Address, u256).init(allocator);
-        errdefer balances_map.deinit();
+        const arena_allocator = arena.allocator();
 
-        var code_map = std.AutoHashMap(Address, []const u8).init(allocator);
-        errdefer code_map.deinit();
-
+        const storage_map = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
+        const balances_map = std.AutoHashMap(Address, u256).init(arena_allocator);
+        const code_map = std.AutoHashMap(Address, []const u8).init(arena_allocator);
         const frames_list = std.ArrayList(*MinimalFrame){};
 
         return Self{
@@ -149,7 +151,8 @@ pub const MinimalEvm = struct {
             .origin = ZERO_ADDRESS,
             .gas_price = 0,
             .host = null,
-            .allocator = allocator,
+            .arena = arena,
+            .allocator = arena_allocator,
         };
     }
 
@@ -162,40 +165,8 @@ pub const MinimalEvm = struct {
 
     /// Clean up resources
     pub fn deinit(self: *Self) void {
-        // Clean up all frames owned by the stack
-        for (self.frames.items) |frame| {
-            frame.deinit();
-            self.allocator.destroy(frame);
-        }
-        // If a current_frame exists but is not part of the frames stack
-        // (e.g., created directly by the tracer), clean it up as well
-        if (self.current_frame) |cf| {
-            var found = false;
-            for (self.frames.items) |f| {
-                if (f == cf) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                cf.deinit();
-                self.allocator.destroy(cf);
-            }
-        }
-        self.frames.deinit(self.allocator);
-        self.storage.deinit();
-        self.balances.deinit();
-
-        // Free stored code
-        var code_iter = self.code.iterator();
-        while (code_iter.next()) |entry| {
-            self.allocator.free(entry.value_ptr.*);
-        }
-        self.code.deinit();
-
-        if (self.return_data.len > 0) {
-            self.allocator.free(self.return_data);
-        }
+        // Arena allocator cleans up everything at once
+        self.arena.deinit();
     }
 
     /// Set blockchain context
@@ -250,8 +221,6 @@ pub const MinimalEvm = struct {
     ) MinimalEvmError!CallResult {
         // Create a new frame for execution
         const frame = try self.allocator.create(MinimalFrame);
-        errdefer self.allocator.destroy(frame);
-
         frame.* = try MinimalFrame.init(
             self.allocator,
             bytecode,
@@ -262,7 +231,6 @@ pub const MinimalEvm = struct {
             calldata,
             @as(*anyopaque, @ptrCast(self)),
         );
-        errdefer frame.deinit();
 
         // Push frame onto stack
         try self.frames.append(self.allocator, frame);
@@ -287,9 +255,7 @@ pub const MinimalEvm = struct {
         if (exec_result) |_| {
             // Success case
         } else |_| {
-            // Error case - clean up and return failure
-            frame.deinit();
-            self.allocator.destroy(frame);
+            // Error case - return failure (arena will clean up)
             return CallResult{
                 .success = false,
                 .gas_left = 0,
@@ -299,10 +265,6 @@ pub const MinimalEvm = struct {
 
         // Store return data
         if (frame.output.len > 0) {
-            const empty = &[_]u8{};
-            if (self.return_data.len > 0 and self.return_data.ptr != empty.ptr) {
-                self.allocator.free(self.return_data);
-            }
             const output_copy = try self.allocator.alloc(u8, frame.output.len);
             @memcpy(output_copy, frame.output);
             self.return_data = output_copy;
@@ -317,10 +279,7 @@ pub const MinimalEvm = struct {
             .output = self.return_data,
         };
 
-        // Clean up frame
-        frame.deinit();
-        self.allocator.destroy(frame);
-
+        // No cleanup needed - arena handles it
         return result;
     }
 
@@ -357,8 +316,6 @@ pub const MinimalEvm = struct {
 
         // Create a new frame for the inner call
         const frame = try self.allocator.create(MinimalFrame);
-        errdefer self.allocator.destroy(frame);
-
         frame.* = try MinimalFrame.init(
             self.allocator,
             code,
@@ -369,7 +326,6 @@ pub const MinimalEvm = struct {
             input,
             @as(*anyopaque, @ptrCast(self)),
         );
-        errdefer frame.deinit();
 
         // Push frame onto stack
         try self.frames.append(self.allocator, frame);
@@ -387,8 +343,7 @@ pub const MinimalEvm = struct {
         frame.execute() catch {
             // Pop frame on error
             _ = self.frames.pop();
-            frame.deinit();
-            self.allocator.destroy(frame);
+            // No cleanup needed - arena handles it
             return CallResult{
                 .success = false,
                 .gas_left = 0,
@@ -401,9 +356,6 @@ pub const MinimalEvm = struct {
 
         // Store return data
         if (frame.output.len > 0) {
-            if (self.return_data.len > 0) {
-                self.allocator.free(self.return_data);
-            }
             const output_copy = try self.allocator.alloc(u8, frame.output.len);
             @memcpy(output_copy, frame.output);
             self.return_data = output_copy;
@@ -418,10 +370,7 @@ pub const MinimalEvm = struct {
             .output = self.return_data,
         };
 
-        // Clean up frame
-        frame.deinit();
-        self.allocator.destroy(frame);
-
+        // No cleanup needed - arena handles it
         return result;
     }
 

@@ -80,14 +80,11 @@ pub const MinimalFrame = struct {
 
     /// Clean up resources
     pub fn deinit(self: *Self) void {
+        // Note: When using arena allocator from MinimalEvm, this becomes a no-op
+        // The arena will clean up all memory at once when MinimalEvm is destroyed
         self.stack.deinit(self.allocator);
         self.memory.deinit();
-        if (self.output.len > 0) {
-            self.allocator.free(self.output);
-        }
-        if (self.return_data.len > 0) {
-            self.allocator.free(@constCast(self.return_data));
-        }
+        // No need to free output or return_data when using arena
     }
 
     /// Get the MinimalEvm instance
@@ -498,7 +495,7 @@ pub const MinimalFrame = struct {
 
                     // Read data from memory
                     var data = try self.allocator.alloc(u8, size_u32);
-                    defer self.allocator.free(data);
+                    // No defer free needed with arena allocator
 
                     var i: u32 = 0;
                     while (i < size_u32) : (i += 1) {
@@ -1099,7 +1096,7 @@ pub const MinimalFrame = struct {
                         input_data = input_data_buffer[0..in_len];
                     } else {
                         const data = try self.allocator.alloc(u8, in_len);
-                        defer self.allocator.free(data);
+                        // No defer free needed with arena allocator
                         var j: u32 = 0;
                         while (j < in_len) : (j += 1) {
                             data[j] = self.readMemory(in_off + j);
@@ -1149,11 +1146,6 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data (make a copy as result will be cleaned up)
-                // Only free if we previously allocated (not pointing to empty slice)
-                const empty_slice = &[_]u8{};
-                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice.ptr) {
-                    self.allocator.free(@constCast(self.return_data));
-                }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
                     @memcpy(return_data_copy, result.output);
@@ -1214,7 +1206,7 @@ pub const MinimalFrame = struct {
                         input_data = input_data_buffer[0..in_len];
                     } else {
                         const data = try self.allocator.alloc(u8, in_len);
-                        defer self.allocator.free(data);
+                        // No defer free needed with arena allocator
                         var j: u32 = 0;
                         while (j < in_len) : (j += 1) {
                             data[j] = self.readMemory(in_off + j);
@@ -1263,11 +1255,6 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                // Only free if we previously allocated (not pointing to empty slice)
-                const empty_slice_2 = &[_]u8{};
-                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice_2.ptr) {
-                    self.allocator.free(@constCast(self.return_data));
-                }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
                     @memcpy(return_data_copy, result.output);
@@ -1342,7 +1329,7 @@ pub const MinimalFrame = struct {
                         input_data = input_data_buffer[0..in_len];
                     } else {
                         const data = try self.allocator.alloc(u8, in_len);
-                        defer self.allocator.free(data);
+                        // No defer free needed with arena allocator
                         var j: u32 = 0;
                         while (j < in_len) : (j += 1) {
                             data[j] = self.readMemory(in_off + j);
@@ -1391,11 +1378,6 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                // Only free if we previously allocated (not pointing to empty slice)
-                const empty_slice_2 = &[_]u8{};
-                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice_2.ptr) {
-                    self.allocator.free(@constCast(self.return_data));
-                }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
                     @memcpy(return_data_copy, result.output);
@@ -1468,7 +1450,7 @@ pub const MinimalFrame = struct {
                         input_data = input_data_buffer[0..in_len];
                     } else {
                         const data = try self.allocator.alloc(u8, in_len);
-                        defer self.allocator.free(data);
+                        // No defer free needed with arena allocator
                         var j: u32 = 0;
                         while (j < in_len) : (j += 1) {
                             data[j] = self.readMemory(in_off + j);
@@ -1517,11 +1499,6 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                // Only free if we previously allocated (not pointing to empty slice)
-                const empty_slice_2 = &[_]u8{};
-                if (self.return_data.len > 0 and self.return_data.ptr != empty_slice_2.ptr) {
-                    self.allocator.free(@constCast(self.return_data));
-                }
                 if (result.output.len > 0) {
                     const return_data_copy = try self.allocator.alloc(u8, result.output.len);
                     @memcpy(return_data_copy, result.output);
@@ -1575,7 +1552,7 @@ pub const MinimalFrame = struct {
 
                 // Copy via temporary buffer to handle overlapping regions
                 const tmp = try self.allocator.alloc(u8, len_u32);
-                defer self.allocator.free(tmp);
+                // No defer free needed with arena allocator
 
                 var i: u32 = 0;
                 while (i < len_u32) : (i += 1) {
