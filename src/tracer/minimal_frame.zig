@@ -56,8 +56,8 @@ pub const MinimalFrame = struct {
         calldata: []const u8,
         evm_ptr: *anyopaque,
     ) !Self {
-        var stack = std.ArrayList(u256).initCapacity(allocator, 1024) catch return error.OutOfMemory;
-        errdefer stack.deinit();
+        var stack = try std.ArrayList(u256).initCapacity(allocator, 1024);
+        errdefer stack.deinit(allocator);
 
         var memory_map = std.AutoHashMap(u32, u8).init(allocator);
         errdefer memory_map.deinit();

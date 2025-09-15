@@ -126,12 +126,14 @@ pub const MinimalEvm = struct {
         var arena = std.heap.ArenaAllocator.init(allocator);
         errdefer arena.deinit();
 
+        // Ensure the arena is properly initialized with a valid allocator
         const arena_allocator = arena.allocator();
 
         const storage_map = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         const balances_map = std.AutoHashMap(Address, u256).init(arena_allocator);
         const code_map = std.AutoHashMap(Address, []const u8).init(arena_allocator);
-        const frames_list = std.ArrayList(*MinimalFrame){};
+        // Initialize with empty unmanaged ArrayList - this is correct for Zig 0.15.1
+        const frames_list = std.ArrayList(*MinimalFrame).empty;
 
         return Self{
             .frames = frames_list,
@@ -167,7 +169,7 @@ pub const MinimalEvm = struct {
 
         const arena_allocator = self.arena.allocator();
 
-        self.frames = std.ArrayList(*MinimalFrame){};
+        self.frames = std.ArrayList(*MinimalFrame).empty;
         self.current_frame = null;
         self.return_data = &[_]u8{};
         self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);

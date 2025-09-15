@@ -477,8 +477,31 @@ pub const DifferentialTestor = struct {
         _ = value;
 
         // Reset MinimalEvm for new execution
-        self.minimal_evm.deinit();
-        self.minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(self.allocator);
+        // Instead of deinit + reinit which breaks arena pointers,
+        // we'll reset the MinimalEvm state while keeping the arena intact
+
+        // Clear the frames
+        self.minimal_evm.frames.clearRetainingCapacity();
+        self.minimal_evm.current_frame = null;
+
+        // Clear other state
+        self.minimal_evm.return_data = &[_]u8{};
+        self.minimal_evm.storage.clearRetainingCapacity();
+        self.minimal_evm.balances.clearRetainingCapacity();
+        self.minimal_evm.code.clearRetainingCapacity();
+
+        // Reset blockchain context to defaults
+        self.minimal_evm.chain_id = 1;
+        self.minimal_evm.block_number = 0;
+        self.minimal_evm.block_timestamp = 0;
+        self.minimal_evm.block_difficulty = 0;
+        self.minimal_evm.block_coinbase = primitives.Address.ZERO_ADDRESS;
+        self.minimal_evm.block_gas_limit = 30_000_000;
+        self.minimal_evm.block_base_fee = 0;
+        self.minimal_evm.blob_base_fee = 0;
+        self.minimal_evm.origin = primitives.Address.ZERO_ADDRESS;
+        self.minimal_evm.gas_price = 0;
+        self.minimal_evm.host = null;
 
         // Execute the bytecode with MinimalEvm
         const result = self.minimal_evm.execute(
