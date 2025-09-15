@@ -1115,12 +1115,17 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // Make the call through EVM
-                const result = try evm.inner_call(
+                const result = evm.inner_call(
                     call_address,
                     value_arg,
                     input_data,
                     available_gas,
-                );
+                ) catch {
+                    // Call failed - push 0 and continue
+                    try self.pushStack(0);
+                    self.pc += 1;
+                    return;
+                };
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1222,12 +1227,17 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // CALLCODE: Execute target code but in current context
-                const result = try evm.inner_call(
+                const result = evm.inner_call(
                     call_address,
                     value_arg,
                     input_data,
                     available_gas,
-                );
+                ) catch {
+                    // Call failed - push 0 and continue
+                    try self.pushStack(0);
+                    self.pc += 1;
+                    return;
+                };
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1342,12 +1352,17 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // DELEGATECALL: use current contract value, not passed value
-                const result = try evm.inner_call(
+                const result = evm.inner_call(
                     call_address,
                     self.value,  // Use current frame's value
                     input_data,
                     available_gas,
-                );
+                ) catch {
+                    // Call failed - push 0 and continue
+                    try self.pushStack(0);
+                    self.pc += 1;
+                    return;
+                };
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1460,12 +1475,17 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // STATICCALL: no value transfer allowed (value = 0)
-                const result = try evm.inner_call(
+                const result = evm.inner_call(
                     call_address,
                     0,  // Static calls have no value
                     input_data,
                     available_gas,
-                );
+                ) catch {
+                    // Call failed - push 0 and continue
+                    try self.pushStack(0);
+                    self.pc += 1;
+                    return;
+                };
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
