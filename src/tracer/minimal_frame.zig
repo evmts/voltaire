@@ -207,18 +207,18 @@ pub const MinimalFrame = struct {
             // SUB
             0x03 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
-                const a = try self.popStack();
-                const b = try self.popStack();
-                try self.pushStack(a -% b);
+                const top = try self.popStack();
+                const second = try self.popStack();
+                try self.pushStack(top -% second);
                 self.pc += 1;
             },
 
             // DIV
             0x04 => {
                 try self.consumeGas(GasConstants.GasFastStep);
-                const a = try self.popStack();
-                const b = try self.popStack();
-                const result = if (b == 0) 0 else a / b;
+                const top = try self.popStack();
+                const second = try self.popStack();
+                const result = if (second == 0) 0 else top / second;
                 try self.pushStack(result);
                 self.pc += 1;
             },
@@ -226,11 +226,12 @@ pub const MinimalFrame = struct {
             // SDIV
             0x05 => {
                 try self.consumeGas(GasConstants.GasFastStep);
-                const a = try self.popStack();
-                const b = try self.popStack();
-                const a_signed = @as(i256, @bitCast(a));
-                const b_signed = @as(i256, @bitCast(b));
-                const result = if (b == 0) 0 else @as(u256, @bitCast(@divTrunc(a_signed, b_signed)));
+                const top = try self.popStack();
+                const second = try self.popStack();
+                const top_signed = @as(i256, @bitCast(top));
+                const second_signed = @as(i256, @bitCast(second));
+                const MIN_SIGNED = @as(u256, 1) << 255;
+                const result = if (second == 0) 0 else if (top == MIN_SIGNED and second == std.math.maxInt(u256)) MIN_SIGNED else @as(u256, @bitCast(@divTrunc(top_signed, second_signed)));
                 try self.pushStack(result);
                 self.pc += 1;
             },
@@ -238,9 +239,9 @@ pub const MinimalFrame = struct {
             // MOD
             0x06 => {
                 try self.consumeGas(GasConstants.GasFastStep);
-                const a = try self.popStack();
-                const b = try self.popStack();
-                const result = if (b == 0) 0 else a % b;
+                const top = try self.popStack();
+                const second = try self.popStack();
+                const result = if (second == 0) 0 else top % second;
                 try self.pushStack(result);
                 self.pc += 1;
             },
@@ -248,11 +249,12 @@ pub const MinimalFrame = struct {
             // SMOD
             0x07 => {
                 try self.consumeGas(GasConstants.GasFastStep);
-                const a = try self.popStack();
-                const b = try self.popStack();
-                const a_signed = @as(i256, @bitCast(a));
-                const b_signed = @as(i256, @bitCast(b));
-                const result = if (b == 0) 0 else @as(u256, @bitCast(@rem(a_signed, b_signed)));
+                const top = try self.popStack();
+                const second = try self.popStack();
+                const top_signed = @as(i256, @bitCast(top));
+                const second_signed = @as(i256, @bitCast(second));
+                const MIN_SIGNED = @as(u256, 1) << 255;
+                const result = if (second == 0) 0 else if (top == MIN_SIGNED and second == std.math.maxInt(u256)) 0 else @as(u256, @bitCast(@rem(top_signed, second_signed)));
                 try self.pushStack(result);
                 self.pc += 1;
             },
@@ -293,8 +295,8 @@ pub const MinimalFrame = struct {
 
             // EXP
             0x0a => {
-                const base = try self.popStack();
                 const exp = try self.popStack();
+                const base = try self.popStack();
 
                 // EIP-160: Dynamic gas cost for EXP
                 // Gas cost = 10 + 50 * (number of bytes in exponent)
@@ -1100,8 +1102,7 @@ pub const MinimalFrame = struct {
                 while (i < 20) : (i += 1) {
                     addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
                 }
-                // Address is only needed for checking if empty, not creating Address struct
-                // const call_address = Address{ .bytes = addr_bytes };
+                const call_address = Address{ .bytes = addr_bytes };
 
                 // Base gas cost
                 var gas_cost: u64 = GasConstants.CallGas;
@@ -1111,63 +1112,35 @@ pub const MinimalFrame = struct {
                 try self.consumeGas(gas_cost);
 
                 // Read input data from memory
-                var input_data_buffer: [1024]u8 = undefined; // Static buffer for small calls
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
                     const in_off = @as(u32, @intCast(in_offset));
                     const in_len = @as(u32, @intCast(in_length));
-
-                    // Use static buffer for small calls, allocate for large ones
-                    if (in_len <= input_data_buffer.len) {
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            input_data_buffer[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = input_data_buffer[0..in_len];
-                    } else {
-                        const data = try self.allocator.alloc(u8, in_len);
-                        // No defer free needed with arena allocator
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            data[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = data;
+                    const data = try self.allocator.alloc(u8, in_len);
+                    var j: u32 = 0;
+                    while (j < in_len) : (j += 1) {
+                        data[j] = self.readMemory(in_off + j);
                     }
+                    input_data = data;
                 }
 
-                // Calculate available gas (all gas or up to 63/64 of remaining)
+                // Calculate available gas
                 const gas_limit = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
                 const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // For MinimalFrame testing: simulate call to empty account
-                // In the current Frame implementation, calls to 0x0 are failing
-                // We need to match that behavior for the tracer to pass
-                const is_empty = std.mem.eql(u8, &addr_bytes, &[_]u8{0} ** 20);
-
-                const empty_output: []const u8 = &[_]u8{};
-                // Match Frame's behavior - calls to 0x0 fail in current implementation
-                // Using intermediate variables to ensure type compatibility
-                const success_flag = if (is_empty) false else true;
-                const gas_consumed = if (is_empty) @as(u64, 100) else @as(u64, 1000);
-                const result = .{
-                    .success = success_flag,
-                    .gas_left = available_gas - gas_consumed,
-                    .output = empty_output,
-                };
+                // Perform the inner call
+                const result = try self.getEvm().inner_call(call_address, value_arg, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
                     const out_off = @as(u32, @intCast(out_offset));
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
-                    // Charge memory expansion + copy per word for copying return data
                     const end_bytes_callcopy: u64 = @as(u64, out_off) + @as(u64, copy_len);
                     const mem_cost_out = self.memoryExpansionCost(end_bytes_callcopy);
-                    const copy_words_out = wordCount(@as(u64, copy_len));
-                    const copy_cost_out = GasConstants.CopyGas * copy_words_out;
-                    try self.consumeGas(mem_cost_out + copy_cost_out);
+                    try self.consumeGas(mem_cost_out);
 
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
@@ -1175,19 +1148,13 @@ pub const MinimalFrame = struct {
                     }
                 }
 
-                // Store return data (make a copy as result will be cleaned up)
-                if (result.output.len > 0) {
-                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
-                    @memcpy(return_data_copy, result.output);
-                    self.return_data = return_data_copy;
-                } else {
-                    self.return_data = &[_]u8{};
-                }
+                // Store return data
+                self.return_data = result.output;
 
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas: deduct the gas used
+                // Update gas
                 const gas_used = available_gas - result.gas_left;
                 self.gas_remaining -= @intCast(gas_used);
 
@@ -1212,8 +1179,7 @@ pub const MinimalFrame = struct {
                 while (i < 20) : (i += 1) {
                     addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
                 }
-                // Address is only needed for checking if empty, not creating Address struct
-                // const call_address = Address{ .bytes = addr_bytes };
+                const call_address = Address{ .bytes = addr_bytes };
 
                 // Base gas cost
                 var gas_cost: u64 = GasConstants.CallGas;
@@ -1223,27 +1189,16 @@ pub const MinimalFrame = struct {
                 try self.consumeGas(gas_cost);
 
                 // Read input data from memory
-                var input_data_buffer: [1024]u8 = undefined;
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
                     const in_off = @as(u32, @intCast(in_offset));
                     const in_len = @as(u32, @intCast(in_length));
-
-                    if (in_len <= input_data_buffer.len) {
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            input_data_buffer[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = input_data_buffer[0..in_len];
-                    } else {
-                        const data = try self.allocator.alloc(u8, in_len);
-                        // No defer free needed with arena allocator
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            data[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = data;
+                    const data = try self.allocator.alloc(u8, in_len);
+                    var j: u32 = 0;
+                    while (j < in_len) : (j += 1) {
+                        data[j] = self.readMemory(in_off + j);
                     }
+                    input_data = data;
                 }
 
                 // Calculate available gas
@@ -1252,26 +1207,8 @@ pub const MinimalFrame = struct {
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // CALLCODE: Check call depth limit using real EVM depth and config
-                const real_evm = @as(*@import("../evm.zig").Evm(.{}), @ptrCast(@alignCast(self.evm_ptr)));
-                const config = @import("../evm_config.zig").EvmConfig{};
-                const depth_exceeded = real_evm.depth >= config.max_call_depth;
-
-                // For MinimalFrame, simulate success only if depth limit not exceeded
-                const result = .{
-                    .success = !depth_exceeded,
-                    .gas_left = if (!depth_exceeded and available_gas >= 1000) available_gas - 1000 else 0,
-                    .output = &[_]u8{},
-                };
-                if (false) {
-                    // Call failed - push 0 and continue
-                    self.pushStack(0) catch {
-                        // Stack overflow - this shouldn't happen but handle gracefully
-                        return error.StackOverflow;
-                    };
-                    self.pc += 1;
-                    return;
-                }
+                // Perform the inner call
+                const result = try self.getEvm().inner_call(call_address, value_arg, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1279,10 +1216,8 @@ pub const MinimalFrame = struct {
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
                     const end_bytes_callcode: u64 = @as(u64, out_off) + @as(u64, copy_len);
-                    const mem_cost_out2 = self.memoryExpansionCost(end_bytes_callcode);
-                    const copy_words_out2 = wordCount(@as(u64, copy_len));
-                    const copy_cost_out2 = GasConstants.CopyGas * copy_words_out2;
-                    try self.consumeGas(mem_cost_out2 + copy_cost_out2);
+                    const mem_cost_out = self.memoryExpansionCost(end_bytes_callcode);
+                    try self.consumeGas(mem_cost_out);
 
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
@@ -1291,13 +1226,7 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                if (result.output.len > 0) {
-                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
-                    @memcpy(return_data_copy, result.output);
-                    self.return_data = return_data_copy;
-                } else {
-                    self.return_data = &[_]u8{};
-                }
+                self.return_data = result.output;
 
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
@@ -1347,34 +1276,22 @@ pub const MinimalFrame = struct {
                 while (i < 20) : (i += 1) {
                     addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
                 }
-                // Address is only needed for checking if empty, not creating Address struct
-                // const call_address = Address{ .bytes = addr_bytes };
+                const call_address = Address{ .bytes = addr_bytes };
 
                 // Base gas cost
                 try self.consumeGas(GasConstants.CallGas);
 
                 // Read input data from memory
-                var input_data_buffer: [1024]u8 = undefined;
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
                     const in_off = @as(u32, @intCast(in_offset));
                     const in_len = @as(u32, @intCast(in_length));
-
-                    if (in_len <= input_data_buffer.len) {
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            input_data_buffer[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = input_data_buffer[0..in_len];
-                    } else {
-                        const data = try self.allocator.alloc(u8, in_len);
-                        // No defer free needed with arena allocator
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            data[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = data;
+                    const data = try self.allocator.alloc(u8, in_len);
+                    var j: u32 = 0;
+                    while (j < in_len) : (j += 1) {
+                        data[j] = self.readMemory(in_off + j);
                     }
+                    input_data = data;
                 }
 
                 // Calculate available gas
@@ -1383,26 +1300,8 @@ pub const MinimalFrame = struct {
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // DELEGATECALL: Check call depth limit using real EVM depth and config
-                const real_evm = @as(*@import("../evm.zig").Evm(.{}), @ptrCast(@alignCast(self.evm_ptr)));
-                const config = @import("../evm_config.zig").EvmConfig{};
-                const depth_exceeded = real_evm.depth >= config.max_call_depth;
-
-                // For MinimalFrame, simulate success only if depth limit not exceeded
-                const result = .{
-                    .success = !depth_exceeded,
-                    .gas_left = if (!depth_exceeded and available_gas >= 1000) available_gas - 1000 else 0,
-                    .output = &[_]u8{},
-                };
-                if (false) {
-                    // Call failed - push 0 and continue
-                    self.pushStack(0) catch {
-                        // Stack overflow - this shouldn't happen but handle gracefully
-                        return error.StackOverflow;
-                    };
-                    self.pc += 1;
-                    return;
-                }
+                // Perform the inner call
+                const result = try self.getEvm().inner_call(call_address, self.value, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1410,10 +1309,8 @@ pub const MinimalFrame = struct {
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
                     const end_bytes_delegate: u64 = @as(u64, out_off) + @as(u64, copy_len);
-                    const mem_cost_out3 = self.memoryExpansionCost(end_bytes_delegate);
-                    const copy_words_out3 = wordCount(@as(u64, copy_len));
-                    const copy_cost_out3 = GasConstants.CopyGas * copy_words_out3;
-                    try self.consumeGas(mem_cost_out3 + copy_cost_out3);
+                    const mem_cost_out = self.memoryExpansionCost(end_bytes_delegate);
+                    try self.consumeGas(mem_cost_out);
 
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
@@ -1422,22 +1319,14 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                if (result.output.len > 0) {
-                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
-                    @memcpy(return_data_copy, result.output);
-                    self.return_data = return_data_copy;
-                } else {
-                    self.return_data = &[_]u8{};
-                }
+                self.return_data = result.output;
 
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas - only consume gas if call succeeded
-                if (!depth_exceeded) {
-                    const gas_used = available_gas - result.gas_left;
-                    self.gas_remaining -= @intCast(gas_used);
-                }
+                // Update gas
+                const gas_used = available_gas - result.gas_left;
+                self.gas_remaining -= @intCast(gas_used);
 
                 self.pc += 1;
             },
@@ -1476,34 +1365,22 @@ pub const MinimalFrame = struct {
                 while (i < 20) : (i += 1) {
                     addr_bytes[19 - i] = @as(u8, @truncate(address_u256 >> @intCast(i * 8)));
                 }
-                // Address is only needed for checking if empty, not creating Address struct
-                // const call_address = Address{ .bytes = addr_bytes };
+                const call_address = Address{ .bytes = addr_bytes };
 
                 // Base gas cost
                 try self.consumeGas(GasConstants.CallGas);
 
                 // Read input data from memory
-                var input_data_buffer: [1024]u8 = undefined;
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
                     const in_off = @as(u32, @intCast(in_offset));
                     const in_len = @as(u32, @intCast(in_length));
-
-                    if (in_len <= input_data_buffer.len) {
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            input_data_buffer[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = input_data_buffer[0..in_len];
-                    } else {
-                        const data = try self.allocator.alloc(u8, in_len);
-                        // No defer free needed with arena allocator
-                        var j: u32 = 0;
-                        while (j < in_len) : (j += 1) {
-                            data[j] = self.readMemory(in_off + j);
-                        }
-                        input_data = data;
+                    const data = try self.allocator.alloc(u8, in_len);
+                    var j: u32 = 0;
+                    while (j < in_len) : (j += 1) {
+                        data[j] = self.readMemory(in_off + j);
                     }
+                    input_data = data;
                 }
 
                 // Calculate available gas
@@ -1512,26 +1389,8 @@ pub const MinimalFrame = struct {
                 const max_gas = remaining_gas - (remaining_gas / 64);
                 const available_gas = @min(gas_limit, max_gas);
 
-                // STATICCALL: Check call depth limit using real EVM depth and config
-                const real_evm = @as(*@import("../evm.zig").Evm(.{}), @ptrCast(@alignCast(self.evm_ptr)));
-                const config = @import("../evm_config.zig").EvmConfig{};
-                const depth_exceeded = real_evm.depth >= config.max_call_depth;
-
-                // For MinimalFrame, simulate success only if depth limit not exceeded
-                const result = .{
-                    .success = !depth_exceeded,
-                    .gas_left = if (!depth_exceeded and available_gas >= 1000) available_gas - 1000 else 0,
-                    .output = &[_]u8{},
-                };
-                if (false) {
-                    // Call failed - push 0 and continue
-                    self.pushStack(0) catch {
-                        // Stack overflow - this shouldn't happen but handle gracefully
-                        return error.StackOverflow;
-                    };
-                    self.pc += 1;
-                    return;
-                }
+                // Perform the inner call
+                const result = try self.getEvm().inner_call(call_address, 0, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1539,10 +1398,8 @@ pub const MinimalFrame = struct {
                     const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
 
                     const end_bytes_static: u64 = @as(u64, out_off) + @as(u64, copy_len);
-                    const mem_cost_out4 = self.memoryExpansionCost(end_bytes_static);
-                    const copy_words_out4 = wordCount(@as(u64, copy_len));
-                    const copy_cost_out4 = GasConstants.CopyGas * copy_words_out4;
-                    try self.consumeGas(mem_cost_out4 + copy_cost_out4);
+                    const mem_cost_out = self.memoryExpansionCost(end_bytes_static);
+                    try self.consumeGas(mem_cost_out);
 
                     var k: u32 = 0;
                     while (k < copy_len) : (k += 1) {
@@ -1551,22 +1408,14 @@ pub const MinimalFrame = struct {
                 }
 
                 // Store return data
-                if (result.output.len > 0) {
-                    const return_data_copy = try self.allocator.alloc(u8, result.output.len);
-                    @memcpy(return_data_copy, result.output);
-                    self.return_data = return_data_copy;
-                } else {
-                    self.return_data = &[_]u8{};
-                }
+                self.return_data = result.output;
 
                 // Push success status
                 try self.pushStack(if (result.success) 1 else 0);
 
-                // Update gas - only consume gas if call succeeded
-                if (!depth_exceeded) {
-                    const gas_used = available_gas - result.gas_left;
-                    self.gas_remaining -= @intCast(gas_used);
-                }
+                // Update gas
+                const gas_used = available_gas - result.gas_left;
+                self.gas_remaining -= @intCast(gas_used);
 
                 self.pc += 1;
             },
