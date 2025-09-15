@@ -115,7 +115,7 @@ pub const DifferentialTestor = struct {
 
         // Setup MinimalEvm for differential testing
         const minimal_evm = try allocator.create(guillotine_evm.tracer.MinimalEvm);
-        minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(allocator, &.{}, 0);
+        minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(allocator);
 
         // Setup Guillotine EVMs - allocate databases on heap
         const db = try allocator.create(guillotine_evm.Database);
@@ -478,29 +478,36 @@ pub const DifferentialTestor = struct {
 
         // Reset MinimalEvm for new execution
         self.minimal_evm.deinit();
-        self.minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(self.allocator, &.{}, 0);
+        self.minimal_evm.* = try guillotine_evm.tracer.MinimalEvm.init(self.allocator);
 
-        // Set up the bytecode and gas limit
-        self.minimal_evm.bytecode = bytecode;
-        self.minimal_evm.gas_remaining = @intCast(gas_limit);
-
-        // Set up calldata if provided
-        if (input.len > 0) {
-            self.minimal_evm.calldata = input;
-        }
-
-        // Execute the bytecode
-        self.minimal_evm.execute() catch {};
-        const success = !self.minimal_evm.reverted;
+        // Execute the bytecode with MinimalEvm
+        const result = self.minimal_evm.execute(
+            bytecode,
+            @intCast(gas_limit),
+            primitives.Address.ZERO_ADDRESS, // caller
+            primitives.Address.ZERO_ADDRESS, // contract
+            0, // value
+            input
+        ) catch |err| {
+            // On error, create a failed result
+            _ = @as(anyerror, err);
+            return ExecutionResultWithTrace{
+                .success = false,
+                .gas_used = gas_limit,
+                .output = try self.allocator.alloc(u8, 0),
+                .trace = null,
+            };
+        };
+        const success = result.success;
 
         // Get the output
-        const output = if (self.minimal_evm.return_data.len > 0)
-            try self.allocator.dupe(u8, self.minimal_evm.return_data)
+        const output = if (result.output.len > 0)
+            try self.allocator.dupe(u8, result.output)
         else
             try self.allocator.alloc(u8, 0);
 
         // Calculate gas used
-        const gas_used = gas_limit - @as(u64, @intCast(self.minimal_evm.gas_remaining));
+        const gas_used = gas_limit - result.gas_left;
 
         // MinimalEvm doesn't provide detailed tracing yet
         const trace: ?ExecutionTrace = null;

@@ -144,7 +144,7 @@ test "snailtracer differential test" {
     const block_info = evm.BlockInfo{
         .number = 19426587,
         .timestamp = 1710338135,
-        .gas_limit = 30_000_000,
+        .gas_limit = 3_000_000_000,
         .base_fee = 24_095_923_408,
         .difficulty = 0,
         .coinbase = Address.ZERO,
@@ -156,7 +156,7 @@ test "snailtracer differential test" {
     
     // Setup transaction context
     const tx_context = evm.TransactionContext{
-        .gas_limit = 30_000_000,
+        .gas_limit = 3_000_000_000,
         .coinbase = Address.ZERO,
         .chain_id = 1,
     };
@@ -183,7 +183,7 @@ test "snailtracer differential test" {
             .to = contract_address,
             .value = 0,
             .input = calldata,
-            .gas = 30_000_000,
+            .gas = 3_000_000_000,
         },
     };
 
