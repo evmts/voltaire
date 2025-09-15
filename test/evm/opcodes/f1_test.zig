@@ -6,6 +6,7 @@ const common = @import("common.zig");
 test "opcode 0xf1 differential test" {
     std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
+    std.log.debug("Starting CALL (0xf1) test", .{});
     
     // Build bytecode for this opcode
     const bytecode = try common.build_bytecode(allocator, 0xf1);
@@ -79,4 +80,9 @@ test "opcode 0xf1 differential test" {
     
     var guillotine_result = guillotine_evm.call(call_params);
     defer guillotine_result.deinit(allocator);
+
+    std.log.debug("CALL test result: success={}, output_len={}", .{guillotine_result.success, guillotine_result.output.len});
+
+    // The test should succeed (CALL should return 1 on success)
+    try std.testing.expect(guillotine_result.success);
 }

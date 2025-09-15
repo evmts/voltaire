@@ -95,7 +95,8 @@ pub const DefaultTracer = struct {
             .fused_instruction_count = 0,
             // 300M instructions is ~10x the block gas limit
             // Normal contracts execute far fewer instructions
-            .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
+            // Temporarily reduce for debugging
+            .instruction_safety = SafetyCounter(u64, .enabled).init(10_000),
         };
     }
 
@@ -104,6 +105,7 @@ pub const DefaultTracer = struct {
         if (self.minimal_evm) |evm| {
             // The arena allocator in MinimalEvm will clean up all MinimalFrame allocations
             // when deinit is called, so we don't need to manually clean up frames
+            self.debug("Destroying MinimalEvm at 0x{x}", .{@intFromPtr(evm)});
             evm.deinitPtr(self.allocator);
             self.minimal_evm = null;
         }
@@ -120,8 +122,11 @@ pub const DefaultTracer = struct {
         _ = gas_limit;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            // Reset any existing MinimalEvm
-            self.minimal_evm = null;
+            // Clean up any existing MinimalEvm before resetting
+            if (self.minimal_evm) |evm| {
+                evm.deinitPtr(self.allocator);
+                self.minimal_evm = null;
+            }
 
             // Reset execution counters
             self.instruction_count = 0;
@@ -132,12 +137,14 @@ pub const DefaultTracer = struct {
             // Reset the instruction safety counter for the new frame
             self.instruction_safety.count = 0;
 
-            if (bytecode.len > 0) {
+            if (bytecode.len > 0 and self.minimal_evm == null) {
                 // Initialize MinimalEvm orchestrator on heap to avoid arena corruption
+                // Only create once for the top-level frame, not for nested frames
                 self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
                     self.minimal_evm = null;
                     return;
                 };
+                self.debug("Created MinimalEvm at 0x{x}", .{@intFromPtr(self.minimal_evm)});
 
                 if (self.minimal_evm) |evm| {
                     // Get the main EVM for context
