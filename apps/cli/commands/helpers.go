@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strings"
 
 	guillotine "github.com/evmts/guillotine/sdks/go"
@@ -125,6 +126,50 @@ func ParseCommonParams(c *cli.Context) (CommonParams, error) {
 
 // ParseCallParams extracts parameters for CALL-like operations
 func ParseCallParams(c *cli.Context, needValue bool) (CallParams, error) {
+	// Check if a fixture is provided as positional argument
+	if c.Args().Len() > 0 {
+		fixturePath := c.Args().First()
+		params, err := LoadCallParamsFromFixture(fixturePath)
+		if err != nil {
+			// If fixture loading fails, continue with normal parsing
+			fmt.Fprintf(os.Stderr, "Warning: Could not load fixture %s: %v\n", fixturePath, err)
+		} else {
+			// Override with any CLI flags that were explicitly set
+			if c.IsSet("caller") {
+				caller, err := ParseAddress(c.String("caller"))
+				if err == nil {
+					params.Caller = caller
+				}
+			}
+			if c.IsSet("gas") {
+				gas, err := ParseGas(c.String("gas"))
+				if err == nil {
+					params.Gas = gas
+				}
+			}
+			if c.IsSet("to") {
+				to, err := ParseAddress(c.String("to"))
+				if err == nil {
+					params.To = to
+				}
+			}
+			if c.IsSet("value") && needValue {
+				value, err := ParseBigInt(c.String("value"))
+				if err == nil {
+					params.Value = value
+				}
+			}
+			if c.IsSet("input") {
+				input, err := ParseHex(c.String("input"))
+				if err == nil {
+					params.Input = input
+				}
+			}
+			return params, nil
+		}
+	}
+	
+	// Normal parsing from CLI flags
 	common, err := ParseCommonParams(c)
 	if err != nil {
 		return CallParams{}, err
