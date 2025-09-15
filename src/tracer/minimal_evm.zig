@@ -132,8 +132,7 @@ pub const MinimalEvm = struct {
         const storage_map = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         const balances_map = std.AutoHashMap(Address, u256).init(arena_allocator);
         const code_map = std.AutoHashMap(Address, []const u8).init(arena_allocator);
-        // Initialize with empty unmanaged ArrayList - this is correct for Zig 0.15.1
-        const frames_list = std.ArrayList(*MinimalFrame).empty;
+        const frames_list = try std.ArrayList(*MinimalFrame).initCapacity(arena_allocator, 0);
 
         return Self{
             .frames = frames_list,
