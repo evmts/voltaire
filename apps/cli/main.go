@@ -175,6 +175,37 @@ func main() {
 				Action: commands.RunCompile,
 			},
 			{
+				Name:  "save-fixture",
+				Usage: "Save current call parameters and state as a fixture",
+				ArgsUsage: "<fixture-name>",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "caller", Usage: "Caller address"},
+					&cli.StringFlag{Name: "to", Usage: "Target address"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Value: "10000000", Usage: "Gas limit"},
+					&cli.StringFlag{Name: "description", Usage: "Fixture description"},
+					&cli.StringFlag{Name: "network", Value: "Cancun", Usage: "Network name"},
+					&cli.StringFlag{Name: "dir", Usage: "Directory to save fixture (optional)"},
+					&cli.BoolFlag{Name: "execute", Usage: "Execute and capture post-state"},
+				},
+				Action: commands.SaveFixture,
+			},
+			{
+				Name:  "load-fixture",
+				Usage: "Load and display fixture information",
+				ArgsUsage: "<fixture-name-or-path>",
+				Action: commands.LoadFixture,
+			},
+			{
+				Name:  "list-fixtures",
+				Usage: "List available fixtures",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "dir", Usage: "Directory to list fixtures from (optional)"},
+				},
+				Action: commands.ListFixtures,
+			},
+			{
 				Name:  "bench",
 				Usage: "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
 				ArgsUsage: "[fixture-path]",
