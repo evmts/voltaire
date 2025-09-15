@@ -369,6 +369,30 @@ pub export fn evm_bytecode_error_string(error_code: c_int) [*:0]const u8 {
 // TESTING
 // ============================================================================
 
+/// Pretty print bytecode with human-readable formatting
+/// @param handle Bytecode handle
+/// @param buffer Buffer to store the output string
+/// @param buffer_len Length of the buffer
+/// @return Number of bytes written (including null terminator), or 0 on error
+pub export fn evm_bytecode_pretty_print(handle: ?*const BytecodeHandle, buffer: [*]u8, buffer_len: usize) usize {
+    const h = handle orelse return 0;
+    
+    // Create the pretty printed string
+    const output = h.bytecode.pretty_print(h.allocator) catch return 0;
+    defer h.allocator.free(output);
+    
+    // Copy to the provided buffer
+    if (buffer_len == 0) return output.len + 1; // Return required size including null terminator
+    
+    const copy_len = @min(output.len, buffer_len - 1); // Leave room for null terminator
+    @memcpy(buffer[0..copy_len], output[0..copy_len]);
+    buffer[copy_len] = 0; // Null terminate
+    
+    return copy_len + 1;
+}
+
+// ============================================================================
+
 /// Test opcode utilities
 pub export fn evm_bytecode_test_opcodes() c_int {
     // Test valid opcodes
