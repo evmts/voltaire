@@ -1098,11 +1098,71 @@ export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     const handlers = &FrameType.opcode_handlers;
     
     // Create dispatch schedule
-    const schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch return 0;
+    var schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch return 0;
     defer schedule.deinit();
     
-    // Call the dispatch pretty_print function (it's on Dispatch, not DispatchSchedule)
-    const output = DispatchType.pretty_print(allocator, schedule.items, &bytecode) catch return 0;
+    // Create a simple pretty print output  
+    var output_buf = std.ArrayList(u8).initCapacity(allocator, 8192) catch return 0;
+    defer output_buf.deinit(allocator);
+    const writer = output_buf.writer(allocator);
+    
+    // Header
+    writer.print("=== EVM Dispatch Schedule ===\n", .{}) catch return 0;
+    writer.print("Bytecode: {} bytes → Dispatch: {} items\n\n", .{ bytecode_slice.len, schedule.items.len }) catch return 0;
+    
+    // Show dispatch items
+    writer.print("--- Dispatch Items ---\n", .{}) catch return 0;
+    for (schedule.items, 0..) |item, i| {
+        writer.print("[{d:3}]: ", .{i}) catch return 0;
+        switch (item) {
+            .opcode_handler => |handler| {
+                // Try to identify the opcode by comparing handler address
+                var found = false;
+                inline for (0..256) |opcode_num| {
+                    if (handlers[opcode_num] == handler) {
+                        if (std.meta.intToEnum(evm.Opcode, @as(u8, @intCast(opcode_num)))) |opcode| {
+                            writer.print("HANDLER: {s}\n", .{@tagName(opcode)}) catch return 0;
+                            found = true;
+                            break;
+                        } else |_| {}
+                    }
+                }
+                if (!found) {
+                    writer.print("HANDLER: SYNTHETIC/UNKNOWN\n", .{}) catch return 0;
+                }
+            },
+            .first_block_gas => |gas| {
+                writer.print("FIRST_BLOCK_GAS: {} gas\n", .{gas.gas}) catch return 0;
+            },
+            .jump_dest => |jd| {
+                writer.print("JUMP_DEST: gas={}, min_stack={}\n", .{ jd.gas, jd.min_stack }) catch return 0;
+            },
+            .push_inline => |pi| {
+                writer.print("PUSH_INLINE: value=0x{x}\n", .{pi.value}) catch return 0;
+            },
+            .push_pointer => |pp| {
+                writer.print("PUSH_POINTER: index={}\n", .{pp.index}) catch return 0;
+            },
+            .pc => |pc_val| {
+                writer.print("PC: value={}\n", .{pc_val.value}) catch return 0;
+            },
+            .jump_static => |js| {
+                writer.print("JUMP_STATIC: target=@{*}\n", .{js.dispatch}) catch return 0;
+            },
+        }
+    }
+    
+    writer.print("\n--- Summary ---\n", .{}) catch return 0;
+    writer.print("Optimizations applied:\n", .{}) catch return 0;
+    writer.print("- Jump destinations pre-resolved\n", .{}) catch return 0;
+    writer.print("- Gas batched per basic block\n", .{}) catch return 0;
+    writer.print("- Push values inlined\n", .{}) catch return 0;
+    if (schedule.items.len < bytecode_slice.len) {
+        const ratio = @as(f64, @floatFromInt(bytecode_slice.len)) / @as(f64, @floatFromInt(schedule.items.len));
+        writer.print("- Compression ratio: {d:.2}x\n", .{ratio}) catch return 0;
+    }
+    
+    const output = output_buf.toOwnedSlice(allocator) catch return 0;
     defer allocator.free(output);
     
     // Copy to buffer
