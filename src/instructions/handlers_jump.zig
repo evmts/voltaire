@@ -596,7 +596,7 @@ test "JUMP opcode - invalid destination should revert" {
     const schedule = try TestFrame.Dispatch.init(testing.allocator, &bytecode, &TestFrame.opcode_handlers);
     defer testing.allocator.free(schedule);
 
-    const jump_table = try TestFrame.Dispatch.createJumpTable(testing.allocator, schedule, &bytecode);
+    const jump_table = try TestFrame.Dispatch.createJumpTable(testing.allocator, schedule, bytecode);
     defer testing.allocator.free(jump_table.entries);
 
     // Find the JUMP handler in the schedule
@@ -643,7 +643,7 @@ test "JUMPI opcode - invalid destination should revert when taken" {
     const schedule = try TestFrame.Dispatch.init(testing.allocator, &bytecode, &TestFrame.opcode_handlers);
     defer testing.allocator.free(schedule);
 
-    const jump_table = try TestFrame.Dispatch.createJumpTable(testing.allocator, schedule, &bytecode);
+    const jump_table = try TestFrame.Dispatch.createJumpTable(testing.allocator, schedule, bytecode);
     defer testing.allocator.free(jump_table.entries);
 
     // Find the JUMPI handler in the schedule
