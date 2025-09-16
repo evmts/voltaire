@@ -7,7 +7,7 @@ import type { ErrorUnion } from './errors';
 export function interpret(f: Frame, entry: { handler: Handler; cursor: number }): ReturnData | ErrorUnion {
   let h = entry.handler;
   let c = entry.cursor;
-  let steps = f.safetyLimit;
+  let steps = 300_000_000; // 300M instruction limit
   
   while (true) {
     if (--steps < 0) return new SafetyCounterExceededError();
@@ -21,6 +21,9 @@ export function interpret(f: Frame, entry: { handler: Handler; cursor: number })
     return r as ReturnData | ErrorUnion;
   }
 }
+
+// Alias for common usage
+export const execute = interpret;
 
 export function next(f: Frame, cursor: number): Next {
   const items = f.schedule.items;

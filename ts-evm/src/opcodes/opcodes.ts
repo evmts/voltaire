@@ -24,6 +24,9 @@ export const OPCODES = {
   EQ: 0x14,
   ISZERO: 0x15,
   
+  // Crypto
+  KECCAK256: 0x20,
+  
   // Bitwise
   AND: 0x16,
   OR: 0x17,
@@ -72,9 +75,17 @@ export const OPCODES = {
   MSTORE8: 0x53,
   MSIZE: 0x59,
   
+  // Jump
+  JUMP: 0x56,
+  JUMPI: 0x57,
+  JUMPDEST: 0x5b,
+  
   // PC/GAS
   PC: 0x58,
   GAS: 0x5a,
+  
+  // PUSH0 (EIP-3855)
+  PUSH0: 0x5f,
   
   // MCOPY (EIP-5656)
   MCOPY: 0x5e,

@@ -12,6 +12,12 @@ export function POP(f: Frame, cursor: number): Tail {
   return next(f, cursor);
 }
 
+export function PUSH0(f: Frame, cursor: number): Tail {
+  const e = stackPush(f.stack, 0n);
+  if (e instanceof Error) return e;
+  return next(f, cursor);
+}
+
 export function PUSH(f: Frame, cursor: number): Tail {
   // Get inline data from next item
   const inlineItem = f.schedule.items[cursor + 1] as any;

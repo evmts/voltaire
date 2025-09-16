@@ -8,6 +8,8 @@ import * as comparison from '../instructions/handlers_comparison';
 import * as stack from '../instructions/handlers_stack';
 import * as memory from '../instructions/handlers_memory';
 import * as context from '../instructions/handlers_context';
+import * as jump from '../instructions/handlers_jump';
+import * as crypto from '../instructions/handlers_crypto';
 
 export type Item =
   | { kind: 'meta'; gas?: number }
@@ -34,6 +36,11 @@ function getHandler(opcode: number): Handler | null {
     case OPCODES.SMOD: return arith.SMOD;
     case OPCODES.ADDMOD: return arith.ADDMOD;
     case OPCODES.MULMOD: return arith.MULMOD;
+    case OPCODES.EXP: return arith.EXP;
+    case OPCODES.SIGNEXTEND: return arith.SIGNEXTEND;
+    
+    // Crypto
+    case OPCODES.KECCAK256: return crypto.KECCAK256;
     
     // Comparison
     case OPCODES.LT: return comparison.LT;
@@ -84,6 +91,7 @@ function getHandler(opcode: number): Handler | null {
     
     // Stack
     case OPCODES.POP: return stack.POP;
+    case OPCODES.PUSH0: return stack.PUSH0;
     
     // Memory
     case OPCODES.MLOAD: return memory.MLOAD;
@@ -91,6 +99,11 @@ function getHandler(opcode: number): Handler | null {
     case OPCODES.MSTORE8: return memory.MSTORE8;
     case OPCODES.MSIZE: return memory.MSIZE;
     case OPCODES.MCOPY: return memory.MCOPY;
+    
+    // Jump
+    case OPCODES.JUMP: return jump.JUMP;
+    case OPCODES.JUMPI: return jump.JUMPI;
+    case OPCODES.JUMPDEST: return jump.JUMPDEST;
     
     // PC/GAS
     case OPCODES.PC: return context.PC;
