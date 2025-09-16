@@ -133,8 +133,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         origin: primitives.Address,
         /// Hardfork configuration
         hardfork_config: Hardfork,
-        /// Active EIPs configuration
-        eips: eips.Eips.EvmConfig,
 
         // Cache line 5+ - COLD PATH: Large data structures accessed infrequently
         /// Growing arena allocator for per-call temporary allocations with 50% growth strategy
@@ -179,7 +177,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .gas_price = gas_price,
                 .origin = origin,
                 .hardfork_config = hardfork_config,
-                .eips = (eips.Eips{ .hardfork = hardfork_config }).get_evm_config(),
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
                 .tracer = @import("tracer/tracer.zig").DefaultTracer.init(allocator),
@@ -188,7 +185,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
             self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
             self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
-            
+
             // Process system contract updates based on configuration
             if (comptime config.enable_beacon_roots) {
                 // Process beacon root update for EIP-4788 if applicable
@@ -196,19 +193,19 @@ pub fn Evm(comptime config: EvmConfig) type {
                     self.tracer.onBeaconRootUpdate(false, err);
                 };
             }
-            
+
             if (comptime config.enable_historical_block_hashes) {
                 @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
                     self.tracer.onHistoricalBlockHashUpdate(false, err);
                 };
             }
-            
+
             if (comptime config.enable_validator_deposits) {
                 @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
                     self.tracer.onValidatorDeposits(false, err);
                 };
             }
-            
+
             if (comptime config.enable_validator_withdrawals) {
                 @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
                     self.tracer.onValidatorWithdrawals(false, err);
@@ -373,7 +370,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.logs = .empty;
             // Extract self-destruct records if self-destruct is enabled
             // EIP-6780 restricts SELFDESTRUCT behavior in Cancun+
-            if (comptime self.eips.eip_6780_enabled) {
+            if (comptime config.eips.eip_6780_selfdestruct_same_transaction_only()) {
                 result.selfdestructs = self.self_destruct.toOwnedSlice(self.allocator) catch |err| {
                     log.err("Failed to extract self-destruct records: {}", .{err});
                     return CallResult.failure(result.gas_left);
@@ -1104,7 +1101,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             address: primitives.Address,
             snapshot_id: Journal.SnapshotIdType,
         ) !CallResult {
-            if (self.eips.eip_3860_enabled and code.len > 49152) {
+            if (code.len > config.eips.size_limit()) {
                 log.debug("Init code too large: {} > 49152", .{code.len});
                 return CallResult.failure(0);
             }
