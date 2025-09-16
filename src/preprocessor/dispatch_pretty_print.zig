@@ -33,6 +33,7 @@ pub fn DispatchDebugInfo(comptime FrameType: type) type {
             pc,
             jump_static,
             first_block_gas,
+            unexpected,
         };
         
         pub const MetadataInfo = union(enum) {
@@ -153,7 +154,7 @@ pub fn pretty_print(
     comptime ItemType: type, // Item type
 ) ![]u8 {
     // Get debug info first
-    const debug_info = try getDebugInfo(allocator, schedule, bytecode, FrameType, ItemType);
+    var debug_info = try getDebugInfo(allocator, schedule, bytecode, FrameType, ItemType);
     defer debug_info.deinit();
 
     var output = std.ArrayList(u8){
@@ -171,7 +172,11 @@ pub fn pretty_print(
         try output.writer(allocator).print("{s}--- VALIDATION ERRORS ---{s}\n", .{ Colors.red, Colors.reset });
         for (debug_info.validation_errors.items) |error_entry| {
             try output.writer(allocator).print("{s}[ERROR]{s} ", .{ Colors.red, Colors.reset });
-            try output.writer(allocator).print("PC=0x{x:0>4} Schedule[{}]: ", .{ error_entry.pc, error_entry.schedule_index });
+            if (error_entry.pc) |pc| {
+                try output.writer(allocator).print("PC=0x{x:0>4} Schedule[{}]: ", .{ pc, error_entry.schedule_index });
+            } else {
+                try output.writer(allocator).print("PC=? Schedule[{}]: ", .{error_entry.schedule_index});
+            }
             try output.writer(allocator).print("{s}\n", .{error_entry.message});
         }
         try output.writer(allocator).print("\n", .{});
@@ -242,35 +247,69 @@ pub fn pretty_print(
             // Item type and details
             switch (entry.item_type) {
                 .opcode_handler => {
-                    if (entry.opcode_name) |name| {
+                    if (entry.handler_name) |name| {
                         try output.writer(allocator).print("{s}{s}{s}", .{ Colors.yellow, name, Colors.reset });
                     } else {
                         try output.writer(allocator).print("{s}HANDLER{s}", .{ Colors.yellow, Colors.reset });
                     }
                 },
-                .metadata => {
-                    try output.writer(allocator).print("{s}METADATA{s}", .{ Colors.green, Colors.reset });
-                    if (entry.metadata_value) |value| {
-                        try output.writer(allocator).print(" {s}value=0x{x}{s}", .{ Colors.dim, value, Colors.reset });
-                    }
-                },
                 .first_block_gas => {
                     try output.writer(allocator).print("{s}FIRST_BLOCK_GAS{s}", .{ Colors.bright_cyan, Colors.reset });
-                    if (entry.metadata_value) |gas| {
-                        try output.writer(allocator).print(" {s}gas={}{s}", .{ Colors.dim, gas, Colors.reset });
+                    if (entry.metadata) |meta| {
+                        if (meta == .first_block_gas) {
+                            try output.writer(allocator).print(" {s}gas={}{s}", .{ Colors.dim, meta.first_block_gas.gas, Colors.reset });
+                        }
                     }
                 },
                 .jump_dest => {
                     try output.writer(allocator).print("{s}JUMP_DEST{s}", .{ Colors.bright_magenta, Colors.reset });
-                    if (entry.jump_target_pc) |target_pc| {
-                        if (debug_info.pc_to_schedule_map.get(target_pc)) |target_idx| {
-                            try output.writer(allocator).print(" {s}→ PC=0x{x:0>4} (Schedule[{}]){s}", .{ Colors.dim, target_pc, target_idx, Colors.reset });
-                        } else {
-                            try output.writer(allocator).print(" {s}→ PC=0x{x:0>4}{s}", .{ Colors.dim, target_pc, Colors.reset });
+                    if (entry.metadata) |meta| {
+                        if (meta == .jump_dest) {
+                            const target_pc = meta.jump_dest.target_pc orelse 0;
+                            if (target_pc > 0) {
+                                if (debug_info.pc_to_schedule_map.get(target_pc)) |target_idx| {
+                                    try output.writer(allocator).print(" {s}→ PC=0x{x:0>4} (Schedule[{}]){s}", .{ Colors.dim, target_pc, target_idx, Colors.reset });
+                                } else {
+                                    try output.writer(allocator).print(" {s}→ PC=0x{x:0>4}{s}", .{ Colors.dim, target_pc, Colors.reset });
+                                }
+                            }
                         }
                     }
                 },
-                .unknown => {
+                .push_inline => {
+                    try output.writer(allocator).print("{s}PUSH_INLINE{s}", .{ Colors.green, Colors.reset });
+                    if (entry.metadata) |meta| {
+                        if (meta == .push_inline) {
+                            try output.writer(allocator).print(" {s}value=0x{x}{s}", .{ Colors.dim, meta.push_inline.value, Colors.reset });
+                        }
+                    }
+                },
+                .push_pointer => {
+                    try output.writer(allocator).print("{s}PUSH_POINTER{s}", .{ Colors.green, Colors.reset });
+                    if (entry.metadata) |meta| {
+                        if (meta == .push_pointer) {
+                            try output.writer(allocator).print(" {s}value=0x{x}{s}", .{ Colors.dim, meta.push_pointer.value, Colors.reset });
+                        }
+                    }
+                },
+                .pc => {
+                    try output.writer(allocator).print("{s}PC{s}", .{ Colors.blue, Colors.reset });
+                    if (entry.pc) |pc_val| {
+                        try output.writer(allocator).print(" {s}0x{x:0>4}{s}", .{ Colors.dim, pc_val, Colors.reset });
+                    }
+                },
+                .jump_static => {
+                    try output.writer(allocator).print("{s}JUMP_STATIC{s}", .{ Colors.magenta, Colors.reset });
+                    if (entry.metadata) |meta| {
+                        if (meta == .jump_static) {
+                            const target_pc = meta.jump_static.target_pc orelse 0;
+                            if (target_pc > 0) {
+                                try output.writer(allocator).print(" {s}→ PC=0x{x:0>4}{s}", .{ Colors.dim, target_pc, Colors.reset });
+                            }
+                        }
+                    }
+                },
+                .unexpected => {
                     try output.writer(allocator).print("{s}UNKNOWN{s}", .{ Colors.red, Colors.reset });
                 },
             }
@@ -800,18 +839,10 @@ pub fn getDebugInfo(
                     .validation_status = .unexpected_item,
                 };
             },
-            else => .{
+            else => DebugInfo.ScheduleEntry{
                 .schedule_index = schedule_idx,
                 .pc = null,
-                .item_type = switch (item) {
-                    .opcode_handler => .opcode_handler,
-                    .jump_dest => .jump_dest,
-                    .push_inline => .push_inline,
-                    .push_pointer => .push_pointer,
-                    .pc => .pc,
-                    .jump_static => .jump_static,
-                    .first_block_gas => .first_block_gas,
-                },
+                .item_type = .unexpected,
                 .handler_ptr = null,
                 .handler_name = "UNEXPECTED",
                 .metadata = null,
