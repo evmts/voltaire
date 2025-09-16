@@ -295,7 +295,7 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
 
 pub const LruConfig = struct {
     capacity: usize,
-    HashContext: type = std.hash_map.AutoContext,
+    HashContext: type = void,  // Will be replaced with AutoContext(K) if void
 };
 
 pub const CacheStats = struct {
