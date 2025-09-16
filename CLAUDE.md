@@ -175,7 +175,7 @@ const Contract = @import("../frame/contract.zig");
 
 ### CRITICAL: Dispatch-Based Execution Model
 
-**Guillotine uses a revolutionary dispatch-based execution model, NOT a traditional interpreter!**
+**Guillotine uses a dispatch-based execution model, NOT a traditional interpreter!**
 
 #### Traditional Interpreter (MinimalEvm)
 ```
