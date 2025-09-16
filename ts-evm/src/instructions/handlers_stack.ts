@@ -11,6 +11,11 @@ import type { Tail } from '../types_runtime';
 import type { ReturnData } from '../frame/call_result';
 import { ScheduleError } from '../errors';
 
+// STOP (0x00) - Stop execution and return empty data
+export function STOP(f: Frame, cursor: number): Tail {
+  return { data: new Uint8Array() } as ReturnData;
+}
+
 export function POP(f: Frame, cursor: number): Tail {
   const val = stackPop(f.stack);
   if (val instanceof Error) return val;
@@ -25,12 +30,17 @@ export function PUSH0(f: Frame, cursor: number): Tail {
 
 export function PUSH(f: Frame, cursor: number): Tail {
   // Get inline data from next item
-  const inlineItem = f.schedule.items[cursor + 1] as any;
-  if (!inlineItem || inlineItem.kind !== 'inline') {
-    return new ScheduleError('Missing inline data for PUSH');
+  const metaItem = f.schedule.items[cursor + 1] as any;
+  if (!metaItem) return new ScheduleError('Missing metadata for PUSH');
+  let value: Word;
+  if (metaItem.kind === 'inline') {
+    value = metaItem.data.value as Word;
+  } else if (metaItem.kind === 'pointer') {
+    const idx: number = metaItem.index;
+    value = f.schedule.u256Pool[idx] as Word;
+  } else {
+    return new ScheduleError('Invalid metadata for PUSH');
   }
-  
-  const value = inlineItem.data.value as Word;
   const e = stackPush(f.stack, value);
   if (e instanceof Error) return e;
   return next(f, cursor);
@@ -60,12 +70,6 @@ export function SWAP(f: Frame, cursor: number): Tail {
   const e = stackSwap(f.stack, n);
   if (e instanceof Error) return e;
   return next(f, cursor);
-}
-
-export function RETURN(f: Frame, _cursor: number): Tail {
-  const top = stackPop(f.stack);
-  if (top instanceof Error) return top;
-  return { data: wordToBytes32(top as Word) } as ReturnData;
 }
 
 export function STOP(_f: Frame, _cursor: number): Tail {
