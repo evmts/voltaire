@@ -33,9 +33,7 @@ fn checkSubmodules() void {
         std.debug.print("\n", .{});
         std.debug.print("This will download and initialize all required dependencies.\n", .{});
         std.debug.print("\n", .{});
-        // TEMPORARILY DISABLED FOR DISPATCH TESTING
-        // std.process.exit(1);
-        std.debug.print("WARNING: Continuing without submodules for dispatch testing...\n", .{});
+        std.process.exit(1);
     }
 }
 
