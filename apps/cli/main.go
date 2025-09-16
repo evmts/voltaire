@@ -212,6 +212,12 @@ func main() {
 				Action: commands.ExecuteBytecode,
 			},
 			{
+				Name:  "dispatch",
+				Usage: "Pretty print EVM bytecode dispatch schedule with debug info",
+				ArgsUsage: "[fixture-name | file-path | hex-bytecode]",
+				Action: commands.ExecuteDispatch,
+			},
+			{
 				Name:  "bench",
 				Usage: "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
 				ArgsUsage: "[fixture-path]",
