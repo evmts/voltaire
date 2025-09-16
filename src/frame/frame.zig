@@ -556,6 +556,25 @@ pub fn Frame(comptime config: FrameConfig) type {
                         return Error.AllocationError;
                     };
                     schedule = owned_schedule.?.items;
+                    
+                    // Pretty print dispatch schedule in debug builds
+                    if (comptime (std.builtin.mode == .Debug or std.builtin.mode == .ReleaseSafe)) {
+                        const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
+                        const pretty_output = dispatch_pretty_print.pretty_print(
+                            allocator,
+                            schedule,
+                            &bytecode,
+                            Self,
+                            Dispatch.Item,
+                        ) catch |err| blk: {
+                            self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
+                            break :blk null;
+                        };
+                        if (pretty_output) |output| {
+                            defer allocator.free(output);
+                            self.getTracer().debug("\n{s}", .{output});
+                        }
+                    }
 
                     // Create jump table on heap
                     const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
@@ -596,6 +615,25 @@ pub fn Frame(comptime config: FrameConfig) type {
                     return Error.AllocationError;
                 };
                 schedule = owned_schedule.?.items;
+                
+                // Pretty print dispatch schedule in debug builds
+                if (comptime (std.builtin.mode == .Debug or std.builtin.mode == .ReleaseSafe)) {
+                    const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
+                    const pretty_output = dispatch_pretty_print.pretty_print(
+                        allocator,
+                        schedule,
+                        &bytecode,
+                        Self,
+                        Dispatch.Item,
+                    ) catch |err| blk: {
+                        self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
+                        break :blk null;
+                    };
+                    if (pretty_output) |output| {
+                        defer allocator.free(output);
+                        self.getTracer().debug("\n{s}", .{output});
+                    }
+                }
 
                 // Create jump table on heap
                 const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;

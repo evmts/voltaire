@@ -1073,28 +1073,34 @@ export fn evm_bytecode_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     return copy_len + 1;
 }
 
-// Pretty print dispatch schedule  
+// Pretty print dispatch schedule with comprehensive debug information
 export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: [*]u8, buffer_len: usize) usize {
     const allocator = ffi_allocator orelse std.heap.c_allocator;
     
-    if (data_len == 0) return 0;
+    if (data_len == 0) {
+        const err_msg = "Error: No bytecode provided\n";
+        if (buffer_len == 0) return err_msg.len + 1;
+        const copy_len = @min(err_msg.len, buffer_len - 1);
+        @memcpy(buffer[0..copy_len], err_msg[0..copy_len]);
+        buffer[copy_len] = 0;
+        return copy_len + 1;
+    }
     
     const bytecode_slice = data[0..data_len];
     
     // Create bytecode instance
     const BytecodeType = evm.Bytecode(evm.BytecodeConfig{});
     var bytecode = BytecodeType.init(allocator, bytecode_slice) catch {
-        // Return error message if init fails
-        const err_msg = "Error: Failed to initialize bytecode\n";
+        const err_msg = "Error: Failed to analyze bytecode\n";
         if (buffer_len == 0) return err_msg.len + 1;
-        const len = @min(err_msg.len, buffer_len - 1);
-        @memcpy(buffer[0..len], err_msg[0..len]);
-        buffer[len] = 0;
-        return len + 1;
+        const copy_len = @min(err_msg.len, buffer_len - 1);
+        @memcpy(buffer[0..copy_len], err_msg[0..copy_len]);
+        buffer[copy_len] = 0;
+        return copy_len + 1;
     };
     defer bytecode.deinit();
     
-    // Create Frame and Dispatch types
+    // Create Frame and Dispatch
     const MemoryDatabase = @import("evm").MemoryDatabase;
     const FrameType = evm.Frame(evm.FrameConfig{
         .DatabaseType = MemoryDatabase,
@@ -1104,92 +1110,40 @@ export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     
     // Create dispatch schedule
     var schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch {
-        // Return error message if schedule creation fails
         const err_msg = "Error: Failed to create dispatch schedule\n";
         if (buffer_len == 0) return err_msg.len + 1;
-        const len = @min(err_msg.len, buffer_len - 1);
-        @memcpy(buffer[0..len], err_msg[0..len]);
-        buffer[len] = 0;
-        return len + 1;
+        const copy_len = @min(err_msg.len, buffer_len - 1);
+        @memcpy(buffer[0..copy_len], err_msg[0..copy_len]);
+        buffer[copy_len] = 0;
+        return copy_len + 1;
     };
     defer schedule.deinit();
     
-    // Use a fixed buffer for output
-    var output_buf: [16384]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&output_buf);
-    const writer = fbs.writer();
+    // Import the pretty print module through evm
+    const dispatch_pretty_print = evm.dispatch_pretty_print;
+    const output = dispatch_pretty_print.pretty_print(
+        allocator,
+        schedule.items,
+        &bytecode,
+        FrameType,
+        DispatchType.Item,
+    ) catch {
+        const err_msg = "Error: Failed to generate pretty print output\n";
+        if (buffer_len == 0) return err_msg.len + 1;
+        const copy_len = @min(err_msg.len, buffer_len - 1);
+        @memcpy(buffer[0..copy_len], err_msg[0..copy_len]);
+        buffer[copy_len] = 0;
+        return copy_len + 1;
+    };
+    defer allocator.free(output);
     
-    // Write header
-    _ = writer.print("=== EVM Dispatch Schedule ===\n", .{}) catch {};
-    _ = writer.print("Bytecode: {} bytes → Dispatch: {} items\n\n", .{ bytecode_slice.len, schedule.items.len }) catch {};
-    
-    // Write dispatch items
-    _ = writer.print("--- Dispatch Items ---\n", .{}) catch {};
-    for (schedule.items, 0..) |item, i| {
-        _ = writer.print("[{d:3}]: ", .{i}) catch {};
-        switch (item) {
-            .opcode_handler => |handler| {
-                // Try to identify the opcode
-                var found = false;
-                inline for (0..256) |opcode_num| {
-                    if (handlers[opcode_num] == handler) {
-                        if (std.meta.intToEnum(evm.Opcode, @as(u8, @intCast(opcode_num)))) |opcode| {
-                            _ = writer.print("HANDLER: {s}\n", .{@tagName(opcode)}) catch {};
-                            found = true;
-                            break;
-                        } else |_| {}
-                    }
-                }
-                if (!found) {
-                    _ = writer.print("HANDLER: SYNTHETIC/UNKNOWN\n", .{}) catch {};
-                }
-            },
-            .first_block_gas => |gas| {
-                _ = writer.print("FIRST_BLOCK_GAS: {} gas\n", .{gas.gas}) catch {};
-            },
-            .jump_dest => |jd| {
-                _ = writer.print("JUMP_DEST: gas={}, min_stack={}\n", .{ jd.gas, jd.min_stack }) catch {};
-            },
-            .push_inline => |pi| {
-                _ = writer.print("PUSH_INLINE: value=0x{x}\n", .{pi.value}) catch {};
-            },
-            .push_pointer => |pp| {
-                _ = writer.print("PUSH_POINTER: index={}\n", .{pp.index}) catch {};
-            },
-            .pc => |pc_val| {
-                _ = writer.print("PC: value={}\n", .{pc_val.value}) catch {};
-            },
-            .jump_static => |js| {
-                _ = writer.print("JUMP_STATIC: target=@{*}\n", .{js.dispatch}) catch {};
-            },
-        }
-    }
-    
-    // Write summary
-    _ = writer.print("\n--- Summary ---\n", .{}) catch {};
-    _ = writer.print("Optimizations applied:\n", .{}) catch {};
-    _ = writer.print("- Jump destinations pre-resolved\n", .{}) catch {};
-    _ = writer.print("- Gas batched per basic block\n", .{}) catch {};
-    _ = writer.print("- Push values inlined\n", .{}) catch {};
-    
-    const written = fbs.getPos() catch 0;
-    if (written == 0) {
-        // Fallback if nothing was written
-        const fallback = "Error: Failed to generate output\n";
-        if (buffer_len == 0) return fallback.len + 1;
-        const len = @min(fallback.len, buffer_len - 1);
-        @memcpy(buffer[0..len], fallback[0..len]);
-        buffer[len] = 0;
-        return len + 1;
-    }
-    
-    // Return size or copy to buffer
+    // Copy to buffer
     if (buffer_len == 0) {
-        return written + 1;
+        return output.len + 1;
     }
     
-    const copy_len = @min(written, buffer_len - 1);
-    @memcpy(buffer[0..copy_len], output_buf[0..copy_len]);
+    const copy_len = @min(output.len, buffer_len - 1);
+    @memcpy(buffer[0..copy_len], output[0..copy_len]);
     buffer[copy_len] = 0;
     return copy_len + 1;
 }
