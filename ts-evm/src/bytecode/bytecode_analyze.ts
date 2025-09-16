@@ -1,4 +1,4 @@
-import { OPCODES, OpcodeInfo } from '../opcodes/opcodes';
+import { OPCODES, OPCODE_INFO, OpcodeInfo } from '../opcodes/opcodes';
 import type { Word } from '../types';
 
 // Bytecode analysis for validation and optimization
@@ -71,7 +71,7 @@ export function analyzeBytecode(bytecode: Uint8Array): BytecodeAnalysis {
     if (opcode === 0xf4) analysis.hasDelegatecall = true;
     
     // Get opcode info
-    const info = OPCODES[opcode];
+    const info = OPCODE_INFO[opcode];
     if (!info) {
       analysis.containsInvalidOpcodes = true;
       analysis.errors.push(`Invalid opcode 0x${opcode.toString(16)} at position ${i}`);
@@ -211,7 +211,7 @@ function identifyBasicBlocks(bytecode: Uint8Array, jumpDests: Set<number>): Basi
     let pos = start;
     while (pos <= end && pos < bytecode.length) {
       const opcode = bytecode[pos];
-      const info = OPCODES[opcode];
+      const info = OPCODE_INFO[opcode];
       
       if (info) {
         block.gasUsed += BigInt(info.gas);
