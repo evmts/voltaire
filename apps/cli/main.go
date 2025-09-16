@@ -206,6 +206,12 @@ func main() {
 				Action: commands.ListFixtures,
 			},
 			{
+				Name:  "bytecode",
+				Usage: "Pretty print EVM bytecode with disassembly",
+				ArgsUsage: "[fixture-name | file-path | hex-bytecode]",
+				Action: commands.ExecuteBytecode,
+			},
+			{
 				Name:  "bench",
 				Usage: "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
 				ArgsUsage: "[fixture-path]",
