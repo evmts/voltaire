@@ -36,7 +36,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // The dispatch pointer already points to the JUMPDEST handler location
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             }
             const condition = self.stack.pop_unsafe();
@@ -130,7 +130,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const dest = op_data.metadata.value;
 
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             }
             const condition = self.stack.pop_unsafe();
@@ -177,7 +177,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = op_data.metadata.value.*;
 
             // Pop the condition
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             } // PUSH_JUMPI requires 1 stack item
             const condition = self.stack.pop_unsafe();
@@ -230,7 +230,7 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = MemoryDatabase,
-    .enable_tracing = false,
+    .TracerType = null,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };

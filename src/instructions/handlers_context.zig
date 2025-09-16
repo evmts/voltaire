@@ -52,7 +52,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn address(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.ADDRESS, cursor);
             const addr_u256 = to_u256(self.contract_address);
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ADDRESS requires stack space");
             }
             self.stack.push_unsafe(addr_u256);
@@ -63,7 +63,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [address] → [balance]
         pub fn balance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.BALANCE, cursor);
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "BALANCE requires 1 stack item");
             }
             const address_u256 = self.stack.peek_unsafe();
@@ -98,7 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.ORIGIN, cursor);
             const tx_origin = self.getEvm().get_tx_origin();
             const origin_u256 = to_u256(tx_origin);
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ORIGIN requires stack space");
             }
             self.stack.push_unsafe(origin_u256);
@@ -110,7 +110,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn caller(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLER, cursor);
             const caller_u256 = to_u256(self.caller);
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLER requires stack space");
             }
             self.stack.push_unsafe(caller_u256);
@@ -122,7 +122,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn callvalue(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLVALUE, cursor);
             const value = self.value;
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLVALUE requires stack space");
             }
             self.stack.push_unsafe(value);
@@ -134,7 +134,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn calldataload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLDATALOAD, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "CALLDATALOAD requires 1 stack item");
             }
             const offset = self.stack.peek_unsafe();
@@ -172,7 +172,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const calldata = self.calldata();
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLDATASIZE requires stack space");
             }
             self.stack.push_unsafe(calldata_len);
@@ -185,7 +185,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn calldatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLDATACOPY, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 3, "CALLDATACOPY requires 3 stack items");
             }
             const length = self.stack.pop_unsafe(); // Top of stack
@@ -249,7 +249,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CODESIZE, cursor);
             // Get codesize from frame's code
             const bytecode_len = @as(WordType, @intCast(self.code.len));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CODESIZE requires stack space");
             }
             self.stack.push_unsafe(bytecode_len);
@@ -262,7 +262,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CODECOPY, cursor);
             // EVM stack order: [destOffset, offset, length] with dest on top
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 3, "CODECOPY requires 3 stack items");
             }
             const dest_offset = self.stack.pop_unsafe(); // Top of stack
@@ -328,7 +328,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const gas_price = self.getEvm().get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASPRICE requires stack space");
             }
             self.stack.push_unsafe(gas_price_truncated);
@@ -341,7 +341,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .EXTCODESIZE);
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "EXTCODESIZE requires 1 stack item");
             }
             const address_u256 = self.stack.peek_unsafe();
@@ -372,7 +372,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .EXTCODECOPY);
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 4, "EXTCODECOPY requires 4 stack items");
             }
             const length = self.stack.pop_unsafe(); // Top of stack
@@ -450,7 +450,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodehash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .EXTCODEHASH);
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "EXTCODEHASH requires 1 stack item");
             }
             const address_u256 = self.stack.peek_unsafe();
@@ -509,7 +509,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Return data is stored in the frame's output field after a call
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(self.output.len))));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
             }
             self.stack.push_unsafe(return_data_len);
@@ -523,7 +523,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.before_instruction(self, .RETURNDATACOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             // EVM stack order: [destOffset, offset, length] with dest on top
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 3, "RETURNDATACOPY requires 3 stack items");
             }
             const dest_offset = self.stack.pop_unsafe();
@@ -598,7 +598,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "BLOCKHASH requires 1 stack item");
             }
             const block_number = self.stack.peek_unsafe();
@@ -639,7 +639,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "COINBASE requires stack space");
             }
             self.stack.push_unsafe(coinbase_word);
@@ -662,7 +662,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "TIMESTAMP requires stack space");
             }
             self.stack.push_unsafe(timestamp_word);
@@ -685,7 +685,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "NUMBER requires stack space");
             }
             self.stack.push_unsafe(block_number_word);
@@ -708,7 +708,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "DIFFICULTY requires stack space");
             }
             self.stack.push_unsafe(difficulty_word);
@@ -731,7 +731,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASLIMIT requires stack space");
             }
             self.stack.push_unsafe(gas_limit_word);
@@ -746,7 +746,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CHAINID requires stack space");
             }
             self.stack.push_unsafe(chain_id_word);
@@ -761,7 +761,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "SELFBALANCE requires stack space");
             }
             self.stack.push_unsafe(balance_word);
@@ -776,7 +776,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BASEFEE requires stack space");
             }
             self.stack.push_unsafe(base_fee_word);
@@ -789,7 +789,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.BLOBHASH, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() >= 1, "BLOBHASH requires 1 stack item");
             }
             const index = self.stack.peek_unsafe();
@@ -827,7 +827,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const blob_base_fee = block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BLOBBASEFEE requires stack space");
             }
             self.stack.push_unsafe(blob_base_fee_word);
@@ -843,7 +843,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Note: The gas value pushed should be after the gas for this instruction is consumed
             // The dispatch system handles the gas consumption before calling this handler
             const gas_value = @as(WordType, @max(self.gas_remaining, 0));
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
             }
             self.stack.push_unsafe(gas_value);
@@ -859,7 +859,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);
-            if (comptime FrameType.frame_config.enable_tracing) {
+            if (comptime FrameType.frame_config.TracerType != null) {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PC requires stack space");
             }
             self.stack.push_unsafe(op_data.metadata.value);
