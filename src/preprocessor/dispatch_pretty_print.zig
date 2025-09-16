@@ -735,14 +735,14 @@ pub fn getDebugInfo(
                             });
                         },
                         .push_pointer => |meta| {
-                            const actual_value = dispatch_schedule.getU256Value(meta.index);
+                            // Cannot access u256 values without DispatchSchedule
                             try entries.append(allocator, .{
                                 .schedule_index = schedule_idx,
                                 .pc = @intCast(bytecode_pc),
                                 .item_type = .push_pointer,
                                 .handler_ptr = null,
                                 .handler_name = null,
-                                .metadata = .{ .push_pointer = .{ .index = meta.index, .value = actual_value } },
+                                .metadata = .{ .push_pointer = .{ .index = meta.index, .value = 0 } }, // Can't get actual value
                                 .expected_from_bytecode = null,
                                 .validation_status = .valid,
                             });
