@@ -137,11 +137,13 @@ const TestEvmInstance = struct {
 // Instance pools - maintain reusable EVM instances
 var instance_pool: ?std.ArrayList(*EvmInstance) = null;
 var tracing_instance_pool: ?std.ArrayList(*TracingEvmInstance) = null;
+var test_instance_pool: ?std.ArrayList(*TestEvmInstance) = null;
 var pool_mutex = std.Thread.Mutex{};
 
 // Map handles to instances
 var handle_map: ?std.AutoHashMap(*EvmHandle, *EvmInstance) = null;
 var tracing_handle_map: ?std.AutoHashMap(*EvmHandle, *TracingEvmInstance) = null;
+var test_handle_map: ?std.AutoHashMap(*EvmHandle, *TestEvmInstance) = null;
 
 fn setError(comptime fmt: []const u8, args: anytype) void {
     const slice = std.fmt.bufPrint(&last_error, fmt, args) catch "Unknown error";
@@ -163,8 +165,10 @@ export fn guillotine_init() void {
     if (instance_pool == null) {
         instance_pool = std.ArrayList(*EvmInstance).initCapacity(allocator, 4) catch return;
         tracing_instance_pool = std.ArrayList(*TracingEvmInstance).initCapacity(allocator, 4) catch return;
+        test_instance_pool = std.ArrayList(*TestEvmInstance).initCapacity(allocator, 4) catch return;
         handle_map = std.AutoHashMap(*EvmHandle, *EvmInstance).init(allocator);
         tracing_handle_map = std.AutoHashMap(*EvmHandle, *TracingEvmInstance).init(allocator);
+        test_handle_map = std.AutoHashMap(*EvmHandle, *TestEvmInstance).init(allocator);
     }
 }
 
@@ -207,6 +211,23 @@ export fn guillotine_cleanup() void {
         if (tracing_handle_map) |*map| {
             map.deinit();
             tracing_handle_map = null;
+        }
+        
+        if (test_instance_pool) |*pool| {
+            for (pool.items) |instance| {
+                instance.evm.deinit();
+                instance.database.deinit();
+                allocator.destroy(instance.database);
+                allocator.destroy(instance.evm);
+                allocator.destroy(instance);
+            }
+            pool.deinit(allocator);
+            test_instance_pool = null;
+        }
+        
+        if (test_handle_map) |*map| {
+            map.deinit();
+            test_handle_map = null;
         }
     }
     
