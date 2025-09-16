@@ -1329,6 +1329,74 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 scan_line += 1;
             }
             
+            // Function to analyze a basic block
+            const BlockInfo = struct {
+                gas: u64,
+                min_stack: u16,
+                max_stack: u16,
+                length: u32,
+            };
+            
+            const analyzeBlock = struct {
+                fn analyze(bytecode: *const Self, start_pc: PcType) BlockInfo {
+                    var gas: u64 = 0;
+                    var stack_effect: i32 = 0;
+                    var min_stack: i32 = 0;
+                    var max_stack: i32 = 0;
+                    var current_pc = start_pc;
+                    var length: u32 = 0;
+                    const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
+                    
+                    while (current_pc < bytecode.runtime_code.len) {
+                        const opcode = bytecode.runtime_code[current_pc];
+                        length += 1;
+                        
+                        // Add gas cost for this instruction
+                        if (opcode < opcode_info.len) {
+                            gas = std.math.add(u64, gas, opcode_info[opcode].gas_cost) catch std.math.maxInt(u64);
+                            
+                            // Update stack effect
+                            stack_effect -= opcode_info[opcode].stack_inputs;
+                            if (stack_effect < min_stack) min_stack = stack_effect;
+                            stack_effect += opcode_info[opcode].stack_outputs;
+                            if (stack_effect > max_stack) max_stack = stack_effect;
+                        }
+                        
+                        // Move to next instruction
+                        const instruction_size: PcType = if (opcode >= 0x60 and opcode <= 0x7f) opcode - 0x5f + 1 else 1;
+                        current_pc += instruction_size;
+                        
+                        // Check if this opcode terminates the block
+                        const terminates = switch (opcode) {
+                            0x00, // STOP
+                            0x56, // JUMP
+                            0x57, // JUMPI
+                            0xf3, // RETURN
+                            0xfd, // REVERT
+                            0xfe, // INVALID
+                            0xff  // SELFDESTRUCT
+                            => true,
+                            else => false,
+                        };
+                        
+                        if (terminates) break; // End of this block
+                        
+                        // Check if next instruction is a JUMPDEST (starts new block)
+                        if (current_pc < bytecode.runtime_code.len) {
+                            const next_op = if (current_pc < bytecode.runtime_code.len) bytecode.runtime_code[current_pc] else 0x00;
+                            if (next_op == 0x5b) break; // Next instruction is JUMPDEST, end this block
+                        }
+                    }
+                    
+                    return .{
+                        .gas = gas,
+                        .min_stack = @intCast(@abs(min_stack)),
+                        .max_stack = @intCast(@max(0, max_stack)),
+                        .length = length,
+                    };
+                }
+            }.analyze;
+            
             // Track basic blocks and stack depth
             var pc: PcType = 0;
             var line_num: u32 = 1;
@@ -1336,28 +1404,66 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var current_block: u32 = 0;
             var last_was_terminator = false;
             var block_start_line: u32 = 1;
+            var block_start_pc: PcType = 0;
 
             while (pc < self.runtime_code.len) {
                 const opcode_byte = self.runtime_code[pc];
                 
                 // Check if we're starting a new basic block
                 const is_new_block = (pc == 0) or last_was_terminator or self.isValidJumpDest(pc);
-                if (is_new_block and pc > 0) {
-                    // Add blank line between blocks for visual separation
-                    try output.writer(allocator).print("\n", .{});
-                    if (last_was_terminator) {
-                        current_block += 1;
+                if (is_new_block) {
+                    // Add blank line between blocks for visual separation (except for first block)
+                    if (pc > 0) {
+                        try output.writer(allocator).print("\n", .{});
+                    }
+                    if (pc == 0) {
+                        block_start_pc = 0;
+                    } else if (last_was_terminator or self.isValidJumpDest(pc)) {
+                        if (last_was_terminator) current_block += 1;
                         block_start_line = line_num;
+                        block_start_pc = pc;
                     }
                 }
                 
-                // Add muted block number at start of each block
+                // Add block header with analysis at start of each block
                 if (is_new_block or line_num == block_start_line) {
-                    try output.writer(allocator).print("{s}[Block {}]{s}\n", .{ 
+                    const block_info = analyzeBlock(&self, block_start_pc);
+                    
+                    // Format block header with gas, stack requirements, and length
+                    try output.writer(allocator).print("{s}[Block {}]{s} ", .{ 
                         "\x1b[38;5;240m", // Very muted gray color
                         current_block, 
                         Colors.reset 
                     });
+                    
+                    // Add block analysis info
+                    try output.writer(allocator).print("{s}gas: {}{s} ", .{
+                        Colors.dim,
+                        block_info.gas,
+                        Colors.reset,
+                    });
+                    
+                    try output.writer(allocator).print("{s}stack: [{}, {}]{s} ", .{
+                        Colors.dim,
+                        block_info.min_stack,
+                        block_info.max_stack,
+                        Colors.reset,
+                    });
+                    
+                    try output.writer(allocator).print("{s}len: {}{s}\n", .{
+                        Colors.dim,
+                        block_info.length,
+                        Colors.reset,
+                    });
+                    
+                    // Add green "Begin" marker for JUMPDEST blocks
+                    if (self.isValidJumpDest(block_start_pc)) {
+                        try output.writer(allocator).print("{s}{s} Begin {s}\n", .{
+                            Colors.bg_green,
+                            Colors.black,
+                            Colors.reset,
+                        });
+                    }
                 }
 
                 // Line number
