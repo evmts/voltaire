@@ -16,7 +16,7 @@ pub const HostInterface = struct {
     vtable: *const VTable,
 
     pub const VTable = struct {
-        inner_call: *const fn (ptr: *anyopaque, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: CallType) struct { success: bool, gas_left: u64, output: []const u8 },
+        inner_call: *const fn (ptr: *anyopaque, gas: u64, address: primitives.Address.Address, value: u256, input: []const u8, call_type: CallType) CallResult,
         get_balance: *const fn (ptr: *anyopaque, address: primitives.Address.Address) u256,
         get_code: *const fn (ptr: *anyopaque, address: primitives.Address.Address) []const u8,
         get_storage: *const fn (ptr: *anyopaque, address: primitives.Address.Address, slot: u256) u256,
@@ -64,6 +64,34 @@ pub const CallResult = struct {
 pub const StorageSlotKey = struct {
     address: Address,
     slot: u256,
+
+    pub fn hash(key: StorageSlotKey) u32 {
+        var hasher = std.hash.Wyhash.init(0);
+        hasher.update(&key.address.bytes);
+        hasher.update(std.mem.asBytes(&key.slot));
+        return @truncate(hasher.final());
+    }
+
+    pub fn eql(a: StorageSlotKey, b: StorageSlotKey) bool {
+        return std.mem.eql(u8, &a.address.bytes, &b.address.bytes) and a.slot == b.slot;
+    }
+};
+
+// Context for Address ArrayHashMap
+const AddressContext = std.array_hash_map.AutoContext(Address);
+
+// Context for hashing/equality of StorageSlotKey for ArrayHashMap
+const StorageSlotKeyContext = struct {
+    pub fn hash(self: @This(), key: StorageSlotKey) u32 {
+        _ = self;
+        return StorageSlotKey.hash(key);
+    }
+
+    pub fn eql(self: @This(), a: StorageSlotKey, b: StorageSlotKey, b_index: usize) bool {
+        _ = self;
+        _ = b_index;
+        return StorageSlotKey.eql(a, b);
+    }
 };
 
 /// Error set for MinimalEvm operations
@@ -75,6 +103,8 @@ pub const MinimalEvmError = error{
     InvalidOpcode,
     InvalidJump,
     InvalidPush,
+    // Access list
+    AddressPreWarmError,
 };
 
 /// Minimal EVM - Orchestrates execution like evm.zig
@@ -98,6 +128,10 @@ pub const MinimalEvm = struct {
 
     // Account code
     code: std.AutoHashMap(Address, []const u8),
+
+    // EIP-2929 warm/cold tracking (minimal)
+    warm_addresses: std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false),
+    warm_storage_slots: std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false),
 
     // Blockchain context
     chain_id: u64,
@@ -132,6 +166,9 @@ pub const MinimalEvm = struct {
         const storage_map = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         const balances_map = std.AutoHashMap(Address, u256).init(arena_allocator);
         const code_map = std.AutoHashMap(Address, []const u8).init(arena_allocator);
+        // Initialize warm/cold tracking maps
+        const warm_addresses = std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false).init(arena_allocator);
+        const warm_storage_slots = std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false).init(arena_allocator);
         // In Zig 0.15.1, std.ArrayList is unmanaged
         var frames_list = std.ArrayList(*MinimalFrame){};
         try frames_list.ensureTotalCapacity(arena_allocator, 16);
@@ -143,6 +180,8 @@ pub const MinimalEvm = struct {
             .storage = storage_map,
             .balances = balances_map,
             .code = code_map,
+            .warm_addresses = warm_addresses,
+            .warm_storage_slots = warm_storage_slots,
             .chain_id = 1,
             .block_number = 0,
             .block_timestamp = 0,
@@ -176,6 +215,8 @@ pub const MinimalEvm = struct {
         self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         self.balances = std.AutoHashMap(Address, u256).init(arena_allocator);
         self.code = std.AutoHashMap(Address, []const u8).init(arena_allocator);
+        self.warm_addresses = std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false).init(arena_allocator);
+        self.warm_storage_slots = std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false).init(arena_allocator);
         self.chain_id = 1;
         self.block_number = 0;
         self.block_timestamp = 0;
@@ -251,6 +292,34 @@ pub const MinimalEvm = struct {
         try self.balances.put(address, balance);
     }
 
+    /// Access an address and return the gas cost (EIP-2929 warm/cold)
+    pub fn access_address(self: *Self, address: Address) !u64 {
+        const entry = try self.warm_addresses.getOrPut(address);
+        return if (entry.found_existing)
+            GasConstants.WarmStorageReadCost
+        else
+            GasConstants.ColdAccountAccessCost;
+    }
+
+    /// Access a storage slot and return the gas cost (EIP-2929 warm/cold)
+    pub fn access_storage_slot(self: *Self, contract_address: Address, slot: u256) !u64 {
+        const key = StorageSlotKey{ .address = contract_address, .slot = slot };
+        const entry = try self.warm_storage_slots.getOrPut(key);
+        return if (entry.found_existing)
+            GasConstants.WarmStorageReadCost
+        else
+            GasConstants.ColdSloadCost;
+    }
+
+    /// Pre-warm addresses for transaction initialization
+    pub fn pre_warm_addresses(self: *Self, addresses: []const Address) !void {
+        for (addresses) |address| {
+            _ = self.warm_addresses.getOrPut(address) catch {
+                return MinimalEvmError.AddressPreWarmError;
+            };
+        }
+    }
+
     /// Execute bytecode (main entry point like evm.execute)
     pub fn execute(
         self: *Self,
@@ -260,7 +329,16 @@ pub const MinimalEvm = struct {
         address: Address,
         value: u256,
         calldata: []const u8,
-    ) MinimalEvmError!CallResult {
+    ) MinimalEvmError!CallResult {        
+        // Clear and pre-warm warm trackers
+        self.warm_addresses.clearRetainingCapacity();
+        self.warm_storage_slots.clearRetainingCapacity();
+        // TODO: Gate pre-warming by hardfork (Berlin enables access list rules, Shanghai warms coinbase)
+        // and include precompiles as warm from the start.
+        // TODO: pre-warm EIP-2930 tx access list entries when wiring tx params into the tracer.
+        try self.pre_warm_addresses(&[_]Address{ self.origin, address, self.block_coinbase });
+
+        // Currently we only use this function for regular calls
         const intrinsic_gas: i64 = @intCast(GasConstants.TxGas);
         if (gas < intrinsic_gas) {
           @branchHint(.cold);
@@ -271,7 +349,7 @@ pub const MinimalEvm = struct {
             };
         }
         const execution_gas = gas - intrinsic_gas;
-        
+
         // Create a new frame for execution
         const frame = try self.allocator.create(MinimalFrame);
         frame.* = try MinimalFrame.init(
