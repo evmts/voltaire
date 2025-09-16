@@ -551,12 +551,12 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
             return null;
         };
         
-        for (result.logs, 0..) |log, i| {
-            logs_copy[i].address = log.address.bytes;
+        for (result.logs, 0..) |log_item, i| {
+            logs_copy[i].address = log_item.address.bytes;
             
             // Copy topics
-            if (log.topics.len > 0) {
-                const topics_copy = allocator.alloc([32]u8, log.topics.len) catch {
+            if (log_item.topics.len > 0) {
+                const topics_copy = allocator.alloc([32]u8, log_item.topics.len) catch {
                     setError("Failed to allocate topics", .{});
                     // Clean up already allocated
                     for (logs_copy[0..i]) |prev_log| {
@@ -568,7 +568,7 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
                     allocator.destroy(evm_result);
                     return null;
                 };
-                for (log.topics, 0..) |topic, j| {
+                for (log_item.topics, 0..) |topic, j| {
                     std.mem.writeInt(u256, &topics_copy[j], topic, .big);
                 }
                 logs_copy[i].topics = topics_copy.ptr;
@@ -579,8 +579,8 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
             }
             
             // Copy data
-            if (log.data.len > 0) {
-                const data_copy = allocator.alloc(u8, log.data.len) catch {
+            if (log_item.data.len > 0) {
+                const data_copy = allocator.alloc(u8, log_item.data.len) catch {
                     setError("Failed to allocate log data", .{});
                     // Clean up
                     if (logs_copy[i].topics_len > 0) allocator.free(logs_copy[i].topics[0..logs_copy[i].topics_len]);
@@ -593,7 +593,7 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
                     allocator.destroy(evm_result);
                     return null;
                 };
-                @memcpy(data_copy, log.data);
+                @memcpy(data_copy, log_item.data);
                 logs_copy[i].data = data_copy.ptr;
                 logs_copy[i].data_len = data_copy.len;
             } else {
@@ -615,9 +615,9 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
             setError("Failed to allocate selfdestructs", .{});
             // Clean up logs
             if (evm_result.logs_len > 0) {
-                for (evm_result.logs[0..evm_result.logs_len]) |log| {
-                    if (log.topics_len > 0) allocator.free(log.topics[0..log.topics_len]);
-                    if (log.data_len > 0) allocator.free(log.data[0..log.data_len]);
+                for (evm_result.logs[0..evm_result.logs_len]) |log_item| {
+                    if (log_item.topics_len > 0) allocator.free(log_item.topics[0..log_item.topics_len]);
+                    if (log_item.data_len > 0) allocator.free(log_item.data[0..log_item.data_len]);
                 }
                 allocator.free(evm_result.logs[0..evm_result.logs_len]);
             }
@@ -645,9 +645,9 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
             // Clean up previous allocations
             if (evm_result.selfdestructs_len > 0) allocator.free(evm_result.selfdestructs[0..evm_result.selfdestructs_len]);
             if (evm_result.logs_len > 0) {
-                for (evm_result.logs[0..evm_result.logs_len]) |log| {
-                    if (log.topics_len > 0) allocator.free(log.topics[0..log.topics_len]);
-                    if (log.data_len > 0) allocator.free(log.data[0..log.data_len]);
+                for (evm_result.logs[0..evm_result.logs_len]) |log_item| {
+                    if (log_item.topics_len > 0) allocator.free(log_item.topics[0..log_item.topics_len]);
+                    if (log_item.data_len > 0) allocator.free(log_item.data[0..log_item.data_len]);
                 }
                 allocator.free(evm_result.logs[0..evm_result.logs_len]);
             }
@@ -675,9 +675,9 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
             if (evm_result.accessed_addresses_len > 0) allocator.free(evm_result.accessed_addresses[0..evm_result.accessed_addresses_len]);
             if (evm_result.selfdestructs_len > 0) allocator.free(evm_result.selfdestructs[0..evm_result.selfdestructs_len]);
             if (evm_result.logs_len > 0) {
-                for (evm_result.logs[0..evm_result.logs_len]) |log| {
-                    if (log.topics_len > 0) allocator.free(log.topics[0..log.topics_len]);
-                    if (log.data_len > 0) allocator.free(log.data[0..log.data_len]);
+                for (evm_result.logs[0..evm_result.logs_len]) |log_item| {
+                    if (log_item.topics_len > 0) allocator.free(log_item.topics[0..log_item.topics_len]);
+                    if (log_item.data_len > 0) allocator.free(log_item.data[0..log_item.data_len]);
                 }
                 allocator.free(evm_result.logs[0..evm_result.logs_len]);
             }
@@ -965,12 +965,12 @@ export fn guillotine_free_result(result: ?*EvmResult) void {
         
         // Free logs
         if (r.logs_len > 0) {
-            for (r.logs[0..r.logs_len]) |log| {
-                if (log.topics_len > 0) {
-                    allocator.free(log.topics[0..log.topics_len]);
+            for (r.logs[0..r.logs_len]) |log_item| {
+                if (log_item.topics_len > 0) {
+                    allocator.free(log_item.topics[0..log_item.topics_len]);
                 }
-                if (log.data_len > 0) {
-                    allocator.free(log.data[0..log.data_len]);
+                if (log_item.data_len > 0) {
+                    allocator.free(log_item.data[0..log_item.data_len]);
                 }
             }
             allocator.free(r.logs[0..r.logs_len]);
