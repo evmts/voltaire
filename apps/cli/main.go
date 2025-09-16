@@ -124,12 +124,15 @@ func main() {
 			},
 			{
 				Name:  "trace",
-				Usage: "Execute and write JSON-RPC trace to a file (default: trace.json)",
+				Usage: "Execute a CALL with JSON-RPC tracing enabled",
+				ArgsUsage: "[snailtracer]  # Use 'snailtracer' for test fixture",
 				Flags: []cli.Flag{
-					&cli.StringFlag{ Name: "bytecode", Usage: "Path to runtime bytecode hex (defaults to snailtracer runtime_clean.txt)", Value: "" },
-					&cli.StringFlag{ Name: "calldata", Usage: "Path to calldata hex (defaults to snailtracer calldata.txt)", Value: "" },
-					&cli.StringFlag{ Name: "out", Usage: "Output trace file", Value: "trace.json" },
-					&cli.StringFlag{ Name: "gas", Usage: "Gas limit", Value: "10000000" },
+					// Standard CallParams fields
+					&cli.StringFlag{Name: "caller", Usage: "Caller address (required unless using fixture)"},
+					&cli.StringFlag{Name: "to", Usage: "Target contract address (required unless using fixture)"},
+					&cli.StringFlag{Name: "value", Value: "0", Usage: "Wei value to transfer"},
+					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
+					&cli.StringFlag{Name: "gas", Value: "10000000", Usage: "Gas limit"},
 				},
 				Action: commands.RunTrace,
 			},

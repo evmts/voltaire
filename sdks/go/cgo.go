@@ -140,8 +140,9 @@ import (
 
 // VMHandle wraps the C EVM handle
 type VMHandle struct {
-	ptr *C.EvmHandle
-	mu  sync.RWMutex
+	ptr       *C.EvmHandle
+	mu        sync.RWMutex
+	isTracing bool // Track if this is a tracing VM
 }
 
 // BlockInfo contains the block context for EVM execution
@@ -208,7 +209,7 @@ func NewVMHandle(blockInfo ...*BlockInfo) (*VMHandle, error) {
 		}
 		return nil, ErrVMCreationFailed
 	}
-	return &VMHandle{ptr: ptr}, nil
+	return &VMHandle{ptr: ptr, isTracing: false}, nil
 }
 
 // NewTracingVMHandle creates a new EVM instance with JSON-RPC tracing enabled
@@ -251,7 +252,7 @@ func NewTracingVMHandle(blockInfo ...*BlockInfo) (*VMHandle, error) {
 		}
 		return nil, ErrVMCreationFailed
 	}
-	return &VMHandle{ptr: ptr}, nil
+	return &VMHandle{ptr: ptr, isTracing: true}, nil
 }
 
 // Destroy destroys the EVM instance (consistent with guillotine_evm_destroy)
@@ -260,7 +261,11 @@ func (vm *VMHandle) Destroy() error {
 	defer vm.mu.Unlock()
 	
 	if vm.ptr != nil {
-		C.guillotine_evm_destroy(vm.ptr)
+		if vm.isTracing {
+			C.guillotine_evm_destroy_tracing(vm.ptr)
+		} else {
+			C.guillotine_evm_destroy(vm.ptr)
+		}
 		vm.ptr = nil
 		C.guillotine_cleanup()
 	}
@@ -320,8 +325,13 @@ func (vm *VMHandle) Call(params *CallParams) (*CallResult, error) {
 	cParams.call_type = C.uint8_t(params.CallType)
 	cParams.gas = C.uint64_t(params.Gas)
 	
-	// Execute the call
-	cResult := C.guillotine_call(vm.ptr, &cParams)
+	// Execute the call (use tracing version if appropriate)
+	var cResult *C.EvmResult
+	if vm.isTracing {
+		cResult = C.guillotine_call_tracing(vm.ptr, &cParams)
+	} else {
+		cResult = C.guillotine_call(vm.ptr, &cParams)
+	}
 	if cResult == nil {
 		errMsg := C.GoString(C.guillotine_get_last_error())
 		if errMsg != "" {
@@ -428,11 +438,20 @@ func (vm *VMHandle) SetBalance(address [20]byte, balance [32]byte) error {
 		return ErrVMClosed
 	}
 	
-	success := C.guillotine_set_balance(
-		vm.ptr,
-		(*C.uint8_t)(unsafe.Pointer(&address[0])),
-		(*C.uint8_t)(unsafe.Pointer(&balance[0])),
-	)
+	var success C.bool
+	if vm.isTracing {
+		success = C.guillotine_set_balance_tracing(
+			vm.ptr,
+			(*C.uint8_t)(unsafe.Pointer(&address[0])),
+			(*C.uint8_t)(unsafe.Pointer(&balance[0])),
+		)
+	} else {
+		success = C.guillotine_set_balance(
+			vm.ptr,
+			(*C.uint8_t)(unsafe.Pointer(&address[0])),
+			(*C.uint8_t)(unsafe.Pointer(&balance[0])),
+		)
+	}
 	
 	if !success {
 		errMsg := C.GoString(C.guillotine_get_last_error())
@@ -494,12 +513,22 @@ func (vm *VMHandle) SetCode(address [20]byte, code []byte) error {
 		codePtr = (*C.uint8_t)(unsafe.Pointer(&code[0]))
 	}
 	
-	success := C.guillotine_set_code(
-		vm.ptr,
-		(*C.uint8_t)(unsafe.Pointer(&address[0])),
-		codePtr,
-		C.size_t(len(code)),
-	)
+	var success C.bool
+	if vm.isTracing {
+		success = C.guillotine_set_code_tracing(
+			vm.ptr,
+			(*C.uint8_t)(unsafe.Pointer(&address[0])),
+			codePtr,
+			C.size_t(len(code)),
+		)
+	} else {
+		success = C.guillotine_set_code(
+			vm.ptr,
+			(*C.uint8_t)(unsafe.Pointer(&address[0])),
+			codePtr,
+			C.size_t(len(code)),
+		)
+	}
 	
 	if !success {
 		errMsg := C.GoString(C.guillotine_get_last_error())
