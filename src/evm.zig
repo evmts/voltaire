@@ -142,7 +142,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         // Tracer - at the very bottom of memory layout for minimal impact on cache performance
         /// Tracer for debugging and logging - can be accessed via evm.tracer or frame.evm_ptr.tracer
-        tracer: if (config.enable_tracing) @import("tracer/tracer.zig").DefaultTracer else void,
+        tracer: if (config.TracerType) |T| T else void,
 
         /// Initialize a new EVM instance.
         ///
@@ -179,10 +179,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .hardfork_config = hardfork_config,
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
-                .tracer = if (config.enable_tracing) @import("tracer/tracer.zig").DefaultTracer.init(allocator) else {},
+                .tracer = if (config.TracerType) |T| T.init(allocator) else {},
             };
 
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
                 self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
                 self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
@@ -192,7 +192,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (comptime config.enable_beacon_roots) {
                 // Process beacon root update for EIP-4788 if applicable
                 @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
-                    if (config.enable_tracing) {
+                    if (config.TracerType != null) {
                         self.tracer.onBeaconRootUpdate(false, err);
                     }
                 };
@@ -200,7 +200,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             if (comptime config.enable_historical_block_hashes) {
                 @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
-                    if (config.enable_tracing) {
+                    if (config.TracerType != null) {
                         self.tracer.onHistoricalBlockHashUpdate(false, err);
                     }
                 };
@@ -208,7 +208,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             if (comptime config.enable_validator_deposits) {
                 @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
-                    if (config.enable_tracing) {
+                    if (config.TracerType != null) {
                         self.tracer.onValidatorDeposits(false, err);
                     }
                 };
@@ -216,7 +216,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             if (comptime config.enable_validator_withdrawals) {
                 @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
-                    if (config.enable_tracing) {
+                    if (config.TracerType != null) {
                         self.tracer.onValidatorWithdrawals(false, err);
                     }
                 };
@@ -231,7 +231,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         pub fn deinit(self: *Self) void {
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.tracer.deinit();
             }
             if (self.return_data.len > 0) self.allocator.free(self.return_data);
@@ -279,7 +279,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// on the operation type (CALL, CREATE, etc). Manages transaction-level
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) CallResult {
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.tracer.assert(self.depth == 0, "call() should only be called at top level");
             }
 
@@ -292,7 +292,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create => |p| p.value,
                 .create2 => |p| p.value,
             };
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
             }
 
@@ -367,7 +367,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             var result = self.inner_call(modified_params);
 
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.tracer.onCallComplete(result.success, @as(i64, @intCast(result.gas_left)), result.output.len);
             }
 
@@ -588,26 +588,26 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
-                if (config.enable_tracing) {
+                if (config.TracerType != null) {
                     self.tracer.onCallPreflight("CALL", @errorName(err));
                 }
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.tracer.onCallPreflight("CALL", @tagName(preflight));
             }
 
             switch (preflight) {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| {
-                    if (config.enable_tracing) {
+                    if (config.TracerType != null) {
                         self.tracer.onCodeRetrieval(params.to, 0, true);
                     }
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    if (config.enable_tracing) {
+                    if (config.TracerType != null) {
                         self.tracer.onCodeRetrieval(params.to, code.len, false);
                     }
                     const result = self.execute_frame(
@@ -1053,7 +1053,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const Termination = error{ Stop, Return, SelfDestruct };
             var termination_reason: ?Termination = null;
 
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 frame.interpret_with_tracer(code, @TypeOf(self.tracer), &self.tracer) catch |err| switch (err) {
                     error.Stop => termination_reason = error.Stop,
                     error.Return => termination_reason = error.Return,
@@ -1103,7 +1103,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             }
 
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
             }
 

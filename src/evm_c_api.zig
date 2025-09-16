@@ -7,10 +7,13 @@ const primitives = @import("primitives");
 const bytecode_c = @import("bytecode/bytecode_c.zig");
 const log = std.log.scoped(.c_api);
 
-// Import types from evm module
-const DefaultEvm = evm.DefaultEvm;
-// Tracer is now part of EVM struct, not a config option
-const TracerEvm = evm.Evm(.{ .TracerType = evm.tracer.DefaultTracer });
+// Import pre-configured EVM types for FFI
+const MainnetEvm = evm.MainnetEvm;
+const MainnetEvmWithTracer = evm.MainnetEvmWithTracer;
+const TestEvm = evm.TestEvm;
+// Legacy aliases for backward compatibility
+const DefaultEvm = MainnetEvm;
+const TracerEvm = MainnetEvmWithTracer;
 const Database = evm.Database;
 const BlockInfo = evm.BlockInfo;
 const TransactionContext = evm.TransactionContext;
@@ -99,9 +102,16 @@ threadlocal var last_error_z: [257]u8 = undefined;
 const empty_error: [1]u8 = .{0};
 const empty_buffer: [0]u8 = .{};
 
+// EVM configuration enum for runtime selection
+pub const EvmConfiguration = enum(u8) {
+    mainnet = 0,
+    mainnet_with_tracer = 1,
+    test = 2,
+};
+
 // Instance pooling for performance
 const EvmInstance = struct {
-    evm: *DefaultEvm,
+    evm: *MainnetEvm,
     database: *Database,
     block_info: BlockInfoFFI,
     in_use: bool,
@@ -109,7 +119,15 @@ const EvmInstance = struct {
 };
 
 const TracingEvmInstance = struct {
-    evm: *TracerEvm,
+    evm: *MainnetEvmWithTracer,
+    database: *Database,
+    block_info: BlockInfoFFI,
+    in_use: bool,
+    needs_reset: bool,
+};
+
+const TestEvmInstance = struct {
+    evm: *TestEvm,
     database: *Database,
     block_info: BlockInfoFFI,
     in_use: bool,
@@ -195,8 +213,22 @@ export fn guillotine_cleanup() void {
     ffi_allocator = null;
 }
 
-// Create a new EVM instance (or reuse from pool)
+// Create a new EVM instance with specific configuration
+export fn guillotine_evm_create_with_config(block_info_ptr: *const BlockInfoFFI, config: EvmConfiguration) ?*EvmHandle {
+    return switch (config) {
+        .mainnet => guillotine_evm_create_mainnet(block_info_ptr),
+        .mainnet_with_tracer => guillotine_evm_create_tracing(block_info_ptr),
+        .test => guillotine_evm_create_test(block_info_ptr),
+    };
+}
+
+// Create a new mainnet EVM instance (or reuse from pool) - default for backward compatibility
 export fn guillotine_evm_create(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle {
+    return guillotine_evm_create_mainnet(block_info_ptr);
+}
+
+// Create a new mainnet EVM instance (or reuse from pool)
+export fn guillotine_evm_create_mainnet(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle {
     const allocator = ffi_allocator orelse {
         setError("FFI not initialized. Call guillotine_init() first", .{});
         return null;

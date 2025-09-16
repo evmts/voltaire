@@ -120,10 +120,13 @@ pub const EvmConfig = struct {
     enable_validator_deposits: bool = true,
     enable_validator_withdrawals: bool = true,
 
-    /// Enable tracing for execution monitoring and debugging
-    /// true = enable tracing (default for debug/safe builds)
-    /// false = disable tracing (default for release builds)
-    enable_tracing: bool = builtin.mode == .Debug or builtin.mode == .ReleaseSafe,
+    /// Tracer type for execution monitoring and debugging
+    /// null = no tracing (default for release builds)
+    /// type = tracer implementation (default: DefaultTracer for debug/safe builds)
+    TracerType: ?type = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 
+        @import("tracer/tracer.zig").DefaultTracer 
+    else 
+        null,
 
     /// Get the effective SIMD vector length for the current target
     pub fn getVectorLength(self: EvmConfig) comptime_int {
@@ -173,7 +176,7 @@ pub const EvmConfig = struct {
             .disable_fusion = self.disable_fusion,
             .vector_length = self.getVectorLength(),
             .loop_quota = self.loop_quota,
-            .enable_tracing = self.enable_tracing,
+            .TracerType = self.TracerType,
         };
     }
 
