@@ -663,7 +663,11 @@ pub fn getDebugInfo(
                         }
                     }
                     
-                    const fusion_data = if (op_data == .push_jump_fusion) op_data.push_jump_fusion else op_data.push_jumpi_fusion;
+                    const expected_target = switch (op_data) {
+                        .push_jump_fusion => |fusion| @as(u32, @intCast(fusion.value)),
+                        .push_jumpi_fusion => |fusion| @as(u32, @intCast(fusion.value)),
+                        else => unreachable,
+                    };
                     
                     try entries.append(allocator, .{
                         .schedule_index = schedule_idx,
@@ -677,12 +681,12 @@ pub fn getDebugInfo(
                             .target_idx = target_idx,
                         }},
                         .expected_from_bytecode = null,
-                        .validation_status = if (target_pc == @as(u32, @intCast(fusion_data.value))) .valid else .metadata_mismatch,
+                        .validation_status = if (target_pc == expected_target) .valid else .metadata_mismatch,
                     });
                     
-                    if (target_pc != @as(u32, @intCast(fusion_data.value))) {
+                    if (target_pc != expected_target) {
                         try addValidationError(&debug_info, schedule_idx, bytecode_pc, "Jump target mismatch",
-                            try std.fmt.allocPrint(allocator, "PC=0x{x}", .{fusion_data.value}),
+                            try std.fmt.allocPrint(allocator, "PC=0x{x}", .{expected_target}),
                             try std.fmt.allocPrint(allocator, "PC=0x{x}", .{target_pc orelse 0}));
                     }
                 }
