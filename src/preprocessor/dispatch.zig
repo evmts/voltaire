@@ -111,6 +111,15 @@ pub fn Dispatch(comptime FrameType: type) type {
                 return;
             }
 
+            // Helper function for conditional tracing assertions
+            const tracerAssert = struct {
+                fn call(f: *FrameType, condition: bool, comptime message: []const u8) void {
+                    if (comptime FrameType.frame_config.enable_tracing) {
+                        f.getTracer().assert(condition, message);
+                    }
+                }
+            }.call;
+
             // Validate handler pointer matches expected opcode handler
             const expected_handler = if (opcode.isRegular())
                 FrameType.opcode_handlers[@intFromEnum(opcode.toOpcode())]
@@ -119,154 +128,154 @@ pub fn Dispatch(comptime FrameType: type) type {
                 break :blk frame_handlers.getSyntheticHandler(FrameType, @intFromEnum(opcode.toSynthetic()));
             };
 
-            frame.getTracer().assert(self.cursor[0].opcode_handler == expected_handler, "Opcode handler mismatch");
+            tracerAssert(frame, self.cursor[0].opcode_handler == expected_handler, "Opcode handler mismatch");
 
             // Validate metadata type and stack requirements based on opcode
             switch (opcode) {
                 // Opcodes with PC metadata
                 .PC => {
-                    frame.getTracer().assert(self.cursor[1] == .pc, "PC opcode: expected .pc metadata");
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Ensure space for push
+                    tracerAssert(frame, self.cursor[1] == .pc, "PC opcode: expected .pc metadata");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Ensure space for push
                 },
 
                 // Opcodes with inline push metadata (PUSH1-PUSH8)
                 .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 => {
-                    frame.getTracer().assert(self.cursor[1] == .push_inline, "PUSH opcode: expected .push_inline metadata");
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Ensure space for push
+                    tracerAssert(frame, self.cursor[1] == .push_inline, "PUSH opcode: expected .push_inline metadata");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Ensure space for push
                 },
 
                 // Opcodes with pointer push metadata (PUSH9-PUSH32)
                 .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16,
                 .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
                 .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
-                    frame.getTracer().assert(self.cursor[1] == .push_pointer, "PUSH opcode: expected .push_pointer metadata");
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Ensure space for push
+                    tracerAssert(frame, self.cursor[1] == .push_pointer, "PUSH opcode: expected .push_pointer metadata");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Ensure space for push
                 },
 
                 // JUMPDEST with gas and stack validation metadata
                 .JUMPDEST => {
-                    frame.getTracer().assert(self.cursor[1] == .jump_dest, "JUMPDEST: expected .jump_dest metadata");
+                    tracerAssert(frame, self.cursor[1] == .jump_dest, "JUMPDEST: expected .jump_dest metadata");
                     // Stack validation is done within JUMPDEST handler using metadata
                 },
 
                 // Jump operations
                 .JUMP => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "JUMP: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "JUMP: stack underflow, requires 1 item");
                 },
                 .JUMPI => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "JUMPI: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "JUMPI: stack underflow, requires 2 items");
                 },
 
                 // Static jump operations with jump_static metadata
                 .JUMP_TO_STATIC_LOCATION, .JUMPI_TO_STATIC_LOCATION => {
-                    frame.getTracer().assert(self.cursor[1] == .jump_static, "Static jump: expected .jump_static metadata");
+                    tracerAssert(frame, self.cursor[1] == .jump_static, "Static jump: expected .jump_static metadata");
                     if (opcode == .JUMPI_TO_STATIC_LOCATION) {
-                        frame.getTracer().assert(frame.stack.size() >= 1, "JUMPI_TO_STATIC: stack underflow, requires condition");
+                        tracerAssert(frame, frame.stack.size() >= 1, "JUMPI_TO_STATIC: stack underflow, requires condition");
                     }
                 },
 
                 // Arithmetic operations requiring 2 stack items
                 .ADD, .MUL, .SUB, .DIV, .SDIV, .MOD, .SMOD => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
 
                 // ADDMOD and MULMOD require 3 stack items
                 .ADDMOD, .MULMOD => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
+                    tracerAssert(frame, frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
                 },
 
                 // EXP and SIGNEXTEND require 2 stack items
                 .EXP, .SIGNEXTEND => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
 
                 // Comparison operations requiring 2 stack items (except ISZERO)
                 .LT, .GT, .SLT, .SGT, .EQ => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
                 .ISZERO => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
 
                 // Bitwise operations
                 .AND, .OR, .XOR => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
                 .NOT => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
                 .BYTE, .SHL, .SHR, .SAR => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
 
                 // Memory operations
                 .MLOAD => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
                 .MSTORE => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
                 .MSTORE8 => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
                 .MSIZE => {
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
                 },
                 .MCOPY => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
+                    tracerAssert(frame, frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
                 },
 
                 // Storage operations
                 .SLOAD, .TLOAD => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
                 .SSTORE, .TSTORE => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
 
                 // Stack operations
                 .POP => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
                 .PUSH0 => {
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
                 },
 
                 // DUP operations
                 .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8,
                 .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16 => {
                     const n = @intFromEnum(opcode) - @intFromEnum(UnifiedOpcode.DUP1) + 1;
-                    frame.getTracer().assert(frame.stack.size() >= n, "Dispatch validation failed");
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() >= n, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
                 },
 
                 // SWAP operations
                 .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8,
                 .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16 => {
                     const n = @intFromEnum(opcode) - @intFromEnum(UnifiedOpcode.SWAP1) + 2;
-                    frame.getTracer().assert(frame.stack.size() >= n, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() >= n, "Dispatch validation failed");
                 },
 
                 // LOG operations
                 .LOG0 => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Dispatch validation failed"); // offset, length
+                    tracerAssert(frame, frame.stack.size() >= 2, "Dispatch validation failed"); // offset, length
                 },
                 .LOG1 => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Dispatch validation failed"); // offset, length, topic1
+                    tracerAssert(frame, frame.stack.size() >= 3, "Dispatch validation failed"); // offset, length, topic1
                 },
                 .LOG2 => {
-                    frame.getTracer().assert(frame.stack.size() >= 4, "Dispatch validation failed"); // offset, length, topic1, topic2
+                    tracerAssert(frame, frame.stack.size() >= 4, "Dispatch validation failed"); // offset, length, topic1, topic2
                 },
                 .LOG3 => {
-                    frame.getTracer().assert(frame.stack.size() >= 5, "Dispatch validation failed"); // offset, length, topic1, topic2, topic3
+                    tracerAssert(frame, frame.stack.size() >= 5, "Dispatch validation failed"); // offset, length, topic1, topic2, topic3
                 },
                 .LOG4 => {
-                    frame.getTracer().assert(frame.stack.size() >= 6, "Dispatch validation failed"); // offset, length, topic1, topic2, topic3, topic4
+                    tracerAssert(frame, frame.stack.size() >= 6, "Dispatch validation failed"); // offset, length, topic1, topic2, topic3, topic4
                 },
 
                 // Keccak256
                 .KECCAK256 => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
 
                 // Context operations that push values
@@ -274,125 +283,125 @@ pub fn Dispatch(comptime FrameType: type) type {
                 .GASPRICE, .RETURNDATASIZE, .COINBASE, .TIMESTAMP, .NUMBER,
                 .PREVRANDAO, .GASLIMIT, .CHAINID, .SELFBALANCE, .BASEFEE,
                 .BLOBBASEFEE, .GAS => {
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
                 },
 
                 // Context operations that require stack items
                 .BALANCE, .EXTCODESIZE, .EXTCODEHASH, .BLOCKHASH, .BLOBHASH => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
                 .CALLDATALOAD => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
                 .CALLDATACOPY, .CODECOPY, .RETURNDATACOPY => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
+                    tracerAssert(frame, frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
                 },
                 .EXTCODECOPY => {
-                    frame.getTracer().assert(frame.stack.size() >= 4, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() >= 4, "Dispatch validation failed");
                 },
 
                 // System operations
                 .CREATE => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
+                    tracerAssert(frame, frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
                 },
                 .CREATE2 => {
-                    frame.getTracer().assert(frame.stack.size() >= 4, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() >= 4, "Dispatch validation failed");
                 },
                 .CALL, .CALLCODE => {
-                    frame.getTracer().assert(frame.stack.size() >= 7, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() >= 7, "Dispatch validation failed");
                 },
                 .DELEGATECALL, .STATICCALL => {
-                    frame.getTracer().assert(frame.stack.size() >= 6, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() >= 6, "Dispatch validation failed");
                 },
                 .RETURN, .REVERT => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
                 .SELFDESTRUCT => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
 
                 // Synthetic arithmetic opcodes with inline metadata (require 1 stack item)
                 .PUSH_ADD_INLINE, .PUSH_MUL_INLINE, .PUSH_DIV_INLINE, .PUSH_SUB_INLINE,
                 .PUSH_AND_INLINE, .PUSH_OR_INLINE, .PUSH_XOR_INLINE => {
-                    frame.getTracer().assert(self.cursor[1] == .push_inline, "Invalid metadata for synthetic opcode: expected push_inline");
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Stack underflow for synthetic opcode: requires 1 item");
+                    tracerAssert(frame, self.cursor[1] == .push_inline, "Invalid metadata for synthetic opcode: expected push_inline");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic opcode: requires 1 item");
                 },
 
                 // Synthetic memory load with inline metadata (no stack requirement)
                 .PUSH_MLOAD_INLINE => {
-                    frame.getTracer().assert(self.cursor[1] == .push_inline, "Invalid metadata for PUSH_MLOAD_INLINE: expected push_inline");
+                    tracerAssert(frame, self.cursor[1] == .push_inline, "Invalid metadata for PUSH_MLOAD_INLINE: expected push_inline");
                     // PUSH_MLOAD doesn't require anything on stack - it pushes offset then loads
                 },
 
                 // Synthetic memory store with inline metadata (require 1 stack item for value)
                 .PUSH_MSTORE_INLINE, .PUSH_MSTORE8_INLINE => {
-                    frame.getTracer().assert(self.cursor[1] == .push_inline, "Invalid metadata for synthetic store opcode: expected push_inline");
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Stack underflow for synthetic store opcode: requires 1 item");
+                    tracerAssert(frame, self.cursor[1] == .push_inline, "Invalid metadata for synthetic store opcode: expected push_inline");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic store opcode: requires 1 item");
                 },
 
                 // Synthetic arithmetic opcodes with pointer metadata (require 1 stack item)
                 .PUSH_ADD_POINTER, .PUSH_MUL_POINTER, .PUSH_DIV_POINTER, .PUSH_SUB_POINTER,
                 .PUSH_AND_POINTER, .PUSH_OR_POINTER, .PUSH_XOR_POINTER => {
-                    frame.getTracer().assert(self.cursor[1] == .push_pointer, "Invalid metadata for synthetic opcode: expected push_pointer");
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Stack underflow for synthetic opcode: requires 1 item");
+                    tracerAssert(frame, self.cursor[1] == .push_pointer, "Invalid metadata for synthetic opcode: expected push_pointer");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic opcode: requires 1 item");
                 },
 
                 // Synthetic memory load with pointer metadata (no stack requirement)
                 .PUSH_MLOAD_POINTER => {
-                    frame.getTracer().assert(self.cursor[1] == .push_pointer, "Invalid metadata for PUSH_MLOAD_POINTER: expected push_pointer");
+                    tracerAssert(frame, self.cursor[1] == .push_pointer, "Invalid metadata for PUSH_MLOAD_POINTER: expected push_pointer");
                     // PUSH_MLOAD doesn't require anything on stack - it pushes offset then loads
                 },
 
                 // Synthetic memory store with pointer metadata (require 1 stack item for value)
                 .PUSH_MSTORE_POINTER, .PUSH_MSTORE8_POINTER => {
-                    frame.getTracer().assert(self.cursor[1] == .push_pointer, "Invalid metadata for synthetic store opcode: expected push_pointer");
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Stack underflow for synthetic store opcode: requires 1 item");
+                    tracerAssert(frame, self.cursor[1] == .push_pointer, "Invalid metadata for synthetic store opcode: expected push_pointer");
+                    tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic store opcode: requires 1 item");
                 },
 
                 // Advanced synthetic opcodes
                 .MULTI_PUSH_2 => {
-                    frame.getTracer().assert(frame.stack.size() + 2 <= @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() + 2 <= @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
                 },
                 .MULTI_PUSH_3 => {
-                    frame.getTracer().assert(frame.stack.size() + 3 <= @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    tracerAssert(frame, frame.stack.size() + 3 <= @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
                 },
                 .MULTI_POP_2 => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
+                    tracerAssert(frame, frame.stack.size() >= 2, "Binary op: stack underflow, requires 2 items");
                 },
                 .MULTI_POP_3 => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
+                    tracerAssert(frame, frame.stack.size() >= 3, "Ternary op: stack underflow, requires 3 items");
                 },
                 .ISZERO_JUMPI => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Dispatch validation failed"); // Requires value to check
+                    tracerAssert(frame, frame.stack.size() >= 1, "Dispatch validation failed"); // Requires value to check
                 },
                 .DUP2_MSTORE_PUSH => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Dispatch validation failed"); // DUP2 requires 2, MSTORE consumes 2, PUSH adds 1
+                    tracerAssert(frame, frame.stack.size() >= 2, "Dispatch validation failed"); // DUP2 requires 2, MSTORE consumes 2, PUSH adds 1
                 },
                 .DUP3_ADD_MSTORE => {
-                    frame.getTracer().assert(frame.stack.size() >= 3, "Dispatch validation failed"); // DUP3 requires 3
+                    tracerAssert(frame, frame.stack.size() >= 3, "Dispatch validation failed"); // DUP3 requires 3
                 },
                 .SWAP1_DUP2_ADD => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Dispatch validation failed"); // SWAP1 requires 2
+                    tracerAssert(frame, frame.stack.size() >= 2, "Dispatch validation failed"); // SWAP1 requires 2
                 },
                 .PUSH_DUP3_ADD => {
-                    frame.getTracer().assert(frame.stack.size() >= 2, "Dispatch validation failed"); // DUP3 in fusion requires 2 existing + pushed = 3
+                    tracerAssert(frame, frame.stack.size() >= 2, "Dispatch validation failed"); // DUP3 in fusion requires 2 existing + pushed = 3
                 },
                 .FUNCTION_DISPATCH => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Dispatch validation failed"); // Requires calldata to check
+                    tracerAssert(frame, frame.stack.size() >= 1, "Dispatch validation failed"); // Requires calldata to check
                 },
                 .CALLVALUE_CHECK => {
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Pushes callvalue
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // Pushes callvalue
                 },
                 .PUSH0_REVERT => {
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // PUSH0 needs space
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // PUSH0 needs space
                 },
                 .PUSH_ADD_DUP1 => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Dispatch validation failed"); // Requires 1 for ADD
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // DUP1 needs space
+                    tracerAssert(frame, frame.stack.size() >= 1, "Dispatch validation failed"); // Requires 1 for ADD
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // DUP1 needs space
                 },
                 .MLOAD_SWAP1_DUP2 => {
-                    frame.getTracer().assert(frame.stack.size() >= 1, "Dispatch validation failed"); // MLOAD requires offset
-                    frame.getTracer().assert(frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // DUP2 needs space
+                    tracerAssert(frame, frame.stack.size() >= 1, "Dispatch validation failed"); // MLOAD requires offset
+                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed"); // DUP2 needs space
                 },
 
                 // Opcodes that don't require special validation
@@ -501,7 +510,7 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // Notify tracer of schedule build start
             if (tracer) |t| {
-                t.onScheduleBuildStart(bytecode.len());
+                t.onScheduleBuildStart((try bytecode.*).len());
             }
             
             const ScheduleList = ArrayList(Self.Item, null);

@@ -19,8 +19,8 @@ pub const StackConfig = struct {
     WordType: type = u256,
     /// Whether to enable opcode fusions fuzing more than one opcode into a single operation
     fusions_enabled: bool = true,
-    /// Tracer for assertions and debugging
-    TracerType: ?type = null,
+    /// Enable tracing for assertions and debugging
+    enable_tracing: bool = false,
 
     /// StackIndexType: smallest integer type to index the stack
     pub fn StackIndexType(comptime self: Self) type {
