@@ -1073,3 +1073,45 @@ export fn evm_bytecode_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     return copy_len + 1;
 }
 
+// Pretty print dispatch schedule  
+export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: [*]u8, buffer_len: usize) usize {
+    const allocator = ffi_allocator orelse std.heap.c_allocator;
+    
+    if (data_len == 0) return 0;
+    
+    const bytecode_slice = data[0..data_len];
+    
+    // Create bytecode instance for analysis
+    const BytecodeType = evm.Bytecode(evm.BytecodeConfig{});
+    var bytecode = BytecodeType.init(allocator, bytecode_slice) catch return 0;
+    defer bytecode.deinit();
+    
+    // Create a Frame type to get access to Dispatch
+    // Use MemoryDatabase as the database type for this context
+    const MemoryDatabase = @import("evm").MemoryDatabase;
+    const FrameType = evm.Frame(evm.FrameConfig{
+        .DatabaseType = MemoryDatabase,
+    });
+    const DispatchType = FrameType.Dispatch;
+    
+    // Get opcode handlers
+    const handlers = &FrameType.opcode_handlers;
+    
+    // Create dispatch schedule
+    const schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch return 0;
+    defer schedule.deinit();
+    
+    // Call the dispatch pretty_print function (it's on Dispatch, not DispatchSchedule)
+    const output = DispatchType.pretty_print(allocator, schedule.items, &bytecode) catch return 0;
+    defer allocator.free(output);
+    
+    // Copy to buffer
+    if (buffer_len == 0) return output.len + 1; // Return required size
+    
+    const copy_len = @min(output.len, buffer_len - 1);
+    @memcpy(buffer[0..copy_len], output[0..copy_len]);
+    buffer[copy_len] = 0; // Null terminate
+    
+    return copy_len + 1;
+}
+
