@@ -15,6 +15,9 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
         else 
             config.HashContext;
         
+        // Define evicted item type here so it's consistent
+        pub const EvictedItem = struct { key: K, value: V };
+        
         // Core data structures
         map: std.HashMap(K, usize, HashContextType, 80),  // Key -> Node index
         nodes: []Node,  // Pre-allocated array of nodes
@@ -87,7 +90,7 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
         }
         
         /// Put key-value pair, returning evicted item if capacity exceeded
-        pub fn put(self: *Self, key: K, value: V) !?struct { key: K, value: V } {
+        pub fn put(self: *Self, key: K, value: V) !?EvictedItem {
             // Update existing entry
             if (self.map.get(key)) |idx| {
                 self.nodes[idx].value = value;
