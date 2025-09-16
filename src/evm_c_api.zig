@@ -1042,3 +1042,34 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) ?*E
     // Convert result to FFI format
     return convertCallResultToEvmResult(result, allocator);
 }
+
+// ============================================================================
+// BYTECODE API
+// ============================================================================
+
+// Pretty print bytecode
+export fn evm_bytecode_pretty_print(data: [*]const u8, data_len: usize, buffer: [*]u8, buffer_len: usize) usize {
+    const allocator = ffi_allocator orelse std.heap.c_allocator;
+    
+    if (data_len == 0) return 0;
+    
+    const bytecode_slice = data[0..data_len];
+    
+    // Create bytecode instance
+    const BytecodeType = evm.Bytecode(evm.BytecodeConfig{});
+    const bytecode = BytecodeType.init(allocator, bytecode_slice) catch return 0;
+    
+    // Call pretty_print 
+    const output = bytecode.pretty_print(allocator) catch return 0;
+    defer allocator.free(output);
+    
+    // Copy to buffer
+    if (buffer_len == 0) return output.len + 1; // Return required size
+    
+    const copy_len = @min(output.len, buffer_len - 1);
+    @memcpy(buffer[0..copy_len], output[0..copy_len]);
+    buffer[copy_len] = 0; // Null terminate
+    
+    return copy_len + 1;
+}
+

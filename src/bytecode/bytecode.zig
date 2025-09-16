@@ -1277,7 +1277,16 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 }
 
                 // Raw hex bytes (show opcode + data for PUSH instructions)
-                const instruction_size = self.getInstructionSize(pc);
+                // Calculate instruction size based on opcode
+                const instruction_size: usize = blk: {
+                    if (opcode_byte >= 0x60 and opcode_byte <= 0x7f) {
+                        // PUSH1-PUSH32: size = 1 + (opcode - 0x5f)
+                        const push_size = opcode_byte - 0x5f;
+                        break :blk 1 + push_size;
+                    } else {
+                        break :blk 1;
+                    }
+                };
                 var hex_output = std.ArrayListAligned(u8, null){};
                 defer hex_output.deinit(allocator);
 
@@ -1307,7 +1316,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             try output.writer(allocator).print("{s}{s:<12}{s}", .{ Colors.green, @tagName(opcode), Colors.reset });
 
                             // Extract and format push value
-                            if (self.readPushValueN(pc, push_size)) |value| {
+                            // Read push value inline (similar to Iterator.next())
+                            var value: u256 = 0;
+                            const end_pc = @min(pc + 1 + push_size, self.len());
+                            if (pc + 1 < self.len()) {
+                                for (pc + 1..end_pc) |i| {
+                                    value = std.math.shl(u256, value, 8) | self.get_unsafe(@intCast(i));
+                                }
                                 try output.writer(allocator).print(" {s}0x{x}{s}", .{ Colors.bright_magenta, value, Colors.reset });
 
                                 // Show decimal if small value
@@ -1353,7 +1368,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 try output.writer(allocator).print("\n", .{});
 
-                pc += instruction_size;
+                pc += @intCast(instruction_size);
                 line_num += 1;
             }
 
