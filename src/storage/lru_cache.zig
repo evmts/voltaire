@@ -99,7 +99,7 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
             }
             
             // Need to add new entry
-            var evicted: ?struct { key: K, value: V } = null;
+            var evicted: ?EvictedItem = null;
             
             // Evict LRU if at capacity
             if (self.size >= config.capacity) {
@@ -239,7 +239,7 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
             self.head = idx;
         }
         
-        fn evictLru(self: *Self) struct { key: K, value: V } {
+        fn evictLru(self: *Self) EvictedItem {
             std.debug.assert(self.tail != INVALID_INDEX);
             
             const idx = self.tail;
