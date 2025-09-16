@@ -12,6 +12,7 @@ import * as jump from '../instructions/handlers_jump';
 import * as crypto from '../instructions/handlers_crypto';
 import * as storage from '../instructions/handlers_storage';
 import * as log from '../instructions/handlers_log';
+import * as synth from '../instructions/handlers_synthetic';
 
 export type Item =
   | { kind: 'meta'; gas?: number }
@@ -143,49 +144,83 @@ export function compile(bytecode: Uint8Array): Schedule | InvalidOpcodeError {
   let pc = 0;
   while (pc < bytecode.length) {
     const opcode = bytecode[pc];
-    const handler = getHandler(opcode);
-    
-    if (!handler) {
-      return new InvalidOpcodeError(opcode);
-    }
-    
-    const handlerIndex = items.length;
-    handlerIndices.push(handlerIndex);
-    
-    items.push({
-      kind: 'handler',
-      handler,
-      nextCursor: -1, // Will be updated
-      opcode,
-      pc
-    });
-    
-    // Handle PUSH immediates
+
+    // FUSION: PUSH <imm> + (ADD|SUB|MUL|DIV)
     if (isPush(opcode)) {
       const pushSize = getPushSize(opcode);
       const dataStart = pc + 1;
       const dataEnd = Math.min(dataStart + pushSize, bytecode.length);
       const immediateBytes = bytecode.slice(dataStart, dataEnd);
-      
-      // Pad with zeros if we run out of bytecode
       const paddedBytes = new Uint8Array(pushSize);
       paddedBytes.set(immediateBytes);
-      
       const value = bytesToWord(paddedBytes);
+
+      const nextPc = pc + 1 + pushSize;
+      const nextOpcode = nextPc < bytecode.length ? bytecode[nextPc] : undefined;
+
+      if (
+        nextOpcode === OPCODES.ADD ||
+        nextOpcode === OPCODES.SUB ||
+        nextOpcode === OPCODES.MUL ||
+        nextOpcode === OPCODES.DIV
+      ) {
+        const handlerIndex = items.length;
+        handlerIndices.push(handlerIndex);
+        const fusedHandler =
+          nextOpcode === OPCODES.ADD ? synth.PUSH_ADD_INLINE :
+          nextOpcode === OPCODES.SUB ? synth.PUSH_SUB_INLINE :
+          nextOpcode === OPCODES.MUL ? synth.PUSH_MUL_INLINE :
+          synth.PUSH_DIV_INLINE;
+        items.push({ kind: 'handler', handler: fusedHandler, nextCursor: -1, opcode: nextOpcode, pc });
+        items.push({ kind: 'inline', data: { value, n: pushSize } });
+        pc = nextPc + 1;
+        continue;
+      }
+
+      // FUSION: PUSH <imm> + (MLOAD|MSTORE|MSTORE8)
+      if (
+        nextOpcode === OPCODES.MLOAD ||
+        nextOpcode === OPCODES.MSTORE ||
+        nextOpcode === OPCODES.MSTORE8
+      ) {
+        const handlerIndex = items.length;
+        handlerIndices.push(handlerIndex);
+        const fusedHandler =
+          nextOpcode === OPCODES.MLOAD ? synth.PUSH_MLOAD_INLINE :
+          nextOpcode === OPCODES.MSTORE ? synth.PUSH_MSTORE_INLINE :
+          synth.PUSH_MSTORE8_INLINE;
+        items.push({ kind: 'handler', handler: fusedHandler, nextCursor: -1, opcode: nextOpcode, pc });
+        items.push({ kind: 'inline', data: { value, n: pushSize } });
+        pc = nextPc + 1;
+        continue;
+      }
+
+      // Plain PUSH case
+      const pushHandler = getHandler(opcode);
+      if (!pushHandler) return new InvalidOpcodeError(opcode);
+      const handlerIndex = items.length;
+      handlerIndices.push(handlerIndex);
+      items.push({ kind: 'handler', handler: pushHandler, nextCursor: -1, opcode, pc });
       items.push({ kind: 'inline', data: { value, n: pushSize } });
-      
       pc += pushSize + 1;
-    } else if (isDup(opcode)) {
+      continue;
+    }
+
+    // Non-PUSH path
+    const handler = getHandler(opcode);
+    if (!handler) return new InvalidOpcodeError(opcode);
+    const handlerIndex = items.length;
+    handlerIndices.push(handlerIndex);
+    items.push({ kind: 'handler', handler, nextCursor: -1, opcode, pc });
+
+    if (isDup(opcode)) {
       const n = getDupN(opcode);
       items.push({ kind: 'inline', data: { n } });
-      pc++;
     } else if (isSwap(opcode)) {
       const n = getSwapN(opcode);
       items.push({ kind: 'inline', data: { n } });
-      pc++;
-    } else {
-      pc++;
     }
+    pc++;
   }
   
   // Add terminal handler
