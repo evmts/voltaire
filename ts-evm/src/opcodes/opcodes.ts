@@ -1,4 +1,5 @@
 // Opcode constants
+// Opcode constants (numeric values)
 export const OPCODES = {
   // System
   STOP: 0x00,
@@ -106,6 +107,109 @@ export const OPCODES = {
   RETURN: 0xf3,
   INVALID: 0xfe,
 } as const;
+
+// Basic opcode metadata used by analysis and (optionally) cost modeling.
+// Note: Gas values here are indicative and incomplete; callers should not
+// rely on exact costs. The Zig devtool charges gas per-basic-block; this
+// table provides stack arity and a coarse gas baseline to enable analysis
+// and scheduling.
+export interface OpcodeInfo {
+  name: string;
+  gas: number;      // static base cost only (no dynamic memory expansion)
+  stackIn: number;
+  stackOut: number;
+}
+
+// Map opcode byte → metadata
+export const OPCODE_INFO: Record<number, OpcodeInfo | undefined> = {
+  [OPCODES.STOP]:         { name: 'STOP', gas: 0, stackIn: 0, stackOut: 0 },
+
+  [OPCODES.ADD]:          { name: 'ADD', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.MUL]:          { name: 'MUL', gas: 5, stackIn: 2, stackOut: 1 },
+  [OPCODES.SUB]:          { name: 'SUB', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.DIV]:          { name: 'DIV', gas: 5, stackIn: 2, stackOut: 1 },
+  [OPCODES.SDIV]:         { name: 'SDIV', gas: 5, stackIn: 2, stackOut: 1 },
+  [OPCODES.MOD]:          { name: 'MOD', gas: 5, stackIn: 2, stackOut: 1 },
+  [OPCODES.SMOD]:         { name: 'SMOD', gas: 5, stackIn: 2, stackOut: 1 },
+  [OPCODES.ADDMOD]:       { name: 'ADDMOD', gas: 8, stackIn: 3, stackOut: 1 },
+  [OPCODES.MULMOD]:       { name: 'MULMOD', gas: 8, stackIn: 3, stackOut: 1 },
+  [OPCODES.EXP]:          { name: 'EXP', gas: 10, stackIn: 2, stackOut: 1 },
+  [OPCODES.SIGNEXTEND]:   { name: 'SIGNEXTEND', gas: 5, stackIn: 2, stackOut: 1 },
+
+  [OPCODES.LT]:           { name: 'LT', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.GT]:           { name: 'GT', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.SLT]:          { name: 'SLT', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.SGT]:          { name: 'SGT', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.EQ]:           { name: 'EQ', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.ISZERO]:       { name: 'ISZERO', gas: 3, stackIn: 1, stackOut: 1 },
+
+  [OPCODES.KECCAK256]:    { name: 'KECCAK256', gas: 30, stackIn: 2, stackOut: 1 },
+
+  [OPCODES.AND]:          { name: 'AND', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.OR]:           { name: 'OR', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.XOR]:          { name: 'XOR', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.NOT]:          { name: 'NOT', gas: 3, stackIn: 1, stackOut: 1 },
+  [OPCODES.BYTE]:         { name: 'BYTE', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.SHL]:          { name: 'SHL', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.SHR]:          { name: 'SHR', gas: 3, stackIn: 2, stackOut: 1 },
+  [OPCODES.SAR]:          { name: 'SAR', gas: 3, stackIn: 2, stackOut: 1 },
+
+  [OPCODES.ADDRESS]:      { name: 'ADDRESS', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.BALANCE]:      { name: 'BALANCE', gas: 100, stackIn: 1, stackOut: 1 },
+  [OPCODES.ORIGIN]:       { name: 'ORIGIN', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.CALLER]:       { name: 'CALLER', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.CALLVALUE]:    { name: 'CALLVALUE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.CALLDATALOAD]: { name: 'CALLDATALOAD', gas: 3, stackIn: 1, stackOut: 1 },
+  [OPCODES.CALLDATASIZE]: { name: 'CALLDATASIZE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.CALLDATACOPY]: { name: 'CALLDATACOPY', gas: 3, stackIn: 3, stackOut: 0 },
+  [OPCODES.CODESIZE]:     { name: 'CODESIZE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.CODECOPY]:     { name: 'CODECOPY', gas: 3, stackIn: 3, stackOut: 0 },
+  [OPCODES.GASPRICE]:     { name: 'GASPRICE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.EXTCODESIZE]:  { name: 'EXTCODESIZE', gas: 100, stackIn: 1, stackOut: 1 },
+  [OPCODES.EXTCODECOPY]:  { name: 'EXTCODECOPY', gas: 100, stackIn: 4, stackOut: 0 },
+  [OPCODES.RETURNDATASIZE]: { name: 'RETURNDATASIZE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.RETURNDATACOPY]: { name: 'RETURNDATACOPY', gas: 3, stackIn: 3, stackOut: 0 },
+  [OPCODES.EXTCODEHASH]:  { name: 'EXTCODEHASH', gas: 100, stackIn: 1, stackOut: 1 },
+  [OPCODES.BLOCKHASH]:    { name: 'BLOCKHASH', gas: 20, stackIn: 1, stackOut: 1 },
+  [OPCODES.COINBASE]:     { name: 'COINBASE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.TIMESTAMP]:    { name: 'TIMESTAMP', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.NUMBER]:       { name: 'NUMBER', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.DIFFICULTY]:   { name: 'DIFFICULTY', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.GASLIMIT]:     { name: 'GASLIMIT', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.CHAINID]:      { name: 'CHAINID', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.SELFBALANCE]:  { name: 'SELFBALANCE', gas: 5, stackIn: 0, stackOut: 1 },
+  [OPCODES.BASEFEE]:      { name: 'BASEFEE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.BLOBHASH]:     { name: 'BLOBHASH', gas: 3, stackIn: 1, stackOut: 1 },
+  [OPCODES.BLOBBASEFEE]:  { name: 'BLOBBASEFEE', gas: 2, stackIn: 0, stackOut: 1 },
+
+  [OPCODES.POP]:          { name: 'POP', gas: 2, stackIn: 1, stackOut: 0 },
+  [OPCODES.PUSH0]:        { name: 'PUSH0', gas: 2, stackIn: 0, stackOut: 1 },
+
+  [OPCODES.MLOAD]:        { name: 'MLOAD', gas: 3, stackIn: 1, stackOut: 1 },
+  [OPCODES.MSTORE]:       { name: 'MSTORE', gas: 3, stackIn: 2, stackOut: 0 },
+  [OPCODES.MSTORE8]:      { name: 'MSTORE8', gas: 3, stackIn: 2, stackOut: 0 },
+  [OPCODES.MSIZE]:        { name: 'MSIZE', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.MCOPY]:        { name: 'MCOPY', gas: 3, stackIn: 3, stackOut: 0 },
+
+  [OPCODES.SLOAD]:        { name: 'SLOAD', gas: 100, stackIn: 1, stackOut: 1 },
+  [OPCODES.SSTORE]:       { name: 'SSTORE', gas: 100, stackIn: 2, stackOut: 0 },
+
+  [OPCODES.JUMP]:         { name: 'JUMP', gas: 8, stackIn: 1, stackOut: 0 },
+  [OPCODES.JUMPI]:        { name: 'JUMPI', gas: 10, stackIn: 2, stackOut: 0 },
+  [OPCODES.JUMPDEST]:     { name: 'JUMPDEST', gas: 1, stackIn: 0, stackOut: 0 },
+
+  [OPCODES.PC]:           { name: 'PC', gas: 2, stackIn: 0, stackOut: 1 },
+  [OPCODES.GAS]:          { name: 'GAS', gas: 2, stackIn: 0, stackOut: 1 },
+
+  [OPCODES.LOG0]:         { name: 'LOG0', gas: 375, stackIn: 2, stackOut: 0 },
+  [OPCODES.LOG1]:         { name: 'LOG1', gas: 750, stackIn: 3, stackOut: 0 },
+  [OPCODES.LOG2]:         { name: 'LOG2', gas: 1125, stackIn: 4, stackOut: 0 },
+  [OPCODES.LOG3]:         { name: 'LOG3', gas: 1500, stackIn: 5, stackOut: 0 },
+  [OPCODES.LOG4]:         { name: 'LOG4', gas: 1875, stackIn: 6, stackOut: 0 },
+
+  [OPCODES.RETURN]:       { name: 'RETURN', gas: 0, stackIn: 2, stackOut: 0 },
+  [OPCODES.INVALID]:      { name: 'INVALID', gas: 0, stackIn: 0, stackOut: 0 },
+};
 
 // PUSH opcodes (0x60 - 0x7f)
 export function isPush(opcode: number): boolean {
