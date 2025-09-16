@@ -407,7 +407,7 @@ export function compile(bytecode: Uint8Array): Schedule | InvalidOpcodeError {
           nextOpcode === OPCODES.AND ? (synth as any).PUSH_AND_INLINE :
           nextOpcode === OPCODES.OR  ? (synth as any).PUSH_OR_INLINE :
           (synth as any).PUSH_XOR_INLINE;
-        items.push({ kind: 'handler', handler: fusedHandler, nextCursor: -1, opcode: nextOpcode, pc: nextPc });
+        items.push({ kind: 'handler', handler: fusedHandler, nextCursor: -1, opcode: nextOpcode, pc });
         if (pushSize <= 8) {
           items.push({ kind: 'inline', data: { value, n: pushSize } });
         } else {
@@ -423,7 +423,7 @@ export function compile(bytecode: Uint8Array): Schedule | InvalidOpcodeError {
         const handlerIndex = items.length;
         handlerIndices.push(handlerIndex);
         const fusedHandler = nextOpcode === OPCODES.JUMP ? synth.PUSH_JUMP_INLINE : synth.PUSH_JUMPI_INLINE;
-        items.push({ kind: 'handler', handler: fusedHandler, nextCursor: -1, opcode: nextOpcode, pc: nextPc });
+        items.push({ kind: 'handler', handler: fusedHandler, nextCursor: -1, opcode: nextOpcode, pc });
         if (pushSize <= 8) {
           items.push({ kind: 'inline', data: { value, n: pushSize } });
         } else {
