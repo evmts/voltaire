@@ -4,6 +4,7 @@ const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
+const SelfDestructRecord = @import("../frame/call_result.zig").SelfDestructRecord;
 
 /// Error type for SelfDestruct operations
 pub const StateError = error{OutOfMemory};
@@ -46,13 +47,29 @@ pub const SelfDestruct = struct {
         self.destructions.deinit();
     }
 
-    /// Transfer ownership of this SelfDestruct to the caller
-    /// After calling this, the original SelfDestruct should not be used
-    pub fn to_owned(self: SelfDestruct) SelfDestruct {
-        return SelfDestruct{
-            .destructions = self.destructions,
-            .allocator = self.allocator,
-        };
+    /// Convert the internal HashMap to an owned slice of SelfDestructRecord for CallResult
+    /// Returns an allocated slice that the caller must eventually free
+    pub fn toOwnedSlice(self: *SelfDestruct, allocator: std.mem.Allocator) ![]const SelfDestructRecord {
+        // Early return for empty case
+        if (self.destructions.count() == 0) {
+            return &.{};
+        }
+
+        // Use ArrayList for efficient single-pass collection (idiomatic Zig pattern)
+        var list = std.ArrayList(SelfDestructRecord){};
+        errdefer list.deinit(allocator); // Clean up on error
+        
+        // Single iteration through HashMap
+        var iter = self.iterator();
+        while (iter.next()) |entry| {
+            try list.append(allocator, SelfDestructRecord{
+                .contract = entry.key_ptr.*,
+                .beneficiary = entry.value_ptr.*,
+            });
+        }
+        
+        // Transfer ownership to caller
+        return try list.toOwnedSlice(allocator);
     }
 
     /// Mark a contract for destruction

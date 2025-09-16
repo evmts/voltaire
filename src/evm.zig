@@ -371,7 +371,14 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
 
             self.logs = .empty;
-            result.selfdestructs = &.{};
+            // Extract self-destruct records if self-destruct is enabled
+            // EIP-6780 restricts SELFDESTRUCT behavior in Cancun+
+            if (comptime self.eips.eip_6780_enabled) {
+                result.selfdestructs = self.self_destruct.toOwnedSlice(self.allocator) catch |err| {
+                    log.err("Failed to extract self-destruct records: {}", .{err});
+                    return CallResult.failure(result.gas_left);
+                };
+            }
             result.accessed_addresses = &.{};
             result.accessed_storage = &.{};
             self.self_destruct.clear();
@@ -457,6 +464,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
+                    // TODO: Handle allocation errors as special case - should revert snapshot properly
                     const out = self.allocator.alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
                         return PreflightResult{ .precompile_result = CallResult.failure(0) };
@@ -486,6 +494,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
+                    // TODO: Handle allocation errors as special case - should revert snapshot properly
                     const out = self.allocator.alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
                         return PreflightResult{ .precompile_result = CallResult.failure(0) };
@@ -1030,6 +1039,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
                     const out_len = frame.output.len;
                     const out_copy = if (out_len > 0) blk: {
+                        // TODO: Handle allocation errors as special case - should revert snapshot properly
                         const buf = try self.allocator.alloc(u8, out_len);
                         @memcpy(buf, frame.output);
                         break :blk buf;
@@ -1052,6 +1062,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
             const out_items = frame.output;
             const out_buf = if (out_items.len > 0) blk: {
+                // TODO: Handle allocation errors as special case - should revert snapshot properly
                 const b = try self.allocator.alloc(u8, out_items.len);
                 @memcpy(b, out_items);
                 break :blk b;
@@ -1161,6 +1172,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // EIP-214: Prevent log emission in static context
             if (!eips.Eips.is_log_emission_allowed(self.is_static_context())) return;
 
+            // TODO: Handle allocation errors as special case - should revert snapshot properly
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
 
