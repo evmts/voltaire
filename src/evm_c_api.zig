@@ -4,6 +4,7 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
+const log = std.log.scoped(.c_api);
 
 // Import types from evm module
 const DefaultEvm = evm.DefaultEvm;
@@ -1109,8 +1110,9 @@ export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     const handlers = &FrameType.opcode_handlers;
     
     // Create dispatch schedule
-    var schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch {
+    var schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch |err| {
         const err_msg = "Error: Failed to create dispatch schedule\n";
+        log.err("Failed to create dispatch schedule: {}", .{err});
         if (buffer_len == 0) return err_msg.len + 1;
         const copy_len = @min(err_msg.len, buffer_len - 1);
         @memcpy(buffer[0..copy_len], err_msg[0..copy_len]);

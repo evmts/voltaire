@@ -32,7 +32,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
 # Build the Zig library if needed
-if [ ! -f "zig-out/lib/libguillotine.dylib" ] && [ ! -f "zig-out/lib/libguillotine.so" ]; then
+if [ ! -f "zig-out/lib/libguillotine_ffi.dylib" ] && [ ! -f "zig-out/lib/libguillotine_ffi.so" ]; then
     echo -e "${YELLOW}Building Guillotine library...${NC}"
     zig build
     if [ $? -eq 0 ]; then
@@ -49,11 +49,11 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     export DYLD_LIBRARY_PATH="${SCRIPT_DIR}/zig-out/lib:${DYLD_LIBRARY_PATH}"
-    LIB_FILE="zig-out/lib/libguillotine.dylib"
+    LIB_FILE="zig-out/lib/libguillotine_ffi.dylib"
 else
     # Linux
     export LD_LIBRARY_PATH="${SCRIPT_DIR}/zig-out/lib:${LD_LIBRARY_PATH}"
-    LIB_FILE="zig-out/lib/libguillotine.so"
+    LIB_FILE="zig-out/lib/libguillotine_ffi.so"
 fi
 
 # Check if library exists
