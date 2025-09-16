@@ -1262,6 +1262,31 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             defer output.deinit(allocator);
 
             // Add new colors for different instruction categories
+            // Helper function to calculate fusion instruction span
+            const getFusionInstructionSpan = struct {
+                fn get(fusion_data: OpcodeData) PcType {
+                return switch (fusion_data) {
+                    // 2-opcode fusions: PUSH + op (simplified - assume most are PUSH1)
+                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion,
+                    .push_and_fusion, .push_or_fusion, .push_xor_fusion,
+                    .push_jump_fusion, .push_jumpi_fusion,
+                    .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => 3, // PUSH1 + data + op
+                    // 3-opcode fusions
+                    .push_dup3_add, .push_add_dup1, .iszero_jumpi,
+                    .dup2_mstore_push, .dup3_add_mstore, .swap1_dup2_add => 3,
+                    // 4-opcode fusion
+                    .function_dispatch => 4,
+                    // Multi-push/pop
+                    .multi_push => |mp| mp.original_length,
+                    .multi_pop => |mp| mp.count,
+                    // Special patterns
+                    .callvalue_check => 3,
+                    .push0_revert => 2,
+                    else => 1,
+                };
+                }
+            }.get;
+            
             const InstructionColors = struct {
                 const push = Colors.blue;
                 const arithmetic = Colors.cyan;
@@ -1282,15 +1307,88 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             try output.writer(allocator).print("{s}Length: {} bytes{s}\n", .{ Colors.dim, self.runtime_code.len, Colors.reset });
             try output.writer(allocator).print("{s}Legend: {s}{s}●{s}=JUMPDEST {s}{s}⚡{s}=Fusion{s}\n\n", .{ 
                 Colors.dim, 
-                InstructionColors.jumpdest_bg, Colors.white, Colors.reset,
+                InstructionColors.jumpdest_bg, Colors.black, Colors.reset,
                 Colors.bg_green, Colors.black, Colors.reset,
                 Colors.reset
             });
             
             // Column headers
-            try output.writer(allocator).print("{s} #  | PC   |{s} Hex                     | Opcode         | Details\n", .{ Colors.bold, Colors.reset });
-            try output.writer(allocator).print("{s}----|------|--------------------------|----------------|-------------------------------------------{s}\n", .{ Colors.dim, Colors.reset });
+            try output.writer(allocator).print("{s} #  | PC   | Hex                     | Opcode         | Jump   | Details{s}\n", .{ Colors.bold, Colors.reset });
+            try output.writer(allocator).print("{s}----|------|-------------------------|----------------|--------|-------------------------------------------{s}\n", .{ Colors.dim, Colors.reset });
 
+            // First pass: collect all JUMPs, JUMPIs and their targets
+            var jump_map = std.ArrayList(struct { from_pc: PcType, to_pc: ?PcType, is_conditional: bool, line_from: u32, line_to: ?u32 }){};            
+            defer jump_map.deinit(allocator);
+            var line_pc_map = std.ArrayList(struct { pc: PcType, line: u32 }){};            
+            defer line_pc_map.deinit(allocator);
+            
+            // First pass - build line/pc mapping
+            var scan_pc: PcType = 0;
+            var scan_line: u32 = 1;
+            while (scan_pc < self.runtime_code.len) {
+                try line_pc_map.append(allocator, .{ .pc = scan_pc, .line = scan_line });
+                const op = self.runtime_code[scan_pc];
+                const size: PcType = if (op >= 0x60 and op <= 0x7f) op - 0x5f + 1 else 1;
+                scan_pc += size;
+                scan_line += 1;
+            }
+            
+            // Find JUMPs and their targets
+            scan_pc = 0;
+            scan_line = 1;
+            while (scan_pc < self.runtime_code.len) {
+                const op = self.runtime_code[scan_pc];
+                
+                // Check for JUMP or JUMPI preceded by PUSH
+                if ((op == 0x56 or op == 0x57) and scan_pc > 0) {
+                    // Look for preceding PUSH to get the jump target
+                    var target: ?PcType = null;
+                    var check_pc = if (scan_pc > 0) scan_pc - 1 else 0;
+                    
+                    // Search backwards for a PUSH instruction
+                    while (check_pc > 0 and scan_pc - check_pc < 33) : (check_pc -= 1) {
+                        const prev_op = self.runtime_code[check_pc];
+                        if (prev_op >= 0x60 and prev_op <= 0x7f) {
+                            // Found a PUSH, extract the value
+                            const push_size = prev_op - 0x5f;
+                            if (check_pc + 1 + push_size == scan_pc) {
+                                // This PUSH provides the value for our JUMP
+                                var value: PcType = 0;
+                                for (check_pc + 1..check_pc + 1 + push_size) |i| {
+                                    value = (value << 8) | self.runtime_code[i];
+                                }
+                                target = value;
+                                break;
+                            }
+                        }
+                        if (check_pc == 0) break;
+                    }
+                    
+                    // Find line number for target
+                    var target_line: ?u32 = null;
+                    if (target) |t| {
+                        for (line_pc_map.items) |mapping| {
+                            if (mapping.pc == t) {
+                                target_line = mapping.line;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    try jump_map.append(allocator, .{
+                        .from_pc = scan_pc,
+                        .to_pc = target,
+                        .is_conditional = op == 0x57,
+                        .line_from = scan_line,
+                        .line_to = target_line,
+                    });
+                }
+                
+                const size: PcType = if (op >= 0x60 and op <= 0x7f) op - 0x5f + 1 else 1;
+                scan_pc += size;
+                scan_line += 1;
+            }
+            
             var pc: PcType = 0;
             var line_num: u32 = 1;
 
@@ -1302,24 +1400,11 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 
                 // PC address column
                 try output.writer(allocator).print("{s}{x:0>4}{s} | ", .{ Colors.cyan, pc, Colors.reset });
-                
+
                 // Check if this is a jump destination or fusion candidate
                 const is_jumpdest = self.isValidJumpDest(pc);
                 const is_fusion = self.packed_bitmap[pc].is_fusion_candidate;
                 
-                // Special marker for JUMPDEST/JUMP/JUMPI/Fusion
-                if (is_jumpdest) {
-                    try output.writer(allocator).print("{s}{s}●{s} ", .{ InstructionColors.jumpdest_bg, Colors.white, Colors.reset });
-                } else if (opcode_byte == 0x56) { // JUMP
-                    try output.writer(allocator).print("  ", .{});
-                } else if (opcode_byte == 0x57) { // JUMPI
-                    try output.writer(allocator).print("  ", .{});
-                } else if (is_fusion) {
-                    try output.writer(allocator).print("{s}{s}⚡{s}", .{ Colors.bg_green, Colors.black, Colors.reset });
-                } else {
-                    try output.writer(allocator).print("  ", .{});
-                }
-
                 // Raw hex bytes (show opcode + data for PUSH instructions)
                 // Calculate instruction size based on opcode
                 const instruction_size: usize = blk: {
@@ -1334,6 +1419,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 var hex_output = std.ArrayListAligned(u8, null){};
                 defer hex_output.deinit(allocator);
 
+                // Add marker before hex if needed
+                if (is_jumpdest) {
+                    try hex_output.writer(allocator).print("{s}{s}●{s}", .{ InstructionColors.jumpdest_bg, Colors.black, Colors.reset });
+                } else if (is_fusion) {
+                    try hex_output.writer(allocator).print("{s}{s}⚡{s}", .{ Colors.bg_green, Colors.black, Colors.reset });
+                }
+
                 for (0..instruction_size) |i| {
                     if (pc + i < self.runtime_code.len) {
                         try hex_output.writer(allocator).print("{x:0>2}", .{self.runtime_code[pc + i]});
@@ -1343,7 +1435,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Pad hex to fixed width for alignment
                 const hex_str = hex_output.items;
-                try output.writer(allocator).print("{s}{s:<24}{s} ", .{ Colors.dim, hex_str, Colors.reset });
+                try output.writer(allocator).print("{s}{s:<23}{s} | ", .{ Colors.dim, hex_str, Colors.reset });
 
                 // Parse and format the instruction
                 if (std.meta.intToEnum(Opcode, opcode_byte)) |opcode| {
@@ -1376,17 +1468,13 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                             }
                         },
                         .JUMPDEST => {
-                            try output.writer(allocator).print("{s}{s}{s:<12}{s}", .{ InstructionColors.jumpdest_bg, Colors.white, @tagName(opcode), Colors.reset });
-                            // Show PC as potential jump target
-                            try output.writer(allocator).print(" {s}[target: PC={d}]{s}", .{ Colors.bright_green, pc, Colors.reset });
+                            try output.writer(allocator).print("{s}{s}{s:<12}{s}", .{ InstructionColors.jumpdest_bg, Colors.black, @tagName(opcode), Colors.reset });
                         },
                         .JUMP => {
                             try output.writer(allocator).print("{s}{s:<12}{s}", .{ InstructionColors.jump_yellow, @tagName(opcode), Colors.reset });
-                            try output.writer(allocator).print(" {s}[unconditional jump]{s}", .{ InstructionColors.jump_yellow, Colors.reset });
                         },
                         .JUMPI => {
                             try output.writer(allocator).print("{s}{s:<12}{s}", .{ InstructionColors.jump_gold, @tagName(opcode), Colors.reset });
-                            try output.writer(allocator).print(" {s}[conditional jump]{s}", .{ InstructionColors.jump_gold, Colors.reset });
                         },
                         .STOP, .RETURN, .REVERT, .INVALID, .SELFDESTRUCT => {
                             try output.writer(allocator).print("{s}{s:<12}{s}", .{ InstructionColors.flow_control, @tagName(opcode), Colors.reset });
@@ -1421,46 +1509,95 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                         },
                     }
 
+                } else |_| {
+                    // Invalid opcode
+                    try output.writer(allocator).print("{s}INVALID(0x{x:0>2}){s}", .{ Colors.bright_red, opcode_byte, Colors.reset });
+                }
+                
+                // Jump visualization column
+                try output.writer(allocator).print(" | ", .{});
+                
+                // Check if this line has a jump connection
+                var jump_visual = std.ArrayListAligned(u8, null){};
+                defer jump_visual.deinit(allocator);
+                
+                // Find if this line is part of a jump
+                for (jump_map.items) |jump| {
+                    if (jump.line_from == line_num) {
+                        // This is where a jump originates
+                        if (jump.to_pc) |target| {
+                            if (jump.line_to) |target_line| {
+                                const color = if (jump.is_conditional) InstructionColors.jump_gold else InstructionColors.jump_yellow;
+                                if (target_line > line_num) {
+                                    try jump_visual.writer(allocator).print("{s}┐→{d}{s}", .{ color, target, Colors.reset });
+                                } else {
+                                    try jump_visual.writer(allocator).print("{s}┘→{d}{s}", .{ color, target, Colors.reset });
+                                }
+                            } else {
+                                try jump_visual.writer(allocator).print("{s}→?{s}", .{ Colors.red, Colors.reset });
+                            }
+                        }
+                    } else if (jump.line_to) |target_line| {
+                        if (target_line == line_num) {
+                            // This is a jump destination
+                            const color = InstructionColors.jumpdest_bg;
+                            try jump_visual.writer(allocator).print("{s}←●{s}", .{ color, Colors.reset });
+                        }
+                    }
+                }
+                
+                try output.writer(allocator).print("{s:<6} | ", .{jump_visual.items});
+                
+                // Details column (gas cost, stack effects, etc.)
+                if (std.meta.intToEnum(Opcode, opcode_byte)) |opcode| {
+                    const opcode_info = opcode_data.OPCODE_INFO[opcode_byte];
+                    
+                    // Special details for specific opcodes
+                    if (opcode == .JUMPDEST) {
+                        try output.writer(allocator).print("{s}[target: PC={d}]{s} ", .{ Colors.bright_green, pc, Colors.reset });
+                    } else if (opcode == .JUMP) {
+                        try output.writer(allocator).print("{s}[unconditional jump]{s} ", .{ InstructionColors.jump_yellow, Colors.reset });
+                    } else if (opcode == .JUMPI) {
+                        try output.writer(allocator).print("{s}[conditional jump]{s} ", .{ InstructionColors.jump_gold, Colors.reset });
+                    }
+                    
                     // Gas cost
-                    try output.writer(allocator).print(" {s}[gas: {}]{s}", .{ Colors.dim, opcode_info.gas_cost, Colors.reset });
+                    try output.writer(allocator).print("{s}[gas: {}]{s}", .{ Colors.dim, opcode_info.gas_cost, Colors.reset });
 
                     // Stack effects
                     if (opcode_info.stack_inputs > 0 or opcode_info.stack_outputs > 0) {
                         try output.writer(allocator).print(" {s}[stack: -{}, +{}]{s}", .{ Colors.dim, opcode_info.stack_inputs, opcode_info.stack_outputs, Colors.reset });
                     }
-                } else |_| {
-                    // Invalid opcode
-                    try output.writer(allocator).print("{s}INVALID(0x{x:0>2}){s}", .{ Colors.bright_red, opcode_byte, Colors.reset });
                 }
 
                 // Check for fusion patterns and show what they fuse into
                 if (self.packed_bitmap[pc].is_fusion_candidate) {
                     const fusion_data = self.getFusionData(pc);
                     switch (fusion_data) {
-                        .push_add_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+ADD{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_mul_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+MUL{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_sub_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+SUB{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_mstore_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+MSTORE{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_mstore8_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+MSTORE8{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_mload_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+MLOAD{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_jump_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+JUMP{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_jumpi_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+JUMPI{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_and_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+AND{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_or_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+OR{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_xor_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+XOR{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_div_fusion => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+DIV{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_dup3_add => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+DUP3+ADD{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push_add_dup1 => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH+ADD+DUP1{s}", .{ Colors.bright_green, Colors.reset }),
-                        .multi_push => |mp| try output.writer(allocator).print(" {s}⚡ FUSES: {}xPUSH{s}", .{ Colors.bright_green, mp.count, Colors.reset }),
-                        .multi_pop => |mp| try output.writer(allocator).print(" {s}⚡ FUSES: {}xPOP{s}", .{ Colors.bright_green, mp.count, Colors.reset }),
-                        .iszero_jumpi => try output.writer(allocator).print(" {s}⚡ FUSES: ISZERO+JUMPI{s}", .{ Colors.bright_green, Colors.reset }),
-                        .dup2_mstore_push => try output.writer(allocator).print(" {s}⚡ FUSES: DUP2+MSTORE+PUSH{s}", .{ Colors.bright_green, Colors.reset }),
-                        .function_dispatch => try output.writer(allocator).print(" {s}⚡ FUSES: FUNCTION_DISPATCH{s}", .{ Colors.bright_green, Colors.reset }),
-                        .dup3_add_mstore => try output.writer(allocator).print(" {s}⚡ FUSES: DUP3+ADD+MSTORE{s}", .{ Colors.bright_green, Colors.reset }),
-                        .swap1_dup2_add => try output.writer(allocator).print(" {s}⚡ FUSES: SWAP1+DUP2+ADD{s}", .{ Colors.bright_green, Colors.reset }),
-                        .callvalue_check => try output.writer(allocator).print(" {s}⚡ FUSES: CALLVALUE_CHECK{s}", .{ Colors.bright_green, Colors.reset }),
-                        .push0_revert => try output.writer(allocator).print(" {s}⚡ FUSES: PUSH0+REVERT{s}", .{ Colors.bright_green, Colors.reset }),
-                        .mload_swap1_dup2 => try output.writer(allocator).print(" {s}⚡ FUSES: MLOAD+SWAP1+DUP2{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_add_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+ADD{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_mul_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+MUL{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_sub_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+SUB{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_mstore_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+MSTORE{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_mstore8_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+MSTORE8{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_mload_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+MLOAD{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_jump_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+JUMP{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_jumpi_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+JUMPI{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_and_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+AND{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_or_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+OR{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_xor_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+XOR{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_div_fusion => try output.writer(allocator).print(" {s}⚡ PUSH+DIV{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_dup3_add => try output.writer(allocator).print(" {s}⚡ PUSH+DUP3+ADD{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push_add_dup1 => try output.writer(allocator).print(" {s}⚡ PUSH+ADD+DUP1{s}", .{ Colors.bright_green, Colors.reset }),
+                        .multi_push => |mp| try output.writer(allocator).print(" {s}⚡ {}xPUSH{s}", .{ Colors.bright_green, mp.count, Colors.reset }),
+                        .multi_pop => |mp| try output.writer(allocator).print(" {s}⚡ {}xPOP{s}", .{ Colors.bright_green, mp.count, Colors.reset }),
+                        .iszero_jumpi => try output.writer(allocator).print(" {s}⚡ ISZERO+JUMPI{s}", .{ Colors.bright_green, Colors.reset }),
+                        .dup2_mstore_push => try output.writer(allocator).print(" {s}⚡ DUP2+MSTORE+PUSH{s}", .{ Colors.bright_green, Colors.reset }),
+                        .function_dispatch => try output.writer(allocator).print(" {s}⚡ FUNCTION_DISPATCH{s}", .{ Colors.bright_green, Colors.reset }),
+                        .dup3_add_mstore => try output.writer(allocator).print(" {s}⚡ DUP3+ADD+MSTORE{s}", .{ Colors.bright_green, Colors.reset }),
+                        .swap1_dup2_add => try output.writer(allocator).print(" {s}⚡ SWAP1+DUP2+ADD{s}", .{ Colors.bright_green, Colors.reset }),
+                        .callvalue_check => try output.writer(allocator).print(" {s}⚡ CALLVALUE_CHECK{s}", .{ Colors.bright_green, Colors.reset }),
+                        .push0_revert => try output.writer(allocator).print(" {s}⚡ PUSH0+REVERT{s}", .{ Colors.bright_green, Colors.reset }),
+                        .mload_swap1_dup2 => try output.writer(allocator).print(" {s}⚡ MLOAD+SWAP1+DUP2{s}", .{ Colors.bright_green, Colors.reset }),
                         else => {},
                     }
                 }
