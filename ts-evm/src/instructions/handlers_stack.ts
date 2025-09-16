@@ -1,5 +1,10 @@
 import { Word, wordToBytes32 } from '../types';
-import { stackPop, stackPush, stackDup, stackSwap } from '../stack/stack';
+import { 
+  stackPop, 
+  stackPush, 
+  stackDupN as stackDup, 
+  stackSwapN as stackSwap 
+} from '../stack/stack';
 import { next } from '../interpreter';
 import type { Frame } from '../frame/frame';
 import type { Tail } from '../types_runtime';
