@@ -16,6 +16,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
+        const config = FrameType.frame_config;
         const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
 
         /// Continue to next instruction with afterInstruction tracking
@@ -51,7 +52,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn address(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.ADDRESS, cursor);
             const addr_u256 = to_u256(self.contract_address);
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ADDRESS requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ADDRESS requires stack space");
+            }
             self.stack.push_unsafe(addr_u256);
             return next_instruction(self, cursor, .ADDRESS);
         }
@@ -60,7 +63,9 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Stack: [address] → [balance]
         pub fn balance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.BALANCE, cursor);
-            self.getTracer().assert(self.stack.size() >= 1, "BALANCE requires 1 stack item");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 1, "BALANCE requires 1 stack item");
+            }
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
 
@@ -93,7 +98,9 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.ORIGIN, cursor);
             const tx_origin = self.getEvm().get_tx_origin();
             const origin_u256 = to_u256(tx_origin);
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ORIGIN requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ORIGIN requires stack space");
+            }
             self.stack.push_unsafe(origin_u256);
             return next_instruction(self, cursor, .ORIGIN);
         }
@@ -103,7 +110,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn caller(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLER, cursor);
             const caller_u256 = to_u256(self.caller);
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLER requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLER requires stack space");
+            }
             self.stack.push_unsafe(caller_u256);
             return next_instruction(self, cursor, .CALLER);
         }
@@ -113,7 +122,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn callvalue(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLVALUE, cursor);
             const value = self.value;
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLVALUE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLVALUE requires stack space");
+            }
             self.stack.push_unsafe(value);
             return next_instruction(self, cursor, .CALLVALUE);
         }
@@ -123,7 +134,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn calldataload(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLDATALOAD, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 1, "CALLDATALOAD requires 1 stack item");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 1, "CALLDATALOAD requires 1 stack item");
+            }
             const offset = self.stack.peek_unsafe();
             // Convert u256 to usize, checking for overflow
             if (offset > std.math.maxInt(usize)) {
@@ -159,7 +172,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const calldata = self.calldata();
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLDATASIZE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLDATASIZE requires stack space");
+            }
             self.stack.push_unsafe(calldata_len);
             const op_data = dispatch.getOpData(.CALLDATASIZE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -170,7 +185,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn calldatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLDATACOPY, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 3, "CALLDATACOPY requires 3 stack items");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 3, "CALLDATACOPY requires 3 stack items");
+            }
             const length = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Second from top
             const dest_offset = self.stack.pop_unsafe(); // Third from top
@@ -232,7 +249,9 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CODESIZE, cursor);
             // Get codesize from frame's code
             const bytecode_len = @as(WordType, @intCast(self.code.len));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CODESIZE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CODESIZE requires stack space");
+            }
             self.stack.push_unsafe(bytecode_len);
             const op_data = dispatch_opcode_data.getOpData(.CODESIZE, Dispatch, Dispatch.Item, cursor);
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -243,7 +262,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn codecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CODECOPY, cursor);
             // EVM stack order: [destOffset, offset, length] with dest on top
-            self.getTracer().assert(self.stack.size() >= 3, "CODECOPY requires 3 stack items");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 3, "CODECOPY requires 3 stack items");
+            }
             const dest_offset = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Next
             const length = self.stack.pop_unsafe(); // Next
@@ -307,7 +328,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const gas_price = self.getEvm().get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASPRICE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASPRICE requires stack space");
+            }
             self.stack.push_unsafe(gas_price_truncated);
             const op_data = dispatch.getOpData(.GASPRICE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -318,7 +341,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .EXTCODESIZE);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 1, "EXTCODESIZE requires 1 stack item");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 1, "EXTCODESIZE requires 1 stack item");
+            }
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
 
@@ -347,7 +372,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .EXTCODECOPY);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 4, "EXTCODECOPY requires 4 stack items");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 4, "EXTCODECOPY requires 4 stack items");
+            }
             const length = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Second from top
             const dest_offset = self.stack.pop_unsafe(); // Third from top
@@ -423,7 +450,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn extcodehash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .EXTCODEHASH);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 1, "EXTCODEHASH requires 1 stack item");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 1, "EXTCODEHASH requires 1 stack item");
+            }
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
 
@@ -480,7 +509,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Return data is stored in the frame's output field after a call
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(self.output.len))));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
+            }
             self.stack.push_unsafe(return_data_len);
             const op_data = dispatch.getOpData(.RETURNDATASIZE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -492,7 +523,9 @@ pub fn Handlers(comptime FrameType: type) type {
             log.before_instruction(self, .RETURNDATACOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             // EVM stack order: [destOffset, offset, length] with dest on top
-            self.getTracer().assert(self.stack.size() >= 3, "RETURNDATACOPY requires 3 stack items");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 3, "RETURNDATACOPY requires 3 stack items");
+            }
             const dest_offset = self.stack.pop_unsafe();
             const offset = self.stack.pop_unsafe();
             const length = self.stack.pop_unsafe();
@@ -565,7 +598,9 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 1, "BLOCKHASH requires 1 stack item");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 1, "BLOCKHASH requires 1 stack item");
+            }
             const block_number = self.stack.peek_unsafe();
             // Cast to u64 - EVM spec says only last 256 blocks are accessible
             const block_number_u64 = @as(u64, @truncate(block_number));
@@ -604,7 +639,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "COINBASE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "COINBASE requires stack space");
+            }
             self.stack.push_unsafe(coinbase_word);
             const op_data = dispatch.getOpData(.COINBASE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -625,7 +662,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "TIMESTAMP requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "TIMESTAMP requires stack space");
+            }
             self.stack.push_unsafe(timestamp_word);
             const op_data = dispatch.getOpData(.TIMESTAMP); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -646,7 +685,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "NUMBER requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "NUMBER requires stack space");
+            }
             self.stack.push_unsafe(block_number_word);
             const op_data = dispatch.getOpData(.NUMBER); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -667,7 +708,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "DIFFICULTY requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "DIFFICULTY requires stack space");
+            }
             self.stack.push_unsafe(difficulty_word);
             const op_data = dispatch.getOpData(.PREVRANDAO); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -688,7 +731,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASLIMIT requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASLIMIT requires stack space");
+            }
             self.stack.push_unsafe(gas_limit_word);
             const op_data = dispatch.getOpData(.GASLIMIT); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -701,7 +746,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CHAINID requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CHAINID requires stack space");
+            }
             self.stack.push_unsafe(chain_id_word);
             const op_data = dispatch.getOpData(.CHAINID); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -714,7 +761,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "SELFBALANCE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "SELFBALANCE requires stack space");
+            }
             self.stack.push_unsafe(balance_word);
             const op_data = dispatch.getOpData(.SELFBALANCE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -727,7 +776,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BASEFEE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BASEFEE requires stack space");
+            }
             self.stack.push_unsafe(base_fee_word);
             const op_data = dispatch.getOpData(.BASEFEE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -738,7 +789,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn blobhash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.BLOBHASH, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 1, "BLOBHASH requires 1 stack item");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() >= 1, "BLOBHASH requires 1 stack item");
+            }
             const index = self.stack.peek_unsafe();
             // Convert u256 to usize for array access
             if (index > std.math.maxInt(usize)) {
@@ -774,7 +827,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const blob_base_fee = block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BLOBBASEFEE requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BLOBBASEFEE requires stack space");
+            }
             self.stack.push_unsafe(blob_base_fee_word);
             const op_data = dispatch.getOpData(.BLOBBASEFEE); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -788,7 +843,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // Note: The gas value pushed should be after the gas for this instruction is consumed
             // The dispatch system handles the gas consumption before calling this handler
             const gas_value = @as(WordType, @max(self.gas_remaining, 0));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
+            }
             self.stack.push_unsafe(gas_value);
             const op_data = dispatch.getOpData(.GAS);
             // Use op_data.next_handler and op_data.next_cursor directly
@@ -802,7 +859,9 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PC requires stack space");
+            if (comptime FrameType.frame_config.enable_tracing) {
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PC requires stack space");
+            }
             self.stack.push_unsafe(op_data.metadata.value);
             return @call(FrameType.getTailCallModifier(), op_data.op_data.next_handler, .{ self, op_data.op_data.next_cursor.cursor });
         }

@@ -38,7 +38,9 @@ pub fn Handlers(comptime FrameType: type) type {
                         3 => .LOG3,
                         4 => .LOG4,
                         else => {
-                            self.getTracer().assert(false, "Invalid topic count for LOG opcode");
+                            if (comptime FrameType.frame_config.enable_tracing) {
+                                self.getTracer().assert(false, "Invalid topic count for LOG opcode");
+                            }
                             unreachable;
                         },
                     };
@@ -47,7 +49,9 @@ pub fn Handlers(comptime FrameType: type) type {
                     // EIP-214: WriteProtection is handled by host interface for static calls
 
                     // LOG0 requires 2 items, LOG1 requires 3, LOG2 requires 4, LOG3 requires 5, LOG4 requires 6
+                if (comptime FrameType.frame_config.enable_tracing) {
                     self.getTracer().assert(self.stack.size() >= 2 + topic_count, "LOG requires sufficient stack items");
+                }
 
                     // Pop offset and length first (they're on top of stack)
                     const offset = self.stack.pop_unsafe();
@@ -173,7 +177,9 @@ pub fn Handlers(comptime FrameType: type) type {
                             return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG4).next_handler, .{ self, dispatch.getOpData(.LOG4).next_cursor.cursor });
                         },
                         else => {
-                            self.getTracer().assert(false, "Invalid topic count for LOG dispatch");
+                            if (comptime FrameType.frame_config.enable_tracing) {
+                                self.getTracer().assert(false, "Invalid topic count for LOG dispatch");
+                            }
                             unreachable;
                         },
                     }
