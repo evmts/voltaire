@@ -57,10 +57,10 @@ pub const FrameConfig = struct {
     /// value = maximum iterations before panic (default for debug/safe builds)
     loop_quota: ?u32 = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 1_000_000 else null,
 
-    /// Enable tracing for execution monitoring and debugging
-    /// true = enable tracing
-    /// false = disable tracing
-    enable_tracing: bool = false,
+    /// Tracer type for execution monitoring and debugging
+    /// null = no tracing (default for release builds)
+    /// type = tracer implementation (e.g., DefaultTracer)
+    TracerType: ?type = null,
 
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
