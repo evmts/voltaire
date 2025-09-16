@@ -1262,30 +1262,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             defer output.deinit(allocator);
 
             // Add new colors for different instruction categories
-            // Helper function to calculate fusion instruction span
-            const getFusionInstructionSpan = struct {
-                fn get(fusion_data: OpcodeData) PcType {
-                return switch (fusion_data) {
-                    // 2-opcode fusions: PUSH + op (simplified - assume most are PUSH1)
-                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion,
-                    .push_and_fusion, .push_or_fusion, .push_xor_fusion,
-                    .push_jump_fusion, .push_jumpi_fusion,
-                    .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => 3, // PUSH1 + data + op
-                    // 3-opcode fusions
-                    .push_dup3_add, .push_add_dup1, .iszero_jumpi,
-                    .dup2_mstore_push, .dup3_add_mstore, .swap1_dup2_add => 3,
-                    // 4-opcode fusion
-                    .function_dispatch => 4,
-                    // Multi-push/pop
-                    .multi_push => |mp| mp.original_length,
-                    .multi_pop => |mp| mp.count,
-                    // Special patterns
-                    .callvalue_check => 3,
-                    .push0_revert => 2,
-                    else => 1,
-                };
-                }
-            }.get;
             
             const InstructionColors = struct {
                 const push = Colors.blue;
@@ -1439,8 +1415,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
 
                 // Parse and format the instruction
                 if (std.meta.intToEnum(Opcode, opcode_byte)) |opcode| {
-                    const opcode_info = opcode_data.OPCODE_INFO[opcode_byte];
-
                     switch (opcode) {
                         .PUSH0 => {
                             // EIP-3855: PUSH0 pushes zero
