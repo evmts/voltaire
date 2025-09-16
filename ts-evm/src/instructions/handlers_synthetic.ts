@@ -268,4 +268,3 @@ export function MULTI_POP_3(f: Frame, cursor: number): Tail {
   if (e instanceof Error) return e;
   return next(f, cursor);
 }
-
