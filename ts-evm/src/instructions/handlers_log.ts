@@ -1,372 +1,103 @@
+import { Word } from '../types';
+import { stackPop } from '../stack/stack';
+import { getSlice } from '../memory/memory';
+import { next } from '../interpreter';
 import type { Frame } from '../frame/frame';
-import { ErrorUnion, createError } from '../errors';
-import type { DispatchItem } from '../preprocessor/dispatch';
-import type { Word } from '../types';
-import { Journal } from '../storage/journal';
-
-// Log operations for event emission
-
-// Gas costs for LOG operations
-const LOG_GAS_COSTS = {
-  LOG_GAS: 375,
-  LOG_TOPIC_GAS: 375,
-  LOG_DATA_GAS: 8 // per byte
-} as const;
-
-// Extended Frame interface for log operations
-export interface FrameWithLogs extends Frame {
-  journal?: Journal;
-  isStatic?: boolean;
-  logs?: LogEntry[];
-}
+import type { Tail } from '../types_runtime';
 
 export interface LogEntry {
-  address: bigint;
+  address: Uint8Array;
   topics: Word[];
   data: Uint8Array;
 }
 
-// LOG0 (0xa0) - Append log record with no topics
-export function log0(frame: FrameWithLogs, _cursor: DispatchItem[]): ErrorUnion | null {
-  if (frame.stack.size() < 2) {
-    return createError('StackUnderflow', 'LOG0 requires 2 stack items');
+function createLog(f: Frame, topicCount: number): LogEntry | Error {
+  const offset = stackPop(f.stack);
+  if (offset instanceof Error) return offset;
+  const length = stackPop(f.stack);
+  if (length instanceof Error) return length;
+  
+  const topics: Word[] = [];
+  for (let i = 0; i < topicCount; i++) {
+    const topic = stackPop(f.stack);
+    if (topic instanceof Error) return topic;
+    topics.push(topic as Word);
   }
   
-  // Check for static call violation
-  if (frame.isStatic) {
-    return createError('StaticCallViolation', 'LOG0 not allowed in static call');
-  }
+  const data = getSlice(f.memory, Number(offset), Number(length));
   
-  const offset = frame.stack.pop();
-  const size = frame.stack.pop();
-  
-  // Calculate gas cost
-  const gasCost = BigInt(LOG_GAS_COSTS.LOG_GAS) + BigInt(size) * BigInt(LOG_GAS_COSTS.LOG_DATA_GAS);
-  if (frame.gasRemaining < gasCost) {
-    return createError('OutOfGas', `LOG0 requires ${gasCost} gas`);
-  }
-  frame.gasRemaining -= gasCost;
-  
-  // Get log data from memory
-  const data = frame.memory.readSlice(Number(offset), Number(size));
-  if (data instanceof Error) {
-    return createError('MemoryError', data.message);
-  }
-  
-  // Create log entry
-  const logEntry: LogEntry = {
-    address: frame.contractAddress,
-    topics: [],
-    data
-  };
-  
-  // Record in journal
-  if (frame.journal) {
-    frame.journal.recordLog(frame.contractAddress, [], data);
-  }
-  
-  // Add to frame logs
-  if (!frame.logs) {
-    frame.logs = [];
-  }
-  frame.logs.push(logEntry);
-  
-  return null;
-}
-
-// LOG1 (0xa1) - Append log record with one topic
-export function log1(frame: FrameWithLogs, _cursor: DispatchItem[]): ErrorUnion | null {
-  if (frame.stack.size() < 3) {
-    return createError('StackUnderflow', 'LOG1 requires 3 stack items');
-  }
-  
-  // Check for static call violation
-  if (frame.isStatic) {
-    return createError('StaticCallViolation', 'LOG1 not allowed in static call');
-  }
-  
-  const offset = frame.stack.pop();
-  const size = frame.stack.pop();
-  const topic0 = frame.stack.pop();
-  
-  // Calculate gas cost
-  const gasCost = BigInt(LOG_GAS_COSTS.LOG_GAS) + 
-                  BigInt(LOG_GAS_COSTS.LOG_TOPIC_GAS) + 
-                  BigInt(size) * BigInt(LOG_GAS_COSTS.LOG_DATA_GAS);
-  if (frame.gasRemaining < gasCost) {
-    return createError('OutOfGas', `LOG1 requires ${gasCost} gas`);
-  }
-  frame.gasRemaining -= gasCost;
-  
-  // Get log data from memory
-  const data = frame.memory.readSlice(Number(offset), Number(size));
-  if (data instanceof Error) {
-    return createError('MemoryError', data.message);
-  }
-  
-  // Create log entry
-  const topics = [topic0];
-  const logEntry: LogEntry = {
-    address: frame.contractAddress,
+  return {
+    address: f.contractAddress,
     topics,
     data
   };
-  
-  // Record in journal
-  if (frame.journal) {
-    frame.journal.recordLog(frame.contractAddress, topics, data);
-  }
-  
-  // Add to frame logs
-  if (!frame.logs) {
-    frame.logs = [];
-  }
-  frame.logs.push(logEntry);
-  
-  return null;
 }
 
-// LOG2 (0xa2) - Append log record with two topics
-export function log2(frame: FrameWithLogs, _cursor: DispatchItem[]): ErrorUnion | null {
-  if (frame.stack.size() < 4) {
-    return createError('StackUnderflow', 'LOG2 requires 4 stack items');
+function emitLog(f: Frame, log: LogEntry): void {
+  // In a real implementation, this would add the log to the transaction's log list
+  // For now, we'll store it on the frame
+  if (!f.logs) {
+    f.logs = [];
   }
-  
-  // Check for static call violation
-  if (frame.isStatic) {
-    return createError('StaticCallViolation', 'LOG2 not allowed in static call');
-  }
-  
-  const offset = frame.stack.pop();
-  const size = frame.stack.pop();
-  const topic0 = frame.stack.pop();
-  const topic1 = frame.stack.pop();
-  
-  // Calculate gas cost
-  const gasCost = BigInt(LOG_GAS_COSTS.LOG_GAS) + 
-                  BigInt(LOG_GAS_COSTS.LOG_TOPIC_GAS) * 2n + 
-                  BigInt(size) * BigInt(LOG_GAS_COSTS.LOG_DATA_GAS);
-  if (frame.gasRemaining < gasCost) {
-    return createError('OutOfGas', `LOG2 requires ${gasCost} gas`);
-  }
-  frame.gasRemaining -= gasCost;
-  
-  // Get log data from memory
-  const data = frame.memory.readSlice(Number(offset), Number(size));
-  if (data instanceof Error) {
-    return createError('MemoryError', data.message);
-  }
-  
-  // Create log entry
-  const topics = [topic0, topic1];
-  const logEntry: LogEntry = {
-    address: frame.contractAddress,
-    topics,
-    data
-  };
-  
-  // Record in journal
-  if (frame.journal) {
-    frame.journal.recordLog(frame.contractAddress, topics, data);
-  }
-  
-  // Add to frame logs
-  if (!frame.logs) {
-    frame.logs = [];
-  }
-  frame.logs.push(logEntry);
-  
-  return null;
+  f.logs.push(log);
 }
 
-// LOG3 (0xa3) - Append log record with three topics
-export function log3(frame: FrameWithLogs, _cursor: DispatchItem[]): ErrorUnion | null {
-  if (frame.stack.size() < 5) {
-    return createError('StackUnderflow', 'LOG3 requires 5 stack items');
+export function LOG0(f: Frame, cursor: number): Tail {
+  if (f.isStatic) {
+    return new Error('Cannot emit logs in static call');
   }
   
-  // Check for static call violation
-  if (frame.isStatic) {
-    return createError('StaticCallViolation', 'LOG3 not allowed in static call');
-  }
+  const log = createLog(f, 0);
+  if (log instanceof Error) return log;
   
-  const offset = frame.stack.pop();
-  const size = frame.stack.pop();
-  const topic0 = frame.stack.pop();
-  const topic1 = frame.stack.pop();
-  const topic2 = frame.stack.pop();
-  
-  // Calculate gas cost
-  const gasCost = BigInt(LOG_GAS_COSTS.LOG_GAS) + 
-                  BigInt(LOG_GAS_COSTS.LOG_TOPIC_GAS) * 3n + 
-                  BigInt(size) * BigInt(LOG_GAS_COSTS.LOG_DATA_GAS);
-  if (frame.gasRemaining < gasCost) {
-    return createError('OutOfGas', `LOG3 requires ${gasCost} gas`);
-  }
-  frame.gasRemaining -= gasCost;
-  
-  // Get log data from memory
-  const data = frame.memory.readSlice(Number(offset), Number(size));
-  if (data instanceof Error) {
-    return createError('MemoryError', data.message);
-  }
-  
-  // Create log entry
-  const topics = [topic0, topic1, topic2];
-  const logEntry: LogEntry = {
-    address: frame.contractAddress,
-    topics,
-    data
-  };
-  
-  // Record in journal
-  if (frame.journal) {
-    frame.journal.recordLog(frame.contractAddress, topics, data);
-  }
-  
-  // Add to frame logs
-  if (!frame.logs) {
-    frame.logs = [];
-  }
-  frame.logs.push(logEntry);
-  
-  return null;
+  emitLog(f, log);
+  return next(f, cursor);
 }
 
-// LOG4 (0xa4) - Append log record with four topics
-export function log4(frame: FrameWithLogs, _cursor: DispatchItem[]): ErrorUnion | null {
-  if (frame.stack.size() < 6) {
-    return createError('StackUnderflow', 'LOG4 requires 6 stack items');
+export function LOG1(f: Frame, cursor: number): Tail {
+  if (f.isStatic) {
+    return new Error('Cannot emit logs in static call');
   }
   
-  // Check for static call violation
-  if (frame.isStatic) {
-    return createError('StaticCallViolation', 'LOG4 not allowed in static call');
-  }
+  const log = createLog(f, 1);
+  if (log instanceof Error) return log;
   
-  const offset = frame.stack.pop();
-  const size = frame.stack.pop();
-  const topic0 = frame.stack.pop();
-  const topic1 = frame.stack.pop();
-  const topic2 = frame.stack.pop();
-  const topic3 = frame.stack.pop();
-  
-  // Calculate gas cost
-  const gasCost = BigInt(LOG_GAS_COSTS.LOG_GAS) + 
-                  BigInt(LOG_GAS_COSTS.LOG_TOPIC_GAS) * 4n + 
-                  BigInt(size) * BigInt(LOG_GAS_COSTS.LOG_DATA_GAS);
-  if (frame.gasRemaining < gasCost) {
-    return createError('OutOfGas', `LOG4 requires ${gasCost} gas`);
-  }
-  frame.gasRemaining -= gasCost;
-  
-  // Get log data from memory
-  const data = frame.memory.readSlice(Number(offset), Number(size));
-  if (data instanceof Error) {
-    return createError('MemoryError', data.message);
-  }
-  
-  // Create log entry
-  const topics = [topic0, topic1, topic2, topic3];
-  const logEntry: LogEntry = {
-    address: frame.contractAddress,
-    topics,
-    data
-  };
-  
-  // Record in journal
-  if (frame.journal) {
-    frame.journal.recordLog(frame.contractAddress, topics, data);
-  }
-  
-  // Add to frame logs
-  if (!frame.logs) {
-    frame.logs = [];
-  }
-  frame.logs.push(logEntry);
-  
-  return null;
+  emitLog(f, log);
+  return next(f, cursor);
 }
 
-// Helper function to encode log for RLP
-export function encodeLog(log: LogEntry): Uint8Array {
-  // This would encode the log in RLP format for inclusion in receipts
-  // For now, return a simple concatenation
-  const parts: Uint8Array[] = [];
-  
-  // Add address (20 bytes)
-  const addressBytes = new Uint8Array(20);
-  let addr = log.address;
-  for (let i = 19; i >= 0; i--) {
-    addressBytes[i] = Number(addr & 0xFFn);
-    addr >>= 8n;
-  }
-  parts.push(addressBytes);
-  
-  // Add topics (each 32 bytes)
-  for (const topic of log.topics) {
-    const topicBytes = new Uint8Array(32);
-    let t = topic;
-    for (let i = 31; i >= 0; i--) {
-      topicBytes[i] = Number(t & 0xFFn);
-      t >>= 8n;
-    }
-    parts.push(topicBytes);
+export function LOG2(f: Frame, cursor: number): Tail {
+  if (f.isStatic) {
+    return new Error('Cannot emit logs in static call');
   }
   
-  // Add data
-  parts.push(log.data);
+  const log = createLog(f, 2);
+  if (log instanceof Error) return log;
   
-  // Concatenate all parts
-  const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const part of parts) {
-    result.set(part, offset);
-    offset += part.length;
-  }
-  
-  return result;
+  emitLog(f, log);
+  return next(f, cursor);
 }
 
-// Function to create bloom filter for logs
-export function createBloomFilter(logs: LogEntry[]): Uint8Array {
-  // Create a 256-byte bloom filter
-  const bloom = new Uint8Array(256);
-  
-  for (const log of logs) {
-    // Add address to bloom
-    addToBloom(bloom, log.address.toString());
-    
-    // Add topics to bloom
-    for (const topic of log.topics) {
-      addToBloom(bloom, topic.toString());
-    }
+export function LOG3(f: Frame, cursor: number): Tail {
+  if (f.isStatic) {
+    return new Error('Cannot emit logs in static call');
   }
   
-  return bloom;
+  const log = createLog(f, 3);
+  if (log instanceof Error) return log;
+  
+  emitLog(f, log);
+  return next(f, cursor);
 }
 
-function addToBloom(bloom: Uint8Array, value: string): void {
-  // Simple bloom filter implementation
-  // In production, this would use proper Keccak256 hashing
-  const hash = simpleHash(value);
+export function LOG4(f: Frame, cursor: number): Tail {
+  if (f.isStatic) {
+    return new Error('Cannot emit logs in static call');
+  }
   
-  // Set 3 bits in the bloom filter
-  for (let i = 0; i < 3; i++) {
-    const bitIndex = (hash + i * 2048) % 2048;
-    const byteIndex = Math.floor(bitIndex / 8);
-    const bitPosition = bitIndex % 8;
-    bloom[byteIndex] |= (1 << bitPosition);
-  }
-}
-
-function simpleHash(value: string): number {
-  // Simple hash function for demo purposes
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = ((hash << 5) - hash) + value.charCodeAt(i);
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash);
+  const log = createLog(f, 4);
+  if (log instanceof Error) return log;
+  
+  emitLog(f, log);
+  return next(f, cursor);
 }

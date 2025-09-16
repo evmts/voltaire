@@ -51,11 +51,11 @@ export function MSTORE(f: Frame, cursor: number): Tail {
 
 // MSTORE8 (0x53) - Store byte to memory
 export function MSTORE8(f: Frame, cursor: number): Tail {
-  const offset = stackPop(f.stack);
-  if (offset instanceof Error) return offset;
-  
   const value = stackPop(f.stack);
   if (value instanceof Error) return value;
+  
+  const offset = stackPop(f.stack);
+  if (offset instanceof Error) return offset;
   
   if (offset > BigInt(Number.MAX_SAFE_INTEGER)) {
     return new Error('Memory offset too large');

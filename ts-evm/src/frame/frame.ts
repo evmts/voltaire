@@ -3,6 +3,7 @@ import { createMemory, Memory } from '../memory/memory';
 import type { Schedule } from '../preprocessor/dispatch';
 import type { Address } from '../types_blockchain';
 import type { Word } from '../types';
+import type { LogEntry } from '../instructions/handlers_log';
 
 export interface Evm {
   // Block context
@@ -27,6 +28,10 @@ export interface Evm {
   getBalance?(address: Address): Word;
   getCode?(address: Address): Uint8Array;
   getCodeHash?(address: Address): Word;
+  
+  // Storage operations
+  getStorageAt?(address: Address, slot: Word): Word;
+  setStorageAt?(address: Address, slot: Word, value: Word): void;
 }
 
 export interface Frame {
@@ -48,6 +53,9 @@ export interface Frame {
   
   // Gas (simplified for now)
   gasRemaining: bigint;
+  
+  // Logs
+  logs?: LogEntry[];
 }
 
 export function createFrame(

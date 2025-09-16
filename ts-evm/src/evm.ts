@@ -6,6 +6,7 @@ import { createFrame, Evm as EvmInterface } from './frame/frame';
 import { interpret } from './interpreter';
 import { Address, BlockInfo, createAddress } from './types_blockchain';
 import { Word } from './types';
+import { Storage, InMemoryStorage } from './storage/storage';
 import * as crypto from 'crypto';
 
 export class ConcreteEvm implements EvmInterface {
@@ -13,6 +14,7 @@ export class ConcreteEvm implements EvmInterface {
   private txOrigin: Address;
   private gasPrice: Word;
   private chainId: Word;
+  private storage: Storage;
   private balances: Map<string, Word>;
   private codes: Map<string, Uint8Array>;
   
@@ -33,6 +35,7 @@ export class ConcreteEvm implements EvmInterface {
     this.txOrigin = config?.txOrigin || createAddress();
     this.gasPrice = config?.gasPrice || 1_000_000_000n;
     this.chainId = config?.chainId || 1n;
+    this.storage = new InMemoryStorage();
     this.balances = new Map();
     this.codes = new Map();
   }
@@ -104,6 +107,15 @@ export class ConcreteEvm implements EvmInterface {
       word = (word << 8n) | BigInt(bytes[i]);
     }
     return word;
+  }
+  
+  // Storage operations
+  getStorageAt(address: Address, slot: Word): Word {
+    return this.storage.get(address, slot);
+  }
+  
+  setStorageAt(address: Address, slot: Word, value: Word): void {
+    this.storage.set(address, slot, value);
   }
 }
 

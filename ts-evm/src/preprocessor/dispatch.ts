@@ -10,6 +10,8 @@ import * as memory from '../instructions/handlers_memory';
 import * as context from '../instructions/handlers_context';
 import * as jump from '../instructions/handlers_jump';
 import * as crypto from '../instructions/handlers_crypto';
+import * as storage from '../instructions/handlers_storage';
+import * as log from '../instructions/handlers_log';
 
 export type Item =
   | { kind: 'meta'; gas?: number }
@@ -100,6 +102,10 @@ function getHandler(opcode: number): Handler | null {
     case OPCODES.MSIZE: return memory.MSIZE;
     case OPCODES.MCOPY: return memory.MCOPY;
     
+    // Storage
+    case OPCODES.SLOAD: return storage.SLOAD;
+    case OPCODES.SSTORE: return storage.SSTORE;
+    
     // Jump
     case OPCODES.JUMP: return jump.JUMP;
     case OPCODES.JUMPI: return jump.JUMPI;
@@ -108,6 +114,13 @@ function getHandler(opcode: number): Handler | null {
     // PC/GAS
     case OPCODES.PC: return context.PC;
     case OPCODES.GAS: return context.GAS;
+    
+    // Logs
+    case OPCODES.LOG0: return log.LOG0;
+    case OPCODES.LOG1: return log.LOG1;
+    case OPCODES.LOG2: return log.LOG2;
+    case OPCODES.LOG3: return log.LOG3;
+    case OPCODES.LOG4: return log.LOG4;
     
     // System
     case OPCODES.RETURN: return stack.RETURN;

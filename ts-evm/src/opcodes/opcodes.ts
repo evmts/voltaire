@@ -73,6 +73,11 @@ export const OPCODES = {
   MLOAD: 0x51,
   MSTORE: 0x52,
   MSTORE8: 0x53,
+  
+  // Storage
+  SLOAD: 0x54,
+  SSTORE: 0x55,
+  
   MSIZE: 0x59,
   
   // Jump
@@ -89,6 +94,13 @@ export const OPCODES = {
   
   // MCOPY (EIP-5656)
   MCOPY: 0x5e,
+  
+  // Logs
+  LOG0: 0xa0,
+  LOG1: 0xa1,
+  LOG2: 0xa2,
+  LOG3: 0xa3,
+  LOG4: 0xa4,
   
   // System
   RETURN: 0xf3,
