@@ -10,8 +10,13 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
     return struct {
         const Self = @This();
         
+        const HashContextType = if (config.HashContext == void) 
+            std.hash_map.AutoContext(K) 
+        else 
+            config.HashContext;
+        
         // Core data structures
-        map: std.HashMap(K, usize, config.HashContext, 80),  // Key -> Node index
+        map: std.HashMap(K, usize, HashContextType, 80),  // Key -> Node index
         nodes: []Node,  // Pre-allocated array of nodes
         head: usize,    // Index of most recently used node
         tail: usize,    // Index of least recently used node
@@ -48,7 +53,7 @@ pub fn LruCache(comptime K: type, comptime V: type, comptime config: LruConfig) 
                 };
             }
             
-            var map = std.HashMap(K, usize, config.HashContext, 80).init(allocator);
+            var map = std.HashMap(K, usize, HashContextType, 80).init(allocator);
             try map.ensureTotalCapacity(@intCast(config.capacity));
             
             return Self{
