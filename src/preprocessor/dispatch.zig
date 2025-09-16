@@ -114,7 +114,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             // Helper function for conditional tracing assertions
             const tracerAssert = struct {
                 fn call(f: *FrameType, condition: bool, comptime message: []const u8) void {
-                    if (comptime FrameType.frame_config.enable_tracing) {
+                    if (comptime FrameType.frame_config.TracerType != null) {
                         f.getTracer().assert(condition, message);
                     }
                 }
@@ -526,9 +526,9 @@ pub fn Dispatch(comptime FrameType: type) type {
             var unresolved_jumps = ArrayList(UnresolvedJump, null){};
             defer unresolved_jumps.deinit(allocator);
 
-            var iter = bytecode.createIterator();
+            var iter = (try bytecode.*).createIterator();
 
-            const first_block_gas = calculateFirstBlockGas(bytecode);
+            const first_block_gas = calculateFirstBlockGas(try bytecode.*);
 
             if (first_block_gas > 0) {
                 try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });

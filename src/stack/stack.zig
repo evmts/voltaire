@@ -48,7 +48,7 @@ pub fn Stack(comptime config: StackConfig) type {
         stack_ptr: [*]WordType,
 
         // Tracer for assertions (comptime optional)
-        tracer: if (config.enable_tracing) *anyopaque else void,
+        tracer: if (config.TracerType != null) *anyopaque else void,
 
 
         /// Initialize a new stack with allocated memory.
@@ -69,7 +69,7 @@ pub fn Stack(comptime config: StackConfig) type {
             return Self{
                 .buf_ptr = base_ptr,
                 .stack_ptr = base_ptr + stack_capacity,
-                .tracer = if (config.enable_tracing) tracer else {},
+                .tracer = if (config.TracerType != null) tracer else {},
             };
         }
 
@@ -90,7 +90,7 @@ pub fn Stack(comptime config: StackConfig) type {
 
         /// Assert helper that only calls tracer.assert if tracing is enabled
         inline fn assert(self: *const Self, condition: bool, comptime message: []const u8) void {
-            if (config.enable_tracing) {
+            if (config.TracerType != null) {
                 self.tracer.assert(condition, message);
             }
         }

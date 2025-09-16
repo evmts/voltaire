@@ -28,6 +28,24 @@ pub const EvmConfig = @import("evm_config.zig").EvmConfig;
 pub const getBuildConfig = EvmConfig.fromBuildOptions;
 pub const BuildConfiguredEvm = Evm(EvmConfig.fromBuildOptions());
 
+// Pre-configured EVM types for FFI
+// These are concrete types that can be stored at runtime
+pub const MainnetEvm = Evm(EvmConfig{
+    .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
+    .TracerType = null,
+});
+
+pub const MainnetEvmWithTracer = Evm(EvmConfig{
+    .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
+    .TracerType = @import("tracer/tracer.zig").DefaultTracer,
+});
+
+pub const TestEvm = Evm(EvmConfig{
+    .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
+    .TracerType = @import("tracer/tracer.zig").DefaultTracer,
+    .disable_gas_checks = true,
+});
+
 // Fixtures for testing
 pub const FixtureContract = @import("_test_utils/fixtures/popular_contracts.zig").FixtureContract;
 pub const ContractName = @import("_test_utils/fixtures/popular_contracts.zig").ContractName;
