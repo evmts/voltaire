@@ -42,6 +42,14 @@ Follow TDD
 
 **STOP and ask for help rather than stubbing.**
 
+**WHY PLACEHOLDERS ARE BANNED**: Placeholder implementations create ambiguity - the human cannot tell if "Coming soon!" or simplified output means:
+1. The AI couldn't solve it and gave up
+2. The AI is planning to implement it later
+3. The feature genuinely isn't ready yet
+4. There's a technical blocker
+
+This uncertainty wastes debugging time and erodes trust. Either implement it fully, explain why it can't be done, or ask for help. Never leave placeholders that pretend to work.
+
 **NEVER swallow errors! Every error must be explicitly handled or propagated. Using `catch` to ignore errors can cause silent failures and fund loss.**
 
 ## Coding Standards
