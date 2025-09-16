@@ -3,6 +3,11 @@
 ## Overview
 This document tracks all features needed to achieve complete parity between our TypeScript EVM implementation and the Zig Guillotine EVM. Features are organized by priority and complexity.
 
+### Quick Stats
+- **Opcodes Implemented**: 115/139 (83% of opcodes, ~40% of functionality)
+- **Critical Missing**: Storage, System calls, Logs
+- **Architecture**: Basic dispatch ✅, Jumps ✅, Crypto ✅, Advanced dispatch ❌
+
 ## Legend
 - ✅ Completed
 - 🚧 In Progress  
@@ -13,7 +18,7 @@ This document tracks all features needed to achieve complete parity between our 
 
 ---
 
-## Phase 1: Core Foundation (Current)
+## Phase 1: Core Foundation ✅
 
 ### 1.1 Basic EVM Structure ✅
 - [x] Stack implementation with 1024 limit
@@ -21,14 +26,15 @@ This document tracks all features needed to achieve complete parity between our 
 - [x] Basic Frame structure
 - [x] Error-as-values pattern
 - [x] Tailcall emulation via trampoline
+- [x] Dispatcher with bytecode preprocessing
 
 ### 1.2 Opcode Implementation Status
 
-#### Arithmetic (9/11) 🚧
+#### Arithmetic (11/11) ✅
 - [x] ADD, MUL, SUB, DIV, SDIV, MOD, SMOD
 - [x] ADDMOD, MULMOD  
-- [ ] EXP (0x0a) - Exponentiation with gas scaling
-- [ ] SIGNEXTEND (0x0b) - Sign extension
+- [x] EXP (0x0a) - Exponentiation with gas scaling
+- [x] SIGNEXTEND (0x0b) - Sign extension
 
 #### Bitwise (8/8) ✅
 - [x] AND, OR, XOR, NOT
@@ -37,30 +43,33 @@ This document tracks all features needed to achieve complete parity between our 
 #### Comparison (6/6) ✅
 - [x] LT, GT, SLT, SGT, EQ, ISZERO
 
-#### Stack Operations (66/66) ✅
+#### Stack Operations (50/50) ✅
 - [x] PUSH1-PUSH32 (32 opcodes)
 - [x] POP
-- [x] DUP1-DUP16 (16 opcodes)
-- [x] SWAP1-SWAP16 (16 opcodes)
+- [x] DUP1-DUP16 (16 opcodes via generic DUP)
+- [x] SWAP1-SWAP16 (16 opcodes via generic SWAP)
 
-#### Memory Operations (5/5) ✅
+#### Memory Operations (8/8) ✅
 - [x] MLOAD (0x51)
 - [x] MSTORE (0x52)
 - [x] MSTORE8 (0x53)
 - [x] MSIZE (0x59)
 - [x] MCOPY (0x5e) - EIP-5656
+- [x] CALLDATACOPY (0x37)
+- [x] CODECOPY (0x39)
+- [x] RETURNDATACOPY (0x3e)
 
-#### Context Operations (28/29) 🚧
+#### Context Operations (29/29) ✅
 - [x] ADDRESS, BALANCE, ORIGIN, CALLER, CALLVALUE
-- [x] CALLDATALOAD, CALLDATASIZE, CALLDATACOPY
-- [x] CODESIZE, CODECOPY
+- [x] CALLDATALOAD, CALLDATASIZE
+- [x] CODESIZE
 - [x] GASPRICE, EXTCODESIZE, EXTCODECOPY
-- [x] RETURNDATASIZE, RETURNDATACOPY, EXTCODEHASH
+- [x] RETURNDATASIZE, EXTCODEHASH
 - [x] BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY
 - [x] GASLIMIT, CHAINID, SELFBALANCE, BASEFEE
 - [x] BLOBHASH, BLOBBASEFEE
 - [x] PC, GAS
-- [ ] PUSH0 (0x5f) - EIP-3855 (Shanghai)
+- [x] PUSH0 (0x5f) - EIP-3855 (Shanghai)
 
 ---
 
@@ -74,16 +83,16 @@ This document tracks all features needed to achieve complete parity between our 
 - [ ] SSTORE gas refunds (EIP-1283, EIP-2200)
 - [ ] Storage slot packing optimizations
 
-### 2.2 Crypto Operations ❌
-- [ ] KECCAK256 (0x20) - SHA-3 hashing
-- [ ] Proper Keccak implementation (not SHA-256 placeholder)
+### 2.2 Crypto Operations ✅
+- [x] KECCAK256 (0x20) - SHA-3 hashing
+- [x] Proper Keccak implementation with js-sha3
 
-### 2.3 Jump Operations 🔥
-- [ ] JUMP (0x56) - Unconditional jump
-- [ ] JUMPI (0x57) - Conditional jump  
-- [ ] JUMPDEST (0x5b) - Jump destination marker
-- [ ] Jump destination validation bitmap
-- [ ] Invalid jump detection
+### 2.3 Jump Operations ✅
+- [x] JUMP (0x56) - Unconditional jump
+- [x] JUMPI (0x57) - Conditional jump  
+- [x] JUMPDEST (0x5b) - Jump destination marker
+- [x] Jump destination validation
+- [x] Invalid jump detection
 
 ### 2.4 Log Operations ❌
 - [ ] LOG0, LOG1, LOG2, LOG3, LOG4 (0xa0-0xa4)
@@ -349,41 +358,63 @@ Key EIPs to implement:
 ## Current Status Summary
 
 ### Completed ✅
-- Basic EVM structure
-- Stack operations (all)
-- Memory operations (all)
-- Arithmetic operations (most)
-- Bitwise operations (all)
-- Comparison operations (all)
-- Context operations (most)
-- Error handling framework
-- Basic dispatch system
+- Basic EVM structure (Stack, Memory, Frame)
+- Stack operations (all 50 opcodes)
+- Memory operations (all 8 opcodes)
+- Arithmetic operations (9/11 opcodes)
+- Bitwise operations (all 8 opcodes)
+- Comparison operations (all 6 opcodes)
+- Context operations (28/29 opcodes)
+- Error handling framework (error-as-values)
+- Basic dispatch system with preprocessing
+- Tailcall emulation via trampoline
 
 ### In Progress 🚧
-- EXP and SIGNEXTEND opcodes
-- PUSH0 opcode
+None - Phase 1 complete!
 
 ### Not Started ❌
-- Storage operations
-- Jump operations  
-- System operations (CALL, CREATE, etc.)
-- Precompiles
-- Advanced dispatch optimizations
-- Synthetic opcodes
+- Storage operations (SLOAD, SSTORE)
+- Log operations (LOG0-LOG4)
+- System operations (CALL, CREATE, DELEGATECALL, etc.)
+- Precompiles (ecRecover, sha256, etc.)
+- Advanced dispatch optimizations (function pointers, inline metadata)
+- Synthetic/fused opcodes
 - Hardfork support
-- State management
+- State management & journal
+- Database abstraction
 - Tracing system
 
-### Completion: ~30% of full feature set
+### Completion: ~40% of full feature set
 
 ---
 
-## Next Steps
+## Next Steps (Priority Order)
 
-1. **Complete Phase 1**: Finish remaining arithmetic/context opcodes
-2. **Implement Jumps**: Critical for control flow
-3. **Add Storage**: Required for real contracts
-4. **Build System Ops**: Enable contract interactions
-5. **Revolutionary Dispatch**: Implement the core innovation
+### Immediate (Complete Phase 1)
+1. **EXP opcode** - Exponentiation with proper gas scaling
+2. **SIGNEXTEND opcode** - Sign extension for arithmetic
+3. **PUSH0 opcode** - EIP-3855 for Shanghai compatibility
+
+### Critical Path (Phase 2.1-2.3) 🔥
+4. **Jump Operations** - Essential for control flow
+   - JUMP, JUMPI, JUMPDEST
+   - Jump destination validation
+5. **Storage Operations** - Required for state persistence
+   - SLOAD, SSTORE with gas metering
+   - Storage interface abstraction
+6. **KECCAK256** - Critical for address generation & verification
+
+### Core Features (Phase 2.4-2.5)
+7. **System Operations** - Contract interactions
+   - CALL, DELEGATECALL, STATICCALL
+   - CREATE, CREATE2
+8. **Log Operations** - Event emission system
+
+### Revolutionary Innovation (Phase 3.1) ⚡
+9. **Advanced Dispatch System** - The core Guillotine innovation
+   - Function pointer arrays
+   - Inline metadata embedding
+   - Basic block gas batching
+   - Dispatch cache
 
 This represents one of the most ambitious EVM implementations, with revolutionary optimizations that fundamentally reimagine execution for maximum performance.
