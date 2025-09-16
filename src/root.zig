@@ -95,6 +95,7 @@ pub const kzg_setup = @import("precompiles/kzg_setup.zig");
 // Re-export from evm module for compatibility
 pub const Primitives = @import("primitives");
 pub const Provider = @import("provider");
+pub const dispatch_pretty_print = @import("preprocessor/dispatch_pretty_print.zig");
 
 // Run tests
 test {

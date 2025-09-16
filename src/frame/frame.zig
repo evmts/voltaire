@@ -558,7 +558,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     schedule = owned_schedule.?.items;
                     
                     // Pretty print dispatch schedule in debug builds
-                    if (comptime (std.builtin.mode == .Debug or std.builtin.mode == .ReleaseSafe)) {
+                    if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
                         const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
                         const pretty_output = dispatch_pretty_print.pretty_print(
                             allocator,
