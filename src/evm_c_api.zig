@@ -4,6 +4,7 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
+const bytecode_c = @import("bytecode/bytecode_c.zig");
 const log = std.log.scoped(.c_api);
 
 // Import types from evm module
@@ -15,6 +16,10 @@ const BlockInfo = evm.BlockInfo;
 const TransactionContext = evm.TransactionContext;
 const Hardfork = evm.Hardfork;
 const Account = evm.Account;
+
+// ============================================================================
+// EVM C API
+// ============================================================================
 
 // Opaque handle for EVM instance
 pub const EvmHandle = opaque {};
@@ -1006,72 +1011,81 @@ export fn guillotine_get_last_error() [*:0]const u8 {
     return @ptrCast(&last_error_z);
 }
 
-// Simulate a call (doesn't commit state)
-export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) ?*EvmResult {
-    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
-    const allocator = ffi_allocator orelse {
-        setError("FFI not initialized", .{});
-        return null;
-    };
-    
-    // Convert input slice
-    const input_slice = if (params.input_len > 0) params.input[0..params.input_len] else &[_]u8{};
-    
-    // Convert value from bytes to u256
-    const value = std.mem.readInt(u256, &params.value, .big);
-    
-    // Create appropriate call params based on type
-    const call_params = switch (params.call_type) {
-        0 => DefaultEvm.CallParams{ // CALL
-            .call = .{
-                .caller = primitives.Address{ .bytes = params.caller },
-                .to = primitives.Address{ .bytes = params.to },
-                .value = value,
-                .input = input_slice,
-                .gas = params.gas,
-            },
-        },
-        else => {
-            setError("Simulate only supports CALL type", .{});
-            return null;
-        },
-    };
-    
-    // Simulate the call
-    const result = evm_ptr.simulate(call_params);
-    
-    // Convert result to FFI format
-    return convertCallResultToEvmResult(result, allocator);
-}
-
 // ============================================================================
 // BYTECODE API
 // ============================================================================
 
+// Re-export bytecode error codes
+pub const EVM_BYTECODE_SUCCESS = bytecode_c.EVM_BYTECODE_SUCCESS;
+pub const EVM_BYTECODE_ERROR_NULL_POINTER = bytecode_c.EVM_BYTECODE_ERROR_NULL_POINTER;
+pub const EVM_BYTECODE_ERROR_INVALID_BYTECODE = bytecode_c.EVM_BYTECODE_ERROR_INVALID_BYTECODE;
+pub const EVM_BYTECODE_ERROR_OUT_OF_MEMORY = bytecode_c.EVM_BYTECODE_ERROR_OUT_OF_MEMORY;
+pub const EVM_BYTECODE_ERROR_BYTECODE_TOO_LARGE = bytecode_c.EVM_BYTECODE_ERROR_BYTECODE_TOO_LARGE;
+pub const EVM_BYTECODE_ERROR_INVALID_OPCODE = bytecode_c.EVM_BYTECODE_ERROR_INVALID_OPCODE;
+pub const EVM_BYTECODE_ERROR_OUT_OF_BOUNDS = bytecode_c.EVM_BYTECODE_ERROR_OUT_OF_BOUNDS;
+
+const BytecodeHandle = bytecode_c.CBytecodeHandle;
+
+export fn evm_bytecode_create(data: [*]const u8, data_len: usize) ?*BytecodeHandle {
+    const allocator = ffi_allocator orelse std.heap.c_allocator;
+    return bytecode_c.evm_bytecode_create_with_allocator(allocator, data, data_len);
+}
+
+export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
+    bytecode_c.evm_bytecode_destroy(handle);
+}
+
+export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
+    return bytecode_c.evm_bytecode_get_length(handle);
+}
+
+export fn evm_bytecode_get_runtime_data(handle: ?*const BytecodeHandle, buffer: [*]u8, buffer_len: usize) usize {
+    return bytecode_c.evm_bytecode_get_runtime_data(handle, buffer, buffer_len);
+}
+
+export fn evm_bytecode_get_opcode_at(handle: ?*const BytecodeHandle, position: usize) u8 {
+    return bytecode_c.evm_bytecode_get_opcode_at(handle, position);
+}
+
+pub const CBasicBlock = bytecode_c.CBasicBlock;
+pub const CFusionInfo = bytecode_c.CFusionInfo;
+pub const CFusionType = bytecode_c.CFusionType;
+pub const CJumpFusion = bytecode_c.CJumpFusion;
+pub const CAdvancedFusion = bytecode_c.CAdvancedFusion;
+pub const CBytecodeAnalysis = bytecode_c.CBytecodeAnalysis;
+
+export fn evm_bytecode_analyze(handle: ?*const BytecodeHandle, analysis_out: *CBytecodeAnalysis) c_int {
+    const allocator = ffi_allocator orelse std.heap.c_allocator;
+    return bytecode_c.evm_bytecode_analyze_with_allocator(allocator, handle, analysis_out);
+}
+
+export fn evm_bytecode_free_analysis(analysis: *CBytecodeAnalysis) void {
+    const allocator = ffi_allocator orelse std.heap.c_allocator;
+    bytecode_c.evm_bytecode_free_analysis_with_allocator(allocator, analysis);
+}
+
+export fn evm_bytecode_opcode_name(opcode_value: u8) [*:0]const u8 {
+    return bytecode_c.evm_bytecode_opcode_name(opcode_value);
+}
+
+pub const COpcodeInfo = bytecode_c.COpcodeInfo;
+
+export fn evm_bytecode_opcode_info(opcode_value: u8) COpcodeInfo {
+    return bytecode_c.evm_bytecode_opcode_info(opcode_value);
+}
+
+export fn evm_bytecode_is_valid_opcode(opcode_value: u8) c_int {
+    return bytecode_c.evm_bytecode_is_valid_opcode(opcode_value);
+}
+
+export fn evm_bytecode_error_string(error_code: c_int) [*:0]const u8 {
+    return bytecode_c.evm_bytecode_error_string(error_code);
+}
+
 // Pretty print bytecode
 export fn evm_bytecode_pretty_print(data: [*]const u8, data_len: usize, buffer: [*]u8, buffer_len: usize) usize {
     const allocator = ffi_allocator orelse std.heap.c_allocator;
-    
-    if (data_len == 0) return 0;
-    
-    const bytecode_slice = data[0..data_len];
-    
-    // Create bytecode instance
-    const BytecodeType = evm.Bytecode(evm.BytecodeConfig{});
-    const bytecode = BytecodeType.init(allocator, bytecode_slice) catch return 0;
-    
-    // Call pretty_print 
-    const output = bytecode.pretty_print(allocator) catch return 0;
-    defer allocator.free(output);
-    
-    // Copy to buffer
-    if (buffer_len == 0) return output.len + 1; // Return required size
-    
-    const copy_len = @min(output.len, buffer_len - 1);
-    @memcpy(buffer[0..copy_len], output[0..copy_len]);
-    buffer[copy_len] = 0; // Null terminate
-    
-    return copy_len + 1;
+    return bytecode_c.evm_bytecode_pretty_print_with_allocator(allocator, data, data_len, buffer, buffer_len);
 }
 
 // Pretty print dispatch schedule with comprehensive debug information
@@ -1148,5 +1162,47 @@ export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     @memcpy(buffer[0..copy_len], output[0..copy_len]);
     buffer[copy_len] = 0;
     return copy_len + 1;
+}
+
+// ============================================================================
+// TESTS
+// ============================================================================
+
+// Simulate a call (doesn't commit state)
+export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) ?*EvmResult {
+    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
+    const allocator = ffi_allocator orelse {
+        setError("FFI not initialized", .{});
+        return null;
+    };
+    
+    // Convert input slice
+    const input_slice = if (params.input_len > 0) params.input[0..params.input_len] else &[_]u8{};
+    
+    // Convert value from bytes to u256
+    const value = std.mem.readInt(u256, &params.value, .big);
+    
+    // Create appropriate call params based on type
+    const call_params = switch (params.call_type) {
+        0 => DefaultEvm.CallParams{ // CALL
+            .call = .{
+                .caller = primitives.Address{ .bytes = params.caller },
+                .to = primitives.Address{ .bytes = params.to },
+                .value = value,
+                .input = input_slice,
+                .gas = params.gas,
+            },
+        },
+        else => {
+            setError("Simulate only supports CALL type", .{});
+            return null;
+        },
+    };
+    
+    // Simulate the call
+    const result = evm_ptr.simulate(call_params);
+    
+    // Convert result to FFI format
+    return convertCallResultToEvmResult(result, allocator);
 }
 
