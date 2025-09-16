@@ -153,8 +153,14 @@ pub fn pretty_print(
     comptime FrameType: type,
     comptime ItemType: type, // Item type
 ) ![]u8 {
+    // Handle both error union and direct bytecode types
+    const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
+        try bytecode
+    else
+        bytecode;
+    
     // Get debug info first
-    var debug_info = try getDebugInfo(allocator, schedule, bytecode, FrameType, ItemType);
+    var debug_info = try getDebugInfo(allocator, schedule, actual_bytecode, FrameType, ItemType);
     defer debug_info.deinit();
 
     var output = std.ArrayList(u8){
@@ -165,7 +171,7 @@ pub fn pretty_print(
 
     // Header
     try output.writer(allocator).print("{s}=== EVM Dispatch Instruction Stream ==={s}\n", .{ Colors.bold, Colors.reset });
-    try output.writer(allocator).print("{s}Original bytecode: {} bytes, Dispatch items: {}{s}\n\n", .{ Colors.dim, bytecode.runtime_code.len, schedule.len, Colors.reset });
+    try output.writer(allocator).print("{s}Original bytecode: {} bytes, Dispatch items: {}{s}\n\n", .{ Colors.dim, actual_bytecode.runtime_code.len, schedule.len, Colors.reset });
     
     // Display validation errors if any
     if (debug_info.validation_errors.items.len > 0) {
@@ -184,8 +190,8 @@ pub fn pretty_print(
 
     // Section showing original bytecode
     try output.writer(allocator).print("{s}--- Original Bytecode ---{s}\n", .{ Colors.bold, Colors.reset });
-    if (bytecode.runtime_code.len > 0) {
-        const runtime_code = bytecode.runtime_code;
+    if (actual_bytecode.runtime_code.len > 0) {
+        const runtime_code = actual_bytecode.runtime_code;
         var bytecode_pc: FrameType.PcType = 0;
         while (bytecode_pc < runtime_code.len) {
             const opcode_byte = runtime_code[bytecode_pc];
@@ -339,7 +345,7 @@ pub fn pretty_print(
     const total_items = schedule.len;
 
     try output.writer(allocator).print("{s}Total dispatch items: {}{s}\n", .{ Colors.dim, total_items, Colors.reset });
-    try output.writer(allocator).print("{s}Compression ratio: {d:.2}x (bytecode:{} -> dispatch:{}){s}\n", .{ Colors.dim, if (schedule.len > 0) @as(f64, @floatFromInt(bytecode.runtime_code.len)) / @as(f64, @floatFromInt(schedule.len)) else 0.0, bytecode.runtime_code.len, schedule.len, Colors.reset });
+    try output.writer(allocator).print("{s}Compression ratio: {d:.2}x (bytecode:{} -> dispatch:{}){s}\n", .{ Colors.dim, if (schedule.len > 0) @as(f64, @floatFromInt(actual_bytecode.runtime_code.len)) / @as(f64, @floatFromInt(schedule.len)) else 0.0, actual_bytecode.runtime_code.len, schedule.len, Colors.reset });
 
     return output.toOwnedSlice(allocator);
 }

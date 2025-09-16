@@ -129,7 +129,7 @@ test "Dispatch - basic initialization with empty bytecode" {
     // Create empty bytecode
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{}, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -150,7 +150,7 @@ test "Dispatch - simple bytecode with ADD" {
     // Create bytecode with ADD instruction
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{@intFromEnum(Opcode.ADD)}, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -168,7 +168,7 @@ test "Dispatch - PUSH1 with inline metadata" {
     // Create bytecode with PUSH1 42
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{ @intFromEnum(Opcode.PUSH1), 42 }, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -187,7 +187,7 @@ test "Dispatch - PC opcode with metadata" {
     // Create bytecode with PC instruction
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{@intFromEnum(Opcode.PC)}, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -318,7 +318,7 @@ test "Dispatch - complex bytecode sequence" {
         @intFromEnum(Opcode.PUSH1), 20,
         @intFromEnum(Opcode.ADD),   @intFromEnum(Opcode.STOP),
     }, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -359,7 +359,7 @@ test "Dispatch - invalid bytecode handling" {
     // Create bytecode with invalid opcode
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{0xFE}, null); // Invalid opcode
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -377,7 +377,7 @@ test "Dispatch - JUMPDEST with gas metadata" {
     // Create bytecode with JUMPDEST
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{@intFromEnum(Opcode.JUMPDEST)}, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Note: In real usage, the bytecode analyzer would set gas costs
     // For this test, we're checking the structure is created correctly
@@ -401,7 +401,7 @@ test "Dispatch - PUSH32 with pointer metadata" {
     var push32_data = [_]u8{@intFromEnum(Opcode.PUSH32)} ++ [_]u8{0xFF} ** 32;
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &push32_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -433,7 +433,7 @@ test "Dispatch - PUSH9 boundary test (first pointer type)" {
     var push9_data = [_]u8{@intFromEnum(Opcode.PUSH9)} ++ [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11 };
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &push9_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -465,7 +465,7 @@ test "Dispatch - PUSH8 boundary test (last inline type)" {
     var push8_data = [_]u8{@intFromEnum(Opcode.PUSH8)} ++ [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &push8_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -550,14 +550,14 @@ test "JumpTable - single entry" {
 
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &bytecode_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
     defer allocator.free(dispatch_items);
 
     // Create jump table
-    const jump_table = try TestDispatch.createJumpTable(allocator, dispatch_items, &bytecode);
+    const jump_table = try TestDispatch.createJumpTable(allocator, dispatch_items, bytecode);
     defer allocator.free(jump_table.entries);
 
     // Should have exactly one entry
@@ -587,13 +587,13 @@ test "JumpTable - multiple entries sorted order" {
 
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &bytecode_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch and jump table
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
     defer allocator.free(dispatch_items);
 
-    const jump_table = try TestDispatch.createJumpTable(allocator, dispatch_items, &bytecode);
+    const jump_table = try TestDispatch.createJumpTable(allocator, dispatch_items, bytecode);
     defer allocator.free(jump_table.entries);
 
     // Should have 3 entries
@@ -728,7 +728,7 @@ test "Dispatch - memory cleanup for pointer metadata" {
     var push16_data = [_]u8{@intFromEnum(Opcode.PUSH16)} ++ [_]u8{0xFF} ** 16;
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &push16_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -767,7 +767,7 @@ test "Dispatch - allocation failure handling" {
     // Create simple bytecode
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(testing.allocator, &[_]u8{@intFromEnum(Opcode.ADD)});
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Should fail allocation
     const result = TestDispatch.init(failing_allocator.allocator(), &bytecode, &handlers);
@@ -783,7 +783,7 @@ test "Dispatch - edge case empty bytecode safety" {
     // Create completely empty bytecode
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{}, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
@@ -876,14 +876,14 @@ test "Dispatch - createJumpTable with arithmetic bytecode" {
 
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &bytecode_data, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch schedule
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);
     defer allocator.free(dispatch_items);
 
     // This should not panic
-    const jump_table = try TestDispatch.createJumpTable(allocator, dispatch_items, &bytecode);
+    const jump_table = try TestDispatch.createJumpTable(allocator, dispatch_items, bytecode);
     defer allocator.free(jump_table.entries);
 
     // Should have no entries since there are no JUMPDESTs
@@ -928,7 +928,7 @@ test "Dispatch - calculateFirstBlockGas helper function" {
     {
         const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
         var bytecode = try Bytecode.init(allocator, &[_]u8{}, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
         try testing.expect(gas == 0);
@@ -938,7 +938,7 @@ test "Dispatch - calculateFirstBlockGas helper function" {
     {
         const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
         var bytecode = try Bytecode.init(allocator, &[_]u8{@intFromEnum(Opcode.STOP)}, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
         try testing.expect(gas == 0); // STOP has 0 gas cost
@@ -952,7 +952,7 @@ test "Dispatch - calculateFirstBlockGas helper function" {
             @intFromEnum(Opcode.ADD), // 3 gas
             @intFromEnum(Opcode.JUMPDEST), // 1 gas (but terminates block)
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
         try testing.expect(gas == 6); // PUSH1(3) + ADD(3), JUMPDEST not included
@@ -967,7 +967,7 @@ test "Dispatch - calculateFirstBlockGas helper function" {
             @intFromEnum(Opcode.MUL), // 5 gas
             @intFromEnum(Opcode.JUMP), // 8 gas
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
         try testing.expect(gas == 19); // 3 + 3 + 5 + 8
@@ -986,7 +986,7 @@ test "Dispatch - calculateFirstBlockGas helper function" {
 
         const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
         var bytecode = try Bytecode.init(allocator, large_bytecode.items, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const gas = TestDispatch.calculateFirstBlockGas(&bytecode);
         try testing.expect(gas == std.math.maxInt(u64));
@@ -1000,14 +1000,14 @@ test "JumpTable dispatch pointers reference provided schedule buffer" {
     // Bytecode with a single JUMPDEST
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{ @intFromEnum(Opcode.JUMPDEST) }, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Build initial schedule
     const sched1 = try TestDispatch.init(allocator, &bytecode, &handlers);
     defer allocator.free(sched1);
 
     // Build jump table from schedule 1
-    const jt1 = try TestDispatch.createJumpTable(allocator, sched1, &bytecode);
+    const jt1 = try TestDispatch.createJumpTable(allocator, sched1, bytecode);
     defer allocator.free(jt1.entries);
     try testing.expect(jt1.entries.len == 1);
 
@@ -1021,7 +1021,7 @@ test "JumpTable dispatch pointers reference provided schedule buffer" {
     for (sched1, 0..) |it, i| sched2[i] = it; // Copy items
 
     // Build jump table from schedule 2
-    const jt2 = try TestDispatch.createJumpTable(allocator, sched2, &bytecode);
+    const jt2 = try TestDispatch.createJumpTable(allocator, sched2, bytecode);
     defer allocator.free(jt2.entries);
     try testing.expect(jt2.entries.len == 1);
 
@@ -1037,7 +1037,7 @@ test "Aligned bytes can be safely reinterpreted as schedule" {
     // Small bytecode to produce a short schedule
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &[_]u8{ @intFromEnum(Opcode.STOP) }, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     const sched = try TestDispatch.init(allocator, &bytecode, &handlers);
     defer allocator.free(sched);
@@ -1067,10 +1067,10 @@ test "Dispatch - RAII DispatchSchedule for automatic cleanup" {
         var push16_data = [_]u8{@intFromEnum(Opcode.PUSH16)} ++ [_]u8{0xFF} ** 16;
         const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
         var bytecode = try Bytecode.init(allocator, &push16_data, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         // Create RAII dispatch schedule
-        var schedule = try TestDispatch.DispatchSchedule.init(allocator, &bytecode, &handlers);
+        var schedule = try TestDispatch.DispatchSchedule.init(allocator, bytecode, &handlers);
         defer schedule.deinit();
 
         // Verify schedule was created
@@ -1108,7 +1108,7 @@ test "Dispatch - RAII DispatchSchedule for automatic cleanup" {
             0xFF,                        0xFF, 0xFF, 0xFF, 0xFF,
             0xFF,                        0xFF, 0xFF,
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         // Should fail during allocation and clean up properly
         const result = TestDispatch.DispatchSchedule.init(failing_allocator.allocator(), &bytecode, &handlers);
@@ -1126,9 +1126,9 @@ test "Dispatch - RAII DispatchSchedule for automatic cleanup" {
             0xFF,                        0xFF, 0xFF, 0xFF, 0xFF,
             0xFF,                        0xFF,
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
-        var schedule = try TestDispatch.DispatchSchedule.init(allocator, &bytecode, &handlers);
+        var schedule = try TestDispatch.DispatchSchedule.init(allocator, bytecode, &handlers);
         defer schedule.deinit();
 
         // Count inline and pointer metadata
@@ -1158,7 +1158,7 @@ test "Dispatch - JumpTableBuilder iterator pattern" {
             @intFromEnum(Opcode.PUSH1), 10,
             @intFromEnum(Opcode.ADD),   @intFromEnum(Opcode.STOP),
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const schedule = try TestDispatch.init(allocator, &bytecode, &handlers);
         defer allocator.free(schedule);
@@ -1184,7 +1184,7 @@ test "Dispatch - JumpTableBuilder iterator pattern" {
             @intFromEnum(Opcode.JUMPDEST), // PC 5
             @intFromEnum(Opcode.STOP), // PC 6
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const schedule = try TestDispatch.init(allocator, &bytecode, &handlers);
         defer allocator.free(schedule);
@@ -1214,7 +1214,7 @@ test "Dispatch - JumpTableBuilder iterator pattern" {
             @intFromEnum(Opcode.PC), // PC 7
             @intFromEnum(Opcode.JUMPDEST), // PC 8
         }, null);
-        defer bytecode.deinit();
+        // Bytecode doesn't need deinit as it's value-based now
 
         const schedule = try TestDispatch.init(allocator, &bytecode, &handlers);
         defer allocator.free(schedule);
@@ -1261,7 +1261,7 @@ test "Dispatch - pretty_print basic functionality" {
     const code = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x42, @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.STOP) };
     const Bytecode = bytecode_mod.Bytecode(TestFrame.BytecodeConfig);
     var bytecode = try Bytecode.init(allocator, &code, null);
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
 
     // Create dispatch schedule
     const dispatch_items = try TestDispatch.init(allocator, &bytecode, &handlers);

@@ -106,7 +106,7 @@ const empty_buffer: [0]u8 = .{};
 pub const EvmConfiguration = enum(u8) {
     mainnet = 0,
     mainnet_with_tracer = 1,
-    test = 2,
+    test_mode = 2,
 };
 
 // Instance pooling for performance
@@ -239,7 +239,7 @@ export fn guillotine_evm_create_with_config(block_info_ptr: *const BlockInfoFFI,
     return switch (config) {
         .mainnet => guillotine_evm_create_mainnet(block_info_ptr),
         .mainnet_with_tracer => guillotine_evm_create_tracing(block_info_ptr),
-        .test => guillotine_evm_create_test(block_info_ptr),
+        .test_mode => guillotine_evm_create_test(block_info_ptr),
     };
 }
 
@@ -453,12 +453,154 @@ export fn guillotine_evm_create_tracing(block_info_ptr: *const BlockInfoFFI) ?*E
     return @ptrCast(evm_ptr);
 }
 
+// Create a new test EVM instance with gas checks disabled
+export fn guillotine_evm_create_test(block_info_ptr: *const BlockInfoFFI) ?*EvmHandle {
+    const allocator = ffi_allocator orelse {
+        setError("FFI not initialized. Call guillotine_init() first", .{});
+        return null;
+    };
+    
+    pool_mutex.lock();
+    defer pool_mutex.unlock();
+    
+    // Try to find a free instance in the pool
+    if (test_instance_pool) |*pool| {
+        for (pool.items) |instance| {
+            if (!instance.in_use) {
+                // Found a free instance - reset and reuse it
+                if (instance.needs_reset) {
+                    // Reset the database by reinitializing it
+                    instance.database.deinit();
+                    instance.database.* = Database.init(allocator);
+                    instance.needs_reset = false;
+                }
+                
+                // Update block info
+                instance.block_info = block_info_ptr.*;
+                const block_info = BlockInfo{
+                    .number = block_info_ptr.number,
+                    .timestamp = block_info_ptr.timestamp,
+                    .gas_limit = block_info_ptr.gas_limit,
+                    .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
+                    .base_fee = block_info_ptr.base_fee,
+                    .difficulty = block_info_ptr.difficulty,
+                    .prev_randao = block_info_ptr.prev_randao,
+                    .chain_id = @intCast(block_info_ptr.chain_id),
+                    .blob_base_fee = 0,
+                    .blob_versioned_hashes = &.{},
+                };
+                instance.evm.block_info = block_info;
+                instance.in_use = true;
+                
+                // Create handle and register it
+                const handle = @as(*EvmHandle, @ptrCast(instance.evm));
+                test_handle_map.?.put(handle, instance) catch {
+                    instance.in_use = false;
+                    setError("Failed to register handle", .{});
+                    return null;
+                };
+                
+                return handle;
+            }
+        }
+    }
+    
+    // No free instances, create a new one
+    const db = allocator.create(Database) catch {
+        setError("Failed to allocate database", .{});
+        return null;
+    };
+    db.* = Database.init(allocator);
+    
+    const block_info = BlockInfo{
+        .number = block_info_ptr.number,
+        .timestamp = block_info_ptr.timestamp,
+        .gas_limit = block_info_ptr.gas_limit,
+        .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
+        .base_fee = block_info_ptr.base_fee,
+        .difficulty = block_info_ptr.difficulty,
+        .prev_randao = block_info_ptr.prev_randao,
+        .chain_id = @intCast(block_info_ptr.chain_id),
+        .blob_base_fee = 0,
+        .blob_versioned_hashes = &.{},
+    };
+    
+    const tx_context = TransactionContext{
+        .gas_limit = block_info_ptr.gas_limit,
+        .coinbase = primitives.Address{ .bytes = block_info_ptr.coinbase },
+        .chain_id = @intCast(block_info_ptr.chain_id),
+        .blob_versioned_hashes = &.{},
+        .blob_base_fee = 0,
+    };
+    
+    const evm_ptr = allocator.create(TestEvm) catch {
+        setError("Failed to allocate TestEvm", .{});
+        db.deinit();
+        allocator.destroy(db);
+        return null;
+    };
+    
+    evm_ptr.* = TestEvm.init(
+        allocator,
+        db,
+        block_info,
+        tx_context,
+        0,
+        primitives.Address.ZERO_ADDRESS,
+        .CANCUN,
+    ) catch {
+        setError("Failed to initialize TestEvm", .{});
+        db.deinit();
+        allocator.destroy(db);
+        allocator.destroy(evm_ptr);
+        return null;
+    };
+    
+    // Create instance for pool
+    const instance = allocator.create(TestEvmInstance) catch {
+        setError("Failed to allocate instance", .{});
+        evm_ptr.deinit();
+        db.deinit();
+        allocator.destroy(db);
+        allocator.destroy(evm_ptr);
+        return null;
+    };
+    
+    instance.* = TestEvmInstance{
+        .evm = evm_ptr,
+        .database = db,
+        .block_info = block_info_ptr.*,
+        .in_use = true,
+        .needs_reset = false,
+    };
+    
+    // Add to pool
+    test_instance_pool.?.append(allocator, instance) catch {
+        setError("Failed to add to pool", .{});
+        evm_ptr.deinit();
+        db.deinit();
+        allocator.destroy(db);
+        allocator.destroy(evm_ptr);
+        allocator.destroy(instance);
+        return null;
+    };
+    
+    // Create handle and register it
+    const handle = @as(*EvmHandle, @ptrCast(evm_ptr));
+    test_handle_map.?.put(handle, instance) catch {
+        setError("Failed to register handle", .{});
+        return null;
+    };
+
+    return handle;
+}
+
 // Destroy an EVM instance (actually returns it to the pool)
 export fn guillotine_evm_destroy(handle: *EvmHandle) void {
     pool_mutex.lock();
     defer pool_mutex.unlock();
     
-    // Find the instance in the handle map
+    // Try mainnet instances first
     if (handle_map) |*map| {
         if (map.fetchRemove(handle)) |entry| {
             const instance = entry.value;
@@ -466,6 +608,19 @@ export fn guillotine_evm_destroy(handle: *EvmHandle) void {
             instance.in_use = false;
             instance.needs_reset = true;
             // Instance stays in the pool for reuse
+            return;
+        }
+    }
+    
+    // Try test instances
+    if (test_handle_map) |*map| {
+        if (map.fetchRemove(handle)) |entry| {
+            const instance = entry.value;
+            // Mark as not in use and needs reset
+            instance.in_use = false;
+            instance.needs_reset = true;
+            // Instance stays in the pool for reuse
+            return;
         }
     }
 }
@@ -1166,7 +1321,7 @@ export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: 
         buffer[copy_len] = 0;
         return copy_len + 1;
     };
-    defer bytecode.deinit();
+    // Bytecode doesn't need deinit as it's value-based now
     
     // Create Frame and Dispatch
     const MemoryDatabase = @import("evm").MemoryDatabase;
@@ -1177,7 +1332,7 @@ export fn evm_dispatch_pretty_print(data: [*]const u8, data_len: usize, buffer: 
     const handlers = &FrameType.opcode_handlers;
     
     // Create dispatch schedule
-    var schedule = DispatchType.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch |err| {
+    var schedule = DispatchType.DispatchSchedule.init(allocator, bytecode, handlers, null) catch |err| {
         const err_msg = "Error: Failed to create dispatch schedule\n";
         log.err("Failed to create dispatch schedule: {}", .{err});
         if (buffer_len == 0) return err_msg.len + 1;

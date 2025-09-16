@@ -549,7 +549,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                         self.getTracer().debug("Frame: Cache miss, creating new dispatch", .{});
                     }
                     // Cache miss - create new dispatch
-                    var bytecode = if (comptime frame_config.TracerType != null) 
+                    const bytecode = if (comptime frame_config.TracerType != null) 
                         Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer()))
                     else
                         Bytecode.init(allocator, bytecode_raw)
@@ -567,12 +567,12 @@ pub fn Frame(comptime config: FrameConfig) type {
                             else => Error.AllocationError,
                         };
                     };
-                    defer bytecode.deinit();
+                    // Bytecode doesn't need deinit as it's value-based now
 
                     const handlers = &Self.opcode_handlers;
 
                     // Create dispatch schedule
-                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers, 
+                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, 
                         if (comptime frame_config.TracerType != null) @as(?@TypeOf(self.getTracer()), self.getTracer()) else null
                     ) catch {
                         return Error.AllocationError;
@@ -585,7 +585,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                         const pretty_output = dispatch_pretty_print.pretty_print(
                             allocator,
                             schedule,
-                            &bytecode,
+                            bytecode,
                             Self,
                             Dispatch.Item,
                         ) catch |err| blk: {
@@ -603,7 +603,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     }
 
                     // Create jump table on heap
-                    const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
+                    const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
                     const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
                     heap_jump_table.* = jt;
                     jump_table_ptr = heap_jump_table;
@@ -622,7 +622,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             } else {
                 @branchHint(.unlikely);
                 // No cache available - create new dispatch
-                var bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
+                const bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                     @branchHint(.unlikely);
                     // Frame bytecode init failure - already traced by EVM caller
                     return switch (e) {
@@ -634,12 +634,12 @@ pub fn Frame(comptime config: FrameConfig) type {
                         else => Error.AllocationError,
                     };
                 };
-                defer bytecode.deinit();
+                // Bytecode doesn't need deinit as it's value-based now
 
                 const handlers = &Self.opcode_handlers;
 
                 // Create dispatch schedule
-                owned_schedule = Dispatch.DispatchSchedule.init(allocator, &bytecode, handlers, null) catch {
+                owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, null) catch {
                     return Error.AllocationError;
                 };
                 schedule = owned_schedule.?.items;
@@ -650,7 +650,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     const pretty_output = dispatch_pretty_print.pretty_print(
                         allocator,
                         schedule,
-                        &bytecode,
+                        bytecode,
                         Self,
                         Dispatch.Item,
                     ) catch |err| blk: {
@@ -668,7 +668,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
 
                 // Create jump table on heap
-                const jt = Dispatch.createJumpTable(allocator, schedule, &bytecode) catch return Error.AllocationError;
+                const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
                 const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
                 heap_jump_table.* = jt;
                 jump_table_ptr = heap_jump_table;

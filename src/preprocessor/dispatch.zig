@@ -433,7 +433,12 @@ pub fn Dispatch(comptime FrameType: type) type {
 
         pub fn calculateFirstBlockGas(bytecode: anytype) u64 {
             var gas: u64 = 0;
-            var iter = bytecode.createIterator();
+            // Handle both error union and direct bytecode types
+            const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
+                bytecode catch return 0
+            else
+                bytecode;
+            var iter = actual_bytecode.createIterator();
             const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
 
             var op_count: u32 = 0;
@@ -510,7 +515,12 @@ pub fn Dispatch(comptime FrameType: type) type {
 
             // Notify tracer of schedule build start
             if (tracer) |t| {
-                t.onScheduleBuildStart((try bytecode.*).len());
+                // Handle both error union and direct bytecode types
+                const bc_len = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
+                    (try bytecode).len()
+                else
+                    bytecode.len();
+                t.onScheduleBuildStart(bc_len);
             }
             
             const ScheduleList = ArrayList(Self.Item, null);
@@ -526,9 +536,15 @@ pub fn Dispatch(comptime FrameType: type) type {
             var unresolved_jumps = ArrayList(UnresolvedJump, null){};
             defer unresolved_jumps.deinit(allocator);
 
-            var iter = (try bytecode.*).createIterator();
+            // Handle both error union and direct bytecode types
+            const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
+                try bytecode
+            else
+                bytecode;
+            
+            var iter = actual_bytecode.createIterator();
 
-            const first_block_gas = calculateFirstBlockGas(try bytecode.*);
+            const first_block_gas = calculateFirstBlockGas(actual_bytecode);
 
             if (first_block_gas > 0) {
                 try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
@@ -1000,16 +1016,22 @@ pub fn Dispatch(comptime FrameType: type) type {
             schedule: []const Item,
             bytecode: anytype,
         ) !JumpTable {
+            // Handle both error union and direct bytecode types
+            const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
+                try bytecode
+            else
+                bytecode;
+            
             // Build jumpdest entries array by iterating bytecode
             var jumpdest_entries = ArrayList(JumpDestEntry, null){};
             defer jumpdest_entries.deinit(allocator);
             
             // Build array from bytecode
-            var iter = bytecode.createIterator();
+            var iter = actual_bytecode.createIterator();
             var schedule_index: usize = 0;
             
             // Skip first_block_gas if present
-            const first_block_gas = Self.calculateFirstBlockGas(bytecode);
+            const first_block_gas = Self.calculateFirstBlockGas(actual_bytecode);
             if (first_block_gas > 0 and schedule.len > 0) {
                 schedule_index = 1;
             }
