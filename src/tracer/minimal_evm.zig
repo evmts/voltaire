@@ -329,7 +329,7 @@ pub const MinimalEvm = struct {
         address: Address,
         value: u256,
         calldata: []const u8,
-    ) MinimalEvmError!CallResult {        
+    ) MinimalEvmError!CallResult {
         // Clear and pre-warm warm trackers
         self.warm_addresses.clearRetainingCapacity();
         self.warm_storage_slots.clearRetainingCapacity();
@@ -341,7 +341,7 @@ pub const MinimalEvm = struct {
         // Currently we only use this function for regular calls
         const intrinsic_gas: i64 = @intCast(GasConstants.TxGas);
         if (gas < intrinsic_gas) {
-          @branchHint(.cold);
+            @branchHint(.cold);
             return CallResult{
                 .success = false,
                 .gas_left = 0,
