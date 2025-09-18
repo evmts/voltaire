@@ -102,6 +102,11 @@ pub fn createAccessList(comptime config: AccessListConfig) type {
                 std.mem.doNotOptimizeAway(&result);
             }
         }
+
+        /// Clone the access list
+        pub fn clone(self: *const Self) !Self {
+            return Self{ .addresses = try self.addresses.clone(), .storage_slots = try self.storage_slots.clone() };
+        }
     };
 }
 
