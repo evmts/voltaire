@@ -20,14 +20,6 @@ const stack_frame_memory_synthetic = @import("../instructions/handlers_memory_sy
 const stack_frame_jump_synthetic = @import("../instructions/handlers_jump_synthetic.zig");
 const stack_frame_advanced_synthetic = @import("../instructions/handlers_advanced_synthetic.zig");
 
-/// Thread-local storage for the tracer instance and its type info
-threadlocal var tracer_instance: ?*anyopaque = null;
-
-/// Thread-local storage for current execution context
-threadlocal var current_opcode: u8 = 0;
-threadlocal var current_pc: u32 = 0;
-threadlocal var tracer_vtable: ?*const anyopaque = null;
-
 /// Returns the normal (non-traced) opcode handlers array for a given Frame type
 pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler {
     return getOpcodeHandlersWithOverrides(FrameType, &.{});
@@ -239,75 +231,3 @@ pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) Frame
     };
 }
 
-
-/// Returns traced opcode handlers that wrap the base handlers with tracer calls
-pub fn getTracedOpcodeHandlers(
-    comptime FrameType: type,
-    comptime TracerType: type,
-) [256]FrameType.OpcodeHandler {
-    // Get the base handlers at compile time
-    const base_handlers = getOpcodeHandlers(FrameType);
-
-    // Create a wrapper function generator
-    const createWrapper = struct {
-        fn wrap(comptime opcode_index: u8, comptime base_handler: FrameType.OpcodeHandler) FrameType.OpcodeHandler {
-            const wrapper = struct {
-                fn handler(frame: *FrameType, cursor: [*]const FrameType.Dispatch.Item) FrameType.Error!noreturn {
-                    // Get the tracer instance from thread-local storage
-                    if (tracer_instance) |tracer_ptr| {
-                        const tracer = @as(*TracerType, @ptrCast(@alignCast(tracer_ptr)));
-
-                        // Use the compile-time opcode value
-                        const opcode: u8 = opcode_index;
-                        const pc: u32 = current_pc; // Use thread-local PC
-
-                        // Call beforeOp if the tracer has it
-                        if (@hasDecl(TracerType, "beforeOp")) {
-                            tracer.beforeOp(pc, opcode, FrameType, frame);
-                        }
-                    }
-
-                    // Call the base handler with tail call optimization where supported
-                    // Note: Since handlers are noreturn, we don't need afterOp
-                    return @call(FrameType.getTailCallModifier(), base_handler, .{ frame, cursor });
-                }
-            }.handler;
-            return &wrapper;
-        }
-    }.wrap;
-
-    // Create the traced handlers array at compile time
-    @setEvalBranchQuota(10000);
-    var traced: [256]FrameType.OpcodeHandler = undefined;
-
-    // Wrap each handler at compile time
-    inline for (0..256) |i| {
-        traced[i] = createWrapper(@intCast(i), base_handlers[i]);
-    }
-
-    return traced;
-}
-
-/// Set the tracer instance for traced execution
-pub fn setTracerInstance(tracer: anytype) void {
-    if (@TypeOf(tracer) == void) {
-        tracer_instance = null;
-    } else {
-        tracer_instance = @ptrCast(@alignCast(tracer));
-    }
-}
-
-/// Clear the tracer instance
-pub fn clearTracerInstance() void {
-    tracer_instance = null;
-}
-
-/// Set the current PC for tracing
-pub fn setCurrentPc(pc: u32) void {
-    current_pc = pc;
-}
-
-/// Get the current PC for tracing
-pub fn getCurrentPc() u32 {
-    return current_pc;
-}

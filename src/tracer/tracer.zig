@@ -40,6 +40,10 @@ pub const TracerConfig = struct {
     /// Enable debug logging (default: false)
     enable_debug_logging: bool = false,
     
+    /// Enable advanced trace capture for optimized execution (default: false)
+    /// This captures synthetic opcodes, fusions, and block-based gas charging
+    enable_advanced_trace: bool = false,
+    
     /// Default configuration with all tracing disabled
     pub const disabled = TracerConfig{};
     
@@ -58,6 +62,7 @@ pub const TracerConfig = struct {
         .enable_pc_tracking = true,
         .enable_gas_tracking = true,
         .enable_debug_logging = true,
+        .enable_advanced_trace = true,
     };
 };
 
@@ -71,8 +76,11 @@ pub const TracerConfig = struct {
 pub const Tracer = struct {
     config: TracerConfig,
     allocator: std.mem.Allocator,
-    // Empty steps list to satisfy EVM interface
+    // Execution trace for normal MinimalEvm validation
     steps: std.ArrayList(ExecutionStep),
+    
+    // Advanced execution trace for optimized Frame execution
+    advanced_steps: std.ArrayList(AdvancedStep),
 
     // PC tracker for validation (only in debug/safe builds)
     pc_tracker: ?pc_tracker_mod.PcTracker,
@@ -121,11 +129,31 @@ pub const Tracer = struct {
         error_msg: ?[]const u8,
     };
 
+    // Advanced execution step for capturing optimized execution
+    pub const AdvancedStep = struct {
+        step_number: u64,
+        schedule_index: u32,  // Index into dispatch schedule instead of PC
+        opcode: u16,  // u16 to accommodate synthetic opcodes (>0xFF)
+        opcode_name: []const u8,
+        is_synthetic: bool,  // True for fused/synthetic opcodes
+        gas_before: i64,  // i64 for Frame's gas tracking
+        gas_after: i64,
+        gas_cost: u64,  // Can be large for block-based charging
+        stack_size_before: u32,
+        stack_size_after: u32,
+        memory_size_before: u32,
+        memory_size_after: u32,
+        depth: u16,
+        // Additional metadata for synthetic opcodes
+        fusion_info: ?[]const u8,  // Description of fused operations
+    };
+
     pub fn init(allocator: std.mem.Allocator, config: TracerConfig) Tracer {
         return .{
             .config = config,
             .allocator = allocator,
             .steps = std.ArrayList(ExecutionStep){},
+            .advanced_steps = std.ArrayList(AdvancedStep){},
             .pc_tracker = null,
             .gas_tracker = null,
             .current_pc = 0,
@@ -146,6 +174,11 @@ pub const Tracer = struct {
         return self.steps.items;
     }
 
+    /// Get the captured advanced execution steps
+    pub fn getAdvancedSteps(self: *const Tracer) []const AdvancedStep {
+        return self.advanced_steps.items;
+    }
+
     pub fn deinit(self: *Tracer) void {
         // Clean up execution steps
         for (self.steps.items) |step| {
@@ -157,6 +190,14 @@ pub const Tracer = struct {
             }
         }
         self.steps.deinit(self.allocator);
+        
+        // Clean up advanced steps
+        for (self.advanced_steps.items) |step| {
+            if (step.fusion_info) |fusion_desc| {
+                self.allocator.free(fusion_desc);
+            }
+        }
+        self.advanced_steps.deinit(self.allocator);
         
         // Clean up MinimalEvm if it exists
         if (self.minimal_evm) |evm| {
@@ -288,6 +329,7 @@ pub const Tracer = struct {
         }
     }
 
+
     /// Called before an instruction executes
     /// This is the main entry point for instruction tracing
     pub fn before_instruction(
@@ -335,6 +377,21 @@ pub const Tracer = struct {
                     self.fused_instruction_count += 1;
                 } else {
                     self.simple_instruction_count += 1;
+                }
+
+                // Capture advanced execution trace for Frame
+                if (self.config.enable_advanced_trace) {
+                    const step = self.captureAdvancedStep(frame, opcode, cursor) catch |capture_err| {
+                        self.warn("Failed to capture advanced step: {}", .{capture_err});
+                        return;
+                    };
+                    
+                    // Store the step if it's valid (not a dummy)
+                    if (step.step_number > 0) {
+                        self.advanced_steps.append(self.allocator, step) catch |append_err| {
+                            self.warn("Failed to append advanced step: {}", .{append_err});
+                        };
+                    }
                 }
 
                 // Increment safety counter - will panic if limit exceeded
@@ -395,6 +452,18 @@ pub const Tracer = struct {
 
                 // Advance schedule index
                 self.schedule_index += 1;
+
+                // Update advanced trace with "after" values
+                if (self.config.enable_advanced_trace and self.advanced_steps.items.len > 0) {
+                    const last_step_idx = self.advanced_steps.items.len - 1;
+                    var last_step = &self.advanced_steps.items[last_step_idx];
+                    
+                    // Update the "after" values
+                    last_step.gas_after = frame.gas_remaining;
+                    last_step.gas_cost = @intCast(@as(i64, last_step.gas_before) - @as(i64, frame.gas_remaining));
+                    last_step.stack_size_after = @intCast(frame.stack.size());
+                    last_step.memory_size_after = @intCast(frame.memory.size());
+                }
 
                 // Validate next handler consistency
                 if (next_cursor[0] != .opcode_handler or next_cursor[0].opcode_handler != next_handler) {
@@ -516,6 +585,107 @@ pub const Tracer = struct {
             .error_occurred = false,
             .error_msg = null,
         };
+    }
+
+    /// Capture the current advanced execution state for Frame
+    fn captureAdvancedStep(
+        self: *Tracer,
+        frame: anytype,
+        comptime opcode: UnifiedOpcode,
+        cursor: [*]const @TypeOf(frame.*).Dispatch.Item
+    ) !AdvancedStep {
+        // Only capture if advanced trace is enabled
+        if (!self.config.enable_advanced_trace) {
+            return AdvancedStep{
+                .step_number = 0,
+                .schedule_index = 0,
+                .opcode = 0,
+                .opcode_name = "",
+                .is_synthetic = false,
+                .gas_before = 0,
+                .gas_after = 0,
+                .gas_cost = 0,
+                .stack_size_before = 0,
+                .stack_size_after = 0,
+                .memory_size_before = 0,
+                .memory_size_after = 0,
+                .depth = 0,
+                .fusion_info = null,
+            };
+        }
+
+        const opcode_value = @intFromEnum(opcode);
+        const is_synthetic = opcode_value > 0xFF;
+        
+        // Get opcode name and fusion info
+        const opcode_name = if (is_synthetic) 
+            getSyntheticOpcodeName(opcode_value) 
+        else 
+            getOpcodeName(@intCast(opcode_value));
+            
+        const fusion_info = if (is_synthetic) blk: {
+            // Generate fusion description for synthetic opcodes
+            const desc = try self.describeFusion(opcode);
+            break :blk desc;
+        } else null;
+
+        // Calculate schedule index from cursor position
+        const schedule_index: u32 = @intCast(@intFromPtr(cursor) - @intFromPtr(frame.dispatch.cursor));
+        
+        return AdvancedStep{
+            .step_number = self.instruction_count,
+            .schedule_index = schedule_index,
+            .opcode = opcode_value,
+            .opcode_name = opcode_name,
+            .is_synthetic = is_synthetic,
+            .gas_before = frame.gas_remaining,
+            .gas_after = 0, // Will be filled in after_instruction
+            .gas_cost = 0, // Will be calculated in after_instruction
+            .stack_size_before = @intCast(frame.stack.size()),
+            .stack_size_after = 0, // Will be filled in after_instruction
+            .memory_size_before = @intCast(frame.memory.size()),
+            .memory_size_after = 0, // Will be filled in after_instruction
+            .depth = @intCast(frame.getEvm().depth),
+            .fusion_info = fusion_info,
+        };
+    }
+
+    /// Describe a fusion operation for advanced trace
+    fn describeFusion(self: *Tracer, comptime opcode: UnifiedOpcode) !?[]const u8 {
+        const description = switch (opcode) {
+            .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => "PUSH+ADD fusion",
+            .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => "PUSH+SUB fusion",
+            .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => "PUSH+MUL fusion",
+            .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => "PUSH+DIV fusion",
+            .PUSH_AND_INLINE, .PUSH_AND_POINTER => "PUSH+AND fusion",
+            .PUSH_OR_INLINE, .PUSH_OR_POINTER => "PUSH+OR fusion",
+            .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => "PUSH+XOR fusion",
+            .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => "PUSH+MSTORE fusion",
+            .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => "PUSH+MSTORE8 fusion",
+            .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => "PUSH+MLOAD fusion",
+            .JUMP_TO_STATIC_LOCATION => "Static JUMP optimization",
+            .JUMPI_TO_STATIC_LOCATION => "Static JUMPI optimization",
+            .MULTI_PUSH_2 => "Double PUSH fusion",
+            .MULTI_PUSH_3 => "Triple PUSH fusion",
+            .MULTI_POP_2 => "Double POP fusion",
+            .MULTI_POP_3 => "Triple POP fusion",
+            .ISZERO_JUMPI => "ISZERO+JUMPI pattern",
+            .DUP2_MSTORE_PUSH => "DUP2+MSTORE+PUSH pattern",
+            .DUP3_ADD_MSTORE => "DUP3+ADD+MSTORE pattern",
+            .SWAP1_DUP2_ADD => "SWAP1+DUP2+ADD pattern",
+            .PUSH_DUP3_ADD => "PUSH+DUP3+ADD pattern",
+            .FUNCTION_DISPATCH => "Function selector dispatch (PUSH4+EQ+PUSH+JUMPI)",
+            .CALLVALUE_CHECK => "Payable check (CALLVALUE+DUP1+ISZERO)",
+            .PUSH0_REVERT => "Error pattern (PUSH0+PUSH0+REVERT)",
+            .PUSH_ADD_DUP1 => "PUSH+ADD+DUP1 pattern",
+            .MLOAD_SWAP1_DUP2 => "MLOAD+SWAP1+DUP2 pattern",
+            else => return null,
+        };
+        
+        // Allocate and copy the description
+        const copy = try self.allocator.alloc(u8, description.len);
+        @memcpy(copy, description);
+        return copy;
     }
 
     /// Execute MinimalEvm for the given UnifiedOpcode
@@ -1471,6 +1641,51 @@ fn getOpcodeName(opcode: u8) []const u8 {
         0xfe => "INVALID",
         0xff => "SELFDESTRUCT",
         else => "UNKNOWN",
+    };
+}
+
+// Helper function to get synthetic opcode name
+fn getSyntheticOpcodeName(opcode: u16) []const u8 {
+    const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
+    
+    return switch (opcode) {
+        @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) => "PUSH_ADD_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER) => "PUSH_ADD_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE) => "PUSH_SUB_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER) => "PUSH_SUB_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) => "PUSH_MUL_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER) => "PUSH_MUL_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) => "PUSH_DIV_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER) => "PUSH_DIV_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) => "PUSH_AND_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER) => "PUSH_AND_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) => "PUSH_OR_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER) => "PUSH_OR_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) => "PUSH_XOR_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER) => "PUSH_XOR_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) => "PUSH_MLOAD_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER) => "PUSH_MLOAD_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => "PUSH_MSTORE_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => "PUSH_MSTORE_POINTER",
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) => "PUSH_MSTORE8_INLINE",
+        @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER) => "PUSH_MSTORE8_POINTER",
+        @intFromEnum(OpcodeSynthetic.JUMP_TO_STATIC_LOCATION) => "JUMP_TO_STATIC_LOCATION",
+        @intFromEnum(OpcodeSynthetic.JUMPI_TO_STATIC_LOCATION) => "JUMPI_TO_STATIC_LOCATION",
+        @intFromEnum(OpcodeSynthetic.MULTI_PUSH_2) => "MULTI_PUSH_2",
+        @intFromEnum(OpcodeSynthetic.MULTI_PUSH_3) => "MULTI_PUSH_3",
+        @intFromEnum(OpcodeSynthetic.MULTI_POP_2) => "MULTI_POP_2",
+        @intFromEnum(OpcodeSynthetic.MULTI_POP_3) => "MULTI_POP_3",
+        @intFromEnum(OpcodeSynthetic.ISZERO_JUMPI) => "ISZERO_JUMPI",
+        @intFromEnum(OpcodeSynthetic.DUP2_MSTORE_PUSH) => "DUP2_MSTORE_PUSH",
+        @intFromEnum(OpcodeSynthetic.DUP3_ADD_MSTORE) => "DUP3_ADD_MSTORE",
+        @intFromEnum(OpcodeSynthetic.SWAP1_DUP2_ADD) => "SWAP1_DUP2_ADD",
+        @intFromEnum(OpcodeSynthetic.PUSH_DUP3_ADD) => "PUSH_DUP3_ADD",
+        @intFromEnum(OpcodeSynthetic.FUNCTION_DISPATCH) => "FUNCTION_DISPATCH",
+        @intFromEnum(OpcodeSynthetic.CALLVALUE_CHECK) => "CALLVALUE_CHECK",
+        @intFromEnum(OpcodeSynthetic.PUSH0_REVERT) => "PUSH0_REVERT",
+        @intFromEnum(OpcodeSynthetic.PUSH_ADD_DUP1) => "PUSH_ADD_DUP1",
+        @intFromEnum(OpcodeSynthetic.MLOAD_SWAP1_DUP2) => "MLOAD_SWAP1_DUP2",
+        else => "UNKNOWN_SYNTHETIC",
     };
 }
 

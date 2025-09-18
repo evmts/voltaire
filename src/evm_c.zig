@@ -27,7 +27,16 @@ const primitives = @import("primitives");
 
 // Import types from evm module
 const DefaultEvm = evm.DefaultEvm;
-const TracerEvm = evm.Evm(.{ .TracerType = evm.tracer.JSONRPCTracer });
+const TracerEvm = evm.Evm(.{ 
+    .TracerType = evm.tracer.Tracer,
+    .tracer_config = evm.tracer.TracerConfig{ 
+        .enable_validation = false,
+        .enable_step_capture = true,
+        .enable_pc_tracking = false,
+        .enable_gas_tracking = true,
+        .enable_debug_logging = false,
+    }
+});
 const Database = evm.Database;
 const BlockInfo = evm.BlockInfo;
 const TransactionContext = evm.TransactionContext;

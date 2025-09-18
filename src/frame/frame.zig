@@ -492,6 +492,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
             @branchHint(.likely);
 
+            // Tracer instance is passed but no longer used - tracing is handled through getTracer()
+            _ = tracer_instance;
 
             if (comptime frame_config.TracerType != null) {
                 self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
@@ -684,9 +686,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            // Setup tracer
-            frame_handlers.setTracerInstance(tracer_instance);
-            defer frame_handlers.clearTracerInstance();
+            // Tracer is now handled directly by the tracer module, not frame_handlers
 
             // Store pointer to jump table in frame for JUMP/JUMPI handlers
             self.jump_table = jump_table_ptr;
@@ -772,8 +772,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                         }
                     }
                     // Check if it's PUSH_MSTORE_INLINE specifically (the problematic one)
-                    const handlers_mod = @import("frame_handlers.zig");
-                    const push_mstore_inline_handler = handlers_mod.getSyntheticHandler(Self, @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
+                    const push_mstore_inline_handler = frame_handlers.getSyntheticHandler(Self, @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
                     if (handler == push_mstore_inline_handler) {
                         self.getTracer().debug("Frame: About to execute PUSH_MSTORE_INLINE handler!", .{});
                     }

@@ -984,14 +984,14 @@ pub fn Evm(comptime config: EvmConfig) type {
         fn convertTracerToExecutionTrace(allocator: std.mem.Allocator, tracer: anytype) !@import("frame/call_result.zig").ExecutionTrace {
             const call_result = @import("frame/call_result.zig");
 
-            if (!@hasField(@TypeOf(tracer.*), "trace_steps")) {
+            if (!@hasField(@TypeOf(tracer.*), "steps")) {
                 return call_result.ExecutionTrace{
                     .steps = &[_]call_result.TraceStep{},
                     .allocator = allocator,
                 };
             }
 
-            const tracer_steps = tracer.trace_steps.items;
+            const tracer_steps = tracer.steps.items;
             var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
             errdefer allocator.free(trace_steps);
 
@@ -1004,13 +1004,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 trace_steps[i] = call_result.TraceStep{
                     .pc = @intCast(tracer_step.pc),
                     .opcode = tracer_step.opcode,
-                    .opcode_name = try allocator.dupe(u8, tracer_step.op),
-                    .gas = tracer_step.gas,
+                    .opcode_name = try allocator.dupe(u8, tracer_step.opcode_name),
+                    .gas = @intCast(tracer_step.gas_before),
                     .depth = tracer_step.depth,
-                    .mem_size = tracer_step.memSize,
-                    .gas_cost = tracer_step.gasCost,
-                    .stack = try allocator.dupe(u256, tracer_step.stack),
-                    .memory = if (tracer_step.memory) |mem| try allocator.dupe(u8, mem) else &.{},
+                    .mem_size = @intCast(tracer_step.memory_size_before),
+                    .gas_cost = tracer_step.gas_cost,
+                    .stack = try allocator.dupe(u256, tracer_step.stack_before),
+                    .memory = &.{}, // TODO: Add memory capture if needed
                     .storage_reads = &.{},
                     .storage_writes = &.{},
                 };
