@@ -32,232 +32,7 @@ const DefaultEvm = @import("../evm.zig").Evm(.{});
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
-
-/// LRU cache for dispatch schedules to avoid recompiling bytecode
-const DispatchCacheEntry = struct {
-    /// Full bytecode used as key (points to bytecode directly)
-    bytecode_key: []const u8,
-    /// Cached dispatch schedule (owned by cache)
-    schedule: []const u8, // Store as raw bytes
-    /// Cached jump table (owned by cache)
-    jump_table_entries: []const u8, // Store as raw bytes
-    /// Last access timestamp for LRU eviction
-    last_access: u64,
-    /// Reference count for concurrent usage
-    ref_count: u32,
-};
-
-const DispatchCache = struct {
-    const CACHE_SIZE = 256; // Number of cached contracts
-    const SMALL_BYTECODE_THRESHOLD = 256; // Compute on-demand for bytecode smaller than this
-
-    entries: [CACHE_SIZE]?DispatchCacheEntry = [_]?DispatchCacheEntry{null} ** CACHE_SIZE,
-    allocator: std.mem.Allocator,
-    access_counter: u64 = 0,
-    hits: u64 = 0,
-    misses: u64 = 0,
-    mutex: std.Thread.Mutex = .{},
-
-    fn init(allocator: std.mem.Allocator) DispatchCache {
-        return .{
-            .allocator = allocator,
-        };
-    }
-
-    fn deinit(self: *DispatchCache) void {
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                self.allocator.free(entry.schedule);
-                self.allocator.free(entry.jump_table_entries);
-                entry_opt.* = null;
-            }
-        }
-    }
-
-    fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
-        // Skip cache for small bytecode - compute on-demand is faster
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
-            return null;
-        }
-
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        self.access_counter += 1;
-
-        // Search for matching entry
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                // Direct bytecode comparison - safe from collision attacks
-                if (std.mem.eql(u8, entry.bytecode_key, bytecode)) {
-                    // Found a hit
-                    self.hits += 1;
-                    entry.last_access = self.access_counter;
-                    entry.ref_count += 1;
-                    return .{
-                        .schedule = entry.schedule,
-                        .jump_table = entry.jump_table_entries,
-                    };
-                }
-            }
-        }
-
-        self.misses += 1;
-        return null;
-    }
-
-    fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
-        // Skip cache for small bytecode
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
-            return;
-        }
-
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        // Find slot to insert (either empty or LRU)
-        var lru_idx: usize = 0;
-        var lru_access: u64 = std.math.maxInt(u64);
-        var empty_idx: ?usize = null;
-
-        for (&self.entries, 0..) |*entry_opt, i| {
-            if (entry_opt.* == null) {
-                empty_idx = i;
-                break;
-            } else if (entry_opt.*.?.ref_count == 0 and entry_opt.*.?.last_access < lru_access) {
-                lru_idx = i;
-                lru_access = entry_opt.*.?.last_access;
-            }
-        }
-
-        const target_idx = empty_idx orelse lru_idx;
-
-        // Free old entry if replacing
-        if (self.entries[target_idx]) |*old_entry| {
-            if (old_entry.ref_count > 0) {
-                // Skip if still in use
-                return;
-            }
-            self.allocator.free(old_entry.schedule);
-            self.allocator.free(old_entry.jump_table_entries);
-        }
-
-        // Copy schedule and jump table
-        const schedule_copy = try self.allocator.dupe(u8, schedule);
-        errdefer self.allocator.free(schedule_copy);
-
-        const jump_table_copy = try self.allocator.dupe(u8, jump_table);
-
-        // Insert new entry
-        self.entries[target_idx] = DispatchCacheEntry{
-            .bytecode_key = bytecode, // Use bytecode directly as key
-            .schedule = schedule_copy,
-            .jump_table_entries = jump_table_copy,
-            .last_access = self.access_counter,
-            .ref_count = 0,
-        };
-    }
-
-    fn release(self: *DispatchCache, bytecode: []const u8) void {
-        // Skip for small bytecode
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
-            return;
-        }
-
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                // Direct bytecode comparison
-                if (std.mem.eql(u8, entry.bytecode_key, bytecode)) {
-                    if (entry.ref_count > 0) {
-                        entry.ref_count -= 1;
-                    }
-                    return;
-                }
-            }
-        }
-    }
-
-    fn getStatistics(self: *const DispatchCache) struct { hits: u64, misses: u64, hit_rate: f64 } {
-        const total = self.hits + self.misses;
-        const hit_rate = if (total > 0) @as(f64, @floatFromInt(self.hits)) / @as(f64, @floatFromInt(total)) else 0.0;
-        return .{
-            .hits = self.hits,
-            .misses = self.misses,
-            .hit_rate = hit_rate,
-        };
-    }
-
-    fn clear(self: *DispatchCache) void {
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                if (entry.ref_count == 0) {
-                    self.allocator.free(entry.schedule);
-                    self.allocator.free(entry.jump_table_entries);
-                    entry_opt.* = null;
-                }
-            }
-        }
-
-        self.hits = 0;
-        self.misses = 0;
-        self.access_counter = 0;
-    }
-};
-
-/// Global dispatch cache instance
-var global_dispatch_cache: ?DispatchCache = null;
-var cache_mutex: std.Thread.Mutex = .{};
-
-/// Initialize the global dispatch cache
-pub fn initGlobalCache(allocator: std.mem.Allocator) void {
-    cache_mutex.lock();
-    defer cache_mutex.unlock();
-
-    if (global_dispatch_cache == null) {
-        global_dispatch_cache = DispatchCache.init(allocator);
-    }
-}
-
-/// Deinitialize the global dispatch cache
-pub fn deinitGlobalCache() void {
-    cache_mutex.lock();
-    defer cache_mutex.unlock();
-
-    if (global_dispatch_cache) |*cache| {
-        cache.deinit();
-        global_dispatch_cache = null;
-    }
-}
-
-/// Get cache statistics
-pub fn getCacheStatistics() ?struct { hits: u64, misses: u64, hit_rate: f64 } {
-    cache_mutex.lock();
-    defer cache_mutex.unlock();
-
-    if (global_dispatch_cache) |*cache| {
-        return cache.getStatistics();
-    }
-    return null;
-}
-
-/// Clear the cache (useful for testing or memory pressure)
-pub fn clearGlobalCache() void {
-    cache_mutex.lock();
-    defer cache_mutex.unlock();
-
-    if (global_dispatch_cache) |*cache| {
-        cache.clear();
-    }
-}
+const dispatch_cache = @import("dispatch_cache.zig");
 
 /// Creates a configured Frame type for EVM execution.
 ///
@@ -267,6 +42,8 @@ pub fn Frame(comptime config: FrameConfig) type {
     comptime config.validate();
 
     return struct {
+        const Self = @This();
+
         /// Error code type returned by Frame.interpret - includes both error and success termination cases
         pub const Error = error{
             StackOverflow,
@@ -286,27 +63,24 @@ pub fn Frame(comptime config: FrameConfig) type {
             Return,
             SelfDestruct,
         };
-        const Self = @This();
-        /// The type all opcode handlers return.
+
         /// Opcode handlers are expected to recursively dispatch the next opcode if they themselves don't error or return
         /// Takes cursor pointer with jump table available through dispatch metadata when needed
         pub const OpcodeHandler = *const fn (frame: *Self, cursor: [*]const Dispatch.Item) Error!noreturn;
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
         pub const Dispatch = dispatch_mod.Dispatch(Self);
+        /// TODO: Rename frame_config config
         /// The config passed into Frame(config)
         pub const frame_config = config;
 
-        /// SIMD vector length for optimized operations
-        /// Value of 1 means scalar operations (no SIMD)
-        pub const vector_length = config.vector_length;
-
+        /// TODO: Move this to static method on Dispatch struct
         /// Returns the appropriate tail call modifier based on the target architecture.
         /// WebAssembly doesn't support tail calls by default, so we use .auto for wasm targets.
         pub inline fn getTailCallModifier() std.builtin.CallModifier {
             return if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64)
                 .auto
             else
-                .always_tail; // Must use always_tail for performance
+                .always_tail;
         }
         /// The "word" type used by the evm. Defaults to u256. "Word" is the type used by Stack and throughout the Evm
         /// If set to something else the EVM will update to that new word size. e.g. run kekkak128 instead of kekkak256
@@ -327,9 +101,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
         // Compile-time check: PcType must be at least u8 for dispatch cache optimization
         comptime {
-            if (@bitSizeOf(PcType) < 8) {
-                @compileError("PcType must be at least u8 (8 bits). Current max_bytecode_size is too small.");
-            }
+            if (@bitSizeOf(PcType) < 8) @compileError("PcType must be at least u8 (8 bits). Current max_bytecode_size is too small.");
         }
 
         /// The struct in charge of managing Evm memory
@@ -382,31 +154,40 @@ pub fn Frame(comptime config: FrameConfig) type {
         stack: Stack, // 16B - Stack operations (EVERY arithmetic/stack op)
         gas_remaining: GasType, // 8B - Gas tracking (checked in most ops)
         dispatch: Dispatch, // 16B - Dispatch cursor (EVERY instruction)
-        memory: Memory, // 16B - Memory operations (frequent)
         evm_ptr: *anyopaque, // 8B - EVM instance pointer (storage/context/system)
+        memory: Memory, // 16B - Memory operations (frequent)
         // Total: 64 bytes exactly
 
         // CACHE LINE 2 (64 bytes) - STORAGE/CONTEXT/EXECUTION
+        // TODO: We should be able to store direct pointers to the constant thus we shouldn't need to store it here
+        // We can keep it stored where it's originally stored
         // These fields are accessed together during storage ops and execution
-        contract_address: Address, // 20B - Current contract (storage ops, ADDRESS)
         u256_constants: []const WordType, // 16B - Constants from dispatch (PUSH9-32)
-        jump_table: *const Dispatch.JumpTable, // 8B - Jump table for JUMP/JUMPI
+        contract_address: Address, // 20B - Current contract (storage ops, ADDRESS)
+        // TODO: We should be able to allocate this when we return
         output: []u8, // 16B - Output data (RETURN/REVERT/calls)
-        _padding2: [4]u8 = undefined, // 4B - Alignment padding
         // Total: 64 bytes
 
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         // These fields are rarely accessed (specific opcodes only)
         // Note: database moved to EVM struct - access via evm_ptr for better cache locality
+        // TODO: We should be able to remove this in favor of storing value as metadata
         caller: Address, // 20B - Only for CALLER opcode
+        // TODO: We should be able to remove this in favor of storing value as metadata
         value: WordType, // 32B - Only for CALLVALUE opcode (moved from warm)
+        // TODO: We should be able to remove this in favor of storing pointer as metadata
         calldata_slice: []const u8, // 16B - Only for CALLDATALOAD/COPY
+        // TODO: We should be able to remove this in favor of storing pointer as metadata
         code: []const u8 = &[_]u8{}, // 16B - Only for CODESIZE/CODECOPY
+        // TODO: We should be able to remove this in favor of storing pointer as metadata
         authorized_address: ?Address = null, // 21B - EIP-3074 (rarely used)
+        // TODO: We should be able to remove this in favor of storing pointer as metadata
+        jump_table: *const Dispatch.JumpTable, // 8B - Jump table for JUMP/JUMPI
 
         // Loop safety counter for preventing infinite dispatch loops
         instruction_counter: config.createLoopSafetyCounter(),
 
+        // TODO: We shouldn't need to store this on frame if it's only for tracer sync
         // First block gas amount that was pre-charged (for tracer synchronization)
         first_block_gas_charged: u32 = 0,
 
@@ -420,60 +201,38 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Initialize a new execution frame.
         /// Note: database is now accessed through evm_ptr for better cache locality
         pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
-            // Frame initialization will be traced after frame is created
-            // Stack initialization - tracer will be set later via frame access
-            var stack = Stack.init(allocator, null) catch {
-                @branchHint(.cold);
-                // Can't use tracer yet since Frame is not initialized
-                // This error will be traced when caught by the caller
-                return Error.AllocationError;
-            };
+            var stack = Stack.init(allocator, null) catch return Error.AllocationError;
             errdefer stack.deinit(allocator);
-            var memory = Memory.init(allocator) catch {
-                @branchHint(.cold);
-                // Can't use tracer yet since Frame is not initialized
-                // This error will be traced when caught by the caller
-                return Error.AllocationError;
-            };
+
+            var memory = Memory.init(allocator) catch return Error.AllocationError;
             errdefer memory.deinit(allocator);
 
-            // Initialization success will be traced by caller
             return Self{
-                // Cache line 1 - TRUE HOT PATH
                 .stack = stack,
                 .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
                 .dispatch = Dispatch{ .cursor = undefined }, // Will be set during interpret
                 .memory = memory,
                 .evm_ptr = evm_ptr,
-                // Cache line 2 - STORAGE/CONTEXT/EXECUTION
                 .contract_address = Address.ZERO_ADDRESS,
                 .u256_constants = &[_]WordType{}, // Will be set during interpret
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
-                .output = &[_]u8{}, // Start with empty output
+                .output = &[_]u8{},
                 ._padding2 = undefined,
-                // Cache line 3+ - COLD PATH
                 .caller = caller,
                 .value = value,
                 .calldata_slice = calldata_input,
                 .code = &[_]u8{}, // Will be set during interpret
                 .authorized_address = null,
-                // Initialize the instruction counter
                 .instruction_counter = config.createLoopSafetyCounter().init(config.loop_quota orelse 0),
                 .first_block_gas_charged = 0,
             };
         }
         /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            {
-                self.getTracer().debug("Frame.deinit: Starting cleanup, output_len={}", .{self.output.len});
-            }
+            self.getTracer().debug("Frame.deinit: Starting cleanup, output_len={}", .{self.output.len});
             self.stack.deinit(allocator);
             self.memory.deinit(allocator);
-            // No need to free any arena-allocated data (output, calldata)
-            // The arena allocator will be reset after the call completes
-            {
-                self.getTracer().debug("Frame.deinit: Cleanup complete", .{});
-            }
+            self.getTracer().debug("Frame.deinit: Cleanup complete", .{});
         }
 
         /// Execute this frame without tracing (backward compatibility method).
@@ -481,83 +240,41 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// @param bytecode_raw: Raw bytecode to execute
         pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
             @branchHint(.likely);
-            return self.interpret_with_tracer(bytecode_raw, null, {});
-        }
 
-        /// Execute this frame by building a dispatch schedule and jumping to the first handler.
-        /// Performs a one-time static gas charge for the first basic block before execution.
-        ///
-        /// @param bytecode_raw: Raw bytecode to execute
-        /// Execute bytecode with tracer support
-        /// @param tracer_instance: Instance of the tracer 
-        pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: type, tracer_instance: *TracerType) Error!void {
-            @branchHint(.likely);
-
-            // Tracer instance is passed but no longer used - tracing is handled through getTracer()
-            _ = tracer_instance;
-
-            {
-                self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
-            }
-
+            self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
-                {
-                    self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
-                }
+                self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
                 return Error.BytecodeTooLarge;
             }
-
-            // Store the raw code in the frame
             self.code = bytecode_raw;
-
-            // Initialize PC tracker with bytecode for validation
-            {
-                self.getTracer().initPcTracker(bytecode_raw);
-
-                // Initialize MinimalEvm sidecar for validation (only in Debug/ReleaseSafe)
-                // CRITICAL: Pass the Frame's CURRENT gas_remaining as MinimalEvm's starting gas
-                // This ensures both start with identical gas amounts for proper differential testing
-                const initial_gas_for_minimal_evm = @as(i64, @intCast(self.gas_remaining));
-                self.getTracer().onInterpret(self, bytecode_raw, initial_gas_for_minimal_evm);
-            }
+            self.getTracer().initPcTracker(bytecode_raw);
+            self.getTracer().onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
 
             const allocator = self.getAllocator();
 
-            // Either get from cache or create new dispatch
             var schedule: []const Dispatch.Item = undefined;
             var jump_table_ptr: *Dispatch.JumpTable = undefined;
             var owned_schedule: ?Dispatch.DispatchSchedule = null;
             var owned_jump_table: ?*Dispatch.JumpTable = null;
 
             // Check cache first
-            if (global_dispatch_cache) |*cache| {
+            if (dispatch_cache.global_dispatch_cache) |*cache| {
                 if (cache.lookup(bytecode_raw)) |cached_data| {
-                    {
-                        self.getTracer().debug("Frame: Using cached dispatch schedule", .{});
-                    }
-                    // Use cached data
+                    self.getTracer().debug("Frame: Using cached dispatch schedule", .{});
                     schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0 .. cached_data.schedule.len / @sizeOf(Dispatch.Item)];
                     const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0 .. cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
-                    // Allocate jump table on heap for cached data
                     const cached_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
                     cached_jump_table.* = .{ .entries = jump_table_entries };
                     jump_table_ptr = cached_jump_table;
                     owned_jump_table = cached_jump_table;
 
-                    // Release cache entry when done
                     defer cache.release(bytecode_raw);
                 } else {
-                    {
-                        self.getTracer().debug("Frame: Cache miss, creating new dispatch", .{});
-                    }
-                    // Cache miss - create new dispatch
-                    const bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer()))
-                    catch |e| {
+                    self.getTracer().debug("Frame: Cache miss, creating new dispatch", .{});
+                    const bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer())) catch |e| {
                         @branchHint(.cold);
-                        {
-                            self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, e);
-                        }
+                        self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, e);
                         return switch (e) {
                             error.BytecodeTooLarge => Error.BytecodeTooLarge,
                             error.InvalidOpcode => Error.InvalidOpcode,
@@ -567,19 +284,12 @@ pub fn Frame(comptime config: FrameConfig) type {
                             else => Error.AllocationError,
                         };
                     };
-                    // Bytecode doesn't need deinit as it's value-based now
-
                     const handlers = &Self.opcode_handlers;
-
-                    // Create dispatch schedule
-                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, 
-                        @as(?@TypeOf(self.getTracer()), self.getTracer())
-                    ) catch {
+                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, @as(?@TypeOf(self.getTracer()), self.getTracer())) catch {
                         return Error.AllocationError;
                     };
                     schedule = owned_schedule.?.items;
-                    
-                    // Pretty print dispatch schedule in debug builds
+
                     if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
                         const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
                         const pretty_output = dispatch_pretty_print.pretty_print(
@@ -589,42 +299,33 @@ pub fn Frame(comptime config: FrameConfig) type {
                             Self,
                             Dispatch.Item,
                         ) catch |err| blk: {
-                            {
-                                self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
-                            }
+                            self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
                             break :blk null;
                         };
                         if (pretty_output) |output| {
                             defer allocator.free(output);
-                            {
-                                self.getTracer().debug("\n{s}", .{output});
-                            }
+                            self.getTracer().debug("\n{s}", .{output});
                         }
                     }
 
-                    // Create jump table on heap
                     const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
                     const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
                     heap_jump_table.* = jt;
                     jump_table_ptr = heap_jump_table;
                     owned_jump_table = heap_jump_table;
 
-                    // Try to cache it
                     const schedule_bytes = std.mem.sliceAsBytes(schedule);
                     const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
                     cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
                         @branchHint(.cold);
-                        {
-                            self.getTracer().err("Failed to cache dispatch schedule for bytecode", .{});
-                        }
+                        self.getTracer().err("Failed to cache dispatch schedule for bytecode", .{});
+                        // Not a fatal error
                     };
                 }
             } else {
                 @branchHint(.unlikely);
-                // No cache available - create new dispatch
                 const bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
                     @branchHint(.unlikely);
-                    // Frame bytecode init failure - already traced by EVM caller
                     return switch (e) {
                         error.BytecodeTooLarge => Error.BytecodeTooLarge,
                         error.InvalidOpcode => Error.InvalidOpcode,
@@ -634,17 +335,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                         else => Error.AllocationError,
                     };
                 };
-                // Bytecode doesn't need deinit as it's value-based now
 
                 const handlers = &Self.opcode_handlers;
 
-                // Create dispatch schedule
                 owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, null) catch {
                     return Error.AllocationError;
                 };
                 schedule = owned_schedule.?.items;
-                
-                // Pretty print dispatch schedule in debug builds
+
                 if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
                     const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
                     const pretty_output = dispatch_pretty_print.pretty_print(
@@ -654,20 +352,15 @@ pub fn Frame(comptime config: FrameConfig) type {
                         Self,
                         Dispatch.Item,
                     ) catch |err| blk: {
-                        {
-                            self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
-                        }
+                        self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
                         break :blk null;
                     };
                     if (pretty_output) |output| {
                         defer allocator.free(output);
-                        {
-                            self.getTracer().debug("\n{s}", .{output});
-                        }
+                        self.getTracer().debug("\n{s}", .{output});
                     }
                 }
 
-                // Create jump table on heap
                 const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
                 const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
                 heap_jump_table.* = jt;
@@ -675,7 +368,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 owned_jump_table = heap_jump_table;
             }
 
-            // Clean up owned resources when done
             defer {
                 if (owned_schedule) |*s| s.deinit();
                 if (owned_jump_table) |jt| {
@@ -684,26 +376,18 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
             }
 
-            // Tracer is now handled directly by the tracer module, not frame_handlers
-
-            // Store pointer to jump table in frame for JUMP/JUMPI handlers
             self.jump_table = jump_table_ptr;
 
-            // Handle first_block_gas
             var start_index: usize = 0;
             var first_block_gas_amount: u32 = 0;
             if (schedule.len > 0) {
-                {
-                    self.getTracer().debug("Frame: schedule[0] type = {s}", .{@tagName(schedule[0])});
-                    if (schedule.len > 1) {
-                        self.getTracer().debug("Frame: schedule[1] type = {s}", .{@tagName(schedule[1])});
-                    }
+                self.getTracer().debug("Frame: schedule[0] type = {s}", .{@tagName(schedule[0])});
+                if (schedule.len > 1) {
+                    self.getTracer().debug("Frame: schedule[1] type = {s}", .{@tagName(schedule[1])});
                 }
                 switch (schedule[0]) {
                     .first_block_gas => |meta| {
-                        {
-                            self.getTracer().debug("Frame: Found first_block_gas with gas={d}, skipping to index 1", .{meta.gas});
-                        }
+                        self.getTracer().debug("Frame: Found first_block_gas with gas={d}, skipping to index 1", .{meta.gas});
                         if (meta.gas > 0) {
                             first_block_gas_amount = meta.gas;
                             try self.consumeGasChecked(@intCast(meta.gas));
@@ -711,19 +395,15 @@ pub fn Frame(comptime config: FrameConfig) type {
                         start_index = 1;
                     },
                     else => {
-                        {
-                            self.getTracer().debug("Frame: No first_block_gas, starting at index 0", .{});
-                        }
+                        self.getTracer().debug("Frame: No first_block_gas, starting at index 0", .{});
                     },
                 }
             }
 
-            // Set up dispatch cursor
             self.dispatch = Dispatch{
                 .cursor = schedule.ptr + start_index,
             };
 
-            // Store the first_block_gas_amount for tracer synchronization
             self.first_block_gas_charged = first_block_gas_amount;
 
             // Store u256_constants slice for Frame access
@@ -735,60 +415,25 @@ pub fn Frame(comptime config: FrameConfig) type {
                     const last_item = schedule[schedule.len - 1];
                     const second_last_item = schedule[schedule.len - 2];
 
-                    // Tracer is now part of EVM struct, not config
-                    // Always using non-traced handlers now
-                    {
-                        const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
-                        if (last_item.opcode_handler != stop_handler or second_last_item.opcode_handler != stop_handler) {
-                            {
-                                self.getTracer().err("Frame.interpret: Bytecode stream does not end with 2 stop handlers", .{});
-                            }
-                            return Error.InvalidOpcode;
-                        }
+                    const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
+                    if (last_item.opcode_handler != stop_handler or second_last_item.opcode_handler != stop_handler) {
+                        self.getTracer().err("Frame.interpret: Bytecode stream does not end with 2 stop handlers", .{});
+                        return Error.InvalidOpcode;
                     }
                 } else {
-                    {
-                        self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.InvalidOpcode);
-                    }
+                    self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.InvalidOpcode);
                     return Error.InvalidOpcode;
                 }
             }
 
-            {
-                self.getTracer().debug("Frame: Starting opcode execution, first_item_type={s}", .{@tagName(self.dispatch.cursor[0])});
-            }
-
-            // Debug: Check what handler we're about to call
-            {
-                if (self.dispatch.cursor[0] == .opcode_handler) {
-                    const handler = self.dispatch.cursor[0].opcode_handler;
-                    // Check if it's a regular opcode handler
-                    inline for (0..256) |i| {
-                        if (Self.opcode_handlers[i] == handler) {
-                            self.getTracer().debug("Frame: About to execute regular opcode 0x{x:0>2} handler", .{i});
-                            break;
-                        }
-                    }
-                    // Check if it's PUSH_MSTORE_INLINE specifically (the problematic one)
-                    const push_mstore_inline_handler = frame_handlers.getSyntheticHandler(Self, @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE));
-                    if (handler == push_mstore_inline_handler) {
-                        self.getTracer().debug("Frame: About to execute PUSH_MSTORE_INLINE handler!", .{});
-                    }
-                }
-            }
-
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
-            {
-                self.getTracer().assert(false, "Handlers should never return normally");
-            }
+            self.getTracer().assert(false, "Handlers should never return normally");
         }
 
         /// Create a deep copy of the frame.
         /// This is used by DebugPlan to create a sidecar frame for validation.
         pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
-            {
-                self.getTracer().debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}", .{ self.stack.get_slice().len, self.memory.size() });
-            }
+            self.getTracer().debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}", .{ self.stack.get_slice().len, self.memory.size() });
             var new_stack = Stack.init(allocator, @as(?*anyopaque, @ptrCast(&self.getEvm().tracer))) catch return Error.AllocationError;
             errdefer new_stack.deinit(allocator);
             const src_stack_slice = self.stack.get_slice();
@@ -814,9 +459,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 break :blk output_copy;
             } else &[_]u8{};
 
-            {
-                self.getTracer().debug("Frame.copy: Deep copy complete", .{});
-            }
+            self.getTracer().debug("Frame.copy: Deep copy complete", .{});
             return Self{
                 // Cache line 1 - TRUE HOT PATH
                 .stack = new_stack,
@@ -846,24 +489,16 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Returns OutOfGas if insufficient gas remaining
         pub fn consumeGasChecked(self: *Self, amount: u32) Error!void {
             // Skip gas checks if disabled in config
-            if (comptime config.disable_gas_checks) {
-                return;
-            }
+            if (comptime config.disable_gas_checks) return;
 
-            // Cast to GasType - should always succeed with u32 input
-            // Only fails if GasType is smaller than u32 (impossible with current config)
             const amt = std.math.cast(GasType, amount) orelse {
-                {
-                    self.getTracer().err("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
-                }
+                self.getTracer().err("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
                 return Error.GasOverflow;
             };
 
             // Check if we have enough gas
             if (amt > self.gas_remaining) {
-                {
-                    self.getTracer().debug("Frame.consumeGasChecked: Out of gas, required={}, remaining={}", .{ amt, self.gas_remaining });
-                }
+                self.getTracer().debug("Frame.consumeGasChecked: Out of gas, required={}, remaining={}", .{ amt, self.gas_remaining });
                 return Error.OutOfGas;
             }
 
@@ -900,11 +535,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             comptime opcode: Dispatch.UnifiedOpcode,
             cursor: [*]const Dispatch.Item,
         ) void {
-            if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) {
-                return;
-            }
-
-            // Delegate to Dispatch's validation logic which encapsulates all the checks
+            if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) return;
             const dispatch = Dispatch{ .cursor = cursor };
             dispatch.validateOpcodeHandler(opcode, self);
         }
@@ -916,12 +547,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             comptime opcode: Dispatch.UnifiedOpcode,
             cursor: [*]const Dispatch.Item,
         ) void {
-            // Call tracer's before_instruction with cursor for metadata access (if tracer is enabled)
-            {
-                self.getTracer().before_instruction(self, opcode, cursor);
-            }
-
-            // Validate opcode handler (only in debug/safe builds)
+            self.getTracer().before_instruction(self, opcode, cursor);
             self.validateOpcodeHandler(opcode, cursor);
         }
 
@@ -933,10 +559,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             next_handler: OpcodeHandler,
             next_cursor: [*]const Dispatch.Item,
         ) void {
-            // Call tracer's after_instruction with next handler and cursor to validate schedule alignment (if tracer is enabled)
-            {
-                self.getTracer().after_instruction(self, opcode, next_handler, next_cursor);
-            }
+            self.getTracer().after_instruction(self, opcode, next_handler, next_cursor);
         }
 
         /// Called when an instruction completes with a terminal state
@@ -945,10 +568,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             self: *Self,
             comptime opcode: Dispatch.UnifiedOpcode,
         ) void {
-            // Notify tracer about terminal states (if tracer is enabled)
-            {
-                self.getTracer().after_complete(self, opcode);
-            }
+            self.getTracer().after_complete(self, opcode);
         }
 
         /// Pretty print the frame state for debugging and visualization.
@@ -1052,7 +672,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 try writer.print("  {s}(empty){s}\n", .{ Colors.dim, Colors.reset });
             }
 
-            // Calldata preview (if present)
             const calldata_slice = self.calldata();
             if (calldata_slice.len > 0) {
                 try writer.print("\n{s}📥 Calldata [{d} bytes]:{s} ", .{ Colors.yellow, calldata_slice.len, Colors.reset });
@@ -1067,23 +686,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                 try writer.print("\n", .{});
             }
 
-            // Logs count - removed as Frame doesn't track logs directly
-
-            // Output data (if any)
             if (self.output.len > 0) {
                 try writer.print("\n{s}📤 Output [{d} bytes]:{s} ", .{ Colors.green, self.output.len, Colors.reset });
-
                 const output_preview_len = @min(self.output.len, 32);
-                for (self.output[0..output_preview_len]) |byte| {
-                    try writer.print("{x:0>2}", .{byte});
-                }
-                if (self.output.len > 32) {
-                    try writer.print("...");
-                }
+                for (self.output[0..output_preview_len]) |byte| try writer.print("{x:0>2}", .{byte});
+                if (self.output.len > 32) try writer.print("...");
                 try writer.print("\n", .{});
             }
 
-            // Footer
             try writer.print("\n{s}{s}════════════════════════════════════════════════════════════════{s}\n", .{ Colors.dim, Colors.cyan, Colors.reset });
 
             return try output.toOwnedSlice(allocator);
