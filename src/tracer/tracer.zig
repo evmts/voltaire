@@ -20,15 +20,56 @@ const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 
 // ============================================================================
-// DEFAULT TRACER
+// TRACER CONFIGURATION
 // ============================================================================
 
-// Default tracer does not do anything in release modes but does extensive defensive validation
-// In debug and safe mode. In a debug mode the tracer can be thought of as unit tests that run in
-// real time as the evm is executing and we are expected to have similar levels of coverage.
-// For this reason, the tracer is intentionally decoupled from the EVM and is expected to share
-// minimal code with it.
-pub const DefaultTracer = struct {
+/// Configuration for the tracer
+pub const TracerConfig = struct {
+    /// Enable execution validation with MinimalEvm (default: false)
+    enable_validation: bool = false,
+    
+    /// Enable execution step capture (default: false)
+    enable_step_capture: bool = false,
+    
+    /// Enable PC tracking (default: false)
+    enable_pc_tracking: bool = false,
+    
+    /// Enable gas tracking (default: false) 
+    enable_gas_tracking: bool = false,
+    
+    /// Enable debug logging (default: false)
+    enable_debug_logging: bool = false,
+    
+    /// Default configuration with all tracing disabled
+    pub const disabled = TracerConfig{};
+    
+    /// Debug configuration with validation enabled
+    pub const debug = TracerConfig{
+        .enable_validation = true,
+        .enable_pc_tracking = true,
+        .enable_gas_tracking = true,
+        .enable_debug_logging = true,
+    };
+    
+    /// Full tracing configuration with all features enabled
+    pub const full = TracerConfig{
+        .enable_validation = true,
+        .enable_step_capture = true,
+        .enable_pc_tracking = true,
+        .enable_gas_tracking = true,
+        .enable_debug_logging = true,
+    };
+};
+
+// ============================================================================
+// TRACER
+// ============================================================================
+
+// Main tracer implementation that can be configured via TracerConfig.
+// In release mode with default config, most operations become no-ops.
+// The tracer is intentionally decoupled from the EVM and shares minimal code.
+pub const Tracer = struct {
+    config: TracerConfig,
     allocator: std.mem.Allocator,
     // Empty steps list to satisfy EVM interface
     steps: std.ArrayList(ExecutionStep),
@@ -80,7 +121,7 @@ pub const DefaultTracer = struct {
         error_msg: ?[]const u8,
     };
 
-    pub fn init(allocator: std.mem.Allocator) DefaultTracer {
+    pub fn init(allocator: std.mem.Allocator, config: TracerConfig) Tracer {
         return .{
             .allocator = allocator,
             .steps = std.ArrayList(ExecutionStep){},
