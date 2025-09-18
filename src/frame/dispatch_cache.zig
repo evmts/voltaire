@@ -67,7 +67,7 @@ pub const DispatchCache = struct {
         }
     }
 
-    fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
+    pub fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
         // Skip cache for small bytecode - compute on-demand is faster
         if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
             return null;
@@ -99,7 +99,7 @@ pub const DispatchCache = struct {
         return null;
     }
 
-    fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
+    pub fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
         // Skip cache for small bytecode
         if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
             return;
@@ -151,7 +151,7 @@ pub const DispatchCache = struct {
         };
     }
 
-    fn release(self: *DispatchCache, bytecode: []const u8) void {
+    pub fn release(self: *DispatchCache, bytecode: []const u8) void {
         // Skip for small bytecode
         if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
             return;
@@ -204,7 +204,7 @@ pub const DispatchCache = struct {
 };
 
 /// Global dispatch cache instance
-var global_dispatch_cache: ?DispatchCache = null;
+pub var global_dispatch_cache: ?DispatchCache = null;
 var cache_mutex: std.Thread.Mutex = .{};
 
 /// Initialize the global dispatch cache
