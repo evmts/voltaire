@@ -437,6 +437,26 @@ pub fn build(b: *std.Build) void {
     const test_gt_bug = b.step("test-gt-bug", "Test GT opcode bug");
     test_gt_bug.dependOn(&b.addRunArtifact(gt_bug_test).step);
 
+    // Development test for quick debugging
+    const dev_test = b.addTest(.{
+        .name = "dev-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/dev_test.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+    });
+    dev_test.root_module.addImport("evm", modules.evm_mod);
+    dev_test.root_module.addImport("primitives", modules.primitives_mod);
+    dev_test.root_module.addImport("crypto", modules.crypto_mod);
+    dev_test.root_module.addImport("build_options", config.options_mod);
+    dev_test.linkLibrary(c_kzg_lib);
+    dev_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| dev_test.linkLibrary(bn254);
+    dev_test.linkLibC();
+    const test_dev = b.step("test-dev", "Run development test for debugging");
+    test_dev.dependOn(&b.addRunArtifact(dev_test).step);
+
     // Per-opcode differential tests discovered in test/evm/opcodes
     // We dynamically scan the directory and add a test target for each file matching *_test.zig
     const opcode_tests_step = b.step("test-opcodes", "Run all per-opcode differential tests");

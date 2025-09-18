@@ -43,7 +43,7 @@ pub const MainnetEvmWithTracer = Evm(EvmConfig{
         .enable_step_capture = true,  // Enable step capture for JSON-RPC trace  
         .enable_pc_tracking = true,
         .enable_gas_tracking = true,
-        .enable_debug_logging = false,  // Disable debug logging for cleaner output
+        .enable_debug_logging = true,  // Enable debug logging to see what's happening
         .enable_advanced_trace = false,  // Disable advanced trace to simplify
     },
 });

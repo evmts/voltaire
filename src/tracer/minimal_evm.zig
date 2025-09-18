@@ -190,7 +190,7 @@ pub const MinimalEvm = struct {
 
         const arena_allocator = self.arena.allocator();
 
-        self.frames = std.ArrayList(*MinimalFrame).empty;
+        self.frames = std.ArrayList(*MinimalFrame){};  // Unmanaged ArrayList, default init
         self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         self.balances = std.AutoHashMap(Address, u256).init(arena_allocator);
         self.code = std.AutoHashMap(Address, []const u8).init(arena_allocator);

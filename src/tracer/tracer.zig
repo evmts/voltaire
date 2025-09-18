@@ -185,9 +185,9 @@ pub const Tracer = struct {
         /// Initialize the ring buffer
         pub fn init() RingBuffer {
             return .{
-                .buffer = undefined,
-                .head = 0,
-                .count = 0,
+        .buffer = undefined,
+        .head = 0,
+        .count = 0,
             };
         }
 
@@ -196,7 +196,7 @@ pub const Tracer = struct {
             self.buffer[self.head] = entry;
             self.head = (self.head + 1) % CAPACITY;
             if (self.count < CAPACITY) {
-                self.count += 1;
+        self.count += 1;
             }
         }
 
@@ -206,7 +206,7 @@ pub const Tracer = struct {
             
             // If buffer is not full, return from start
             if (self.count < CAPACITY) {
-                return self.buffer[0..self.count];
+        return self.buffer[0..self.count];
             }
             
             // Buffer is full, entries wrap around
@@ -219,9 +219,9 @@ pub const Tracer = struct {
             if (self.count == 0) return out[0..0];
             
             if (self.count < CAPACITY) {
-                // Buffer not full, simple copy
-                @memcpy(out[0..self.count], self.buffer[0..self.count]);
-                return out[0..self.count];
+        // Buffer not full, simple copy
+        @memcpy(out[0..self.count], self.buffer[0..self.count]);
+        return out[0..self.count];
             }
             
             // Buffer is full, reorder from oldest to newest
@@ -232,7 +232,7 @@ pub const Tracer = struct {
             @memcpy(out[0..newer_count], self.buffer[oldest_idx..CAPACITY]);
             // Copy newer entries (from start to head)
             if (oldest_idx > 0) {
-                @memcpy(out[newer_count..CAPACITY], self.buffer[0..oldest_idx]);
+        @memcpy(out[newer_count..CAPACITY], self.buffer[0..oldest_idx]);
             }
             
             return out[0..CAPACITY];
@@ -245,18 +245,18 @@ pub const Tracer = struct {
 
             // ANSI color codes
             const Colors = struct {
-                const reset = "\x1b[0m";
-                const bold = "\x1b[1m";
-                const dim = "\x1b[90m";
-                const red = "\x1b[91m";
-                const green = "\x1b[92m";
-                const yellow = "\x1b[93m";
-                const cyan = "\x1b[96m";
-                const magenta = "\x1b[95m";
-                const bright_red = "\x1b[91;1m";
-                const bg_red = "\x1b[41m";
-                const bg_green = "\x1b[42m";
-                const black = "\x1b[30m";
+        const reset = "\x1b[0m";
+        const bold = "\x1b[1m";
+        const dim = "\x1b[90m";
+        const red = "\x1b[91m";
+        const green = "\x1b[92m";
+        const yellow = "\x1b[93m";
+        const cyan = "\x1b[96m";
+        const magenta = "\x1b[95m";
+        const bright_red = "\x1b[91;1m";
+        const bg_red = "\x1b[41m";
+        const bg_green = "\x1b[42m";
+        const black = "\x1b[30m";
             };
 
             // Header
@@ -265,8 +265,8 @@ pub const Tracer = struct {
             try output.writer(allocator).print("{s}═══════════════════════════════════════════════════════════════════{s}\n\n", .{ Colors.bright_red, Colors.reset });
 
             if (self.count == 0) {
-                try output.writer(allocator).print("{s}  (No instructions executed yet){s}\n", .{ Colors.dim, Colors.reset });
-                return output.toOwnedSlice(allocator);
+        try output.writer(allocator).print("{s}  (No instructions executed yet){s}\n", .{ Colors.dim, Colors.reset });
+        return output.toOwnedSlice(allocator);
             }
 
             // Column headers
@@ -279,38 +279,38 @@ pub const Tracer = struct {
 
             // Display each entry
             for (entries) |entry| {
-                // Step number
-                try output.writer(allocator).print("{s}{d:6}{s} | ", .{ Colors.cyan, entry.step_number, Colors.reset });
-                
-                // Schedule index
-                try output.writer(allocator).print("{s}{d:5}{s} | ", .{ Colors.dim, entry.schedule_index, Colors.reset });
+        // Step number
+        try output.writer(allocator).print("{s}{d:6}{s} | ", .{ Colors.cyan, entry.step_number, Colors.reset });
+        
+        // Schedule index
+        try output.writer(allocator).print("{s}{d:5}{s} | ", .{ Colors.dim, entry.schedule_index, Colors.reset });
 
-                // Opcode with coloring
-                const opcode_color = if (entry.is_synthetic) Colors.bg_green else Colors.yellow;
-                if (entry.is_synthetic) {
-                    try output.writer(allocator).print("{s}{s}⚡{s:<15}{s} | ", .{ 
-                        opcode_color, Colors.black, entry.opcode_name, Colors.reset 
-                    });
-                } else {
-                    try output.writer(allocator).print("{s}{s:<16}{s} | ", .{ 
-                        opcode_color, entry.opcode_name, Colors.reset 
-                    });
-                }
+        // Opcode with coloring
+        const opcode_color = if (entry.is_synthetic) Colors.bg_green else Colors.yellow;
+        if (entry.is_synthetic) {
+            try output.writer(allocator).print("{s}{s}⚡{s:<15}{s} | ", .{ 
+                opcode_color, Colors.black, entry.opcode_name, Colors.reset 
+            });
+        } else {
+            try output.writer(allocator).print("{s}{s:<16}{s} | ", .{ 
+                opcode_color, entry.opcode_name, Colors.reset 
+            });
+        }
 
-                // Gas change
-                const gas_used = entry.gas_before - entry.gas_after;
-                const gas_color = if (gas_used > 100) Colors.red else if (gas_used > 20) Colors.yellow else Colors.green;
-                try output.writer(allocator).print("{s}{d:8} → {d:<8}{s} | ", .{ 
-                    gas_color, entry.gas_before, entry.gas_after, Colors.reset 
-                });
+        // Gas change
+        const gas_used = entry.gas_before - entry.gas_after;
+        const gas_color = if (gas_used > 100) Colors.red else if (gas_used > 20) Colors.yellow else Colors.green;
+        try output.writer(allocator).print("{s}{d:8} → {d:<8}{s} | ", .{ 
+            gas_color, entry.gas_before, entry.gas_after, Colors.reset 
+        });
 
-                // Stack size
-                try output.writer(allocator).print("{s}{d:5}{s} | ", .{ Colors.dim, entry.stack_size, Colors.reset });
+        // Stack size
+        try output.writer(allocator).print("{s}{d:5}{s} | ", .{ Colors.dim, entry.stack_size, Colors.reset });
 
-                // Memory size
-                try output.writer(allocator).print("{s}{d:6}{s}", .{ Colors.dim, entry.memory_size, Colors.reset });
+        // Memory size
+        try output.writer(allocator).print("{s}{d:6}{s}", .{ Colors.dim, entry.memory_size, Colors.reset });
 
-                try output.writer(allocator).print("\n", .{});
+        try output.writer(allocator).print("\n", .{});
             }
 
             try output.writer(allocator).print("\n", .{});
@@ -322,22 +322,22 @@ pub const Tracer = struct {
         // If tracer is disabled, return a minimal disabled tracer
         if (!config.enabled) {
             return .{
-                .config = config,
-                .allocator = allocator,
-                .steps = std.ArrayList(ExecutionStep){},
-                .advanced_steps = std.ArrayList(AdvancedStep){},
-                .pc_tracker = null,
-                .gas_tracker = null,
-                .current_pc = 0,
-                .bytecode = &[_]u8{},
-                .minimal_evm = null,
-                .instruction_count = 0,
-                .schedule_index = 0,
-                .simple_instruction_count = 0,
-                .fused_instruction_count = 0,
-                // Disabled tracer still needs safety counter for protection
-                .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
-                .recent_opcodes = RingBuffer.init(),
+        .config = config,
+        .allocator = allocator,
+        .steps = std.ArrayList(ExecutionStep){},
+        .advanced_steps = std.ArrayList(AdvancedStep){},
+        .pc_tracker = null,
+        .gas_tracker = null,
+        .current_pc = 0,
+        .bytecode = &[_]u8{},
+        .minimal_evm = null,
+        .instruction_count = 0,
+        .schedule_index = 0,
+        .simple_instruction_count = 0,
+        .fused_instruction_count = 0,
+        // Disabled tracer still needs safety counter for protection
+        .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
+        .recent_opcodes = RingBuffer.init(),
             };
         }
         
@@ -394,10 +394,10 @@ pub const Tracer = struct {
         // Clean up execution steps
         for (self.steps.items) |step| {
             if (step.stack_before.len > 0) {
-                self.allocator.free(step.stack_before);
+        self.allocator.free(step.stack_before);
             }
             if (step.stack_after.len > 0) {
-                self.allocator.free(step.stack_after);
+        self.allocator.free(step.stack_after);
             }
         }
         self.steps.deinit(self.allocator);
@@ -405,7 +405,7 @@ pub const Tracer = struct {
         // Clean up advanced steps
         for (self.advanced_steps.items) |step| {
             if (step.fusion_info) |fusion_desc| {
-                self.allocator.free(fusion_desc);
+        self.allocator.free(fusion_desc);
             }
         }
         self.advanced_steps.deinit(self.allocator);
@@ -436,23 +436,23 @@ pub const Tracer = struct {
         // Early exit if validation and step capture are disabled
         if (!self.config.enable_validation and !self.config.enable_step_capture) return;
         
-        const builtin = @import("builtin");
-        if (self.config.enable_validation and comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+        // Initialize MinimalEvm if validation is enabled
+        if (self.config.enable_validation) {
             // Get EVM depth to check if this is an inner call
             const main_evm = frame.getEvm();
-            const depth = main_evm.depth;
+            _ = main_evm.depth; // Currently unused but may be needed for inner frame handling
             
-            // Only create/reset MinimalEvm for the outermost frame (depth 1)
-            // Inner frames (depth > 1) will be handled by MinimalEvm's inner_call
-            if (depth > 1) {
-                self.debug("Skipping MinimalEvm init for inner frame at depth {d}", .{depth});
-                return;
+            // Skip MinimalEvm init only if we already have one initialized
+            // Tracing may start at depth 2 for transaction context
+            if (self.minimal_evm != null) {
+        self.debug("MinimalEvm already initialized, skipping", .{});
+        return;
             }
             
             // Clean up any existing MinimalEvm before resetting
             if (self.minimal_evm) |evm| {
-                evm.deinitPtr(self.allocator);
-                self.minimal_evm = null;
+        evm.deinitPtr(self.allocator);
+        self.minimal_evm = null;
             }
 
             // Reset execution counters
@@ -465,80 +465,81 @@ pub const Tracer = struct {
             self.instruction_safety.count = 0;
 
             if (bytecode.len > 0) {
-                    self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
-                        self.minimal_evm = null;
-                        return;
-                    };
-                    self.debug("Created MinimalEvm at 0x{x}", .{@intFromPtr(self.minimal_evm)});
-                }
+            self.minimal_evm = MinimalEvm.initPtr(self.allocator) catch {
+                self.minimal_evm = null;
+                return;
+            };
+            self.debug("Created MinimalEvm at 0x{x}", .{@intFromPtr(self.minimal_evm)});
+        }
 
-                if (self.minimal_evm) |evm| {
-                    // Get the main EVM for context  
-                    const evm_instance = frame.getEvm();
+        if (self.minimal_evm) |evm| {
+            // Get the main EVM for context  
+            const evm_instance = frame.getEvm();
 
-                    // Sync blockchain context from EVM
-                    const block_info = evm_instance.get_block_info();
-                    evm.setBlockchainContext(
-                        evm_instance.get_chain_id(),
-                        block_info.number,
-                        block_info.timestamp,
-                        block_info.difficulty,
-                        block_info.coinbase,
-                        block_info.gas_limit,
-                        block_info.base_fee,
-                        block_info.blob_base_fee
-                    );
+            // Sync blockchain context from EVM
+            const block_info = evm_instance.get_block_info();
+            evm.setBlockchainContext(
+                evm_instance.get_chain_id(),
+                block_info.number,
+                block_info.timestamp,
+                block_info.difficulty,
+                block_info.coinbase,
+                block_info.gas_limit,
+                block_info.base_fee,
+                block_info.blob_base_fee
+            );
 
-                    // Set transaction context
-                    evm.setTransactionContext(evm_instance.get_tx_origin(), evm_instance.gas_price);
+            // Set transaction context
+            evm.setTransactionContext(evm_instance.get_tx_origin(), evm_instance.gas_price);
 
-                    // Get frame context for call
-                    var caller = primitives.ZERO_ADDRESS;
-                    var address = primitives.ZERO_ADDRESS;
-                    var value: u256 = 0;
-                    var calldata: []const u8 = &[_]u8{};
+            // Get frame context for call
+            var caller = primitives.ZERO_ADDRESS;
+            var address = primitives.ZERO_ADDRESS;
+            var value: u256 = 0;
+            var calldata: []const u8 = &[_]u8{};
 
-                    if (@hasField(@TypeOf(frame.*), "contract_address")) {
-                        address = frame.contract_address;
-                    }
-                    if (@hasField(@TypeOf(frame.*), "caller")) {
-                        caller = frame.caller;
-                    }
-                    if (@hasField(@TypeOf(frame.*), "value")) {
-                        value = frame.value;
-                    }
-                    if (@hasField(@TypeOf(frame.*), "calldata_slice")) {
-                        calldata = frame.calldata_slice;
-                    }
+            if (@hasField(@TypeOf(frame.*), "contract_address")) {
+                address = frame.contract_address;
+            }
+            if (@hasField(@TypeOf(frame.*), "caller")) {
+                caller = frame.caller;
+            }
+            if (@hasField(@TypeOf(frame.*), "value")) {
+                value = frame.value;
+            }
+            if (@hasField(@TypeOf(frame.*), "calldata_slice")) {
+                calldata = frame.calldata_slice;
+            }
 
-                    // Ensure the MinimalEvm knows the code for this address (for inner calls)
-                    if (!std.mem.eql(u8, &address.bytes, &primitives.ZERO_ADDRESS.bytes)) {
-                        evm.setCode(address, bytecode) catch {};
-                    }
+            // Ensure the MinimalEvm knows the code for this address (for inner calls)
+            if (!std.mem.eql(u8, &address.bytes, &primitives.ZERO_ADDRESS.bytes)) {
+                evm.setCode(address, bytecode) catch {};
+            }
 
-                    // Create a frame but don't execute it yet - execution will happen step-by-step
-                    const frame_gas_remaining = frame.gas_remaining;
+            // Create a frame but don't execute it yet - execution will happen step-by-step
+            const frame_gas_remaining = frame.gas_remaining;
 
-                    // Create the frame directly using MinimalEvm's arena allocator
-                    const minimal_frame = evm.allocator.create(MinimalFrame) catch return;
-                    minimal_frame.* = MinimalFrame.init(
-                        evm.allocator,
-                        bytecode,
-                        @intCast(frame_gas_remaining),
-                        caller,
-                        address,
-                        value,
-                        calldata,
-                        @as(*anyopaque, @ptrCast(evm)),
-                    ) catch return;
+            // Create the frame directly using MinimalEvm's arena allocator
+            const minimal_frame = evm.allocator.create(MinimalFrame) catch return;
+            minimal_frame.* = MinimalFrame.init(
+                evm.allocator,
+                bytecode,
+                @intCast(frame_gas_remaining),
+                caller,
+                address,
+                value,
+                calldata,
+                @as(*anyopaque, @ptrCast(evm)),
+            ) catch return;
 
-                    // Frame is automatically current via frames stack
+            // Add the frame to MinimalEvm's frames stack
+            evm.frames.append(evm.allocator, minimal_frame) catch return;
 
-                    self.debug("MinimalEvm initialized with bytecode_len={d}, gas={d}", .{
-                        bytecode.len,
-                        frame_gas_remaining,
-                    });
-                }
+            self.debug("MinimalEvm initialized with bytecode_len={d}, gas={d}", .{
+                bytecode.len,
+                frame_gas_remaining,
+            });
+        }
         }
     }
 
@@ -552,120 +553,146 @@ pub const Tracer = struct {
         cursor: [*]const @TypeOf(frame.*).Dispatch.Item
     ) void {
         if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-                // Skip validation for inner frames (depth > 1)
-                const main_evm = frame.getEvm();
-                if (main_evm.depth > 1) {
-                    return;
-                }
-                const opcode_name = comptime @tagName(opcode);
-                const opcode_value = @intFromEnum(opcode);
+        
+        const main_evm = frame.getEvm();
+        const opcode_name = comptime @tagName(opcode);
+        const opcode_value = @intFromEnum(opcode);
 
-                // Track in ring buffer (always active when tracer is enabled)
-                // This happens before validation for crash debugging
-                // Calculate schedule index safely - cursor may be null in some tests
-                var schedule_idx: u32 = 0;
-                if (@hasField(@TypeOf(frame.*), "dispatch")) {
-                    const item_size = @sizeOf(@TypeOf(frame.*).Dispatch.Item);
-                    const cursor_offset = @intFromPtr(cursor) - @intFromPtr(frame.dispatch.cursor);
-                    schedule_idx = @intCast(cursor_offset / item_size);
-                }
-                
-                self.recent_opcodes.write(.{
-                    .step_number = self.instruction_count,
-                    .opcode = opcode_value,
-                    .opcode_name = opcode_name,
-                    .gas_before = frame.gas_remaining,
-                    .gas_after = 0, // Will be updated in after_instruction
-                    .stack_size = @intCast(frame.stack.size()),
-                    .memory_size = @intCast(frame.memory.size()),
-                    .schedule_index = schedule_idx,
-                    .is_synthetic = opcode_value > 0xFF,
-                });
+        // Track in ring buffer (always active when tracer is enabled)
+        // This happens before validation for crash debugging
+        // Calculate schedule index safely - cursor may be null in some tests
+        var schedule_idx: u32 = 0;
+        if (@hasField(@TypeOf(frame.*), "dispatch")) {
+            const item_size = @sizeOf(@TypeOf(frame.*).Dispatch.Item);
+            const cursor_offset = @intFromPtr(cursor) - @intFromPtr(frame.dispatch.cursor);
+            schedule_idx = @intCast(cursor_offset / item_size);
+        }
+        
+        self.recent_opcodes.write(.{
+            .step_number = self.instruction_count,
+            .opcode = opcode_value,
+            .opcode_name = opcode_name,
+            .gas_before = frame.gas_remaining,
+            .gas_after = 0, // Will be updated in after_instruction
+            .stack_size = @intCast(frame.stack.size()),
+            .memory_size = @intCast(frame.memory.size()),
+            .schedule_index = schedule_idx,
+            .is_synthetic = opcode_value > 0xFF,
+        });
 
-                // Debug logging to understand execution order
-                if (self.minimal_evm) |evm| {
-                    const pc = evm.getPC();
-                    const bytecode = evm.getBytecode();
-                    log.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{
-                        opcode_name,
-                        pc,
-                        if (pc < bytecode.len) bytecode[pc] else 0
-                    });
-                }
+        // Capture execution steps if enabled
+        if (self.config.enable_step_capture) {
+            const pc = self.current_pc;
+            
+            // Capture stack state
+            var stack_before: []u256 = &[_]u256{};
+            if (frame.stack.size() > 0) {
+                const stack_slice = frame.stack.get_slice();
+                if (self.allocator.alloc(u256, stack_slice.len)) |stack| {
+                    @memcpy(stack, stack_slice);
+                    stack_before = stack;
+                } else |_| {}
+            }
+            
+            const step = ExecutionStep{
+                .step_number = self.instruction_count,
+                .pc = pc,
+                .opcode = if (opcode_value <= 0xFF) @intCast(opcode_value) else 0,
+                .opcode_name = opcode_name,
+                .gas_before = @intCast(frame.gas_remaining),
+                .gas_after = 0, // Will be filled in after_instruction
+                .gas_cost = 0, // Will be calculated in after_instruction
+                .stack_before = stack_before,
+                .stack_after = &[_]u256{}, // Will be filled in after_instruction
+                .memory_size_before = frame.memory.size(),
+                .memory_size_after = 0, // Will be filled in after_instruction
+                .depth = @intCast(main_evm.depth),
+                .error_occurred = false,
+                .error_msg = null,
+            };
+            
+            self.steps.append(self.allocator, step) catch {};
+        }
 
-                // Validate cursor points to expected handler for regular opcodes
-                if (opcode_value <= 0xff) {
-                    const expected_handler = @TypeOf(frame.*).opcode_handlers[opcode_value];
-                    const actual_handler = cursor[0].opcode_handler;
-                    if (actual_handler != expected_handler) {
-                        self.err("[HANDLER] Handler mismatch for {s}: expected={*}, actual={*}", .{
-                            opcode_name, expected_handler, actual_handler
-                        });
-                    }
-                }
+        // Debug logging to understand execution order
+        if (self.minimal_evm) |evm| {
+            const pc = evm.getPC();
+            const bytecode = evm.getBytecode();
+            log.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{
+                opcode_name,
+                pc,
+                if (pc < bytecode.len) bytecode[pc] else 0
+            });
+        }
 
-                // Increment instruction counts
-                self.instruction_count += 1;
-                if (opcode_value > 0xff) {
-                    self.fused_instruction_count += 1;
-                } else {
-                    self.simple_instruction_count += 1;
-                }
-
-                // Capture advanced execution trace for Frame
-                if (self.config.enable_advanced_trace) {
-                    const step = self.captureAdvancedStep(frame, opcode, cursor) catch |capture_err| {
-                        self.warn("Failed to capture advanced step: {}", .{capture_err});
-                        return;
-                    };
-                    
-                    // Store the step if it's valid (not a dummy)
-                    if (step.step_number > 0) {
-                        self.advanced_steps.append(self.allocator, step) catch |append_err| {
-                            self.warn("Failed to append advanced step: {}", .{append_err});
-                        };
-                    }
-                }
-
-                // Increment safety counter - will panic if limit exceeded
-                // with message about potential infinite loop or excessive instructions
-                self.instruction_safety.inc();
-
-                // Execute MinimalEvm step for validation (if initialized)
-                if (self.minimal_evm) |evm| {
-                    // Log stack state before execution
-                    if (evm.getCurrentFrame()) |mf| {
-                        log.debug("Before executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
-                            opcode_name,
-                            mf.stack.items.len,
-                            frame.stack.size(),
-                        });
-                    }
-                    self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
-                    // Log stack state after execution
-                    if (evm.getCurrentFrame()) |mf| {
-                        log.debug("After executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
-                            opcode_name,
-                            mf.stack.items.len,
-                            frame.stack.size(),
-                        });
-                    }
-                }
-
-                // Log execution
-                const stack_size = frame.stack.size();
-                log.debug("EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
-                    self.instruction_count,
-                    opcode_name,
-                    self.current_pc,
-                    stack_size,
-                    frame.gas_remaining,
+        // Validate cursor points to expected handler for regular opcodes
+        if (opcode_value <= 0xff) {
+            const expected_handler = @TypeOf(frame.*).opcode_handlers[opcode_value];
+            const actual_handler = cursor[0].opcode_handler;
+            if (actual_handler != expected_handler) {
+                self.err("[HANDLER] Handler mismatch for {s}: expected={*}, actual={*}", .{
+                    opcode_name, expected_handler, actual_handler
                 });
             }
         }
+
+        // Increment instruction counts
+        self.instruction_count += 1;
+        if (opcode_value > 0xff) {
+            self.fused_instruction_count += 1;
+        } else {
+            self.simple_instruction_count += 1;
+        }
+
+        // Capture advanced execution trace for Frame
+        if (self.config.enable_advanced_trace) {
+            const step = self.captureAdvancedStep(frame, opcode, cursor) catch |capture_err| {
+                self.warn("Failed to capture advanced step: {}", .{capture_err});
+                return;
+            };
+            
+            // Store the step if it's valid (not a dummy)
+            if (step.step_number > 0) {
+                self.advanced_steps.append(self.allocator, step) catch |append_err| {
+                    self.warn("Failed to append advanced step: {}", .{append_err});
+                };
+            }
+        }
+
+        // Increment safety counter - will panic if limit exceeded
+        // with message about potential infinite loop or excessive instructions
+        self.instruction_safety.inc();
+
+        // Execute MinimalEvm step for validation (if initialized)
+        if (self.minimal_evm) |evm| {
+            // Log stack state before execution
+            if (evm.getCurrentFrame()) |mf| {
+                log.debug("Before executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
+                    opcode_name,
+                    mf.stack.items.len,
+                    frame.stack.size(),
+                });
+            }
+            self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
+            // Log stack state after execution
+            if (evm.getCurrentFrame()) |mf| {
+                log.debug("After executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
+                    opcode_name,
+                    mf.stack.items.len,
+                    frame.stack.size(),
+                });
+            }
+        }
+
+        // Log execution
+        const stack_size = frame.stack.size();
+        log.debug("EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
+            self.instruction_count,
+            opcode_name,
+            self.current_pc,
+            stack_size,
+            frame.gas_remaining,
+        });
     }
 
     /// Called after an instruction completes successfully
@@ -677,88 +704,79 @@ pub const Tracer = struct {
         next_cursor: [*]const @TypeOf(frame.*).Dispatch.Item
     ) void {
         if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-                // Skip validation for inner frames (depth > 1)
-                const main_evm = frame.getEvm();
-                if (main_evm.depth > 1) {
-                    return;
-                }
-                const opcode_name = comptime @tagName(opcode);
+        
+        const opcode_name = comptime @tagName(opcode);
 
-                // Update the most recent ring buffer entry with gas_after
-                if (self.recent_opcodes.count > 0) {
-                    const last_idx = if (self.recent_opcodes.head == 0) 
-                        RingBuffer.CAPACITY - 1 
-                    else 
-                        self.recent_opcodes.head - 1;
-                    self.recent_opcodes.buffer[last_idx].gas_after = frame.gas_remaining;
-                }
+        // Update the most recent ring buffer entry with gas_after
+        if (self.recent_opcodes.count > 0) {
+            const last_idx = if (self.recent_opcodes.head == 0) 
+                RingBuffer.CAPACITY - 1 
+            else 
+                self.recent_opcodes.head - 1;
+            self.recent_opcodes.buffer[last_idx].gas_after = frame.gas_remaining;
+        }
 
-                // Advance schedule index
-                self.schedule_index += 1;
+        // Advance schedule index
+        self.schedule_index += 1;
 
-                // Update advanced trace with "after" values
-                if (self.config.enable_advanced_trace and self.advanced_steps.items.len > 0) {
-                    const last_step_idx = self.advanced_steps.items.len - 1;
-                    var last_step = &self.advanced_steps.items[last_step_idx];
-                    
-                    // Update the "after" values
-                    last_step.gas_after = frame.gas_remaining;
-                    last_step.gas_cost = @intCast(@as(i64, last_step.gas_before) - @as(i64, frame.gas_remaining));
-                    last_step.stack_size_after = @intCast(frame.stack.size());
-                    last_step.memory_size_after = @intCast(frame.memory.size());
-                }
+        // Update advanced trace with "after" values
+        if (self.config.enable_advanced_trace and self.advanced_steps.items.len > 0) {
+            const last_step_idx = self.advanced_steps.items.len - 1;
+            var last_step = &self.advanced_steps.items[last_step_idx];
+            
+            // Update the "after" values
+            last_step.gas_after = frame.gas_remaining;
+            last_step.gas_cost = @intCast(@as(i64, last_step.gas_before) - @as(i64, frame.gas_remaining));
+            last_step.stack_size_after = @intCast(frame.stack.size());
+            last_step.memory_size_after = @intCast(frame.memory.size());
+        }
 
-                // Validate next handler consistency
-                if (next_cursor[0] != .opcode_handler or next_cursor[0].opcode_handler != next_handler) {
-                    self.err("[SCHEDULE] Next handler mismatch at sched_idx={d}", .{self.schedule_index});
-                }
+        // Validate next handler consistency
+        if (next_cursor[0] != .opcode_handler or next_cursor[0].opcode_handler != next_handler) {
+            self.err("[SCHEDULE] Next handler mismatch at sched_idx={d}", .{self.schedule_index});
+        }
 
-                // Validate next handler points to expected handler for regular opcodes
-                if (next_cursor[0] == .opcode_handler) {
-                    // Extract the opcode from the next handler if it's a regular opcode
-                    const next_opcode_value = self.getOpcodeFromHandler(@TypeOf(frame.*), next_handler);
-                    if (next_opcode_value) |opcode_int| {
-                        if (opcode_int <= 0xff) {
-                            const expected_next_handler = @TypeOf(frame.*).opcode_handlers[opcode_int];
-                            if (next_handler != expected_next_handler) {
-                                self.err("[HANDLER] Next handler mismatch: opcode=0x{x:0>2}, expected={*}, actual={*}", .{
-                                    opcode_int, expected_next_handler, next_handler
-                                });
-                            }
-                        }
+        // Validate next handler points to expected handler for regular opcodes
+        if (next_cursor[0] == .opcode_handler) {
+            // Extract the opcode from the next handler if it's a regular opcode
+            const next_opcode_value = self.getOpcodeFromHandler(@TypeOf(frame.*), next_handler);
+            if (next_opcode_value) |opcode_int| {
+                if (opcode_int <= 0xff) {
+                    const expected_next_handler = @TypeOf(frame.*).opcode_handlers[opcode_int];
+                    if (next_handler != expected_next_handler) {
+                self.err("[HANDLER] Next handler mismatch: opcode=0x{x:0>2}, expected={*}, actual={*}", .{
+                    opcode_int, expected_next_handler, next_handler
+                });
                     }
                 }
+            }
+        }
 
-                // Validate MinimalEvm state
-                log.debug("afterInstruction: Validating state after {s}", .{opcode_name});
-                if (self.minimal_evm) |evm| {
-                    if (evm.getCurrentFrame()) |mf| {
-                        log.debug("  MinimalEvm stack={d}, Frame stack={d}", .{
-                            mf.stack.items.len,
-                            frame.stack.size(),
-                        });
-                    }
-                }
-                self.validateMinimalEvmState(frame, opcode);
-
-                // Update current PC tracking
-                // Note: PC synchronization between Frame dispatch and MinimalEvm sequential
-                // execution is complex due to synthetic opcodes, so we track separately
-                if (self.minimal_evm) |evm| {
-                    self.current_pc = evm.getPC();
-                }
-
-                // Log completion
-                log.debug("DONE[{d}]: {s} | PC={d}", .{
-                    self.instruction_count,
-                    opcode_name,
-                    self.current_pc,
+        // Validate MinimalEvm state
+        log.debug("afterInstruction: Validating state after {s}", .{opcode_name});
+        if (self.minimal_evm) |evm| {
+            if (evm.getCurrentFrame()) |mf| {
+                log.debug("  MinimalEvm stack={d}, Frame stack={d}", .{
+                    mf.stack.items.len,
+                    frame.stack.size(),
                 });
             }
         }
+        self.validateMinimalEvmState(frame, opcode);
+
+        // Update current PC tracking
+        // Note: PC synchronization between Frame dispatch and MinimalEvm sequential
+        // execution is complex due to synthetic opcodes, so we track separately
+        if (self.minimal_evm) |evm| {
+            self.current_pc = evm.getPC();
+        }
+
+        // Log completion
+        log.debug("DONE[{d}]: {s} | PC={d}", .{
+            self.instruction_count,
+            opcode_name,
+            self.current_pc,
+        });
     }
 
     /// Called when an instruction completes with a terminal state
@@ -768,16 +786,13 @@ pub const Tracer = struct {
         comptime opcode: UnifiedOpcode
     ) void {
         if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            // Skip validation for inner frames (depth > 1)
-            const main_evm = frame.getEvm();
-            if (main_evm.depth > 1) {
-                return;
-            }
-            // Final validation for terminal states
-            self.validateMinimalEvmState(frame, opcode);
+        
+        const main_evm = frame.getEvm();
+        if (main_evm.depth > 1) {
+            return;
         }
+        // Final validation for terminal states
+        self.validateMinimalEvmState(frame, opcode);
     }
 
     // ============================================================================
@@ -789,20 +804,20 @@ pub const Tracer = struct {
         // Only capture if step capture is enabled
         if (!self.config.enable_step_capture) {
             return ExecutionStep{
-                .step_number = 0,
-                .pc = 0,
-                .opcode = 0,
-                .opcode_name = "",
-                .gas_before = 0,
-                .gas_after = 0,
-                .gas_cost = 0,
-                .stack_before = &[_]u256{},
-                .stack_after = &[_]u256{},
-                .memory_size_before = 0,
-                .memory_size_after = 0,
-                .depth = 0,
-                .error_occurred = false,
-                .error_msg = null,
+        .step_number = 0,
+        .pc = 0,
+        .opcode = 0,
+        .opcode_name = "",
+        .gas_before = 0,
+        .gas_after = 0,
+        .gas_cost = 0,
+        .stack_before = &[_]u256{},
+        .stack_after = &[_]u256{},
+        .memory_size_before = 0,
+        .memory_size_after = 0,
+        .depth = 0,
+        .error_occurred = false,
+        .error_msg = null,
             };
         }
         // Capture stack before
@@ -810,7 +825,7 @@ pub const Tracer = struct {
         if (frame.stack.items.len > 0) {
             stack_before = try self.allocator.alloc(u256, frame.stack.items.len);
             for (frame.stack.items, 0..) |val, i| {
-                stack_before[frame.stack.items.len - 1 - i] = val; // LIFO order
+        stack_before[frame.stack.items.len - 1 - i] = val; // LIFO order
             }
         }
         
@@ -844,20 +859,20 @@ pub const Tracer = struct {
         // Only capture if advanced trace is enabled
         if (!self.config.enable_advanced_trace) {
             return AdvancedStep{
-                .step_number = 0,
-                .schedule_index = 0,
-                .opcode = 0,
-                .opcode_name = "",
-                .is_synthetic = false,
-                .gas_before = 0,
-                .gas_after = 0,
-                .gas_cost = 0,
-                .stack_size_before = 0,
-                .stack_size_after = 0,
-                .memory_size_before = 0,
-                .memory_size_after = 0,
-                .depth = 0,
-                .fusion_info = null,
+        .step_number = 0,
+        .schedule_index = 0,
+        .opcode = 0,
+        .opcode_name = "",
+        .is_synthetic = false,
+        .gas_before = 0,
+        .gas_after = 0,
+        .gas_cost = 0,
+        .stack_size_before = 0,
+        .stack_size_after = 0,
+        .memory_size_before = 0,
+        .memory_size_after = 0,
+        .depth = 0,
+        .fusion_info = null,
             };
         }
 
@@ -957,81 +972,81 @@ pub const Tracer = struct {
         // For regular opcodes (0x00-0xFF), execute exactly 1 opcode in MinimalEvm
         if (opcode_value <= 0xff) {
             if (evm.getCurrentFrame()) |mf| {
-                // Capture trace before execution (only if enabled)
-                const step_before = if (self.config.enable_step_capture) self.captureStep(mf, opcode_value) catch null else null;
-                defer if (step_before) |step| {
-                    if (step.stack_before.len > 0) {
-                        self.allocator.free(step.stack_before);
+        // Capture trace before execution (only if enabled)
+        const step_before = if (self.config.enable_step_capture) self.captureStep(mf, opcode_value) catch null else null;
+        defer if (step_before) |step| {
+            if (step.stack_before.len > 0) {
+                self.allocator.free(step.stack_before);
+            }
+        };
+        
+        // Special handling: JUMPDEST in Frame pre-charges entire basic-block gas.
+        // MinimalEvm's JUMPDEST charges only JumpdestGas, so we reconcile here.
+        if (opcode_value == 0x5b) { // JUMPDEST
+            const DispatchType = @TypeOf(frame.*).Dispatch;
+            const dispatch = DispatchType{ .cursor = cursor };
+            const op_data = dispatch.getOpData(.JUMPDEST);
+            const block_gas: u64 = op_data.metadata.gas;
+            const jumpdest_gas: u64 = primitives.GasConstants.JumpdestGas;
+            const extra: i64 = @as(i64, @intCast(block_gas)) - @as(i64, @intCast(jumpdest_gas));
+            mf.gas_remaining -= extra;
+        }
+        
+        // Execute a single step in MinimalEvm
+        evm.step() catch |e| {
+            // Capture error state
+            if (step_before) |mut_step| {
+                var step = mut_step;
+                step.error_occurred = true;
+                step.error_msg = @errorName(e);
+                step.gas_after = @intCast(mf.gas_remaining);
+                step.stack_after = &[_]u256{};
+                step.memory_size_after = mf.memory_size;
+                self.steps.append(self.allocator, step) catch {};
+            }
+            
+            // Get actual opcode from MinimalEvm to see what it was trying to execute
+            var actual_opcode: u8 = 0;
+            if (mf.pc < mf.bytecode.len) {
+                actual_opcode = mf.bytecode[mf.pc];
+            }
+            log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{
+                mf.pc,
+                actual_opcode,
+                opcode_value,
+                e
+            });
+            @panic("MinimalEvm execution error");
+        };
+        
+        // Capture trace after execution
+        if (step_before) |mut_step| {
+            var step = mut_step;
+            step.gas_after = @intCast(mf.gas_remaining);
+            step.gas_cost = @intCast(@as(i64, step.gas_before) - @as(i64, step.gas_after));
+            
+            // Capture stack after
+            if (mf.stack.items.len > 0) {
+                if (self.allocator.alloc(u256, mf.stack.items.len)) |stack_after| {
+                    for (mf.stack.items, 0..) |val, i| {
+                stack_after[mf.stack.items.len - 1 - i] = val; // LIFO order
                     }
-                };
-                
-                // Special handling: JUMPDEST in Frame pre-charges entire basic-block gas.
-                // MinimalEvm's JUMPDEST charges only JumpdestGas, so we reconcile here.
-                if (opcode_value == 0x5b) { // JUMPDEST
-                    const DispatchType = @TypeOf(frame.*).Dispatch;
-                    const dispatch = DispatchType{ .cursor = cursor };
-                    const op_data = dispatch.getOpData(.JUMPDEST);
-                    const block_gas: u64 = op_data.metadata.gas;
-                    const jumpdest_gas: u64 = primitives.GasConstants.JumpdestGas;
-                    const extra: i64 = @as(i64, @intCast(block_gas)) - @as(i64, @intCast(jumpdest_gas));
-                    mf.gas_remaining -= extra;
-                }
-                
-                // Execute a single step in MinimalEvm
-                evm.step() catch |e| {
-                    // Capture error state
-                    if (step_before) |mut_step| {
-                        var step = mut_step;
-                        step.error_occurred = true;
-                        step.error_msg = @errorName(e);
-                        step.gas_after = @intCast(mf.gas_remaining);
-                        step.stack_after = &[_]u256{};
-                        step.memory_size_after = mf.memory_size;
-                        self.steps.append(self.allocator, step) catch {};
-                    }
-                    
-                    // Get actual opcode from MinimalEvm to see what it was trying to execute
-                    var actual_opcode: u8 = 0;
-                    if (mf.pc < mf.bytecode.len) {
-                        actual_opcode = mf.bytecode[mf.pc];
-                    }
-                    log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{
-                        mf.pc,
-                        actual_opcode,
-                        opcode_value,
-                        e
-                    });
-                    @panic("MinimalEvm execution error");
-                };
-                
-                // Capture trace after execution
-                if (step_before) |mut_step| {
-                    var step = mut_step;
-                    step.gas_after = @intCast(mf.gas_remaining);
-                    step.gas_cost = @intCast(@as(i64, step.gas_before) - @as(i64, step.gas_after));
-                    
-                    // Capture stack after
-                    if (mf.stack.items.len > 0) {
-                        if (self.allocator.alloc(u256, mf.stack.items.len)) |stack_after| {
-                            for (mf.stack.items, 0..) |val, i| {
-                                stack_after[mf.stack.items.len - 1 - i] = val; // LIFO order
-                            }
-                            step.stack_after = stack_after;
-                        } else |_| {
-                            step.stack_after = &[_]u256{};
-                        }
-                    } else {
-                        step.stack_after = &[_]u256{};
-                    }
-                    
-                    step.memory_size_after = mf.memory_size;
-                    step.error_occurred = false;
-                    
-                    self.steps.append(self.allocator, step) catch {};
+                    step.stack_after = stack_after;
+                } else |_| {
+                    step.stack_after = &[_]u256{};
                 }
             } else {
-                log.err("[EVM2] MinimalEvm has no current frame when trying to execute opcode 0x{x:0>2}", .{opcode_value});
-                @panic("MinimalEvm not initialized");
+                step.stack_after = &[_]u256{};
+            }
+            
+            step.memory_size_after = mf.memory_size;
+            step.error_occurred = false;
+            
+            self.steps.append(self.allocator, step) catch {};
+        }
+            } else {
+        log.err("[EVM2] MinimalEvm has no current frame when trying to execute opcode 0x{x:0>2}", .{opcode_value});
+        @panic("MinimalEvm not initialized");
             }
             return;
         }
@@ -1040,297 +1055,297 @@ pub const Tracer = struct {
         switch (opcode) {
             // PUSH + arithmetic fusions (2 steps)
             .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x01)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_ADD step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x01)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_ADD step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
             .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x02)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_MUL step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x02)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_MUL step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
             .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x03)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_SUB step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x03)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_SUB step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
             .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x04)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_DIV step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x04)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_DIV step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
 
             // Bitwise fusions
             .PUSH_AND_INLINE, .PUSH_AND_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x16)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_AND step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x16)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_AND step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
             .PUSH_OR_INLINE, .PUSH_OR_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x17)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_OR step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x17)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_OR step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
             .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x18)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_XOR step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x18)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_XOR step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
 
             // Memory fusions
             .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => {
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
-                    evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x51)
-                {
-                    inline for (0..2) |_| {
-                        evm.step() catch |e| {
-                            self.err("PUSH_MLOAD step failed: {any}", .{e});
-                            return;
-                        };
-                    }
-                }
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] >= 0x60 and evm.getBytecode()[evm.getPC()] <= 0x7f and
+            evm.getBytecode()[evm.getPC() + 1 + (evm.getBytecode()[evm.getPC()] - 0x5f)] == 0x51)
+        {
+            inline for (0..2) |_| {
+                evm.step() catch |e| {
+                    self.err("PUSH_MLOAD step failed: {any}", .{e});
+                    return;
+                };
+            }
+        }
             },
             .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => {
-                // PUSH_MSTORE_INLINE synthetic operation in Frame:
-                // - Pops 1 value from stack (the value to store)
-                // - Uses metadata offset (doesn't push offset to stack)
-                // - Stores value at that memory offset
-                // MinimalEvm must emulate the same net stack effect (pop 1, push 0)
+        // PUSH_MSTORE_INLINE synthetic operation in Frame:
+        // - Pops 1 value from stack (the value to store)
+        // - Uses metadata offset (doesn't push offset to stack)
+        // - Stores value at that memory offset
+        // MinimalEvm must emulate the same net stack effect (pop 1, push 0)
 
-                // PUSH_MSTORE_INLINE synthetic opcodes will be handled by sequential bytecode execution
+        // PUSH_MSTORE_INLINE synthetic opcodes will be handled by sequential bytecode execution
 
-                // PUSH_MSTORE_INLINE represents PUSH1 + MSTORE sequence in bytecode
-                // MinimalEvm should execute these 2 sequential operations
+        // PUSH_MSTORE_INLINE represents PUSH1 + MSTORE sequence in bytecode
+        // MinimalEvm should execute these 2 sequential operations
 
-                // Debug: Log current MinimalEvm state before execution
-                self.debug("PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
-                    evm.getPC(), (evm.getCurrentFrame() orelse unreachable).stack.items.len, frame.stack.size()
-                });
+        // Debug: Log current MinimalEvm state before execution
+        self.debug("PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
+            evm.getPC(), (evm.getCurrentFrame() orelse unreachable).stack.items.len, frame.stack.size()
+        });
 
-                // Execute the 2-step sequence: PUSH1 + MSTORE
-                // First, check if we're at the right bytecode position for PUSH1+MSTORE
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
-                    evm.getBytecode()[evm.getPC() + 2] == 0x52) {   // MSTORE (after PUSH1 + 1 byte immediate)
+        // Execute the 2-step sequence: PUSH1 + MSTORE
+        // First, check if we're at the right bytecode position for PUSH1+MSTORE
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
+            evm.getBytecode()[evm.getPC() + 2] == 0x52) {   // MSTORE (after PUSH1 + 1 byte immediate)
 
-                    self.debug("PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.getPC()});
+            self.debug("PUSH_MSTORE_INLINE: Found PUSH1+MSTORE at PC {d}, executing 2 steps", .{evm.getPC()});
 
-                    // Execute PUSH1 + MSTORE
-                    inline for (0..2) |step_num| {
-                        const current_opcode = evm.getBytecode()[evm.getPC()];
-                        self.debug("PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
+            // Execute PUSH1 + MSTORE
+            inline for (0..2) |step_num| {
+                const current_opcode = evm.getBytecode()[evm.getPC()];
+                self.debug("PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
 
-                        evm.step() catch |e| {
-                            self.err("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
-                            return;
-                        };
-                    }
-                } else {
-                    // Not a PUSH1+MSTORE sequence - this is a mis-identified synthetic opcode
-                    self.debug("PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
-                        if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
+                evm.step() catch |e| {
+                    self.err("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
+                    return;
+                };
+            }
+        } else {
+            // Not a PUSH1+MSTORE sequence - this is a mis-identified synthetic opcode
+            self.debug("PUSH_MSTORE_INLINE: Not at PUSH1+MSTORE sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
+                if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
 
-                    // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
-                    // Frame will handle the actual opcode, MinimalEvm should remain unchanged
-                    self.debug("PUSH_MSTORE_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
-                }
+            // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
+            // Frame will handle the actual opcode, MinimalEvm should remain unchanged
+            self.debug("PUSH_MSTORE_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
+        }
             },
             .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => {
-                // PUSH_MSTORE8_INLINE synthetic operation in Frame:
-                // - Pops 1 value from stack (the value to store)
-                // - Uses metadata offset (doesn't push offset to stack)
-                // - Stores LSB of value at that memory offset
+        // PUSH_MSTORE8_INLINE synthetic operation in Frame:
+        // - Pops 1 value from stack (the value to store)
+        // - Uses metadata offset (doesn't push offset to stack)
+        // - Stores LSB of value at that memory offset
 
-                // PUSH_MSTORE8_INLINE synthetic opcodes will be handled by sequential bytecode execution
+        // PUSH_MSTORE8_INLINE synthetic opcodes will be handled by sequential bytecode execution
 
-                // PUSH_MSTORE8_INLINE represents PUSH1 + MSTORE8 sequence in bytecode
-                // MinimalEvm should execute these 2 sequential operations
+        // PUSH_MSTORE8_INLINE represents PUSH1 + MSTORE8 sequence in bytecode
+        // MinimalEvm should execute these 2 sequential operations
 
-                // Debug: Log current MinimalEvm state before execution
-                self.debug("PUSH_MSTORE8_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
-                    evm.getPC(), (evm.getCurrentFrame() orelse unreachable).stack.items.len, frame.stack.size()
-                });
+        // Debug: Log current MinimalEvm state before execution
+        self.debug("PUSH_MSTORE8_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
+            evm.getPC(), (evm.getCurrentFrame() orelse unreachable).stack.items.len, frame.stack.size()
+        });
 
-                // Execute the 2-step sequence: PUSH1 + MSTORE8
-                if (evm.getPC() + 2 < evm.getBytecode().len and
-                    evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
-                    evm.getBytecode()[evm.getPC() + 2] == 0x53) {   // MSTORE8 (after PUSH1 + 1 byte immediate)
+        // Execute the 2-step sequence: PUSH1 + MSTORE8
+        if (evm.getPC() + 2 < evm.getBytecode().len and
+            evm.getBytecode()[evm.getPC()] == 0x60 and      // PUSH1
+            evm.getBytecode()[evm.getPC() + 2] == 0x53) {   // MSTORE8 (after PUSH1 + 1 byte immediate)
 
-                    self.debug("PUSH_MSTORE8_INLINE: Found PUSH1+MSTORE8 at PC {d}, executing 2 steps", .{evm.getPC()});
+            self.debug("PUSH_MSTORE8_INLINE: Found PUSH1+MSTORE8 at PC {d}, executing 2 steps", .{evm.getPC()});
 
-                    inline for (0..2) |step_num| {
-                        if (evm.getPC() >= evm.getBytecode().len) {
-                            self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.getPC(), evm.getBytecode().len});
-                            return;
-                        }
-
-                        const current_opcode = evm.getBytecode()[evm.getPC()];
-                        self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
-
-                        evm.step() catch |e| {
-                            self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
-                            return;
-                        };
-                    }
-                } else {
-                    // Not a PUSH1+MSTORE8 sequence - this is a mis-identified synthetic opcode
-                    self.debug("PUSH_MSTORE8_INLINE: Not at PUSH1+MSTORE8 sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
-                        if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
-
-                    // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
-                    // Frame will handle the actual opcode, MinimalEvm should remain unchanged
-                    self.debug("PUSH_MSTORE8_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
+            inline for (0..2) |step_num| {
+                if (evm.getPC() >= evm.getBytecode().len) {
+                    self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{step_num + 1, evm.getPC(), evm.getBytecode().len});
+                    return;
                 }
+
+                const current_opcode = evm.getBytecode()[evm.getPC()];
+                self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{step_num + 1, current_opcode, evm.getPC()});
+
+                evm.step() catch |e| {
+                    self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{step_num + 1, current_opcode, e});
+                    return;
+                };
+            }
+        } else {
+            // Not a PUSH1+MSTORE8 sequence - this is a mis-identified synthetic opcode
+            self.debug("PUSH_MSTORE8_INLINE: Not at PUSH1+MSTORE8 sequence at PC {d} (opcode=0x{x:0>2})", .{evm.getPC(),
+                if (evm.getPC() < evm.getBytecode().len) evm.getBytecode()[evm.getPC()] else 0});
+
+            // Do NOT execute any MinimalEvm operations for mis-identified synthetic opcodes
+            // Frame will handle the actual opcode, MinimalEvm should remain unchanged
+            self.debug("PUSH_MSTORE8_INLINE: Skipping MinimalEvm execution for mis-identified synthetic opcode", .{});
+        }
             },
 
             // Control flow fusions
             .JUMP_TO_STATIC_LOCATION, .JUMPI_TO_STATIC_LOCATION => {
-                // These are optimized jumps, in the minimal EVM they are PUSH + JUMP(I)
-                const pc = evm.getPC();
-                const bytecode = evm.getBytecode();
-                if (pc + 2 < bytecode.len and bytecode[pc] >= 0x60 and bytecode[pc] <= 0x7f) {
-                    const push_size = bytecode[pc] - 0x5f;
-                    const next_op_pc = pc + 1 + push_size;
-                    if (next_op_pc < bytecode.len and (bytecode[next_op_pc] == 0x56 or bytecode[next_op_pc] == 0x57)) {
-                        inline for (0..2) |_| {
-                            evm.step() catch |e| {
-                                self.err("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
-                                return;
-                            };
-                        }
-                    }
+        // These are optimized jumps, in the minimal EVM they are PUSH + JUMP(I)
+        const pc = evm.getPC();
+        const bytecode = evm.getBytecode();
+        if (pc + 2 < bytecode.len and bytecode[pc] >= 0x60 and bytecode[pc] <= 0x7f) {
+            const push_size = bytecode[pc] - 0x5f;
+            const next_op_pc = pc + 1 + push_size;
+            if (next_op_pc < bytecode.len and (bytecode[next_op_pc] == 0x56 or bytecode[next_op_pc] == 0x57)) {
+                inline for (0..2) |_| {
+                    evm.step() catch |e| {
+                self.err("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
+                return;
+                    };
                 }
+            }
+        }
             },
 
             // Multi-push/pop fusions
             .MULTI_PUSH_2 => {
-                // Approximate validation: check for two consecutive PUSHes
-                const pc = evm.getPC();
-                const bytecode = evm.getBytecode();
-                if (pc + 2 < bytecode.len and bytecode[pc] >= 0x60 and bytecode[pc] <= 0x7f) {
-                    const push_size1 = bytecode[pc] - 0x5f;
-                    const next_pc = pc + 1 + push_size1;
-                    if (next_pc < bytecode.len and bytecode[next_pc] >= 0x60 and bytecode[next_pc] <= 0x7f) {
-                        inline for (0..2) |_| {
-                            evm.step() catch |e| {
-                                self.err("MULTI_PUSH_2 step failed: {any}", .{e});
-                                return;
-                            };
-                        }
-                    }
-                }
-            },
-            .MULTI_PUSH_3 => {
-                // Approximate validation for three PUSHes
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("MULTI_PUSH_3 step failed: {any}", .{e});
-                        return;
-                    };
-                }
-            },
-            .MULTI_POP_2 => {
+        // Approximate validation: check for two consecutive PUSHes
+        const pc = evm.getPC();
+        const bytecode = evm.getBytecode();
+        if (pc + 2 < bytecode.len and bytecode[pc] >= 0x60 and bytecode[pc] <= 0x7f) {
+            const push_size1 = bytecode[pc] - 0x5f;
+            const next_pc = pc + 1 + push_size1;
+            if (next_pc < bytecode.len and bytecode[next_pc] >= 0x60 and bytecode[next_pc] <= 0x7f) {
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
-                        self.err("MULTI_POP_2 step failed: {any}", .{e});
-                        return;
+                self.err("MULTI_PUSH_2 step failed: {any}", .{e});
+                return;
                     };
                 }
+            }
+        }
+            },
+            .MULTI_PUSH_3 => {
+        // Approximate validation for three PUSHes
+        inline for (0..3) |_| {
+            evm.step() catch |e| {
+                self.err("MULTI_PUSH_3 step failed: {any}", .{e});
+                return;
+            };
+        }
+            },
+            .MULTI_POP_2 => {
+        inline for (0..2) |_| {
+            evm.step() catch |e| {
+                self.err("MULTI_POP_2 step failed: {any}", .{e});
+                return;
+            };
+        }
             },
             .MULTI_POP_3 => {
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("MULTI_POP_3 step failed: {any}", .{e});
-                        return;
-                    };
-                }
+        inline for (0..3) |_| {
+            evm.step() catch |e| {
+                self.err("MULTI_POP_3 step failed: {any}", .{e});
+                return;
+            };
+        }
             },
 
             // Three-operation fusions
             .DUP2_MSTORE_PUSH, .DUP3_ADD_MSTORE, .SWAP1_DUP2_ADD, .PUSH_DUP3_ADD, .PUSH_ADD_DUP1, .MLOAD_SWAP1_DUP2, .ISZERO_JUMPI, .CALLVALUE_CHECK, .PUSH0_REVERT => {
-                inline for (0..3) |_| {
-                    evm.step() catch |e| {
-                        self.err("Three-op fusion step failed: {any}", .{e});
-                        return;
-                    };
-                }
+        inline for (0..3) |_| {
+            evm.step() catch |e| {
+                self.err("Three-op fusion step failed: {any}", .{e});
+                return;
+            };
+        }
             },
 
             // Four-operation fusion
             .FUNCTION_DISPATCH => {
-                // Step 4 times: PUSH4 + EQ + PUSH + JUMPI
-                inline for (0..4) |_| {
-                    evm.step() catch |e| {
-                        self.err("FUNCTION_DISPATCH step failed: {any}", .{e});
-                        return;
-                    };
-                }
+        // Step 4 times: PUSH4 + EQ + PUSH + JUMPI
+        inline for (0..4) |_| {
+            evm.step() catch |e| {
+                self.err("FUNCTION_DISPATCH step failed: {any}", .{e});
+                return;
+            };
+        }
             },
 
             else => {
-                // Unknown synthetic opcode - just step once
-                if (evm.getPC() < evm.getBytecode().len) {
-                    evm.step() catch |e| {
-                        self.err("MinimalEvm step failed for synthetic opcode: {any}", .{e});
-                    };
-                }
+        // Unknown synthetic opcode - just step once
+        if (evm.getPC() < evm.getBytecode().len) {
+            evm.step() catch |e| {
+                self.err("MinimalEvm step failed for synthetic opcode: {any}", .{e});
+            };
+        }
             },
         }
     }
@@ -1341,7 +1356,7 @@ pub const Tracer = struct {
         _ = self;
         inline for (0..256) |i| {
             if (FrameType.opcode_handlers[i] == handler) {
-                return @intCast(i);
+        return @intCast(i);
             }
         }
         return null;
@@ -1363,65 +1378,65 @@ pub const Tracer = struct {
             const evm_stack_size = (evm.getCurrentFrame() orelse unreachable).stack.items.len;
 
             if (evm_stack_size != frame_stack_size) {
-                // Allow call-like opcodes a grace period: their host-dependent behavior
-                // can differ under the MinimalEvm stub host. We still log but avoid
-                // aborting on pure size diffs here to keep differential tests focused
-                // on Frame correctness. Content is validated when sizes match.
-                const is_call_like = switch (opcode) {
-                    .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => true,
-                    else => false,
-                };
-                if (is_call_like) {
-                    log.debug("[EVM2] [DIVERGENCE] (call-like) Stack size mismatch after {s}: MinimalEvm={d} Frame={d}", .{ opcode_name, evm_stack_size, frame_stack_size });
-                    return;
-                }
-                log.err("[EVM2] [DIVERGENCE] Stack size mismatch after {s}:", .{opcode_name});
-                log.err("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{evm_stack_size, frame_stack_size});
-                // Show top elements for debugging
-                if (evm_stack_size > 0) {
-                    self.err("  MinimalEvm top: 0x{x}", .{
-                        (evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1]
-                    });
-                }
-                if (frame_stack_size > 0) {
-                    self.err("  Frame top: 0x{x}", .{frame.stack.peek_unsafe()});
-                }
-                @panic("Stack divergence");
+        // Allow call-like opcodes a grace period: their host-dependent behavior
+        // can differ under the MinimalEvm stub host. We still log but avoid
+        // aborting on pure size diffs here to keep differential tests focused
+        // on Frame correctness. Content is validated when sizes match.
+        const is_call_like = switch (opcode) {
+            .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL => true,
+            else => false,
+        };
+        if (is_call_like) {
+            log.debug("[EVM2] [DIVERGENCE] (call-like) Stack size mismatch after {s}: MinimalEvm={d} Frame={d}", .{ opcode_name, evm_stack_size, frame_stack_size });
+            return;
+        }
+        log.err("[EVM2] [DIVERGENCE] Stack size mismatch after {s}:", .{opcode_name});
+        log.err("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{evm_stack_size, frame_stack_size});
+        // Show top elements for debugging
+        if (evm_stack_size > 0) {
+            self.err("  MinimalEvm top: 0x{x}", .{
+                (evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1]
+            });
+        }
+        if (frame_stack_size > 0) {
+            self.err("  Frame top: 0x{x}", .{frame.stack.peek_unsafe()});
+        }
+        @panic("Stack divergence");
             } else if (evm_stack_size > 0) {
-                // Compare stack contents
-                const frame_stack = frame.stack.get_slice();
-                for (0..evm_stack_size) |i| {
-                    const evm_val = (evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1 - i];
-                    const frame_val = frame_stack[i];
-                    if (evm_val != frame_val) {
-                        log.err("[EVM2] [DIVERGENCE] Stack content mismatch at position {d}:", .{i});
-                        log.err("[EVM2]   MinimalEvm: 0x{x}, Frame: 0x{x}", .{evm_val, frame_val});
-                        log.err("[EVM2]   Opcode: {s}, MinimalEvm PC: {d}", .{opcode_name, if (evm.getCurrentFrame()) |f| f.pc else 0});
-                        // Print full stack contents
-                        log.err("[EVM2]   MinimalEvm stack (top first):", .{});
-                        if (evm.getCurrentFrame()) |f| {
-                            for (0..@min(10, f.stack.items.len)) |j| {
-                                log.err("[EVM2]     [{d}]: 0x{x}", .{j, f.stack.items[f.stack.items.len - 1 - j]});
-                            }
-                        }
-                        log.err("[EVM2]   Frame stack (top first):", .{});
-                        for (0..@min(10, frame_stack.len)) |j| {
-                            log.err("[EVM2]     [{d}]: 0x{x}", .{j, frame_stack[j]});
-                        }
-                        @panic("Stack content divergence");
+        // Compare stack contents
+        const frame_stack = frame.stack.get_slice();
+        for (0..evm_stack_size) |i| {
+            const evm_val = (evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1 - i];
+            const frame_val = frame_stack[i];
+            if (evm_val != frame_val) {
+                log.err("[EVM2] [DIVERGENCE] Stack content mismatch at position {d}:", .{i});
+                log.err("[EVM2]   MinimalEvm: 0x{x}, Frame: 0x{x}", .{evm_val, frame_val});
+                log.err("[EVM2]   Opcode: {s}, MinimalEvm PC: {d}", .{opcode_name, if (evm.getCurrentFrame()) |f| f.pc else 0});
+                // Print full stack contents
+                log.err("[EVM2]   MinimalEvm stack (top first):", .{});
+                if (evm.getCurrentFrame()) |f| {
+                    for (0..@min(10, f.stack.items.len)) |j| {
+                log.err("[EVM2]     [{d}]: 0x{x}", .{j, f.stack.items[f.stack.items.len - 1 - j]});
                     }
                 }
+                log.err("[EVM2]   Frame stack (top first):", .{});
+                for (0..@min(10, frame_stack.len)) |j| {
+                    log.err("[EVM2]     [{d}]: 0x{x}", .{j, frame_stack[j]});
+                }
+                @panic("Stack content divergence");
+            }
+        }
             }
 
             // Compare memory sizes
             const frame_memory_size = if (@hasField(@TypeOf(frame.*), "memory"))
-                frame.memory.size() else 0;
+        frame.memory.size() else 0;
             const evm_memory_size = (evm.getCurrentFrame() orelse unreachable).memory_size;
 
             if (evm_memory_size != frame_memory_size) {
-                // Memory size mismatch is not critical, just debug log
-                log.debug("[EVM2] [DIVERGENCE] Memory size mismatch:", .{});
-                log.debug("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
+        // Memory size mismatch is not critical, just debug log
+        log.debug("[EVM2] [DIVERGENCE] Memory size mismatch:", .{});
+        log.debug("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
             }
 
             // Gas validation - different rules for different opcode types
@@ -1430,46 +1445,46 @@ pub const Tracer = struct {
 
             // Check if this is a jump/terminal opcode that should have exact gas match
             const is_terminal_opcode = switch (opcode) {
-                .JUMP, .JUMPI, .STOP, .RETURN, .REVERT, .SELFDESTRUCT => true,
-                else => false,
+        .JUMP, .JUMPI, .STOP, .RETURN, .REVERT, .SELFDESTRUCT => true,
+        else => false,
             };
 
             if (is_terminal_opcode) {
-                // For jump/terminal opcodes, gas should match exactly
-                // because both EVMs should have consumed the same amount
-                if (frame_gas_remaining != evm_gas_remaining) {
-                    // Gas divergence at terminal state, debug log only
-                    log.debug("[EVM2] [GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
-                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    log.debug("[EVM2]   Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
-                }
+        // For jump/terminal opcodes, gas should match exactly
+        // because both EVMs should have consumed the same amount
+        if (frame_gas_remaining != evm_gas_remaining) {
+            // Gas divergence at terminal state, debug log only
+            log.debug("[EVM2] [GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
+            log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+            log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+            log.debug("[EVM2]   Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
+        }
             } else {
-                // For regular opcodes, allow reasonable gas differences due to block vs opcode charging
-                // Frame may consume gas in larger chunks at block boundaries
-                const gas_diff = @as(i64, evm_gas_remaining) - @as(i64, frame_gas_remaining);
+        // For regular opcodes, allow reasonable gas differences due to block vs opcode charging
+        // Frame may consume gas in larger chunks at block boundaries
+        const gas_diff = @as(i64, evm_gas_remaining) - @as(i64, frame_gas_remaining);
 
-                // Get expected first_block_gas for this frame to adjust tolerance
-                const expected_first_block_gas = if (@hasField(@TypeOf(frame.*), "first_block_gas_charged"))
-                    @as(i64, frame.first_block_gas_charged)
-                else
-                    0;
+        // Get expected first_block_gas for this frame to adjust tolerance
+        const expected_first_block_gas = if (@hasField(@TypeOf(frame.*), "first_block_gas_charged"))
+            @as(i64, frame.first_block_gas_charged)
+        else
+            0;
 
-                // Allow Frame to consume first_block_gas + 50 more than MinimalEvm
-                // This accounts for Frame's pre-charging strategy
-                const tolerance = expected_first_block_gas + 50;
-                if (gas_diff > tolerance) {
-                    // Gas divergence during execution, debug log only
-                    log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
-                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    log.debug("[EVM2]   Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
-                } else if (gas_diff < -20) {
-                    log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
-                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.warn("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
-                }
+        // Allow Frame to consume first_block_gas + 50 more than MinimalEvm
+        // This accounts for Frame's pre-charging strategy
+        const tolerance = expected_first_block_gas + 50;
+        if (gas_diff > tolerance) {
+            // Gas divergence during execution, debug log only
+            log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
+            log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+            log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+            log.debug("[EVM2]   Gas difference: {d} (exceeds {d} gas tolerance)", .{gas_diff, tolerance});
+        } else if (gas_diff < -20) {
+            log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
+            log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+            log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+            self.warn("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
+        }
             }
         }
     }
@@ -1490,11 +1505,11 @@ pub const Tracer = struct {
         // Pretty print the ring buffer on error for debugging
         if (self.config.enabled) {
             if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
-                defer self.allocator.free(output);
-                log.err("{s}", .{output});
+        defer self.allocator.free(output);
+        log.err("{s}", .{output});
             } else |_| {
-                // If pretty print fails, at least show the count
-                log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+        // If pretty print fails, at least show the count
+        log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
             }
         }
         
@@ -1518,11 +1533,11 @@ pub const Tracer = struct {
         // Pretty print the ring buffer on fatal error for debugging
         if (self.config.enabled) {
             if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
-                defer self.allocator.free(output);
-                log.err("{s}", .{output});
+        defer self.allocator.free(output);
+        log.err("{s}", .{output});
             } else |_| {
-                // If pretty print fails, at least show the count
-                log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+        // If pretty print fails, at least show the count
+        log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
             }
         }
         
@@ -1704,20 +1719,20 @@ pub const Tracer = struct {
             
             // Pretty print the ring buffer on assertion failure for debugging
             if (self.config.enabled) {
-                if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
-                    defer self.allocator.free(output);
-                    log.err("{s}", .{output});
-                } else |_| {
-                    // If pretty print fails, at least show the count
-                    log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
-                }
+        if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
+            defer self.allocator.free(output);
+            log.err("{s}", .{output});
+        } else |_| {
+            // If pretty print fails, at least show the count
+            log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+        }
             }
             
             const builtin = @import("builtin");
             if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
-                unreachable;
+        unreachable;
             } else {
-                @panic(message);
+        @panic(message);
             }
         }
     }
@@ -1886,24 +1901,24 @@ fn getOpcodeName(opcode: u8) []const u8 {
         0x5f => "PUSH0",
         0x60...0x7f => |n| blk: {
             const push_names = [_][]const u8{
-                "PUSH1",  "PUSH2",  "PUSH3",  "PUSH4",  "PUSH5",  "PUSH6",  "PUSH7",  "PUSH8",
-                "PUSH9",  "PUSH10", "PUSH11", "PUSH12", "PUSH13", "PUSH14", "PUSH15", "PUSH16",
-                "PUSH17", "PUSH18", "PUSH19", "PUSH20", "PUSH21", "PUSH22", "PUSH23", "PUSH24",
-                "PUSH25", "PUSH26", "PUSH27", "PUSH28", "PUSH29", "PUSH30", "PUSH31", "PUSH32",
+        "PUSH1",  "PUSH2",  "PUSH3",  "PUSH4",  "PUSH5",  "PUSH6",  "PUSH7",  "PUSH8",
+        "PUSH9",  "PUSH10", "PUSH11", "PUSH12", "PUSH13", "PUSH14", "PUSH15", "PUSH16",
+        "PUSH17", "PUSH18", "PUSH19", "PUSH20", "PUSH21", "PUSH22", "PUSH23", "PUSH24",
+        "PUSH25", "PUSH26", "PUSH27", "PUSH28", "PUSH29", "PUSH30", "PUSH31", "PUSH32",
             };
             break :blk push_names[n - 0x60];
         },
         0x80...0x8f => |n| blk: {
             const dup_names = [_][]const u8{
-                "DUP1",  "DUP2",  "DUP3",  "DUP4",  "DUP5",  "DUP6",  "DUP7",  "DUP8",
-                "DUP9",  "DUP10", "DUP11", "DUP12", "DUP13", "DUP14", "DUP15", "DUP16",
+        "DUP1",  "DUP2",  "DUP3",  "DUP4",  "DUP5",  "DUP6",  "DUP7",  "DUP8",
+        "DUP9",  "DUP10", "DUP11", "DUP12", "DUP13", "DUP14", "DUP15", "DUP16",
             };
             break :blk dup_names[n - 0x80];
         },
         0x90...0x9f => |n| blk: {
             const swap_names = [_][]const u8{
-                "SWAP1",  "SWAP2",  "SWAP3",  "SWAP4",  "SWAP5",  "SWAP6",  "SWAP7",  "SWAP8",
-                "SWAP9",  "SWAP10", "SWAP11", "SWAP12", "SWAP13", "SWAP14", "SWAP15", "SWAP16",
+        "SWAP1",  "SWAP2",  "SWAP3",  "SWAP4",  "SWAP5",  "SWAP6",  "SWAP7",  "SWAP8",
+        "SWAP9",  "SWAP10", "SWAP11", "SWAP12", "SWAP13", "SWAP14", "SWAP15", "SWAP16",
             };
             break :blk swap_names[n - 0x90];
         },
