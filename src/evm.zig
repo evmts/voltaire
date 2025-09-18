@@ -1060,8 +1060,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return result;
                 },
                 else => {
-                    log.debug("Frame execution with tracer failed: {}", .{err});
-                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
+                    // Try to get partial trace even on error
+                    execution_trace = convertTracerToExecutionTrace(self.allocator, &self.tracer) catch blk: {
+                        break :blk @import("frame/call_result.zig").ExecutionTrace{
+                            .steps = &[_]@import("frame/call_result.zig").TraceStep{},
+                            .allocator = self.allocator,
+                        };
+                    };
                     var failure = CallResult.failure(0);
                     failure.trace = execution_trace;
                     return failure;
