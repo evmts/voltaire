@@ -374,6 +374,22 @@ pub const Tracer = struct {
         return self.advanced_steps.items;
     }
 
+    /// Get the ring buffer for inspection
+    pub fn getRingBuffer(self: *const Tracer) *const RingBuffer {
+        return &self.recent_opcodes;
+    }
+
+    /// Pretty print the current ring buffer state
+    pub fn printRingBuffer(self: *const Tracer) void {
+        if (!self.config.enabled) return;
+        if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
+            defer self.allocator.free(output);
+            log.info("{s}", .{output});
+        } else |_| {
+            log.info("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+        }
+    }
+
     pub fn deinit(self: *Tracer) void {
         // Clean up execution steps
         for (self.steps.items) |step| {
@@ -549,7 +565,14 @@ pub const Tracer = struct {
 
                 // Track in ring buffer (always active when tracer is enabled)
                 // This happens before validation for crash debugging
-                const schedule_index: u32 = @intCast(@intFromPtr(cursor) - @intFromPtr(frame.dispatch.cursor));
+                // Calculate schedule index safely - cursor may be null in some tests
+                var schedule_idx: u32 = 0;
+                if (@hasField(@TypeOf(frame.*), "dispatch")) {
+                    const item_size = @sizeOf(@TypeOf(frame.*).Dispatch.Item);
+                    const cursor_offset = @intFromPtr(cursor) - @intFromPtr(frame.dispatch.cursor);
+                    schedule_idx = @intCast(cursor_offset / item_size);
+                }
+                
                 self.recent_opcodes.write(.{
                     .step_number = self.instruction_count,
                     .opcode = opcode_value,
@@ -558,7 +581,7 @@ pub const Tracer = struct {
                     .gas_after = 0, // Will be updated in after_instruction
                     .stack_size = @intCast(frame.stack.size()),
                     .memory_size = @intCast(frame.memory.size()),
-                    .schedule_index = schedule_index,
+                    .schedule_index = schedule_idx,
                     .is_synthetic = opcode_value > 0xFF,
                 });
 
