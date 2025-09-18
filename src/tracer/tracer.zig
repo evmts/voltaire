@@ -470,6 +470,25 @@ pub const Tracer = struct {
 
     /// Capture the current execution state before executing an opcode
     fn captureStep(self: *Tracer, frame: anytype, opcode_value: u8) !ExecutionStep {
+        // Only capture if step capture is enabled
+        if (!self.config.enable_step_capture) {
+            return ExecutionStep{
+                .step_number = 0,
+                .pc = 0,
+                .opcode = 0,
+                .opcode_name = "",
+                .gas_before = 0,
+                .gas_after = 0,
+                .gas_cost = 0,
+                .stack_before = &[_]u256{},
+                .stack_after = &[_]u256{},
+                .memory_size_before = 0,
+                .memory_size_after = 0,
+                .depth = 0,
+                .error_occurred = false,
+                .error_msg = null,
+            };
+        }
         // Capture stack before
         var stack_before: []u256 = &[_]u256{};
         if (frame.stack.items.len > 0) {
@@ -1043,7 +1062,7 @@ pub const Tracer = struct {
     // ============================================================================
 
     pub fn debug(self: *Tracer, comptime format: []const u8, args: anytype) void {
-        _ = self;
+        if (!self.config.enable_debug_logging) return;
         log.debug(format, args);
     }
 
