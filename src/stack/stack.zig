@@ -47,16 +47,16 @@ pub fn Stack(comptime config: StackConfig) type {
         // Pop: stack_ptr += 1; return *stack_ptr;
         stack_ptr: [*]WordType,
 
-        // Tracer for assertions (comptime optional)
-        tracer: if (config.TracerType != null) *anyopaque else void,
+        // Tracer for assertions (optional for initialization compatibility)
+        tracer: ?*anyopaque,
 
 
         /// Initialize a new stack with allocated memory.
         ///
         /// Allocates cache-aligned memory and sets up pointer boundaries.
         /// Stack pointer starts at the top (highest address) and grows downward.
-        pub fn init(allocator: std.mem.Allocator) Error!Self {
-            return initWithTracer(allocator, null);
+        pub fn init(allocator: std.mem.Allocator, tracer: ?*anyopaque) Error!Self {
+            return initWithTracer(allocator, tracer);
         }
 
         /// Initialize a new stack with a tracer for assertions.
@@ -69,7 +69,7 @@ pub fn Stack(comptime config: StackConfig) type {
             return Self{
                 .buf_ptr = base_ptr,
                 .stack_ptr = base_ptr + stack_capacity,
-                .tracer = if (config.TracerType != null) tracer else {},
+                .tracer = tracer,
             };
         }
 
@@ -88,10 +88,11 @@ pub fn Stack(comptime config: StackConfig) type {
             return self.buf_ptr;
         }
 
-        /// Assert helper that only calls tracer.assert if tracing is enabled
+        /// Assert helper that calls tracer.assert if tracer is available
         inline fn assert(self: *const Self, condition: bool, comptime message: []const u8) void {
-            if (config.TracerType != null) {
-                self.tracer.assert(condition, message);
+            if (self.tracer) |tracer_ptr| {
+                const tracer: *@import("../tracer/tracer.zig").Tracer = @ptrCast(@alignCast(tracer_ptr));
+                tracer.assert(condition, message);
             }
         }
 

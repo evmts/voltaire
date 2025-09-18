@@ -421,7 +421,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Note: database is now accessed through evm_ptr for better cache locality
         pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
             // Frame initialization will be traced after frame is created
-            var stack = Stack.init(allocator) catch {
+            // Stack initialization - tracer will be set later via frame access
+            var stack = Stack.init(allocator, null) catch {
                 @branchHint(.cold);
                 // Can't use tracer yet since Frame is not initialized
                 // This error will be traced when caught by the caller
@@ -463,14 +464,14 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
         /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().debug("Frame.deinit: Starting cleanup, output_len={}", .{self.output.len});
             }
             self.stack.deinit(allocator);
             self.memory.deinit(allocator);
             // No need to free any arena-allocated data (output, calldata)
             // The arena allocator will be reset after the call completes
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().debug("Frame.deinit: Cleanup complete", .{});
             }
         }
@@ -487,21 +488,21 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Performs a one-time static gas charge for the first basic block before execution.
         ///
         /// @param bytecode_raw: Raw bytecode to execute
-        /// @param TracerType: Optional comptime tracer type for zero-cost tracing abstraction
-        /// @param tracer_instance: Instance of the tracer (ignored if TracerType is null)
-        pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: ?type, tracer_instance: if (TracerType) |T| *T else void) Error!void {
+        /// Execute bytecode with tracer support
+        /// @param tracer_instance: Instance of the tracer 
+        pub fn interpret_with_tracer(self: *Self, bytecode_raw: []const u8, comptime TracerType: type, tracer_instance: *TracerType) Error!void {
             @branchHint(.likely);
 
             // Tracer instance is passed but no longer used - tracing is handled through getTracer()
             _ = tracer_instance;
 
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
             }
 
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
-                if (comptime frame_config.TracerType != null) {
+                {
                     self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
                 }
                 return Error.BytecodeTooLarge;
@@ -511,7 +512,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.code = bytecode_raw;
 
             // Initialize PC tracker with bytecode for validation
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().initPcTracker(bytecode_raw);
 
                 // Initialize MinimalEvm sidecar for validation (only in Debug/ReleaseSafe)
@@ -532,7 +533,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Check cache first
             if (global_dispatch_cache) |*cache| {
                 if (cache.lookup(bytecode_raw)) |cached_data| {
-                    if (comptime frame_config.TracerType != null) {
+                    {
                         self.getTracer().debug("Frame: Using cached dispatch schedule", .{});
                     }
                     // Use cached data
@@ -547,17 +548,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                     // Release cache entry when done
                     defer cache.release(bytecode_raw);
                 } else {
-                    if (comptime frame_config.TracerType != null) {
+                    {
                         self.getTracer().debug("Frame: Cache miss, creating new dispatch", .{});
                     }
                     // Cache miss - create new dispatch
-                    const bytecode = (if (comptime frame_config.TracerType != null)
-                        Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer()))
-                    else
-                        Bytecode.init(allocator, bytecode_raw))
+                    const bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer()))
                     catch |e| {
                         @branchHint(.cold);
-                        if (comptime frame_config.TracerType != null) {
+                        {
                             self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, e);
                         }
                         return switch (e) {
@@ -575,7 +573,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
                     // Create dispatch schedule
                     owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, 
-                        if (comptime frame_config.TracerType != null) @as(?@TypeOf(self.getTracer()), self.getTracer()) else null
+                        @as(?@TypeOf(self.getTracer()), self.getTracer())
                     ) catch {
                         return Error.AllocationError;
                     };
@@ -591,14 +589,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                             Self,
                             Dispatch.Item,
                         ) catch |err| blk: {
-                            if (comptime frame_config.TracerType != null) {
+                            {
                                 self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
                             }
                             break :blk null;
                         };
                         if (pretty_output) |output| {
                             defer allocator.free(output);
-                            if (comptime frame_config.TracerType != null) {
+                            {
                                 self.getTracer().debug("\n{s}", .{output});
                             }
                         }
@@ -616,7 +614,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                     const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
                     cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
                         @branchHint(.cold);
-                        if (comptime frame_config.TracerType != null) {
+                        {
                             self.getTracer().err("Failed to cache dispatch schedule for bytecode", .{});
                         }
                     };
@@ -656,14 +654,14 @@ pub fn Frame(comptime config: FrameConfig) type {
                         Self,
                         Dispatch.Item,
                     ) catch |err| blk: {
-                        if (comptime frame_config.TracerType != null) {
+                        {
                             self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
                         }
                         break :blk null;
                     };
                     if (pretty_output) |output| {
                         defer allocator.free(output);
-                        if (comptime frame_config.TracerType != null) {
+                        {
                             self.getTracer().debug("\n{s}", .{output});
                         }
                     }
@@ -695,7 +693,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             var start_index: usize = 0;
             var first_block_gas_amount: u32 = 0;
             if (schedule.len > 0) {
-                if (comptime frame_config.TracerType != null) {
+                {
                     self.getTracer().debug("Frame: schedule[0] type = {s}", .{@tagName(schedule[0])});
                     if (schedule.len > 1) {
                         self.getTracer().debug("Frame: schedule[1] type = {s}", .{@tagName(schedule[1])});
@@ -703,7 +701,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 }
                 switch (schedule[0]) {
                     .first_block_gas => |meta| {
-                        if (comptime frame_config.TracerType != null) {
+                        {
                             self.getTracer().debug("Frame: Found first_block_gas with gas={d}, skipping to index 1", .{meta.gas});
                         }
                         if (meta.gas > 0) {
@@ -713,7 +711,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                         start_index = 1;
                     },
                     else => {
-                        if (comptime frame_config.TracerType != null) {
+                        {
                             self.getTracer().debug("Frame: No first_block_gas, starting at index 0", .{});
                         }
                     },
@@ -742,26 +740,26 @@ pub fn Frame(comptime config: FrameConfig) type {
                     {
                         const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
                         if (last_item.opcode_handler != stop_handler or second_last_item.opcode_handler != stop_handler) {
-                            if (comptime frame_config.TracerType != null) {
+                            {
                                 self.getTracer().err("Frame.interpret: Bytecode stream does not end with 2 stop handlers", .{});
                             }
                             return Error.InvalidOpcode;
                         }
                     }
                 } else {
-                    if (comptime frame_config.TracerType != null) {
+                    {
                         self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.InvalidOpcode);
                     }
                     return Error.InvalidOpcode;
                 }
             }
 
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().debug("Frame: Starting opcode execution, first_item_type={s}", .{@tagName(self.dispatch.cursor[0])});
             }
 
             // Debug: Check what handler we're about to call
-            if (comptime frame_config.TracerType != null) {
+            {
                 if (self.dispatch.cursor[0] == .opcode_handler) {
                     const handler = self.dispatch.cursor[0].opcode_handler;
                     // Check if it's a regular opcode handler
@@ -780,7 +778,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(false, "Handlers should never return normally");
             }
         }
@@ -788,10 +786,10 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Create a deep copy of the frame.
         /// This is used by DebugPlan to create a sidecar frame for validation.
         pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}", .{ self.stack.get_slice().len, self.memory.size() });
             }
-            var new_stack = Stack.init(allocator) catch return Error.AllocationError;
+            var new_stack = Stack.init(allocator, @as(?*anyopaque, @ptrCast(&self.getEvm().tracer))) catch return Error.AllocationError;
             errdefer new_stack.deinit(allocator);
             const src_stack_slice = self.stack.get_slice();
             if (src_stack_slice.len > 0) {
@@ -816,7 +814,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 break :blk output_copy;
             } else &[_]u8{};
 
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().debug("Frame.copy: Deep copy complete", .{});
             }
             return Self{
@@ -855,7 +853,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // Cast to GasType - should always succeed with u32 input
             // Only fails if GasType is smaller than u32 (impossible with current config)
             const amt = std.math.cast(GasType, amount) orelse {
-                if (comptime frame_config.TracerType != null) {
+                {
                     self.getTracer().err("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
                 }
                 return Error.GasOverflow;
@@ -863,7 +861,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Check if we have enough gas
             if (amt > self.gas_remaining) {
-                if (comptime frame_config.TracerType != null) {
+                {
                     self.getTracer().debug("Frame.consumeGasChecked: Out of gas, required={}, remaining={}", .{ amt, self.gas_remaining });
                 }
                 return Error.OutOfGas;
@@ -889,13 +887,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
 
         /// Get the tracer for logging and debugging
-        /// Returns the tracer if TracerType is configured, otherwise returns void
-        pub inline fn getTracer(self: *const Self) if (frame_config.TracerType) |T| *T else void {
-            if (frame_config.TracerType) |_| {
-                return &self.getEvm().tracer;
-            } else {
-                return {};
-            }
+        /// Returns the tracer instance from the EVM
+        pub inline fn getTracer(self: *const Self) *@import("../tracer/tracer.zig").Tracer {
+            return &self.getEvm().tracer;
         }
 
         /// Validate that the current dispatch cursor points to the expected handler and metadata.
@@ -923,7 +917,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             cursor: [*]const Dispatch.Item,
         ) void {
             // Call tracer's before_instruction with cursor for metadata access (if tracer is enabled)
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().before_instruction(self, opcode, cursor);
             }
 
@@ -940,7 +934,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             next_cursor: [*]const Dispatch.Item,
         ) void {
             // Call tracer's after_instruction with next handler and cursor to validate schedule alignment (if tracer is enabled)
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().after_instruction(self, opcode, next_handler, next_cursor);
             }
         }
@@ -952,7 +946,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             comptime opcode: Dispatch.UnifiedOpcode,
         ) void {
             // Notify tracer about terminal states (if tracer is enabled)
-            if (comptime frame_config.TracerType != null) {
+            {
                 self.getTracer().after_complete(self, opcode);
             }
         }
