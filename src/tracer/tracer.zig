@@ -123,6 +123,7 @@ pub const Tracer = struct {
 
     pub fn init(allocator: std.mem.Allocator, config: TracerConfig) Tracer {
         return .{
+            .config = config,
             .allocator = allocator,
             .steps = std.ArrayList(ExecutionStep){},
             .pc_tracker = null,
@@ -141,11 +142,11 @@ pub const Tracer = struct {
     }
 
     /// Get the captured execution steps
-    pub fn getSteps(self: *const DefaultTracer) []const ExecutionStep {
+    pub fn getSteps(self: *const Tracer) []const ExecutionStep {
         return self.steps.items;
     }
 
-    pub fn deinit(self: *DefaultTracer) void {
+    pub fn deinit(self: *Tracer) void {
         // Clean up execution steps
         for (self.steps.items) |step| {
             if (step.stack_before.len > 0) {
@@ -168,7 +169,8 @@ pub const Tracer = struct {
     }
 
     /// Initialize PC tracker with bytecode (called when frame starts interpretation)
-    pub fn initPcTracker(self: *DefaultTracer, bytecode: []const u8) void {
+    pub fn initPcTracker(self: *Tracer, bytecode: []const u8) void {
+        if (!self.config.enable_pc_tracking) return;
         self.bytecode = bytecode;
         self.current_pc = 0;
     }
