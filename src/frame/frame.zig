@@ -217,7 +217,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .u256_constants = &[_]WordType{}, // Will be set during interpret
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
                 .output = &[_]u8{},
-                ._padding2 = undefined,
                 .caller = caller,
                 .value = value,
                 .calldata_slice = calldata_input,
@@ -472,7 +471,6 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .u256_constants = self.u256_constants,
                 .jump_table = self.jump_table,
                 .output = new_output,
-                ._padding2 = undefined,
                 // Cache line 3+ - COLD PATH
                 .caller = self.caller,
                 .value = self.value,
