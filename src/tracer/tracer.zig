@@ -1,7 +1,7 @@
 /// Configurable execution tracing system for EVM debugging and analysis
 ///
 /// Provides multiple tracer implementations with compile-time selection:
-/// - `DefaultTracer`: Validates execution in debug/safe builds
+/// - `Tracer`: Validates execution in debug/safe builds
 /// - `DebuggingTracer`: Step-by-step debugging (no-op implementation)
 /// - `LoggingTracer`: Structured logging to stdout (minimal)
 /// - `FileTracer`: File output (skeleton)
@@ -176,10 +176,14 @@ pub const Tracer = struct {
     }
 
     /// Initialize MinimalEvm as a sidecar validator when frame starts interpretation
-    pub fn onInterpret(self: *DefaultTracer, frame: anytype, bytecode: []const u8, gas_limit: i64) void {
+    pub fn onInterpret(self: *Tracer, frame: anytype, bytecode: []const u8, gas_limit: i64) void {
         _ = gas_limit;
+        
+        // Early exit if validation and step capture are disabled
+        if (!self.config.enable_validation and !self.config.enable_step_capture) return;
+        
         const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+        if (self.config.enable_validation and comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             // Get EVM depth to check if this is an inner call
             const main_evm = frame.getEvm();
             const depth = main_evm.depth;
@@ -287,7 +291,7 @@ pub const Tracer = struct {
     /// Called before an instruction executes
     /// This is the main entry point for instruction tracing
     pub fn before_instruction(
-        self: *DefaultTracer,
+        self: *Tracer,
         frame: anytype,
         comptime opcode: UnifiedOpcode,
         cursor: [*]const @TypeOf(frame.*).Dispatch.Item
@@ -373,7 +377,7 @@ pub const Tracer = struct {
 
     /// Called after an instruction completes successfully
     pub fn after_instruction(
-        self: *DefaultTracer,
+        self: *Tracer,
         frame: anytype,
         comptime opcode: UnifiedOpcode,
         next_handler: anytype,
@@ -444,7 +448,7 @@ pub const Tracer = struct {
 
     /// Called when an instruction completes with a terminal state
     pub fn after_complete(
-        self: *DefaultTracer,
+        self: *Tracer,
         frame: anytype,
         comptime opcode: UnifiedOpcode
     ) void {
@@ -465,7 +469,7 @@ pub const Tracer = struct {
     // ============================================================================
 
     /// Capture the current execution state before executing an opcode
-    fn captureStep(self: *DefaultTracer, frame: anytype, opcode_value: u8) !ExecutionStep {
+    fn captureStep(self: *Tracer, frame: anytype, opcode_value: u8) !ExecutionStep {
         // Capture stack before
         var stack_before: []u256 = &[_]u256{};
         if (frame.stack.items.len > 0) {
@@ -497,7 +501,7 @@ pub const Tracer = struct {
 
     /// Execute MinimalEvm for the given UnifiedOpcode
     fn executeMinimalEvmForOpcode(
-        self: *DefaultTracer,
+        self: *Tracer,
         evm: *MinimalEvm,
         comptime opcode: UnifiedOpcode,
         frame: anytype,
@@ -897,7 +901,7 @@ pub const Tracer = struct {
 
 
     /// Helper to get opcode number from handler pointer by searching opcode_handlers array
-    fn getOpcodeFromHandler(self: *DefaultTracer, comptime FrameType: type, handler: FrameType.OpcodeHandler) ?u8 {
+    fn getOpcodeFromHandler(self: *Tracer, comptime FrameType: type, handler: FrameType.OpcodeHandler) ?u8 {
         _ = self;
         inline for (0..256) |i| {
             if (FrameType.opcode_handlers[i] == handler) {
@@ -909,7 +913,7 @@ pub const Tracer = struct {
 
     /// Validate MinimalEvm state against Frame state
     fn validateMinimalEvmState(
-        self: *DefaultTracer,
+        self: *Tracer,
         frame: anytype,
         comptime opcode: UnifiedOpcode
     ) void {
@@ -1038,28 +1042,28 @@ pub const Tracer = struct {
     // LOGGING FUNCTIONS
     // ============================================================================
 
-    pub fn debug(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
+    pub fn debug(self: *Tracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         log.debug(format, args);
     }
 
-    pub fn err(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
+    pub fn err(self: *Tracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         log.err(format, args);
         @panic("Tracer error - see log above");
     }
 
-    pub fn warn(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
+    pub fn warn(self: *Tracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         log.warn(format, args);
     }
 
-    pub fn info(self: *DefaultTracer, comptime format: []const u8, args: anytype) void {
+    pub fn info(self: *Tracer, comptime format: []const u8, args: anytype) void {
         _ = self;
         log.info(format, args);
     }
 
-    pub fn throwError(self: *DefaultTracer, comptime format: []const u8, args: anytype) noreturn {
+    pub fn throwError(self: *Tracer, comptime format: []const u8, args: anytype) noreturn {
         _ = self;
         const builtin = @import("builtin");
         log.err("FATAL: " ++ format, args);
@@ -1074,7 +1078,7 @@ pub const Tracer = struct {
     // EVM LIFECYCLE EVENTS
     // ============================================================================
 
-    pub fn onFrameStart(self: *DefaultTracer, code_len: usize, gas: u64, depth: u16) void {
+    pub fn onFrameStart(self: *Tracer, code_len: usize, gas: u64, depth: u16) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1082,7 +1086,7 @@ pub const Tracer = struct {
         }
     }
 
-    pub fn onFrameComplete(self: *DefaultTracer, gas_left: u64, output_len: usize) void {
+    pub fn onFrameComplete(self: *Tracer, gas_left: u64, output_len: usize) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1090,7 +1094,7 @@ pub const Tracer = struct {
         }
     }
 
-    pub fn onAccountDelegation(self: *DefaultTracer, account: []const u8, delegated: []const u8) void {
+    pub fn onAccountDelegation(self: *Tracer, account: []const u8, delegated: []const u8) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1098,7 +1102,7 @@ pub const Tracer = struct {
         }
     }
 
-    pub fn onEmptyAccountAccess(self: *DefaultTracer) void {
+    pub fn onEmptyAccountAccess(self: *Tracer) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1107,7 +1111,7 @@ pub const Tracer = struct {
     }
 
     /// Called when arena allocator is initialized
-    pub fn onArenaInit(self: *DefaultTracer, initial_capacity: usize, max_capacity: usize, growth_factor: u32) void {
+    pub fn onArenaInit(self: *Tracer, initial_capacity: usize, max_capacity: usize, growth_factor: u32) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1116,7 +1120,7 @@ pub const Tracer = struct {
     }
 
     /// Event: Call operation started
-    pub fn onCallStart(self: *DefaultTracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
+    pub fn onCallStart(self: *Tracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
         _ = self;
         _ = call_type;
         _ = gas;
@@ -1125,7 +1129,7 @@ pub const Tracer = struct {
     }
 
     /// Event: EVM initialization started
-    pub fn onEvmInit(self: *DefaultTracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
+    pub fn onEvmInit(self: *Tracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
         _ = self;
         _ = gas_price;
         _ = origin;
@@ -1133,7 +1137,7 @@ pub const Tracer = struct {
     }
 
     /// Called when arena is reset
-    pub fn onArenaReset(self: *DefaultTracer, mode: []const u8, capacity_before: usize, capacity_after: usize) void {
+    pub fn onArenaReset(self: *Tracer, mode: []const u8, capacity_before: usize, capacity_after: usize) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1142,14 +1146,14 @@ pub const Tracer = struct {
     }
 
     /// Event: Beacon root update processing
-    pub fn onBeaconRootUpdate(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+    pub fn onBeaconRootUpdate(self: *Tracer, success: bool, error_val: ?anyerror) void {
         _ = self;
         _ = success;
         _ = error_val;
     }
 
     /// Event: Call operation completed
-    pub fn onCallComplete(self: *DefaultTracer, success: bool, gas_left: i64, output_len: usize) void {
+    pub fn onCallComplete(self: *Tracer, success: bool, gas_left: i64, output_len: usize) void {
         _ = self;
         _ = success;
         _ = gas_left;
@@ -1157,21 +1161,21 @@ pub const Tracer = struct {
     }
 
     /// Event: Preflight check for call
-    pub fn onCallPreflight(self: *DefaultTracer, call_type: []const u8, result: []const u8) void {
+    pub fn onCallPreflight(self: *Tracer, call_type: []const u8, result: []const u8) void {
         _ = self;
         _ = call_type;
         _ = result;
     }
 
     /// Event: Historical block hash update processing
-    pub fn onHistoricalBlockHashUpdate(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+    pub fn onHistoricalBlockHashUpdate(self: *Tracer, success: bool, error_val: ?anyerror) void {
         _ = self;
         _ = success;
         _ = error_val;
     }
 
     /// Event: Code retrieval
-    pub fn onCodeRetrieval(self: *DefaultTracer, address: anytype, code_len: usize, is_empty: bool) void {
+    pub fn onCodeRetrieval(self: *Tracer, address: anytype, code_len: usize, is_empty: bool) void {
         _ = self;
         _ = address;
         _ = code_len;
@@ -1179,14 +1183,14 @@ pub const Tracer = struct {
     }
 
     /// Event: Validator deposits processing
-    pub fn onValidatorDeposits(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+    pub fn onValidatorDeposits(self: *Tracer, success: bool, error_val: ?anyerror) void {
         _ = self;
         _ = success;
         _ = error_val;
     }
 
     /// Called when an allocation is made
-    pub fn onArenaAlloc(self: *DefaultTracer, size: usize, alignment: usize, current_capacity: usize) void {
+    pub fn onArenaAlloc(self: *Tracer, size: usize, alignment: usize, current_capacity: usize) void {
         _ = self;
         _ = size;
         _ = alignment;
@@ -1194,7 +1198,7 @@ pub const Tracer = struct {
     }
 
     /// Called when a frame completes (for tracking nested depth)
-    pub fn onFrameReturn(self: *DefaultTracer) void {
+    pub fn onFrameReturn(self: *Tracer) void {
         if (self.minimal_evm) |_| {
             // Skip validation for nested calls
             if (self.nested_depth > 0) return;
@@ -1202,7 +1206,7 @@ pub const Tracer = struct {
     }
 
     /// Event: Frame bytecode initialization
-    pub fn onFrameBytecodeInit(self: *DefaultTracer, bytecode_len: usize, success: bool, error_val: ?anyerror) void {
+    pub fn onFrameBytecodeInit(self: *Tracer, bytecode_len: usize, success: bool, error_val: ?anyerror) void {
         _ = self;
         _ = bytecode_len;
         _ = success;
@@ -1210,14 +1214,14 @@ pub const Tracer = struct {
     }
 
     /// Event: Validator withdrawals processing
-    pub fn onValidatorWithdrawals(self: *DefaultTracer, success: bool, error_val: ?anyerror) void {
+    pub fn onValidatorWithdrawals(self: *Tracer, success: bool, error_val: ?anyerror) void {
         _ = self;
         _ = success;
         _ = error_val;
     }
 
     /// Called when arena grows to accommodate new allocations
-    pub fn onArenaGrow(self: *DefaultTracer, old_capacity: usize, new_capacity: usize, requested_size: usize) void {
+    pub fn onArenaGrow(self: *Tracer, old_capacity: usize, new_capacity: usize, requested_size: usize) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1226,7 +1230,7 @@ pub const Tracer = struct {
     }
 
     /// Called when allocation fails
-    pub fn onArenaAllocFailed(self: *DefaultTracer, size: usize, current_capacity: usize, max_capacity: usize) void {
+    pub fn onArenaAllocFailed(self: *Tracer, size: usize, current_capacity: usize, max_capacity: usize) void {
         _ = self;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
@@ -1235,7 +1239,7 @@ pub const Tracer = struct {
     }
 
     /// Assert with error message - replaces std.debug.assert
-    pub fn assert(self: *DefaultTracer, condition: bool, comptime message: []const u8) void {
+    pub fn assert(self: *Tracer, condition: bool, comptime message: []const u8) void {
         if (!condition) {
             self.err("ASSERTION FAILED: {s}", .{ message });
             const builtin = @import("builtin");
@@ -1248,14 +1252,14 @@ pub const Tracer = struct {
     }
 
     /// Called when bytecode analysis starts
-    pub fn onBytecodeAnalysisStart(self: *DefaultTracer, code_len: usize) void {
+    pub fn onBytecodeAnalysisStart(self: *Tracer, code_len: usize) void {
         _ = self;
         _ = code_len;
         // No-op in default tracer
     }
 
     /// Called when bytecode analysis completes
-    pub fn onBytecodeAnalysisComplete(self: *DefaultTracer, validated_up_to: usize, opcode_count: usize, jumpdest_count: usize) void {
+    pub fn onBytecodeAnalysisComplete(self: *Tracer, validated_up_to: usize, opcode_count: usize, jumpdest_count: usize) void {
         _ = self;
         _ = validated_up_to;
         _ = opcode_count;
@@ -1264,7 +1268,7 @@ pub const Tracer = struct {
     }
 
     /// Called when an invalid opcode is found during analysis
-    pub fn onInvalidOpcode(self: *DefaultTracer, pc: usize, opcode: u8) void {
+    pub fn onInvalidOpcode(self: *Tracer, pc: usize, opcode: u8) void {
         _ = self;
         _ = pc;
         _ = opcode;
@@ -1272,7 +1276,7 @@ pub const Tracer = struct {
     }
 
     /// Called when a JUMPDEST is found during analysis
-    pub fn onJumpdestFound(self: *DefaultTracer, pc: usize, count: usize) void {
+    pub fn onJumpdestFound(self: *Tracer, pc: usize, count: usize) void {
         _ = self;
         _ = pc;
         _ = count;
@@ -1280,14 +1284,14 @@ pub const Tracer = struct {
     }
 
     /// Called when dispatch schedule build starts
-    pub fn onScheduleBuildStart(self: *DefaultTracer, bytecode_len: usize) void {
+    pub fn onScheduleBuildStart(self: *Tracer, bytecode_len: usize) void {
         _ = self;
         _ = bytecode_len;
         // No-op in default tracer
     }
 
     /// Called when a fusion optimization is detected
-    pub fn onFusionDetected(self: *DefaultTracer, pc: usize, fusion_type: []const u8, instruction_count: usize) void {
+    pub fn onFusionDetected(self: *Tracer, pc: usize, fusion_type: []const u8, instruction_count: usize) void {
         _ = self;
         _ = pc;
         _ = fusion_type;
@@ -1296,7 +1300,7 @@ pub const Tracer = struct {
     }
 
     /// Called when an invalid static jump is detected
-    pub fn onInvalidStaticJump(self: *DefaultTracer, jump_pc: usize, target_pc: usize) void {
+    pub fn onInvalidStaticJump(self: *Tracer, jump_pc: usize, target_pc: usize) void {
         _ = self;
         _ = jump_pc;
         _ = target_pc;
@@ -1304,7 +1308,7 @@ pub const Tracer = struct {
     }
 
     /// Called when a static jump is resolved
-    pub fn onStaticJumpResolved(self: *DefaultTracer, jump_pc: usize, target_pc: usize) void {
+    pub fn onStaticJumpResolved(self: *Tracer, jump_pc: usize, target_pc: usize) void {
         _ = self;
         _ = jump_pc;
         _ = target_pc;
@@ -1312,7 +1316,7 @@ pub const Tracer = struct {
     }
 
     /// Called when a truncated PUSH instruction is detected
-    pub fn onTruncatedPush(self: *DefaultTracer, pc: usize, push_size: u8, available: usize) void {
+    pub fn onTruncatedPush(self: *Tracer, pc: usize, push_size: u8, available: usize) void {
         _ = self;
         _ = pc;
         _ = push_size;
@@ -1321,7 +1325,7 @@ pub const Tracer = struct {
     }
 
     /// Called when dispatch schedule build completes
-    pub fn onScheduleBuildComplete(self: *DefaultTracer, item_count: usize, fusion_count: usize) void {
+    pub fn onScheduleBuildComplete(self: *Tracer, item_count: usize, fusion_count: usize) void {
         _ = self;
         _ = item_count;
         _ = fusion_count;
@@ -1329,7 +1333,7 @@ pub const Tracer = struct {
     }
 
     /// Called when a jump table is created
-    pub fn onJumpTableCreated(self: *DefaultTracer, jumpdest_count: usize) void {
+    pub fn onJumpTableCreated(self: *Tracer, jumpdest_count: usize) void {
         _ = self;
         _ = jumpdest_count;
         // No-op in default tracer
