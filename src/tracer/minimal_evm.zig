@@ -79,18 +79,13 @@ pub const MinimalEvm = struct {
         OutOfBounds,
         WriteProtection,
         BytecodeTooLarge,
+        InvalidPush,
     };
 
     const Self = @This();
 
     // Frame stack - manages nested calls
     frames: std.ArrayList(*MinimalFrame),
-
-    // Currently executing frame (points to top of frames stack)
-    current_frame: ?*MinimalFrame,
-
-    // Return data from last call
-    return_data: []const u8,
 
     // Storage for all accounts
     storage: std.AutoHashMap(StorageSlotKey, u256),
@@ -147,8 +142,6 @@ pub const MinimalEvm = struct {
 
         return Self{
             .frames = frames_list,
-            .current_frame = null,
-            .return_data = &[_]u8{},
             .storage = storage_map,
             .balances = balances_map,
             .code = code_map,
@@ -182,8 +175,6 @@ pub const MinimalEvm = struct {
         const arena_allocator = self.arena.allocator();
 
         self.frames = std.ArrayList(*MinimalFrame).empty;
-        self.current_frame = null;
-        self.return_data = &[_]u8{};
         self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         self.balances = std.AutoHashMap(Address, u256).init(arena_allocator);
         self.code = std.AutoHashMap(Address, []const u8).init(arena_allocator);
@@ -337,52 +328,29 @@ pub const MinimalEvm = struct {
 
         // Push frame onto stack
         try self.frames.append(self.allocator, frame);
-
-        // Set as current frame
-        self.current_frame = frame;
+        defer _ = self.frames.pop();
 
         // Execute the frame
-        const exec_result = frame.execute();
-
-        // Pop frame from stack
-        _ = self.frames.pop();
-
-        // Restore previous frame if any
-        if (self.frames.items.len > 0) {
-            self.current_frame = self.frames.items[self.frames.items.len - 1];
-        } else {
-            self.current_frame = null;
-        }
-
-        // Handle execution error
-        if (exec_result) |_| {
-            // Success case
-        } else |_| {
+        frame.execute() catch {
             // Error case - return failure (arena will clean up)
             return CallResult{
                 .success = false,
                 .gas_left = 0,
                 .output = &[_]u8{},
             };
-        }
+        };
 
-        // Store return data
-        if (frame.output.len > 0) {
-            const output_copy = try self.allocator.alloc(u8, frame.output.len);
-            @memcpy(output_copy, frame.output);
-            self.return_data = output_copy;
-        } else {
-            self.return_data = &[_]u8{};
-        }
+        // Frame was popped, current frame is automatically updated via getCurrentFrame()
 
-        // Return result
+        const output = try self.allocator.alloc(u8, frame.output.len);
+        @memcpy(output, frame.output);
+
         const result = CallResult{
             .success = !frame.reverted,
             .gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0))),
-            .output = self.return_data,
+            .output = output,
         };
 
-        // No cleanup needed - arena handles it
         return result;
     }
 
@@ -394,7 +362,6 @@ pub const MinimalEvm = struct {
         input: []const u8,
         gas: u64,
     ) Error!CallResult {
-        // Check depth (frames.items.len is the depth)
         if (self.frames.items.len >= 1024) {
             return CallResult{
                 .success = false,
@@ -415,7 +382,7 @@ pub const MinimalEvm = struct {
         }
 
         // Get caller from current frame
-        const caller = if (self.current_frame) |frame| frame.address else self.origin;
+        const caller = if (self.getCurrentFrame()) |frame| frame.address else self.origin;
 
         // Create a new frame for the inner call
         const frame = try self.allocator.create(MinimalFrame);
@@ -430,23 +397,11 @@ pub const MinimalEvm = struct {
             @as(*anyopaque, @ptrCast(self)),
         );
 
-        // Push frame onto stack
         try self.frames.append(self.allocator, frame);
         errdefer _ = self.frames.pop();
 
-        // Set as current frame
-        const previous_frame = self.current_frame;
-        self.current_frame = frame;
-        defer {
-            // Restore previous frame after execution
-            self.current_frame = previous_frame;
-        }
-
-        // Execute the frame
         frame.execute() catch {
-            // Pop frame on error
             _ = self.frames.pop();
-            // No cleanup needed - arena handles it
             return CallResult{
                 .success = false,
                 .gas_left = 0,
@@ -458,19 +413,17 @@ pub const MinimalEvm = struct {
         _ = self.frames.pop();
 
         // Store return data
-        if (frame.output.len > 0) {
+        const output = if (frame.output.len > 0) blk: {
             const output_copy = try self.allocator.alloc(u8, frame.output.len);
             @memcpy(output_copy, frame.output);
-            self.return_data = output_copy;
-        } else {
-            self.return_data = &[_]u8{};
-        }
+            break :blk output_copy;
+        } else &[_]u8{};
 
         // Return result
         const result = CallResult{
             .success = !frame.reverted,
             .gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0))),
-            .output = self.return_data,
+            .output = output,
         };
 
         // No cleanup needed - arena handles it
@@ -512,9 +465,17 @@ pub const MinimalEvm = struct {
         try self.storage.put(key, value);
     }
 
+    /// Get current frame (top of the frame stack)
+    pub fn getCurrentFrame(self: *const Self) ?*MinimalFrame {
+        if (self.frames.items.len > 0) {
+            return self.frames.items[self.frames.items.len - 1];
+        }
+        return null;
+    }
+
     /// Get current frame's PC (for tracer)
     pub fn getPC(self: *const Self) u32 {
-        if (self.current_frame) |frame| {
+        if (self.getCurrentFrame()) |frame| {
             return frame.pc;
         }
         return 0;
@@ -522,7 +483,7 @@ pub const MinimalEvm = struct {
 
     /// Get current frame's bytecode (for tracer)
     pub fn getBytecode(self: *const Self) []const u8 {
-        if (self.current_frame) |frame| {
+        if (self.getCurrentFrame()) |frame| {
             return frame.bytecode;
         }
         return &[_]u8{};
@@ -530,7 +491,7 @@ pub const MinimalEvm = struct {
 
     /// Execute a single step (for tracer)
     pub fn step(self: *Self) !void {
-        if (self.current_frame) |frame| {
+        if (self.getCurrentFrame()) |frame| {
             try frame.step();
         }
     }

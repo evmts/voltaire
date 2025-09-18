@@ -4,7 +4,7 @@ const std = @import("std");
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
-const MinimalEvmError = @import("minimal_evm.zig").MinimalEvmError;
+const MinimalEvmError = @import("minimal_evm.zig").MinimalEvm.Error;
 
 pub const MinimalFrame = struct {
     const Self = @This();
