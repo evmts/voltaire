@@ -13,68 +13,56 @@ import (
 
 // RunTrace executes a CALL operation with tracing enabled and outputs JSON trace
 func RunTrace(c *cli.Context) error {
-	// Parse call parameters matching Guillotine's CallParams structure
-	callerStr := c.String("caller")
-	toStr := c.String("to")
-	valueStr := c.String("value")
-	gasStr := c.String("gas")
-	
-	// Handle special fixture shorthand
-	if c.Args().Len() > 0 && c.Args().Get(0) == "snailtracer" {
-		// Use snailtracer test fixture defaults
-		projectRoot := "/Users/williamcory/Guillotine"
+	// Check if a fixture name is provided as positional argument
+	if c.Args().Len() > 0 {
+		fixtureName := c.Args().Get(0)
 		
-		// Read bytecode from fixture
-		bytecodePath := filepath.Join(projectRoot, "src/_test_utils/fixtures/snailtracer/bytecode.txt")
-		bcBytesRaw, err := os.ReadFile(bytecodePath)
+		// Load bytecode and calldata from fixture
+		bytecode, calldata, err := LoadFixtureBytecodeAndCalldata(fixtureName)
 		if err != nil {
-			return fmt.Errorf("failed to read snailtracer bytecode: %w", err)
-		}
-		bytecode, err := ParseHex(string(bcBytesRaw))
-		if err != nil {
-			return fmt.Errorf("invalid snailtracer bytecode: %w", err)
+			return fmt.Errorf("failed to load fixture '%s': %w", fixtureName, err)
 		}
 		
-		// Read or get input/calldata
-		var input []byte
-		if inputStr := c.String("input"); inputStr != "" {
-			// Use provided input
-			input, err = ParseHex(inputStr)
-			if err != nil {
-				return fmt.Errorf("invalid input hex: %w", err)
-			}
-		} else {
-			// Read default calldata from fixture
-			calldataPath := filepath.Join(projectRoot, "src/_test_utils/fixtures/snailtracer/calldata.txt")
-			cdBytesRaw, err := os.ReadFile(calldataPath)
-			if err != nil {
-				return fmt.Errorf("failed to read snailtracer calldata: %w", err)
-			}
-			input, err = ParseHex(string(cdBytesRaw))
-			if err != nil {
-				return fmt.Errorf("invalid snailtracer calldata: %w", err)
-			}
-		}
-		
-		// Set default addresses if not provided
+		// Get caller and to addresses (use defaults if not provided)
+		callerStr := c.String("caller")
 		if callerStr == "" {
 			callerStr = "0x1000000000000000000000000000000000000000"
 		}
+		
+		toStr := c.String("to")
 		if toStr == "" {
 			toStr = "0x1000000000000000000000000000000000000001"
 		}
 		
-		// Run snailtracer with special setup
+		// Override calldata if input is explicitly provided
+		input := calldata
+		if inputStr := c.String("input"); inputStr != "" {
+			input, err = ParseHex(inputStr)
+			if err != nil {
+				return fmt.Errorf("invalid input hex: %w", err)
+			}
+		}
+		
+		valueStr := c.String("value")
+		gasStr := c.String("gas")
+		
+		// Run with fixture setup
 		return runTraceWithSetup(callerStr, toStr, valueStr, input, gasStr, bytecode)
 	}
 	
 	// Normal trace mode - require caller and to addresses
+	callerStr := c.String("caller")
 	if callerStr == "" {
-		return fmt.Errorf("--caller is required (or use 'trace snailtracer' for test fixture)")
+		return fmt.Errorf("--caller is required (or use 'trace <fixture-name>' for test fixture)")
 	}
+	
+	toStr := c.String("to")
 	if toStr == "" {
-		return fmt.Errorf("--to is required (or use 'trace snailtracer' for test fixture)")
+		return fmt.Errorf("--to is required (or use 'trace <fixture-name>' for test fixture)")
 	}
+	
+	valueStr := c.String("value")
+	gasStr := c.String("gas")
 	
 	// Parse input data
 	var input []byte
