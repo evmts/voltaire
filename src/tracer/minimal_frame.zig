@@ -499,21 +499,14 @@ pub const MinimalFrame = struct {
                     try self.pushStack(empty_hash);
                     self.pc += 1;
                 } else {
-                    // Check bounds
-                    if (offset > std.math.maxInt(u32) or size > std.math.maxInt(u32)) {
-                        return error.OutOfGas;
-                    }
-
-                    const offset_u32 = @as(u32, @intCast(offset));
-                    const size_u32 = @as(u32, @intCast(size));
+                    const offset_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+                    const size_u32 = std.math.cast(u32, size) orelse return error.OutOfBounds;
 
                     // Charge memory expansion to cover [offset, offset+size)
-                    const end_addr = offset_u32 + size_u32;
+                    const end_addr = @as(u64, offset_u32) + @as(u64, size_u32);
                     const mem_cost = self.memoryExpansionCost(end_addr);
                     try self.consumeGas(mem_cost);
-                    if (end_addr > self.memory_size) {
-                        self.memory_size = end_addr;
-                    }
+                    if (end_addr > self.memory_size) self.memory_size = @intCast(end_addr);
 
                     // Read data from memory
                     var data = try self.allocator.alloc(u8, size_u32);
@@ -565,7 +558,7 @@ pub const MinimalFrame = struct {
             // ORIGIN
             0x32 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                const origin_u256 = primitives.Address.to_u256(self.getEvm().origin);
+                const origin_u256 = primitives.Address.to_u256(evm.origin);
                 try self.pushStack(origin_u256);
                 self.pc += 1;
             },
@@ -618,13 +611,9 @@ pub const MinimalFrame = struct {
                 const offset = try self.popStack();
                 const length = try self.popStack();
 
-                if (dest_offset > std.math.maxInt(u32) or offset > std.math.maxInt(u32) or length > std.math.maxInt(u32)) {
-                    return error.OutOfGas;
-                }
-
-                const dest_off = @as(u32, @intCast(dest_offset));
-                const src_off = @as(u32, @intCast(offset));
-                const len = @as(u32, @intCast(length));
+                const dest_off = std.math.cast(u32, dest_offset) orelse return error.OutOfBounds;
+                const src_off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+                const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
 
                 // Charge base + memory expansion + copy per word
                 const end_bytes_copy: u64 = @as(u64, dest_off) + @as(u64, len);
@@ -656,13 +645,9 @@ pub const MinimalFrame = struct {
                 const offset = try self.popStack();
                 const length = try self.popStack();
 
-                if (dest_offset > std.math.maxInt(u32) or offset > std.math.maxInt(u32) or length > std.math.maxInt(u32)) {
-                    return error.OutOfGas;
-                }
-
-                const dest_off = @as(u32, @intCast(dest_offset));
-                const src_off = @as(u32, @intCast(offset));
-                const len = @as(u32, @intCast(length));
+                const dest_off = std.math.cast(u32, dest_offset) orelse return error.OutOfBounds;
+                const src_off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+                const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
 
                 const end_bytes_code: u64 = @as(u64, dest_off) + @as(u64, len);
                 const mem_cost5 = self.memoryExpansionCost(end_bytes_code);
@@ -683,7 +668,7 @@ pub const MinimalFrame = struct {
             // GASPRICE
             0x3a => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().gas_price);
+                try self.pushStack(evm.gas_price);
                 self.pc += 1;
             },
 
@@ -700,17 +685,13 @@ pub const MinimalFrame = struct {
                 const offset = try self.popStack();
                 const length = try self.popStack();
 
-                if (dest_offset > std.math.maxInt(u32) or offset > std.math.maxInt(u32) or length > std.math.maxInt(u32)) {
-                    return error.OutOfGas;
-                }
-
-                const dest_off = @as(u32, @intCast(dest_offset));
-                const src_off = @as(u32, @intCast(offset));
-                const len = @as(u32, @intCast(length));
+                const dest_off = std.math.cast(u32, dest_offset) orelse return error.OutOfBounds;
+                const src_off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+                const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
 
                 // Check bounds
                 if (src_off + len > self.return_data.len) {
-                    return error.InvalidOpcode;  // Use a valid error type
+                    return error.OutOfBounds;
                 }
 
                 const end_bytes_ret: u64 = @as(u64, dest_off) + @as(u64, len);
@@ -733,7 +714,7 @@ pub const MinimalFrame = struct {
                 try self.consumeGas(GasConstants.GasExtStep);
                 const block_number = try self.popStack();
                 // Simple mock: return a hash based on block number
-                const current_block = self.getEvm().block_number;
+                const current_block = evm.block_number;
                 if (block_number >= current_block or current_block > block_number + 256) {
                     try self.pushStack(0);
                 } else {
@@ -746,7 +727,7 @@ pub const MinimalFrame = struct {
             // COINBASE
             0x41 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                const coinbase_u256 = primitives.Address.to_u256(self.getEvm().block_coinbase);
+                const coinbase_u256 = primitives.Address.to_u256(evm.block_coinbase);
                 try self.pushStack(coinbase_u256);
                 self.pc += 1;
             },
@@ -754,42 +735,42 @@ pub const MinimalFrame = struct {
             // TIMESTAMP
             0x42 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().block_timestamp);
+                try self.pushStack(evm.block_timestamp);
                 self.pc += 1;
             },
 
             // NUMBER
             0x43 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().block_number);
+                try self.pushStack(evm.block_number);
                 self.pc += 1;
             },
 
             // DIFFICULTY/PREVRANDAO
             0x44 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().block_difficulty);
+                try self.pushStack(evm.block_difficulty);
                 self.pc += 1;
             },
 
             // GASLIMIT
             0x45 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().block_gas_limit);
+                try self.pushStack(evm.block_gas_limit);
                 self.pc += 1;
             },
 
             // CHAINID
             0x46 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().chain_id);
+                try self.pushStack(evm.chain_id);
                 self.pc += 1;
             },
 
             // SELFBALANCE
             0x47 => {
                 try self.consumeGas(GasConstants.GasFastStep);
-                const balance = self.getEvm().get_balance(self.address);
+                const balance = evm.get_balance(self.address);
                 try self.pushStack(balance);
                 self.pc += 1;
             },
@@ -797,7 +778,7 @@ pub const MinimalFrame = struct {
             // BASEFEE
             0x48 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().block_base_fee);
+                try self.pushStack(evm.block_base_fee);
                 self.pc += 1;
             },
 
@@ -814,7 +795,7 @@ pub const MinimalFrame = struct {
             // BLOBBASEFEE
             0x4a => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(self.getEvm().blob_base_fee);
+                try self.pushStack(evm.blob_base_fee);
                 self.pc += 1;
             },
 
@@ -828,10 +809,7 @@ pub const MinimalFrame = struct {
             // MLOAD
             0x51 => {
                 const offset = try self.popStack();
-                if (offset > std.math.maxInt(u32)) {
-                    return error.OutOfGas;
-                }
-                const off = @as(u32, @intCast(offset));
+                const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
 
                 // Charge base + memory expansion for reading 32 bytes
                 const end_bytes: u64 = @as(u64, off) + 32;
@@ -855,11 +833,7 @@ pub const MinimalFrame = struct {
                 const offset = try self.popStack();
                 const value = try self.popStack();
 
-                if (offset > std.math.maxInt(u32)) {
-                    return error.OutOfGas;
-                }
-
-                const off = @as(u32, @intCast(offset));
+                const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
 
                 // Charge base + memory expansion for writing 32 bytes
                 const end_bytes2: u64 = @as(u64, off) + 32;
@@ -880,11 +854,7 @@ pub const MinimalFrame = struct {
                 const offset = try self.popStack();
                 const value = try self.popStack();
 
-                if (offset > std.math.maxInt(u32)) {
-                    return error.OutOfGas;
-                }
-
-                const off = @as(u32, @intCast(offset));
+                const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
                 const end_bytes3: u64 = @as(u64, off) + 1;
                 const mem_cost3 = self.memoryExpansionCost(end_bytes3);
                 try self.consumeGas(GasConstants.GasFastestStep + mem_cost3);
@@ -899,7 +869,7 @@ pub const MinimalFrame = struct {
 
                 // EIP-2929: charge warm/cold storage access cost and warm the slot
                 // TODO: Gate EIP-2929 by hardfork
-                const access_cost = try self.getEvm().access_storage_slot(self.address, key);
+                const access_cost = try evm.access_storage_slot(self.address, key);
                 // Access list returns 2100 for cold and 100 for warm
                 // SLOAD total cost is 100 when warm and 2100 + 100 when cold
                 // Add the 100 base only for the cold case to avoid double-charging on warm
@@ -909,7 +879,7 @@ pub const MinimalFrame = struct {
                     access_cost;
                 try self.consumeGas(total_cost);
 
-                const value = self.getEvm().get_storage(self.address, key);
+                const value = evm.get_storage(self.address, key);
                 try self.pushStack(value);
                 self.pc += 1;
             },
@@ -924,7 +894,7 @@ pub const MinimalFrame = struct {
                 // original value tracking and refund logic, reusing warm/cold state.
                 try self.consumeGas(GasConstants.SstoreResetGas);
 
-                try self.getEvm().set_storage(self.address, key, value);
+                try evm.set_storage(self.address, key, value);
                 self.pc += 1;
             },
 
@@ -992,7 +962,7 @@ pub const MinimalFrame = struct {
                 const key = try self.popStack();
                 // For MinimalEvm tracer, we use regular storage for transient storage
                 // In a real implementation, this would be separate
-                const value = self.getEvm().get_storage(self.address, key);
+                const value = evm.get_storage(self.address, key);
                 try self.pushStack(value);
                 self.pc += 1;
             },
@@ -1004,7 +974,7 @@ pub const MinimalFrame = struct {
                 const value = try self.popStack();
                 // For MinimalEvm tracer, we can just track transient storage in the EVM
                 // Transient storage behaves like regular storage but is cleared after tx
-                try self.getEvm().set_storage(self.address, key, value);
+                try evm.set_storage(self.address, key, value);
                 self.pc += 1;
             },
 
@@ -1127,7 +1097,7 @@ pub const MinimalFrame = struct {
                 }
                 // EIP-2929: access target account (warm/cold)
                 // TODO: Skip cold surcharge for precompiles and gate by hardfork.
-                const access_cost = try self.getEvm().access_address(call_address);
+                const access_cost = try evm.access_address(call_address);
                 gas_cost += access_cost;
                 try self.consumeGas(gas_cost);
 
@@ -1151,7 +1121,7 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // Perform the inner call
-                const result = try self.getEvm().inner_call(call_address, value_arg, input_data, available_gas);
+                const result = try evm.inner_call(call_address, value_arg, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1208,7 +1178,7 @@ pub const MinimalFrame = struct {
                 }
                 // EIP-2929: access target account (warm/cold)
                 // TODO: Skip cold surcharge for precompiles and gate by hardfork.
-                const access_cost = try self.getEvm().access_address(call_address);
+                const access_cost = try evm.access_address(call_address);
                 gas_cost += access_cost;
                 try self.consumeGas(gas_cost);
 
@@ -1232,7 +1202,7 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // Perform the inner call
-                const result = try self.getEvm().inner_call(call_address, value_arg, input_data, available_gas);
+                const result = try evm.inner_call(call_address, value_arg, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1268,8 +1238,8 @@ pub const MinimalFrame = struct {
                 const length = try self.popStack();
 
                 if (length > 0) {
-                    const off = @as(u32, @intCast(offset));
-                    const len = @as(u32, @intCast(length));
+                    const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+                    const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
 
                     self.output = try self.allocator.alloc(u8, len);
                     var idx: u32 = 0;
@@ -1323,7 +1293,7 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // Perform the inner call
-                const result = try self.getEvm().inner_call(call_address, self.value, input_data, available_gas);
+                const result = try evm.inner_call(call_address, self.value, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1392,7 +1362,7 @@ pub const MinimalFrame = struct {
                 // Base gas cost + EIP-2929 account access
                 var call_gas_cost: u64 = GasConstants.CallGas;
                 // TODO: Skip cold surcharge for precompiles and gate by hardfork.
-                const access_cost = try self.getEvm().access_address(call_address);
+                const access_cost = try evm.access_address(call_address);
                 call_gas_cost += access_cost;
                 try self.consumeGas(call_gas_cost);
 
@@ -1416,7 +1386,7 @@ pub const MinimalFrame = struct {
                 const available_gas = @min(gas_limit, max_gas);
 
                 // Perform the inner call
-                const result = try self.getEvm().inner_call(call_address, 0, input_data, available_gas);
+                const result = try evm.inner_call(call_address, 0, input_data, available_gas);
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
@@ -1460,14 +1430,9 @@ pub const MinimalFrame = struct {
                 }
 
                 // Bounds and type conversions (clamp to u64 before u32/u24 style ops)
-                const max_u32 = std.math.maxInt(u32);
-                if (dest > max_u32 or src > max_u32 or len > max_u32) {
-                    return error.OutOfGas; // treat as fault in minimal tracer
-                }
-
-                const dest_u32: u32 = @intCast(dest);
-                const src_u32: u32 = @intCast(src);
-                const len_u32: u32 = @intCast(len);
+                const dest_u32 = std.math.cast(u32, dest) orelse return error.OutOfBounds;
+                const src_u32 = std.math.cast(u32, src) orelse return error.OutOfBounds;
+                const len_u32 = std.math.cast(u32, len) orelse return error.OutOfBounds;
 
                 // Gas: memory expansion + copy gas (CopyGas per 32-byte word)
                 const end_src: u64 = @as(u64, src_u32) + @as(u64, len_u32);
@@ -1501,8 +1466,8 @@ pub const MinimalFrame = struct {
                 const length = try self.popStack();
 
                 if (length > 0) {
-                    const off = @as(u32, @intCast(offset));
-                    const len = @as(u32, @intCast(length));
+                    const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+                    const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
 
                     self.output = try self.allocator.alloc(u8, len);
                     var idx: u32 = 0;
@@ -1523,7 +1488,7 @@ pub const MinimalFrame = struct {
 
                 // EIP-2929: charge account access cost
                 // TODO: Treat precompiles as warm and gate by hardfork.
-                const access_cost = try self.getEvm().access_address(ext_addr);
+                const access_cost = try evm.access_address(ext_addr);
                 try self.consumeGas(access_cost);
 
                 // For MinimalFrame, we don't have access to external code
@@ -1549,16 +1514,12 @@ pub const MinimalFrame = struct {
 
                     // EIP-2929: account access + copy cost
                     // TODO: Treat precompiles as warm and gate by hardfork.
-                    const access_cost = try self.getEvm().access_address(ext_addr);
+                    const access_cost = try evm.access_address(ext_addr);
                     try self.consumeGas(access_cost + copy_cost);
 
-                    // Memory expansion cost
-                    if (dest_offset > std.math.maxInt(u32) or size > std.math.maxInt(u32)) {
-                        return error.OutOfGas;
-                    }
-                    const dest = @as(u32, @intCast(dest_offset));
-                    const len = @as(u32, @intCast(size));
-                    const end = dest + len;
+                    const dest = std.math.cast(u32, dest_offset) orelse return error.OutOfBounds;
+                    const len = std.math.cast(u32, size) orelse return error.OutOfBounds;
+                    const end = @as(u64, dest) + @as(u64, len);
                     const mem_cost = self.memoryExpansionCost(end);
                     try self.consumeGas(mem_cost);
 
@@ -1571,7 +1532,7 @@ pub const MinimalFrame = struct {
                 } else {
                     // EIP-2929: charge account access cost even if size is zero
                     // TODO: Treat precompiles as warm and gate by hardfork.
-                    const access_cost = try self.getEvm().access_address(ext_addr);
+                    const access_cost = try evm.access_address(ext_addr);
                     try self.consumeGas(access_cost);
                 }
                 self.pc += 1;
@@ -1585,7 +1546,7 @@ pub const MinimalFrame = struct {
 
                 // EIP-2929: charge account access cost
                 // TODO: Treat precompiles as warm and gate by hardfork.
-                const access_cost = try self.getEvm().access_address(ext_addr);
+                const access_cost = try evm.access_address(ext_addr);
                 try self.consumeGas(access_cost);
 
                 // For MinimalFrame, return empty code hash
