@@ -8,7 +8,7 @@ const Host = @import("minimal_evm.zig").Host;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
-pub const TracerConfig = @import("tracer_config.zig");
+pub const TracerConfig = @import("tracer_config.zig").TracerConfig;
 
 // TODO: This should be generic on FrameType so it can use FrameType types like WordType
 // as well as the frame config
