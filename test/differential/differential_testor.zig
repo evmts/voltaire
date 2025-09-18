@@ -482,7 +482,6 @@ pub const DifferentialTestor = struct {
         self.minimal_evm.frames.clearRetainingCapacity();
 
         // Clear other state
-        self.minimal_evm.return_data = &[_]u8{};
         self.minimal_evm.storage.clearRetainingCapacity();
         self.minimal_evm.balances.clearRetainingCapacity();
         self.minimal_evm.code.clearRetainingCapacity();
