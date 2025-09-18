@@ -38,7 +38,7 @@ pub const MinimalFrame = struct {
     // Reference to MinimalEvm (like Frame has evm_ptr)
     evm_ptr: *anyopaque,
 
-    // Allocator
+    // TODO: We should just use self.evm_ptr.arena instead of having our own allocator
     allocator: std.mem.Allocator,
 
     // EIP-3074 AUTH state
@@ -56,7 +56,6 @@ pub const MinimalFrame = struct {
         calldata: []const u8,
         evm_ptr: *anyopaque,
     ) !Self {
-        // In Zig 0.15.1, std.ArrayList is unmanaged
         var stack = std.ArrayList(u256){};
         try stack.ensureTotalCapacity(allocator, 1024);
         errdefer stack.deinit(allocator);
@@ -139,7 +138,9 @@ pub const MinimalFrame = struct {
         }
     }
 
-    inline fn wordCount(bytes: u64) u64 { return (bytes + 31) / 32; }
+    inline fn wordCount(bytes: u64) u64 {
+        return (bytes + 31) / 32;
+    }
 
     fn memoryExpansionCost(self: *const Self, end_bytes: u64) u64 {
         const current_size = @as(u64, self.memory_size);
@@ -187,7 +188,6 @@ pub const MinimalFrame = struct {
                 self.stopped = true;
                 return;
             },
-
             // ADD
             0x01 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
@@ -196,7 +196,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(a +% b);
                 self.pc += 1;
             },
-
             // MUL
             0x02 => {
                 try self.consumeGas(GasConstants.GasFastStep);
@@ -205,7 +204,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(a *% b);
                 self.pc += 1;
             },
-
             // SUB
             0x03 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
@@ -214,7 +212,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(top -% second);
                 self.pc += 1;
             },
-
             // DIV
             0x04 => {
                 try self.consumeGas(GasConstants.GasFastStep);
@@ -224,7 +221,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(result);
                 self.pc += 1;
             },
-
             // SDIV
             0x05 => {
                 try self.consumeGas(GasConstants.GasFastStep);
@@ -237,7 +233,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(result);
                 self.pc += 1;
             },
-
             // MOD
             0x06 => {
                 try self.consumeGas(GasConstants.GasFastStep);
@@ -247,7 +242,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(result);
                 self.pc += 1;
             },
-
             // SMOD
             0x07 => {
                 try self.consumeGas(GasConstants.GasFastStep);
@@ -260,7 +254,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(result);
                 self.pc += 1;
             },
-
             // ADDMOD
             0x08 => {
                 try self.consumeGas(GasConstants.GasMidStep);
@@ -268,7 +261,6 @@ pub const MinimalFrame = struct {
                 const b = try self.popStack();
                 const n = try self.popStack();
                 const result = if (n == 0) 0 else blk: {
-                    // Use u512 to avoid overflow
                     const a_wide = @as(u512, a);
                     const b_wide = @as(u512, b);
                     const n_wide = @as(u512, n);
@@ -277,7 +269,6 @@ pub const MinimalFrame = struct {
                 try self.pushStack(result);
                 self.pc += 1;
             },
-
             // MULMOD
             0x09 => {
                 try self.consumeGas(GasConstants.GasMidStep);
@@ -348,40 +339,40 @@ pub const MinimalFrame = struct {
             // LT
             0x10 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
-                const top = try self.popStack();     // Top of stack
-                const second = try self.popStack();  // Second from top
-                try self.pushStack(if (second < top) 1 else 0);  // Compare second < top
+                const top = try self.popStack(); // Top of stack
+                const second = try self.popStack(); // Second from top
+                try self.pushStack(if (second < top) 1 else 0); // Compare second < top
                 self.pc += 1;
             },
 
             // GT
             0x11 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
-                const top = try self.popStack();     // Top of stack
-                const second = try self.popStack();  // Second from top
-                try self.pushStack(if (second > top) 1 else 0);  // Compare second > top
+                const top = try self.popStack(); // Top of stack
+                const second = try self.popStack(); // Second from top
+                try self.pushStack(if (second > top) 1 else 0); // Compare second > top
                 self.pc += 1;
             },
 
             // SLT
             0x12 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
-                const top = try self.popStack();     // Top of stack
-                const second = try self.popStack();  // Second from top
+                const top = try self.popStack(); // Top of stack
+                const second = try self.popStack(); // Second from top
                 const top_signed = @as(i256, @bitCast(top));
                 const second_signed = @as(i256, @bitCast(second));
-                try self.pushStack(if (second_signed < top_signed) 1 else 0);  // Compare second < top (signed)
+                try self.pushStack(if (second_signed < top_signed) 1 else 0); // Compare second < top (signed)
                 self.pc += 1;
             },
 
             // SGT
             0x13 => {
                 try self.consumeGas(GasConstants.GasFastestStep);
-                const top = try self.popStack();     // Top of stack
-                const second = try self.popStack();  // Second from top
+                const top = try self.popStack(); // Top of stack
+                const second = try self.popStack(); // Second from top
                 const top_signed = @as(i256, @bitCast(top));
                 const second_signed = @as(i256, @bitCast(second));
-                try self.pushStack(if (second_signed > top_signed) 1 else 0);  // Compare second > top (signed)
+                try self.pushStack(if (second_signed > top_signed) 1 else 0); // Compare second > top (signed)
                 self.pc += 1;
             },
 
@@ -390,7 +381,7 @@ pub const MinimalFrame = struct {
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const top = try self.popStack();
                 const second = try self.popStack();
-                try self.pushStack(if (top == second) 1 else 0);  // EQ is symmetric
+                try self.pushStack(if (top == second) 1 else 0); // EQ is symmetric
                 self.pc += 1;
             },
 

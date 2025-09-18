@@ -52,17 +52,14 @@ pub const EvmConfig = struct {
 
     /// Disable gas checks for testing/development (default: false)
     /// When enabled, gas consumption methods become no-ops
-    /// WARNING: Only use for testing, never in production
     disable_gas_checks: bool = false,
 
     /// Disable balance checks for testing/development (default: false)
     /// When enabled, balance checks always return 0
-    /// WARNING: Only use for testing, never in production
     disable_balance_checks: bool = false,
 
     /// Disable fusion optimizations (default: false)
     /// When enabled, bytecode fusion handlers are not registered
-    /// WARNING: Only use for testing/debugging
     disable_fusion: bool = false,
 
     /// SIMD vector length for optimized memory operations
@@ -112,7 +109,7 @@ pub const EvmConfig = struct {
     /// null = disabled (default for optimized builds)
     /// value = maximum iterations before panic (default for debug/safe builds)
     loop_quota: ?u32 = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 1_000_000 else null,
-    
+
     /// Enable system contract updates (EIP-4788 beacon roots, EIP-2935 historical block hashes)
     /// When true, these contracts are updated at the start of each transaction
     enable_beacon_roots: bool = true,
@@ -213,7 +210,7 @@ pub const EvmConfig = struct {
     pub fn fromBuildOptions() EvmConfig {
         const build_options = @import("build_options");
         const optimize_str = build_options.optimize_strategy;
-        
+
         // Base configuration from optimization strategy
         var config = if (std.mem.eql(u8, optimize_str, "fast"))
             EvmConfig.optimizeFast()
@@ -221,7 +218,7 @@ pub const EvmConfig = struct {
             EvmConfig.optimizeSmall()
         else
             EvmConfig{}; // safe/default
-        
+
         // Apply build options
         config.eips = Eips{ .hardfork = getHardforkFromString(build_options.hardfork) };
         config.max_call_depth = build_options.max_call_depth;
@@ -237,14 +234,14 @@ pub const EvmConfig = struct {
         config.disable_gas_checks = build_options.disable_gas_checks;
         config.disable_balance_checks = build_options.disable_balance_checks;
         config.disable_fusion = build_options.disable_fusion;
-        
+
         // Set tracer if enabled
         if (build_options.enable_tracing) {
             // For now, we'll leave TracerType as null since it requires more complex setup
             // Users can still set up their own tracer through the configuration
             // Tracer is now part of EVM struct, not config
         }
-        
+
         return config;
     }
 
@@ -258,7 +255,7 @@ pub const EvmConfig = struct {
         if (std.mem.eql(u8, hardfork_str, "LONDON")) return .LONDON;
         if (std.mem.eql(u8, hardfork_str, "SHANGHAI")) return .SHANGHAI;
         if (std.mem.eql(u8, hardfork_str, "CANCUN")) return .CANCUN;
-        
+
         // Default to CANCUN if unknown
         return .CANCUN;
     }

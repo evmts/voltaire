@@ -50,6 +50,7 @@ const StorageSlotKeyContext = struct {
     }
 };
 
+// TODO: this should just be called Error and be on MinimalEvm.Error struct
 /// Error set for MinimalEvm operations
 pub const MinimalEvmError = error{
     OutOfMemory,
@@ -65,6 +66,7 @@ pub const MinimalEvmError = error{
     AddressPreWarmError,
 };
 
+// TODO: This should be generic based on Frame and EVMConfig
 /// Minimal EVM - Orchestrates execution like evm.zig
 pub const MinimalEvm = struct {
     /// Error set for MinimalEvm operations
@@ -99,23 +101,13 @@ pub const MinimalEvm = struct {
 
     const Self = @This();
 
-    // Frame stack - manages nested calls
     frames: std.ArrayList(*MinimalFrame),
-
-    // Storage for all accounts
     storage: std.AutoHashMap(StorageSlotKey, u256),
-
-    // Account balances
     balances: std.AutoHashMap(Address, u256),
-
-    // Account code
     code: std.AutoHashMap(Address, []const u8),
-
     // EIP-2929 warm/cold tracking (minimal)
     warm_addresses: std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false),
     warm_storage_slots: std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false),
-
-    // Blockchain context
     chain_id: u64,
     block_number: u64,
     block_timestamp: u64,
@@ -124,34 +116,20 @@ pub const MinimalEvm = struct {
     block_gas_limit: u64,
     block_base_fee: u256,
     blob_base_fee: u256,
-
-    // Transaction context
     origin: Address,
     gas_price: u256,
-
-    // Host interface (if provided)
     host: ?HostInterface,
-
-    // Arena allocator for simplified memory management
     arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
-
-    /// Initialize a new MinimalEvm (orchestrator)
     pub fn init(allocator: std.mem.Allocator) !Self {
-        // Create arena allocator for simplified memory management
         var arena = std.heap.ArenaAllocator.init(allocator);
         errdefer arena.deinit();
-
-        // Ensure the arena is properly initialized with a valid allocator
         const arena_allocator = arena.allocator();
-
         const storage_map = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         const balances_map = std.AutoHashMap(Address, u256).init(arena_allocator);
         const code_map = std.AutoHashMap(Address, []const u8).init(arena_allocator);
-        // Initialize warm/cold tracking maps
         const warm_addresses = std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false).init(arena_allocator);
         const warm_storage_slots = std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false).init(arena_allocator);
-        // In Zig 0.15.1, std.ArrayList is unmanaged
         var frames_list = std.ArrayList(*MinimalFrame){};
         try frames_list.ensureTotalCapacity(arena_allocator, 16);
 
@@ -178,19 +156,18 @@ pub const MinimalEvm = struct {
         };
     }
 
-    /// TODO remove this this method shouldn't exist
+    /// TODO: remove this this method shouldn't exist
     /// Initialize as a pointer to avoid arena corruption from struct copies
     pub fn initPtr(allocator: std.mem.Allocator) !*Self {
         const self = try allocator.create(Self);
         errdefer allocator.destroy(self);
 
-        // Initialize arena in place
         self.arena = std.heap.ArenaAllocator.init(allocator);
         errdefer self.arena.deinit();
 
         const arena_allocator = self.arena.allocator();
 
-        self.frames = std.ArrayList(*MinimalFrame){};  // Unmanaged ArrayList, default init
+        self.frames = std.ArrayList(*MinimalFrame){}; // Unmanaged ArrayList, default init
         self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         self.balances = std.AutoHashMap(Address, u256).init(arena_allocator);
         self.code = std.AutoHashMap(Address, []const u8).init(arena_allocator);
@@ -221,7 +198,6 @@ pub const MinimalEvm = struct {
 
     /// Clean up resources
     pub fn deinit(self: *Self) void {
-        // Arena allocator cleans up everything at once
         self.arena.deinit();
     }
 
@@ -253,25 +229,21 @@ pub const MinimalEvm = struct {
         self.blob_base_fee = blob_base_fee;
     }
 
-    /// Set transaction context
     pub fn setTransactionContext(self: *Self, origin: Address, gas_price: u256) void {
         self.origin = origin;
         self.gas_price = gas_price;
     }
 
-    /// Set account code
     pub fn setCode(self: *Self, address: Address, code: []const u8) !void {
         const code_copy = try self.allocator.alloc(u8, code.len);
         @memcpy(code_copy, code);
         try self.code.put(address, code_copy);
     }
 
-    /// Set account balance
     pub fn setBalance(self: *Self, address: Address, balance: u256) !void {
         try self.balances.put(address, balance);
     }
 
-    /// Access an address and return the gas cost (EIP-2929 warm/cold)
     pub fn access_address(self: *Self, address: Address) !u64 {
         const entry = try self.warm_addresses.getOrPut(address);
         return if (entry.found_existing)
@@ -309,7 +281,6 @@ pub const MinimalEvm = struct {
         value: u256,
         calldata: []const u8,
     ) Error!CallResult {
-        // Clear and pre-warm warm trackers
         self.warm_addresses.clearRetainingCapacity();
         self.warm_storage_slots.clearRetainingCapacity();
         // TODO: Gate pre-warming by hardfork (Berlin enables access list rules, Shanghai warms coinbase)
@@ -328,7 +299,6 @@ pub const MinimalEvm = struct {
         }
         const execution_gas = gas - intrinsic_gas;
 
-        // Create a new frame for execution
         const frame = try self.allocator.create(MinimalFrame);
         frame.* = try MinimalFrame.init(
             self.allocator,
