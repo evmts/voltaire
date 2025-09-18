@@ -96,7 +96,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         // Cache line 1 - EXECUTION CONTROL: Accessed frequently during execution
         /// Current call depth (0 = root call) - tracks active stack depth
-        depth: config.get_depth_type(), // 1-2 bytes (u8 or u11)
+        depth: u11, // Supports up to 2048 depth, more than EVM's 1024 limit
         /// Call stack - tracks caller and value for each call depth
         call_stack: [config.max_call_depth]CallStackEntry,
         /// Current return data from last call
@@ -1378,7 +1378,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get the call depth for the current frame
         pub fn get_depth(self: *Self) u11 {
-            return @intCast(self.depth);
+            return self.depth;
         }
 
         /// Get transaction origin (original sender)
