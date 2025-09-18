@@ -218,8 +218,7 @@ pub const DefaultTracer = struct {
                         @as(*anyopaque, @ptrCast(evm)),
                     ) catch return;
 
-                    // Set as current frame
-                    evm.current_frame = minimal_frame;
+                    // Frame is automatically current via frames stack
 
                     self.debug("MinimalEvm initialized with bytecode_len={d}, gas={d}", .{
                         bytecode.len,
@@ -285,7 +284,7 @@ pub const DefaultTracer = struct {
                 // Execute MinimalEvm step for validation (if initialized)
                 if (self.minimal_evm) |evm| {
                     // Log stack state before execution
-                    if (evm.current_frame) |mf| {
+                    if (evm.getCurrentFrame()) |mf| {
                         log.debug("Before executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
                             opcode_name,
                             mf.stack.items.len,
@@ -294,7 +293,7 @@ pub const DefaultTracer = struct {
                     }
                     self.executeMinimalEvmForOpcode(evm, opcode, frame, cursor);
                     // Log stack state after execution
-                    if (evm.current_frame) |mf| {
+                    if (evm.getCurrentFrame()) |mf| {
                         log.debug("After executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
                             opcode_name,
                             mf.stack.items.len,
@@ -361,7 +360,7 @@ pub const DefaultTracer = struct {
                 // Validate MinimalEvm state
                 log.debug("afterInstruction: Validating state after {s}", .{opcode_name});
                 if (self.minimal_evm) |evm| {
-                    if (evm.current_frame) |mf| {
+                    if (evm.getCurrentFrame()) |mf| {
                         log.debug("  MinimalEvm stack={d}, Frame stack={d}", .{
                             mf.stack.items.len,
                             frame.stack.size(),
@@ -424,7 +423,7 @@ pub const DefaultTracer = struct {
         self.debug("Frame executing: {s}", .{@tagName(opcode)});
         self.debug("  MinimalEvm PC: {d}", .{evm.getPC()});
         self.debug("  Frame stack size: {d}", .{frame.stack.size()});
-        if (evm.current_frame) |minimal_frame| {
+        if (evm.getCurrentFrame()) |minimal_frame| {
             self.debug("  MinimalEvm stack size: {d}", .{minimal_frame.stack.items.len});
         }
 
@@ -438,27 +437,27 @@ pub const DefaultTracer = struct {
                 const op_data = dispatch.getOpData(.JUMPDEST);
                 const block_gas: u64 = op_data.metadata.gas;
                 const jumpdest_gas: u64 = primitives.GasConstants.JumpdestGas;
-                if (evm.current_frame) |mf| {
+                if (evm.getCurrentFrame()) |mf| {
                     const extra: i64 = @as(i64, @intCast(block_gas)) - @as(i64, @intCast(jumpdest_gas));
                     mf.gas_remaining -= extra;
                 }
             }
             // Execute a single step in MinimalEvm (delegates to current frame)
             // Debug: Check if MinimalEvm has a current frame
-            if (evm.current_frame == null) {
+            if (evm.getCurrentFrame() == null) {
                 log.err("[EVM2] MinimalEvm has no current frame when trying to execute opcode 0x{x:0>2}", .{opcode_value});
                 @panic("MinimalEvm not initialized");
             }
             evm.step() catch |e| {
                 // Get actual opcode from MinimalEvm to see what it was trying to execute
                 var actual_opcode: u8 = 0;
-                if (evm.current_frame) |mf| {
+                if (evm.getCurrentFrame()) |mf| {
                     if (mf.pc < mf.bytecode.len) {
                         actual_opcode = mf.bytecode[mf.pc];
                     }
                 }
                 log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{
-                    if (evm.current_frame) |mf| mf.pc else 0,
+                    if (evm.getCurrentFrame()) |mf| mf.pc else 0,
                     actual_opcode,
                     opcode_value,
                     e
@@ -593,7 +592,7 @@ pub const DefaultTracer = struct {
 
                 // Debug: Log current MinimalEvm state before execution
                 self.debug("PUSH_MSTORE_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
-                    evm.getPC(), (evm.current_frame orelse unreachable).stack.items.len, frame.stack.size()
+                    evm.getPC(), (evm.getCurrentFrame() orelse unreachable).stack.items.len, frame.stack.size()
                 });
 
                 // Execute the 2-step sequence: PUSH1 + MSTORE
@@ -637,7 +636,7 @@ pub const DefaultTracer = struct {
 
                 // Debug: Log current MinimalEvm state before execution
                 self.debug("PUSH_MSTORE8_INLINE: MinimalEvm PC={d}, stack_size={d}, Frame stack_size={d}", .{
-                    evm.getPC(), (evm.current_frame orelse unreachable).stack.items.len, frame.stack.size()
+                    evm.getPC(), (evm.getCurrentFrame() orelse unreachable).stack.items.len, frame.stack.size()
                 });
 
                 // Execute the 2-step sequence: PUSH1 + MSTORE8
@@ -792,7 +791,7 @@ pub const DefaultTracer = struct {
 
             // Compare stack sizes
             const frame_stack_size = frame.stack.size();
-            const evm_stack_size = (evm.current_frame orelse unreachable).stack.items.len;
+            const evm_stack_size = (evm.getCurrentFrame() orelse unreachable).stack.items.len;
 
             if (evm_stack_size != frame_stack_size) {
                 // Allow call-like opcodes a grace period: their host-dependent behavior
@@ -812,7 +811,7 @@ pub const DefaultTracer = struct {
                 // Show top elements for debugging
                 if (evm_stack_size > 0) {
                     self.err("  MinimalEvm top: 0x{x}", .{
-                        (evm.current_frame orelse unreachable).stack.items[evm_stack_size - 1]
+                        (evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1]
                     });
                 }
                 if (frame_stack_size > 0) {
@@ -823,15 +822,15 @@ pub const DefaultTracer = struct {
                 // Compare stack contents
                 const frame_stack = frame.stack.get_slice();
                 for (0..evm_stack_size) |i| {
-                    const evm_val = (evm.current_frame orelse unreachable).stack.items[evm_stack_size - 1 - i];
+                    const evm_val = (evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1 - i];
                     const frame_val = frame_stack[i];
                     if (evm_val != frame_val) {
                         log.err("[EVM2] [DIVERGENCE] Stack content mismatch at position {d}:", .{i});
                         log.err("[EVM2]   MinimalEvm: 0x{x}, Frame: 0x{x}", .{evm_val, frame_val});
-                        log.err("[EVM2]   Opcode: {s}, MinimalEvm PC: {d}", .{opcode_name, if (evm.current_frame) |f| f.pc else 0});
+                        log.err("[EVM2]   Opcode: {s}, MinimalEvm PC: {d}", .{opcode_name, if (evm.getCurrentFrame()) |f| f.pc else 0});
                         // Print full stack contents
                         log.err("[EVM2]   MinimalEvm stack (top first):", .{});
-                        if (evm.current_frame) |f| {
+                        if (evm.getCurrentFrame()) |f| {
                             for (0..@min(10, f.stack.items.len)) |j| {
                                 log.err("[EVM2]     [{d}]: 0x{x}", .{j, f.stack.items[f.stack.items.len - 1 - j]});
                             }
@@ -848,7 +847,7 @@ pub const DefaultTracer = struct {
             // Compare memory sizes
             const frame_memory_size = if (@hasField(@TypeOf(frame.*), "memory"))
                 frame.memory.size() else 0;
-            const evm_memory_size = (evm.current_frame orelse unreachable).memory_size;
+            const evm_memory_size = (evm.getCurrentFrame() orelse unreachable).memory_size;
 
             if (evm_memory_size != frame_memory_size) {
                 // Memory size mismatch is not critical, just debug log
@@ -858,7 +857,7 @@ pub const DefaultTracer = struct {
 
             // Gas validation - different rules for different opcode types
             const frame_gas_remaining = frame.gas_remaining;
-            const evm_gas_remaining = (evm.current_frame orelse unreachable).gas_remaining;
+            const evm_gas_remaining = (evm.getCurrentFrame() orelse unreachable).gas_remaining;
 
             // Check if this is a jump/terminal opcode that should have exact gas match
             const is_terminal_opcode = switch (opcode) {
