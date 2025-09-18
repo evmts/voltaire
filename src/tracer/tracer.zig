@@ -1972,7 +1972,3 @@ fn getSyntheticOpcodeName(opcode: u16) []const u8 {
 }
 
 // ============================================================================
-// JSON-RPC TRACER
-// ============================================================================
-
-pub const JsonRpcTracer = @import("json_rpc_tracer.zig").JsonRpcTracer;
