@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"guillotine-cli/internal/config"
+	"guillotine-cli/internal/core/bytecode"
 	"guillotine-cli/internal/core/evm"
 	"guillotine-cli/internal/core/state"
 	"guillotine-cli/internal/types"
@@ -21,6 +22,10 @@ type callResultMsg struct {
 }
 type copyFeedbackMsg struct {
 	message string
+}
+type disassemblyResultMsg struct {
+	result *bytecode.DisassemblyResult
+	error  error
 }
 
 // handleMainMenuSelect handles menu item selection on the main menu
@@ -288,4 +293,16 @@ func (m Model) handleCopy() (tea.Model, tea.Cmd) {
 	}
 	
 	return m, nil
+}
+
+// loadDisassemblyCmd creates a command to load bytecode disassembly
+func (m Model) loadDisassemblyCmd(bc []byte) tea.Cmd {
+	return func() tea.Msg {
+		// Call the disassembly domain directly
+		result, err := bytecode.AnalyzeBytecodeFromBytes(bc)
+		return disassemblyResultMsg{
+			result: result,
+			error:  err,
+		}
+	}
 }

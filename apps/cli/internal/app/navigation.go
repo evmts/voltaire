@@ -2,6 +2,7 @@ package app
 
 import (
 	"guillotine-cli/internal/config"
+	"guillotine-cli/internal/core/bytecode"
 	"guillotine-cli/internal/core/utils"
 	"guillotine-cli/internal/types"
 	"guillotine-cli/internal/ui"
@@ -54,7 +55,7 @@ func (m *Model) handleStateNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleContractsNavigation(msgStr, msg)
 		
 	case types.StateContractDetail:
-		return m.handleContractDetailNavigation(msgStr)
+		return m.handleContractDetailNavigation(msgStr, msg)
 		
 	case types.StateConfirmReset:
 		return m.handleConfirmResetNavigation(msgStr)
@@ -259,6 +260,11 @@ func (m *Model) handleContractsNavigation(msgStr string, msg tea.KeyMsg) (tea.Mo
 		if len(selectedRow) > 0 && m.contractsTable.Cursor() < len(contracts) {
 			m.selectedContract = contracts[m.contractsTable.Cursor()].Address
 			m.state = types.StateContractDetail
+			// Load disassembly for the selected contract
+			contract := m.historyManager.GetContract(m.selectedContract)
+			if contract != nil && len(contract.Bytecode) > 0 {
+				return m, m.loadDisassemblyCmd(contract.Bytecode)
+			}
 		}
 		return m, nil
 	} else if config.IsKey(msgStr, config.KeyBack) {
@@ -273,13 +279,67 @@ func (m *Model) handleContractsNavigation(msgStr string, msg tea.KeyMsg) (tea.Mo
 }
 
 // handleContractDetailNavigation handles navigation in contract detail state
-func (m *Model) handleContractDetailNavigation(msgStr string) (tea.Model, tea.Cmd) {
+func (m *Model) handleContractDetailNavigation(msgStr string, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Handle disassembly navigation if available
+	if m.disassemblyResult != nil {
+		// Jump to destination when 'g' is pressed on a jump instruction
+		if config.IsKey(msgStr, config.KeyJumpToDestination) {
+			m.handleJumpToDestination()
+			return m, nil
+		}
+		
+		// Left/Right to navigate between blocks
+		if config.IsKey(msgStr, config.KeyLeft) {
+			if m.currentBlockIndex > 0 {
+				m.currentBlockIndex--
+				// Update table with new block's instructions
+				m.updateInstructionsTable()
+			}
+		} else if config.IsKey(msgStr, config.KeyRight) {
+			if m.currentBlockIndex < len(m.disassemblyResult.Analysis.BasicBlocks)-1 {
+				m.currentBlockIndex++
+				// Update table with new block's instructions
+				m.updateInstructionsTable()
+			}
+		}
+		
+		// Up/Down handled by the table component
+		if config.IsKey(msgStr, config.KeyUp) || config.IsKey(msgStr, config.KeyDown) {
+			var cmd tea.Cmd
+			m.instructionsTable, cmd = m.instructionsTable.Update(msg)
+			return m, cmd
+		}
+	}
+	
 	if config.IsKey(msgStr, config.KeyBack) {
 		m.state = types.StateContracts
+		m.disassemblyResult = nil  // Clear disassembly when going back
+		m.disassemblyError = nil   // Clear error state
+		m.currentBlockIndex = 0     // Reset block index
 		m.updateContractsTable()
 		return m, nil
 	}
 	return m, nil
+}
+
+// updateInstructionsTable updates the instructions table with current block data
+func (m *Model) updateInstructionsTable() {
+	if m.disassemblyResult == nil {
+		return
+	}
+	
+	instructions, _, err := bytecode.GetInstructionsForBlock(m.disassemblyResult, m.currentBlockIndex)
+	if err != nil {
+		// Handle error case - could log or show error state
+		return
+	}
+	
+	if len(instructions) > 0 {
+		rows := ui.ConvertInstructionsToRows(instructions, m.disassemblyResult.Analysis.JumpDests)
+		m.instructionsTable.SetRows(rows)
+		// Reset cursor to top when changing blocks
+		m.instructionsTable.SetCursor(0)
+	}
 }
 
 // handleConfirmResetNavigation handles navigation in confirm reset state
@@ -308,4 +368,48 @@ func (m *Model) handleLogDetailNavigation(msgStr string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	return m, nil
+}
+
+// handleJumpToDestination navigates to the jump destination of the currently selected instruction
+func (m *Model) handleJumpToDestination() {
+	if m.disassemblyResult == nil {
+		return
+	}
+	
+	// Get current block's instructions
+	instructions, _, err := bytecode.GetInstructionsForBlock(m.disassemblyResult, m.currentBlockIndex)
+	if err != nil {
+		return
+	}
+	
+	// Get the cursor position in the table
+	cursorPos := m.instructionsTable.Cursor()
+	if cursorPos < 0 || cursorPos >= len(instructions) {
+		return
+	}
+	
+	// Check if current instruction is a jump and get its destination
+	jumpDest := bytecode.GetJumpDestination(instructions, cursorPos)
+	if jumpDest == nil {
+		return
+	}
+	
+	// Find which block contains the jump destination
+	targetBlockIndex := bytecode.FindBlockContainingPC(m.disassemblyResult.Analysis, *jumpDest)
+	if targetBlockIndex == -1 {
+		return
+	}
+	
+	// Navigate to the target block
+	m.currentBlockIndex = targetBlockIndex
+	m.updateInstructionsTable()
+	
+	// Try to position the cursor at the jump destination instruction
+	targetInstructions, _, _ := bytecode.GetInstructionsForBlock(m.disassemblyResult, targetBlockIndex)
+	if targetInstructions != nil {
+		targetInstIndex := bytecode.FindInstructionIndexByPC(targetInstructions, *jumpDest)
+		if targetInstIndex >= 0 {
+			m.instructionsTable.SetCursor(targetInstIndex)
+		}
+	}
 }
