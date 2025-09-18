@@ -114,9 +114,7 @@ pub fn Dispatch(comptime FrameType: type) type {
             // Helper function for conditional tracing assertions
             const tracerAssert = struct {
                 fn call(f: *FrameType, condition: bool, comptime message: []const u8) void {
-                    if (comptime FrameType.frame_config.TracerType != null) {
-                        f.getTracer().assert(condition, message);
-                    }
+                    f.getTracer().assert(condition, message);
                 }
             }.call;
 

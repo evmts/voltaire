@@ -32,18 +32,16 @@ pub const BuildConfiguredEvm = Evm(EvmConfig.fromBuildOptions());
 // These are concrete types that can be stored at runtime
 pub const MainnetEvm = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
-    .TracerType = null,
+    .tracer_config = @import("tracer/tracer.zig").TracerConfig.disabled,
 });
 
 pub const MainnetEvmWithTracer = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
-    .TracerType = @import("tracer/tracer.zig").Tracer,
     .tracer_config = @import("tracer/tracer.zig").TracerConfig.debug,
 });
 
 pub const TestEvm = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
-    .TracerType = @import("tracer/tracer.zig").Tracer,
     .tracer_config = @import("tracer/tracer.zig").TracerConfig.debug,
     .disable_gas_checks = true,
 });
