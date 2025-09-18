@@ -48,7 +48,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Check static context - CALL with non-zero value is not allowed in static context
             // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 7, "CALL requires 7 stack items");
             }
             const gas_param = self.stack.pop_unsafe();
@@ -67,7 +67,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
@@ -86,7 +86,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 output_offset > std.math.maxInt(usize) or
                 output_size > std.math.maxInt(usize))
             {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
@@ -176,7 +176,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success status (1 for success, 0 for failure)
             // log.debug("CALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);
@@ -192,7 +192,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CALLCODE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 7, "CALLCODE requires 7 stack items");
             }
             const gas_param = self.stack.pop_unsafe();
@@ -208,7 +208,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
@@ -301,7 +301,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success (1) or failure (0) onto stack
             // log.debug("CALLCODE result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);
@@ -317,7 +317,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.DELEGATECALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 6, "DELEGATECALL requires 6 stack items");
             }
             const gas_param = self.stack.pop_unsafe();
@@ -434,7 +434,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success status (1 for success, 0 for failure)
             // log.debug("DELEGATECALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);
@@ -450,7 +450,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.STATICCALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 6, "STATICCALL requires 6 stack items");
             }
             const gas_param = self.stack.pop_unsafe();
@@ -565,7 +565,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_sc));
 
             // Push success status (1 for success, 0 for failure)
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);
@@ -583,7 +583,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 3, "CREATE requires 3 stack items");
             }
             const value = self.stack.pop_unsafe();
@@ -638,12 +638,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(to_u256(result.created_address.?));
             } else {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
@@ -663,7 +663,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
             // EVM pop order: value, offset, size, salt (top first)
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 4, "CREATE2 requires 4 stack items");
             }
             const value = self.stack.pop_unsafe();
@@ -723,12 +723,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(to_u256(result.created_address.?));
             } else {
-                if (comptime FrameType.frame_config.TracerType != null) {
+                {
                     self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
@@ -749,7 +749,7 @@ pub fn Handlers(comptime FrameType: type) type {
             if (self.stack.size() < 2) {
                 return Error.StackUnderflow;
             }
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 2, "RETURN requires 2 stack items");
             }
             const offset = self.stack.pop_unsafe(); // Top of stack
@@ -805,7 +805,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.REVERT, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 2, "REVERT requires 2 stack items");
             }
             const size = self.stack.pop_unsafe(); // Top of stack
@@ -861,7 +861,7 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EIP-214: STATICCALL prevents SELFDESTRUCT via null self_destruct and static host
         pub fn selfdestruct(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.SELFDESTRUCT, cursor);
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 1, "SELFDESTRUCT requires 1 stack item");
             }
             const recipient_u256 = self.stack.pop_unsafe();
@@ -900,7 +900,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
 
             // Pop authorization parameters from stack
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 5, "AUTH requires 5 stack items");
             }
             const sig_s = self.stack.pop_unsafe();
@@ -980,7 +980,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.authorized_address = authority;
 
             // Push success
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(1);
@@ -996,7 +996,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
 
             // Pop call parameters from stack
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 8, "AUTHCALL requires 8 stack items");
             }
             const auth_flag = self.stack.pop_unsafe();
@@ -1116,7 +1116,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.gas_remaining = @as(@TypeOf(self.gas_remaining), @intCast(result.gas_left));
 
             // Push success status
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);

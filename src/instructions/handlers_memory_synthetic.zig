@@ -51,7 +51,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
             }
             self.stack.push_unsafe(value);
@@ -97,7 +97,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             const value = @as(WordType, @truncate(value_u256));
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
             }
             self.stack.push_unsafe(value);
@@ -118,7 +118,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = op_data.metadata.value;
 
             // Pop the value to store
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
@@ -165,12 +165,12 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = self.u256_constants[op_data.metadata.index];
 
             // Pop the value to store
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
 
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(offset <= std.math.maxInt(usize), "PUSH_MSTORE offset must fit in usize");
             }
             const offset_usize = @as(usize, @intCast(offset));
@@ -210,7 +210,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = op_data.metadata.value;
 
             // Pop the value to store
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
@@ -257,7 +257,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = self.u256_constants[op_data.metadata.index];
 
             // Pop the value to store
-            if (comptime FrameType.frame_config.TracerType != null) {
+            {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();

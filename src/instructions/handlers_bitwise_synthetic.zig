@@ -21,8 +21,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor now points to metadata
             const push_value = op_data.metadata.value;
 
-            if (comptime FrameType.frame_config.TracerType != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+            {
+                {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_AND_INLINE requires 1 stack item");
                 }
             }
@@ -43,8 +43,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor now points to metadata
             const push_value = self.u256_constants[op_data.metadata.index];
 
-            if (comptime FrameType.frame_config.TracerType != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+            {
+                {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_AND_POINTER requires 1 stack item");
                 }
             }
@@ -65,8 +65,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor now points to metadata
             const push_value = op_data.metadata.value;
 
-            if (comptime FrameType.frame_config.TracerType != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+            {
+                {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_OR_INLINE requires 1 stack item");
                 }
             }
@@ -87,8 +87,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor now points to metadata
             const push_value = self.u256_constants[op_data.metadata.index];
 
-            if (comptime FrameType.frame_config.TracerType != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+            {
+                {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_OR_POINTER requires 1 stack item");
                 }
             }
@@ -109,8 +109,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor now points to metadata
             const push_value = op_data.metadata.value;
 
-            if (comptime FrameType.frame_config.TracerType != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+            {
+                {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_XOR_INLINE requires 1 stack item");
                 }
             }
@@ -131,8 +131,8 @@ pub fn Handlers(comptime FrameType: type) type {
             // For synthetic opcodes, cursor now points to metadata
             const push_value = self.u256_constants[op_data.metadata.index];
 
-            if (comptime FrameType.frame_config.TracerType != null) {
-                if (comptime FrameType.frame_config.TracerType != null) {
+            {
+                {
                 self.getTracer().assert(self.stack.size() >= 1, "PUSH_XOR_POINTER requires 1 stack item");
                 }
             }
