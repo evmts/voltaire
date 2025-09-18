@@ -28,8 +28,8 @@ const primitives = @import("primitives");
 // Import types from evm module
 const DefaultEvm = evm.DefaultEvm;
 const TracerEvm = evm.Evm(.{ 
-    .TracerType = evm.tracer.Tracer,
     .tracer_config = evm.tracer.TracerConfig{ 
+        .enabled = true,
         .enable_validation = false,
         .enable_step_capture = true,
         .enable_pc_tracking = false,

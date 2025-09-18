@@ -142,7 +142,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         // Tracer - at the very bottom of memory layout for minimal impact on cache performance
         /// Tracer for debugging and logging - can be accessed via evm.tracer or frame.evm_ptr.tracer
-        tracer: if (config.TracerType) |T| T else void,
+        tracer: @import("tracer/tracer.zig").Tracer,
 
         /// Initialize a new EVM instance.
         ///
@@ -179,46 +179,36 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .hardfork_config = hardfork_config,
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
-                .tracer = if (config.TracerType) |T| T.init(allocator, config.tracer_config) else {},
+                .tracer = @import("tracer/tracer.zig").Tracer.init(allocator, config.tracer_config),
             };
 
-            if (config.TracerType != null) {
-                self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
-                self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
-                self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
-            }
+            self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
+            self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
+            self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
 
             // Process system contract updates based on configuration
             if (comptime config.enable_beacon_roots) {
                 // Process beacon root update for EIP-4788 if applicable
                 @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
-                    if (config.TracerType != null) {
-                        self.tracer.onBeaconRootUpdate(false, err);
-                    }
+                    self.tracer.onBeaconRootUpdate(false, err);
                 };
             }
 
             if (comptime config.enable_historical_block_hashes) {
                 @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
-                    if (config.TracerType != null) {
-                        self.tracer.onHistoricalBlockHashUpdate(false, err);
-                    }
+                    self.tracer.onHistoricalBlockHashUpdate(false, err);
                 };
             }
 
             if (comptime config.enable_validator_deposits) {
                 @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
-                    if (config.TracerType != null) {
-                        self.tracer.onValidatorDeposits(false, err);
-                    }
+                    self.tracer.onValidatorDeposits(false, err);
                 };
             }
 
             if (comptime config.enable_validator_withdrawals) {
                 @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
-                    if (config.TracerType != null) {
-                        self.tracer.onValidatorWithdrawals(false, err);
-                    }
+                    self.tracer.onValidatorWithdrawals(false, err);
                 };
             }
             return self;
@@ -231,9 +221,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         pub fn deinit(self: *Self) void {
-            if (config.TracerType != null) {
-                self.tracer.deinit();
-            }
+            self.tracer.deinit();
             if (self.return_data.len > 0) self.allocator.free(self.return_data);
             self.journal.deinit();
             self.created_contracts.deinit();
@@ -279,9 +267,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// on the operation type (CALL, CREATE, etc). Manages transaction-level
         /// state including logs and ensures proper cleanup.
         pub fn call(self: *Self, params: CallParams) CallResult {
-            if (config.TracerType != null) {
-                self.tracer.assert(self.depth == 0, "call() should only be called at top level");
-            }
+            self.tracer.assert(self.depth == 0, "call() should only be called at top level");
 
             const to_address = params.get_to() orelse primitives.ZERO_ADDRESS;
             const value = switch (params) {
@@ -292,9 +278,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create => |p| p.value,
                 .create2 => |p| p.value,
             };
-            if (config.TracerType != null) {
-                self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
-            }
+            self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
 
             params.validate() catch |err| {
                 log.err("CallParams validation failed: {s}", .{@errorName(err)});
@@ -367,9 +351,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             var result = self.inner_call(modified_params);
 
-            if (config.TracerType != null) {
-                self.tracer.onCallComplete(result.success, @as(i64, @intCast(result.gas_left)), result.output.len);
-            }
+            self.tracer.onCallComplete(result.success, @as(i64, @intCast(result.gas_left)), result.output.len);
 
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
@@ -602,28 +584,20 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
-                if (config.TracerType != null) {
-                    self.tracer.onCallPreflight("CALL", @errorName(err));
-                }
+                self.tracer.onCallPreflight("CALL", @errorName(err));
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
-            if (config.TracerType != null) {
-                self.tracer.onCallPreflight("CALL", @tagName(preflight));
-            }
+            self.tracer.onCallPreflight("CALL", @tagName(preflight));
 
             switch (preflight) {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| {
-                    if (config.TracerType != null) {
-                        self.tracer.onCodeRetrieval(params.to, 0, true);
-                    }
+                    self.tracer.onCodeRetrieval(params.to, 0, true);
                     return CallResult.success_empty(gas);
                 },
                 .execute_with_code => |code| {
-                    if (config.TracerType != null) {
-                        self.tracer.onCodeRetrieval(params.to, code.len, false);
-                    }
+                    self.tracer.onCodeRetrieval(params.to, code.len, false);
                     const result = self.execute_frame(
                         code,
                         params.input,
@@ -1067,59 +1041,34 @@ pub fn Evm(comptime config: EvmConfig) type {
             const Termination = error{ Stop, Return, SelfDestruct };
             var termination_reason: ?Termination = null;
 
-            if (config.TracerType != null) {
-                frame.interpret_with_tracer(code, @TypeOf(self.tracer), &self.tracer) catch |err| switch (err) {
-                    error.Stop => termination_reason = error.Stop,
-                    error.Return => termination_reason = error.Return,
-                    error.SelfDestruct => termination_reason = error.SelfDestruct,
-                    error.REVERT => {
-                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
-                        const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                        const out_len = frame.output.len;
-                        const out_copy = if (out_len > 0) blk: {
-                            // TODO: Handle allocation errors as special case - should revert snapshot properly
-                            const buf = try self.allocator.alloc(u8, out_len);
-                            @memcpy(buf, frame.output);
-                            break :blk buf;
-                        } else &[_]u8{};
-                        var result = CallResult.revert_with_data(gas_left, out_copy);
-                        result.trace = execution_trace;
-                        return result;
-                    },
-                    else => {
-                        log.debug("Frame execution with tracer failed: {}", .{err});
-                        execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
-                        var failure = CallResult.failure(0);
-                        failure.trace = execution_trace;
-                        return failure;
-                    },
-                };
-            } else {
-                frame.interpret(code) catch |err| switch (err) {
-                    error.Stop => termination_reason = error.Stop,
-                    error.Return => termination_reason = error.Return,
-                    error.SelfDestruct => termination_reason = error.SelfDestruct,
-                    error.REVERT => {
-                        const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                        const out_len = frame.output.len;
-                        const out_copy = if (out_len > 0) blk: {
-                            // TODO: Handle allocation errors as special case - should revert snapshot properly
-                            const buf = try self.allocator.alloc(u8, out_len);
-                            @memcpy(buf, frame.output);
-                            break :blk buf;
-                        } else &[_]u8{};
-                        return CallResult.revert_with_data(gas_left, out_copy);
-                    },
-                    else => {
-                        log.debug("Frame execution failed: {}", .{err});
-                        return CallResult.failure(0);
-                    },
-                };
-            }
+            frame.interpret_with_tracer(code, @TypeOf(self.tracer), &self.tracer) catch |err| switch (err) {
+                error.Stop => termination_reason = error.Stop,
+                error.Return => termination_reason = error.Return,
+                error.SelfDestruct => termination_reason = error.SelfDestruct,
+                error.REVERT => {
+                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
+                    const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
+                    const out_len = frame.output.len;
+                    const out_copy = if (out_len > 0) blk: {
+                        // TODO: Handle allocation errors as special case - should revert snapshot properly
+                        const buf = try self.allocator.alloc(u8, out_len);
+                        @memcpy(buf, frame.output);
+                        break :blk buf;
+                    } else &[_]u8{};
+                    var result = CallResult.revert_with_data(gas_left, out_copy);
+                    result.trace = execution_trace;
+                    return result;
+                },
+                else => {
+                    log.debug("Frame execution with tracer failed: {}", .{err});
+                    execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
+                    var failure = CallResult.failure(0);
+                    failure.trace = execution_trace;
+                    return failure;
+                },
+            };
 
-            if (config.TracerType != null) {
-                execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
-            }
+            execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
 
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
             const out_items = frame.output;
@@ -3855,9 +3804,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail
         try std.testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("Low gas (100)", elapsed, 1_000_000);
-        }
+        evm.tracer.onPerformanceWarning("Low gas (100)", elapsed, 1_000_000);
     }
 
     // Test 2: Medium gas limit
@@ -3876,9 +3823,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should still fail (infinite loop)
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("Medium gas (10k)", elapsed, 10_000_000);
-        }
+        evm.tracer.onPerformanceWarning("Medium gas (10k)", elapsed, 10_000_000);
     }
 
     // Test 3: High gas limit
@@ -3897,9 +3842,7 @@ test "Debug - Gas limit affects execution" {
 
         try std.testing.expect(!result.success); // Should fail after consuming all gas
         try std.testing.expectEqual(@as(u64, 0), result.gas_left);
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("High gas (1M)", elapsed, 100_000_000);
-        }
+        evm.tracer.onPerformanceWarning("High gas (1M)", elapsed, 100_000_000);
     }
 }
 
@@ -3946,9 +3889,7 @@ test "Debug - Contract deployment and execution" {
 
         try std.testing.expect(result.success); // Empty contract succeeds immediately
         try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("Empty contract", elapsed, 1_000_000);
-        }
+        evm.tracer.onPerformanceWarning("Empty contract", elapsed, 1_000_000);
     }
 
     // Test 2: Simple contract that returns immediately (STOP opcode)
@@ -3979,9 +3920,7 @@ test "Debug - Contract deployment and execution" {
         // STOP should consume minimal gas
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used < 100); // Should use very little gas
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("STOP contract", elapsed, 1_000_000);
-        }
+        evm.tracer.onPerformanceWarning("STOP contract", elapsed, 1_000_000);
     }
 
     // Test 3: Contract with some computation
@@ -4014,9 +3953,7 @@ test "Debug - Contract deployment and execution" {
         const gas_used = 100000 - result.gas_left;
         try std.testing.expect(gas_used > 0); // Should use some gas
         try std.testing.expect(gas_used < 1000); // But not too much
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("ADD contract", elapsed, 1_000_000);
-        }
+        evm.tracer.onPerformanceWarning("ADD contract", elapsed, 1_000_000);
     }
 }
 
@@ -4084,9 +4021,7 @@ test "Debug - Bytecode size affects execution time" {
         const elapsed = std.time.nanoTimestamp() - start_time;
 
         _ = gas_limit - result.gas_left; // gas_used
-        if (comptime @TypeOf(evm).config.TracerType != null) {
-            evm.tracer.onPerformanceWarning("Large contract", elapsed, 1_000_000_000);
-        }
+        evm.tracer.onPerformanceWarning("Large contract", elapsed, 1_000_000_000);
 
         // With low gas, should fail before completing
         if (gas_limit < 50000) {
