@@ -25,6 +25,13 @@ const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 
 /// Configuration for the tracer
 pub const TracerConfig = struct {
+    /// Enable the tracer system entirely (default: based on build mode)
+    /// false for ReleaseFast and ReleaseSmall, true for Debug and ReleaseSafe
+    enabled: bool = blk: {
+        const builtin = @import("builtin");
+        break :blk builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
+    },
+    
     /// Enable execution validation with MinimalEvm (default: false)
     enable_validation: bool = false,
     
@@ -45,10 +52,11 @@ pub const TracerConfig = struct {
     enable_advanced_trace: bool = false,
     
     /// Default configuration with all tracing disabled
-    pub const disabled = TracerConfig{};
+    pub const disabled = TracerConfig{ .enabled = false };
     
     /// Debug configuration with validation enabled
     pub const debug = TracerConfig{
+        .enabled = true,
         .enable_validation = true,
         .enable_pc_tracking = true,
         .enable_gas_tracking = true,
@@ -57,6 +65,7 @@ pub const TracerConfig = struct {
     
     /// Full tracing configuration with all features enabled
     pub const full = TracerConfig{
+        .enabled = true,
         .enable_validation = true,
         .enable_step_capture = true,
         .enable_pc_tracking = true,
@@ -111,6 +120,9 @@ pub const Tracer = struct {
     // Nested call depth tracking
     nested_depth: u16 = 0,
 
+    // Ring buffer for recent execution history (always tracked for debugging)
+    recent_opcodes: RingBuffer,
+
     // Internal representation of an execution step
     pub const ExecutionStep = struct {
         step_number: u64,
@@ -148,7 +160,187 @@ pub const Tracer = struct {
         fusion_info: ?[]const u8,  // Description of fused operations
     };
 
+    // Fixed-size ring buffer for tracking recent opcodes
+    // Always active when tracer is enabled (zero-cost abstraction when disabled)
+    pub const RingBuffer = struct {
+        const CAPACITY = 10;  // Last 10 opcodes
+
+        // Ring buffer entry containing minimal execution context
+        const Entry = struct {
+            step_number: u64,
+            opcode: u16,  // u16 to accommodate synthetic opcodes
+            opcode_name: []const u8,
+            gas_before: i64,
+            gas_after: i64,
+            stack_size: u32,
+            memory_size: u32,
+            schedule_index: u32,
+            is_synthetic: bool,
+        };
+
+        buffer: [CAPACITY]Entry = undefined,
+        head: usize = 0,  // Index of next write position
+        count: usize = 0,  // Number of valid entries
+
+        /// Initialize the ring buffer
+        pub fn init() RingBuffer {
+            return .{
+                .buffer = undefined,
+                .head = 0,
+                .count = 0,
+            };
+        }
+
+        /// Write an entry to the ring buffer
+        pub fn write(self: *RingBuffer, entry: Entry) void {
+            self.buffer[self.head] = entry;
+            self.head = (self.head + 1) % CAPACITY;
+            if (self.count < CAPACITY) {
+                self.count += 1;
+            }
+        }
+
+        /// Read all valid entries in order (oldest to newest)
+        pub fn read(self: *const RingBuffer) []const Entry {
+            if (self.count == 0) return &[_]Entry{};
+            
+            // If buffer is not full, return from start
+            if (self.count < CAPACITY) {
+                return self.buffer[0..self.count];
+            }
+            
+            // Buffer is full, entries wrap around
+            // Head points to next write position, which is also the oldest entry
+            return &self.buffer;
+        }
+
+        /// Get entries in execution order for display
+        pub fn getOrdered(self: *const RingBuffer, out: *[CAPACITY]Entry) []Entry {
+            if (self.count == 0) return out[0..0];
+            
+            if (self.count < CAPACITY) {
+                // Buffer not full, simple copy
+                @memcpy(out[0..self.count], self.buffer[0..self.count]);
+                return out[0..self.count];
+            }
+            
+            // Buffer is full, reorder from oldest to newest
+            const oldest_idx = self.head;  // Next write position is the oldest
+            const newer_count = CAPACITY - oldest_idx;
+            
+            // Copy oldest entries (from head to end)
+            @memcpy(out[0..newer_count], self.buffer[oldest_idx..CAPACITY]);
+            // Copy newer entries (from start to head)
+            if (oldest_idx > 0) {
+                @memcpy(out[newer_count..CAPACITY], self.buffer[0..oldest_idx]);
+            }
+            
+            return out[0..CAPACITY];
+        }
+
+        /// Pretty print the ring buffer for debugging
+        pub fn prettyPrint(self: *const RingBuffer, allocator: std.mem.Allocator) ![]u8 {
+            var output = std.ArrayList(u8){};
+            errdefer output.deinit(allocator);
+
+            // ANSI color codes
+            const Colors = struct {
+                const reset = "\x1b[0m";
+                const bold = "\x1b[1m";
+                const dim = "\x1b[90m";
+                const red = "\x1b[91m";
+                const green = "\x1b[92m";
+                const yellow = "\x1b[93m";
+                const cyan = "\x1b[96m";
+                const magenta = "\x1b[95m";
+                const bright_red = "\x1b[91;1m";
+                const bg_red = "\x1b[41m";
+                const bg_green = "\x1b[42m";
+                const black = "\x1b[30m";
+            };
+
+            // Header
+            try output.writer(allocator).print("\n{s}═══════════════════════════════════════════════════════════════════{s}\n", .{ Colors.bright_red, Colors.reset });
+            try output.writer(allocator).print("{s}  RECENT EXECUTION HISTORY (Last {} Instructions)  {s}\n", .{ Colors.bright_red, self.count, Colors.reset });
+            try output.writer(allocator).print("{s}═══════════════════════════════════════════════════════════════════{s}\n\n", .{ Colors.bright_red, Colors.reset });
+
+            if (self.count == 0) {
+                try output.writer(allocator).print("{s}  (No instructions executed yet){s}\n", .{ Colors.dim, Colors.reset });
+                return output.toOwnedSlice(allocator);
+            }
+
+            // Column headers
+            try output.writer(allocator).print("{s} Step  | Sched | Opcode           | Gas Before → After    | Stack | Memory{s}\n", .{ Colors.bold, Colors.reset });
+            try output.writer(allocator).print("{s}-------|-------|------------------|-----------------------|-------|--------{s}\n", .{ Colors.dim, Colors.reset });
+
+            // Get ordered entries
+            var ordered_buffer: [CAPACITY]Entry = undefined;
+            const entries = self.getOrdered(&ordered_buffer);
+
+            // Display each entry
+            for (entries) |entry| {
+                // Step number
+                try output.writer(allocator).print("{s}{d:6}{s} | ", .{ Colors.cyan, entry.step_number, Colors.reset });
+                
+                // Schedule index
+                try output.writer(allocator).print("{s}{d:5}{s} | ", .{ Colors.dim, entry.schedule_index, Colors.reset });
+
+                // Opcode with coloring
+                const opcode_color = if (entry.is_synthetic) Colors.bg_green else Colors.yellow;
+                if (entry.is_synthetic) {
+                    try output.writer(allocator).print("{s}{s}⚡{s:<15}{s} | ", .{ 
+                        opcode_color, Colors.black, entry.opcode_name, Colors.reset 
+                    });
+                } else {
+                    try output.writer(allocator).print("{s}{s:<16}{s} | ", .{ 
+                        opcode_color, entry.opcode_name, Colors.reset 
+                    });
+                }
+
+                // Gas change
+                const gas_used = entry.gas_before - entry.gas_after;
+                const gas_color = if (gas_used > 100) Colors.red else if (gas_used > 20) Colors.yellow else Colors.green;
+                try output.writer(allocator).print("{s}{d:8} → {d:<8}{s} | ", .{ 
+                    gas_color, entry.gas_before, entry.gas_after, Colors.reset 
+                });
+
+                // Stack size
+                try output.writer(allocator).print("{s}{d:5}{s} | ", .{ Colors.dim, entry.stack_size, Colors.reset });
+
+                // Memory size
+                try output.writer(allocator).print("{s}{d:6}{s}", .{ Colors.dim, entry.memory_size, Colors.reset });
+
+                try output.writer(allocator).print("\n", .{});
+            }
+
+            try output.writer(allocator).print("\n", .{});
+            return output.toOwnedSlice(allocator);
+        }
+    };
+
     pub fn init(allocator: std.mem.Allocator, config: TracerConfig) Tracer {
+        // If tracer is disabled, return a minimal disabled tracer
+        if (!config.enabled) {
+            return .{
+                .config = config,
+                .allocator = allocator,
+                .steps = std.ArrayList(ExecutionStep){},
+                .advanced_steps = std.ArrayList(AdvancedStep){},
+                .pc_tracker = null,
+                .gas_tracker = null,
+                .current_pc = 0,
+                .bytecode = &[_]u8{},
+                .minimal_evm = null,
+                .instruction_count = 0,
+                .schedule_index = 0,
+                .simple_instruction_count = 0,
+                .fused_instruction_count = 0,
+                // Disabled tracer still needs safety counter for protection
+                .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
+                .recent_opcodes = RingBuffer.init(),
+            };
+        }
+        
         return .{
             .config = config,
             .allocator = allocator,
@@ -166,16 +358,19 @@ pub const Tracer = struct {
             // 300M instructions is ~10x the block gas limit
             // Normal contracts execute far fewer instructions
             .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
+            .recent_opcodes = RingBuffer.init(),
         };
     }
 
     /// Get the captured execution steps
     pub fn getSteps(self: *const Tracer) []const ExecutionStep {
+        if (!self.config.enabled) return &[_]ExecutionStep{};
         return self.steps.items;
     }
 
     /// Get the captured advanced execution steps
     pub fn getAdvancedSteps(self: *const Tracer) []const AdvancedStep {
+        if (!self.config.enabled) return &[_]AdvancedStep{};
         return self.advanced_steps.items;
     }
 
@@ -211,6 +406,7 @@ pub const Tracer = struct {
 
     /// Initialize PC tracker with bytecode (called when frame starts interpretation)
     pub fn initPcTracker(self: *Tracer, bytecode: []const u8) void {
+        if (!self.config.enabled) return;
         if (!self.config.enable_pc_tracking) return;
         self.bytecode = bytecode;
         self.current_pc = 0;
@@ -218,6 +414,7 @@ pub const Tracer = struct {
 
     /// Initialize MinimalEvm as a sidecar validator when frame starts interpretation
     pub fn onInterpret(self: *Tracer, frame: anytype, bytecode: []const u8, gas_limit: i64) void {
+        if (!self.config.enabled) return;
         _ = gas_limit;
         
         // Early exit if validation and step capture are disabled
@@ -338,6 +535,7 @@ pub const Tracer = struct {
         comptime opcode: UnifiedOpcode,
         cursor: [*]const @TypeOf(frame.*).Dispatch.Item
     ) void {
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -348,6 +546,21 @@ pub const Tracer = struct {
                 }
                 const opcode_name = comptime @tagName(opcode);
                 const opcode_value = @intFromEnum(opcode);
+
+                // Track in ring buffer (always active when tracer is enabled)
+                // This happens before validation for crash debugging
+                const schedule_index: u32 = @intCast(@intFromPtr(cursor) - @intFromPtr(frame.dispatch.cursor));
+                self.recent_opcodes.write(.{
+                    .step_number = self.instruction_count,
+                    .opcode = opcode_value,
+                    .opcode_name = opcode_name,
+                    .gas_before = frame.gas_remaining,
+                    .gas_after = 0, // Will be updated in after_instruction
+                    .stack_size = @intCast(frame.stack.size()),
+                    .memory_size = @intCast(frame.memory.size()),
+                    .schedule_index = schedule_index,
+                    .is_synthetic = opcode_value > 0xFF,
+                });
 
                 // Debug logging to understand execution order
                 if (self.minimal_evm) |evm| {
@@ -440,6 +653,7 @@ pub const Tracer = struct {
         next_handler: anytype,
         next_cursor: [*]const @TypeOf(frame.*).Dispatch.Item
     ) void {
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
@@ -449,6 +663,15 @@ pub const Tracer = struct {
                     return;
                 }
                 const opcode_name = comptime @tagName(opcode);
+
+                // Update the most recent ring buffer entry with gas_after
+                if (self.recent_opcodes.count > 0) {
+                    const last_idx = if (self.recent_opcodes.head == 0) 
+                        RingBuffer.CAPACITY - 1 
+                    else 
+                        self.recent_opcodes.head - 1;
+                    self.recent_opcodes.buffer[last_idx].gas_after = frame.gas_remaining;
+                }
 
                 // Advance schedule index
                 self.schedule_index += 1;
@@ -521,6 +744,7 @@ pub const Tracer = struct {
         frame: anytype,
         comptime opcode: UnifiedOpcode
     ) void {
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             // Skip validation for inner frames (depth > 1)
@@ -1232,13 +1456,25 @@ pub const Tracer = struct {
     // ============================================================================
 
     pub fn debug(self: *Tracer, comptime format: []const u8, args: anytype) void {
+        if (!self.config.enabled) return;
         if (!self.config.enable_debug_logging) return;
         log.debug(format, args);
     }
 
     pub fn err(self: *Tracer, comptime format: []const u8, args: anytype) void {
-        _ = self;
         log.err(format, args);
+        
+        // Pretty print the ring buffer on error for debugging
+        if (self.config.enabled) {
+            if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
+                defer self.allocator.free(output);
+                log.err("{s}", .{output});
+            } else |_| {
+                // If pretty print fails, at least show the count
+                log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+            }
+        }
+        
         @panic("Tracer error - see log above");
     }
 
@@ -1253,9 +1489,20 @@ pub const Tracer = struct {
     }
 
     pub fn throwError(self: *Tracer, comptime format: []const u8, args: anytype) noreturn {
-        _ = self;
         const builtin = @import("builtin");
         log.err("FATAL: " ++ format, args);
+        
+        // Pretty print the ring buffer on fatal error for debugging
+        if (self.config.enabled) {
+            if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
+                defer self.allocator.free(output);
+                log.err("{s}", .{output});
+            } else |_| {
+                // If pretty print fails, at least show the count
+                log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+            }
+        }
+        
         if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
             @panic("EVM execution error");
         } else {
@@ -1268,7 +1515,7 @@ pub const Tracer = struct {
     // ============================================================================
 
     pub fn onFrameStart(self: *Tracer, code_len: usize, gas: u64, depth: u16) void {
-        _ = self;
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             log.debug("[EVM] Frame execution started: code_len={}, gas={}, depth={}", .{ code_len, gas, depth });
@@ -1276,7 +1523,7 @@ pub const Tracer = struct {
     }
 
     pub fn onFrameComplete(self: *Tracer, gas_left: u64, output_len: usize) void {
-        _ = self;
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             log.debug("[EVM] Frame execution completed: gas_left={}, output_len={}", .{ gas_left, output_len });
@@ -1301,7 +1548,7 @@ pub const Tracer = struct {
 
     /// Called when arena allocator is initialized
     pub fn onArenaInit(self: *Tracer, initial_capacity: usize, max_capacity: usize, growth_factor: u32) void {
-        _ = self;
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             log.debug("[ARENA] Initialized: initial={d}, max={d}, growth={d}%", .{ initial_capacity, max_capacity, growth_factor });
@@ -1327,7 +1574,7 @@ pub const Tracer = struct {
 
     /// Called when arena is reset
     pub fn onArenaReset(self: *Tracer, mode: []const u8, capacity_before: usize, capacity_after: usize) void {
-        _ = self;
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             log.debug("[ARENA] Reset ({s}): capacity {d} -> {d}", .{ mode, capacity_before, capacity_after });
@@ -1411,7 +1658,7 @@ pub const Tracer = struct {
 
     /// Called when arena grows to accommodate new allocations
     pub fn onArenaGrow(self: *Tracer, old_capacity: usize, new_capacity: usize, requested_size: usize) void {
-        _ = self;
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             log.debug("[ARENA] Growing: {d} -> {d} bytes (requested={d})", .{ old_capacity, new_capacity, requested_size });
@@ -1420,7 +1667,7 @@ pub const Tracer = struct {
 
     /// Called when allocation fails
     pub fn onArenaAllocFailed(self: *Tracer, size: usize, current_capacity: usize, max_capacity: usize) void {
-        _ = self;
+        if (!self.config.enabled) return;
         const builtin = @import("builtin");
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
             log.warn("[ARENA] Allocation failed: size={d}, current={d}, max={d}", .{ size, current_capacity, max_capacity });
@@ -1430,7 +1677,19 @@ pub const Tracer = struct {
     /// Assert with error message - replaces std.debug.assert
     pub fn assert(self: *Tracer, condition: bool, comptime message: []const u8) void {
         if (!condition) {
-            self.err("ASSERTION FAILED: {s}", .{ message });
+            log.err("ASSERTION FAILED: {s}", .{ message });
+            
+            // Pretty print the ring buffer on assertion failure for debugging
+            if (self.config.enabled) {
+                if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
+                    defer self.allocator.free(output);
+                    log.err("{s}", .{output});
+                } else |_| {
+                    // If pretty print fails, at least show the count
+                    log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
+                }
+            }
+            
             const builtin = @import("builtin");
             if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) {
                 unreachable;
