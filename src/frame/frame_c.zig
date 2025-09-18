@@ -15,12 +15,14 @@ const Address = @import("primitives").Address.Address;
 // We might just want to make an instance for every hardfork as it's own different build target we expose
 pub const FrameInterpreter = evm.createFrameInterpreter(.{});
 
-// Create debug frame interpreter type with debugging tracer
+// Create debug frame interpreter type with configured tracer
 pub const DebugFrameInterpreter = evm.createFrameInterpreter(.{
-    .TracerType = tracer_mod.DebuggingTracer,
+    .TracerType = tracer_mod.Tracer,
+    .tracer_config = tracer_mod.TracerConfig.debug,
 });
 pub const DebugFrame = evm.Frame(.{
-    .TracerType = tracer_mod.DebuggingTracer,
+    .TracerType = tracer_mod.Tracer,
+    .tracer_config = tracer_mod.TracerConfig.debug,
 });
 
 pub const allocator = std.heap.c_allocator;

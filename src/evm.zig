@@ -179,7 +179,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .hardfork_config = hardfork_config,
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
-                .tracer = if (config.TracerType) |T| T.init(allocator) else {},
+                .tracer = if (config.TracerType) |T| T.init(allocator, config.tracer_config) else {},
             };
 
             if (config.TracerType != null) {

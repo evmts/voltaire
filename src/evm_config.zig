@@ -120,13 +120,14 @@ pub const EvmConfig = struct {
     enable_validator_deposits: bool = true,
     enable_validator_withdrawals: bool = true,
 
-    /// Tracer type for execution monitoring and debugging
-    /// null = no tracing (default for release builds)
-    /// type = tracer implementation (default: DefaultTracer for debug/safe builds)
-    TracerType: ?type = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 
-        @import("tracer/tracer.zig").DefaultTracer 
-    else 
-        null,
+    /// Tracer configuration for execution monitoring and debugging
+    /// Controls what tracing features are enabled
+    /// Default: disabled (all tracing off for optimal performance)
+    tracer_config: @import("tracer/tracer.zig").TracerConfig = .disabled,
+    
+    /// Tracer type - always uses Tracer but behavior is controlled by tracer_config
+    /// Set to null to completely disable tracing at compile time
+    TracerType: ?type = @import("tracer/tracer.zig").Tracer,
 
     /// Get the effective SIMD vector length for the current target
     pub fn getVectorLength(self: EvmConfig) comptime_int {

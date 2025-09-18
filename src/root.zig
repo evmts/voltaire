@@ -37,12 +37,14 @@ pub const MainnetEvm = Evm(EvmConfig{
 
 pub const MainnetEvmWithTracer = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
-    .TracerType = @import("tracer/tracer.zig").DefaultTracer,
+    .TracerType = @import("tracer/tracer.zig").Tracer,
+    .tracer_config = @import("tracer/tracer.zig").TracerConfig.debug,
 });
 
 pub const TestEvm = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
-    .TracerType = @import("tracer/tracer.zig").DefaultTracer,
+    .TracerType = @import("tracer/tracer.zig").Tracer,
+    .tracer_config = @import("tracer/tracer.zig").TracerConfig.debug,
     .disable_gas_checks = true,
 });
 
@@ -57,13 +59,9 @@ pub const DefaultEvm = BuildConfiguredEvm;
 // Tracer modules
 pub const tracer = @import("tracer/tracer.zig");
 pub const Tracer = @import("tracer/tracer.zig").Tracer;
-pub const DetailedStructLog = @import("tracer/tracer.zig").DetailedStructLog;
 pub const TracerConfig = @import("tracer/tracer.zig").TracerConfig;
-pub const MemoryCaptureMode = @import("tracer/tracer.zig").MemoryCaptureMode;
-pub const LoggingTracer = @import("tracer/tracer.zig").LoggingTracer;
-pub const FileTracer = @import("tracer/tracer.zig").FileTracer;
-pub const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-pub const DebuggingTracer = @import("tracer/tracer.zig").DebuggingTracer;
+// Compatibility alias - to be removed later
+pub const DefaultTracer = Tracer;
 // differential_tracer removed - using MinimalEvm for differential testing
 pub const trace_comparer = @import("_test_utils/trace_comparer.zig");
 pub const JSONRPCTracer = @import("tracer/tracer.zig").JSONRPCTracer;

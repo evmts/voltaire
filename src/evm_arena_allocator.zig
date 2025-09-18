@@ -62,8 +62,8 @@ pub const GrowingArenaAllocator = struct {
 
         // Trace initialization
         if (tracer) |t| {
-            const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-            const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+            const Tracer = @import("tracer/tracer.zig").Tracer;
+            const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
             tracer_ptr.onArenaInit(initial_capacity, max_capacity, growth_factor);
         }
 
@@ -96,8 +96,8 @@ pub const GrowingArenaAllocator = struct {
 
         // Trace reset
         if (self.tracer) |t| {
-            const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-            const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+            const Tracer = @import("tracer/tracer.zig").Tracer;
+            const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
             const mode_str = switch (mode) {
                 .retain_capacity => "retain_capacity",
                 .free_all => "free_all",
@@ -128,8 +128,8 @@ pub const GrowingArenaAllocator = struct {
 
         // Trace reset
         if (self.tracer) |t| {
-            const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-            const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+            const Tracer = @import("tracer/tracer.zig").Tracer;
+            const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
             tracer_ptr.onArenaReset("reset_to_initial", capacity_before, self.initial_capacity);
         }
     }
@@ -168,8 +168,8 @@ pub const GrowingArenaAllocator = struct {
 
         // Trace reset
         if (self.tracer) |t| {
-            const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-            const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+            const Tracer = @import("tracer/tracer.zig").Tracer;
+            const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
             tracer_ptr.onArenaReset(reset_mode, capacity_before, capacity_after);
         }
     }
@@ -188,8 +188,8 @@ pub const GrowingArenaAllocator = struct {
 
             // Trace successful allocation
             if (self.tracer) |t| {
-                const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-                const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+                const Tracer = @import("tracer/tracer.zig").Tracer;
+                const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
                 tracer_ptr.onArenaAlloc(len, @intFromEnum(ptr_align), self.current_capacity);
             }
 
@@ -223,8 +223,8 @@ pub const GrowingArenaAllocator = struct {
 
                     // Trace growth
                     if (self.tracer) |t| {
-                        const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-                        const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+                        const Tracer = @import("tracer/tracer.zig").Tracer;
+                        const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
                         tracer_ptr.onArenaGrow(old_capacity, new_capacity, len);
                     }
                 } else |_| {
@@ -240,15 +240,15 @@ pub const GrowingArenaAllocator = struct {
         if (result) |_| {
             // Trace successful allocation after growth
             if (self.tracer) |t| {
-                const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-                const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+                const Tracer = @import("tracer/tracer.zig").Tracer;
+                const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
                 tracer_ptr.onArenaAlloc(len, @intFromEnum(ptr_align), self.current_capacity);
             }
         } else {
             // Trace allocation failure
             if (self.tracer) |t| {
-                const DefaultTracer = @import("tracer/tracer.zig").DefaultTracer;
-                const tracer_ptr = @as(*DefaultTracer, @ptrCast(@alignCast(t)));
+                const Tracer = @import("tracer/tracer.zig").Tracer;
+                const tracer_ptr = @as(*Tracer, @ptrCast(@alignCast(t)));
                 tracer_ptr.onArenaAllocFailed(len, self.current_capacity, self.max_capacity);
             }
         }
