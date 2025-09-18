@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"path/filepath"
 
 	"github.com/evmts/guillotine/sdks/go/evm"
 	"github.com/evmts/guillotine/sdks/go/primitives"
