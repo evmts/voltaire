@@ -653,6 +653,74 @@ func resolveFixturePath(input string) string {
 	return input
 }
 
+// LoadFixtureBytecodeAndCalldata loads bytecode and calldata from a fixture by name
+// Supports both simple fixture names (e.g., "snailtracer", "erc20-mint") and paths
+func LoadFixtureBytecodeAndCalldata(fixtureName string) (bytecode []byte, calldata []byte, err error) {
+	// Try to find the fixture directory
+	projectRoot := os.Getenv("GUILLOTINE_ROOT")
+	if projectRoot == "" {
+		// Try to find project root by looking for cli.sh
+		if cwd, err := os.Getwd(); err == nil {
+			for dir := cwd; dir != "/"; dir = filepath.Dir(dir) {
+				if _, err := os.Stat(filepath.Join(dir, "cli.sh")); err == nil {
+					projectRoot = dir
+					break
+				}
+			}
+		}
+		// Fall back to hardcoded path if needed
+		if projectRoot == "" {
+			projectRoot = "/Users/williamcory/Guillotine"
+		}
+	}
+	
+	// Build the fixture path
+	var fixturePath string
+	if filepath.IsAbs(fixtureName) {
+		fixturePath = fixtureName
+	} else {
+		// Try the standard fixture location
+		fixturePath = filepath.Join(projectRoot, "src/_test_utils/fixtures", fixtureName)
+	}
+	
+	// Check if the fixture directory exists
+	if info, err := os.Stat(fixturePath); err != nil || !info.IsDir() {
+		return nil, nil, fmt.Errorf("fixture directory not found: %s", fixturePath)
+	}
+	
+	// Read bytecode file
+	bytecodePath := filepath.Join(fixturePath, "bytecode.txt")
+	bcData, err := os.ReadFile(bytecodePath)
+	if err != nil {
+		// Try alternate names
+		bytecodePath = filepath.Join(fixturePath, "runtime_bytecode.txt")
+		bcData, err = os.ReadFile(bytecodePath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read bytecode: %w", err)
+		}
+	}
+	
+	bytecode, err = ParseHex(string(bcData))
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid bytecode hex: %w", err)
+	}
+	
+	// Read calldata file (optional)
+	calldataPath := filepath.Join(fixturePath, "calldata.txt")
+	cdData, err := os.ReadFile(calldataPath)
+	if err != nil {
+		// Calldata is optional, return empty if not found
+		return bytecode, []byte{}, nil
+	}
+	
+	calldata, err = ParseHex(string(cdData))
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid calldata hex: %w", err)
+	}
+	
+	return bytecode, calldata, nil
+}
+
 // SetupEVMWithFixture creates an EVM and loads state from a fixture
 func SetupEVMWithFixture(c *cli.Context) (*evm.EVM, error) {
 	vm, err := evm.New()
