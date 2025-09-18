@@ -178,6 +178,7 @@ pub const MinimalEvm = struct {
         };
     }
 
+    /// TODO remove this this method shouldn't exist
     /// Initialize as a pointer to avoid arena corruption from struct copies
     pub fn initPtr(allocator: std.mem.Allocator) !*Self {
         const self = try allocator.create(Self);

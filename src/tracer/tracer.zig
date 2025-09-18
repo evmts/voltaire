@@ -83,10 +83,7 @@ pub const DefaultTracer = struct {
     pub fn init(allocator: std.mem.Allocator) DefaultTracer {
         return .{
             .allocator = allocator,
-            .steps = std.ArrayList(ExecutionStep){
-                .items = &.{},
-                .capacity = 0,
-            },
+            .steps = std.ArrayList(ExecutionStep){},
             .pc_tracker = null,
             .gas_tracker = null,
             .current_pc = 0,
@@ -102,7 +99,23 @@ pub const DefaultTracer = struct {
         };
     }
 
+    /// Get the captured execution steps
+    pub fn getSteps(self: *const DefaultTracer) []const ExecutionStep {
+        return self.steps.items;
+    }
+
     pub fn deinit(self: *DefaultTracer) void {
+        // Clean up execution steps
+        for (self.steps.items) |step| {
+            if (step.stack_before.len > 0) {
+                self.allocator.free(step.stack_before);
+            }
+            if (step.stack_after.len > 0) {
+                self.allocator.free(step.stack_after);
+            }
+        }
+        self.steps.deinit(self.allocator);
+        
         // Clean up MinimalEvm if it exists
         if (self.minimal_evm) |evm| {
             // The arena allocator in MinimalEvm will clean up all MinimalFrame allocations
@@ -408,6 +421,37 @@ pub const DefaultTracer = struct {
     // MINIMAL EVM EXECUTION
     // ============================================================================
 
+    /// Capture the current execution state before executing an opcode
+    fn captureStep(self: *DefaultTracer, frame: anytype, opcode_value: u8) !ExecutionStep {
+        // Capture stack before
+        var stack_before: []u256 = &[_]u256{};
+        if (frame.stack.items.len > 0) {
+            stack_before = try self.allocator.alloc(u256, frame.stack.items.len);
+            for (frame.stack.items, 0..) |val, i| {
+                stack_before[frame.stack.items.len - 1 - i] = val; // LIFO order
+            }
+        }
+        
+        const opcode_name = getOpcodeName(opcode_value);
+        
+        return ExecutionStep{
+            .step_number = self.instruction_count,
+            .pc = frame.pc,
+            .opcode = opcode_value,
+            .opcode_name = opcode_name,
+            .gas_before = @intCast(frame.gas_remaining),
+            .gas_after = 0, // Will be filled after execution
+            .gas_cost = 0, // Will be calculated after execution
+            .stack_before = stack_before,
+            .stack_after = &[_]u256{}, // Will be filled after execution
+            .memory_size_before = frame.memory_size,
+            .memory_size_after = 0, // Will be filled after execution
+            .depth = frame.call_depth,
+            .error_occurred = false,
+            .error_msg = null,
+        };
+    }
+
     /// Execute MinimalEvm for the given UnifiedOpcode
     fn executeMinimalEvmForOpcode(
         self: *DefaultTracer,
@@ -429,41 +473,83 @@ pub const DefaultTracer = struct {
 
         // For regular opcodes (0x00-0xFF), execute exactly 1 opcode in MinimalEvm
         if (opcode_value <= 0xff) {
-            // Special handling: JUMPDEST in Frame pre-charges entire basic-block gas.
-            // MinimalEvm's JUMPDEST charges only JumpdestGas, so we reconcile here.
-            if (opcode_value == 0x5b) { // JUMPDEST
-                const DispatchType = @TypeOf(frame.*).Dispatch;
-                const dispatch = DispatchType{ .cursor = cursor };
-                const op_data = dispatch.getOpData(.JUMPDEST);
-                const block_gas: u64 = op_data.metadata.gas;
-                const jumpdest_gas: u64 = primitives.GasConstants.JumpdestGas;
-                if (evm.getCurrentFrame()) |mf| {
+            // Capture trace before execution
+            if (evm.getCurrentFrame()) |mf| {
+                const step_before = self.captureStep(mf, opcode_value) catch null;
+                defer if (step_before) |step| {
+                    if (step.stack_before.len > 0) {
+                        self.allocator.free(step.stack_before);
+                    }
+                };
+                
+                // Special handling: JUMPDEST in Frame pre-charges entire basic-block gas.
+                // MinimalEvm's JUMPDEST charges only JumpdestGas, so we reconcile here.
+                if (opcode_value == 0x5b) { // JUMPDEST
+                    const DispatchType = @TypeOf(frame.*).Dispatch;
+                    const dispatch = DispatchType{ .cursor = cursor };
+                    const op_data = dispatch.getOpData(.JUMPDEST);
+                    const block_gas: u64 = op_data.metadata.gas;
+                    const jumpdest_gas: u64 = primitives.GasConstants.JumpdestGas;
                     const extra: i64 = @as(i64, @intCast(block_gas)) - @as(i64, @intCast(jumpdest_gas));
                     mf.gas_remaining -= extra;
                 }
-            }
-            // Execute a single step in MinimalEvm (delegates to current frame)
-            // Debug: Check if MinimalEvm has a current frame
-            if (evm.getCurrentFrame() == null) {
-                log.err("[EVM2] MinimalEvm has no current frame when trying to execute opcode 0x{x:0>2}", .{opcode_value});
-                @panic("MinimalEvm not initialized");
-            }
-            evm.step() catch |e| {
-                // Get actual opcode from MinimalEvm to see what it was trying to execute
-                var actual_opcode: u8 = 0;
-                if (evm.getCurrentFrame()) |mf| {
+                
+                // Execute a single step in MinimalEvm
+                evm.step() catch |e| {
+                    // Capture error state
+                    if (step_before) |mut_step| {
+                        var step = mut_step;
+                        step.error_occurred = true;
+                        step.error_msg = @errorName(e);
+                        step.gas_after = @intCast(mf.gas_remaining);
+                        step.stack_after = &[_]u256{};
+                        step.memory_size_after = mf.memory_size;
+                        self.steps.append(self.allocator, step) catch {};
+                    }
+                    
+                    // Get actual opcode from MinimalEvm to see what it was trying to execute
+                    var actual_opcode: u8 = 0;
                     if (mf.pc < mf.bytecode.len) {
                         actual_opcode = mf.bytecode[mf.pc];
                     }
+                    log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{
+                        mf.pc,
+                        actual_opcode,
+                        opcode_value,
+                        e
+                    });
+                    @panic("MinimalEvm execution error");
+                };
+                
+                // Capture trace after execution
+                if (step_before) |mut_step| {
+                    var step = mut_step;
+                    step.gas_after = @intCast(mf.gas_remaining);
+                    step.gas_cost = @intCast(@as(i64, step.gas_before) - @as(i64, step.gas_after));
+                    
+                    // Capture stack after
+                    if (mf.stack.items.len > 0) {
+                        if (self.allocator.alloc(u256, mf.stack.items.len)) |stack_after| {
+                            for (mf.stack.items, 0..) |val, i| {
+                                stack_after[mf.stack.items.len - 1 - i] = val; // LIFO order
+                            }
+                            step.stack_after = stack_after;
+                        } else |_| {
+                            step.stack_after = &[_]u256{};
+                        }
+                    } else {
+                        step.stack_after = &[_]u256{};
+                    }
+                    
+                    step.memory_size_after = mf.memory_size;
+                    step.error_occurred = false;
+                    
+                    self.steps.append(self.allocator, step) catch {};
                 }
-                log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{
-                    if (evm.getCurrentFrame()) |mf| mf.pc else 0,
-                    actual_opcode,
-                    opcode_value,
-                    e
-                });
-                @panic("MinimalEvm execution error");
-            };
+            } else {
+                log.err("[EVM2] MinimalEvm has no current frame when trying to execute opcode 0x{x:0>2}", .{opcode_value});
+                @panic("MinimalEvm not initialized");
+            }
             return;
         }
 
