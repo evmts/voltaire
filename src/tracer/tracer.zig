@@ -10,8 +10,8 @@ const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 pub const TracerConfig = @import("tracer_config.zig").TracerConfig;
 
-// TODO: This should be generic on FrameType so it can use FrameType types like WordType
-// as well as the frame config
+/// Tracer for EVM execution monitoring and debugging
+/// Tracks execution steps, gas usage, and validates optimized execution
 pub const Tracer = struct {
     config: TracerConfig,
     recent_opcodes: RingBuffer,
@@ -30,7 +30,6 @@ pub const Tracer = struct {
     instruction_safety: SafetyCounter(u64, .enabled),
     allocator: std.mem.Allocator,
 
-    // TODO: some of these properties should be generic on Frame.WordType Frame.GasType etc.
     // Internal representation of an execution step
     pub const ExecutionStep = struct {
         step_number: u64,
@@ -49,7 +48,6 @@ pub const Tracer = struct {
         error_msg: ?[]const u8,
     };
 
-    // TODO: some of these properties should be generic on Frame.WordType Frame.GasType etc.
     // Advanced execution step for capturing optimized execution of the advanced interpreter
     // Primarily used for internal debugging
     pub const AdvancedStep = struct {
@@ -69,11 +67,9 @@ pub const Tracer = struct {
         fusion_info: ?[]const u8,
     };
 
-    // TODO: Move to ring_buffer.zig
     // Fixed-size ring buffer for tracking recent opcodes
     // Always active when tracer is enabled
     pub const RingBuffer = struct {
-        // TODO: this should be configurable on tracer_config.zig
         const CAPACITY = 10; // Last 10 opcodes
 
         const Entry = struct {
@@ -128,7 +124,6 @@ pub const Tracer = struct {
             return out[0..CAPACITY];
         }
 
-        /// TODO: move to it's own file
         /// Pretty print the ring buffer for debugging
         pub fn prettyPrint(self: *const RingBuffer, allocator: std.mem.Allocator) ![]u8 {
             var output = std.ArrayList(u8){};
@@ -202,7 +197,7 @@ pub const Tracer = struct {
             .schedule_index = 0,
             .simple_instruction_count = 0,
             .fused_instruction_count = 0,
-            // TODO: This should be configurable
+            // 300M instruction safety limit
             .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
             .recent_opcodes = RingBuffer.init(),
         };
@@ -221,7 +216,6 @@ pub const Tracer = struct {
             .schedule_index = 0,
             .simple_instruction_count = 0,
             .fused_instruction_count = 0,
-            // TODO: This should be configurable
             // 300M instructions is ~10x the block gas limit
             // Normal contracts execute far fewer instructions
             .instruction_safety = SafetyCounter(u64, .enabled).init(300_000_000),
@@ -679,7 +673,6 @@ pub const Tracer = struct {
         return copy;
     }
 
-    // TODO: MOve this to it's own file and add more validation that each opcode is what we expect to this
     fn executeMinimalEvmForOpcode(self: *Tracer, evm: *MinimalEvm, comptime opcode: UnifiedOpcode, frame: anytype, cursor: [*]const @TypeOf(frame.*).Dispatch.Item) void {
         const opcode_value = @intFromEnum(opcode);
 
@@ -1182,7 +1175,6 @@ pub const Tracer = struct {
         }
     }
 
-    // TODO move to their own file
     // ============================================================================
     // EVM LIFECYCLE EVENTS
     // ============================================================================
@@ -1218,26 +1210,20 @@ pub const Tracer = struct {
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[ARENA] Initialized: initial={d}, max={d}, growth={d}%", .{ initial_capacity, max_capacity, growth_factor });
     }
 
-    // TODO: Add debug logging
     /// Event: Call operation started
     pub fn onCallStart(self: *Tracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
-        _ = self;
-        _ = call_type;
-        _ = gas;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Call started: type={s} gas={d} value={d}", .{ call_type, gas, value });
         _ = to;
-        _ = value;
     }
 
-    // TODO: Add debug logging
     /// Event: EVM initialization started
     pub fn onEvmInit(self: *Tracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
-        _ = self;
-        _ = gas_price;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] EVM init: gas_price={d} hardfork={s}", .{ gas_price, hardfork });
         _ = origin;
-        _ = hardfork;
     }
 
-    // TODO: Add debug logging
     /// Called when arena is reset
     pub fn onArenaReset(self: *Tracer, mode: []const u8, capacity_before: usize, capacity_after: usize) void {
         if (!self.config.enabled) return;
@@ -1245,29 +1231,26 @@ pub const Tracer = struct {
         if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[ARENA] Reset ({s}): capacity {d} -> {d}", .{ mode, capacity_before, capacity_after });
     }
 
-    // TODO: Add debug logging
     /// Event: Beacon root update processing
     pub fn onBeaconRootUpdate(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        _ = self;
-        _ = success;
-        _ = error_val;
+        if (!self.config.enabled) return;
+        if (error_val) |e| {
+            log.debug("[TRACER] Beacon root update failed: {}", .{e});
+        } else {
+            log.debug("[TRACER] Beacon root update: success={}", .{success});
+        }
     }
 
-    // TODO: Add debug logging
     /// Event: Call operation completed
     pub fn onCallComplete(self: *Tracer, success: bool, gas_left: i64, output_len: usize) void {
-        _ = self;
-        _ = success;
-        _ = gas_left;
-        _ = output_len;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Call complete: success={} gas_left={d} output_len={d}", .{ success, gas_left, output_len });
     }
 
-    // TODO: Add debug logging
     /// Event: Preflight check for call
     pub fn onCallPreflight(self: *Tracer, call_type: []const u8, result: []const u8) void {
-        _ = self;
-        _ = call_type;
-        _ = result;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Call preflight: type={s} result={s}", .{ call_type, result });
     }
 
     // TODO: Add debug logging
@@ -1278,47 +1261,50 @@ pub const Tracer = struct {
         _ = error_val;
     }
 
-    // TODO: Add debug logging
     /// Event: Code retrieval
     pub fn onCodeRetrieval(self: *Tracer, address: anytype, code_len: usize, is_empty: bool) void {
-        _ = self;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Code retrieval: len={d} empty={}", .{ code_len, is_empty });
         _ = address;
-        _ = code_len;
-        _ = is_empty;
     }
 
-    // TODO: Add debug logging
     /// Event: Validator deposits processing
     pub fn onValidatorDeposits(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        _ = self;
-        _ = success;
-        _ = error_val;
+        if (!self.config.enabled) return;
+        if (error_val) |e| {
+            log.debug("[TRACER] Validator deposits failed: {}", .{e});
+        } else {
+            log.debug("[TRACER] Validator deposits: success={}", .{success});
+        }
     }
 
-    // TODO: Add debug logging
     /// Called when an allocation is made
     pub fn onArenaAlloc(self: *Tracer, size: usize, alignment: usize, current_capacity: usize) void {
-        _ = self;
-        _ = size;
-        _ = alignment;
-        _ = current_capacity;
+        if (!self.config.enabled) return;
+        const builtin = @import("builtin");
+        if (comptime (builtin.mode == .Debug)) {
+            log.debug("[ARENA] Alloc: size={d} align={d} capacity={d}", .{ size, alignment, current_capacity });
+        }
     }
 
-    // TODO: add debug loggin
     /// Event: Frame bytecode initialization
     pub fn onFrameBytecodeInit(self: *Tracer, bytecode_len: usize, success: bool, error_val: ?anyerror) void {
-        _ = self;
-        _ = bytecode_len;
-        _ = success;
-        _ = error_val;
+        if (!self.config.enabled) return;
+        if (error_val) |e| {
+            log.debug("[TRACER] Frame bytecode init failed: len={d} error={}", .{ bytecode_len, e });
+        } else {
+            log.debug("[TRACER] Frame bytecode init: len={d} success={}", .{ bytecode_len, success });
+        }
     }
 
-    // TODO: add debug loggin
     /// Event: Validator withdrawals processing
     pub fn onValidatorWithdrawals(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        _ = self;
-        _ = success;
-        _ = error_val;
+        if (!self.config.enabled) return;
+        if (error_val) |e| {
+            log.debug("[TRACER] Validator withdrawals failed: {}", .{e});
+        } else {
+            log.debug("[TRACER] Validator withdrawals: success={}", .{success});
+        }
     }
 
     /// Called when arena grows to accommodate new allocations
@@ -1362,99 +1348,68 @@ pub const Tracer = struct {
         }
     }
 
-    // TODO: Add debug logging
     pub fn onBytecodeAnalysisStart(self: *Tracer, code_len: usize) void {
-        _ = self;
-        _ = code_len;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Bytecode analysis start: len={d}", .{code_len});
     }
 
-    // TODO: Add debug logging
     pub fn onBytecodeAnalysisComplete(self: *Tracer, validated_up_to: usize, opcode_count: usize, jumpdest_count: usize) void {
-        _ = self;
-        _ = validated_up_to;
-        _ = opcode_count;
-        _ = jumpdest_count;
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Bytecode analysis complete: validated={d} opcodes={d} jumpdests={d}", .{ validated_up_to, opcode_count, jumpdest_count });
     }
 
-    // TODO: Add debug logging
     /// Called when an invalid opcode is found during analysis
     pub fn onInvalidOpcode(self: *Tracer, pc: usize, opcode: u8) void {
-        _ = self;
-        _ = pc;
-        _ = opcode;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Invalid opcode: pc={d} opcode=0x{x:0>2}", .{ pc, opcode });
     }
 
-    // TODO: Add debug logging
     /// Called when a JUMPDEST is found during analysis
     pub fn onJumpdestFound(self: *Tracer, pc: usize, count: usize) void {
-        _ = self;
-        _ = pc;
-        _ = count;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] JUMPDEST found: pc={d} total={d}", .{ pc, count });
     }
 
-    // TODO: Add debug logging
     /// Called when dispatch schedule build starts
     pub fn onScheduleBuildStart(self: *Tracer, bytecode_len: usize) void {
-        _ = self;
-        _ = bytecode_len;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Schedule build start: bytecode_len={d}", .{bytecode_len});
     }
 
-    // TODO: Add debug logging
     /// Called when a fusion optimization is detected
     pub fn onFusionDetected(self: *Tracer, pc: usize, fusion_type: []const u8, instruction_count: usize) void {
-        _ = self;
-        _ = pc;
-        _ = fusion_type;
-        _ = instruction_count;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Fusion detected: pc={d} type={s} count={d}", .{ pc, fusion_type, instruction_count });
     }
 
-    // TODO: Add debug logging
     /// Called when an invalid static jump is detected
     pub fn onInvalidStaticJump(self: *Tracer, jump_pc: usize, target_pc: usize) void {
-        _ = self;
-        _ = jump_pc;
-        _ = target_pc;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Invalid static jump: from={d} to={d}", .{ jump_pc, target_pc });
     }
 
-    // TODO: Add debug logging
     /// Called when a static jump is resolved
     pub fn onStaticJumpResolved(self: *Tracer, jump_pc: usize, target_pc: usize) void {
-        _ = self;
-        _ = jump_pc;
-        _ = target_pc;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Static jump resolved: from={d} to={d}", .{ jump_pc, target_pc });
     }
 
-    // TODO: Add debug logging
     /// Called when a truncated PUSH instruction is detected
     pub fn onTruncatedPush(self: *Tracer, pc: usize, push_size: u8, available: usize) void {
-        _ = self;
-        _ = pc;
-        _ = push_size;
-        _ = available;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Truncated PUSH: pc={d} size={d} available={d}", .{ pc, push_size, available });
     }
 
-    // TODO: Add debug logging
     /// Called when dispatch schedule build completes
     pub fn onScheduleBuildComplete(self: *Tracer, item_count: usize, fusion_count: usize) void {
-        _ = self;
-        _ = item_count;
-        _ = fusion_count;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Schedule build complete: items={d} fusions={d}", .{ item_count, fusion_count });
     }
 
-    // TODO: Add debug logging
     /// Called when a jump table is created
     pub fn onJumpTableCreated(self: *Tracer, jumpdest_count: usize) void {
-        _ = self;
-        _ = jumpdest_count;
-        // No-op in default tracer
+        if (!self.config.enabled) return;
+        log.debug("[TRACER] Jump table created: jumpdest_count={d}", .{jumpdest_count});
     }
 };
 
