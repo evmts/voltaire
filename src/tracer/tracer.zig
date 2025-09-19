@@ -110,22 +110,6 @@ pub const Tracer = struct {
         };
     }
 
-    /// Get the captured execution steps
-    pub fn getSteps(self: *const Tracer) []const ExecutionStep {
-        if (!self.config.enabled) return &[_]ExecutionStep{};
-        return self.steps.items;
-    }
-
-    /// Get the captured advanced execution steps
-    pub fn getAdvancedSteps(self: *const Tracer) []const AdvancedStep {
-        if (!self.config.enabled) return &[_]AdvancedStep{};
-        return self.advanced_steps.items;
-    }
-
-    /// Get the ring buffer for inspection
-    pub fn getRingBuffer(self: *const Tracer) *const RingBuffer {
-        return &self.recent_opcodes;
-    }
 
     /// Pretty print the current ring buffer state
     pub fn printRingBuffer(self: *const Tracer) void {

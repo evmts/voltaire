@@ -55,7 +55,7 @@ test "simple trace generation" {
     
     // Get the tracer and check if it captured steps
     const tracer = evm.getTracer();
-    const steps = tracer.getSteps();
+    const steps = tracer.steps.items;
     std.debug.print("Steps captured: {}\n", .{steps.len});
     
     if (steps.len == 0) {
@@ -160,7 +160,7 @@ test "trace with dispatch analysis" {
     std.debug.print("Gas used: {}\n", .{deploy_result.gas_used});
     
     const tracer = evm.getTracer();
-    const steps = tracer.getSteps();
+    const steps = tracer.steps.items;
     std.debug.print("Steps captured: {}\n", .{steps.len});
     
     if (steps.len > 0) {
@@ -295,7 +295,7 @@ test "erc20 mint trace - minimal" {
     std.debug.print("Gas used: {}\n", .{call_result.gas_used});
     
     const tracer = evm.getTracer();
-    const steps = tracer.getSteps();
+    const steps = tracer.steps.items;
     std.debug.print("Steps captured: {}\n", .{steps.len});
     
     // Generate and display JSON trace
