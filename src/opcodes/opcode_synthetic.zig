@@ -58,6 +58,38 @@ pub const OpcodeSynthetic = enum(u8) {
     PUSH0_REVERT = 0xCA,           // PUSH0 + PUSH0 + REVERT (error pattern)
     PUSH_ADD_DUP1 = 0xCB,          // PUSH + ADD + DUP1 (common in loops)
     MLOAD_SWAP1_DUP2 = 0xCC,       // MLOAD + SWAP1 + DUP2 (memory pattern)
+    
+    /// Describe the fusion operation for tracing/debugging
+    pub fn describe(self: OpcodeSynthetic) []const u8 {
+        return switch (self) {
+            .PUSH_ADD_INLINE, .PUSH_ADD_POINTER => "PUSH+ADD fusion",
+            .PUSH_SUB_INLINE, .PUSH_SUB_POINTER => "PUSH+SUB fusion",
+            .PUSH_MUL_INLINE, .PUSH_MUL_POINTER => "PUSH+MUL fusion",
+            .PUSH_DIV_INLINE, .PUSH_DIV_POINTER => "PUSH+DIV fusion",
+            .PUSH_AND_INLINE, .PUSH_AND_POINTER => "PUSH+AND fusion",
+            .PUSH_OR_INLINE, .PUSH_OR_POINTER => "PUSH+OR fusion",
+            .PUSH_XOR_INLINE, .PUSH_XOR_POINTER => "PUSH+XOR fusion",
+            .PUSH_MSTORE_INLINE, .PUSH_MSTORE_POINTER => "PUSH+MSTORE fusion",
+            .PUSH_MSTORE8_INLINE, .PUSH_MSTORE8_POINTER => "PUSH+MSTORE8 fusion",
+            .PUSH_MLOAD_INLINE, .PUSH_MLOAD_POINTER => "PUSH+MLOAD fusion",
+            .JUMP_TO_STATIC_LOCATION => "Static JUMP optimization",
+            .JUMPI_TO_STATIC_LOCATION => "Static JUMPI optimization",
+            .MULTI_PUSH_2 => "Double PUSH fusion",
+            .MULTI_PUSH_3 => "Triple PUSH fusion",
+            .MULTI_POP_2 => "Double POP fusion",
+            .MULTI_POP_3 => "Triple POP fusion",
+            .ISZERO_JUMPI => "ISZERO+JUMPI pattern",
+            .DUP2_MSTORE_PUSH => "DUP2+MSTORE+PUSH pattern",
+            .DUP3_ADD_MSTORE => "DUP3+ADD+MSTORE pattern",
+            .SWAP1_DUP2_ADD => "SWAP1+DUP2+ADD pattern",
+            .PUSH_DUP3_ADD => "PUSH+DUP3+ADD pattern",
+            .FUNCTION_DISPATCH => "Function selector dispatch (PUSH4+EQ+PUSH+JUMPI)",
+            .CALLVALUE_CHECK => "Payable check (CALLVALUE+DUP1+ISZERO)",
+            .PUSH0_REVERT => "Error pattern (PUSH0+PUSH0+REVERT)",
+            .PUSH_ADD_DUP1 => "PUSH+ADD+DUP1 pattern",
+            .MLOAD_SWAP1_DUP2 => "MLOAD+SWAP1+DUP2 pattern",
+        };
+    }
 };
 
 // Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
