@@ -165,25 +165,17 @@ pub fn Frame(comptime _config: FrameConfig) type {
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
         // These fields are rarely accessed (specific opcodes only)
         // Note: database moved to EVM struct - access via evm_ptr for better cache locality
-        // TODO: We should be able to remove this in favor of storing value as metadata
-        caller: Address, // 20B - Only for CALLER opcode
-        // TODO: We should be able to remove this in favor of storing value as metadata
-        value: WordType, // 32B - Only for CALLVALUE opcode (moved from warm)
-        // TODO: We should be able to remove this in favor of storing pointer as metadata
-        calldata_slice: []const u8, // 16B - Only for CALLDATALOAD/COPY
+        caller: Address, // 20B - Only for CALLER opcode (per-call, cannot cache)
+        value: WordType, // 32B - Only for CALLVALUE opcode (per-call, cannot cache)
+        calldata_slice: []const u8, // 16B - Only for CALLDATALOAD/COPY (per-call, cannot cache)
         // TODO: We should be able to remove this in favor of storing pointer as metadata
         code: []const u8 = &[_]u8{}, // 16B - Only for CODESIZE/CODECOPY
-        // TODO: We should be able to remove this in favor of storing pointer as metadata
-        authorized_address: ?Address = null, // 21B - EIP-3074 (rarely used)
+        authorized_address: ?Address = null, // 21B - EIP-3074 (per-call auth, cannot cache)
         // TODO: We should be able to remove this in favor of storing pointer as metadata
         jump_table: *const Dispatch.JumpTable, // 8B - Jump table for JUMP/JUMPI
 
         // Loop safety counter for preventing infinite dispatch loops
         instruction_counter: config.createLoopSafetyCounter(),
-
-        // TODO: We shouldn't need to store this on frame if it's only for tracer sync
-        // First block gas amount that was pre-charged (for tracer synchronization)
-        first_block_gas_charged: u32 = 0,
 
         //
         /// Initialize a new execution frame.
@@ -216,7 +208,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .code = &[_]u8{}, // Will be set during interpret
                 .authorized_address = null,
                 .instruction_counter = config.createLoopSafetyCounter().init(config.loop_quota orelse 0),
-                .first_block_gas_charged = 0,
             };
         }
         /// Clean up all frame resources.
@@ -389,7 +380,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .cursor = schedule.ptr + start_index,
             };
 
-            self.first_block_gas_charged = first_block_gas_amount;
+            // Note: first_block_gas_amount is tracked locally for this execution only
 
             // Store u256_constants slice for Frame access
             self.u256_constants = if (owned_schedule) |s| s.u256_values else &[_]WordType{};
@@ -458,7 +449,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .code = self.code,
                 .authorized_address = self.authorized_address,
                 .instruction_counter = self.instruction_counter,
-                .first_block_gas_charged = self.first_block_gas_charged,
             };
         }
 

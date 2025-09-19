@@ -950,15 +950,11 @@ pub const Tracer = struct {
                 // Frame may consume gas in larger chunks at block boundaries
                 const gas_diff = @as(i64, evm_gas_remaining) - @as(i64, frame_gas_remaining);
 
-                // Get expected first_block_gas for this frame to adjust tolerance
-                const expected_first_block_gas = if (@hasField(@TypeOf(frame.*), "first_block_gas_charged"))
-                    @as(i64, frame.first_block_gas_charged)
-                else
-                    0;
-
-                // Allow Frame to consume first_block_gas + 50 more than MinimalEvm
-                // This accounts for Frame's pre-charging strategy
-                const tolerance = expected_first_block_gas + 50;
+                // TODO: This gas tolerance check is fragile and arbitrary. Frame pre-charges gas
+                // in blocks while MinimalEvm charges per-opcode, causing legitimate divergences.
+                // Need a proper way to track and compare gas consumption that accounts for these
+                // different charging strategies without hardcoded magic numbers.
+                const tolerance = 50;
                 if (gas_diff > tolerance) {
                     // Gas divergence during execution, debug log only
                     log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
