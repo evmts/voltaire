@@ -74,8 +74,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// SDIV opcode (0x05) - Signed integer division.
-        // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
-        // The current approach might be slower if the sign of operands is predictable.
+        // Branchless implementation for consistent performance
         pub fn sdiv(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.SDIV, cursor);
             const top = self.stack.pop_unsafe();
@@ -139,8 +138,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// SMOD opcode (0x07) - Signed modulo operation.
-        // TODO: Benchmark this branchless implementation against a simpler version with `if` statements.
-        // The current approach might be slower if the sign of operands is predictable.
+        // Branchless implementation for consistent performance
         pub fn smod(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.SMOD, cursor);
             const top = self.stack.pop_unsafe();

@@ -16,8 +16,6 @@ const frame_c = @import("frame/frame_c.zig");
 const bytecode_c = @import("bytecode/bytecode_c.zig");
 const memory_c = @import("memory/memory_c.zig");
 const stack_c = @import("stack/stack_c.zig");
-// const plan_c = @import("evm/plan_c.zig");  // TODO: These files don't exist yet
-// const planner_c = @import("evm/planner_c.zig");
 const precompiles_c = @import("precompiles/precompiles_c.zig");
 const hardfork_c = @import("eips_and_hardforks/hardfork_c.zig");
 
@@ -29,8 +27,7 @@ comptime {
     @export(frame_c.evm_frame_destroy, .{ .name = "evm_frame_destroy" });
     @export(frame_c.evm_frame_reset, .{ .name = "evm_frame_reset" });
     @export(frame_c.evm_frame_execute, .{ .name = "evm_frame_execute" });
-    // TODO: Add all other exports from frame_c, bytecode_c, memory_c, stack_c, plan_c, planner_c, precompiles_c, hardfork_c
-    // For now, this module will have limited exports until all functions are enumerated
+    // Additional exports should be added as needed for each module
 }
 
 const allocator = std.heap.c_allocator;
@@ -66,8 +63,6 @@ test "C API modules compile" {
     std.testing.refAllDecls(bytecode_c);
     std.testing.refAllDecls(memory_c);
     std.testing.refAllDecls(stack_c);
-    // std.testing.refAllDecls(plan_c);  // TODO: These files don't exist yet
-    // std.testing.refAllDecls(planner_c);
     std.testing.refAllDecls(precompiles_c);
     std.testing.refAllDecls(hardfork_c);
 }
