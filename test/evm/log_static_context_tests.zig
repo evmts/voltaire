@@ -12,7 +12,7 @@ const Host = @import("evm").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const Log = @import("logs.zig").Log;
-const BlockInfo = @import("evm").DefaultBlockInfo;
+const BlockInfo = @import("evm").BlockInfo;
 const ZERO_ADDRESS = @import("primitives").ZERO_ADDRESS;
 const Hardfork = @import("evm").Hardfork;
 

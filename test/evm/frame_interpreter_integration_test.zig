@@ -48,7 +48,7 @@ const TestHost = struct {
         return self.evm.get_code(address);
     }
     
-    pub fn get_block_info(self: *TestHost) block_info.DefaultBlockInfo {
+    pub fn get_block_info(self: *TestHost) block_info.BlockInfo {
         return self.evm.context.block_info;
     }
     
@@ -237,7 +237,7 @@ test "Frame interpreter CREATE integration - deploy simple contract" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .chain_id = 1,
             .number = 1,
             .timestamp = 1000,
@@ -337,7 +337,7 @@ test "Frame interpreter CREATE integration - with value transfer" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .chain_id = 1,
             .number = 1,
             .timestamp = 1000,

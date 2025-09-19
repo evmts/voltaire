@@ -7,7 +7,7 @@ const MemoryDatabase = @import("evm").MemoryDatabase;
 const Address = @import("primitives").Address.Address;
 const primitives = @import("primitives");
 const CallParams = @import("call_params.zig").CallParams;
-const BlockInfo = @import("evm").DefaultBlockInfo;
+const BlockInfo = @import("evm").BlockInfo;
 const TransactionContext = @import("evm").TransactionContext;
 const Hardfork = @import("evm").Hardfork;
 

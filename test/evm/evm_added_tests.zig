@@ -6,7 +6,7 @@ const Address = primitives.Address.Address;
 const DatabaseInterface = @import("evm").DatabaseInterface;
 const Account = @import("evm").Account;
 const MemoryDatabase = @import("evm").MemoryDatabase;
-const BlockInfo = @import("evm").DefaultBlockInfo;
+const BlockInfo = @import("evm").BlockInfo;
 const TransactionContext = @import("evm").TransactionContext;
 const Precompiles = @import("precompiles.zig");
 

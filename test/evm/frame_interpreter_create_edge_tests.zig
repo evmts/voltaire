@@ -23,7 +23,7 @@ test "CREATE edge case - maximum init code size (48KB)" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -116,7 +116,7 @@ test "CREATE edge case - init code size exceeds 48KB" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -207,7 +207,7 @@ test "CREATE edge case - insufficient gas for init code" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -279,7 +279,7 @@ test "CREATE edge case - memory expansion overflow" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -368,7 +368,7 @@ test "CREATE edge case - all gas consumed by subcall" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -462,7 +462,7 @@ test "CREATE edge case - nested CREATE depth limit" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
@@ -573,7 +573,7 @@ test "CREATE real scenario - deploy ERC20 token contract" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 15_000_000, // Recent block
             .timestamp = 1_700_000_000,
             .difficulty = 0, // Post-merge
@@ -684,7 +684,7 @@ test "CREATE real scenario - factory pattern deployment" {
     var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
         allocator,
         db_interface,
-        block_info.DefaultBlockInfo{
+        block_info.BlockInfo{
             .number = 1,
             .timestamp = 1000,
             .difficulty = 100,
