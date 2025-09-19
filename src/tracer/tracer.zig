@@ -10,6 +10,7 @@ const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 pub const TracerConfig = @import("tracer_config.zig").TracerConfig;
 const RingBuffer = @import("ring_buffer.zig").RingBuffer;
+const lifecycle_events = @import("lifecycle_events.zig");
 
 /// Tracer for EVM execution monitoring and debugging
 /// Tracks execution steps, gas usage, and validates optimized execution
@@ -68,7 +69,6 @@ pub const Tracer = struct {
         fusion_info: ?[]const u8,
     };
 
-
     pub fn init(allocator: std.mem.Allocator, config: TracerConfig) Tracer {
         if (!config.enabled) return .{
             .config = config,
@@ -109,8 +109,6 @@ pub const Tracer = struct {
             .recent_opcodes = RingBuffer.init(),
         };
     }
-
-
 
     pub fn deinit(self: *Tracer) void {
         for (self.steps.items) |step| {
@@ -284,7 +282,7 @@ pub const Tracer = struct {
             const expected_handler = @TypeOf(frame.*).opcode_handlers[opcode_value];
             const actual_handler = cursor[0].opcode_handler;
             if (actual_handler != expected_handler) {
-                self.err("[HANDLER] Handler mismatch for {s}: expected={*}, actual={*}", .{ opcode_name, expected_handler, actual_handler });
+                self.panic("[HANDLER] Handler mismatch for {s}: expected={*}, actual={*}", .{ opcode_name, expected_handler, actual_handler });
             }
         }
 
@@ -341,7 +339,7 @@ pub const Tracer = struct {
         const opcode_name = comptime @tagName(opcode);
         if (self.recent_opcodes.count > 0) {
             const last_idx = if (self.recent_opcodes.head == 0)
-                10 - 1  // RingBuffer.CAPACITY = 10
+                10 - 1 // RingBuffer.CAPACITY = 10
             else
                 self.recent_opcodes.head - 1;
             self.recent_opcodes.buffer[last_idx].gas_after = frame.gas_remaining;
@@ -360,7 +358,7 @@ pub const Tracer = struct {
         }
 
         if (next_cursor[0] != .opcode_handler or next_cursor[0].opcode_handler != next_handler) {
-            self.err("[SCHEDULE] Next handler mismatch at sched_idx={d}", .{self.schedule_index});
+            self.panic("[SCHEDULE] Next handler mismatch at sched_idx={d}", .{self.schedule_index});
         }
 
         if (next_cursor[0] == .opcode_handler) {
@@ -369,7 +367,7 @@ pub const Tracer = struct {
                 if (opcode_int <= 0xff) {
                     const expected_next_handler = @TypeOf(frame.*).opcode_handlers[opcode_int];
                     if (next_handler != expected_next_handler) {
-                        self.err("[HANDLER] Next handler mismatch: opcode=0x{x:0>2}, expected={*}, actual={*}", .{ opcode_int, expected_next_handler, next_handler });
+                        self.panic("[HANDLER] Next handler mismatch: opcode=0x{x:0>2}, expected={*}, actual={*}", .{ opcode_int, expected_next_handler, next_handler });
                     }
                 }
             }
@@ -575,7 +573,7 @@ pub const Tracer = struct {
 
                     var actual_opcode: u8 = 0;
                     if (mf.pc < mf.bytecode.len) actual_opcode = mf.bytecode[mf.pc];
-                    self.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{ mf.pc, actual_opcode, opcode_value, e });
+                    self.panic("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{ mf.pc, actual_opcode, opcode_value, e });
                     @panic("MinimalEvm execution error");
                 };
 
@@ -617,7 +615,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_ADD step failed: {any}", .{e});
+                            self.panic("PUSH_ADD step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -630,7 +628,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_MUL step failed: {any}", .{e});
+                            self.panic("PUSH_MUL step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -643,7 +641,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_SUB step failed: {any}", .{e});
+                            self.panic("PUSH_SUB step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -656,7 +654,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_DIV step failed: {any}", .{e});
+                            self.panic("PUSH_DIV step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -669,7 +667,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_AND step failed: {any}", .{e});
+                            self.panic("PUSH_AND step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -682,7 +680,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_OR step failed: {any}", .{e});
+                            self.panic("PUSH_OR step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -695,7 +693,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_XOR step failed: {any}", .{e});
+                            self.panic("PUSH_XOR step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -708,7 +706,7 @@ pub const Tracer = struct {
                 {
                     inline for (0..2) |_| {
                         evm.step() catch |e| {
-                            self.err("PUSH_MLOAD step failed: {any}", .{e});
+                            self.panic("PUSH_MLOAD step failed: {any}", .{e});
                             return;
                         };
                     }
@@ -725,7 +723,7 @@ pub const Tracer = struct {
                         const current_opcode = evm.getBytecode()[evm.getPC()];
                         self.debug("PUSH_MSTORE step {d}: executing opcode 0x{x:0>2} at PC {d}", .{ step_num + 1, current_opcode, evm.getPC() });
                         evm.step() catch |e| {
-                            self.err("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{ step_num + 1, current_opcode, e });
+                            self.panic("PUSH_MSTORE step {d} failed: opcode=0x{x:0>2}, error={any}", .{ step_num + 1, current_opcode, e });
                             return;
                         };
                     }
@@ -744,7 +742,7 @@ pub const Tracer = struct {
 
                     inline for (0..2) |step_num| {
                         if (evm.getPC() >= evm.getBytecode().len) {
-                            self.err("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{ step_num + 1, evm.getPC(), evm.getBytecode().len });
+                            self.panic("PUSH_MSTORE8 step {d}: PC out of bounds: {d} >= {d}", .{ step_num + 1, evm.getPC(), evm.getBytecode().len });
                             return;
                         }
 
@@ -752,7 +750,7 @@ pub const Tracer = struct {
                         self.debug("PUSH_MSTORE8 step {d}: executing opcode 0x{x:0>2} at PC {d}", .{ step_num + 1, current_opcode, evm.getPC() });
 
                         evm.step() catch |e| {
-                            self.err("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{ step_num + 1, current_opcode, e });
+                            self.panic("PUSH_MSTORE8 step {d} failed: opcode=0x{x:0>2}, error={any}", .{ step_num + 1, current_opcode, e });
                             return;
                         };
                     }
@@ -771,7 +769,7 @@ pub const Tracer = struct {
                     if (next_op_pc < bytecode.len and (bytecode[next_op_pc] == 0x56 or bytecode[next_op_pc] == 0x57)) {
                         inline for (0..2) |_| {
                             evm.step() catch |e| {
-                                self.err("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
+                                self.panic("JUMP_TO_STATIC_LOCATION step failed: {any}", .{e});
                                 return;
                             };
                         }
@@ -788,7 +786,7 @@ pub const Tracer = struct {
                     if (next_pc < bytecode.len and bytecode[next_pc] >= 0x60 and bytecode[next_pc] <= 0x7f) {
                         inline for (0..2) |_| {
                             evm.step() catch |e| {
-                                self.err("MULTI_PUSH_2 step failed: {any}", .{e});
+                                self.panic("MULTI_PUSH_2 step failed: {any}", .{e});
                                 return;
                             };
                         }
@@ -798,7 +796,7 @@ pub const Tracer = struct {
             .MULTI_PUSH_3 => {
                 inline for (0..3) |_| {
                     evm.step() catch |e| {
-                        self.err("MULTI_PUSH_3 step failed: {any}", .{e});
+                        self.panic("MULTI_PUSH_3 step failed: {any}", .{e});
                         return;
                     };
                 }
@@ -806,7 +804,7 @@ pub const Tracer = struct {
             .MULTI_POP_2 => {
                 inline for (0..2) |_| {
                     evm.step() catch |e| {
-                        self.err("MULTI_POP_2 step failed: {any}", .{e});
+                        self.panic("MULTI_POP_2 step failed: {any}", .{e});
                         return;
                     };
                 }
@@ -814,7 +812,7 @@ pub const Tracer = struct {
             .MULTI_POP_3 => {
                 inline for (0..3) |_| {
                     evm.step() catch |e| {
-                        self.err("MULTI_POP_3 step failed: {any}", .{e});
+                        self.panic("MULTI_POP_3 step failed: {any}", .{e});
                         return;
                     };
                 }
@@ -822,7 +820,7 @@ pub const Tracer = struct {
             .DUP2_MSTORE_PUSH, .DUP3_ADD_MSTORE, .SWAP1_DUP2_ADD, .PUSH_DUP3_ADD, .PUSH_ADD_DUP1, .MLOAD_SWAP1_DUP2, .ISZERO_JUMPI, .CALLVALUE_CHECK, .PUSH0_REVERT => {
                 inline for (0..3) |_| {
                     evm.step() catch |e| {
-                        self.err("Three-op fusion step failed: {any}", .{e});
+                        self.panic("Three-op fusion step failed: {any}", .{e});
                         return;
                     };
                 }
@@ -830,14 +828,14 @@ pub const Tracer = struct {
             .FUNCTION_DISPATCH => {
                 inline for (0..4) |_| {
                     evm.step() catch |e| {
-                        self.err("FUNCTION_DISPATCH step failed: {any}", .{e});
+                        self.panic("FUNCTION_DISPATCH step failed: {any}", .{e});
                         return;
                     };
                 }
             },
             else => {
                 // Unknown synthetic opcode should never happen in production
-                self.err("Unknown synthetic opcode: {x}", .{@intFromEnum(opcode)});
+                self.panic("Unknown synthetic opcode: {x}", .{@intFromEnum(opcode)});
                 @panic("Unknown synthetic opcode encountered");
             },
         }
@@ -882,10 +880,10 @@ pub const Tracer = struct {
                 log.err("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{ evm_stack_size, frame_stack_size });
                 // Show top elements for debugging
                 if (evm_stack_size > 0) {
-                    self.err("  MinimalEvm top: 0x{x}", .{(evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1]});
+                    self.panic("  MinimalEvm top: 0x{x}", .{(evm.getCurrentFrame() orelse unreachable).stack.items[evm_stack_size - 1]});
                 }
                 if (frame_stack_size > 0) {
-                    self.err("  Frame top: 0x{x}", .{frame.stack.peek_unsafe()});
+                    self.panic("  Frame top: 0x{x}", .{frame.stack.peek_unsafe()});
                 }
                 @panic("Stack divergence");
             } else if (evm_stack_size > 0) {
@@ -987,38 +985,11 @@ pub const Tracer = struct {
         log.debug(format, args);
     }
 
-    pub fn err(self: *Tracer, comptime format: []const u8, args: anytype) void {
+    pub fn panic(self: *Tracer, comptime format: []const u8, args: anytype) noreturn {
+        const builtin = @import("builtin");
         log.err(format, args);
 
         // Pretty print the ring buffer on error for debugging
-        if (self.config.enabled) {
-            if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
-                defer self.allocator.free(output);
-                log.err("{s}", .{output});
-            } else |_| {
-                // If pretty print fails, at least show the count
-                log.err("Ring buffer has {} recent instructions", .{self.recent_opcodes.count});
-            }
-        }
-
-        @panic("Tracer error - see log above");
-    }
-
-    pub fn warn(self: *Tracer, comptime format: []const u8, args: anytype) void {
-        _ = self;
-        log.warn(format, args);
-    }
-
-    pub fn info(self: *Tracer, comptime format: []const u8, args: anytype) void {
-        _ = self;
-        log.info(format, args);
-    }
-
-    pub fn throwError(self: *Tracer, comptime format: []const u8, args: anytype) noreturn {
-        const builtin = @import("builtin");
-        log.err("FATAL: " ++ format, args);
-
-        // Pretty print the ring buffer on fatal error for debugging
         if (self.config.enabled) {
             if (self.recent_opcodes.prettyPrint(self.allocator)) |output| {
                 defer self.allocator.free(output);
@@ -1036,157 +1007,44 @@ pub const Tracer = struct {
         }
     }
 
+    pub fn warn(self: *Tracer, comptime format: []const u8, args: anytype) void {
+        if (!self.config.enabled) return;
+        log.warn(format, args);
+    }
+
+    pub fn info(self: *Tracer, comptime format: []const u8, args: anytype) void {
+        if (!self.config.enabled) return;
+        log.info(format, args);
+    }
+
+
     // ============================================================================
     // EVM LIFECYCLE EVENTS
     // ============================================================================
-
-    pub fn onFrameStart(self: *Tracer, code_len: usize, gas: u64, depth: u16) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[EVM] Frame execution started: code_len={}, gas={}, depth={}", .{ code_len, gas, depth });
-    }
-
-    pub fn onFrameComplete(self: *Tracer, gas_left: u64, output_len: usize) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[EVM] Frame execution completed: gas_left={}, output_len={}", .{ gas_left, output_len });
-    }
-
-    pub fn onAccountDelegation(self: *Tracer, account: []const u8, delegated: []const u8) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[EVM] Account {x} has delegation to {x}", .{ account, delegated });
-    }
-
-    pub fn onEmptyAccountAccess(self: *Tracer) void {
-        _ = self;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[EVM] Empty account access", .{});
-    }
-
-    /// Called when arena allocator is initialized
-    pub fn onArenaInit(self: *Tracer, initial_capacity: usize, max_capacity: usize, growth_factor: u32) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[ARENA] Initialized: initial={d}, max={d}, growth={d}%", .{ initial_capacity, max_capacity, growth_factor });
-    }
-
-    /// Event: Call operation started
-    pub fn onCallStart(self: *Tracer, call_type: []const u8, gas: i64, to: anytype, value: u256) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Call started: type={s} gas={d} value={d}", .{ call_type, gas, value });
-        _ = to;
-    }
-
-    /// Event: EVM initialization started
-    pub fn onEvmInit(self: *Tracer, gas_price: u256, origin: anytype, hardfork: []const u8) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] EVM init: gas_price={d} hardfork={s}", .{ gas_price, hardfork });
-        _ = origin;
-    }
-
-    /// Called when arena is reset
-    pub fn onArenaReset(self: *Tracer, mode: []const u8, capacity_before: usize, capacity_after: usize) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) log.debug("[ARENA] Reset ({s}): capacity {d} -> {d}", .{ mode, capacity_before, capacity_after });
-    }
-
-    /// Event: Beacon root update processing
-    pub fn onBeaconRootUpdate(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        if (!self.config.enabled) return;
-        if (error_val) |e| {
-            log.debug("[TRACER] Beacon root update failed: {}", .{e});
-        } else {
-            log.debug("[TRACER] Beacon root update: success={}", .{success});
-        }
-    }
-
-    /// Event: Call operation completed
-    pub fn onCallComplete(self: *Tracer, success: bool, gas_left: i64, output_len: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Call complete: success={} gas_left={d} output_len={d}", .{ success, gas_left, output_len });
-    }
-
-    /// Event: Preflight check for call
-    pub fn onCallPreflight(self: *Tracer, call_type: []const u8, result: []const u8) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Call preflight: type={s} result={s}", .{ call_type, result });
-    }
-
-    /// Event: Historical block hash update processing
-    pub fn onHistoricalBlockHashUpdate(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        if (!self.config.enabled) return;
-        if (error_val) |e| {
-            log.debug("[TRACER] Historical block hash update failed: {}", .{e});
-        } else {
-            log.debug("[TRACER] Historical block hash update: success={}", .{success});
-        }
-    }
-
-    /// Event: Code retrieval
-    pub fn onCodeRetrieval(self: *Tracer, address: anytype, code_len: usize, is_empty: bool) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Code retrieval: len={d} empty={}", .{ code_len, is_empty });
-        _ = address;
-    }
-
-    /// Event: Validator deposits processing
-    pub fn onValidatorDeposits(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        if (!self.config.enabled) return;
-        if (error_val) |e| {
-            log.debug("[TRACER] Validator deposits failed: {}", .{e});
-        } else {
-            log.debug("[TRACER] Validator deposits: success={}", .{success});
-        }
-    }
-
-    /// Called when an allocation is made
-    pub fn onArenaAlloc(self: *Tracer, size: usize, alignment: usize, current_capacity: usize) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug)) {
-            log.debug("[ARENA] Alloc: size={d} align={d} capacity={d}", .{ size, alignment, current_capacity });
-        }
-    }
-
-    /// Event: Frame bytecode initialization
-    pub fn onFrameBytecodeInit(self: *Tracer, bytecode_len: usize, success: bool, error_val: ?anyerror) void {
-        if (!self.config.enabled) return;
-        if (error_val) |e| {
-            log.debug("[TRACER] Frame bytecode init failed: len={d} error={}", .{ bytecode_len, e });
-        } else {
-            log.debug("[TRACER] Frame bytecode init: len={d} success={}", .{ bytecode_len, success });
-        }
-    }
-
-    /// Event: Validator withdrawals processing
-    pub fn onValidatorWithdrawals(self: *Tracer, success: bool, error_val: ?anyerror) void {
-        if (!self.config.enabled) return;
-        if (error_val) |e| {
-            log.debug("[TRACER] Validator withdrawals failed: {}", .{e});
-        } else {
-            log.debug("[TRACER] Validator withdrawals: success={}", .{success});
-        }
-    }
-
-    /// Called when arena grows to accommodate new allocations
-    pub fn onArenaGrow(self: *Tracer, old_capacity: usize, new_capacity: usize, requested_size: usize) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            log.debug("[ARENA] Growing: {d} -> {d} bytes (requested={d})", .{ old_capacity, new_capacity, requested_size });
-        }
-    }
-
-    /// Called when allocation fails
-    pub fn onArenaAllocFailed(self: *Tracer, size: usize, current_capacity: usize, max_capacity: usize) void {
-        if (!self.config.enabled) return;
-        const builtin = @import("builtin");
-        if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-            log.warn("[ARENA] Allocation failed: size={d}, current={d}, max={d}", .{ size, current_capacity, max_capacity });
-        }
-    }
+    
+    // Generate lifecycle event handlers for this Tracer type
+    pub const LifecycleHandlers = lifecycle_events.Handlers(Tracer);
+    
+    // Forward all lifecycle event methods to the handlers
+    pub const onFrameStart = LifecycleHandlers.onFrameStart;
+    pub const onFrameComplete = LifecycleHandlers.onFrameComplete;
+    pub const onAccountDelegation = LifecycleHandlers.onAccountDelegation;
+    pub const onEmptyAccountAccess = LifecycleHandlers.onEmptyAccountAccess;
+    pub const onArenaInit = LifecycleHandlers.onArenaInit;
+    pub const onCallStart = LifecycleHandlers.onCallStart;
+    pub const onEvmInit = LifecycleHandlers.onEvmInit;
+    pub const onArenaReset = LifecycleHandlers.onArenaReset;
+    pub const onBeaconRootUpdate = LifecycleHandlers.onBeaconRootUpdate;
+    pub const onCallComplete = LifecycleHandlers.onCallComplete;
+    pub const onCallPreflight = LifecycleHandlers.onCallPreflight;
+    pub const onHistoricalBlockHashUpdate = LifecycleHandlers.onHistoricalBlockHashUpdate;
+    pub const onCodeRetrieval = LifecycleHandlers.onCodeRetrieval;
+    pub const onValidatorDeposits = LifecycleHandlers.onValidatorDeposits;
+    pub const onArenaAlloc = LifecycleHandlers.onArenaAlloc;
+    pub const onFrameBytecodeInit = LifecycleHandlers.onFrameBytecodeInit;
+    pub const onValidatorWithdrawals = LifecycleHandlers.onValidatorWithdrawals;
+    pub const onArenaGrow = LifecycleHandlers.onArenaGrow;
+    pub const onArenaAllocFailed = LifecycleHandlers.onArenaAllocFailed;
 
     /// Assert with error message - replaces std.debug.assert
     pub fn assert(self: *Tracer, condition: bool, comptime message: []const u8) void {
@@ -1211,70 +1069,17 @@ pub const Tracer = struct {
         }
     }
 
-    pub fn onBytecodeAnalysisStart(self: *Tracer, code_len: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Bytecode analysis start: len={d}", .{code_len});
-    }
-
-    pub fn onBytecodeAnalysisComplete(self: *Tracer, validated_up_to: usize, opcode_count: usize, jumpdest_count: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Bytecode analysis complete: validated={d} opcodes={d} jumpdests={d}", .{ validated_up_to, opcode_count, jumpdest_count });
-    }
-
-    /// Called when an invalid opcode is found during analysis
-    pub fn onInvalidOpcode(self: *Tracer, pc: usize, opcode: u8) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Invalid opcode: pc={d} opcode=0x{x:0>2}", .{ pc, opcode });
-    }
-
-    /// Called when a JUMPDEST is found during analysis
-    pub fn onJumpdestFound(self: *Tracer, pc: usize, count: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] JUMPDEST found: pc={d} total={d}", .{ pc, count });
-    }
-
-    /// Called when dispatch schedule build starts
-    pub fn onScheduleBuildStart(self: *Tracer, bytecode_len: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Schedule build start: bytecode_len={d}", .{bytecode_len});
-    }
-
-    /// Called when a fusion optimization is detected
-    pub fn onFusionDetected(self: *Tracer, pc: usize, fusion_type: []const u8, instruction_count: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Fusion detected: pc={d} type={s} count={d}", .{ pc, fusion_type, instruction_count });
-    }
-
-    /// Called when an invalid static jump is detected
-    pub fn onInvalidStaticJump(self: *Tracer, jump_pc: usize, target_pc: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Invalid static jump: from={d} to={d}", .{ jump_pc, target_pc });
-    }
-
-    /// Called when a static jump is resolved
-    pub fn onStaticJumpResolved(self: *Tracer, jump_pc: usize, target_pc: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Static jump resolved: from={d} to={d}", .{ jump_pc, target_pc });
-    }
-
-    /// Called when a truncated PUSH instruction is detected
-    pub fn onTruncatedPush(self: *Tracer, pc: usize, push_size: u8, available: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Truncated PUSH: pc={d} size={d} available={d}", .{ pc, push_size, available });
-    }
-
-    /// Called when dispatch schedule build completes
-    pub fn onScheduleBuildComplete(self: *Tracer, item_count: usize, fusion_count: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Schedule build complete: items={d} fusions={d}", .{ item_count, fusion_count });
-    }
-
-    /// Called when a jump table is created
-    pub fn onJumpTableCreated(self: *Tracer, jumpdest_count: usize) void {
-        if (!self.config.enabled) return;
-        log.debug("[TRACER] Jump table created: jumpdest_count={d}", .{jumpdest_count});
-    }
+    pub const onBytecodeAnalysisStart = LifecycleHandlers.onBytecodeAnalysisStart;
+    pub const onBytecodeAnalysisComplete = LifecycleHandlers.onBytecodeAnalysisComplete;
+    pub const onInvalidOpcode = LifecycleHandlers.onInvalidOpcode;
+    pub const onJumpdestFound = LifecycleHandlers.onJumpdestFound;
+    pub const onScheduleBuildStart = LifecycleHandlers.onScheduleBuildStart;
+    pub const onFusionDetected = LifecycleHandlers.onFusionDetected;
+    pub const onInvalidStaticJump = LifecycleHandlers.onInvalidStaticJump;
+    pub const onStaticJumpResolved = LifecycleHandlers.onStaticJumpResolved;
+    pub const onTruncatedPush = LifecycleHandlers.onTruncatedPush;
+    pub const onScheduleBuildComplete = LifecycleHandlers.onScheduleBuildComplete;
+    pub const onJumpTableCreated = LifecycleHandlers.onJumpTableCreated;
 };
-
 
 // ============================================================================
