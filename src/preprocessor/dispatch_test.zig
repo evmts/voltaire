@@ -701,10 +701,6 @@ fn createTestHandlersWithSynthetic() [256]*const TestFrame.OpcodeHandler {
     handlers[@intFromEnum(Opcode.JUMPDEST)] = &TestTypes.mockJumpdest;
     handlers[@intFromEnum(Opcode.PC)] = &TestTypes.mockPc;
 
-    // TODO: Add synthetic opcode handlers when they're implemented
-    // handlers[synthetic_push_add_opcode] = mockPushAddFusion;
-    // handlers[synthetic_push_mul_opcode] = mockPushMulFusion;
-
     return handlers;
 }
 

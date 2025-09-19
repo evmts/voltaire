@@ -11,7 +11,6 @@ const dispatch_jump_table_builder = @import("dispatch_jump_table_builder.zig");
 const dispatch_opcode_data = @import("dispatch_opcode_data.zig");
 const dispatch_pretty_print = @import("dispatch_pretty_print.zig");
 
-// TODO break this up into smaller files
 pub fn Preprocessor(comptime FrameType: type) type {
     return struct {
         const Self = @This();
