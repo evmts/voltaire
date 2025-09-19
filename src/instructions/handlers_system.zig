@@ -158,14 +158,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Store return data for future RETURNDATASIZE/RETURNDATACOPY
-            // Free previous output if any
-            // No need to free when using arena allocator - it's reset after each call
-            // Allocate new output
-            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
-                return Error.AllocationError;
-            };
-            @memcpy(self.output, result.output);
+            // Return data is now managed by EVM's return_data field
+            // which is automatically updated after inner_call
 
             // Update caller gas: subtract only gas actually used by callee
             const provided_gas_call: u64 = gas_u64;
@@ -416,14 +410,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Store return data for future RETURNDATASIZE/RETURNDATACOPY
-            // Free previous output if any
-            // No need to free when using arena allocator - it's reset after each call
-            // Allocate new output
-            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
-                return Error.AllocationError;
-            };
-            @memcpy(self.output, result.output);
+            // Return data is now managed by EVM's return_data field
+            // which is automatically updated after inner_call
 
             // Update caller gas: subtract only gas actually used by callee
             const provided_gas_delegate: u64 = gas_u64;
@@ -548,14 +536,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Store return data for future RETURNDATASIZE/RETURNDATACOPY
-            // Free previous output if any
-            // No need to free when using arena allocator - it's reset after each call
-            // Allocate new output
-            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
-                return Error.AllocationError;
-            };
-            @memcpy(self.output, result.output);
+            // Return data is now managed by EVM's return_data field
+            // which is automatically updated after inner_call
 
             // Update caller gas: subtract only gas actually used by callee
             const provided_gas_sc: u64 = gas_u64;
@@ -775,23 +757,20 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
-            // Extract return data from memory and store it
+            // Extract return data from memory and store it in thread-local storage
             if (size_usize > 0) {
                 const return_data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
                     return Error.OutOfBounds;
                 };
-                // Inline setOutput logic: free existing output if any
-                // No need to free when using arena allocator - it's reset after each call
-                // Set new output
+                // Allocate and copy output to thread-local storage
                 const new_output = self.getAllocator().alloc(u8, return_data.len) catch {
                     return Error.AllocationError;
                 };
                 @memcpy(new_output, return_data);
-                self.output = new_output;
+                FrameType.frame_output = new_output;
             } else {
-                // Empty return data - inline setOutput logic
-                // No need to free when using arena allocator - it's reset after each call
-                self.output = &.{};
+                // Empty return data
+                FrameType.frame_output = &.{};
             }
 
             // Return indicates successful execution
@@ -831,22 +810,20 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity
             self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
-            // Extract revert data from memory and store it
+            // Extract revert data from memory and store it in thread-local storage
             if (size_usize > 0) {
                 const revert_data = self.memory.get_slice(@as(u24, @intCast(offset_usize)), @as(u24, @intCast(size_usize))) catch {
                     return Error.OutOfBounds;
                 };
-                // Free previous output if any
-                // No need to free when using arena allocator - it's reset after each call
-                // Store the revert data
-                self.output = self.getAllocator().alloc(u8, revert_data.len) catch {
+                // Allocate and copy output to thread-local storage
+                const revert_output = self.getAllocator().alloc(u8, revert_data.len) catch {
                     return Error.AllocationError;
                 };
-                @memcpy(self.output, revert_data);
+                @memcpy(revert_output, revert_data);
+                FrameType.frame_output = revert_output;
             } else {
                 // Empty revert data
-                // No need to free when using arena allocator - it's reset after each call
-                self.output = &[_]u8{};
+                FrameType.frame_output = &[_]u8{};
             }
 
             // Reduce log noise: no verbose REVERT logging
@@ -1105,12 +1082,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Store return data for future RETURNDATASIZE/RETURNDATACOPY
-            // No need to free when using arena allocator - it's reset after each call
-            self.output = self.getAllocator().alloc(u8, result.output.len) catch {
-                return Error.AllocationError;
-            };
-            @memcpy(self.output, result.output);
+            // Return data is now managed by EVM's return_data field
+            // which is automatically updated after inner_call
 
             // Update gas remaining
             self.gas_remaining = @as(@TypeOf(self.gas_remaining), @intCast(result.gas_left));

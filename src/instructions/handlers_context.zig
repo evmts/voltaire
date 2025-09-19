@@ -507,8 +507,9 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn returndatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             log.before_instruction(self, .RETURNDATASIZE);
             const dispatch = Dispatch{ .cursor = cursor };
-            // Return data is stored in the frame's output field after a call
-            const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(self.output.len))));
+            // Return data from the last call is stored in the EVM's return_data field
+            const return_data = self.getEvm().get_return_data();
+            const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             {
                 self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
             }
@@ -542,8 +543,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset_usize = @as(usize, @intCast(offset));
             const length_usize = @as(usize, @intCast(length));
 
-            // Return data is stored in the frame's output field after a call
-            const return_data = self.output;
+            // Return data from the last call is stored in the EVM's return_data field
+            const return_data = self.getEvm().get_return_data();
 
             // Check if we're trying to read past the end of return data
             if (offset_usize > return_data.len or

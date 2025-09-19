@@ -1050,11 +1050,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                 error.REVERT => {
                     execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
                     const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                    const out_len = frame.output.len;
-                    const out_copy = if (out_len > 0) blk: {
+                    // Get output from thread-local storage
+                    const output_data = Frame.frame_output;
+                    const out_copy = if (output_data.len > 0) blk: {
                         // Handle allocation errors by reverting snapshot and returning failure
-                        const buf = try self.allocator.alloc(u8, out_len);
-                        @memcpy(buf, frame.output);
+                        const buf = try self.allocator.alloc(u8, output_data.len);
+                        @memcpy(buf, output_data);
                         break :blk buf;
                     } else &[_]u8{};
                     var result = CallResult.revert_with_data(gas_left, out_copy);
@@ -1078,11 +1079,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
 
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-            const out_items = frame.output;
-            const out_buf = if (out_items.len > 0) blk: {
+            // Get output from thread-local storage (set by RETURN/REVERT handlers)
+            const output_data = Frame.frame_output;
+            const out_buf = if (output_data.len > 0) blk: {
                 // Handle allocation errors by reverting and returning appropriate error
-                const b = try self.allocator.alloc(u8, out_items.len);
-                @memcpy(b, out_items);
+                const b = try self.allocator.alloc(u8, output_data.len);
+                @memcpy(b, output_data);
                 break :blk b;
             } else &.{};
 

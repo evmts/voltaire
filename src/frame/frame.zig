@@ -64,6 +64,11 @@ pub fn Frame(comptime _config: FrameConfig) type {
             SelfDestruct,
         };
 
+        /// Output data from frame execution (for RETURN and REVERT)
+        /// This is stored separately from the frame and returned via thread-local storage
+        /// to avoid storing it on the frame struct
+        pub threadlocal var frame_output: []const u8 = &.{};
+
         /// Opcode handlers are expected to recursively dispatch the next opcode if they themselves don't error or return
         /// Takes cursor pointer with jump table available through dispatch metadata when needed
         pub const OpcodeHandler = *const fn (frame: *Self, cursor: [*]const Dispatch.Item) Error!noreturn;
@@ -154,8 +159,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
         // These fields are accessed together during storage ops and execution
         u256_constants: []const WordType, // 16B - Constants from dispatch (PUSH9-32)
         contract_address: Address, // 20B - Current contract (storage ops, ADDRESS)
-        // TODO: We should be able to allocate this when we return
-        output: []u8, // 16B - Output data (RETURN/REVERT/calls)
+        // Output is now returned via thread-local storage, not stored on frame
         // Total: 64 bytes
 
         // CACHE LINE 3+ (128+ bytes) - COLD PATH
@@ -206,7 +210,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .contract_address = Address.ZERO_ADDRESS,
                 .u256_constants = &[_]WordType{}, // Will be set during interpret
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
-                .output = &[_]u8{},
                 .caller = caller,
                 .value = value,
                 .calldata_slice = calldata_input,
@@ -218,7 +221,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
         }
         /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            self.getTracer().debug("Frame.deinit: Starting cleanup, output_len={}", .{self.output.len});
+            self.getTracer().debug("Frame.deinit: Starting cleanup", .{});
             self.stack.deinit(allocator);
             self.memory.deinit(allocator);
             self.getTracer().debug("Frame.deinit: Cleanup complete", .{});
@@ -435,11 +438,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 try new_memory.set_data(0, bytes);
             }
 
-            const new_output = if (self.output.len > 0) blk: {
-                const output_copy = allocator.alloc(u8, self.output.len) catch return Error.AllocationError;
-                @memcpy(output_copy, self.output);
-                break :blk output_copy;
-            } else &[_]u8{};
 
             self.getTracer().debug("Frame.copy: Deep copy complete", .{});
             return Self{
@@ -453,7 +451,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .contract_address = self.contract_address,
                 .u256_constants = self.u256_constants,
                 .jump_table = self.jump_table,
-                .output = new_output,
                 // Cache line 3+ - COLD PATH
                 .caller = self.caller,
                 .value = self.value,
@@ -667,13 +664,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 try writer.print("\n", .{});
             }
 
-            if (self.output.len > 0) {
-                try writer.print("\n{s}📤 Output [{d} bytes]:{s} ", .{ Colors.green, self.output.len, Colors.reset });
-                const output_preview_len = @min(self.output.len, 32);
-                for (self.output[0..output_preview_len]) |byte| try writer.print("{x:0>2}", .{byte});
-                if (self.output.len > 32) try writer.print("...");
-                try writer.print("\n", .{});
-            }
 
             try writer.print("\n{s}{s}════════════════════════════════════════════════════════════════{s}\n", .{ Colors.dim, Colors.cyan, Colors.reset });
 
