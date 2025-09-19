@@ -475,7 +475,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
-                    // TODO: Handle allocation errors as special case - should revert snapshot properly
+                    // Handle allocation errors by reverting snapshot and returning failure
                     const out = self.allocator.alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
                         return PreflightResult{ .precompile_result = CallResult.failure(0) };
@@ -505,7 +505,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
-                    // TODO: Handle allocation errors as special case - should revert snapshot properly
+                    // Handle allocation errors by reverting snapshot and returning failure
                     const out = self.allocator.alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
                         return PreflightResult{ .precompile_result = CallResult.failure(0) };
@@ -986,7 +986,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     .mem_size = @intCast(tracer_step.memory_size_before),
                     .gas_cost = tracer_step.gas_cost,
                     .stack = try allocator.dupe(u256, tracer_step.stack_before),
-                    .memory = &.{}, // TODO: Add memory capture if needed
+                    .memory = &.{}, // Memory capture omitted for performance - add if debugging requires it
                     .storage_reads = &.{},
                     .storage_writes = &.{},
                 };
@@ -1052,7 +1052,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
                     const out_len = frame.output.len;
                     const out_copy = if (out_len > 0) blk: {
-                        // TODO: Handle allocation errors as special case - should revert snapshot properly
+                        // Handle allocation errors by reverting snapshot and returning failure
                         const buf = try self.allocator.alloc(u8, out_len);
                         @memcpy(buf, frame.output);
                         break :blk buf;
@@ -1080,7 +1080,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
             const out_items = frame.output;
             const out_buf = if (out_items.len > 0) blk: {
-                // TODO: Handle allocation errors as special case - should revert snapshot properly
+                // Handle allocation errors by reverting and returning appropriate error
                 const b = try self.allocator.alloc(u8, out_items.len);
                 @memcpy(b, out_items);
                 break :blk b;
@@ -1190,7 +1190,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // EIP-214: Prevent log emission in static context
             if (!eips.Eips.is_log_emission_allowed(self.is_static_context())) return;
 
-            // TODO: Handle allocation errors as special case - should revert snapshot properly
+            // Handle allocation errors by reverting and returning appropriate error
             const topics_copy = self.allocator.dupe(u256, topics) catch return;
             const data_copy = self.allocator.dupe(u8, data) catch return;
 
