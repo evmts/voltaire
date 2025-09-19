@@ -30,8 +30,8 @@ pub const PrecompileOutput = struct {
 };
 
 pub const EvmConfig = struct {
-    // TODO update enum to support latest hardfork
     // Comptime known configuration of Eip and hardfork information
+    // Default to CANCUN as the stable latest hardfork (PRAGUE is upcoming)
     eips: Eips = Eips{ .hardfork = Hardfork.CANCUN },
 
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)

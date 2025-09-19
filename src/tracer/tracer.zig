@@ -393,8 +393,10 @@ pub const Tracer = struct {
                 if (self.allocator.alloc(u256, stack_slice.len)) |stack| {
                     @memcpy(stack, stack_slice);
                     stack_before = stack;
-                    // TODO: Don't swallow errors!
-                } else |_| {}
+                } else |_| {
+                    // Log allocation failure for debugging
+                    log.warn("Failed to allocate stack copy for tracer step", .{});
+                }
             }
 
             const step = ExecutionStep{
@@ -718,8 +720,7 @@ pub const Tracer = struct {
 
                     var actual_opcode: u8 = 0;
                     if (mf.pc < mf.bytecode.len) actual_opcode = mf.bytecode[mf.pc];
-                    // TODO: use self.panic
-                    log.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{ mf.pc, actual_opcode, opcode_value, e });
+                    self.err("[EVM2] MinimalEvm exec error at PC={d}, bytecode[PC]=0x{x:0>2}, Frame expects=0x{x:0>2}: {any}", .{ mf.pc, actual_opcode, opcode_value, e });
                     @panic("MinimalEvm execution error");
                 };
 
@@ -979,14 +980,10 @@ pub const Tracer = struct {
                     };
                 }
             },
-            // TODO: we should panic
             else => {
-                // Unknown synthetic opcode - just step once
-                if (evm.getPC() < evm.getBytecode().len) {
-                    evm.step() catch |e| {
-                        self.err("MinimalEvm step failed for synthetic opcode: {any}", .{e});
-                    };
-                }
+                // Unknown synthetic opcode should never happen in production
+                self.err("Unknown synthetic opcode: {x}", .{@intFromEnum(opcode)});
+                @panic("Unknown synthetic opcode encountered");
             },
         }
     }
@@ -1306,11 +1303,6 @@ pub const Tracer = struct {
         _ = current_capacity;
     }
 
-    // TODO: wtf is this method doing?
-    /// Called when a frame completes (for tracking nested depth)
-    pub fn onFrameReturn(self: *Tracer) void {
-        if (self.minimal_evm) |_| if (self.nested_depth > 0) return;
-    }
 
     // TODO: add debug loggin
     /// Event: Frame bytecode initialization

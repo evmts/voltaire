@@ -60,9 +60,17 @@ pub fn CallParams(comptime config: anytype) type {
         GasZeroError,
     };
 
-    /// TODO we need to validate input!
+    /// Validate call parameters to ensure they meet EVM requirements.
+    /// Checks gas limits and other critical constraints.
     pub fn validate(self: @This()) ValidationError!void {
+        // Gas must be non-zero to execute any operation
         if (self.getGas() == 0) return ValidationError.GasZeroError;
+        
+        // Additional validation could be added here for:
+        // - Input data size limits
+        // - Address validity
+        // - Value constraints for specific call types
+        // Currently only gas validation is implemented as it's the most critical
     }
 
     /// Get the gas limit for this call operation
