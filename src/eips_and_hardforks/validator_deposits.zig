@@ -10,7 +10,7 @@ const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const Database = @import("../storage/database.zig").Database;
-const BlockInfo = @import("../block/block_info.zig").DefaultBlockInfo;
+const BlockInfo = @import("../block/block_info.zig").BlockInfo(.{});
 const log = @import("../log.zig");
 
 /// EIP-6110 deposit contract address
