@@ -243,7 +243,7 @@ test "EIP-2929: warm/cold access - BALANCE opcode gas costs" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("../block/block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../block/block_info.zig").BlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -288,7 +288,7 @@ test "EIP-2929: warm/cold access - SLOAD opcode gas costs" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("../block/block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../block/block_info.zig").BlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -326,7 +326,7 @@ test "EIP-2929: transaction pre-warming" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("../block/block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../block/block_info.zig").BlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -371,7 +371,7 @@ test "EIP-2929: SELFBALANCE always warm" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("../block/block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../block/block_info.zig").BlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -419,7 +419,7 @@ test "EIP-2929: access list cleared between transactions" {
     var db = @import("database.zig").Database.init(allocator);
     defer db.deinit();
 
-    const block_info = @import("../block/block_info.zig").DefaultBlockInfo{
+    const block_info = @import("../block/block_info.zig").BlockInfo{
         .number = 1,
         .timestamp = 1000,
         .difficulty = 100,
@@ -694,7 +694,7 @@ test "AccessList - empty pre-warm list" {
 const Evm = @import("../evm.zig").Evm;
 const Database = @import("database.zig").Database;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-const BlockInfo = @import("../block/block_info.zig").DefaultBlockInfo;
+const BlockInfo = @import("../block/block_info.zig").BlockInfo;
 const TransactionContext = @import("../block/transaction_context.zig").TransactionContext;
 const Hardfork = @import("../eips_and_hardforks/eips.zig").Hardfork;
 // const FrameInterpreter = @import("../evm/frame_interpreter.zig").FrameInterpreter;

@@ -512,7 +512,7 @@ fn createTestEvm(allocator: std.mem.Allocator) !TestEvm {
 
     // Using database directly now
     const evm_ptr = try allocator.create(@import("../root.zig").DefaultEvm);
-    const block_info = @import("../block/block_info.zig").DefaultBlockInfo.init();
+    const block_info = @import("../block/block_info.zig").BlockInfo.init();
     const tx_context = @import("../block/transaction_context.zig").TransactionContext{
         .gas_limit = 1_000_000,
         .coinbase = primitives.Address.ZERO_ADDRESS,
