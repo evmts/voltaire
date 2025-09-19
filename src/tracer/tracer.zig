@@ -1466,7 +1466,6 @@ pub const Tracer = struct {
     }
 };
 
-// TODO: This should just be a method on UnifiedOpcode opcode.name()
 // Helper function to get opcode name
 fn getOpcodeName(opcode: u8) []const u8 {
     return switch (opcode) {
