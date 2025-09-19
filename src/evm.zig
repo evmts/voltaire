@@ -1,24 +1,8 @@
-//! Transaction-level EVM execution and state management.
-//!
-//! The EVM orchestrates contract execution, managing:
-//! - Call depth tracking and nested execution contexts
-//! - State journaling for transaction reverts
-//! - Gas accounting and metering
-//! - Contract creation (CREATE/CREATE2)
-//! - Cross-contract calls (CALL/DELEGATECALL/STATICCALL)
-//! - Integration with external operations for environment queries
-//!
-//! This module provides the entry point for all EVM operations,
-//! coordinating between Frames, the Planner, and state storage.
-//!
-//! The EVM utilizes a Preanalysis phase to analyze bytecode and produce optimized execution data structures
-//! The EVM utilizes the Frame struct to track the evm state and implement all low level execution details
-//! EVM passes itself as an *anyopaque pointer to Frame for accessing external data and executing inner calls
 const std = @import("std");
 const log = @import("log.zig");
 const primitives = @import("primitives");
 const eips = @import("eips_and_hardforks/eips.zig");
-const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo; // Default for backward compatibility
+const BlockInfo = @import("block/block_info.zig").BlockInfo(.{});
 const Database = @import("storage/database.zig").Database;
 const Account = @import("storage/database_interface_account.zig").Account;
 const SelfDestruct = @import("storage/self_destruct.zig").SelfDestruct;
@@ -367,7 +351,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // IMPORTANT: Reinitialize logs after toOwnedSlice() to maintain allocator reference
             // toOwnedSlice() takes ownership and leaves the ArrayList in an undefined state
             self.logs = .empty;
-            
+
             // Extract self-destruct records if self-destruct is enabled
             // EIP-6780 restricts SELFDESTRUCT behavior in Cancun+
             if (comptime config.eips.eip_6780_selfdestruct_same_transaction_only()) {
@@ -375,12 +359,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             } else {
                 result.selfdestructs = &.{};
             }
-            
+
             // Extract access list data before clearing
             result.accessed_addresses = self.allocator.dupe(primitives.Address, self.access_list.addresses.keys()) catch {
                 return CallResult.failure_with_error(0, "Out of memory");
             };
-            
+
             // Convert StorageKey to StorageAccess (same fields, different type)
             const storage_keys = self.access_list.storage_slots.keys();
             const storage_access = self.allocator.alloc(call_result_module.StorageAccess, storage_keys.len) catch {
@@ -390,7 +374,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 storage_access[i] = .{ .address = key.address, .slot = key.slot };
             }
             result.accessed_storage = storage_access;
-            
+
             // Reset internal accumulators (logs and access data already transferred)
             self.self_destruct.clear();
             self.access_list.clear();
