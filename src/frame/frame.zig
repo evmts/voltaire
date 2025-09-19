@@ -38,8 +38,8 @@ const dispatch_cache = @import("dispatch_cache.zig");
 ///
 /// The Frame is parameterized by compile-time configuration to enable
 /// optimal code generation and platform-specific optimizations.
-pub fn Frame(comptime config: FrameConfig) type {
-    comptime config.validate();
+pub fn Frame(comptime _config: FrameConfig) type {
+    comptime _config.validate();
 
     return struct {
         const Self = @This();
@@ -69,9 +69,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub const OpcodeHandler = *const fn (frame: *Self, cursor: [*]const Dispatch.Item) Error!noreturn;
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
         pub const Dispatch = dispatch_mod.Dispatch(Self);
-        /// TODO: Rename frame_config config
-        /// The config passed into Frame(config)
-        pub const frame_config = config;
+        /// The config passed into Frame(_config)
+        pub const config = _config;
 
         /// TODO: Move this to static method on Dispatch struct
         /// Returns the appropriate tail call modifier based on the target architecture.
