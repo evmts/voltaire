@@ -93,7 +93,12 @@ pub const EvmConfig = struct {
 
     /// Block information configuration
     /// Controls the types used for difficulty and base_fee fields
-    block_info_config: BlockInfoConfig = .{},
+    /// Default uses u64 for both difficulty and base_fee for efficiency
+    block_info_config: BlockInfoConfig = .{
+        .DifficultyType = u64,
+        .BaseFeeType = u64,
+        .use_compact_types = false,
+    },
 
     /// Custom opcode handler overrides
     /// These will override the default handlers in frame_handlers.zig
@@ -421,8 +426,10 @@ test "EvmConfig - tracer type handling" {
 test "EvmConfig - block info config integration" {
     const config = EvmConfig{};
 
-    // Default block info config should be initialized
-    try testing.expectEqual(BlockInfoConfig{}, config.block_info_config);
+    // Default block info config should be initialized with u64 types
+    try testing.expectEqual(u64, config.block_info_config.DifficultyType);
+    try testing.expectEqual(u64, config.block_info_config.BaseFeeType);
+    try testing.expectEqual(false, config.block_info_config.use_compact_types);
 }
 
 test "EvmConfig - complete custom configuration" {

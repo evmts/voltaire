@@ -87,14 +87,11 @@ pub fn BlockInfo(comptime config: BlockInfoConfig) type {
     };
 }
 
-/// Default BlockInfo type with full u256 compliance (spec-compliant)
-pub const DefaultBlockInfo = BlockInfo(.{});
-
 /// Compact BlockInfo type using u64 for efficiency (practical values)
 pub const CompactBlockInfo = BlockInfo(.{ .use_compact_types = true });
 
 test "block info initialization" {
-    const block = DefaultBlockInfo.init();
+    const block = BlockInfo(.{}).init();
     try std.testing.expectEqual(@as(u64, 0), block.number);
     try std.testing.expectEqual(@as(u64, 0), block.timestamp);
     try std.testing.expectEqual(@as(u256, 0), block.difficulty);
@@ -110,7 +107,7 @@ test "block info custom values" {
     const custom_address: Address = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const custom_randao = [_]u8{0xff} ** 32;
 
-    const block = DefaultBlockInfo{
+    const block = BlockInfo(.{}){
         .chain_id = 1,
         .number = 12345,
         .timestamp = 1640995200, // Jan 1, 2022
@@ -136,50 +133,50 @@ test "block info custom values" {
 
 test "block info hasBaseFee check" {
     // Block with base fee
-    var block = DefaultBlockInfo.init();
+    var block = BlockInfo(.{}).init();
     block.base_fee = 1000;
     try std.testing.expect(block.hasBaseFee());
 
     // Block with number > 0 (London fork assumption)
-    block = DefaultBlockInfo.init();
+    block = BlockInfo(.{}).init();
     block.number = 12965000; // London fork block
     try std.testing.expect(block.hasBaseFee());
 
     // Genesis block without base fee
-    block = DefaultBlockInfo.init();
+    block = BlockInfo(.{}).init();
     try std.testing.expect(!block.hasBaseFee()); // Neither condition met
 }
 
 test "block info validation" {
     // Valid block
-    var block = DefaultBlockInfo.init();
+    var block = BlockInfo(.{}).init();
     block.timestamp = 1640995200;
     try std.testing.expect(block.validate());
 
     // Invalid gas limit - zero
-    block = DefaultBlockInfo.init();
+    block = BlockInfo(.{}).init();
     block.gas_limit = 0;
     try std.testing.expect(!block.validate());
 
     // Invalid gas limit - too high
-    block = DefaultBlockInfo.init();
+    block = BlockInfo(.{}).init();
     block.gas_limit = 200_000_000;
     try std.testing.expect(!block.validate());
 
     // Invalid timestamp - before Ethereum genesis
-    block = DefaultBlockInfo.init();
+    block = BlockInfo(.{}).init();
     block.timestamp = 1000000; // Before 2015
     try std.testing.expect(!block.validate());
 
     // Valid timestamp at boundary
-    block = DefaultBlockInfo.init();
+    block = BlockInfo(.{}).init();
     block.timestamp = 1438269973; // Ethereum genesis timestamp
     try std.testing.expect(block.validate());
 }
 
 test "block info edge cases" {
     // Maximum values
-    const max_block = DefaultBlockInfo{
+    const max_block = BlockInfo(.{}){
         .chain_id = 1,
         .number = std.math.maxInt(u64),
         .timestamp = std.math.maxInt(u64),
@@ -195,7 +192,7 @@ test "block info edge cases" {
     try std.testing.expect(max_block.hasBaseFee());
 
     // Minimum valid values
-    const min_block = DefaultBlockInfo{
+    const min_block = BlockInfo(.{}){
         .chain_id = 1,
         .number = 0,
         .timestamp = 1438269973, // Ethereum genesis
@@ -238,7 +235,7 @@ test "block info with blob data (EIP-4844)" {
     const blob_hash2 = [_]u8{0x02} ** 32;
     const blob_hashes = [_][32]u8{ blob_hash1, blob_hash2 };
 
-    const block = DefaultBlockInfo{
+    const block = BlockInfo(.{}){
         .chain_id = 1,
         .number = 15_000_000,
         .timestamp = 1640995200,
@@ -285,7 +282,7 @@ test "mixed block info types" {
 }
 
 test "block info gas limit boundary values" {
-    var block = DefaultBlockInfo.init();
+    var block = BlockInfo(.{}).init();
 
     // Test boundary values for gas limit validation
     block.gas_limit = 1; // Minimum valid
@@ -299,7 +296,7 @@ test "block info gas limit boundary values" {
 }
 
 test "block info timestamp edge cases" {
-    var block = DefaultBlockInfo.init();
+    var block = BlockInfo(.{}).init();
 
     // Zero timestamp should be valid (genesis special case)
     block.timestamp = 0;
@@ -319,7 +316,7 @@ test "block info timestamp edge cases" {
 }
 
 test "block info hasBaseFee edge cases" {
-    var block = DefaultBlockInfo.init();
+    var block = BlockInfo(.{}).init();
 
     // Test edge case: exactly zero base fee and block number
     block.base_fee = 0;
@@ -352,7 +349,7 @@ test "block info address variations" {
     };
 
     for (addresses) |addr| {
-        const block = DefaultBlockInfo{
+        const block = BlockInfo(.{}){
             .chain_id = 1,
             .number = 1,
             .timestamp = 1640995200,
@@ -378,7 +375,7 @@ test "block info prev_randao variations" {
     };
 
     for (randao_values) |randao| {
-        const block = DefaultBlockInfo{
+        const block = BlockInfo(.{}){
             .chain_id = 1,
             .number = 1,
             .timestamp = 1640995200,
@@ -405,7 +402,7 @@ test "block info maximum blob hashes" {
         blob_hashes[i] = [_]u8{@intCast(i)} ++ [_]u8{0xFF} ** 31;
     }
 
-    const block = DefaultBlockInfo{
+    const block = BlockInfo(.{}){
         .chain_id = 1,
         .number = 18_000_000,
         .timestamp = 1640995200,
@@ -427,7 +424,7 @@ test "block info maximum blob hashes" {
 
 test "block info zero blob base fee pre-cancun" {
     // Before Cancun fork, blob_base_fee should be 0
-    const pre_cancun_block = DefaultBlockInfo{
+    const pre_cancun_block = BlockInfo(.{}){
         .chain_id = 1,
         .number = 15_000_000, // Before Cancun
         .timestamp = 1640995200,
@@ -456,7 +453,7 @@ test "block info difficulty boundary values" {
     };
 
     for (difficulty_values) |diff| {
-        const block = DefaultBlockInfo{
+        const block = BlockInfo(.{}){
             .chain_id = 1,
             .number = 1,
             .timestamp = 1640995200,
@@ -476,7 +473,7 @@ test "block info difficulty boundary values" {
 
 test "block info compact vs default type sizes" {
     // Verify type sizes are as expected
-    const default_block = DefaultBlockInfo.init();
+    const default_block = BlockInfo(.{}).init();
     const compact_block = CompactBlockInfo.init();
 
     // Default should use u256 for difficulty and base fees
@@ -506,7 +503,7 @@ test "block info large base fee values" {
     };
 
     for (large_base_fees) |base_fee| {
-        const block = DefaultBlockInfo{
+        const block = BlockInfo(.{}){
             .chain_id = 1,
             .number = 20_000_000,
             .timestamp = 1640995200,
@@ -526,7 +523,7 @@ test "block info large base fee values" {
 }
 
 test "block info validation comprehensive" {
-    var block = DefaultBlockInfo.init();
+    var block = BlockInfo(.{}).init();
 
     // Start with valid block
     block.timestamp = 1640995200;
@@ -555,7 +552,7 @@ test "block info validation comprehensive" {
 
 test "block info struct field ordering" {
     // Test that all required fields are accessible and have correct types
-    const block = DefaultBlockInfo.init();
+    const block = BlockInfo(.{}).init();
 
     // Verify field types match expected signature
     _ = @as(u64, block.number);

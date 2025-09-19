@@ -95,8 +95,9 @@ pub const opcode_data = @import("opcodes/opcode_data.zig");
 pub const precompiles = @import("precompiles/precompiles.zig");
 
 // Database and state modules
-pub const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo;
-pub const CompactBlockInfo = @import("block/block_info.zig").CompactBlockInfo;
+pub const BlockInfo = @import("block/block_info.zig").BlockInfo(.{});
+pub const CompactBlockInfo = @import("block/block_info.zig").BlockInfo(.{ .use_compact_types = true });
+pub const DefaultBlockInfo = BlockInfo; // Alias for compatibility
 pub const BlockInfoConfig = @import("frame/block_info_config.zig").BlockInfoConfig;
 pub const CallParams = @import("frame/call_params.zig").CallParams({});
 pub const CallResult = @import("frame/call_result.zig").CallResult({});
