@@ -62,9 +62,9 @@ const TestHost = struct {
         return &[_]u8{};
     }
 
-    pub fn get_block_info(self: *Self) block_info_mod.DefaultBlockInfo {
+    pub fn get_block_info(self: *Self) block_info_mod.BlockInfo {
         _ = self;
-        return block_info_mod.DefaultBlockInfo.init();
+        return block_info_mod.BlockInfo.init();
     }
 
     pub fn emit_log(self: *Self, contract_address: Address, topics: []const u256, data: []const u8) void {

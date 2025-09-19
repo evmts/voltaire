@@ -116,7 +116,7 @@ const MockEvm = struct {
         return self.code_map.get(address) orelse &[_]u8{};
     }
 
-    pub fn get_block_info(self: *Self) block_info_mod.DefaultBlockInfo {
+    pub fn get_block_info(self: *Self) block_info_mod.BlockInfo {
         return self.block_info;
     }
 
