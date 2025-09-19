@@ -287,10 +287,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                             bytecode,
                             Self,
                             Dispatch.Item,
-                        ) catch |err| blk: {
-                            self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
-                            break :blk null;
-                        };
+                        ) catch null;
                         if (pretty_output) |output| {
                             defer allocator.free(output);
                             self.getTracer().debug("\n{s}", .{output});
@@ -307,8 +304,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                     const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
                     cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
                         @branchHint(.cold);
-                        self.getTracer().err("Failed to cache dispatch schedule for bytecode", .{});
-                        // Not a fatal error
+                        // Failed to cache - not a fatal error, just continue
                     };
                 }
             } else {
@@ -340,10 +336,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                         bytecode,
                         Self,
                         Dispatch.Item,
-                    ) catch |err| blk: {
-                        self.getTracer().err("Failed to pretty print dispatch schedule: {}", .{err});
-                        break :blk null;
-                    };
+                    ) catch null;
                     if (pretty_output) |output| {
                         defer allocator.free(output);
                         self.getTracer().debug("\n{s}", .{output});
@@ -406,7 +399,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
                     const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
                     if (last_item.opcode_handler != stop_handler or second_last_item.opcode_handler != stop_handler) {
-                        self.getTracer().err("Frame.interpret: Bytecode stream does not end with 2 stop handlers", .{});
+                        self.getTracer().panic("Frame.interpret: Bytecode stream does not end with 2 stop handlers", .{});
                         return Error.InvalidOpcode;
                     }
                 } else {
@@ -480,7 +473,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             if (comptime config.disable_gas_checks) return;
 
             const amt = std.math.cast(GasType, amount) orelse {
-                self.getTracer().err("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
+                self.getTracer().panic("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
                 return Error.GasOverflow;
             };
 
