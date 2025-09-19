@@ -57,7 +57,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(value);
 
             self.afterInstruction(.PUSH_MLOAD_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MLOAD_POINTER - Fused PUSH+MLOAD with pointer offset (>8 bytes).
@@ -103,7 +103,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(value);
 
             self.afterInstruction(.PUSH_MLOAD_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MSTORE_INLINE - Fused PUSH+MSTORE with inline offset (≤8 bytes).
@@ -151,7 +151,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             self.afterInstruction(.PUSH_MSTORE_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MSTORE_POINTER - Fused PUSH+MSTORE with pointer offset (>8 bytes).
@@ -195,7 +195,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             self.afterInstruction(.PUSH_MSTORE_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MSTORE8_INLINE - Fused PUSH+MSTORE8 with inline offset (≤8 bytes).
@@ -243,7 +243,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             self.afterInstruction(.PUSH_MSTORE8_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_MSTORE8_POINTER - Fused PUSH+MSTORE8 with pointer offset (>8 bytes).
@@ -290,7 +290,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             self.afterInstruction(.PUSH_MSTORE8_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };
 }

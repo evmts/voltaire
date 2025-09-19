@@ -23,7 +23,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
             // Call the handler at that location, passing cursor pointing to the handler itself
             self.afterInstruction(.JUMP_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
-            return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
+            return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
         }
 
         /// Conditionally jump to a statically known location without binary search.
@@ -44,11 +44,11 @@ pub fn Handlers(comptime FrameType: type) type {
                 @branchHint(.unlikely);
                 // Call the handler at that location, passing cursor pointing to that slot
                 self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
-                return @call(FrameType.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
+                return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
             }
             // Continue to next instruction - use the pre-computed next_handler and next_cursor from op_data
             self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_JUMP_INLINE - Fused PUSH+JUMP with inline destination (≤8 bytes).
@@ -77,7 +77,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
                 self.afterInstruction(.PUSH_JUMP_INLINE, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
             } else {
                 // Not a valid JUMPDEST
                 self.afterComplete(.PUSH_JUMP_INLINE);
@@ -111,7 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 @branchHint(.likely);
                 // Found valid JUMPDEST - tail call to the jump destination
                 self.afterInstruction(.PUSH_JUMP_POINTER, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
             } else {
                 // Not a valid JUMPDEST
                 self.afterComplete(.PUSH_JUMP_POINTER);
@@ -152,7 +152,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
                     self.afterInstruction(.PUSH_JUMPI_INLINE, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
                 } else {
                     // Not a valid JUMPDEST
                     self.afterComplete(.PUSH_JUMPI_INLINE);
@@ -161,7 +161,7 @@ pub fn Handlers(comptime FrameType: type) type {
             } else {
                 // Continue to next instruction
                 self.afterInstruction(.PUSH_JUMPI_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
         }
 
@@ -199,7 +199,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     @branchHint(.likely);
                     // Found valid JUMPDEST - tail call to the jump destination
                     self.afterInstruction(.PUSH_JUMPI_POINTER, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor + 1);
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor + 1 });
                 } else {
                     // Not a valid JUMPDEST
                     self.afterComplete(.PUSH_JUMPI_POINTER);
@@ -208,7 +208,7 @@ pub fn Handlers(comptime FrameType: type) type {
             } else {
                 // Continue to next instruction
                 self.afterInstruction(.PUSH_JUMPI_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
         }
     };

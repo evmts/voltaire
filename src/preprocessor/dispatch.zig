@@ -16,6 +16,16 @@ pub fn Preprocessor(comptime FrameType: type) type {
     return struct {
         const Self = @This();
 
+        /// Returns the appropriate tail call modifier based on the target architecture.
+        /// WebAssembly doesn't support tail calls by default, so we use .auto for wasm targets.
+        pub inline fn getTailCallModifier() std.builtin.CallModifier {
+            const builtin = @import("builtin");
+            return if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64)
+                .auto
+            else
+                .always_tail;
+        }
+
         const Metadata = dispatch_metadata.DispatchMetadata(FrameType);
 
         const OpcodeHandler = *const fn (frame: *FrameType, cursor: [*]const Item) FrameType.Error!noreturn;

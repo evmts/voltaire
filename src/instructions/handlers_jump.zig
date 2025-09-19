@@ -16,7 +16,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item, comptime opcode: Dispatch.UnifiedOpcode) Error!noreturn {
             const op_data = dispatch_opcode_data.getOpData(opcode, Dispatch, Dispatch.Item, cursor);
             self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// JUMP opcode (0x56) - Unconditional jump.
@@ -48,7 +48,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 }
 
                 self.afterInstruction(.JUMP, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
-                return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
             } else {
                 // Not a valid JUMPDEST
                 log.warn("JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
@@ -84,7 +84,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     }
 
                     self.afterInstruction(.JUMPI, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     // Not a valid JUMPDEST
                     log.warn("JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
@@ -143,7 +143,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             self.afterInstruction(.JUMPDEST, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PC opcode (0x58) - Get program counter.
@@ -159,7 +159,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(op_data.metadata.value);
 
             self.afterInstruction(.PC, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };
 }

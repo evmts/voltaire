@@ -20,7 +20,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub inline fn next_instruction(self: *FrameType, cursor: [*]const Dispatch.Item, comptime opcode: Dispatch.UnifiedOpcode) Error!noreturn {
             const op_data = dispatch_opcode_data.getOpData(opcode, Dispatch, Dispatch.Item, cursor);
             self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// Generate a log handler for LOG0-LOG4
@@ -158,23 +158,23 @@ pub fn Handlers(comptime FrameType: type) type {
                     switch (topic_count) {
                         0 => {
                             self.afterInstruction(.LOG0, dispatch.getOpData(.LOG0).next_handler, dispatch.getOpData(.LOG0).next_cursor.cursor);
-                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG0).next_handler, .{ self, dispatch.getOpData(.LOG0).next_cursor.cursor });
+                            return @call(FrameType.Dispatch.getTailCallModifier(), dispatch.getOpData(.LOG0).next_handler, .{ self, dispatch.getOpData(.LOG0).next_cursor.cursor });
                         },
                         1 => {
                             self.afterInstruction(.LOG1, dispatch.getOpData(.LOG1).next_handler, dispatch.getOpData(.LOG1).next_cursor.cursor);
-                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG1).next_handler, .{ self, dispatch.getOpData(.LOG1).next_cursor.cursor });
+                            return @call(FrameType.Dispatch.getTailCallModifier(), dispatch.getOpData(.LOG1).next_handler, .{ self, dispatch.getOpData(.LOG1).next_cursor.cursor });
                         },
                         2 => {
                             self.afterInstruction(.LOG2, dispatch.getOpData(.LOG2).next_handler, dispatch.getOpData(.LOG2).next_cursor.cursor);
-                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG2).next_handler, .{ self, dispatch.getOpData(.LOG2).next_cursor.cursor });
+                            return @call(FrameType.Dispatch.getTailCallModifier(), dispatch.getOpData(.LOG2).next_handler, .{ self, dispatch.getOpData(.LOG2).next_cursor.cursor });
                         },
                         3 => {
                             self.afterInstruction(.LOG3, dispatch.getOpData(.LOG3).next_handler, dispatch.getOpData(.LOG3).next_cursor.cursor);
-                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG3).next_handler, .{ self, dispatch.getOpData(.LOG3).next_cursor.cursor });
+                            return @call(FrameType.Dispatch.getTailCallModifier(), dispatch.getOpData(.LOG3).next_handler, .{ self, dispatch.getOpData(.LOG3).next_cursor.cursor });
                         },
                         4 => {
                             self.afterInstruction(.LOG4, dispatch.getOpData(.LOG4).next_handler, dispatch.getOpData(.LOG4).next_cursor.cursor);
-                            return @call(FrameType.getTailCallModifier(), dispatch.getOpData(.LOG4).next_handler, .{ self, dispatch.getOpData(.LOG4).next_cursor.cursor });
+                            return @call(FrameType.Dispatch.getTailCallModifier(), dispatch.getOpData(.LOG4).next_handler, .{ self, dispatch.getOpData(.LOG4).next_cursor.cursor });
                         },
                         else => {
                             {

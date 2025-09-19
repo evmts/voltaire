@@ -73,7 +73,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
             const gas_u64_raw = @as(u64, @intCast(gas_param));
             const caller_gas_available: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
@@ -92,7 +92,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const input_offset_usize = @as(usize, @intCast(input_offset));
@@ -107,7 +107,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -118,7 +118,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -129,7 +129,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -154,7 +154,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -183,7 +183,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.CALL);
             self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// CALLCODE opcode (0xf2) - Message-call with alternative account's code but current context.
@@ -214,7 +214,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALLCODE);
                 self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
             const gas_u64_raw = @as(u64, @intCast(gas_param));
             const caller_gas_available_cc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
@@ -230,7 +230,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALLCODE);
                 self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const input_offset_usize = @as(usize, @intCast(input_offset));
@@ -245,7 +245,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -256,7 +256,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -267,7 +267,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -308,7 +308,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.CALLCODE);
             self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// DELEGATECALL opcode (0xf4) - Message-call with alternative account's code but current values.
@@ -335,7 +335,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.DELEGATECALL);
                 self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
             const gas_u64_raw = @as(u64, @intCast(gas_param));
             const caller_gas_available_dc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
@@ -351,7 +351,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.DELEGATECALL);
                 self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const input_offset_usize = @as(usize, @intCast(input_offset));
@@ -366,7 +366,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -377,7 +377,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -388,7 +388,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -412,7 +412,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -441,7 +441,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.DELEGATECALL);
             self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// STATICCALL opcode (0xfa) - Static message-call (no state changes allowed).
@@ -468,7 +468,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.STATICCALL);
                 self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
             const gas_u64_raw = @as(u64, @intCast(gas_param));
             const caller_gas_available_sc: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
@@ -484,7 +484,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.STATICCALL);
                 self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const input_offset_usize = @as(usize, @intCast(input_offset));
@@ -499,7 +499,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -510,7 +510,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -521,7 +521,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -544,7 +544,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -572,7 +572,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.STATICCALL);
             self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// CREATE opcode (0xf0) - Create a new account with associated code.
@@ -595,7 +595,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE);
                 self.afterInstruction(.CREATE, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const offset_usize = @as(usize, @intCast(offset));
@@ -607,7 +607,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE);
                 self.afterInstruction(.CREATE, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             };
 
             // Extract initialization code
@@ -617,7 +617,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CREATE);
                     self.afterInstruction(.CREATE, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -651,7 +651,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.CREATE);
             self.afterInstruction(.CREATE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// CREATE2 opcode (0xf5) - Create a new account with deterministic address.
@@ -676,7 +676,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE2);
                 self.afterInstruction(.CREATE2, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const offset_usize = @as(usize, @intCast(offset));
@@ -688,7 +688,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE2);
                 self.afterInstruction(.CREATE2, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             };
 
             // Extract initialization code
@@ -698,7 +698,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CREATE2);
                     self.afterInstruction(.CREATE2, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -736,7 +736,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const op_data = dispatch.getOpData(.CREATE2);
             self.afterInstruction(.CREATE2, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// RETURN opcode (0xf3) - Halt execution returning output data.
@@ -918,7 +918,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTH);
                 self.afterInstruction(.AUTH, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             // Create authorization message
@@ -933,12 +933,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTH);
                 self.afterInstruction(.AUTH, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             } orelse {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTH);
                 self.afterInstruction(.AUTH, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             };
 
             // Encode chain ID (32 bytes, big-endian)
@@ -965,7 +965,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTHCALL);
                 self.afterInstruction(.AUTHCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             };
 
             // Check if recovered address matches authority
@@ -973,7 +973,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTHCALL);
                 self.afterInstruction(.AUTHCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             // Store authorized context in frame
@@ -986,7 +986,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(1);
             const op_data = dispatch.getOpData(.AUTHCALL);
             self.afterInstruction(.AUTHCALL, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// AUTHCALL opcode (0xf7) - EIP-3074: Make a call as an authorized address
@@ -1014,7 +1014,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTHCALL);
                 self.afterInstruction(.AUTHCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             // Convert to address
@@ -1025,7 +1025,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTHCALL);
                 self.afterInstruction(.AUTHCALL, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
             const gas_u64 = @as(u64, @intCast(gas_param));
 
@@ -1038,7 +1038,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.AUTHCALL);
                 // Use op_data.next_handler and op_data.next_cursor directly
-                return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
             const input_offset_usize = @as(usize, @intCast(input_offset));
@@ -1053,7 +1053,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -1064,7 +1064,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -1075,7 +1075,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -1101,7 +1101,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
-                    return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
                 };
             }
 
@@ -1122,7 +1122,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(if (result.success) 1 else 0);
             const op_data = dispatch.getOpData(.AUTHCALL);
             // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };
 }

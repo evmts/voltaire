@@ -72,15 +72,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
         /// The config passed into Frame(_config)
         pub const config = _config;
 
-        /// TODO: Move this to static method on Dispatch struct
-        /// Returns the appropriate tail call modifier based on the target architecture.
-        /// WebAssembly doesn't support tail calls by default, so we use .auto for wasm targets.
-        pub inline fn getTailCallModifier() std.builtin.CallModifier {
-            return if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64)
-                .auto
-            else
-                .always_tail;
-        }
         /// The "word" type used by the evm. Defaults to u256. "Word" is the type used by Stack and throughout the Evm
         /// If set to something else the EVM will update to that new word size. e.g. run kekkak128 instead of kekkak256
         /// Lowering the word size can improve perf and bundle size

@@ -31,7 +31,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.set_top_unsafe(result);
 
             self.afterInstruction(.PUSH_AND_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_AND_POINTER - Fused PUSH+AND with pointer value (>8 bytes).
@@ -53,7 +53,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.set_top_unsafe(result);
 
             self.afterInstruction(.PUSH_AND_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_OR_INLINE - Fused PUSH+OR with inline value (≤8 bytes).
@@ -75,7 +75,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.set_top_unsafe(result);
 
             self.afterInstruction(.PUSH_OR_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_OR_POINTER - Fused PUSH+OR with pointer value (>8 bytes).
@@ -97,7 +97,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.set_top_unsafe(result);
 
             self.afterInstruction(.PUSH_OR_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_XOR_INLINE - Fused PUSH+XOR with inline value (≤8 bytes).
@@ -119,7 +119,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.set_top_unsafe(result);
 
             self.afterInstruction(.PUSH_XOR_INLINE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_XOR_POINTER - Fused PUSH+XOR with pointer value (>8 bytes).
@@ -141,7 +141,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.set_top_unsafe(result);
 
             self.afterInstruction(.PUSH_XOR_POINTER, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };
 }

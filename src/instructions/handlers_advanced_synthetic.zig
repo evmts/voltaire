@@ -44,7 +44,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Use getOpData for next instruction
             self.afterInstruction(.MULTI_PUSH_2, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// MULTI_PUSH_3 - Push three values in a single operation
@@ -79,7 +79,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Use getOpData for next instruction
             self.afterInstruction(.MULTI_PUSH_3, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// MULTI_POP_2 - Pop two values in a single operation
@@ -94,7 +94,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Use getOpData for next instruction
             self.afterInstruction(.MULTI_POP_2, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// MULTI_POP_3 - Pop three values in a single operation
@@ -110,7 +110,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Use getOpData for next instruction
             self.afterInstruction(.MULTI_POP_3, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// ISZERO_JUMPI - Combined zero check and conditional jump
@@ -138,7 +138,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Continue to next instruction using getOpData
             self.afterInstruction(.ISZERO_JUMPI, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// DUP2_MSTORE_PUSH - Optimized memory store pattern
@@ -183,7 +183,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Use getOpData for next instruction
             self.afterInstruction(.DUP2_MSTORE_PUSH, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         // New high-impact fusion handlers
@@ -212,7 +212,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             self.afterInstruction(.DUP3_ADD_MSTORE, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// SWAP1_DUP2_ADD - Optimized SWAP1 + DUP2 + ADD pattern (134+ occurrences)
@@ -236,7 +236,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(a +% b);
 
             self.afterInstruction(.SWAP1_DUP2_ADD, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH_DUP3_ADD - Optimized PUSH + DUP3 + ADD pattern (58 occurrences)
@@ -262,7 +262,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(a +% b);
 
             self.afterInstruction(.PUSH_DUP3_ADD, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// FUNCTION_DISPATCH - Optimized PUSH4 + EQ + PUSH + JUMPI for function selectors
@@ -299,7 +299,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 const dest_pc: FrameType.PcType = @intCast(dest);
                 if (self.jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
                     self.afterInstruction(.FUNCTION_DISPATCH, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
-                    return @call(FrameType.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                    return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
                 } else {
                     self.afterComplete(.FUNCTION_DISPATCH);
                     return Error.InvalidJump;
@@ -307,7 +307,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             self.afterInstruction(.FUNCTION_DISPATCH, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// CALLVALUE_CHECK - Optimized CALLVALUE + DUP1 + ISZERO for payable checks
@@ -328,7 +328,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(if (top == 0) 1 else 0);
 
             self.afterInstruction(.CALLVALUE_CHECK, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// PUSH0_REVERT - Optimized PUSH0 + PUSH0 + REVERT for error handling
@@ -374,7 +374,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.push_unsafe(result);
 
             self.afterInstruction(.PUSH_ADD_DUP1, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
 
         /// MLOAD_SWAP1_DUP2 - Optimized MLOAD + SWAP1 + DUP2 memory pattern
@@ -402,7 +402,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.stack.dup_n_unsafe(2);
 
             self.afterInstruction(.MLOAD_SWAP1_DUP2, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };
 }
