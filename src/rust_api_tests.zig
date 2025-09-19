@@ -11,7 +11,7 @@ const MemoryDatabase = @import("storage/memory_database.zig").MemoryDatabase;
 const Account = @import("storage/database_interface_account.zig").Account;
 const EvmConfig = @import("evm_config.zig").EvmConfig;
 const Hardfork = @import("eips_and_hardforks/eips.zig").Hardfork;
-const BlockInfo = @import("block/block_info.zig").DefaultBlockInfo;
+const BlockInfo = @import("block/block_info.zig").BlockInfo;
 const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
 const Evm = @import("evm.zig").Evm;
 
