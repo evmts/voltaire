@@ -68,7 +68,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
         /// Takes cursor pointer with jump table available through dispatch metadata when needed
         pub const OpcodeHandler = *const fn (frame: *Self, cursor: [*]const Dispatch.Item) Error!noreturn;
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
-        pub const Dispatch = dispatch_mod.Dispatch(Self);
+        pub const Dispatch = dispatch_mod.Preprocessor(Self);
         /// The config passed into Frame(_config)
         pub const config = _config;
 

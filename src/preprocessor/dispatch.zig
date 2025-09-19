@@ -11,9 +11,8 @@ const dispatch_jump_table_builder = @import("dispatch_jump_table_builder.zig");
 const dispatch_opcode_data = @import("dispatch_opcode_data.zig");
 const dispatch_pretty_print = @import("dispatch_pretty_print.zig");
 
-// TODO rename this Preprocessor
 // TODO break this up into smaller files
-pub fn Dispatch(comptime FrameType: type) type {
+pub fn Preprocessor(comptime FrameType: type) type {
     return struct {
         const Self = @This();
 
@@ -1147,7 +1146,10 @@ pub fn Dispatch(comptime FrameType: type) type {
     };
 }
 
+// Compatibility alias for existing code
+pub const Dispatch = Preprocessor;
+
 pub fn ScheduleElement(comptime FrameType: type) type {
-    const DispatchType = Dispatch(FrameType);
+    const DispatchType = Preprocessor(FrameType);
     return DispatchType.Item;
 }
