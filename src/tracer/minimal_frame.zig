@@ -38,7 +38,7 @@ pub const MinimalFrame = struct {
     // Reference to MinimalEvm (like Frame has evm_ptr)
     evm_ptr: *anyopaque,
 
-    // TODO: We should just use self.evm_ptr.arena instead of having our own allocator
+    // Allocator for frame operations
     allocator: std.mem.Allocator,
 
     // EIP-3074 AUTH state

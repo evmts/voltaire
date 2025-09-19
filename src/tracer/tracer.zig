@@ -69,6 +69,7 @@ pub const Tracer = struct {
         fusion_info: ?[]const u8,
     };
 
+    // TODO: Move to ring_buffer.zig
     // Fixed-size ring buffer for tracking recent opcodes
     // Always active when tracer is enabled
     pub const RingBuffer = struct {
@@ -1302,7 +1303,6 @@ pub const Tracer = struct {
         _ = alignment;
         _ = current_capacity;
     }
-
 
     // TODO: add debug loggin
     /// Event: Frame bytecode initialization

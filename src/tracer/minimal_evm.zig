@@ -50,8 +50,7 @@ const StorageSlotKeyContext = struct {
     }
 };
 
-// TODO: this should just be called Error and be on MinimalEvm.Error struct
-/// Error set for MinimalEvm operations
+/// Legacy error set (deprecated, use MinimalEvm.Error instead)
 pub const MinimalEvmError = error{
     OutOfMemory,
     StackOverflow,
@@ -66,7 +65,6 @@ pub const MinimalEvmError = error{
     AddressPreWarmError,
 };
 
-// TODO: This should be generic based on Frame and EVMConfig
 /// Minimal EVM - Orchestrates execution like evm.zig
 pub const MinimalEvm = struct {
     /// Error set for MinimalEvm operations
@@ -156,8 +154,8 @@ pub const MinimalEvm = struct {
         };
     }
 
-    /// TODO: remove this this method shouldn't exist
     /// Initialize as a pointer to avoid arena corruption from struct copies
+    /// @deprecated Use init() with proper lifetime management instead
     pub fn initPtr(allocator: std.mem.Allocator) !*Self {
         const self = try allocator.create(Self);
         errdefer allocator.destroy(self);
