@@ -3,7 +3,7 @@
 // ============================================================================
 
 const std = @import("std");
-const Hardfork = @import("hardfork.zig").Hardfork;
+const Hardfork = @import("eips.zig").Hardfork;
 
 // ============================================================================
 // C HARDFORK ENUMERATION

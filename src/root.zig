@@ -31,12 +31,12 @@ pub const BuildConfiguredEvm = Evm(EvmConfig.fromBuildOptions());
 // Pre-configured EVM types for FFI
 // These are concrete types that can be stored at runtime
 pub const MainnetEvm = Evm(EvmConfig{
-    .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
+    .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },
     .tracer_config = @import("tracer/tracer.zig").TracerConfig.disabled,
 });
 
 pub const MainnetEvmWithTracer = Evm(EvmConfig{
-    .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
+    .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },
     .tracer_config = @import("tracer/tracer.zig").TracerConfig{
         .enabled = true,
         .enable_validation = true,  // Enable validation for step capture
@@ -49,7 +49,7 @@ pub const MainnetEvmWithTracer = Evm(EvmConfig{
 });
 
 pub const TestEvm = Evm(EvmConfig{
-    .eips = .{ .hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork.CANCUN },
+    .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },
     .tracer_config = @import("tracer/tracer.zig").TracerConfig.debug,
     .disable_gas_checks = true,
 });
@@ -104,7 +104,7 @@ pub const CreatedContracts = @import("storage/created_contracts.zig").CreatedCon
 pub const Database = @import("storage/database.zig").Database;
 pub const Account = @import("storage/database_interface_account.zig").Account;
 pub const AccessList = @import("storage/access_list.zig").AccessList;
-pub const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
+pub const Hardfork = @import("eips_and_hardforks/eips.zig").Hardfork;
 pub const Eips = @import("eips_and_hardforks/eips.zig").Eips;
 pub const MemoryDatabase = @import("storage/memory_database.zig").MemoryDatabase;
 pub const SelfDestruct = @import("storage/self_destruct.zig").SelfDestruct;

@@ -15,7 +15,7 @@ const Host = evm_mod.Host;
 const block_info_mod = @import("../block/block_info.zig");
 const call_params_mod = @import("call_params.zig");
 const call_result_mod = @import("call_result.zig");
-const hardfork_mod = @import("../eips_and_hardforks/hardfork.zig");
+const hardfork_mod = @import("../eips_and_hardforks/eips.zig");
 const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 
 /// Load bytecode from a fixture file

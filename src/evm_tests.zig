@@ -12,7 +12,7 @@ const Account = @import("storage/database_interface_account.zig").Account;
 const TransactionContext = @import("block/transaction_context.zig").TransactionContext;
 const Opcode = @import("opcodes/opcode.zig").Opcode;
 const EvmConfig = @import("evm_config.zig").EvmConfig;
-const Hardfork = @import("eips_and_hardforks/hardfork.zig").Hardfork;
+const Hardfork = @import("eips_and_hardforks/eips.zig").Hardfork;
 
 test "CallParams and CallResult structures" {
     const call_params = DefaultEvm.CallParams{

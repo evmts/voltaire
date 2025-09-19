@@ -20,7 +20,7 @@ const logs = primitives.logs;
 const Log = logs.Log;
 const CallParams = @import("../frame/call_params.zig").CallParams;
 const CallResult = @import("../frame/call_result.zig").CallResult;
-const Hardfork = @import("../eips_and_hardforks/hardfork.zig").Hardfork;
+const Hardfork = @import("../eips_and_hardforks/eips.zig").Hardfork;
 
 /// Static database wrapper that throws PermissionDenied errors for state modifications.
 /// Implements EIP-214 constraint: STATICCALL cannot modify blockchain state.

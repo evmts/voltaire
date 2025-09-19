@@ -322,7 +322,7 @@ test "Authorization processor - basic delegation" {
     
     // Process authorization
     var gas_remaining: i64 = 100_000;
-    const eips = Eips{ .hardfork = @import("hardfork.zig").Hardfork.PRAGUE };
+    const eips = Eips{ .hardfork = @import("eips.zig").Hardfork.PRAGUE };
     var processor = AuthorizationProcessor{
         .db = &db,
         .chain_id = 1,
@@ -363,7 +363,7 @@ test "Authorization processor - wrong nonce rejected" {
     };
     
     var gas_remaining: i64 = 100_000;
-    const eips = Eips{ .hardfork = @import("hardfork.zig").Hardfork.PRAGUE };
+    const eips = Eips{ .hardfork = @import("eips.zig").Hardfork.PRAGUE };
     var processor = AuthorizationProcessor{
         .db = &db,
         .chain_id = 1,
