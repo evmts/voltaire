@@ -478,6 +478,9 @@ pub const MinimalFrame = struct {
 
             // SHL
             0x1b => {
+                // EIP-145: SHL opcode was introduced in Constantinople hardfork
+                if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const shift = try self.popStack();
                 const value = try self.popStack();
@@ -488,6 +491,9 @@ pub const MinimalFrame = struct {
 
             // SHR
             0x1c => {
+                // EIP-145: SHR opcode was introduced in Constantinople hardfork
+                if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const shift = try self.popStack();
                 const value = try self.popStack();
@@ -498,6 +504,9 @@ pub const MinimalFrame = struct {
 
             // SAR
             0x1d => {
+                // EIP-145: SAR opcode was introduced in Constantinople hardfork
+                if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const shift = try self.popStack();
                 const value = try self.popStack();
@@ -703,6 +712,9 @@ pub const MinimalFrame = struct {
 
             // RETURNDATASIZE
             0x3d => {
+                // EIP-211: RETURNDATASIZE was introduced in Byzantium hardfork
+                if (evm.hardfork.isBefore(.BYZANTIUM)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasQuickStep);
                 try self.pushStack(self.return_data.len);
                 self.pc += 1;
@@ -710,6 +722,9 @@ pub const MinimalFrame = struct {
 
             // RETURNDATACOPY
             0x3e => {
+                // EIP-211: RETURNDATACOPY was introduced in Byzantium hardfork
+                if (evm.hardfork.isBefore(.BYZANTIUM)) return error.InvalidOpcode;
+
                 const dest_offset = try self.popStack();
                 const offset = try self.popStack();
                 const length = try self.popStack();
@@ -778,7 +793,11 @@ pub const MinimalFrame = struct {
             // DIFFICULTY/PREVRANDAO
             0x44 => {
                 try self.consumeGas(GasConstants.GasQuickStep);
-                try self.pushStack(evm.block_difficulty);
+                if (evm.hardfork.isAtLeast(.MERGE)) {
+                    try self.pushStack(evm.block_prevrandao);
+                } else {
+                    try self.pushStack(evm.block_difficulty);
+                }
                 self.pc += 1;
             },
 
@@ -791,6 +810,9 @@ pub const MinimalFrame = struct {
 
             // CHAINID
             0x46 => {
+                // EIP-1344: CHAINID was introduced in Istanbul hardfork
+                if (evm.hardfork.isBefore(.ISTANBUL)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasQuickStep);
                 try self.pushStack(evm.chain_id);
                 self.pc += 1;
@@ -798,6 +820,9 @@ pub const MinimalFrame = struct {
 
             // SELFBALANCE
             0x47 => {
+                // EIP-1884: SELFBALANCE was introduced in Istanbul hardfork
+                if (evm.hardfork.isBefore(.ISTANBUL)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasFastStep);
                 const balance = evm.get_balance(self.address);
                 try self.pushStack(balance);
@@ -806,6 +831,9 @@ pub const MinimalFrame = struct {
 
             // BASEFEE
             0x48 => {
+                // EIP-3198: BASEFEE was introduced in London hardfork
+                if (evm.hardfork.isBefore(.LONDON)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasQuickStep);
                 try self.pushStack(evm.block_base_fee);
                 self.pc += 1;
@@ -813,6 +841,9 @@ pub const MinimalFrame = struct {
 
             // BLOBHASH
             0x49 => {
+                // EIP-4844: BLOBHASH was introduced in Cancun hardfork
+                if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasFastestStep);
                 const index = try self.popStack();
                 _ = index;
@@ -823,6 +854,9 @@ pub const MinimalFrame = struct {
 
             // BLOBBASEFEE
             0x4a => {
+                // EIP-7516: BLOBBASEFEE was introduced in Cancun hardfork
+                if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasQuickStep);
                 try self.pushStack(evm.blob_base_fee);
                 self.pc += 1;
@@ -989,6 +1023,9 @@ pub const MinimalFrame = struct {
 
             // TLOAD
             0x5c => {
+                // EIP-1153: TLOAD was introduced in Cancun hardfork
+                if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.WarmStorageReadCost);
                 const key = try self.popStack();
                 // For MinimalEvm tracer, we use regular storage for transient storage
@@ -1000,6 +1037,9 @@ pub const MinimalFrame = struct {
 
             // TSTORE
             0x5d => {
+                // EIP-1153: TSTORE was introduced in Cancun hardfork
+                if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.WarmStorageReadCost); // Use same as TLOAD for now
                 const key = try self.popStack();
                 const value = try self.popStack();
@@ -1011,6 +1051,9 @@ pub const MinimalFrame = struct {
 
             // PUSH0
             0x5f => {
+                // EIP-3855: PUSH0 was introduced in Shanghai hardfork
+                if (evm.hardfork.isBefore(.SHANGHAI)) return error.InvalidOpcode;
+
                 try self.consumeGas(GasConstants.GasQuickStep);
                 try self.pushStack(0);
                 self.pc += 1;
@@ -1022,7 +1065,7 @@ pub const MinimalFrame = struct {
                 const push_size = opcode - 0x5f;
 
                 // Check bounds - need to read push_size bytes after the opcode
-                if (self.pc + push_size > self.bytecode.len) {
+                if (self.pc + push_size >= self.bytecode.len) {
                     return error.InvalidPush;
                 }
 
@@ -1362,6 +1405,9 @@ pub const MinimalFrame = struct {
 
             // CREATE2
             0xf5 => {
+                // EIP-1014: CREATE2 opcode was introduced in Constantinople hardfork
+                if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
                 const value = try self.popStack();
                 const offset = try self.popStack();
                 const length = try self.popStack();
@@ -1380,6 +1426,9 @@ pub const MinimalFrame = struct {
 
             // STATICCALL
             0xfa => {
+                // EIP-214: STATICCALL was introduced in Byzantium hardfork
+                if (evm.hardfork.isBefore(.BYZANTIUM)) return error.InvalidOpcode;
+
                 // Pop all 6 arguments (no value for static call)
                 const gas = try self.popStack();
                 const address_u256 = try self.popStack();
@@ -1455,6 +1504,9 @@ pub const MinimalFrame = struct {
 
             // MCOPY (EIP-5656)
             0x5e => {
+                // EIP-5656: MCOPY was introduced in Cancun hardfork
+                if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
                 // Stack order: [dest, src, len]
                 const len = try self.popStack();
                 const src = try self.popStack();
@@ -1499,6 +1551,9 @@ pub const MinimalFrame = struct {
 
             // REVERT
             0xfd => {
+                // EIP-140: REVERT was introduced in Byzantium hardfork
+                if (evm.hardfork.isBefore(.BYZANTIUM)) return error.InvalidOpcode;
+
                 const offset = try self.popStack();
                 const length = try self.popStack();
 
@@ -1583,6 +1638,9 @@ pub const MinimalFrame = struct {
 
             // EXTCODEHASH
             0x3f => {
+                // EIP-1052: EXTCODEHASH opcode was introduced in Constantinople hardfork
+                if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
                 // Get code hash of external account
                 const addr_int = try self.popStack();
                 const ext_addr = primitives.Address.from_u256(addr_int);
@@ -1599,6 +1657,8 @@ pub const MinimalFrame = struct {
                 self.pc += 1;
             },
 
+            // TODO: Figure out what we want to do with AUTH and AUTHCALL as they were removed
+            // from prague in favor of EIP-7702 (account abstraction) and currently not planned to be implemented
             // AUTH (EIP-3074)
             0xf6 => {
                 // AUTH opcode from EIP-3074
