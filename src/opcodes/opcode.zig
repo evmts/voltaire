@@ -429,8 +429,8 @@ pub const UnifiedOpcode = enum(u16) {
         return switch (@intFromEnum(self)) {
             // Regular opcodes
             0x00...0xFF => |opcode| getOpcodeName(@intCast(opcode)),
-            // Synthetic opcodes
-            else => |opcode| getSyntheticOpcodeName(opcode),
+            // Synthetic opcodes - use @tagName directly
+            else => @tagName(self),
         };
     }
 
@@ -547,48 +547,7 @@ pub const UnifiedOpcode = enum(u16) {
             else => "UNKNOWN",
         };
     }
-
-    fn getSyntheticOpcodeName(opcode: u16) []const u8 {
-        return switch (opcode) {
-            @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) => "PUSH_ADD_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER) => "PUSH_ADD_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE) => "PUSH_SUB_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER) => "PUSH_SUB_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) => "PUSH_MUL_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER) => "PUSH_MUL_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) => "PUSH_DIV_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER) => "PUSH_DIV_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_AND_INLINE) => "PUSH_AND_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_AND_POINTER) => "PUSH_AND_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_OR_INLINE) => "PUSH_OR_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_OR_POINTER) => "PUSH_OR_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_XOR_INLINE) => "PUSH_XOR_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER) => "PUSH_XOR_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) => "PUSH_MLOAD_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_POINTER) => "PUSH_MLOAD_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_INLINE) => "PUSH_MSTORE_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_MSTORE_POINTER) => "PUSH_MSTORE_POINTER",
-            @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) => "PUSH_MSTORE8_INLINE",
-            @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER) => "PUSH_MSTORE8_POINTER",
-            @intFromEnum(OpcodeSynthetic.JUMP_TO_STATIC_LOCATION) => "JUMP_TO_STATIC_LOCATION",
-            @intFromEnum(OpcodeSynthetic.JUMPI_TO_STATIC_LOCATION) => "JUMPI_TO_STATIC_LOCATION",
-            @intFromEnum(OpcodeSynthetic.MULTI_PUSH_2) => "MULTI_PUSH_2",
-            @intFromEnum(OpcodeSynthetic.MULTI_PUSH_3) => "MULTI_PUSH_3",
-            @intFromEnum(OpcodeSynthetic.MULTI_POP_2) => "MULTI_POP_2",
-            @intFromEnum(OpcodeSynthetic.MULTI_POP_3) => "MULTI_POP_3",
-            @intFromEnum(OpcodeSynthetic.ISZERO_JUMPI) => "ISZERO_JUMPI",
-            @intFromEnum(OpcodeSynthetic.DUP2_MSTORE_PUSH) => "DUP2_MSTORE_PUSH",
-            @intFromEnum(OpcodeSynthetic.DUP3_ADD_MSTORE) => "DUP3_ADD_MSTORE",
-            @intFromEnum(OpcodeSynthetic.SWAP1_DUP2_ADD) => "SWAP1_DUP2_ADD",
-            @intFromEnum(OpcodeSynthetic.PUSH_DUP3_ADD) => "PUSH_DUP3_ADD",
-            @intFromEnum(OpcodeSynthetic.FUNCTION_DISPATCH) => "FUNCTION_DISPATCH",
-            @intFromEnum(OpcodeSynthetic.CALLVALUE_CHECK) => "CALLVALUE_CHECK",
-            @intFromEnum(OpcodeSynthetic.PUSH0_REVERT) => "PUSH0_REVERT",
-            @intFromEnum(OpcodeSynthetic.PUSH_ADD_DUP1) => "PUSH_ADD_DUP1",
-            @intFromEnum(OpcodeSynthetic.MLOAD_SWAP1_DUP2) => "MLOAD_SWAP1_DUP2",
-            else => "UNKNOWN_SYNTHETIC",
-        };
-    }
+    
     // Regular opcodes 0x00-0xFF
     STOP = 0x00,
     ADD = 0x01,
