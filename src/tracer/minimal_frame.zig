@@ -335,7 +335,8 @@ pub const MinimalFrame = struct {
                 };
 
                 // TODO: these constants should be in gas_constants.zig as well
-                const gas_per_byte = if (self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) @as(u32, 50) else @as(u32, 10);
+                // Use modern EIP-160 gas cost (50 gas per byte) for EXP
+                const gas_per_byte: u32 = 50;
                 // Calculate gas cost based on the number of bytes needed to represent the exponent
                 const gas_cost = GasConstants.GasSlowStep + gas_per_byte * exp_bytes;
                 try self.consumeGas(gas_cost);
