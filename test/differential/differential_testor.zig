@@ -493,6 +493,7 @@ pub const DifferentialTestor = struct {
         self.minimal_evm.block_number = 0;
         self.minimal_evm.block_timestamp = 0;
         self.minimal_evm.block_difficulty = 0;
+        self.minimal_evm.block_prevrandao = 0;
         self.minimal_evm.block_coinbase = primitives.Address.ZERO_ADDRESS;
         self.minimal_evm.block_gas_limit = 30_000_000;
         self.minimal_evm.block_base_fee = 0;

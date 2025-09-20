@@ -152,6 +152,7 @@ export fn evm_set_blockchain_context(
             block_number,
             block_timestamp,
             0, // block_difficulty
+            0, // block_prevrandao
             block_coinbase,
             block_gas_limit,
             0, // block_base_fee

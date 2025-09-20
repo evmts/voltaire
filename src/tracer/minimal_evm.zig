@@ -111,6 +111,7 @@ pub const MinimalEvm = struct {
     block_number: u64,
     block_timestamp: u64,
     block_difficulty: u256,
+    block_prevrandao: u256,
     block_coinbase: Address,
     block_gas_limit: u64,
     block_base_fee: u256,
@@ -144,6 +145,7 @@ pub const MinimalEvm = struct {
             .block_number = 0,
             .block_timestamp = 0,
             .block_difficulty = 0,
+            .block_prevrandao = 0,
             .block_coinbase = ZERO_ADDRESS,
             .block_gas_limit = 30_000_000,
             .block_base_fee = 0,
@@ -178,6 +180,7 @@ pub const MinimalEvm = struct {
         self.block_number = 0;
         self.block_timestamp = 0;
         self.block_difficulty = 0;
+        self.block_prevrandao = 0;
         self.block_coinbase = ZERO_ADDRESS;
         self.block_gas_limit = 30_000_000;
         self.block_base_fee = 0;
@@ -216,6 +219,7 @@ pub const MinimalEvm = struct {
         block_number: u64,
         block_timestamp: u64,
         block_difficulty: u256,
+        block_prevrandao: u256,
         block_coinbase: Address,
         block_gas_limit: u64,
         block_base_fee: u256,
@@ -225,6 +229,7 @@ pub const MinimalEvm = struct {
         self.block_number = block_number;
         self.block_timestamp = block_timestamp;
         self.block_difficulty = block_difficulty;
+        self.block_prevrandao = block_prevrandao;
         self.block_coinbase = block_coinbase;
         self.block_gas_limit = block_gas_limit;
         self.block_base_fee = block_base_fee;

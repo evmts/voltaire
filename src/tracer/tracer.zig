@@ -174,7 +174,7 @@ pub const Tracer = struct {
                 const evm_instance = frame.getEvm();
 
                 const block_info = evm_instance.get_block_info();
-                evm.setBlockchainContext(evm_instance.get_chain_id(), block_info.number, block_info.timestamp, block_info.difficulty, block_info.coinbase, block_info.gas_limit, block_info.base_fee, block_info.blob_base_fee);
+                evm.setBlockchainContext(evm_instance.get_chain_id(), block_info.number, block_info.timestamp, block_info.difficulty, block_info.difficulty, block_info.coinbase, block_info.gas_limit, block_info.base_fee, block_info.blob_base_fee);
                 evm.setTransactionContext(evm_instance.get_tx_origin(), evm_instance.gas_price);
                 var caller = primitives.ZERO_ADDRESS;
                 var address = primitives.ZERO_ADDRESS;

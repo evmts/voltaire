@@ -1847,6 +1847,7 @@ test "MinimalFrame JUMP and JUMPI validation" {
         100, // block_number
         1000, // block_timestamp
         1, // block_difficulty
+        1, // block_prevrandao
         Address{ .bytes = .{0} ** 20 }, // block_coinbase
         30000000, // block_gas_limit
         1, // block_base_fee
