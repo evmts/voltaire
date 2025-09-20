@@ -318,5 +318,5 @@ We deeply appreciate these excellent EVM implementations that served as inspirat
 
 MIT License. Free for all use. 🌍
 
-<a href="https://shazow.net/posts/permissive-vs-copyleft/"><img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/644c2d29-8e7f-44f4-a17f-285a1f4c20e7" /></a>
+<a href="https://shazow.net/posts/permissive-vs-copyleft/"><img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/644c2d29-8e7f-44f4-a17f-285a1f4c20e7" /></a>
 
