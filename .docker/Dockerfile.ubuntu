@@ -73,22 +73,18 @@ RUN ARCH=$(uname -m) && \
         ln -s /opt/zig-x86_64-linux-0.15.1/zig /usr/local/bin/zig; \
     fi
 
+# Install additional libraries needed for cryptography
+RUN apt-get update && apt-get install -y libgmp-dev && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /workspace
 
-# Copy project files (needed for building)
-COPY . .
+# Copy entrypoint script
+COPY docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Clean any existing build artifacts from host
-RUN rm -rf target zig-out zig-cache .zig-cache
-
-# Build the Rust library for Linux (for foundry-compilers)
-RUN cargo build --release --target $(uname -m)-unknown-linux-gnu --manifest-path lib/foundry-compilers/crates/wrapper/Cargo.toml && \
-    mkdir -p target/$(uname -m)-unknown-linux-gnu/release && \
-    cp target/$(uname -m)-unknown-linux-gnu/release/libfoundry_wrapper.* target/$(uname -m)-unknown-linux-gnu/release/ 2>/dev/null || true
-
-# Build Guillotine with Zig
-RUN zig build
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command
-CMD ["./guil.sh", "--help"]
+CMD []
