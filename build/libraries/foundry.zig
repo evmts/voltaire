@@ -13,27 +13,6 @@ pub fn createFoundryLibrary(
         return null;
     };
 
-    // Build the Rust static library
-    const cargo_build = b.addSystemCommand(&.{
-        "cargo",
-        "build",
-        "--release",
-        "--manifest-path",
-        b.pathFromRoot("lib/foundry-compilers/Cargo.toml"),
-    });
-
-    if (rust_target) |target_triple| {
-        cargo_build.addArg("--target");
-        cargo_build.addArg(target_triple);
-    }
-
-    if (rust_build_step) |step| {
-        cargo_build.step.dependOn(step);
-    }
-
-    // Generate C bindings using the build.rs script (happens automatically with cargo build)
-    // The build.rs will generate foundry_wrapper.h
-
     // Create a static library wrapper for Zig
     const foundry_lib = b.addLibrary(.{
         .name = "foundry_wrapper",
@@ -68,21 +47,44 @@ pub fn createFoundryLibrary(
         foundry_lib.linkFramework("CoreFoundation");
     }
 
-    foundry_lib.step.dependOn(&cargo_build.step);
+    // The rust_build_step should handle the workspace build
+    // We just need to depend on it, not create our own cargo build
+    if (rust_build_step) |step| {
+        foundry_lib.step.dependOn(step);
+    } else {
+        // If no rust_build_step provided, create our own
+        const cargo_build = b.addSystemCommand(&.{
+            "cargo",
+            "build",
+            "--release",
+            "--workspace",
+        });
+
+        if (rust_target) |target_triple| {
+            cargo_build.addArg("--target");
+            cargo_build.addArg(target_triple);
+        }
+        
+        foundry_lib.step.dependOn(&cargo_build.step);
+    }
 
     return foundry_lib;
 }
 
-pub fn createRustBuildStep(b: *std.Build) *std.Build.Step {
-    const rust_build = b.step("build-foundry-rust", "Build Rust foundry-compilers library");
+pub fn createRustBuildStep(b: *std.Build, rust_target: ?[]const u8) *std.Build.Step {
+    const rust_build = b.step("build-rust-workspace", "Build Rust workspace libraries");
     
     const cargo_build = b.addSystemCommand(&.{
         "cargo",
         "build",
         "--release",
-        "--manifest-path",
-        b.pathFromRoot("lib/foundry-compilers/Cargo.toml"),
+        "--workspace",
     });
+    
+    if (rust_target) |target_triple| {
+        cargo_build.addArg("--target");
+        cargo_build.addArg(target_triple);
+    }
     
     rust_build.dependOn(&cargo_build.step);
     return rust_build;

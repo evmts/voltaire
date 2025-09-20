@@ -68,7 +68,7 @@ pub fn build(b: *std.Build) void {
     const blst_lib = build_pkg.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = build_pkg.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
 
-    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b);
+    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b, rust_target);
     const bn254_lib = build_pkg.Bn254Lib.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
     const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
 
