@@ -1,5 +1,5 @@
 # Alpine-based Docker image for Guillotine CI
-FROM --platform=linux/amd64 alpine:3.19
+FROM alpine:3.19
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -24,9 +24,15 @@ RUN apk add --no-cache nodejs npm && \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install Zig 0.14.1
-RUN curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar -xJ -C /opt && \
-    ln -s /opt/zig-x86_64-linux-0.14.1/zig /usr/local/bin/zig
+# Install Zig 0.15.1
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        curl -L https://ziglang.org/download/0.15.1/zig-aarch64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
+        ln -s /opt/zig-aarch64-linux-0.15.1/zig /usr/local/bin/zig; \
+    else \
+        curl -L https://ziglang.org/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
+        ln -s /opt/zig-x86_64-linux-0.15.1/zig /usr/local/bin/zig; \
+    fi
 
 # Set working directory
 WORKDIR /workspace

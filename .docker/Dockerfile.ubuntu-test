@@ -1,5 +1,5 @@
-# Debian-based Docker image for Guillotine CI
-FROM debian:12
+# Ubuntu-based Docker image for Guillotine CI (test version)
+FROM --platform=linux/amd64 ubuntu:22.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,10 +14,10 @@ RUN apt-get update && apt-get install -y \
     clang \
     lld \
     python3 \
-    xz-utils \
-    tar \
     ca-certificates \
     gnupg \
+    xz-utils \
+    tar \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 18 from NodeSource
@@ -30,17 +30,14 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install Zig 0.15.1
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "aarch64" ]; then \
-        curl -L https://ziglang.org/download/0.15.1/zig-aarch64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
-        ln -s /opt/zig-aarch64-linux-0.15.1/zig /usr/local/bin/zig; \
-    else \
-        curl -L https://ziglang.org/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
-        ln -s /opt/zig-x86_64-linux-0.15.1/zig /usr/local/bin/zig; \
-    fi
+RUN curl -L https://ziglang.org/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
+    ln -s /opt/zig-x86_64-linux-0.15.1/zig /usr/local/bin/zig
 
 # Set working directory
 WORKDIR /workspace
 
-# Default command
+# Set environment variable to skip submodule check in Docker
+ENV SKIP_SUBMODULE_CHECK=1
+
+# Default command - we'll mount the volume instead of copying
 CMD ["bash", "-c", "zig build && zig build test && zig build bench"]

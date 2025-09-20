@@ -8,9 +8,15 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Zig 0.14.1 for x86_64
-RUN curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar -xJ -C /opt && \
-    ln -s /opt/zig-x86_64-linux-0.14.1/zig /usr/local/bin/zig
+# Install Zig 0.15.1
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        curl -L https://ziglang.org/download/0.15.1/zig-aarch64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
+        ln -s /opt/zig-aarch64-linux-0.15.1/zig /usr/local/bin/zig; \
+    else \
+        curl -L https://ziglang.org/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz | tar -xJ -C /opt && \
+        ln -s /opt/zig-x86_64-linux-0.15.1/zig /usr/local/bin/zig; \
+    fi
 
 # Add Zig to PATH
 ENV PATH="/usr/local/bin:${PATH}"
