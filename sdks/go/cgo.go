@@ -2,9 +2,8 @@ package guillotine
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../zig-out/include -I${SRCDIR}/../../src
-#cgo LDFLAGS: -L${SRCDIR}/../../zig-out/lib -lguillotine_ffi
-#cgo darwin LDFLAGS: -Wl,-rpath,${SRCDIR}/../../zig-out/lib
-#cgo linux LDFLAGS: -Wl,-rpath,${SRCDIR}/../../zig-out/lib
+#cgo darwin LDFLAGS: -L${SRCDIR}/../../zig-out/lib -lguillotine_ffi -Wl,-rpath,${SRCDIR}/../../zig-out/lib
+#cgo linux LDFLAGS: -L${SRCDIR}/../../zig-out/lib -lguillotine_ffi -lblst -lc-kzg-4844 -lbn254_wrapper -lgmp -lm -ldl -lpthread -Wl,-rpath,${SRCDIR}/../../zig-out/lib
 
 #include <stdlib.h>
 #include <stdint.h>

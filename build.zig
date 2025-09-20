@@ -71,6 +71,11 @@ pub fn build(b: *std.Build) void {
     const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b, rust_target, optimize);
     const bn254_lib = build_pkg.Bn254Lib.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
     const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
+    
+    // Install BLS libraries to zig-out/lib for stable paths
+    b.installArtifact(blst_lib);
+    b.installArtifact(c_kzg_lib);
+    if (bn254_lib) |bn254| b.installArtifact(bn254);
 
     // Modules
     const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
@@ -160,6 +165,8 @@ pub fn build(b: *std.Build) void {
     shared_lib.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| shared_lib.linkLibrary(bn254);
     shared_lib.linkLibC();
+    // Export all symbols for Linux to ensure BLS symbols are available
+    shared_lib.rdynamic = true;
     b.installArtifact(shared_lib);
 
     const shared_lib_step = b.step("shared", "Build shared library for FFI");
