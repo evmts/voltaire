@@ -745,16 +745,14 @@ pub fn Preprocessor(comptime FrameType: type) type {
 
             try resolveStaticJumpsWithArray(final_schedule, &unresolved_jumps, jumpdest_array, tracer);
 
-            const u256_values = try u256_storage.values.toOwnedSlice(allocator);
-
             if (tracer) |t| {
-                t.onScheduleBuildComplete(final_schedule.len, u256_values.len);
+                t.onScheduleBuildComplete(final_schedule.len, u256_storage.values.items.len);
                 t.onJumpTableCreated(jumpdest_array.len);
             }
 
             return DispatchSchedule{
                 .items = final_schedule,
-                .u256_values = u256_values,
+                .u256_values = u256_storage.values.items,
                 .allocator = allocator,
             };
         }
