@@ -76,5 +76,19 @@ RUN ARCH=$(uname -m) && \
 # Set working directory
 WORKDIR /workspace
 
+# Copy project files (needed for building)
+COPY . .
+
+# Clean any existing build artifacts from host
+RUN rm -rf target zig-out zig-cache .zig-cache
+
+# Build the Rust library for Linux (for foundry-compilers)
+RUN cargo build --release --target $(uname -m)-unknown-linux-gnu --manifest-path lib/foundry-compilers/crates/wrapper/Cargo.toml && \
+    mkdir -p target/$(uname -m)-unknown-linux-gnu/release && \
+    cp target/$(uname -m)-unknown-linux-gnu/release/libfoundry_wrapper.* target/$(uname -m)-unknown-linux-gnu/release/ 2>/dev/null || true
+
+# Build Guillotine with Zig
+RUN zig build
+
 # Default command
-CMD ["bash", "-c", "zig build && zig build test && zig build bench"]
+CMD ["./guil.sh", "--help"]

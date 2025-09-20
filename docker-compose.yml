@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   guillotine:
@@ -9,33 +9,6 @@ services:
       # Mount the entire project directory for development
       - .:/workspace
     working_dir: /workspace
-    command: >
-      bash -c "
-        echo '=== Verifying all language toolchains ===' &&
-        echo 'Zig version:' && zig version &&
-        echo 'Go version:' && go version &&
-        echo 'Python version:' && python3 --version &&
-        echo 'Node.js version:' && node --version &&
-        echo 'NPM version:' && npm --version &&
-        echo 'Rust version:' && rustc --version &&
-        echo 'Cargo version:' && cargo --version &&
-        echo 'Bun version:' && bun --version &&
-        echo 'Swift version:' && (swift --version 2>/dev/null || echo 'Swift not available on this architecture') &&
-        echo '=== Building Guillotine ===' &&
-        zig build &&
-        echo '=== Testing SDK builds ===' &&
-        echo 'Testing Go SDK:' &&
-        cd sdks/go && go version && go build ./... && cd ../.. &&
-        echo 'Testing Python SDK:' &&
-        python3 -c 'print(\"Python SDK toolchain working\")' &&
-        echo 'Testing TypeScript/Node SDK:' &&
-        cd sdks/typescript && npm version && cd ../.. &&
-        echo 'Testing Rust SDK:' &&
-        cd sdks/rust && cargo --version && cargo build && cd ../.. &&
-        echo 'Testing Bun SDK:' &&
-        cd sdks/bun && bun --version && cd ../.. &&
-        echo '=== All language toolchains verified successfully ==='
-      "
     stdin_open: true
     tty: true
     environment:
