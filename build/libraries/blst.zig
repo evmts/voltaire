@@ -14,6 +14,7 @@ pub fn createBlstLibrary(
     const lib = b.addLibrary(.{
         .name = "blst",
         .linkage = .static,
+        .use_llvm = true, // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .root_module = b.createModule(.{
             .target = target,
             .optimize = optimize,

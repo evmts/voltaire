@@ -23,6 +23,8 @@ pub fn createDevtoolExecutable(
     const exe = b.addExecutable(.{
         .name = "guillotine-devtool",
         .root_module = devtool_mod,
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     // macOS-specific Swift integration

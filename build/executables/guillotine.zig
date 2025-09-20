@@ -7,6 +7,8 @@ pub fn createExecutable(
     const exe = b.addExecutable(.{
         .name = "Guillotine",
         .root_module = exe_mod,
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
 
     b.installArtifact(exe);

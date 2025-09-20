@@ -16,6 +16,8 @@ pub fn createDebugRunner(
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     exe.root_module.addImport("evm", evm_mod);
@@ -40,6 +42,8 @@ pub fn createCrashDebugger(
             .root_source_file = b.path("src/crash-debug.zig"),
             .target = target,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     exe.root_module.addImport("evm", evm_mod);
@@ -65,6 +69,8 @@ pub fn createSimpleCrashTest(
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     exe.root_module.addImport("evm", evm_mod);
@@ -86,6 +92,8 @@ pub fn createPoopRunner(
             .target = target,
             .optimize = .ReleaseFast,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
 
     b.installArtifact(exe);
@@ -114,6 +122,8 @@ pub fn createOrchestrator(
             .target = target,
             .optimize = .ReleaseFast,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     exe.root_module.addImport("clap", clap_dep.module("clap"));

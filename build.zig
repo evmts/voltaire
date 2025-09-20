@@ -68,7 +68,7 @@ pub fn build(b: *std.Build) void {
     const blst_lib = build_pkg.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = build_pkg.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
 
-    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b, rust_target);
+    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b, rust_target, optimize);
     const bn254_lib = build_pkg.Bn254Lib.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
     const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
 
@@ -108,6 +108,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     pattern_analyzer.root_module.addImport("evm", modules.evm_mod);
     pattern_analyzer.root_module.addImport("primitives", modules.primitives_mod);
@@ -125,6 +127,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     bytecode_patterns.root_module.addImport("evm", modules.evm_mod);
     bytecode_patterns.root_module.addImport("primitives", modules.primitives_mod);
@@ -149,6 +153,8 @@ pub fn build(b: *std.Build) void {
         .name = "guillotine_ffi",
         .linkage = .dynamic,
         .root_module = shared_lib_mod,
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     shared_lib.linkLibrary(c_kzg_lib);
     shared_lib.linkLibrary(blst_lib);
@@ -164,6 +170,8 @@ pub fn build(b: *std.Build) void {
         .name = "guillotine_ffi_static",
         .linkage = .static,
         .root_module = shared_lib_mod,
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     static_lib.linkLibrary(c_kzg_lib);
     static_lib.linkLibrary(blst_lib);
@@ -176,7 +184,11 @@ pub fn build(b: *std.Build) void {
 
     // Tests
     const tests_pkg = build_pkg.Tests;
-    const lib_unit_tests = b.addTest(.{ .root_module = modules.lib_mod });
+    const lib_unit_tests = b.addTest(.{ 
+        .root_module = modules.lib_mod,
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
+    });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
     const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, bn254_lib, c_kzg_lib, blst_lib);
@@ -189,6 +201,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     root_tests.root_module.addImport("evm", modules.evm_mod);
     root_tests.root_module.addImport("primitives", modules.primitives_mod);
@@ -212,6 +226,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     compiler_tests.root_module.addImport("compilers", modules.compilers_mod);
     compiler_tests.root_module.addImport("primitives", modules.primitives_mod);
@@ -245,6 +261,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .ReleaseFast,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     zbench_bn254.root_module.addImport("zbench", zbench_module);
 
@@ -260,6 +278,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .ReleaseFast,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     zbench_evm.root_module.addImport("zbench", zbench_module);
     zbench_evm.root_module.addImport("log", b.createModule(.{
@@ -288,6 +308,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug, // Debug for better logging
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     erc20_gas_test.root_module.addImport("evm", modules.evm_mod);
     erc20_gas_test.root_module.addImport("primitives", modules.primitives_mod);
@@ -315,6 +337,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     jump_table_test.root_module.addImport("evm", modules.evm_mod);
     jump_table_test.root_module.addImport("primitives", modules.primitives_mod);
@@ -342,6 +366,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     erc20_deployment_test.root_module.addImport("evm", modules.evm_mod);
     erc20_deployment_test.root_module.addImport("primitives", modules.primitives_mod);
@@ -372,12 +398,18 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     fixtures_differential_test.root_module.addImport("evm", modules.evm_mod);
     fixtures_differential_test.root_module.addImport("primitives", modules.primitives_mod);
     fixtures_differential_test.root_module.addImport("crypto", modules.crypto_mod);
     fixtures_differential_test.root_module.addImport("build_options", config.options_mod);
-    fixtures_differential_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+    fixtures_differential_test.root_module.addImport("log", b.createModule(.{ 
+        .root_source_file = b.path("src/log.zig"), 
+        .target = target, 
+        .optimize = .Debug, 
+    }));
 
     // Using MinimalEvm for differential testing (REVM removed)
 
@@ -398,12 +430,18 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     snailtracer_test.root_module.addImport("evm", modules.evm_mod);
     snailtracer_test.root_module.addImport("primitives", modules.primitives_mod);
     snailtracer_test.root_module.addImport("crypto", modules.crypto_mod);
     snailtracer_test.root_module.addImport("build_options", config.options_mod);
-    snailtracer_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+    snailtracer_test.root_module.addImport("log", b.createModule(.{ 
+        .root_source_file = b.path("src/log.zig"), 
+        .target = target, 
+        .optimize = .Debug, 
+    }));
 
     // Using MinimalEvm for differential testing (REVM removed)
 
@@ -424,12 +462,18 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     gt_bug_test.root_module.addImport("evm", modules.evm_mod);
     gt_bug_test.root_module.addImport("primitives", modules.primitives_mod);
     gt_bug_test.root_module.addImport("crypto", modules.crypto_mod);
     gt_bug_test.root_module.addImport("build_options", config.options_mod);
-    gt_bug_test.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+    gt_bug_test.root_module.addImport("log", b.createModule(.{ 
+        .root_source_file = b.path("src/log.zig"), 
+        .target = target, 
+        .optimize = .Debug, 
+    }));
     gt_bug_test.linkLibrary(c_kzg_lib);
     gt_bug_test.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| gt_bug_test.linkLibrary(bn254);
@@ -445,6 +489,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = .Debug,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     dev_test.root_module.addImport("evm", modules.evm_mod);
     dev_test.root_module.addImport("primitives", modules.primitives_mod);
@@ -483,13 +529,19 @@ pub fn build(b: *std.Build) void {
                     .target = target,
                     .optimize = .Debug,
                 }),
+                // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+                .use_llvm = true,
             });
             // Inject module dependencies used by the differential harness
             t.root_module.addImport("evm", modules.evm_mod);
             t.root_module.addImport("primitives", modules.primitives_mod);
             t.root_module.addImport("crypto", modules.crypto_mod);
             t.root_module.addImport("build_options", config.options_mod);
-            t.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
+            t.root_module.addImport("log", b.createModule(.{ 
+                .root_source_file = b.path("src/log.zig"), 
+                .target = target, 
+                .optimize = .Debug, 
+            }));
 
             // Link external libs
             t.linkLibrary(c_kzg_lib);
@@ -519,6 +571,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
 
         // Add all the required dependencies
@@ -549,6 +603,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
 
         erc20_transfer_test.root_module.addImport("evm", modules.evm_mod);
@@ -607,6 +663,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
 
         codecopy_test.root_module.addImport("evm", modules.evm_mod);
@@ -628,6 +686,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
 
         // Add required imports
@@ -664,6 +724,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
 
         official_chain_test.root_module.addImport("evm", modules.evm_mod);
@@ -696,6 +758,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
 
         // Add module imports needed by the test
@@ -741,6 +805,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = .Debug,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
         fusions_basic.root_module.addImport("evm", modules.evm_mod);
         fusions_basic.root_module.addImport("primitives", modules.primitives_mod);
@@ -760,6 +826,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = .Debug,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
         fusions_dispatch.root_module.addImport("evm", modules.evm_mod);
         fusions_dispatch.root_module.addImport("primitives", modules.primitives_mod);
@@ -779,6 +847,8 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = .Debug,
             }),
+            // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+            .use_llvm = true,
         });
         fusions_diff_toggle.root_module.addImport("evm", modules.evm_mod);
         fusions_diff_toggle.root_module.addImport("primitives", modules.primitives_mod);

@@ -13,13 +13,19 @@ pub fn createBn254Library(
 
     const lib = b.addLibrary(.{
         .name = "bn254_wrapper",
+        .use_llvm = true, // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .root_module = b.createModule(.{
             .target = target,
             .optimize = optimize,
         }),
     });
 
-    const profile_dir = if (optimize == .Debug) "debug" else "release";
+    // Map Zig optimize modes to Rust profile directories
+    const profile_dir = switch (optimize) {
+        .Debug => "debug",
+        .ReleaseSafe, .ReleaseSmall => "release",
+        .ReleaseFast => "release-fast",
+    };
     const lib_path = if (rust_target) |target_triple|
         b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, profile_dir })
     else

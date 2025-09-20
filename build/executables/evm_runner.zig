@@ -18,6 +18,8 @@ pub fn createEvmRunner(
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     exe.root_module.addImport("evm", evm_mod);
@@ -54,6 +56,8 @@ pub fn createEvmRunnerSmall(
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     exe.root_module.addImport("evm", evm_mod);
@@ -88,6 +92,8 @@ pub fn createTestStep(
             .target = target,
             .optimize = optimize,
         }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
     });
     
     // Add the Runner module

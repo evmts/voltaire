@@ -45,6 +45,7 @@ pub fn buildWasmExecutable(
     const exe = b.addExecutable(.{
         .name = config.name,
         .root_module = module,
+        .use_llvm = true, // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
     });
     
     if (config.entry_disabled) {
