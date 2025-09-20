@@ -7,6 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    wget \
     git \
     build-essential \
     libssl-dev \
@@ -14,10 +15,13 @@ RUN apt-get update && apt-get install -y \
     clang \
     lld \
     python3 \
+    python3-pip \
+    python3-venv \
     ca-certificates \
     gnupg \
     xz-utils \
     tar \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 18 from NodeSource
@@ -30,6 +34,34 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 # Add the appropriate Rust target for cross-compilation if needed
 RUN rustup target add $(uname -m)-unknown-linux-gnu
+
+# Install Go 1.23
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        GO_ARCH="arm64"; \
+    else \
+        GO_ARCH="amd64"; \
+    fi && \
+    curl -L https://go.dev/dl/go1.23.0.linux-${GO_ARCH}.tar.gz | tar -xzC /usr/local && \
+    ln -s /usr/local/go/bin/go /usr/local/bin/go && \
+    ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash && \
+    ln -s /root/.bun/bin/bun /usr/local/bin/bun
+ENV PATH="/root/.bun/bin:${PATH}"
+
+# Install Swift 6.0
+# Note: Swift is only officially supported on x86_64 for Linux
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        curl -L https://download.swift.org/swift-6.0-release/ubuntu2204/swift-6.0-RELEASE/swift-6.0-RELEASE-ubuntu22.04.tar.gz | tar -xzC /opt && \
+        ln -s /opt/swift-6.0-RELEASE-ubuntu22.04/usr/bin/swift /usr/local/bin/swift && \
+        ln -s /opt/swift-6.0-RELEASE-ubuntu22.04/usr/bin/swiftc /usr/local/bin/swiftc; \
+    else \
+        echo "Swift is not officially supported on ARM64 Linux, skipping installation"; \
+    fi
 
 # Install Zig 0.15.1
 RUN ARCH=$(uname -m) && \

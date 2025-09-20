@@ -385,7 +385,6 @@ fn build_guillotine_library(project_dir: &Path) {
     let target_dir = project_dir.join("target").join(rust_profile_dir);
     println!("cargo:rustc-link-search=native={}", target_dir.display());
     println!("cargo:rustc-link-lib=static=bn254_wrapper");
-    println!("cargo:rustc-link-lib=static=revm_wrapper");
 }
 
 fn generate_bindings(out_dir: &str, manifest_dir: &str) {
