@@ -70,16 +70,22 @@ pub const EvmConfig = struct {
     // Frame configuration fields (previously nested)
     /// The maximum stack size for the evm. Defaults to 1024
     stack_size: u12 = 1024,
+
     /// The size of a single word in the EVM - Defaults to u256
     WordType: type = u256,
+
     /// The maximum amount of bytes allowed in contract code
     max_bytecode_size: u32 = 24576,
+
     /// The maximum amount of bytes allowed in contract deployment
     max_initcode_size: u32 = 49152,
+
     /// The maximum gas limit for a block
     block_gas_limit: u64 = 30_000_000,
+
     /// Memory configuration
     memory_initial_capacity: usize = 4096,
+
     memory_limit: u64 = 0xFFFFFF,
 
     /// Arena allocator configuration
@@ -118,8 +124,11 @@ pub const EvmConfig = struct {
     /// Enable system contract updates (EIP-4788 beacon roots, EIP-2935 historical block hashes)
     /// When true, these contracts are updated at the start of each transaction
     enable_beacon_roots: bool = true,
+
     enable_historical_block_hashes: bool = true,
+
     enable_validator_deposits: bool = true,
+
     enable_validator_withdrawals: bool = true,
 
     /// Tracer configuration for execution monitoring and debugging
@@ -133,12 +142,10 @@ pub const EvmConfig = struct {
         }
     },
 
+    // TODO: this method is completely
     /// Get the effective SIMD vector length for the current target
     pub fn getVectorLength(self: EvmConfig) comptime_int {
-        if (self.vector_length > 0) {
-            return self.vector_length;
-        }
-        // Auto-detect based on target CPU
+        if (self.vector_length > 0) return self.vector_length;
         const target = @import("builtin").target;
         return std.simd.suggestVectorLengthForCpu(u8, target.cpu) orelse 1;
     }
@@ -150,7 +157,6 @@ pub const EvmConfig = struct {
         const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
         const limit = self.loop_quota orelse 0;
 
-        // Choose the smallest type that can hold the limit
         const T = if (limit <= std.math.maxInt(u8))
             u8
         else if (limit <= std.math.maxInt(u16))
@@ -159,6 +165,7 @@ pub const EvmConfig = struct {
             u32
         else
             u64;
+        // TODO: check we aren't bigger than max u64 too
 
         const Counter = SafetyCounter(T, mode);
         return Counter;
@@ -181,6 +188,7 @@ pub const EvmConfig = struct {
             .disable_fusion = self.disable_fusion,
             .vector_length = self.getVectorLength(),
             .loop_quota = self.loop_quota,
+            .opcode_overrides = self.opcode_overrides,
             // TracerType removed - tracer is always present but enabled/disabled via config
         };
     }
@@ -195,6 +203,8 @@ pub const EvmConfig = struct {
             @compileError("max_call_depth too large");
     }
 
+    // TODO: This is either dead code or code that should be dead
+    // Remove it
     /// Predefined configuration optimized for performance
     /// Uses advanced planner strategy for maximum optimization
     pub fn optimizeFast() EvmConfig {
@@ -203,6 +213,8 @@ pub const EvmConfig = struct {
         };
     }
 
+    // TODO: This is either dead code or code that should be dead
+    // Remove it
     /// Predefined configuration optimized for binary size
     /// Uses minimal planner strategy to reduce executable size
     pub fn optimizeSmall() EvmConfig {
@@ -211,6 +223,8 @@ pub const EvmConfig = struct {
         };
     }
 
+    // TODO: This is either dead code or code that should be dead
+    // Remove it
     /// Generate configuration from build options
     pub fn fromBuildOptions() EvmConfig {
         const build_options = @import("build_options");
@@ -250,8 +264,11 @@ pub const EvmConfig = struct {
         return config;
     }
 
+    // TODO: This is only used in one method so we should inline it in that method instead of abstracting it here
     /// Get the hardfork enum from a string
     fn getHardforkFromString(hardfork_str: []const u8) Hardfork {
+        // TODO: We need to stop making cancun the default and instead make latest the default
+        // We should also alias latest so we can update latest hardfork in a single spot to update the default latest hardfork everywhere
         if (std.mem.eql(u8, hardfork_str, "FRONTIER")) return .FRONTIER;
         if (std.mem.eql(u8, hardfork_str, "HOMESTEAD")) return .HOMESTEAD;
         if (std.mem.eql(u8, hardfork_str, "BYZANTIUM")) return .BYZANTIUM;
@@ -260,7 +277,6 @@ pub const EvmConfig = struct {
         if (std.mem.eql(u8, hardfork_str, "LONDON")) return .LONDON;
         if (std.mem.eql(u8, hardfork_str, "SHANGHAI")) return .SHANGHAI;
         if (std.mem.eql(u8, hardfork_str, "CANCUN")) return .CANCUN;
-
         // Default to CANCUN if unknown
         return .CANCUN;
     }
@@ -491,7 +507,7 @@ test "EvmConfig - custom opcode handlers" {
         .{ .opcode = 0xFE, .handler = &custom_invalid }, // Invalid opcode
     };
 
-    const handlers = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &overrides);
+    const handlers = frame_handlers.getOpcodeHandlers(TestFrame, &overrides);
 
     // Verify ADD was overridden
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &custom_add), handlers[@intFromEnum(Opcode.ADD)]);
@@ -518,7 +534,7 @@ test "EvmConfig - empty opcode overrides" {
 
     // Test with no overrides
     const handlers_no_override = frame_handlers.getOpcodeHandlers(TestFrame);
-    const handlers_empty_override = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &.{});
+    const handlers_empty_override = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
 
     // Both should produce identical results
     for (0..256) |i| {
@@ -571,7 +587,7 @@ test "EvmConfig - multiple opcode overrides" {
         .{ .opcode = 0xFC, .handler = &handler3 }, // Invalid opcode
     };
 
-    const handlers = frame_handlers.getOpcodeHandlersWithOverrides(TestFrame, &overrides);
+    const handlers = frame_handlers.getOpcodeHandlers(TestFrame, &overrides);
 
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler1), handlers[@intFromEnum(Opcode.ADD)]);
     try testing.expectEqual(@as(TestFrame.OpcodeHandler, &handler2), handlers[@intFromEnum(Opcode.MUL)]);

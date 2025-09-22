@@ -20,14 +20,10 @@ const stack_frame_memory_synthetic = @import("../instructions/handlers_memory_sy
 const stack_frame_jump_synthetic = @import("../instructions/handlers_jump_synthetic.zig");
 const stack_frame_advanced_synthetic = @import("../instructions/handlers_advanced_synthetic.zig");
 
-/// Returns the normal (non-traced) opcode handlers array for a given Frame type
-pub fn getOpcodeHandlers(comptime FrameType: type) [256]FrameType.OpcodeHandler {
-    return getOpcodeHandlersWithOverrides(FrameType, &.{});
-}
-
-/// Returns opcode handlers with custom overrides applied
-pub fn getOpcodeHandlersWithOverrides(
+/// Returns opcode handlers array with optional custom overrides
+pub fn getOpcodeHandlers(
     comptime FrameType: type,
+    // TODO see if zig supports changing anyOpaque to FrameType.OpcodeHandler
     comptime overrides: []const struct { opcode: u8, handler: *const anyopaque },
 ) [256]FrameType.OpcodeHandler {
     // Import handler modules with FrameType
@@ -49,14 +45,14 @@ pub fn getOpcodeHandlersWithOverrides(
             _ = cursor;
             // Invalid opcodes consume all remaining gas and revert
             frame.gas_remaining = 0;
-            return FrameType.Error.OutOfGas;
+            return FrameType.Error.InvalidOpcode;
         }
     }.handler;
 
-    @setEvalBranchQuota(10000);
     var h: [256]FrameType.OpcodeHandler = undefined;
-    const invalid_handler: FrameType.OpcodeHandler = &invalid;
-    for (&h) |*handler| handler.* = invalid_handler;
+    @setEvalBranchQuota(10000);
+    for (&h) |*handler| handler.* = &invalid;
+
     h[@intFromEnum(Opcode.STOP)] = &SystemHandlers.stop;
     h[@intFromEnum(Opcode.ADD)] = &ArithmeticHandlers.add;
     h[@intFromEnum(Opcode.MUL)] = &ArithmeticHandlers.mul;
@@ -124,7 +120,6 @@ pub fn getOpcodeHandlersWithOverrides(
     h[@intFromEnum(Opcode.MCOPY)] = &MemoryHandlers.mcopy;
     h[@intFromEnum(Opcode.GAS)] = &ContextHandlers.gas;
     h[@intFromEnum(Opcode.JUMPDEST)] = &JumpHandlers.jumpdest;
-    // TODO: Enable when EVM implementation has transient storage support
     h[@intFromEnum(Opcode.TLOAD)] = &StorageHandlers.tload;
     h[@intFromEnum(Opcode.TSTORE)] = &StorageHandlers.tstore;
     // PUSH
@@ -167,12 +162,12 @@ pub fn getOpcodeHandlersWithOverrides(
     // Note: Synthetic opcodes (0xa5-0xbc) are NOT mapped here because they should only be used
     // internally by the dispatch system during optimization. Raw bytecode containing these values
     // should be treated as invalid opcodes and use the default invalid handler.
-    
+
     // Apply custom overrides
     inline for (overrides) |override| {
         h[override.opcode] = @as(FrameType.OpcodeHandler, @ptrCast(override.handler));
     }
-    
+
     return h;
 }
 
@@ -195,7 +190,6 @@ pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) Frame
         @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER) => &ArithmeticSyntheticHandlers.push_div_pointer,
         @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE) => &ArithmeticSyntheticHandlers.push_sub_inline,
         @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER) => &ArithmeticSyntheticHandlers.push_sub_pointer,
-        // Static jump optimizations
         @intFromEnum(OpcodeSynthetic.JUMP_TO_STATIC_LOCATION) => &JumpSyntheticHandlers.jump_to_static_location,
         @intFromEnum(OpcodeSynthetic.JUMPI_TO_STATIC_LOCATION) => &JumpSyntheticHandlers.jumpi_to_static_location,
         @intFromEnum(OpcodeSynthetic.PUSH_MLOAD_INLINE) => &MemorySyntheticHandlers.push_mload_inline,
@@ -210,15 +204,12 @@ pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) Frame
         @intFromEnum(OpcodeSynthetic.PUSH_XOR_POINTER) => &BitwiseSyntheticHandlers.push_xor_pointer,
         @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_INLINE) => &MemorySyntheticHandlers.push_mstore8_inline,
         @intFromEnum(OpcodeSynthetic.PUSH_MSTORE8_POINTER) => &MemorySyntheticHandlers.push_mstore8_pointer,
-        // Advanced fusion patterns
-        // Note: CONSTANT_FOLD (0xBD) removed - compiler handles constant folding
         @intFromEnum(OpcodeSynthetic.MULTI_PUSH_2) => &AdvancedSyntheticHandlers.multi_push_2,
         @intFromEnum(OpcodeSynthetic.MULTI_PUSH_3) => &AdvancedSyntheticHandlers.multi_push_3,
         @intFromEnum(OpcodeSynthetic.MULTI_POP_2) => &AdvancedSyntheticHandlers.multi_pop_2,
         @intFromEnum(OpcodeSynthetic.MULTI_POP_3) => &AdvancedSyntheticHandlers.multi_pop_3,
         @intFromEnum(OpcodeSynthetic.ISZERO_JUMPI) => &AdvancedSyntheticHandlers.iszero_jumpi,
         @intFromEnum(OpcodeSynthetic.DUP2_MSTORE_PUSH) => &AdvancedSyntheticHandlers.dup2_mstore_push,
-        // New high-impact fusions
         @intFromEnum(OpcodeSynthetic.DUP3_ADD_MSTORE) => &AdvancedSyntheticHandlers.dup3_add_mstore,
         @intFromEnum(OpcodeSynthetic.SWAP1_DUP2_ADD) => &AdvancedSyntheticHandlers.swap1_dup2_add,
         @intFromEnum(OpcodeSynthetic.PUSH_DUP3_ADD) => &AdvancedSyntheticHandlers.push_dup3_add,
@@ -227,7 +218,7 @@ pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) Frame
         @intFromEnum(OpcodeSynthetic.PUSH0_REVERT) => &AdvancedSyntheticHandlers.push0_revert,
         @intFromEnum(OpcodeSynthetic.PUSH_ADD_DUP1) => &AdvancedSyntheticHandlers.push_add_dup1,
         @intFromEnum(OpcodeSynthetic.MLOAD_SWAP1_DUP2) => &AdvancedSyntheticHandlers.mload_swap1_dup2,
+        // TODO we should Frame.tracer.panic instead
         else => @panic("Invalid synthetic opcode"),
     };
 }
-

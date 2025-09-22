@@ -1,330 +1,319 @@
-/// Creates a CallResult type specialized for the given EVM configuration.
-/// This allows the CallResult structure to be adapted based on configuration
-/// while maintaining backward compatibility with existing code.
 pub fn CallResult(comptime config: anytype) type {
     // We can add config-specific customizations here in the future
     _ = config; // Currently unused but reserved for future enhancements
-    
+
+    // TODO: do const Self = @This() instead of inlining return @This()
     return struct {
-    success: bool,
-    gas_left: u64,
-    output: []const u8,
-    logs: []const Log = &.{},
-    /// Accounts that self-destructed during execution (address -> beneficiary)
-    selfdestructs: []const SelfDestructRecord = &.{},
-    /// Addresses accessed during execution (for access list)
-    accessed_addresses: []const Address = &.{},
-    /// Storage slots accessed during execution
-    accessed_storage: []const StorageAccess = &.{},
-    /// Execution trace (for debugging and differential testing)
-    trace: ?ExecutionTrace = null,
-    /// Error information (for debugging and differential testing)
-    error_info: ?[]const u8 = null,
-    /// Address of created contract (for CREATE/CREATE2 operations)
-    created_address: ?Address = null,
+        success: bool,
+        gas_left: u64,
+        output: []const u8,
+        logs: []const Log = &.{},
+        selfdestructs: []const SelfDestructRecord = &.{},
+        accessed_addresses: []const Address = &.{},
+        accessed_storage: []const StorageAccess = &.{},
+        trace: ?ExecutionTrace = null,
+        error_info: ?[]const u8 = null,
+        created_address: ?Address = null,
 
-    /// Create a successful call result
-    pub fn success_with_output(gas_left: u64, output: []const u8) @This() {
-        return @This(){
-            .success = true,
-            .gas_left = gas_left,
-            .output = output,
-            .logs = &.{},
-            .selfdestructs = &.{},
-            .accessed_addresses = &.{},
-            .accessed_storage = &.{},
-        };
-    }
-
-    /// Create a successful call result with empty output
-    pub fn success_empty(gas_left: u64) @This() {
-        return @This(){
-            .success = true,
-            .gas_left = gas_left,
-            .output = &[_]u8{},
-            .logs = &.{},
-            .selfdestructs = &.{},
-            .accessed_addresses = &.{},
-            .accessed_storage = &.{},
-        };
-    }
-
-    /// Create a failed call result
-    pub fn failure(gas_left: u64) @This() {
-        return @This(){
-            .success = false,
-            .gas_left = gas_left,
-            .output = &[_]u8{},
-            .logs = &.{},
-            .selfdestructs = &.{},
-            .accessed_addresses = &.{},
-            .accessed_storage = &.{},
-        };
-    }
-
-    /// Create a failed call result with error info
-    pub fn failure_with_error(gas_left: u64, error_info: []const u8) @This() {
-        return @This(){
-            .success = false,
-            .gas_left = gas_left,
-            .output = &[_]u8{},
-            .logs = &.{},
-            .selfdestructs = &.{},
-            .accessed_addresses = &.{},
-            .accessed_storage = &.{},
-            .error_info = error_info,
-        };
-    }
-
-    /// Create a reverted call result with revert data
-    pub fn revert_with_data(gas_left: u64, revert_data: []const u8) @This() {
-        return @This(){
-            .success = false,
-            .gas_left = gas_left,
-            .output = revert_data,
-            .logs = &.{},
-            .selfdestructs = &.{},
-            .accessed_addresses = &.{},
-            .accessed_storage = &.{},
-            .error_info = null,  // Don't set error_info to avoid freeing string literal
-        };
-    }
-
-    /// Create a successful call result with output and logs
-    pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) @This() {
-        return @This(){
-            .success = true,
-            .gas_left = gas_left,
-            .output = output,
-            .logs = logs,
-            .selfdestructs = &.{},
-            .accessed_addresses = &.{},
-            .accessed_storage = &.{},
-        };
-    }
-
-    /// Check if the call succeeded
-    pub fn isSuccess(self: @This()) bool {
-        return self.success;
-    }
-
-    /// Check if the call failed
-    pub fn isFailure(self: @This()) bool {
-        return !self.success;
-    }
-
-    /// Check if the call has output data
-    pub fn hasOutput(self: @This()) bool {
-        return self.output.len > 0;
-    }
-
-    /// Get the amount of gas consumed (assuming original_gas was provided)
-    pub fn gasConsumed(self: @This(), original_gas: u64) u64 {
-        if (self.gas_left > original_gas) return 0; // Sanity check
-        return original_gas - self.gas_left;
-    }
-
-    /// Clean up all memory associated with logs
-    /// Must be called when CallResult contains owned log data
-    pub fn deinitLogs(self: *@This(), allocator: std.mem.Allocator) void {
-        for (self.logs) |log| {
-            allocator.free(log.topics);
-            allocator.free(log.data);
+        pub fn success_with_output(gas_left: u64, output: []const u8) @This() {
+            return @This(){
+                .success = true,
+                .gas_left = gas_left,
+                .output = output,
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
+            };
         }
-        allocator.free(self.logs);
-        self.logs = &.{};
-    }
 
-    /// Clean up memory for a logs slice returned by takeLogs()
-    /// Use this when you have logs from takeLogs() instead of a full CallResult
-    pub fn deinitLogsSlice(logs: []const Log, allocator: std.mem.Allocator) void {
-        for (logs) |log| {
-            allocator.free(log.topics);
-            allocator.free(log.data);
+        pub fn success_empty(gas_left: u64) @This() {
+            return @This(){
+                .success = true,
+                .gas_left = gas_left,
+                .output = &[_]u8{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
+            };
         }
-        allocator.free(logs);
-    }
 
-    /// Clean up all allocated memory in the CallResult
-    /// Call this when the CallResult contains owned data that needs to be freed
-    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-        // Free output buffer if it's allocated
-        if (self.output.len > 0) {
-            allocator.free(self.output);
+        pub fn failure(gas_left: u64) @This() {
+            return @This(){
+                .success = false,
+                .gas_left = gas_left,
+                .output = &[_]u8{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
+            };
         }
-        
-        // Free logs - always free if we have logs since they're allocated
-        if (self.logs.len > 0) {
+
+        /// Create a failed call result with error info
+        pub fn failure_with_error(gas_left: u64, error_info: []const u8) @This() {
+            return @This(){
+                .success = false,
+                .gas_left = gas_left,
+                .output = &[_]u8{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
+                .error_info = error_info,
+            };
+        }
+
+        /// Create a reverted call result with revert data
+        pub fn revert_with_data(gas_left: u64, revert_data: []const u8) @This() {
+            return @This(){
+                .success = false,
+                .gas_left = gas_left,
+                .output = revert_data,
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
+                .error_info = null, // Don't set error_info to avoid freeing string literal
+            };
+        }
+
+        /// Create a successful call result with output and logs
+        pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) @This() {
+            return @This(){
+                .success = true,
+                .gas_left = gas_left,
+                .output = output,
+                .logs = logs,
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
+            };
+        }
+
+        /// Check if the call succeeded
+        pub fn isSuccess(self: @This()) bool {
+            return self.success;
+        }
+
+        /// Check if the call failed
+        pub fn isFailure(self: @This()) bool {
+            return !self.success;
+        }
+
+        /// Check if the call has output data
+        pub fn hasOutput(self: @This()) bool {
+            return self.output.len > 0;
+        }
+
+        /// Get the amount of gas consumed (assuming original_gas was provided)
+        pub fn gasConsumed(self: @This(), original_gas: u64) u64 {
+            if (self.gas_left > original_gas) return 0; // Sanity check
+            return original_gas - self.gas_left;
+        }
+
+        /// Clean up all memory associated with logs
+        /// Must be called when CallResult contains owned log data
+        pub fn deinitLogs(self: *@This(), allocator: std.mem.Allocator) void {
             for (self.logs) |log| {
-                if (log.topics.len > 0) {
-                    allocator.free(log.topics);
-                }
-                if (log.data.len > 0) {
-                    allocator.free(log.data);
-                }
+                allocator.free(log.topics);
+                allocator.free(log.data);
             }
             allocator.free(self.logs);
+            self.logs = &.{};
         }
-        
-        // Free selfdestructs if allocated
-        if (self.selfdestructs.len > 0) {
-            allocator.free(self.selfdestructs);
-        }
-        
-        // Free accessed_addresses if allocated
-        if (self.accessed_addresses.len > 0) {
-            allocator.free(self.accessed_addresses);
-        }
-        
-        // Free accessed_storage if allocated
-        if (self.accessed_storage.len > 0) {
-            allocator.free(self.accessed_storage);
-        }
-        
-        // Free trace if present
-        if (self.trace) |*trace| {
-            trace.deinit();
-        }
-        
-        // Free error_info if present
-        if (self.error_info) |info| {
-            allocator.free(info);
-        }
-        
-        // Reset all fields to empty slices
-        self.output = &.{};
-        self.logs = &.{};
-        self.selfdestructs = &.{};
-        self.accessed_addresses = &.{};
-        self.accessed_storage = &.{};
-        self.trace = null;
-        self.error_info = null;
-    }
 
-    /// Create an owned copy of this CallResult
-    /// All dynamically allocated data (output, logs, etc.) is duplicated
-    /// The caller owns the returned result and must call deinit() when done
-    pub fn toOwnedResult(self: @This(), allocator: std.mem.Allocator) !@This() {
-        // Copy output data
-        const output_copy = if (self.output.len > 0) 
-            try allocator.dupe(u8, self.output) 
-        else 
-            &.{};
-        errdefer if (output_copy.len > 0) allocator.free(output_copy);
+        /// Clean up memory for a logs slice returned by takeLogs()
+        /// Use this when you have logs from takeLogs() instead of a full CallResult
+        pub fn deinitLogsSlice(logs: []const Log, allocator: std.mem.Allocator) void {
+            for (logs) |log| {
+                allocator.free(log.topics);
+                allocator.free(log.data);
+            }
+            allocator.free(logs);
+        }
 
-        // Copy logs
-        const logs_copy = if (self.logs.len > 0) blk: {
-            const logs = try allocator.alloc(Log, self.logs.len);
-            errdefer allocator.free(logs);
-            
-            var copied_count: usize = 0;
-            errdefer {
-                for (logs[0..copied_count]) |log| {
+        /// Clean up all allocated memory in the CallResult
+        /// Call this when the CallResult contains owned data that needs to be freed
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            // Free output buffer if it's allocated
+            if (self.output.len > 0) {
+                allocator.free(self.output);
+            }
+
+            // Free logs - always free if we have logs since they're allocated
+            if (self.logs.len > 0) {
+                for (self.logs) |log| {
+                    if (log.topics.len > 0) {
+                        allocator.free(log.topics);
+                    }
+                    if (log.data.len > 0) {
+                        allocator.free(log.data);
+                    }
+                }
+                allocator.free(self.logs);
+            }
+
+            // Free selfdestructs if allocated
+            if (self.selfdestructs.len > 0) {
+                allocator.free(self.selfdestructs);
+            }
+
+            // Free accessed_addresses if allocated
+            if (self.accessed_addresses.len > 0) {
+                allocator.free(self.accessed_addresses);
+            }
+
+            // Free accessed_storage if allocated
+            if (self.accessed_storage.len > 0) {
+                allocator.free(self.accessed_storage);
+            }
+
+            // Free trace if present
+            if (self.trace) |*trace| {
+                trace.deinit();
+            }
+
+            // Free error_info if present
+            if (self.error_info) |info| {
+                allocator.free(info);
+            }
+
+            // Reset all fields to empty slices
+            self.output = &.{};
+            self.logs = &.{};
+            self.selfdestructs = &.{};
+            self.accessed_addresses = &.{};
+            self.accessed_storage = &.{};
+            self.trace = null;
+            self.error_info = null;
+        }
+
+        /// Create an owned copy of this CallResult
+        /// All dynamically allocated data (output, logs, etc.) is duplicated
+        /// The caller owns the returned result and must call deinit() when done
+        pub fn toOwnedResult(self: @This(), allocator: std.mem.Allocator) !@This() {
+            // Copy output data
+            const output_copy = if (self.output.len > 0)
+                try allocator.dupe(u8, self.output)
+            else
+                &.{};
+            errdefer if (output_copy.len > 0) allocator.free(output_copy);
+
+            // Copy logs
+            const logs_copy = if (self.logs.len > 0) blk: {
+                const logs = try allocator.alloc(Log, self.logs.len);
+                errdefer allocator.free(logs);
+
+                var copied_count: usize = 0;
+                errdefer {
+                    for (logs[0..copied_count]) |log| {
+                        if (log.topics.len > 0) allocator.free(log.topics);
+                        if (log.data.len > 0) allocator.free(log.data);
+                    }
+                }
+
+                for (self.logs, 0..) |log, i| {
+                    logs[i] = .{
+                        .address = log.address,
+                        .topics = if (log.topics.len > 0)
+                            try allocator.dupe(u256, log.topics)
+                        else
+                            &.{},
+                        .data = if (log.data.len > 0)
+                            try allocator.dupe(u8, log.data)
+                        else
+                            &.{},
+                    };
+                    copied_count += 1;
+                }
+                break :blk logs;
+            } else &.{};
+            errdefer if (logs_copy.len > 0) {
+                for (logs_copy) |log| {
                     if (log.topics.len > 0) allocator.free(log.topics);
                     if (log.data.len > 0) allocator.free(log.data);
                 }
-            }
-            
-            for (self.logs, 0..) |log, i| {
-                logs[i] = .{
-                    .address = log.address,
-                    .topics = if (log.topics.len > 0) 
-                        try allocator.dupe(u256, log.topics) 
-                    else 
-                        &.{},
-                    .data = if (log.data.len > 0) 
-                        try allocator.dupe(u8, log.data) 
-                    else 
-                        &.{},
-                };
-                copied_count += 1;
-            }
-            break :blk logs;
-        } else &.{};
-        errdefer if (logs_copy.len > 0) {
-            for (logs_copy) |log| {
-                if (log.topics.len > 0) allocator.free(log.topics);
-                if (log.data.len > 0) allocator.free(log.data);
-            }
-            allocator.free(logs_copy);
-        };
-
-        // Copy selfdestructs
-        const selfdestructs_copy = if (self.selfdestructs.len > 0)
-            try allocator.dupe(SelfDestructRecord, self.selfdestructs)
-        else
-            &.{};
-        errdefer if (selfdestructs_copy.len > 0) allocator.free(selfdestructs_copy);
-
-        // Copy accessed addresses
-        const accessed_addresses_copy = if (self.accessed_addresses.len > 0)
-            try allocator.dupe(Address, self.accessed_addresses)
-        else
-            &.{};
-        errdefer if (accessed_addresses_copy.len > 0) allocator.free(accessed_addresses_copy);
-
-        // Copy accessed storage
-        const accessed_storage_copy = if (self.accessed_storage.len > 0)
-            try allocator.dupe(StorageAccess, self.accessed_storage)
-        else
-            &.{};
-        errdefer if (accessed_storage_copy.len > 0) allocator.free(accessed_storage_copy);
-
-        // Copy error info
-        const error_info_copy = if (self.error_info) |info|
-            try allocator.dupe(u8, info)
-        else
-            null;
-        errdefer if (error_info_copy) |info| allocator.free(info);
-
-        // Copy trace if present
-        const trace_copy = if (self.trace) |trace| blk: {
-            const steps_copy = try allocator.alloc(TraceStep, trace.steps.len);
-            errdefer allocator.free(steps_copy);
-            
-            var copied_steps: usize = 0;
-            errdefer {
-                for (steps_copy[0..copied_steps]) |*step| {
-                    step.deinit(allocator);
-                }
-            }
-            
-            for (trace.steps, 0..) |step, i| {
-                steps_copy[i] = .{
-                    .pc = step.pc,
-                    .opcode = step.opcode,
-                    .opcode_name = try allocator.dupe(u8, step.opcode_name),
-                    .gas = step.gas,
-                    .depth = step.depth,
-                    .mem_size = step.mem_size,
-                    .gas_cost = step.gas_cost,
-                    .stack = try allocator.dupe(u256, step.stack),
-                    .memory = try allocator.dupe(u8, step.memory),
-                    .storage_reads = try allocator.dupe(TraceStep.StorageRead, step.storage_reads),
-                    .storage_writes = try allocator.dupe(TraceStep.StorageWrite, step.storage_writes),
-                };
-                copied_steps += 1;
-            }
-            
-            break :blk ExecutionTrace{
-                .steps = steps_copy,
-                .allocator = allocator,
+                allocator.free(logs_copy);
             };
-        } else null;
 
-        return @This(){
-            .success = self.success,
-            .gas_left = self.gas_left,
-            .output = output_copy,
-            .logs = logs_copy,
-            .selfdestructs = selfdestructs_copy,
-            .accessed_addresses = accessed_addresses_copy,
-            .accessed_storage = accessed_storage_copy,
-            .trace = trace_copy,
-            .error_info = error_info_copy,
-            .created_address = self.created_address,
-        };
-    }
+            // Copy selfdestructs
+            const selfdestructs_copy = if (self.selfdestructs.len > 0)
+                try allocator.dupe(SelfDestructRecord, self.selfdestructs)
+            else
+                &.{};
+            errdefer if (selfdestructs_copy.len > 0) allocator.free(selfdestructs_copy);
+
+            // Copy accessed addresses
+            const accessed_addresses_copy = if (self.accessed_addresses.len > 0)
+                try allocator.dupe(Address, self.accessed_addresses)
+            else
+                &.{};
+            errdefer if (accessed_addresses_copy.len > 0) allocator.free(accessed_addresses_copy);
+
+            // Copy accessed storage
+            const accessed_storage_copy = if (self.accessed_storage.len > 0)
+                try allocator.dupe(StorageAccess, self.accessed_storage)
+            else
+                &.{};
+            errdefer if (accessed_storage_copy.len > 0) allocator.free(accessed_storage_copy);
+
+            // Copy error info
+            const error_info_copy = if (self.error_info) |info|
+                try allocator.dupe(u8, info)
+            else
+                null;
+            errdefer if (error_info_copy) |info| allocator.free(info);
+
+            // Copy trace if present
+            const trace_copy = if (self.trace) |trace| blk: {
+                const steps_copy = try allocator.alloc(TraceStep, trace.steps.len);
+                errdefer allocator.free(steps_copy);
+
+                var copied_steps: usize = 0;
+                errdefer {
+                    for (steps_copy[0..copied_steps]) |*step| {
+                        step.deinit(allocator);
+                    }
+                }
+
+                for (trace.steps, 0..) |step, i| {
+                    steps_copy[i] = .{
+                        .pc = step.pc,
+                        .opcode = step.opcode,
+                        .opcode_name = try allocator.dupe(u8, step.opcode_name),
+                        .gas = step.gas,
+                        .depth = step.depth,
+                        .mem_size = step.mem_size,
+                        .gas_cost = step.gas_cost,
+                        .stack = try allocator.dupe(u256, step.stack),
+                        .memory = try allocator.dupe(u8, step.memory),
+                        .storage_reads = try allocator.dupe(TraceStep.StorageRead, step.storage_reads),
+                        .storage_writes = try allocator.dupe(TraceStep.StorageWrite, step.storage_writes),
+                    };
+                    copied_steps += 1;
+                }
+
+                break :blk ExecutionTrace{
+                    .steps = steps_copy,
+                    .allocator = allocator,
+                };
+            } else null;
+
+            return @This(){
+                .success = self.success,
+                .gas_left = self.gas_left,
+                .output = output_copy,
+                .logs = logs_copy,
+                .selfdestructs = selfdestructs_copy,
+                .accessed_addresses = accessed_addresses_copy,
+                .accessed_storage = accessed_storage_copy,
+                .trace = trace_copy,
+                .error_info = error_info_copy,
+                .created_address = self.created_address,
+            };
+        }
     };
 }
 
@@ -859,19 +848,14 @@ test "log struct comprehensive" {
     const allocator = gpa.allocator();
 
     // Test log with maximum topics (typically 4 in EVM)
-    const topics = try allocator.dupe(u256, &[_]u256{ 
-        0x1111111111111111,
-        0x2222222222222222, 
-        0x3333333333333333,
-        0x4444444444444444
-    });
+    const topics = try allocator.dupe(u256, &[_]u256{ 0x1111111111111111, 0x2222222222222222, 0x3333333333333333, 0x4444444444444444 });
     defer allocator.free(topics);
 
     const data = try allocator.dupe(u8, "This is a comprehensive test of log data with various characters: !@#$%^&*()");
     defer allocator.free(data);
 
     const log = Log{
-        .address = Address{ .bytes = [_]u8{0xDE, 0xAD, 0xBE, 0xEF} ++ [_]u8{0xCA, 0xFE, 0xBA, 0xBE} ++ [_]u8{0x12, 0x34, 0x56, 0x78} ++ [_]u8{0x9A, 0xBC, 0xDE, 0xF0} ++ [_]u8{0x11, 0x22, 0x33, 0x44} },
+        .address = Address{ .bytes = [_]u8{ 0xDE, 0xAD, 0xBE, 0xEF } ++ [_]u8{ 0xCA, 0xFE, 0xBA, 0xBE } ++ [_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{ 0x9A, 0xBC, 0xDE, 0xF0 } ++ [_]u8{ 0x11, 0x22, 0x33, 0x44 } },
         .topics = topics,
         .data = data,
     };
@@ -928,7 +912,7 @@ test "call result toOwnedResult basic" {
     try testing.expect(owned.success);
     try testing.expectEqual(@as(u64, 5000), owned.gas_left);
     try testing.expectEqualSlices(u8, "test output", owned.output);
-    
+
     // Verify it's a copy (different memory address)
     if (original.output.len > 0) {
         try testing.expect(original.output.ptr != owned.output.ptr);
@@ -965,7 +949,7 @@ test "call result toOwnedResult with logs" {
     try testing.expectEqual(@as(usize, 1), owned.logs.len);
     try testing.expectEqual(@as(usize, 2), owned.logs[0].topics.len);
     try testing.expectEqualSlices(u8, "log data", owned.logs[0].data);
-    
+
     // Verify deep copy
     try testing.expect(original.logs.ptr != owned.logs.ptr);
     if (original.logs.len > 0) {
@@ -1005,7 +989,7 @@ test "call result toOwnedResult with error info" {
     try testing.expect(!owned.success);
     try testing.expectEqual(@as(u64, 500), owned.gas_left);
     try testing.expectEqualSlices(u8, "error message", owned.error_info.?);
-    
+
     // Verify it's a copy
     if (original.error_info) |info| {
         try testing.expect(info.ptr != owned.error_info.?.ptr);
@@ -1020,7 +1004,7 @@ test "call result toOwnedResult with all fields" {
 
     // Create a result with all fields populated
     var result = DefaultCallResult.success_with_output(2500, "test output");
-    
+
     // Add logs
     const topics = try allocator.dupe(u256, &[_]u256{0xABCD});
     defer allocator.free(topics);
@@ -1034,7 +1018,7 @@ test "call result toOwnedResult with all fields" {
         .data = log_data,
     };
     result.logs = logs;
-    
+
     // Add selfdestructs
     const selfdestructs = try allocator.alloc(SelfDestructRecord, 1);
     defer allocator.free(selfdestructs);
@@ -1043,14 +1027,14 @@ test "call result toOwnedResult with all fields" {
         .beneficiary = .{ .bytes = [_]u8{0x33} ++ [_]u8{0} ** 19 },
     };
     result.selfdestructs = selfdestructs;
-    
+
     // Add accessed addresses
     const addresses = try allocator.alloc(Address, 2);
     defer allocator.free(addresses);
     addresses[0] = .{ .bytes = [_]u8{0x44} ++ [_]u8{0} ** 19 };
     addresses[1] = .{ .bytes = [_]u8{0x55} ++ [_]u8{0} ** 19 };
     result.accessed_addresses = addresses;
-    
+
     // Add accessed storage
     const storage = try allocator.alloc(StorageAccess, 1);
     defer allocator.free(storage);
@@ -1059,17 +1043,17 @@ test "call result toOwnedResult with all fields" {
         .slot = 0x100,
     };
     result.accessed_storage = storage;
-    
+
     // Add created address
     result.created_address = .{ .bytes = [_]u8{0x77} ++ [_]u8{0} ** 19 };
-    
+
     // Create owned copy
     const owned = try result.toOwnedResult(allocator);
     defer {
         var mutable_owned = owned;
         mutable_owned.deinit(allocator);
     }
-    
+
     // Verify all fields were copied
     try testing.expectEqualSlices(u8, "test output", owned.output);
     try testing.expectEqual(@as(usize, 1), owned.logs.len);
@@ -1077,7 +1061,7 @@ test "call result toOwnedResult with all fields" {
     try testing.expectEqual(@as(usize, 2), owned.accessed_addresses.len);
     try testing.expectEqual(@as(usize, 1), owned.accessed_storage.len);
     try testing.expectEqual(Address{ .bytes = [_]u8{0x77} ++ [_]u8{0} ** 19 }, owned.created_address.?);
-    
+
     // Verify deep copies
     try testing.expect(result.output.ptr != owned.output.ptr);
     try testing.expect(result.logs.ptr != owned.logs.ptr);

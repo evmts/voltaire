@@ -1,241 +1,240 @@
 const primitives = @import("primitives");
 const Address = primitives.Address;
 
-/// Creates a CallParams type specialized for the given EVM configuration.
-/// This allows the CallParams structure to be adapted based on configuration
-/// while maintaining backward compatibility with existing code.
 pub fn CallParams(comptime config: anytype) type {
     // We can add config-specific customizations here in the future
     _ = config; // Currently unused but reserved for future enhancements
-    
+
     return union(enum) {
-    /// Regular CALL operation
-    call: struct {
-        caller: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    },
-    /// CALLCODE operation: execute external code with current storage/context
-    /// Executes code at `to`, but uses caller's storage and address context
-    callcode: struct {
-        caller: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    },
-    /// DELEGATECALL operation (preserves caller context)
-    delegatecall: struct {
-        caller: Address, // Original caller, not current contract
-        to: Address,
-        input: []const u8,
-        gas: u64,
-    },
-    /// STATICCALL operation (read-only)
-    staticcall: struct {
-        caller: Address,
-        to: Address,
-        input: []const u8,
-        gas: u64,
-    },
-    /// CREATE operation
-    create: struct {
-        caller: Address,
-        value: u256,
-        init_code: []const u8,
-        gas: u64,
-    },
-    /// CREATE2 operation
-    create2: struct {
-        caller: Address,
-        value: u256,
-        init_code: []const u8,
-        salt: u256,
-        gas: u64,
-    },
+        /// Regular CALL operation
+        call: struct {
+            caller: Address,
+            to: Address,
+            value: u256,
+            input: []const u8,
+            gas: u64,
+        },
+        /// CALLCODE operation: execute external code with current storage/context
+        /// Executes code at `to`, but uses caller's storage and address context
+        callcode: struct {
+            caller: Address,
+            to: Address,
+            value: u256,
+            input: []const u8,
+            gas: u64,
+        },
+        /// DELEGATECALL operation (preserves caller context)
+        delegatecall: struct {
+            caller: Address, // Original caller, not current contract
+            to: Address,
+            input: []const u8,
+            gas: u64,
+        },
+        /// STATICCALL operation (read-only)
+        staticcall: struct {
+            caller: Address,
+            to: Address,
+            input: []const u8,
+            gas: u64,
+        },
+        /// CREATE operation
+        create: struct {
+            caller: Address,
+            value: u256,
+            init_code: []const u8,
+            gas: u64,
+        },
+        /// CREATE2 operation
+        create2: struct {
+            caller: Address,
+            value: u256,
+            init_code: []const u8,
+            salt: u256,
+            gas: u64,
+        },
 
-    pub const ValidationError = error{
-        GasZeroError,
-    };
-
-    /// Validate call parameters to ensure they meet EVM requirements.
-    /// Checks gas limits and other critical constraints.
-    pub fn validate(self: @This()) ValidationError!void {
-        // Gas must be non-zero to execute any operation
-        if (self.getGas() == 0) return ValidationError.GasZeroError;
-        
-        // Additional validation could be added here for:
-        // - Input data size limits
-        // - Address validity
-        // - Value constraints for specific call types
-        // Currently only gas validation is implemented as it's the most critical
-    }
-
-    /// Get the gas limit for this call operation
-    pub fn getGas(self: @This()) u64 {
-        return switch (self) {
-            .call => |params| params.gas,
-            .callcode => |params| params.gas,
-            .delegatecall => |params| params.gas,
-            .staticcall => |params| params.gas,
-            .create => |params| params.gas,
-            .create2 => |params| params.gas,
+        pub const ValidationError = error{
+            GasZeroError,
         };
-    }
 
-    /// Set the gas limit for this call operation
-    pub fn setGas(self: *@This(), gas: u64) void {
-        switch (self.*) {
-            .call => |*params| params.gas = gas,
-            .callcode => |*params| params.gas = gas,
-            .delegatecall => |*params| params.gas = gas,
-            .staticcall => |*params| params.gas = gas,
-            .create => |*params| params.gas = gas,
-            .create2 => |*params| params.gas = gas,
+        /// Validate call parameters to ensure they meet EVM requirements.
+        /// Checks gas limits and other critical constraints.
+        pub fn validate(self: @This()) ValidationError!void {
+            // BUG: we should be checking if gas checks are disabled or not
+            // Gas must be non-zero to execute any operation
+            if (self.getGas() == 0) return ValidationError.GasZeroError;
+
+            // TODO: Validate everything though!
+            // Additional validation could be added here for:
+            // - Input data size limits
+            // - Address validity
+            // - Value constraints for specific call types
+            // Currently only gas validation is implemented as it's the most critical
         }
-    }
 
-    /// Get the caller address for this call operation
-    pub fn getCaller(self: @This()) Address {
-        return switch (self) {
-            .call => |params| params.caller,
-            .callcode => |params| params.caller,
-            .delegatecall => |params| params.caller,
-            .staticcall => |params| params.caller,
-            .create => |params| params.caller,
-            .create2 => |params| params.caller,
-        };
-    }
-
-    /// Get the input data for this call operation (empty for CREATE operations)
-    pub fn getInput(self: @This()) []const u8 {
-        return switch (self) {
-            .call => |params| params.input,
-            .callcode => |params| params.input,
-            .delegatecall => |params| params.input,
-            .staticcall => |params| params.input,
-            .create => |params| params.init_code,
-            .create2 => |params| params.init_code,
-        };
-    }
-
-    /// Check if this call operation transfers value
-    pub fn hasValue(self: @This()) bool {
-        return switch (self) {
-            .call => |params| params.value > 0,
-            .callcode => |params| params.value > 0,
-            .delegatecall => false, // DELEGATECALL preserves value from parent context
-            .staticcall => false, // STATICCALL cannot transfer value
-            .create => |params| params.value > 0,
-            .create2 => |params| params.value > 0,
-        };
-    }
-
-    /// Check if this is a read-only operation
-    pub fn isReadOnly(self: @This()) bool {
-        return switch (self) {
-            .staticcall => true,
-            else => false,
-        };
-    }
-
-    /// Check if this is a contract creation operation
-    pub fn isCreate(self: @This()) bool {
-        return switch (self) {
-            .create, .create2 => true,
-            else => false,
-        };
-    }
-
-    /// Creates a deep copy of the CallParams
-    /// Allocates new memory for all dynamic data (input/init_code)
-    pub fn clone(self: @This(), allocator: std.mem.Allocator) !@This() {
-        return switch (self) {
-            .call => |params| blk: {
-                const cloned_input = try allocator.dupe(u8, params.input);
-                break :blk @This(){ .call = .{
-                    .caller = params.caller,
-                    .to = params.to,
-                    .value = params.value,
-                    .input = cloned_input,
-                    .gas = params.gas,
-                } };
-            },
-            .callcode => |params| blk: {
-                const cloned_input = try allocator.dupe(u8, params.input);
-                break :blk @This(){ .callcode = .{
-                    .caller = params.caller,
-                    .to = params.to,
-                    .value = params.value,
-                    .input = cloned_input,
-                    .gas = params.gas,
-                } };
-            },
-            .delegatecall => |params| blk: {
-                const cloned_input = try allocator.dupe(u8, params.input);
-                break :blk @This(){ .delegatecall = .{
-                    .caller = params.caller,
-                    .to = params.to,
-                    .input = cloned_input,
-                    .gas = params.gas,
-                } };
-            },
-            .staticcall => |params| blk: {
-                const cloned_input = try allocator.dupe(u8, params.input);
-                break :blk @This(){ .staticcall = .{
-                    .caller = params.caller,
-                    .to = params.to,
-                    .input = cloned_input,
-                    .gas = params.gas,
-                } };
-            },
-            .create => |params| blk: {
-                const cloned_init_code = try allocator.dupe(u8, params.init_code);
-                break :blk @This(){ .create = .{
-                    .caller = params.caller,
-                    .value = params.value,
-                    .init_code = cloned_init_code,
-                    .gas = params.gas,
-                } };
-            },
-            .create2 => |params| blk: {
-                const cloned_init_code = try allocator.dupe(u8, params.init_code);
-                break :blk @This(){ .create2 = .{
-                    .caller = params.caller,
-                    .value = params.value,
-                    .init_code = cloned_init_code,
-                    .salt = params.salt,
-                    .gas = params.gas,
-                } };
-            },
-        };
-    }
-
-    /// Frees memory allocated by clone()
-    /// Must be called when the cloned CallParams is no longer needed
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
-        switch (self) {
-            .call => |params| allocator.free(params.input),
-            .callcode => |params| allocator.free(params.input),
-            .delegatecall => |params| allocator.free(params.input),
-            .staticcall => |params| allocator.free(params.input),
-            .create => |params| allocator.free(params.init_code),
-            .create2 => |params| allocator.free(params.init_code),
+        /// Get the gas limit for this call operation
+        pub fn getGas(self: @This()) u64 {
+            return switch (self) {
+                .call => |params| params.gas,
+                .callcode => |params| params.gas,
+                .delegatecall => |params| params.gas,
+                .staticcall => |params| params.gas,
+                .create => |params| params.gas,
+                .create2 => |params| params.gas,
+            };
         }
-    }
 
-    /// Get the target address for the call (returns null for CREATE operations)
-    pub fn get_to(self: @This()) ?primitives.Address {
-        return switch (self) {
-            .call => |p| p.to,
-            .callcode => |p| p.to,
-            .delegatecall => |p| p.to,
-            .staticcall => |p| p.to,
-            .create, .create2 => null,
-        };
-    }
+        /// Set the gas limit for this call operation
+        pub fn setGas(self: *@This(), gas: u64) void {
+            switch (self.*) {
+                .call => |*params| params.gas = gas,
+                .callcode => |*params| params.gas = gas,
+                .delegatecall => |*params| params.gas = gas,
+                .staticcall => |*params| params.gas = gas,
+                .create => |*params| params.gas = gas,
+                .create2 => |*params| params.gas = gas,
+            }
+        }
+
+        /// Get the caller address for this call operation
+        pub fn getCaller(self: @This()) Address {
+            return switch (self) {
+                .call => |params| params.caller,
+                .callcode => |params| params.caller,
+                .delegatecall => |params| params.caller,
+                .staticcall => |params| params.caller,
+                .create => |params| params.caller,
+                .create2 => |params| params.caller,
+            };
+        }
+
+        /// Get the input data for this call operation (empty for CREATE operations)
+        pub fn getInput(self: @This()) []const u8 {
+            return switch (self) {
+                .call => |params| params.input,
+                .callcode => |params| params.input,
+                .delegatecall => |params| params.input,
+                .staticcall => |params| params.input,
+                .create => |params| params.init_code,
+                .create2 => |params| params.init_code,
+            };
+        }
+
+        /// Check if this call operation transfers value
+        pub fn hasValue(self: @This()) bool {
+            return switch (self) {
+                .call => |params| params.value > 0,
+                .callcode => |params| params.value > 0,
+                .delegatecall => false, // DELEGATECALL preserves value from parent context
+                .staticcall => false, // STATICCALL cannot transfer value
+                .create => |params| params.value > 0,
+                .create2 => |params| params.value > 0,
+            };
+        }
+
+        /// Check if this is a read-only operation
+        pub fn isReadOnly(self: @This()) bool {
+            return switch (self) {
+                .staticcall => true,
+                else => false,
+            };
+        }
+
+        /// Check if this is a contract creation operation
+        pub fn isCreate(self: @This()) bool {
+            return switch (self) {
+                .create, .create2 => true,
+                else => false,
+            };
+        }
+
+        /// Creates a deep copy of the CallParams
+        /// Allocates new memory for all dynamic data (input/init_code)
+        pub fn clone(self: @This(), allocator: std.mem.Allocator) !@This() {
+            return switch (self) {
+                .call => |params| blk: {
+                    const cloned_input = try allocator.dupe(u8, params.input);
+                    break :blk @This(){ .call = .{
+                        .caller = params.caller,
+                        .to = params.to,
+                        .value = params.value,
+                        .input = cloned_input,
+                        .gas = params.gas,
+                    } };
+                },
+                .callcode => |params| blk: {
+                    const cloned_input = try allocator.dupe(u8, params.input);
+                    break :blk @This(){ .callcode = .{
+                        .caller = params.caller,
+                        .to = params.to,
+                        .value = params.value,
+                        .input = cloned_input,
+                        .gas = params.gas,
+                    } };
+                },
+                .delegatecall => |params| blk: {
+                    const cloned_input = try allocator.dupe(u8, params.input);
+                    break :blk @This(){ .delegatecall = .{
+                        .caller = params.caller,
+                        .to = params.to,
+                        .input = cloned_input,
+                        .gas = params.gas,
+                    } };
+                },
+                .staticcall => |params| blk: {
+                    const cloned_input = try allocator.dupe(u8, params.input);
+                    break :blk @This(){ .staticcall = .{
+                        .caller = params.caller,
+                        .to = params.to,
+                        .input = cloned_input,
+                        .gas = params.gas,
+                    } };
+                },
+                .create => |params| blk: {
+                    const cloned_init_code = try allocator.dupe(u8, params.init_code);
+                    break :blk @This(){ .create = .{
+                        .caller = params.caller,
+                        .value = params.value,
+                        .init_code = cloned_init_code,
+                        .gas = params.gas,
+                    } };
+                },
+                .create2 => |params| blk: {
+                    const cloned_init_code = try allocator.dupe(u8, params.init_code);
+                    break :blk @This(){ .create2 = .{
+                        .caller = params.caller,
+                        .value = params.value,
+                        .init_code = cloned_init_code,
+                        .salt = params.salt,
+                        .gas = params.gas,
+                    } };
+                },
+            };
+        }
+
+        /// Frees memory allocated by clone()
+        /// Must be called when the cloned CallParams is no longer needed
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            switch (self) {
+                .call => |params| allocator.free(params.input),
+                .callcode => |params| allocator.free(params.input),
+                .delegatecall => |params| allocator.free(params.input),
+                .staticcall => |params| allocator.free(params.input),
+                .create => |params| allocator.free(params.init_code),
+                .create2 => |params| allocator.free(params.init_code),
+            }
+        }
+
+        /// Get the target address for the call (returns null for CREATE operations)
+        pub fn get_to(self: @This()) ?primitives.Address {
+            return switch (self) {
+                .call => |p| p.to,
+                .callcode => |p| p.to,
+                .delegatecall => |p| p.to,
+                .staticcall => |p| p.to,
+                .create, .create2 => null,
+            };
+        }
     };
 }
 
@@ -1067,7 +1066,7 @@ test "call params setGas" {
     const caller = primitives.ZERO_ADDRESS;
     const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
     const input = &[_]u8{0x42};
-    const init_code = &[_]u8{0x60, 0x00, 0xf3};
+    const init_code = &[_]u8{ 0x60, 0x00, 0xf3 };
 
     // Test CALL setGas
     {
@@ -1078,7 +1077,7 @@ test "call params setGas" {
             .input = input,
             .gas = 21000,
         } };
-        
+
         try std.testing.expectEqual(@as(u64, 21000), call_op.getGas());
         call_op.setGas(50000);
         try std.testing.expectEqual(@as(u64, 50000), call_op.getGas());
@@ -1092,7 +1091,7 @@ test "call params setGas" {
             .input = input,
             .gas = 15000,
         } };
-        
+
         try std.testing.expectEqual(@as(u64, 15000), delegatecall_op.getGas());
         delegatecall_op.setGas(30000);
         try std.testing.expectEqual(@as(u64, 30000), delegatecall_op.getGas());
@@ -1106,7 +1105,7 @@ test "call params setGas" {
             .input = input,
             .gas = 20000,
         } };
-        
+
         try std.testing.expectEqual(@as(u64, 20000), staticcall_op.getGas());
         staticcall_op.setGas(40000);
         try std.testing.expectEqual(@as(u64, 40000), staticcall_op.getGas());
@@ -1121,7 +1120,7 @@ test "call params setGas" {
             .input = input,
             .gas = 25000,
         } };
-        
+
         try std.testing.expectEqual(@as(u64, 25000), callcode_op.getGas());
         callcode_op.setGas(60000);
         try std.testing.expectEqual(@as(u64, 60000), callcode_op.getGas());
@@ -1135,7 +1134,7 @@ test "call params setGas" {
             .init_code = init_code,
             .gas = 53000,
         } };
-        
+
         try std.testing.expectEqual(@as(u64, 53000), create_op.getGas());
         create_op.setGas(70000);
         try std.testing.expectEqual(@as(u64, 70000), create_op.getGas());
@@ -1150,7 +1149,7 @@ test "call params setGas" {
             .salt = 0xdeadbeef,
             .gas = 55000,
         } };
-        
+
         try std.testing.expectEqual(@as(u64, 55000), create2_op.getGas());
         create2_op.setGas(80000);
         try std.testing.expectEqual(@as(u64, 80000), create2_op.getGas());
@@ -1170,7 +1169,7 @@ test "call params setGas edge cases" {
             .input = &[_]u8{},
             .gas = 1000,
         } };
-        
+
         call_op.setGas(0);
         try std.testing.expectEqual(@as(u64, 0), call_op.getGas());
         try std.testing.expectError(DefaultCallParams.ValidationError.GasZeroError, call_op.validate());
@@ -1185,7 +1184,7 @@ test "call params setGas edge cases" {
             .input = &[_]u8{},
             .gas = 1000,
         } };
-        
+
         const max_gas = std.math.maxInt(u64);
         call_op.setGas(max_gas);
         try std.testing.expectEqual(max_gas, call_op.getGas());
@@ -1200,13 +1199,13 @@ test "call params setGas edge cases" {
             .input = &[_]u8{},
             .gas = 1000,
         } };
-        
+
         call_op.setGas(2000);
         try std.testing.expectEqual(@as(u64, 2000), call_op.getGas());
-        
+
         call_op.setGas(3000);
         try std.testing.expectEqual(@as(u64, 3000), call_op.getGas());
-        
+
         call_op.setGas(1500);
         try std.testing.expectEqual(@as(u64, 1500), call_op.getGas());
     }

@@ -1,13 +1,3 @@
-//! Lightweight execution context for EVM operations.
-//!
-//! Frame handles direct opcode execution including stack manipulation,
-//! arithmetic, memory access, and storage operations. It does NOT handle:
-//! - PC tracking and jumps (managed by Plan)
-//! - CALL/CREATE operations (managed by Host/EVM)
-//! - Environment queries (provided by Host)
-//!
-//! The Frame is designed for efficient opcode dispatch with configurable
-//! components for stack size, memory limits, and gas tracking.
 const std = @import("std");
 const builtin = @import("builtin");
 const memory_mod = @import("../memory/memory.zig");
@@ -34,17 +24,17 @@ const call_result_mod = @import("call_result.zig");
 const dispatch_mod = @import("../preprocessor/dispatch.zig");
 const dispatch_cache = @import("dispatch_cache.zig");
 
-/// Creates a configured Frame type for EVM execution.
-///
-/// The Frame is parameterized by compile-time configuration to enable
-/// optimal code generation and platform-specific optimizations.
+/// The core most important datastructure of the entire EVM
+/// Holds the StackFrame state along with an `interpret` method for executing a stack frame
 pub fn Frame(comptime _config: FrameConfig) type {
     comptime _config.validate();
 
     return struct {
         const Self = @This();
 
-        /// Error code type returned by Frame.interpret - includes both error and success termination cases
+        /// The config passed into Frame(_config)
+        pub const config = _config;
+
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
@@ -59,6 +49,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
             InvalidAmount,
             WriteProtection,
             // Success termination cases (not actually errors)
+            // We treat every exit as errors in the low level interpreter while evm.zig catches them and returns them as success
+            // This is a perf optimization
             Stop,
             Return,
             SelfDestruct,
@@ -72,10 +64,9 @@ pub fn Frame(comptime _config: FrameConfig) type {
         /// Opcode handlers are expected to recursively dispatch the next opcode if they themselves don't error or return
         /// Takes cursor pointer with jump table available through dispatch metadata when needed
         pub const OpcodeHandler = *const fn (frame: *Self, cursor: [*]const Dispatch.Item) Error!noreturn;
+
         /// The struct in charge of efficiently dispatching opcode handlers and providing them metadata
         pub const Dispatch = dispatch_mod.Preprocessor(Self);
-        /// The config passed into Frame(_config)
-        pub const config = _config;
 
         /// The "word" type used by the evm. Defaults to u256. "Word" is the type used by Stack and throughout the Evm
         /// If set to something else the EVM will update to that new word size. e.g. run kekkak128 instead of kekkak256
@@ -123,7 +114,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
         /// A fixed size array of opcode handlers indexed by opcode number
         /// Note: Tracer is now part of EVM struct, not config - always use non-traced handlers
-        pub const opcode_handlers: [256]OpcodeHandler = frame_handlers.getOpcodeHandlers(Self);
+        pub const opcode_handlers: [256]OpcodeHandler = frame_handlers.getOpcodeHandlers(Self, config.opcode_overrides);
 
         // Individual handler groups for testing and direct access
         pub const ArithmeticHandlers = @import("../instructions/handlers_arithmetic.zig").Handlers(Self);
@@ -144,25 +135,17 @@ pub fn Frame(comptime _config: FrameConfig) type {
         pub const MemorySyntheticHandlers = @import("../instructions/handlers_memory_synthetic.zig").Handlers(Self);
         pub const JumpSyntheticHandlers = @import("../instructions/handlers_jump_synthetic.zig").Handlers(Self);
 
-        // CACHE LINE 1 (64 bytes exactly) - TRUE HOT PATH
-        // These fields are accessed in nearly every instruction
-        stack: Stack, // 16B - Stack operations (EVERY arithmetic/stack op)
-        gas_remaining: GasType, // 8B - Gas tracking (checked in most ops)
-        dispatch: Dispatch, // 16B - Dispatch cursor (EVERY instruction)
-        evm_ptr: *anyopaque, // 8B - EVM instance pointer (storage/context/system)
-        memory: Memory, // 16B - Memory operations (frequent)
-        // Total: 64 bytes exactly
+        // CACHE LINE 1
+        stack: Stack, // 16B
+        gas_remaining: GasType, // 8B
+        /// Inner calls are handled by recursively calling back into the EVM which will execute that call in a new StackFrame
+        evm_ptr: *anyopaque, // 8B
+        memory: Memory, // 16B -
+        contract_address: Address, // 20B
+        caller: Address, // 20B
 
-        // CACHE LINE 2 (64 bytes) - STORAGE/CONTEXT/EXECUTION
-        // These fields are accessed together during storage ops and execution
-        contract_address: Address, // 20B - Current contract (storage ops, ADDRESS)
-        // Output is now returned via thread-local storage, not stored on frame
-        // Total: 64 bytes
-
-        // CACHE LINE 3+ (128+ bytes) - COLD PATH
         // These fields are rarely accessed (specific opcodes only)
         // Note: database moved to EVM struct - access via evm_ptr for better cache locality
-        caller: Address, // 20B - Only for CALLER opcode (per-call, cannot cache)
         value: WordType, // 32B - Only for CALLVALUE opcode (per-call, cannot cache)
         calldata_slice: []const u8, // 16B - Only for CALLDATALOAD/COPY (per-call, cannot cache)
         // TODO: We should be able to remove this in favor of storing pointer as metadata
@@ -170,26 +153,15 @@ pub fn Frame(comptime _config: FrameConfig) type {
         authorized_address: ?Address = null, // 21B - EIP-3074 (per-call auth, cannot cache)
         // TODO: We should be able to remove this in favor of storing pointer as metadata
         jump_table: *const Dispatch.JumpTable, // 8B - Jump table for JUMP/JUMPI
-
-        // Loop safety counter for preventing infinite dispatch loops
+        dispatch: Dispatch, // 16B
+        // When enabled (by default only in Debug and Safe mode) we track how many instructions we executed and limit it
         instruction_counter: config.createLoopSafetyCounter(),
 
-        //
-        /// Initialize a new execution frame.
-        ///
-        /// Creates stack, memory, and other execution components. Allocates
-        /// resources with proper cleanup on failure. Bytecode validation
-        /// and analysis is now handled separately by dispatch initialization.
-        ///
-        /// Initialize a new execution frame.
-        /// Note: database is now accessed through evm_ptr for better cache locality
         pub fn init(allocator: std.mem.Allocator, gas_remaining: GasType, caller: Address, value: WordType, calldata_input: []const u8, evm_ptr: *anyopaque) Error!Self {
             var stack = Stack.init(allocator, null) catch return Error.AllocationError;
             errdefer stack.deinit(allocator);
-
             var memory = Memory.init(allocator) catch return Error.AllocationError;
             errdefer memory.deinit(allocator);
-
             return Self{
                 .stack = stack,
                 .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
@@ -206,6 +178,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .instruction_counter = config.createLoopSafetyCounter().init(config.loop_quota orelse 0),
             };
         }
+
         /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.getTracer().debug("Frame.deinit: Starting cleanup", .{});
@@ -214,21 +187,19 @@ pub fn Frame(comptime _config: FrameConfig) type {
             self.getTracer().debug("Frame.deinit: Cleanup complete", .{});
         }
 
-        /// Execute this frame without tracing (backward compatibility method).
-        /// Simply delegates to interpret_with_tracer with no tracer.
-        /// @param bytecode_raw: Raw bytecode to execute
         pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
             @branchHint(.likely);
+            self.getTracer().onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
 
-            self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
                 self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
                 return Error.BytecodeTooLarge;
             }
+            self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
             self.code = bytecode_raw;
+
             self.getTracer().initPcTracker(bytecode_raw);
-            self.getTracer().onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
 
             const allocator = self.getAllocator();
 
@@ -237,7 +208,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
             var owned_schedule: ?Dispatch.DispatchSchedule = null;
             var owned_jump_table: ?*Dispatch.JumpTable = null;
 
-            // Check cache first
+            // TODO: this is AI slop code that is way too tested way too complex and could be simplified
+            // TODO: Why is global_dispatch_cache optional? I don't remember if this is intentional or not
             if (dispatch_cache.global_dispatch_cache) |*cache| {
                 if (cache.lookup(bytecode_raw)) |cached_data| {
                     self.getTracer().debug("Frame: Using cached dispatch schedule", .{});
@@ -295,6 +267,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                     cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
                         @branchHint(.cold);
                         // Failed to cache - not a fatal error, just continue
+                        // TODO: we should be tracer.warn logging here
                     };
                 }
             } else {
@@ -352,50 +325,31 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
             var start_index: usize = 0;
             var first_block_gas_amount: u32 = 0;
-            if (schedule.len > 0) {
-                self.getTracer().debug("Frame: schedule[0] type = {s}", .{@tagName(schedule[0])});
-                if (schedule.len > 1) {
-                    self.getTracer().debug("Frame: schedule[1] type = {s}", .{@tagName(schedule[1])});
-                }
-                switch (schedule[0]) {
-                    .first_block_gas => |meta| {
-                        self.getTracer().debug("Frame: Found first_block_gas with gas={d}, skipping to index 1", .{meta.gas});
-                        if (meta.gas > 0) {
-                            first_block_gas_amount = meta.gas;
-                            try self.consumeGasChecked(@intCast(meta.gas));
-                        }
-                        start_index = 1;
-                    },
-                    else => {
-                        self.getTracer().debug("Frame: No first_block_gas, starting at index 0", .{});
-                    },
-                }
+
+            self.getTracer().assert(schedule.len > 0, "Fatal unexpected error: the opcode execution schedule is length 0 which should be impossible");
+            const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
+            self.getTracer().assert(schedule.len >= 2 or schedule[schedule.len - 1].opcode_handler != stop_handler or schedule[schedule.len - 2].opcode_handler != stop_handler, "Frame.interpret: Bytecode stream does not end with 2 stop handlers");
+
+            // TODO: this could just be a schedule.validate() method along with more validation
+            switch (schedule[0]) {
+                .first_block_gas => |meta| {
+                    if (meta.gas > 0) {
+                        first_block_gas_amount = meta.gas;
+                        try self.consumeGasChecked(@intCast(meta.gas));
+                    }
+                    start_index = 1;
+                },
+                else => {
+                    self.getTracer().assert(false, "Schedule doesn't start with .first_block_gas which is completely unexpected");
+                },
             }
 
             self.dispatch = Dispatch{
                 .cursor = schedule.ptr + start_index,
             };
 
-            // Note: first_block_gas_amount is tracked locally for this execution only
-
-            // Verify bytecode stream ends with 2 stop handlers (debug builds only)
-            if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
-                if (schedule.len >= 2) {
-                    const last_item = schedule[schedule.len - 1];
-                    const second_last_item = schedule[schedule.len - 2];
-
-                    const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
-                    if (last_item.opcode_handler != stop_handler or second_last_item.opcode_handler != stop_handler) {
-                        self.getTracer().panic("Frame.interpret: Bytecode stream does not end with 2 stop handlers", .{});
-                        return Error.InvalidOpcode;
-                    }
-                } else {
-                    self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.InvalidOpcode);
-                    return Error.InvalidOpcode;
-                }
-            }
-
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
+
             self.getTracer().assert(false, "Handlers should never return normally");
         }
 
@@ -422,19 +376,15 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 try new_memory.set_data(0, bytes);
             }
 
-
             self.getTracer().debug("Frame.copy: Deep copy complete", .{});
             return Self{
-                // Cache line 1 - TRUE HOT PATH
                 .stack = new_stack,
                 .gas_remaining = self.gas_remaining,
                 .dispatch = self.dispatch,
                 .memory = new_memory,
                 .evm_ptr = self.evm_ptr,
-                // Cache line 2 - STORAGE/CONTEXT/EXECUTION
                 .contract_address = self.contract_address,
                 .jump_table = self.jump_table,
-                // Cache line 3+ - COLD PATH
                 .caller = self.caller,
                 .value = self.value,
                 .calldata_slice = self.calldata_slice,
@@ -465,28 +415,35 @@ pub fn Frame(comptime _config: FrameConfig) type {
             self.gas_remaining -= amt;
         }
 
+        // TODO: Remove useless method
         /// Get calldata as a slice.
         /// Returns the calldata slice directly.
         pub inline fn calldata(self: *const Self) []const u8 {
             return self.calldata_slice;
         }
 
+        // TODO: DefaultEvm should not exist! This is a bug and a relic from an old version of this.
+        // What we should do instead here is pass in the Evm type on the config as a require param and then cast to it instead of DefaultEvm
+        // Which is literally the wrong type unless the EVM is configured with defaults
         /// Get the EVM instance from the opaque pointer
         pub inline fn getEvm(self: *const Self) *DefaultEvm {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
         }
 
+        // TODO: Remove this useless method in favor of just being explicit and inlining the self.getEvm().getCallArenaAllocator()
         /// Get the arena allocator for temporary allocations during execution
         pub inline fn getAllocator(self: *const Self) std.mem.Allocator {
             return self.getEvm().getCallArenaAllocator();
         }
 
+        // TODO: Remove this useless method in favor of just being explicit and inlining the self.getEvm().getCallArenaAllocator()
         /// Get the tracer for logging and debugging
         /// Returns the tracer instance from the EVM
         pub inline fn getTracer(self: *const Self) *@import("../tracer/tracer.zig").Tracer {
             return &self.getEvm().tracer;
         }
 
+        // TODO: Remove this useless method just inline it
         /// Validate that the current dispatch cursor points to the expected handler and metadata.
         /// This provides extra validation that cursor logic is working as expected.
         /// Only runs in Debug and ReleaseSafe modes, no-op in ReleaseSmall/ReleaseFast.
@@ -507,6 +464,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             comptime opcode: Dispatch.UnifiedOpcode,
             cursor: [*]const Dispatch.Item,
         ) void {
+            if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) return;
             self.getTracer().before_instruction(self, opcode, cursor);
             self.validateOpcodeHandler(opcode, cursor);
         }
@@ -645,7 +603,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 }
                 try writer.print("\n", .{});
             }
-
 
             try writer.print("\n{s}{s}════════════════════════════════════════════════════════════════{s}\n", .{ Colors.dim, Colors.cyan, Colors.reset });
 

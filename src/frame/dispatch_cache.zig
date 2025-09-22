@@ -33,7 +33,6 @@ pub const DispatchCacheEntry = struct {
     jump_table_entries: []const u8, // Store as raw bytes
     /// Last access timestamp for LRU eviction
     last_access: u64,
-    /// Reference count for concurrent usage
     ref_count: u32,
 };
 
@@ -68,16 +67,17 @@ pub const DispatchCache = struct {
     }
 
     pub fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
+        // TODO: Low priority. We just did vibe based threshold instead of measuring
+        // TODO: But this shouldn't even be necessary here if we never cached it we will fall through remove unnecessary branching here
         // Skip cache for small bytecode - compute on-demand is faster
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
-            return null;
-        }
+        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) return null;
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
         self.access_counter += 1;
 
+        // TODO: why do we have to do a linear search? This should be constant time lookup
         // Search for matching entry
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
@@ -100,15 +100,11 @@ pub const DispatchCache = struct {
     }
 
     pub fn insert(self: *DispatchCache, bytecode: []const u8, schedule: []const u8, jump_table: []const u8) !void {
-        // Skip cache for small bytecode
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
-            return;
-        }
+        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) return;
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        // Find slot to insert (either empty or LRU)
         var lru_idx: usize = 0;
         var lru_access: u64 = std.math.maxInt(u64);
         var empty_idx: ?usize = null;
@@ -125,25 +121,19 @@ pub const DispatchCache = struct {
 
         const target_idx = empty_idx orelse lru_idx;
 
-        // Free old entry if replacing
         if (self.entries[target_idx]) |*old_entry| {
-            if (old_entry.ref_count > 0) {
-                // Skip if still in use
-                return;
-            }
+            if (old_entry.ref_count > 0) return;
             self.allocator.free(old_entry.schedule);
             self.allocator.free(old_entry.jump_table_entries);
         }
 
-        // Copy schedule and jump table
         const schedule_copy = try self.allocator.dupe(u8, schedule);
         errdefer self.allocator.free(schedule_copy);
 
         const jump_table_copy = try self.allocator.dupe(u8, jump_table);
 
-        // Insert new entry
         self.entries[target_idx] = DispatchCacheEntry{
-            .bytecode_key = bytecode, // Use bytecode directly as key
+            .bytecode_key = bytecode,
             .schedule = schedule_copy,
             .jump_table_entries = jump_table_copy,
             .last_access = self.access_counter,
@@ -151,22 +141,17 @@ pub const DispatchCache = struct {
         };
     }
 
+    // TODO: I wasn't able to remember what this code does and why it exists intuitively at first glance
     pub fn release(self: *DispatchCache, bytecode: []const u8) void {
-        // Skip for small bytecode
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) {
-            return;
-        }
+        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) return;
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
         for (&self.entries) |*entry_opt| {
             if (entry_opt.*) |*entry| {
-                // Direct bytecode comparison
                 if (std.mem.eql(u8, entry.bytecode_key, bytecode)) {
-                    if (entry.ref_count > 0) {
-                        entry.ref_count -= 1;
-                    }
+                    if (entry.ref_count > 0) entry.ref_count -= 1;
                     return;
                 }
             }
@@ -203,48 +188,36 @@ pub const DispatchCache = struct {
     }
 };
 
+// TODO: We need to properly think about threads. I think it's possible we want to handle threads via violently erroring if we detect the same EVM instance
+// // is on more than 1 thread
 /// Global dispatch cache instance
 pub var global_dispatch_cache: ?DispatchCache = null;
 var cache_mutex: std.Thread.Mutex = .{};
 
-/// Initialize the global dispatch cache
 pub fn initGlobalCache(allocator: std.mem.Allocator) void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-
-    if (global_dispatch_cache == null) {
-        global_dispatch_cache = DispatchCache.init(allocator);
-    }
+    if (global_dispatch_cache == null) global_dispatch_cache = DispatchCache.init(allocator);
 }
 
-/// Deinitialize the global dispatch cache
 pub fn deinitGlobalCache() void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-
     if (global_dispatch_cache) |*cache| {
         cache.deinit();
         global_dispatch_cache = null;
     }
 }
 
-/// Get cache statistics
 pub fn getCacheStatistics() ?struct { hits: u64, misses: u64, hit_rate: f64 } {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-
-    if (global_dispatch_cache) |*cache| {
-        return cache.getStatistics();
-    }
+    if (global_dispatch_cache) |*cache| return cache.getStatistics();
     return null;
 }
 
-/// Clear the cache (useful for testing or memory pressure)
 pub fn clearGlobalCache() void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-
-    if (global_dispatch_cache) |*cache| {
-        cache.clear();
-    }
+    if (global_dispatch_cache) |*cache| cache.clear();
 }

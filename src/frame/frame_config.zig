@@ -1,35 +1,31 @@
-/// Frame configuration parameters for customizable EVM execution contexts
-///
-/// Defines compile-time configuration for Frame instances including:
-/// - Stack size and word type (u256, u128, etc.)
-/// - Memory limits and initial capacity
-/// - Gas tracking precision (i32 vs i64)
-/// - Database and tracing capabilities
-/// - Platform-specific optimizations
-///
-/// Configuration is validated at compile time to ensure optimal performance
-/// and catch invalid parameter combinations early.
 const std = @import("std");
 const builtin = @import("builtin");
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 const Mode = @import("../internal/safety_counter.zig").Mode;
 
-// TODO add the Eip type from evm
 pub const FrameConfig = struct {
     const Self = @This();
     /// The maximum stack size for the evm. Defaults to 1024
     stack_size: u12 = 1024,
+
     /// The size of a single word in the EVM - Defaults to u256
     WordType: type = u256,
+
     /// The maximum amount of bytes allowed in contract code
     max_bytecode_size: u32 = 24576,
+
     /// The maximum amount of bytes allowed in contract deployment
     max_initcode_size: u32 = 49152,
+
     /// The maximum gas limit for a block
     block_gas_limit: u64 = 30_000_000,
-    /// Memory configuration
+
+    /// The initial allocation created by the EVM. Defaults to 4096
     memory_initial_capacity: usize = 4096,
+
+    /// The limit on how much the EVM should be allowed to allocate. Default is 0xffffff. This should be plenty for most bytecode and gas limits
     memory_limit: u64 = 0xFFFFFF,
+
     /// Database implementation type for storage operations (always required).
     DatabaseType: type,
 
@@ -57,7 +53,17 @@ pub const FrameConfig = struct {
     /// value = maximum iterations before panic (default for debug/safe builds)
     loop_quota: ?u32 = if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) 1_000_000 else null,
 
-    // TracerType removed - tracer is always present but controlled by tracer_config.enabled
+    /// Custom opcode handler overrides
+    /// These will override the default handlers in frame_handlers.zig
+    opcode_overrides: []const struct { opcode: u8, handler: *const anyopaque } = &.{},
+
+    // TODO we should have more validation here such making sure the memory allowed is large enough
+    pub fn validate(comptime self: Self) void {
+        if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
+        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
+        if (self.max_bytecode_size > 65535) @compileError("max_bytecode_size must be at most 65535");
+    }
+    // Below are derived properties that are derived from other config options
 
     /// PcType: chosen PC integer type from max_bytecode_size
     pub fn PcType(comptime self: Self) type {
@@ -72,6 +78,7 @@ pub const FrameConfig = struct {
         else
             @compileError("Bytecode size too large! It must have under u32 bytes");
     }
+
     /// StackIndexType: minimal integer type to index the configured stack
     pub fn StackIndexType(comptime self: Self) type {
         return if (self.stack_size <= std.math.maxInt(u4))
@@ -115,11 +122,5 @@ pub const FrameConfig = struct {
 
         const Counter = SafetyCounter(T, mode);
         return Counter;
-    }
-
-    pub fn validate(comptime self: Self) void {
-        if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
-        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
-        if (self.max_bytecode_size > 65535) @compileError("max_bytecode_size must be at most 65535");
     }
 };
