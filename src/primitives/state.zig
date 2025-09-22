@@ -1,5 +1,6 @@
 const std = @import("std");
 
+// TODO: We should add a comptime block validating the hardcoded hash matches the derived one
 /// Hash of empty EVM bytecode (Keccak256 of empty bytes).
 ///
 /// This is a well-known constant in Ethereum representing the Keccak256 hash
@@ -14,6 +15,7 @@ pub const EMPTY_CODE_HASH = [32]u8{
     0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70,
 };
 
+// TODO: We should add a comptime block validating the hardcoded hash matches the derived one
 /// Root hash of an empty Merkle Patricia Trie.
 ///
 /// This is the root hash of an empty trie structure in Ethereum, used as

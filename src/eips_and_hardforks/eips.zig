@@ -1,6 +1,7 @@
 const primitives = @import("primitives");
 const AccessList = @import("../storage/access_list.zig").AccessList;
 
+// TODO: Hardfork should be in hardfork.zig
 /// Ethereum hardfork identifiers.
 ///
 /// Hardforks represent protocol upgrades that change EVM behavior,
@@ -90,6 +91,9 @@ pub const Hardfork = enum {
     }
 };
 
+// TODO: we need to design a way to override hardforks with specific EIPs
+// You should be able to pick a base hardfork and then enable/disable specific EIP
+
 // EIPs is a comptime known configuration of Eip and hardfork specific behavior
 // This struct consolidates all EIP-specific logic for the EVM
 pub const Eips = struct {
@@ -156,16 +160,13 @@ pub const Eips = struct {
             warm_count += 1;
         }
 
-        // Pre-warm all addresses
-        if (warm_count > 0) {
-            try access_list.pre_warm_addresses(warm_addresses[0..warm_count]);
-        }
+        if (warm_count > 0) try access_list.pre_warm_addresses(warm_addresses[0..warm_count]);
     }
 
     /// EIP-3651: Warm COINBASE address at the start of transaction
     /// Shanghai hardfork introduced this optimization
     pub fn eip_3651_warm_coinbase_address(self: Self, access_list: *AccessList, coinbase: primitives.Address.Address) !void {
-        if (!self.hardfork.isAtLeast(.SHANGHAI)) return;
+        if (comptime !self.hardfork.isAtLeast(.SHANGHAI)) return;
         try access_list.pre_warm_addresses(&[_]primitives.Address{coinbase});
     }
 
@@ -175,46 +176,33 @@ pub const Eips = struct {
     /// - No longer fully refunds SELFDESTRUCT
     /// Returns the refund amount to be applied
     pub fn eip_3529_gas_refund_cap(self: Self, gas_used: u64, refund_counter: u64) u64 {
-        if (!self.hardfork.isAtLeast(.LONDON)) {
-            // Pre-London: refund up to half of gas used
-            return @min(refund_counter, gas_used / 2);
-        }
-
-        // Post-London: refund up to one fifth of gas used
+        if (comptime !self.hardfork.isAtLeast(.LONDON)) return @min(refund_counter, gas_used / 2);
         return @min(refund_counter, gas_used / 5);
     }
 
     /// EIP-2929: Gas cost increases for state access opcodes
     /// Berlin hardfork introduced access lists and changed gas costs
     pub fn eip_2929_cold_sload_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) {
-            return 200; // Pre-Berlin: SLOAD costs 200 gas
-        }
-        return 2100; // Post-Berlin: cold SLOAD costs 2100 gas
+        if (comptime !self.hardfork.isAtLeast(.BERLIN)) return 200;
+        return 2100;
     }
 
     /// EIP-2929: Warm storage access cost
     pub fn eip_2929_warm_storage_read_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) {
-            return 200; // Pre-Berlin: all reads cost 200
-        }
-        return 100; // Post-Berlin: warm reads cost 100 gas
+        if (!self.hardfork.isAtLeast(.BERLIN)) return 200;
+        return 100;
     }
 
     /// EIP-2929: Cold account access cost
     pub fn eip_2929_cold_account_access_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) {
-            return 700; // Pre-Berlin: account access costs 700
-        }
-        return 2600; // Post-Berlin: cold account access costs 2600 gas
+        if (!self.hardfork.isAtLeast(.BERLIN)) return 700;
+        return 2600;
     }
 
     /// EIP-2929: Warm account access cost
     pub fn eip_2929_warm_account_access_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) {
-            return 700; // Pre-Berlin: all access costs 700
-        }
-        return 100; // Post-Berlin: warm access costs 100 gas
+        if (!self.hardfork.isAtLeast(.BERLIN)) return 700;
+        return 100;
     }
 
     /// EIP-1559: Fee market change for ETH 1.0 chain
@@ -273,14 +261,16 @@ pub const Eips = struct {
     /// EIP-7702: Base gas cost per authorization
     /// Prague hardfork introduced authorization lists
     pub fn eip_7702_per_auth_base_cost(self: Self) i64 {
-        _ = self; // EIP-7702 gas costs are constant regardless of hardfork
+        // TODO: We should be throwing a compile error if 7702 is not enabled on the current hardfork
+        _ = self;
         return 12500;
     }
 
     /// EIP-7702: Additional gas cost for empty account
     /// Prague hardfork introduced authorization lists
     pub fn eip_7702_per_empty_account_cost(self: Self) i64 {
-        _ = self; // EIP-7702 gas costs are constant regardless of hardfork
+        // TODO: We should be throwing a compile error if 7702 is not enabled on the current hardfork
+        _ = self;
         return 25000;
     }
 
@@ -311,12 +301,11 @@ pub const Eips = struct {
     /// Check if a specific EIP is active
     pub fn is_eip_active(self: Self, eip: u16) bool {
         const active_eips = self.get_active_eips();
-        for (active_eips) |active_eip| {
-            if (active_eip == eip) return true;
-        }
+        for (active_eips) |active_eip| if (active_eip == eip) return true;
         return false;
     }
 
+    // TODO: I think this is currently completely unused dead code that should be removed
     /// Get configuration for EVM features based on hardfork
     pub fn get_evm_config(self: Self) EvmConfig {
         return EvmConfig{
@@ -334,6 +323,7 @@ pub const Eips = struct {
         };
     }
 
+    // TODO: I think this is currently completely unused dead code that should be removed
     /// Configuration struct for EVM features
     pub const EvmConfig = struct {
         eip_214_enabled: bool, // Static call restrictions
@@ -349,15 +339,15 @@ pub const Eips = struct {
         eip_7702_enabled: bool, // EOA code execution
     };
 
+    // TODO: All methods in this file should explicitly say what eip they are in this case 170
     /// Get maximum contract code size based on hardfork
     pub fn max_code_size(self: Self) u32 {
         // EIP-170: Contract code size limit (Spurious Dragon)
-        if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) {
-            return 0xFFFFFF; // No limit before Spurious Dragon
-        }
+        if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) return 0xFFFFFF; // No limit
         return 0x6000; // 24KB limit
     }
 
+    // TODO: All methods in this file should explicitly say what eip they are in this case 3541
     /// Check if bytecode starting with 0xEF should be rejected
     pub fn should_reject_ef_bytecode(self: Self) bool {
         return self.hardfork.isAtLeast(.LONDON); // EIP-3541
@@ -365,9 +355,7 @@ pub const Eips = struct {
 
     /// Get gas cost for EXP opcode exponent byte
     pub fn exp_byte_gas_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) {
-            return 10; // Pre-EIP-160
-        }
+        if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) return 10; // Pre-EIP-160
         return 50; // Post-EIP-160
     }
 
@@ -381,17 +369,15 @@ pub const Eips = struct {
         return self.hardfork.isAtLeast(.MERGE); // EIP-4399
     }
 
+    // TODO: put the eip number in name EIP-2028: Reduced non-zero byte cost
     /// Get calldata gas costs
     pub fn calldata_gas_cost(self: Self, is_zero: bool) u64 {
         if (is_zero) return 4;
-
-        // EIP-2028: Reduced non-zero byte cost
-        if (!self.hardfork.isAtLeast(.ISTANBUL)) {
-            return 68; // Pre-Istanbul
-        }
+        if (!self.hardfork.isAtLeast(.ISTANBUL)) return 68;
         return 16; // Post-Istanbul
     }
 
+    // TODO: put the eip number in name
     /// Check if transient storage is available
     pub fn has_transient_storage(self: Self) bool {
         return self.hardfork.isAtLeast(.CANCUN); // EIP-1153
@@ -419,10 +405,10 @@ pub const Eips = struct {
 
     /// Get SSTORE gas costs based on hardfork and state
     pub fn sstore_gas_cost(self: Self, current: u256, new: u256, original: u256) SstoreGasCost {
-        _ = original; // Will be used for EIP-2200
+        _ = original; // TODO: Will be used for EIP-2200
 
         // Pre-Constantinople: Simple model
-        if (self.hardfork.isBefore(.CONSTANTINOPLE)) {
+        if (comptime self.hardfork.isBefore(.CONSTANTINOPLE)) {
             if (current == 0 and new != 0) {
                 return .{ .gas = 20000, .refund = 0 };
             }
@@ -449,6 +435,7 @@ pub const Eips = struct {
         refund: u64,
     };
 
+    // TODO: Need to compile error if not enabled
     /// EIP-4788: Check if address is the beacon roots contract
     pub fn is_beacon_roots_address(self: Self, address: primitives.Address) bool {
         _ = self;
@@ -463,6 +450,7 @@ pub const Eips = struct {
         return std.mem.eql(u8, &address.bytes, &historical_block_hashes.HISTORY_CONTRACT_ADDRESS.bytes);
     }
 
+    // TODO: Need to compile error if not enabled
     /// EIP-7702: Get effective code address handling delegation
     pub fn get_effective_code_address(self: Self, account: ?@import("../storage/database_interface_account.zig").Account, address: primitives.Address) primitives.Address {
         _ = self;
@@ -476,13 +464,13 @@ pub const Eips = struct {
 
     /// EIP-3541: Should reject bytecode starting with 0xEF
     pub fn should_reject_create_with_ef_bytecode(self: Self, bytecode: []const u8) bool {
-        if (!self.hardfork.isAtLeast(.LONDON)) return false;
+        if (comptime !self.hardfork.isAtLeast(.LONDON)) return false;
         return bytecode.len > 0 and bytecode[0] == 0xEF;
     }
 
     /// EIP-2929: Warm contract address for execution
     pub fn warm_contract_for_execution(self: Self, access_list: anytype, address: primitives.Address) !void {
-        if (!self.hardfork.isAtLeast(.BERLIN)) return;
+        if (comptime !self.hardfork.isAtLeast(.BERLIN)) return;
         _ = try access_list.access_address(address);
     }
 
@@ -502,7 +490,7 @@ pub const Eips = struct {
         journal: anytype,
         snapshot_id: anytype,
     ) !void {
-        if (!self.hardfork.isAtLeast(.CANCUN)) {
+        if (comptime !self.hardfork.isAtLeast(.CANCUN)) {
             // Pre-Cancun: always mark for full destruction
             try self_destruct.mark_for_destruction(contract_address, recipient);
             return;
@@ -535,12 +523,11 @@ pub const Eips = struct {
         }
     }
 
+    // TODO: EIP number in fn name
     /// Apply EIP-3529 gas refund after transaction
     pub fn apply_gas_refund(self: Self, initial_gas: u64, gas_left: u64, gas_refund_counter: u64) u64 {
         const gas_used = initial_gas - gas_left;
         const capped_refund = self.eip_3529_gas_refund_cap(gas_used, gas_refund_counter);
-
-        // Apply the refund, ensuring we don't exceed the gas used
         return @min(initial_gas, gas_left + capped_refund);
     }
 };

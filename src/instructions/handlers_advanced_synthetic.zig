@@ -16,8 +16,6 @@ pub fn Handlers(comptime FrameType: type) type {
         pub const Dispatch = FrameType.Dispatch;
         pub const WordType = FrameType.WordType;
 
-        // Note: constant_fold handler removed - compiler handles constant folding
-
         /// MULTI_PUSH_2 - Push two values in a single operation
         pub fn multi_push_2(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.MULTI_PUSH_2, cursor);

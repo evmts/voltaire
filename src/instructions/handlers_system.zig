@@ -46,11 +46,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn call(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            // Check static context - CALL with non-zero value is not allowed in static context
-            // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
-            {
-                self.getTracer().assert(self.stack.size() >= 7, "CALL requires 7 stack items");
-            }
+            self.getTracer().assert(self.stack.size() >= 7, "CALL requires 7 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
@@ -59,17 +55,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
 
-            // EIP-214: Static calls with value > 0 will fail in host.inner_call()
-            // Data-oriented design: constraint is encoded in host implementation
-
-            // Convert address from u256
             const addr = from_u256(address_u256);
 
-            // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
-                {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
-                }
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -80,15 +69,12 @@ pub fn Handlers(comptime FrameType: type) type {
             const max_forwardable: u64 = caller_gas_available - (caller_gas_available / 64);
             const gas_u64 = if (gas_u64_raw < max_forwardable) gas_u64_raw else max_forwardable;
 
-            // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
                 input_size > std.math.maxInt(usize) or
                 output_offset > std.math.maxInt(usize) or
                 output_size > std.math.maxInt(usize))
             {
-                {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
-                }
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -100,7 +86,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
-            // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -111,7 +96,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
                 self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
@@ -122,7 +106,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Extract input data
             var input_data: []const u8 = &.{};
             if (input_size_usize > 0) {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
@@ -133,7 +116,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Perform the call through the host interface
             const params = CallParams{
                 .call = .{
                     .caller = self.contract_address,
@@ -147,7 +129,6 @@ pub fn Handlers(comptime FrameType: type) type {
             var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
-            // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
                 self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
@@ -158,23 +139,13 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Return data is now managed by EVM's return_data field
-            // which is automatically updated after inner_call
-
-            // Update caller gas: subtract only gas actually used by callee
             const provided_gas_call: u64 = gas_u64;
             const used_gas_call: u64 = if (result.gas_left > provided_gas_call) 0 else (provided_gas_call - result.gas_left);
             const caller_gas_call: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const new_gas_call: u64 = if (used_gas_call > caller_gas_call) 0 else caller_gas_call - used_gas_call;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_call));
-
-            // Push success status (1 for success, 0 for failure)
-            // log.debug("CALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
-            {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
-            }
+            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             self.stack.push_unsafe(if (result.success) 1 else 0);
-
             const op_data = dispatch.getOpData(.CALL);
             self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -185,10 +156,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn callcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLCODE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            // Stack (top first): [gas, address, value, input_offset, input_size, output_offset, output_size]
-            {
-                self.getTracer().assert(self.stack.size() >= 7, "CALLCODE requires 7 stack items");
-            }
+            self.getTracer().assert(self.stack.size() >= 7, "CALLCODE requires 7 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
@@ -197,14 +165,10 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
 
-            // Convert address from u256
             const addr = from_u256(address_u256);
 
-            // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
-                {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
-                }
+                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALLCODE);
                 self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
@@ -215,7 +179,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const max_forwardable_cc: u64 = caller_gas_available_cc - (caller_gas_available_cc / 64);
             const gas_u64 = if (gas_u64_raw < max_forwardable_cc) gas_u64_raw else max_forwardable_cc;
 
-            // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
                 input_size > std.math.maxInt(usize) or
                 output_offset > std.math.maxInt(usize) or
@@ -232,7 +195,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
-            // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -243,7 +205,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
                 self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
@@ -254,7 +215,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Extract input data
             var input_data: []const u8 = &.{};
             if (input_size_usize > 0) {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
@@ -265,13 +225,11 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // CALLCODE: Execute code from `addr` but in current contract's context
-            // This means using current contract's address, storage, and balance
             const call_params = CallParams{
                 .callcode = .{
                     .caller = self.contract_address,
-                    .to = addr, // Code to execute from this address
-                    .value = value, // Value to appear to be sent
+                    .to = addr,
+                    .value = value,
                     .input = input_data,
                     .gas = gas_u64,
                 },
@@ -280,24 +238,18 @@ pub fn Handlers(comptime FrameType: type) type {
             var result = self.getEvm().inner_call(call_params);
             defer result.deinit(self.getAllocator());
 
-            // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
                 self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
             }
 
-            // Update caller gas: subtract only gas actually used by callee
             const provided_gas_callcode: u64 = gas_u64;
             const used_gas_callcode: u64 = if (result.gas_left > provided_gas_callcode) 0 else (provided_gas_callcode - result.gas_left);
             const caller_gas_callcode: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const new_gas_callcode: u64 = if (used_gas_callcode > caller_gas_callcode) 0 else caller_gas_callcode - used_gas_callcode;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_callcode));
 
-            // Push success (1) or failure (0) onto stack
-            // log.debug("CALLCODE result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
-            {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
-            }
+            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.CALLCODE);
@@ -310,10 +262,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.DELEGATECALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
-            {
-                self.getTracer().assert(self.stack.size() >= 6, "DELEGATECALL requires 6 stack items");
-            }
+            self.getTracer().assert(self.stack.size() >= 6, "DELEGATECALL requires 6 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const input_offset = self.stack.pop_unsafe();
@@ -321,10 +270,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
 
-            // Convert address from u256
             const addr = from_u256(address_u256);
 
-            // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.DELEGATECALL);
@@ -336,7 +283,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const max_forwardable_dc: u64 = caller_gas_available_dc - (caller_gas_available_dc / 64);
             const gas_u64 = if (gas_u64_raw < max_forwardable_dc) gas_u64_raw else max_forwardable_dc;
 
-            // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
                 input_size > std.math.maxInt(usize) or
                 output_offset > std.math.maxInt(usize) or
@@ -353,7 +299,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
-            // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -364,7 +309,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
                 self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
@@ -375,7 +319,6 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Extract input data
             var input_data: []const u8 = &.{};
             if (input_size_usize > 0) {
                 input_data = self.memory.get_slice(@as(u24, @intCast(input_offset_usize)), @as(u24, @intCast(input_size_usize))) catch {
@@ -386,11 +329,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Perform the delegatecall through the host interface
-            // DELEGATECALL preserves caller and value from current context
             const params = CallParams{
                 .delegatecall = .{
-                    .caller = self.caller, // Preserve original caller, not contract address!
+                    .caller = self.caller,
                     .to = addr,
                     .input = input_data,
                     .gas = gas_u64,
@@ -399,7 +340,6 @@ pub fn Handlers(comptime FrameType: type) type {
             var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getAllocator());
 
-            // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
                 self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
@@ -410,21 +350,13 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Return data is now managed by EVM's return_data field
-            // which is automatically updated after inner_call
-
-            // Update caller gas: subtract only gas actually used by callee
             const provided_gas_delegate: u64 = gas_u64;
             const used_gas_delegate: u64 = if (result.gas_left > provided_gas_delegate) 0 else (provided_gas_delegate - result.gas_left);
             const caller_gas_delegate: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const new_gas_delegate: u64 = if (used_gas_delegate > caller_gas_delegate) 0 else caller_gas_delegate - used_gas_delegate;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_delegate));
 
-            // Push success status (1 for success, 0 for failure)
-            // log.debug("DELEGATECALL result.success={}, gas_left={}, output_len={}", .{ result.success, result.gas_left, result.output.len });
-            {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
-            }
+            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.DELEGATECALL);
@@ -437,10 +369,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn staticcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.STATICCALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            // Stack (top first): [gas, address, input_offset, input_size, output_offset, output_size]
-            {
-                self.getTracer().assert(self.stack.size() >= 6, "STATICCALL requires 6 stack items");
-            }
+            self.getTracer().assert(self.stack.size() >= 6, "STATICCALL requires 6 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const input_offset = self.stack.pop_unsafe();
@@ -448,10 +377,8 @@ pub fn Handlers(comptime FrameType: type) type {
             const output_offset = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
 
-            // Convert address from u256
             const addr = from_u256(address_u256);
 
-            // Bounds checking for gas parameter
             if (gas_param > std.math.maxInt(u64)) {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.STATICCALL);
@@ -463,7 +390,6 @@ pub fn Handlers(comptime FrameType: type) type {
             const max_forwardable_sc: u64 = caller_gas_available_sc - (caller_gas_available_sc / 64);
             const gas_u64 = if (gas_u64_raw < max_forwardable_sc) gas_u64_raw else max_forwardable_sc;
 
-            // Bounds checking for memory offsets and sizes
             if (input_offset > std.math.maxInt(usize) or
                 input_size > std.math.maxInt(usize) or
                 output_offset > std.math.maxInt(usize) or

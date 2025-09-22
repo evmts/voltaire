@@ -18,11 +18,10 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "tui",
-				Usage: "Launch interactive TUI",
+				Name:   "tui",
+				Usage:  "Launch interactive TUI",
 				Action: commands.RunTUI,
 			},
-			// Core EVM operations matching CallParams variants
 			{
 				Name:  "call",
 				Usage: "Execute a CALL operation",
@@ -111,7 +110,7 @@ func main() {
 				Action: commands.ExecuteEstimateGas,
 			},
 			{
-				Name:  "accesslist", 
+				Name:  "accesslist",
 				Usage: "Get access list for a transaction (eth_createAccessList compatible)",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "from", Required: true, Usage: "From address"},
@@ -123,8 +122,8 @@ func main() {
 				Action: commands.ExecuteAccessList,
 			},
 			{
-				Name:  "trace",
-				Usage: "Execute a CALL with JSON-RPC tracing enabled",
+				Name:      "trace",
+				Usage:     "Execute a CALL with JSON-RPC tracing enabled",
 				ArgsUsage: "[snailtracer]  # Use 'snailtracer' for test fixture",
 				Flags: []cli.Flag{
 					// Standard CallParams fields
@@ -141,45 +140,45 @@ func main() {
 				Usage: "Compile Solidity source code",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:     "source",
-						Aliases:  []string{"s"},
-						Usage:    "Solidity source code (inline)",
+						Name:    "source",
+						Aliases: []string{"s"},
+						Usage:   "Solidity source code (inline)",
 					},
 					&cli.StringFlag{
-						Name:     "file",
-						Aliases:  []string{"f"},
-						Usage:    "Path to Solidity source file",
+						Name:    "file",
+						Aliases: []string{"f"},
+						Usage:   "Path to Solidity source file",
 					},
 					&cli.StringFlag{
-						Name:     "output",
-						Aliases:  []string{"o"},
-						Usage:    "Output file path (default: stdout)",
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "Output file path (default: stdout)",
 					},
 					&cli.StringFlag{
-						Name:    "format",
-						Usage:   "Output format: json, hex, combined",
-						Value:   "json",
+						Name:  "format",
+						Usage: "Output format: json, hex, combined",
+						Value: "json",
 					},
 					&cli.BoolFlag{
-						Name:    "optimize",
-						Usage:   "Enable optimizer",
-						Value:   true,
+						Name:  "optimize",
+						Usage: "Enable optimizer",
+						Value: true,
 					},
 					&cli.UintFlag{
-						Name:    "optimize-runs",
-						Usage:   "Optimizer runs",
-						Value:   200,
+						Name:  "optimize-runs",
+						Usage: "Optimizer runs",
+						Value: 200,
 					},
 					&cli.StringFlag{
-						Name:    "evm-version",
-						Usage:   "EVM version (e.g., london, paris, shanghai)",
+						Name:  "evm-version",
+						Usage: "EVM version (e.g., london, paris, shanghai)",
 					},
 				},
 				Action: commands.RunCompile,
 			},
 			{
-				Name:  "save-fixture",
-				Usage: "Save current call parameters and state as a fixture",
+				Name:      "save-fixture",
+				Usage:     "Save current call parameters and state as a fixture",
 				ArgsUsage: "<fixture-name>",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "caller", Usage: "Caller address"},
@@ -195,10 +194,10 @@ func main() {
 				Action: commands.SaveFixture,
 			},
 			{
-				Name:  "load-fixture",
-				Usage: "Load and display fixture information",
+				Name:      "load-fixture",
+				Usage:     "Load and display fixture information",
 				ArgsUsage: "<fixture-name-or-path>",
-				Action: commands.LoadFixture,
+				Action:    commands.LoadFixture,
 			},
 			{
 				Name:  "list-fixtures",
@@ -209,20 +208,20 @@ func main() {
 				Action: commands.ListFixtures,
 			},
 			{
-				Name:  "bytecode",
-				Usage: "Pretty print EVM bytecode with disassembly",
+				Name:      "bytecode",
+				Usage:     "Pretty print EVM bytecode with disassembly",
 				ArgsUsage: "[fixture-name | file-path | hex-bytecode]",
-				Action: commands.ExecuteBytecode,
+				Action:    commands.ExecuteBytecode,
 			},
 			{
-				Name:  "dispatch",
-				Usage: "Pretty print EVM bytecode dispatch schedule with debug info",
+				Name:      "dispatch",
+				Usage:     "Pretty print EVM bytecode dispatch schedule with debug info",
 				ArgsUsage: "[fixture-name | file-path | hex-bytecode]",
-				Action: commands.ExecuteDispatch,
+				Action:    commands.ExecuteDispatch,
 			},
 			{
-				Name:  "bench",
-				Usage: "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
+				Name:      "bench",
+				Usage:     "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
 				ArgsUsage: "[fixture-path]",
 				Flags: []cli.Flag{
 					// Call parameters (same as call command)
@@ -232,7 +231,7 @@ func main() {
 					&cli.StringFlag{Name: "input", Value: "", Usage: "Input data (hex)"},
 					&cli.StringFlag{Name: "gas", Usage: "Gas limit"},
 					&cli.StringFlag{Name: "format", Value: "hex", Usage: "Output format: hex, json"},
-					
+
 					// Hyperfine parameters
 					&cli.IntFlag{Name: "warmup", Value: 3, Usage: "Number of warmup runs before benchmarking"},
 					&cli.IntFlag{Name: "runs", Usage: "Number of runs (default: automatic)"},
@@ -260,3 +259,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+
