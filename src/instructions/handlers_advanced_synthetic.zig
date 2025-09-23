@@ -181,7 +181,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store to memory
             const offset_u24 = @as(u24, @intCast(offset));
-            self.memory.set_u256_evm(self.getAllocator(), offset_u24, mem_value) catch {
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24, mem_value) catch {
                 self.afterComplete(.DUP2_MSTORE_PUSH);
                 return Error.OutOfBounds;
             };
@@ -214,7 +214,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const offset = self.stack.pop_unsafe();
             const data = self.stack.pop_unsafe();
             const offset_u24 = @as(u24, @intCast(offset));
-            self.memory.set_u256_evm(self.getAllocator(), offset_u24, data) catch {
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24, data) catch {
                 self.afterComplete(.DUP3_ADD_MSTORE);
                 return Error.OutOfBounds;
             };
@@ -394,7 +394,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // MLOAD: Load from memory
             const offset = self.stack.pop_unsafe();
             const offset_u24 = @as(u24, @intCast(offset));
-            const value = self.memory.get_u256_evm(self.getAllocator(), offset_u24) catch {
+            const value = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24) catch {
                 self.afterComplete(.MLOAD_SWAP1_DUP2);
                 return Error.OutOfBounds;
             };

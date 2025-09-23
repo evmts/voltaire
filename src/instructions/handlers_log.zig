@@ -39,7 +39,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         4 => .LOG4,
                         else => {
                             {
-                                self.getTracer().assert(false, "Invalid topic count for LOG opcode");
+                                (&self.getEvm().tracer).assert(false, "Invalid topic count for LOG opcode");
                             }
                             unreachable;
                         },
@@ -50,7 +50,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
                     // LOG0 requires 2 items, LOG1 requires 3, LOG2 requires 4, LOG3 requires 5, LOG4 requires 6
                 {
-                    self.getTracer().assert(self.stack.size() >= 2 + topic_count, "LOG requires sufficient stack items");
+                    (&self.getEvm().tracer).assert(self.stack.size() >= 2 + topic_count, "LOG requires sufficient stack items");
                 }
 
                     // Pop offset and length first (they're on top of stack)
@@ -98,7 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     // Ensure memory capacity
                     if (length_usize > 0) {
                         const memory_end = offset_usize + length_usize;
-                        self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch {
+                        self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch {
                             self.afterComplete(unified_opcode);
                             return Error.OutOfBounds;
                         };
@@ -178,7 +178,7 @@ pub fn Handlers(comptime FrameType: type) type {
                         },
                         else => {
                             {
-                                self.getTracer().assert(false, "Invalid topic count for LOG dispatch");
+                                (&self.getEvm().tracer).assert(false, "Invalid topic count for LOG dispatch");
                             }
                             unreachable;
                         },

@@ -37,7 +37,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // The dispatch pointer already points to the JUMPDEST handler location
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
             {
-                self.getTracer().assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             }
             const condition = self.stack.pop_unsafe();
             if (condition != 0) {
@@ -131,7 +131,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dest = op_data.metadata.value;
 
             {
-                self.getTracer().assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             }
             const condition = self.stack.pop_unsafe();
 
@@ -178,7 +178,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop the condition
             {
-                self.getTracer().assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             } // PUSH_JUMPI requires 1 stack item
             const condition = self.stack.pop_unsafe();
 

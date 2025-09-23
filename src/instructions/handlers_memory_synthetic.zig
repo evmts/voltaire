@@ -35,7 +35,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Read 32 bytes from memory
-            const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MLOAD_INLINE);
                     return Error.OutOfBounds;
@@ -52,7 +52,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const value = @as(WordType, @truncate(value_u256));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
             }
             self.stack.push_unsafe(value);
 
@@ -81,7 +81,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Read 32 bytes from memory
-            const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MLOAD_POINTER);
                     return Error.OutOfBounds;
@@ -98,7 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const value = @as(WordType, @truncate(value_u256));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PUSH_MLOAD requires stack space");
             }
             self.stack.push_unsafe(value);
 
@@ -119,7 +119,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop the value to store
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
 
@@ -135,7 +135,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MSTORE_INLINE);
                     return Error.OutOfBounds;
@@ -166,12 +166,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop the value to store
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_MSTORE requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
 
             {
-                self.getTracer().assert(offset <= std.math.maxInt(usize), "PUSH_MSTORE offset must fit in usize");
+                (&self.getEvm().tracer).assert(offset <= std.math.maxInt(usize), "PUSH_MSTORE offset must fit in usize");
             }
             const offset_usize = @as(usize, @intCast(offset));
 
@@ -179,7 +179,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MSTORE_POINTER);
                     return Error.OutOfBounds;
@@ -211,7 +211,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop the value to store
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
 
@@ -227,7 +227,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
-            self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
+            self.memory.set_byte_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MSTORE8_INLINE);
                     return Error.OutOfBounds;
@@ -258,7 +258,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop the value to store
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_MSTORE8 requires 1 stack item");
             }
             const value = self.stack.pop_unsafe();
 
@@ -274,7 +274,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
-            self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
+            self.memory.set_byte_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MSTORE8_POINTER);
                     return Error.OutOfBounds;

@@ -46,7 +46,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn call(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 7, "CALL requires 7 stack items");
+            (&self.getEvm().tracer).assert(self.stack.size() >= 7, "CALL requires 7 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
@@ -58,7 +58,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const addr = from_u256(address_u256);
 
             if (gas_param > std.math.maxInt(u64)) {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -74,7 +74,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 output_offset > std.math.maxInt(usize) or
                 output_size > std.math.maxInt(usize))
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALL);
                 self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -88,7 +88,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -98,7 +98,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -127,11 +127,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALL);
                     self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -144,7 +144,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const caller_gas_call: u64 = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const new_gas_call: u64 = if (used_gas_call > caller_gas_call) 0 else caller_gas_call - used_gas_call;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_call));
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+            (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             self.stack.push_unsafe(if (result.success) 1 else 0);
             const op_data = dispatch.getOpData(.CALL);
             self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -156,7 +156,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn callcode(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLCODE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 7, "CALLCODE requires 7 stack items");
+            (&self.getEvm().tracer).assert(self.stack.size() >= 7, "CALLCODE requires 7 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const value = self.stack.pop_unsafe();
@@ -168,7 +168,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const addr = from_u256(address_u256);
 
             if (gas_param > std.math.maxInt(u64)) {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CALLCODE);
                 self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
@@ -197,7 +197,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
@@ -207,7 +207,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.CALLCODE);
                     self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
@@ -236,11 +236,11 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             var result = self.getEvm().inner_call(call_params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
+                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
             }
 
             const provided_gas_callcode: u64 = gas_u64;
@@ -249,7 +249,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const new_gas_callcode: u64 = if (used_gas_callcode > caller_gas_callcode) 0 else caller_gas_callcode - used_gas_callcode;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_callcode));
 
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+            (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.CALLCODE);
@@ -262,7 +262,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn delegatecall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.DELEGATECALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 6, "DELEGATECALL requires 6 stack items");
+            (&self.getEvm().tracer).assert(self.stack.size() >= 6, "DELEGATECALL requires 6 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const input_offset = self.stack.pop_unsafe();
@@ -301,7 +301,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -311,7 +311,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -338,11 +338,11 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.DELEGATECALL);
                     self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -356,7 +356,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const new_gas_delegate: u64 = if (used_gas_delegate > caller_gas_delegate) 0 else caller_gas_delegate - used_gas_delegate;
             self.gas_remaining = @as(FrameType.GasType, @intCast(new_gas_delegate));
 
-            self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+            (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
             const op_data = dispatch.getOpData(.DELEGATECALL);
@@ -369,7 +369,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn staticcall(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.STATICCALL, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            self.getTracer().assert(self.stack.size() >= 6, "STATICCALL requires 6 stack items");
+            (&self.getEvm().tracer).assert(self.stack.size() >= 6, "STATICCALL requires 6 stack items");
             const gas_param = self.stack.pop_unsafe();
             const address_u256 = self.stack.pop_unsafe();
             const input_offset = self.stack.pop_unsafe();
@@ -409,7 +409,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -420,7 +420,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -449,12 +449,12 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.STATICCALL);
                     self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
@@ -474,7 +474,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success status (1 for success, 0 for failure)
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);
 
@@ -492,7 +492,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // EIP-214: Static constraint encoded in host - will throw WriteProtection
 
             {
-                self.getTracer().assert(self.stack.size() >= 3, "CREATE requires 3 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 3, "CREATE requires 3 stack items");
             }
             const value = self.stack.pop_unsafe();
             const offset = self.stack.pop_unsafe();
@@ -511,7 +511,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Ensure memory capacity
             const memory_end = offset_usize + size_usize;
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE);
                 self.afterInstruction(.CREATE, op_data.next_handler, op_data.next_cursor.cursor);
@@ -539,7 +539,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
@@ -547,12 +547,12 @@ pub fn Handlers(comptime FrameType: type) type {
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
                 {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(to_u256(result.created_address.?));
             } else {
                 {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
             }
@@ -572,7 +572,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // EVM pop order: value, offset, size, salt (top first)
             {
-                self.getTracer().assert(self.stack.size() >= 4, "CREATE2 requires 4 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 4, "CREATE2 requires 4 stack items");
             }
             const value = self.stack.pop_unsafe();
             const offset = self.stack.pop_unsafe();
@@ -592,7 +592,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Ensure memory capacity
             const memory_end = offset_usize + size_usize;
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE2);
                 self.afterInstruction(.CREATE2, op_data.next_handler, op_data.next_cursor.cursor);
@@ -624,7 +624,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
@@ -632,12 +632,12 @@ pub fn Handlers(comptime FrameType: type) type {
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
                 {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(to_u256(result.created_address.?));
             } else {
                 {
-                    self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
                 }
                 self.stack.push_unsafe(0);
             }
@@ -658,7 +658,7 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.StackUnderflow;
             }
             {
-                self.getTracer().assert(self.stack.size() >= 2, "RETURN requires 2 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 2, "RETURN requires 2 stack items");
             }
             const offset = self.stack.pop_unsafe(); // Top of stack
             const size = self.stack.pop_unsafe(); // Second from top
@@ -681,7 +681,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
             // Extract return data from memory and store it in thread-local storage
             if (size_usize > 0) {
@@ -689,7 +689,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.OutOfBounds;
                 };
                 // Allocate and copy output to thread-local storage
-                const new_output = self.getAllocator().alloc(u8, return_data.len) catch {
+                const new_output = self.getEvm().getCallArenaAllocator().alloc(u8, return_data.len) catch {
                     return Error.AllocationError;
                 };
                 @memcpy(new_output, return_data);
@@ -711,7 +711,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             _ = dispatch;
             {
-                self.getTracer().assert(self.stack.size() >= 2, "REVERT requires 2 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 2, "REVERT requires 2 stack items");
             }
             const size = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Second from top
@@ -734,7 +734,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
             // Extract revert data from memory and store it in thread-local storage
             if (size_usize > 0) {
@@ -742,7 +742,7 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.OutOfBounds;
                 };
                 // Allocate and copy output to thread-local storage
-                const revert_output = self.getAllocator().alloc(u8, revert_data.len) catch {
+                const revert_output = self.getEvm().getCallArenaAllocator().alloc(u8, revert_data.len) catch {
                     return Error.AllocationError;
                 };
                 @memcpy(revert_output, revert_data);
@@ -765,7 +765,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn selfdestruct(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.SELFDESTRUCT, cursor);
             {
-                self.getTracer().assert(self.stack.size() >= 1, "SELFDESTRUCT requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "SELFDESTRUCT requires 1 stack item");
             }
             const recipient_u256 = self.stack.pop_unsafe();
             const recipient = from_u256(recipient_u256);
@@ -804,7 +804,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop authorization parameters from stack
             {
-                self.getTracer().assert(self.stack.size() >= 5, "AUTH requires 5 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 5, "AUTH requires 5 stack items");
             }
             const sig_s = self.stack.pop_unsafe();
             const sig_r = self.stack.pop_unsafe();
@@ -884,7 +884,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(1);
             const op_data = dispatch.getOpData(.AUTHCALL);
@@ -900,7 +900,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Pop call parameters from stack
             {
-                self.getTracer().assert(self.stack.size() >= 8, "AUTHCALL requires 8 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 8, "AUTHCALL requires 8 stack items");
             }
             const auth_flag = self.stack.pop_unsafe();
             const output_size = self.stack.pop_unsafe();
@@ -952,7 +952,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for input
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(input_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
@@ -963,7 +963,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Ensure memory capacity for output
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
-                self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(output_end))) catch {
+                self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_end))) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
@@ -995,12 +995,12 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getAllocator());
+            defer result.deinit(self.getEvm().getCallArenaAllocator());
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.getAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
+                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {
                     self.stack.push_unsafe(0);
                     const op_data = dispatch.getOpData(.AUTHCALL);
                     // Use op_data.next_handler and op_data.next_cursor directly
@@ -1016,7 +1016,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Push success status
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Stack must have space for push");
             }
             self.stack.push_unsafe(if (result.success) 1 else 0);
             const op_data = dispatch.getOpData(.AUTHCALL);

@@ -22,8 +22,8 @@ pub fn Handlers(comptime FrameType: type) type {
         /// Validate stack constraints
         pub inline fn validate_stack(self: *FrameType) void {
             {
-                self.getTracer().assert(self.stack.size() >= 1, "Arithmetic operation requires at least 1 stack item");
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Arithmetic operation requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "Arithmetic operation requires at least 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Arithmetic operation requires stack space");
             }
         }
 
@@ -105,7 +105,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dividend = op_data.metadata.value_ptr.*;
 
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_DIV_POINTER requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_DIV_POINTER requires 1 stack item");
             }
             const divisor = self.stack.peek_unsafe();
 
@@ -129,7 +129,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const op_data = dispatch_opcode_data.getOpData(.PUSH_SUB_INLINE, Dispatch, Dispatch.Item, cursor);
             const push_value = op_data.metadata.value;
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_SUB_INLINE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_SUB_INLINE requires 1 stack item");
             }
             const top = self.stack.peek_unsafe();
             const result = push_value -% top;
@@ -142,7 +142,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.PUSH_SUB_POINTER, cursor);
             const op_data = dispatch_opcode_data.getOpData(.PUSH_SUB_POINTER, Dispatch, Dispatch.Item, cursor);
             {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_SUB_POINTER requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_SUB_POINTER requires 1 stack item");
             }
             const top = self.stack.peek_unsafe();
             const result = op_data.metadata.value_ptr.* -% top;

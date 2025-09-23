@@ -23,7 +23,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             {
                 {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_AND_INLINE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_AND_INLINE requires 1 stack item");
                 }
             }
             const top = self.stack.peek_unsafe();
@@ -45,7 +45,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             {
                 {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_AND_POINTER requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_AND_POINTER requires 1 stack item");
                 }
             }
             const top = self.stack.peek_unsafe();
@@ -67,7 +67,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             {
                 {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_OR_INLINE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_OR_INLINE requires 1 stack item");
                 }
             }
             const top = self.stack.peek_unsafe();
@@ -89,7 +89,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             {
                 {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_OR_POINTER requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_OR_POINTER requires 1 stack item");
                 }
             }
             const top = self.stack.peek_unsafe();
@@ -111,7 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             {
                 {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_XOR_INLINE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_XOR_INLINE requires 1 stack item");
                 }
             }
             const top = self.stack.peek_unsafe();
@@ -133,7 +133,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             {
                 {
-                self.getTracer().assert(self.stack.size() >= 1, "PUSH_XOR_POINTER requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "PUSH_XOR_POINTER requires 1 stack item");
                 }
             }
             const top = self.stack.peek_unsafe();
