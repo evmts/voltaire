@@ -203,27 +203,44 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
             const allocator = self.getEvm().getCallArenaAllocator();
 
+            // Try to get cached dispatch data first
+            const cached_data = if (dispatch_cache.global_dispatch_cache) |*cache|
+                cache.lookup(bytecode_raw)
+            else
+                null;
+
             var schedule: []const Dispatch.Item = undefined;
             var jump_table_ptr: *Dispatch.JumpTable = undefined;
             var owned_schedule: ?Dispatch.DispatchSchedule = null;
             var owned_jump_table: ?*Dispatch.JumpTable = null;
 
-            // TODO: this is AI slop code that is way too tested way too complex and could be simplified
-            // TODO: Why is global_dispatch_cache optional? I don't remember if this is intentional or not
-            if (dispatch_cache.global_dispatch_cache) |*cache| {
-                if (cache.lookup(bytecode_raw)) |cached_data| {
-                    (&self.getEvm().tracer).debug("Frame: Using cached dispatch schedule", .{});
-                    schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0 .. cached_data.schedule.len / @sizeOf(Dispatch.Item)];
-                    const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0 .. cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
-                    const cached_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
-                    cached_jump_table.* = .{ .entries = jump_table_entries };
-                    jump_table_ptr = cached_jump_table;
-                    owned_jump_table = cached_jump_table;
+            // Use cached data if available
+            if (cached_data) |data| {
+                defer if (dispatch_cache.global_dispatch_cache) |*cache| cache.release(bytecode_raw);
 
-                    defer cache.release(bytecode_raw);
-                } else {
-                    (&self.getEvm().tracer).debug("Frame: Cache miss, creating new dispatch", .{});
-                    const bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer)) catch |e| {
+                (&self.getEvm().tracer).debug("Frame: Using cached dispatch schedule", .{});
+
+                // Convert raw bytes back to typed slices
+                schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(data.schedule.ptr)))[0 .. data.schedule.len / @sizeOf(Dispatch.Item)];
+                const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(data.jump_table.ptr)))[0 .. data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
+
+                // Create heap-allocated jump table wrapper
+                const cached_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
+                cached_jump_table.* = .{ .entries = jump_table_entries };
+                jump_table_ptr = cached_jump_table;
+                owned_jump_table = cached_jump_table;
+            } else {
+                // Build new dispatch schedule
+                (&self.getEvm().tracer).debug("Frame: Building new dispatch schedule", .{});
+
+                // Initialize bytecode with appropriate tracer
+                const tracer = if (dispatch_cache.global_dispatch_cache != null)
+                    @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer)
+                else
+                    null;
+
+                const bytecode = if (tracer != null)
+                    Bytecode.initWithTracer(allocator, bytecode_raw, tracer) catch |e| {
                         @branchHint(.cold);
                         (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, false, e);
                         return switch (e) {
@@ -234,63 +251,28 @@ pub fn Frame(comptime _config: FrameConfig) type {
                             error.OutOfMemory => Error.AllocationError,
                             else => Error.AllocationError,
                         };
-                    };
-                    const handlers = &Self.opcode_handlers;
-                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer)) catch {
-                        return Error.AllocationError;
-                    };
-                    schedule = owned_schedule.?.items;
-
-                    if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
-                        const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
-                        const pretty_output = dispatch_pretty_print.pretty_print(
-                            allocator,
-                            schedule,
-                            bytecode,
-                            Self,
-                            Dispatch.Item,
-                        ) catch null;
-                        if (pretty_output) |output| {
-                            defer allocator.free(output);
-                            (&self.getEvm().tracer).debug("\n{s}", .{output});
-                        }
                     }
-
-                    const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
-                    const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
-                    heap_jump_table.* = jt;
-                    jump_table_ptr = heap_jump_table;
-                    owned_jump_table = heap_jump_table;
-
-                    const schedule_bytes = std.mem.sliceAsBytes(schedule);
-                    const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
-                    cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
-                        @branchHint(.cold);
-                        // Failed to cache - not a fatal error, just continue
-                        // TODO: we should be tracer.warn logging here
+                else
+                    Bytecode.init(allocator, bytecode_raw) catch |e| {
+                        @branchHint(.unlikely);
+                        return switch (e) {
+                            error.BytecodeTooLarge => Error.BytecodeTooLarge,
+                            error.InvalidOpcode => Error.InvalidOpcode,
+                            error.InvalidJumpDestination => Error.InvalidJump,
+                            error.TruncatedPush => Error.InvalidOpcode,
+                            error.OutOfMemory => Error.AllocationError,
+                            else => Error.AllocationError,
+                        };
                     };
-                }
-            } else {
-                @branchHint(.unlikely);
-                const bytecode = Bytecode.init(allocator, bytecode_raw) catch |e| {
-                    @branchHint(.unlikely);
-                    return switch (e) {
-                        error.BytecodeTooLarge => Error.BytecodeTooLarge,
-                        error.InvalidOpcode => Error.InvalidOpcode,
-                        error.InvalidJumpDestination => Error.InvalidJump,
-                        error.TruncatedPush => Error.InvalidOpcode,
-                        error.OutOfMemory => Error.AllocationError,
-                        else => Error.AllocationError,
-                    };
-                };
 
+                // Create dispatch schedule
                 const handlers = &Self.opcode_handlers;
-
-                owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, null) catch {
+                owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, tracer) catch {
                     return Error.AllocationError;
                 };
                 schedule = owned_schedule.?.items;
 
+                // Pretty print in debug modes
                 if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
                     const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
                     const pretty_output = dispatch_pretty_print.pretty_print(
@@ -306,11 +288,22 @@ pub fn Frame(comptime _config: FrameConfig) type {
                     }
                 }
 
+                // Create jump table
                 const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
                 const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
                 heap_jump_table.* = jt;
                 jump_table_ptr = heap_jump_table;
                 owned_jump_table = heap_jump_table;
+
+                // Try to cache the results
+                if (dispatch_cache.global_dispatch_cache) |*cache| {
+                    const schedule_bytes = std.mem.sliceAsBytes(schedule);
+                    const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
+                    cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
+                        @branchHint(.cold);
+                        // Cache insertion failed - not fatal, continue without caching
+                    };
+                }
             }
 
             defer {
@@ -335,17 +328,14 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 (&self.getEvm().tracer).assert(s.validate(), "Frame.interpret: Invalid dispatch schedule structure");
             }
 
-            switch (schedule[0]) {
-                .first_block_gas => |meta| {
-                    if (meta.gas > 0) {
-                        first_block_gas_amount = meta.gas;
-                        try self.consumeGasChecked(@intCast(meta.gas));
-                    }
-                    start_index = 1;
-                },
-                else => {
-                    (&self.getEvm().tracer).assert(false, "Schedule doesn't start with .first_block_gas which is completely unexpected");
-                },
+            // Check if schedule starts with first_block_gas (it may not if gas is 0)
+            if (schedule.len > 0 and schedule[0] == .first_block_gas) {
+                const meta = schedule[0].first_block_gas;
+                if (meta.gas > 0) {
+                    first_block_gas_amount = meta.gas;
+                    try self.consumeGasChecked(@intCast(meta.gas));
+                }
+                start_index = 1;
             }
 
             self.dispatch = Dispatch{
