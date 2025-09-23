@@ -880,7 +880,6 @@ pub fn build(b: *std.Build) void {
     // Language bindings
     build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
     build_pkg.PythonBindings.createPythonSteps(b);
-    build_pkg.SwiftBindings.createSwiftSteps(b);
     build_pkg.GoBindings.createGoSteps(b);
     build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
 
