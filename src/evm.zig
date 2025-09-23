@@ -340,7 +340,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
                 const eips_for_refund = eips.Eips{ .hardfork = self.hardfork_config };
-                result.gas_left = eips_for_refund.apply_gas_refund(initial_gas, result.gas_left, self.gas_refund_counter);
+                result.gas_left = eips_for_refund.eip_3529_apply_gas_refund(initial_gas, result.gas_left, self.gas_refund_counter);
                 // Reset refund counter for next transaction
                 self.gas_refund_counter = 0;
             }
@@ -447,7 +447,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Handle EIP-4788 beacon roots contract
             const beacon_roots = @import("eips_and_hardforks/beacon_roots.zig");
             const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
-            if (eips_instance.is_beacon_roots_address(to)) {
+            if (eips_instance.eip_4788_is_beacon_roots_address(to)) {
                 var contract = beacon_roots.BeaconRootsContract{ .database = self.database, .allocator = self.allocator };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
 
@@ -477,7 +477,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Handle EIP-2935 historical block hashes contract
             const historical_block_hashes = @import("eips_and_hardforks/historical_block_hashes.zig");
-            if (eips_instance.is_historical_block_hashes_address(to)) {
+            if (eips_instance.eip_2935_is_historical_block_hashes_address(to)) {
                 var contract = historical_block_hashes.HistoricalBlockHashesContract{ .database = self.database };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
 
@@ -512,7 +512,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
 
             // Get the effective code address (handles delegation)
-            const code_address = eips_instance.get_effective_code_address(account, to);
+            const code_address = eips_instance.eip_7702_get_effective_code_address(account, to);
             if (account) |acc| {
                 if (acc.get_effective_code_address()) |delegated| {
                     log.debug("Account {x} has delegation to {x}", .{ to.bytes, delegated.bytes });
@@ -914,7 +914,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (result.output.len > 0) {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
                 const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
-                if (eips_instance.should_reject_create_with_ef_bytecode(result.output)) {
+                if (eips_instance.eip_3541_should_reject_create_with_ef_bytecode(result.output)) {
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }

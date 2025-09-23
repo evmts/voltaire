@@ -172,16 +172,14 @@ pub const Eips = struct {
     /// EIP-7702: Base gas cost per authorization
     /// Prague hardfork introduced authorization lists
     pub fn eip_7702_per_auth_base_cost(self: Self) i64 {
-        // TODO: We should be throwing a compile error if 7702 is not enabled on the current hardfork
-        _ = self;
+        if (!self.hardfork.isAtLeast(.PRAGUE)) return 0;
         return 12500;
     }
 
     /// EIP-7702: Additional gas cost for empty account
     /// Prague hardfork introduced authorization lists
     pub fn eip_7702_per_empty_account_cost(self: Self) i64 {
-        // TODO: We should be throwing a compile error if 7702 is not enabled on the current hardfork
-        _ = self;
+        if (!self.hardfork.isAtLeast(.PRAGUE)) return 0;
         return 25000;
     }
 
@@ -250,22 +248,20 @@ pub const Eips = struct {
         eip_7702_enabled: bool, // EOA code execution
     };
 
-    // TODO: All methods in this file should explicitly say what eip they are in this case 170
-    /// Get maximum contract code size based on hardfork
-    pub fn max_code_size(self: Self) u32 {
+    /// EIP-170: Get maximum contract code size based on hardfork
+    pub fn eip_170_max_code_size(self: Self) u32 {
         // EIP-170: Contract code size limit (Spurious Dragon)
         if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) return 0xFFFFFF; // No limit
         return 0x6000; // 24KB limit
     }
 
-    // TODO: All methods in this file should explicitly say what eip they are in this case 3541
-    /// Check if bytecode starting with 0xEF should be rejected
-    pub fn should_reject_ef_bytecode(self: Self) bool {
+    /// EIP-3541: Check if bytecode starting with 0xEF should be rejected
+    pub fn eip_3541_should_reject_ef_bytecode(self: Self) bool {
         return self.hardfork.isAtLeast(.LONDON); // EIP-3541
     }
 
-    /// Get gas cost for EXP opcode exponent byte
-    pub fn exp_byte_gas_cost(self: Self) u64 {
+    /// EIP-160: Get gas cost for EXP opcode exponent byte
+    pub fn eip_160_exp_byte_gas_cost(self: Self) u64 {
         if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) return 10; // Pre-EIP-160
         return 50; // Post-EIP-160
     }
@@ -275,42 +271,40 @@ pub const Eips = struct {
         return 32000;
     }
 
-    /// Check if PREVRANDAO should be used instead of DIFFICULTY
-    pub fn use_prevrandao(self: Self) bool {
+    /// EIP-4399: Check if PREVRANDAO should be used instead of DIFFICULTY
+    pub fn eip_4399_use_prevrandao(self: Self) bool {
         return self.hardfork.isAtLeast(.MERGE); // EIP-4399
     }
 
-    // TODO: put the eip number in name EIP-2028: Reduced non-zero byte cost
-    /// Get calldata gas costs
-    pub fn calldata_gas_cost(self: Self, is_zero: bool) u64 {
+    /// EIP-2028: Get calldata gas costs (reduced non-zero byte cost)
+    pub fn eip_2028_calldata_gas_cost(self: Self, is_zero: bool) u64 {
         if (is_zero) return 4;
         if (!self.hardfork.isAtLeast(.ISTANBUL)) return 68;
         return 16; // Post-Istanbul
     }
 
-    // TODO: put the eip number in name
-    /// Check if transient storage is available
-    pub fn has_transient_storage(self: Self) bool {
+    /// EIP-1153: Check if transient storage is available
+    pub fn eip_1153_has_transient_storage(self: Self) bool {
         return self.hardfork.isAtLeast(.CANCUN); // EIP-1153
     }
 
-    /// Check if PUSH0 opcode is available
-    pub fn has_push0(self: Self) bool {
+    /// EIP-3855: Check if PUSH0 opcode is available
+    pub fn eip_3855_has_push0(self: Self) bool {
         return self.hardfork.isAtLeast(.SHANGHAI); // EIP-3855
     }
 
-    /// Check if BASEFEE opcode is available
-    pub fn has_basefee(self: Self) bool {
+    /// EIP-3198: Check if BASEFEE opcode is available
+    pub fn eip_3198_has_basefee(self: Self) bool {
         return self.hardfork.isAtLeast(.LONDON); // EIP-3198
     }
 
-    /// Check if MCOPY opcode is available
-    pub fn has_mcopy(self: Self) bool {
+    /// EIP-5656: Check if MCOPY opcode is available
+    pub fn eip_5656_has_mcopy(self: Self) bool {
         return self.hardfork.isAtLeast(.CANCUN); // EIP-5656
     }
 
-    /// Check if blob transactions are supported
-    pub fn has_blob_transactions(self: Self) bool {
+    /// EIP-4844: Check if blob transactions are supported
+    pub fn eip_4844_has_blob_transactions(self: Self) bool {
         return self.hardfork.isAtLeast(.CANCUN); // EIP-4844
     }
 
@@ -346,25 +340,23 @@ pub const Eips = struct {
         refund: u64,
     };
 
-    // TODO: Need to compile error if not enabled
     /// EIP-4788: Check if address is the beacon roots contract
-    pub fn is_beacon_roots_address(self: Self, address: primitives.Address) bool {
-        _ = self;
+    pub fn eip_4788_is_beacon_roots_address(self: Self, address: primitives.Address) bool {
+        if (!self.hardfork.isAtLeast(.CANCUN)) return false;
         const beacon_roots = @import("beacon_roots.zig");
         return std.mem.eql(u8, &address.bytes, &beacon_roots.BEACON_ROOTS_ADDRESS.bytes);
     }
 
     /// EIP-2935: Check if address is the historical block hashes contract
-    pub fn is_historical_block_hashes_address(self: Self, address: primitives.Address) bool {
-        _ = self;
+    pub fn eip_2935_is_historical_block_hashes_address(self: Self, address: primitives.Address) bool {
+        if (!self.hardfork.isAtLeast(.PRAGUE)) return false;
         const historical_block_hashes = @import("historical_block_hashes.zig");
         return std.mem.eql(u8, &address.bytes, &historical_block_hashes.HISTORY_CONTRACT_ADDRESS.bytes);
     }
 
-    // TODO: Need to compile error if not enabled
     /// EIP-7702: Get effective code address handling delegation
-    pub fn get_effective_code_address(self: Self, account: ?@import("../storage/database_interface_account.zig").Account, address: primitives.Address) primitives.Address {
-        _ = self;
+    pub fn eip_7702_get_effective_code_address(self: Self, account: ?@import("../storage/database_interface_account.zig").Account, address: primitives.Address) primitives.Address {
+        if (!self.hardfork.isAtLeast(.PRAGUE)) return address;
         if (account) |acc| {
             if (acc.get_effective_code_address()) |delegated| {
                 return delegated;
@@ -374,7 +366,7 @@ pub const Eips = struct {
     }
 
     /// EIP-3541: Should reject bytecode starting with 0xEF
-    pub fn should_reject_create_with_ef_bytecode(self: Self, bytecode: []const u8) bool {
+    pub fn eip_3541_should_reject_create_with_ef_bytecode(self: Self, bytecode: []const u8) bool {
         if (!self.hardfork.isAtLeast(.LONDON)) return false;
         return bytecode.len > 0 and bytecode[0] == 0xEF;
     }
@@ -434,9 +426,8 @@ pub const Eips = struct {
         }
     }
 
-    // TODO: EIP number in fn name
-    /// Apply EIP-3529 gas refund after transaction
-    pub fn apply_gas_refund(self: Self, initial_gas: u64, gas_left: u64, gas_refund_counter: u64) u64 {
+    /// EIP-3529: Apply gas refund after transaction
+    pub fn eip_3529_apply_gas_refund(self: Self, initial_gas: u64, gas_left: u64, gas_refund_counter: u64) u64 {
         const gas_used = initial_gas - gas_left;
         const capped_refund = self.eip_3529_gas_refund_cap(gas_used, gas_refund_counter);
         return @min(initial_gas, gas_left + capped_refund);
@@ -843,36 +834,36 @@ test "specific eip helper functions" {
     const merge = Eips{ .hardfork = Hardfork.MERGE };
 
     // Test max code size
-    try std.testing.expectEqual(@as(u32, 0xFFFFFF), frontier.max_code_size());
-    try std.testing.expectEqual(@as(u32, 0x6000), spurious.max_code_size());
+    try std.testing.expectEqual(@as(u32, 0xFFFFFF), frontier.eip_170_max_code_size());
+    try std.testing.expectEqual(@as(u32, 0x6000), spurious.eip_170_max_code_size());
 
     // Test 0xEF bytecode rejection
-    try std.testing.expect(!frontier.should_reject_ef_bytecode());
-    try std.testing.expect(london.should_reject_ef_bytecode());
+    try std.testing.expect(!frontier.eip_3541_should_reject_ef_bytecode());
+    try std.testing.expect(london.eip_3541_should_reject_ef_bytecode());
 
     // Test EXP gas cost
-    try std.testing.expectEqual(@as(u64, 10), frontier.exp_byte_gas_cost());
-    try std.testing.expectEqual(@as(u64, 50), spurious.exp_byte_gas_cost());
+    try std.testing.expectEqual(@as(u64, 10), frontier.eip_160_exp_byte_gas_cost());
+    try std.testing.expectEqual(@as(u64, 50), spurious.eip_160_exp_byte_gas_cost());
 
     // Test PREVRANDAO vs DIFFICULTY
-    try std.testing.expect(!london.use_prevrandao());
-    try std.testing.expect(merge.use_prevrandao());
+    try std.testing.expect(!london.eip_4399_use_prevrandao());
+    try std.testing.expect(merge.eip_4399_use_prevrandao());
 
     // Test opcode availability
-    try std.testing.expect(!london.has_push0());
-    try std.testing.expect(shanghai.has_push0());
+    try std.testing.expect(!london.eip_3855_has_push0());
+    try std.testing.expect(shanghai.eip_3855_has_push0());
 
-    try std.testing.expect(!shanghai.has_mcopy());
-    try std.testing.expect(cancun.has_mcopy());
+    try std.testing.expect(!shanghai.eip_5656_has_mcopy());
+    try std.testing.expect(cancun.eip_5656_has_mcopy());
 
-    try std.testing.expect(!frontier.has_basefee());
-    try std.testing.expect(london.has_basefee());
+    try std.testing.expect(!frontier.eip_3198_has_basefee());
+    try std.testing.expect(london.eip_3198_has_basefee());
 
-    try std.testing.expect(!shanghai.has_transient_storage());
-    try std.testing.expect(cancun.has_transient_storage());
+    try std.testing.expect(!shanghai.eip_1153_has_transient_storage());
+    try std.testing.expect(cancun.eip_1153_has_transient_storage());
 
-    try std.testing.expect(!shanghai.has_blob_transactions());
-    try std.testing.expect(cancun.has_blob_transactions());
+    try std.testing.expect(!shanghai.eip_4844_has_blob_transactions());
+    try std.testing.expect(cancun.eip_4844_has_blob_transactions());
 }
 
 test "calldata gas costs" {
@@ -880,12 +871,12 @@ test "calldata gas costs" {
     const istanbul = Eips{ .hardfork = Hardfork.ISTANBUL };
 
     // Zero bytes always cost 4 gas
-    try std.testing.expectEqual(@as(u64, 4), homestead.calldata_gas_cost(true));
-    try std.testing.expectEqual(@as(u64, 4), istanbul.calldata_gas_cost(true));
+    try std.testing.expectEqual(@as(u64, 4), homestead.eip_2028_calldata_gas_cost(true));
+    try std.testing.expectEqual(@as(u64, 4), istanbul.eip_2028_calldata_gas_cost(true));
 
     // Non-zero bytes: 68 pre-Istanbul, 16 post-Istanbul
-    try std.testing.expectEqual(@as(u64, 68), homestead.calldata_gas_cost(false));
-    try std.testing.expectEqual(@as(u64, 16), istanbul.calldata_gas_cost(false));
+    try std.testing.expectEqual(@as(u64, 68), homestead.eip_2028_calldata_gas_cost(false));
+    try std.testing.expectEqual(@as(u64, 16), istanbul.eip_2028_calldata_gas_cost(false));
 }
 
 test "sstore gas costs" {
