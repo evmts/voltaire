@@ -148,6 +148,11 @@ pub const EvmConfig = struct {
         const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
         const limit = self.loop_quota orelse 0;
 
+        // Compile-time check that loop_quota doesn't exceed u64 max
+        if (limit > std.math.maxInt(u64)) {
+            @compileError("loop_quota exceeds maximum u64 value");
+        }
+
         const T = if (limit <= std.math.maxInt(u8))
             u8
         else if (limit <= std.math.maxInt(u16))
@@ -156,7 +161,6 @@ pub const EvmConfig = struct {
             u32
         else
             u64;
-        // TODO: check we aren't bigger than max u64 too
 
         const Counter = SafetyCounter(T, mode);
         return Counter;

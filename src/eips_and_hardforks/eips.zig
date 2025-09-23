@@ -2,8 +2,11 @@ const primitives = @import("primitives");
 const AccessList = @import("../storage/access_list.zig").AccessList;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 
-// TODO: we need to design a way to override hardforks with specific EIPs
-// You should be able to pick a base hardfork and then enable/disable specific EIP
+/// EIP Override entry - allows enabling/disabling specific EIPs
+pub const EipOverride = struct {
+    eip: u16,
+    enabled: bool,
+};
 
 // EIPs is a comptime known configuration of Eip and hardfork specific behavior
 // This struct consolidates all EIP-specific logic for the EVM
@@ -11,6 +14,10 @@ pub const Eips = struct {
     const Self = @This();
 
     hardfork: Hardfork,
+
+    /// Overrides for specific EIPs - applied on top of the base hardfork
+    /// Use this to enable future EIPs or disable existing ones for testing
+    overrides: []const EipOverride = &.{},
 
     /// EIP-7702: Set EOA account code (Prague)
     /// Allows EOAs to temporarily execute smart contract code for one transaction
@@ -209,6 +216,12 @@ pub const Eips = struct {
 
     /// Check if a specific EIP is active
     pub fn is_eip_active(self: Self, eip: u16) bool {
+        // First check overrides
+        for (self.overrides) |override| {
+            if (override.eip == eip) return override.enabled;
+        }
+
+        // Then check base hardfork
         const active_eips = self.get_active_eips();
         for (active_eips) |active_eip| if (active_eip == eip) return true;
         return false;
