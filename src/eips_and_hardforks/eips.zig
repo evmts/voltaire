@@ -22,31 +22,31 @@ pub const Eips = struct {
     /// EIP-7702: Set EOA account code (Prague)
     /// Allows EOAs to temporarily execute smart contract code for one transaction
     pub fn eip_7702_eoa_code_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.PRAGUE);
+        return self.is_eip_active(7702);
     }
 
     /// EIP-2537: BLS12-381 precompile operations (Prague)
     /// Adds precompiled contracts for BLS12-381 curve operations
     pub fn eip_2537_bls_precompiles_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.PRAGUE);
+        return self.is_eip_active(2537);
     }
 
     /// EIP-2935: Serve historical block hashes from state (Prague)
     /// Stores historical block hashes in the state for easier access
     pub fn eip_2935_historical_block_hashes_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.PRAGUE);
+        return self.is_eip_active(2935);
     }
 
     /// EIP-6110: Supply validator deposits on chain (Prague)
     /// Validator deposits handled directly on execution layer
     pub fn eip_6110_validator_deposits_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.PRAGUE);
+        return self.is_eip_active(6110);
     }
 
     /// EIP-7002: Execution layer triggerable exits (Prague)
     /// Allows triggering validator exits from execution layer
     pub fn eip_7002_validator_exits_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.PRAGUE);
+        return self.is_eip_active(7002);
     }
 
     /// EIP-2929 & EIP-3651: Pre-warm addresses for top-level calls
@@ -126,37 +126,37 @@ pub const Eips = struct {
     /// EIP-1559: Fee market change for ETH 1.0 chain
     /// London hardfork introduced base fee per gas
     pub fn eip_1559_is_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.LONDON);
+        return self.is_eip_active(1559);
     }
 
     /// EIP-3198: BASEFEE opcode
     /// London hardfork added BASEFEE opcode
     pub fn eip_3198_basefee_opcode_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.LONDON);
+        return self.is_eip_active(3198);
     }
 
     /// EIP-1153: Transient storage opcodes (TLOAD/TSTORE)
     /// Cancun hardfork added transient storage
     pub fn eip_1153_transient_storage_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.CANCUN);
+        return self.is_eip_active(1153);
     }
 
     /// EIP-4844: Shard Blob Transactions
     /// Cancun hardfork introduced blob transactions
     pub fn eip_4844_blob_transactions_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.CANCUN);
+        return self.is_eip_active(4844);
     }
 
     /// EIP-6780: SELFDESTRUCT only in same transaction
     /// Cancun hardfork restricted SELFDESTRUCT behavior
     pub fn eip_6780_selfdestruct_same_transaction_only(self: Self) bool {
-        return self.hardfork.isAtLeast(.CANCUN);
+        return self.is_eip_active(6780);
     }
 
     /// EIP-3855: PUSH0 instruction
     /// Shanghai hardfork added PUSH0 instruction
     pub fn eip_3855_push0_enabled(self: Self) bool {
-        return self.hardfork.isAtLeast(.SHANGHAI);
+        return self.is_eip_active(3855);
     }
 
     /// EIP-3860: Limit and meter initcode
@@ -164,7 +164,7 @@ pub const Eips = struct {
     // Pre-Shanghai: 24KB limit (EIP-170)
     // Post-Shanghai: 48KB limit
     pub fn size_limit(self: Self) u64 {
-        if (self.hardfork.isAtLeast(.SHANGHAI)) return 0xC000;
+        if (self.is_eip_active(3860)) return 0xC000;
         return 0x6000;
     }
 
@@ -172,7 +172,7 @@ pub const Eips = struct {
     // Pre-Shanghai: no additional cost
     // Post-Shanghai: 2 gas per word
     pub fn word_cost(self: Self) u64 {
-        if (self.hardfork.isAtLeast(.SHANGHAI)) return 2;
+        if (self.is_eip_active(3860)) return 2;
         return 2;
     }
 
@@ -264,18 +264,18 @@ pub const Eips = struct {
     /// EIP-170: Get maximum contract code size based on hardfork
     pub fn eip_170_max_code_size(self: Self) u32 {
         // EIP-170: Contract code size limit (Spurious Dragon)
-        if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) return 0xFFFFFF; // No limit
+        if (!self.is_eip_active(170)) return 0xFFFFFF; // No limit
         return 0x6000; // 24KB limit
     }
 
     /// EIP-3541: Check if bytecode starting with 0xEF should be rejected
     pub fn eip_3541_should_reject_ef_bytecode(self: Self) bool {
-        return self.hardfork.isAtLeast(.LONDON); // EIP-3541
+        return self.is_eip_active(3541);
     }
 
     /// EIP-160: Get gas cost for EXP opcode exponent byte
     pub fn eip_160_exp_byte_gas_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.SPURIOUS_DRAGON)) return 10; // Pre-EIP-160
+        if (!self.is_eip_active(160)) return 10; // Pre-EIP-160
         return 50; // Post-EIP-160
     }
 
@@ -286,39 +286,39 @@ pub const Eips = struct {
 
     /// EIP-4399: Check if PREVRANDAO should be used instead of DIFFICULTY
     pub fn eip_4399_use_prevrandao(self: Self) bool {
-        return self.hardfork.isAtLeast(.MERGE); // EIP-4399
+        return self.is_eip_active(4399);
     }
 
     /// EIP-2028: Get calldata gas costs (reduced non-zero byte cost)
     pub fn eip_2028_calldata_gas_cost(self: Self, is_zero: bool) u64 {
         if (is_zero) return 4;
-        if (!self.hardfork.isAtLeast(.ISTANBUL)) return 68;
+        if (!self.is_eip_active(2028)) return 68;
         return 16; // Post-Istanbul
     }
 
     /// EIP-1153: Check if transient storage is available
     pub fn eip_1153_has_transient_storage(self: Self) bool {
-        return self.hardfork.isAtLeast(.CANCUN); // EIP-1153
+        return self.is_eip_active(1153);
     }
 
     /// EIP-3855: Check if PUSH0 opcode is available
     pub fn eip_3855_has_push0(self: Self) bool {
-        return self.hardfork.isAtLeast(.SHANGHAI); // EIP-3855
+        return self.is_eip_active(3855);
     }
 
     /// EIP-3198: Check if BASEFEE opcode is available
     pub fn eip_3198_has_basefee(self: Self) bool {
-        return self.hardfork.isAtLeast(.LONDON); // EIP-3198
+        return self.is_eip_active(3198);
     }
 
     /// EIP-5656: Check if MCOPY opcode is available
     pub fn eip_5656_has_mcopy(self: Self) bool {
-        return self.hardfork.isAtLeast(.CANCUN); // EIP-5656
+        return self.is_eip_active(5656);
     }
 
     /// EIP-4844: Check if blob transactions are supported
     pub fn eip_4844_has_blob_transactions(self: Self) bool {
-        return self.hardfork.isAtLeast(.CANCUN); // EIP-4844
+        return self.is_eip_active(4844);
     }
 
     /// Get SSTORE gas costs based on hardfork and state
@@ -380,13 +380,13 @@ pub const Eips = struct {
 
     /// EIP-3541: Should reject bytecode starting with 0xEF
     pub fn eip_3541_should_reject_create_with_ef_bytecode(self: Self, bytecode: []const u8) bool {
-        if (!self.hardfork.isAtLeast(.LONDON)) return false;
+        if (!self.is_eip_active(3541)) return false;
         return bytecode.len > 0 and bytecode[0] == 0xEF;
     }
 
     /// EIP-2929: Warm contract address for execution
     pub fn warm_contract_for_execution(self: Self, access_list: anytype, address: primitives.Address) !void {
-        if (!self.hardfork.isAtLeast(.BERLIN)) return;
+        if (!self.is_eip_active(2929)) return;
         _ = try access_list.access_address(address);
     }
 

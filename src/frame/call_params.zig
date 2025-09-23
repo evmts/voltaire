@@ -1299,6 +1299,79 @@ test "call params setGas" {
     }
 }
 
+test "call params validation - comprehensive" {
+    const caller = primitives.ZERO_ADDRESS;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+
+    // Small valid input - should pass
+    const small_input = &[_]u8{ 0x12, 0x34, 0x56, 0x78 };
+    const call_small = DefaultCallParams{ .call = .{
+        .caller = caller,
+        .to = to,
+        .value = 100,
+        .input = small_input,
+        .gas = 21000,
+    } };
+    try call_small.validate();
+
+    // Small valid init code - should pass
+    const small_init = &[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xf3 };
+    const create_small = DefaultCallParams{ .create = .{
+        .caller = caller,
+        .value = 0,
+        .init_code = small_init,
+        .gas = 53000,
+    } };
+    try create_small.validate();
+
+    // Test all call types with valid parameters
+    const valid_ops = [_]DefaultCallParams{
+        DefaultCallParams{ .call = .{
+            .caller = caller,
+            .to = to,
+            .value = 100,
+            .input = small_input,
+            .gas = 21000,
+        } },
+        DefaultCallParams{ .callcode = .{
+            .caller = caller,
+            .to = to,
+            .value = 100,
+            .input = small_input,
+            .gas = 21000,
+        } },
+        DefaultCallParams{ .delegatecall = .{
+            .caller = caller,
+            .to = to,
+            .input = small_input,
+            .gas = 21000,
+        } },
+        DefaultCallParams{ .staticcall = .{
+            .caller = caller,
+            .to = to,
+            .input = small_input,
+            .gas = 21000,
+        } },
+        DefaultCallParams{ .create = .{
+            .caller = caller,
+            .value = 100,
+            .init_code = small_init,
+            .gas = 53000,
+        } },
+        DefaultCallParams{ .create2 = .{
+            .caller = caller,
+            .value = 100,
+            .init_code = small_init,
+            .salt = 0x123456,
+            .gas = 53000,
+        } },
+    };
+
+    for (valid_ops) |op| {
+        try op.validate();
+    }
+}
+
 test "call params setGas edge cases" {
     const caller = primitives.ZERO_ADDRESS;
     const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
