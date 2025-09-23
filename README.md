@@ -60,10 +60,11 @@ See [test report](specs/test_report.md) for detailed results. For an in-depth un
   - **Zig**
   - **C**
   - **TypeScript** - Wasm or Bun
-  - **Python**
-  - **Swift**
+  - **Rust**
   - **Wasm**
-  - **🚧 Kotlin**
+  - **🚧 Python** - Looking for contributors
+  - **🚧 Swift** - Looking for contributors
+  - **🚧 Kotlin** - Looking for contributors
 - 📦 **Minimal bundle size**
   - Zig `comptime` configuration means you only pay for features you actually use
   - Skip precompiles or use specific hard forks without bundle size or runtime overhead
@@ -82,9 +83,13 @@ All SDKs in this repo are vibecoded proof-of-concepts. APIs are unstable and may
 - [Go](sdks/go) — Go bindings with FFI to Zig EVM
 - [Bun](sdks/bun) — Native Bun bindings around the Zig EVM
 - [C](sdks/c) — C/C++ FFI surface for embedding
-- [Python](sdks/python) — Python bindings and primitives
-- [Swift](sdks/swift) — Swift bindings for Apple platforms
+- [Rust](sdks/rust) — Idiomatic Rust wrapper over FFI
 - [TypeScript](sdks/typescript) — WASM/TS APIs for Node, Bun, Browser
+
+**Looking for Contributors:**
+- **Python** — Help us build Python bindings and primitives
+- **Swift** — Help us build Swift bindings for Apple platforms
+- **Kotlin** — Help us build Kotlin/JVM bindings
 
 See each SDK's README for install, quick start, and current API.
 
