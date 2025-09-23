@@ -116,7 +116,7 @@ pub fn Preprocessor(comptime FrameType: type) type {
             // Helper function for conditional tracing assertions
             const tracerAssert = struct {
                 fn call(f: *FrameType, condition: bool, comptime message: []const u8) void {
-                    f.getTracer().assert(condition, message);
+                    (&f.getEvm().tracer).assert(condition, message);
                 }
             }.call;
 
