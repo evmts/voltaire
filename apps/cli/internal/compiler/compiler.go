@@ -2,8 +2,8 @@ package compiler
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../../../lib/foundry-compilers
-#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../../../../target/aarch64-apple-darwin/release -lfoundry_wrapper
-#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../../../../target/x86_64-apple-darwin/release -lfoundry_wrapper
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../../../../zig-out/lib -lfoundry_wrapper
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../../../../zig-out/lib -lfoundry_wrapper
 #cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../../../../zig-out/lib -lfoundry_wrapper
 #cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../../../../zig-out/lib -lfoundry_wrapper
 #cgo darwin LDFLAGS: -framework Security -framework SystemConfiguration -framework CoreFoundation -lc++
