@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
 const BlockInfoConfig = @import("frame/block_info_config.zig").BlockInfoConfig;
 const Eips = @import("eips_and_hardforks/eips.zig").Eips;
+const EipOverride = @import("eips_and_hardforks/eips.zig").EipOverride;
 const Hardfork = @import("eips_and_hardforks/eips.zig").Hardfork;
 const primitives = @import("primitives");
 const Address = primitives.Address;
@@ -28,6 +29,10 @@ pub const EvmConfig = struct {
     // Comptime known configuration of Eip and hardfork information
     // Default to CANCUN as the stable latest hardfork (PRAGUE is upcoming)
     eips: Eips = Eips{ .hardfork = Hardfork.CANCUN },
+
+    /// EIP overrides to apply on top of the base hardfork
+    /// Allows granular control over specific EIP features
+    eip_overrides: []const EipOverride = &.{},
 
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
     /// This prevents infinite recursion and stack overflow attacks
@@ -234,7 +239,10 @@ pub const EvmConfig = struct {
             EvmConfig{}; // safe/default
 
         // Apply build options
-        config.eips = Eips{ .hardfork = getHardforkFromString(build_options.hardfork) };
+        config.eips = Eips{
+            .hardfork = getHardforkFromString(build_options.hardfork),
+            .overrides = config.eip_overrides,
+        };
         config.max_call_depth = build_options.max_call_depth;
         config.stack_size = build_options.stack_size;
         config.max_bytecode_size = build_options.max_bytecode_size;
@@ -258,7 +266,6 @@ pub const EvmConfig = struct {
         return config;
     }
 
-    // TODO: This is only used in one method so we should inline it in that method instead of abstracting it here
     /// Get the hardfork enum from a string
     fn getHardforkFromString(hardfork_str: []const u8) Hardfork {
         // TODO: We need to stop making cancun the default and instead make latest the default
@@ -286,6 +293,7 @@ test "EvmConfig - default initialization" {
     const config = EvmConfig{};
 
     try testing.expectEqual(Hardfork.CANCUN, config.eips.hardfork);
+    try testing.expectEqual(@as(usize, 0), config.eip_overrides.len);
     try testing.expectEqual(@as(u11, 1024), config.max_call_depth);
     try testing.expectEqual(@as(u18, 131072), config.max_input_size);
     try testing.expectEqual(true, config.enable_precompiles);
@@ -298,6 +306,7 @@ test "EvmConfig - default initialization" {
 test "EvmConfig - custom configuration" {
     const config = EvmConfig{
         .eips = Eips{ .hardfork = Hardfork.BERLIN },
+        .eip_overrides = &.{},
         .max_call_depth = 512,
         .max_input_size = 65536,
         .enable_precompiles = false,
@@ -457,6 +466,49 @@ test "EvmConfig - complete custom configuration" {
     try testing.expectEqual(false, config.enable_precompiles);
     try testing.expectEqual(false, config.enable_fusion);
     try testing.expectEqual(u11, config.get_depth_type());
+}
+
+test "EvmConfig - EIP overrides" {
+    // Test enabling a future EIP on an older hardfork
+    const enable_future = EvmConfig{
+        .eips = Eips{
+            .hardfork = Hardfork.LONDON,
+            .overrides = &[_]EipOverride{
+                .{ .eip = 3855, .enabled = true }, // Enable PUSH0 on London
+                .{ .eip = 1153, .enabled = true }, // Enable transient storage on London
+            },
+        },
+        .eip_overrides = &[_]EipOverride{
+            .{ .eip = 3855, .enabled = true },
+            .{ .eip = 1153, .enabled = true },
+        },
+    };
+
+    // London normally doesn't have PUSH0 (EIP-3855)
+    try testing.expect(enable_future.eips.eip_3855_push0_enabled());
+    try testing.expect(enable_future.eips.eip_1153_transient_storage_enabled());
+
+    // Test disabling an existing EIP
+    const disable_existing = EvmConfig{
+        .eips = Eips{
+            .hardfork = Hardfork.CANCUN,
+            .overrides = &[_]EipOverride{
+                .{ .eip = 6780, .enabled = false }, // Disable SELFDESTRUCT restriction
+                .{ .eip = 4844, .enabled = false }, // Disable blob transactions
+            },
+        },
+        .eip_overrides = &[_]EipOverride{
+            .{ .eip = 6780, .enabled = false },
+            .{ .eip = 4844, .enabled = false },
+        },
+    };
+
+    // Cancun normally has these features, but we've disabled them
+    try testing.expect(!disable_existing.eips.eip_6780_selfdestruct_same_transaction_only());
+    try testing.expect(!disable_existing.eips.eip_4844_blob_transactions_enabled());
+
+    // Other Cancun features should still be enabled
+    try testing.expect(disable_existing.eips.eip_1153_transient_storage_enabled());
 }
 
 test "EvmConfig - custom opcode handlers" {

@@ -73,7 +73,7 @@ pub const Eips = struct {
         }
 
         // EIP-3651: Warm coinbase for Shanghai+
-        if (self.hardfork.isAtLeast(.SHANGHAI)) {
+        if (self.is_eip_active(3651)) {
             warm_addresses[warm_count] = coinbase;
             warm_count += 1;
         }
@@ -915,4 +915,128 @@ test "sstore gas costs" {
     cost = frontier.sstore_gas_cost(1, 1, 1);
     try std.testing.expectEqual(@as(u64, 5000), cost.gas);
     try std.testing.expectEqual(@as(u64, 0), cost.refund);
+}
+
+test "EIP overrides - enable future EIPs" {
+    // Test enabling Shanghai features on London
+    const london_with_push0 = Eips{
+        .hardfork = Hardfork.LONDON,
+        .overrides = &[_]EipOverride{
+            .{ .eip = 3855, .enabled = true }, // PUSH0
+            .{ .eip = 3651, .enabled = true }, // Warm COINBASE
+        },
+    };
+
+    // London doesn't normally have these
+    const plain_london = Eips{ .hardfork = Hardfork.LONDON };
+    try std.testing.expect(!plain_london.is_eip_active(3855));
+    try std.testing.expect(!plain_london.is_eip_active(3651));
+
+    // But with overrides, they're enabled
+    try std.testing.expect(london_with_push0.is_eip_active(3855));
+    try std.testing.expect(london_with_push0.is_eip_active(3651));
+    try std.testing.expect(london_with_push0.eip_3855_push0_enabled());
+
+    // Other London features still work
+    try std.testing.expect(london_with_push0.is_eip_active(1559));
+    try std.testing.expect(london_with_push0.eip_1559_is_enabled());
+}
+
+test "EIP overrides - disable existing EIPs" {
+    // Test disabling Cancun features
+    const cancun_restricted = Eips{
+        .hardfork = Hardfork.CANCUN,
+        .overrides = &[_]EipOverride{
+            .{ .eip = 4844, .enabled = false }, // Disable blob transactions
+            .{ .eip = 6780, .enabled = false }, // Disable SELFDESTRUCT restriction
+            .{ .eip = 1153, .enabled = false }, // Disable transient storage
+        },
+    };
+
+    // Cancun normally has these
+    const plain_cancun = Eips{ .hardfork = Hardfork.CANCUN };
+    try std.testing.expect(plain_cancun.is_eip_active(4844));
+    try std.testing.expect(plain_cancun.is_eip_active(6780));
+    try std.testing.expect(plain_cancun.is_eip_active(1153));
+
+    // But with overrides, they're disabled
+    try std.testing.expect(!cancun_restricted.is_eip_active(4844));
+    try std.testing.expect(!cancun_restricted.is_eip_active(6780));
+    try std.testing.expect(!cancun_restricted.is_eip_active(1153));
+    try std.testing.expect(!cancun_restricted.eip_4844_blob_transactions_enabled());
+    try std.testing.expect(!cancun_restricted.eip_6780_selfdestruct_same_transaction_only());
+    try std.testing.expect(!cancun_restricted.eip_1153_transient_storage_enabled());
+
+    // Other Cancun features still enabled
+    try std.testing.expect(cancun_restricted.is_eip_active(3855)); // PUSH0 from Shanghai
+    try std.testing.expect(cancun_restricted.is_eip_active(1559)); // Fee market from London
+}
+
+test "EIP overrides - mixed enable/disable" {
+    // Complex scenario: Berlin base with some London features enabled, some Berlin features disabled
+    const custom_berlin = Eips{
+        .hardfork = Hardfork.BERLIN,
+        .overrides = &[_]EipOverride{
+            // Enable London features
+            .{ .eip = 1559, .enabled = true }, // Fee market
+            .{ .eip = 3198, .enabled = true }, // BASEFEE
+            .{ .eip = 3529, .enabled = true }, // Refund reduction
+            // Disable a Berlin feature
+            .{ .eip = 2929, .enabled = false }, // Access list gas changes
+        },
+    };
+
+    // Check enabled London features
+    try std.testing.expect(custom_berlin.is_eip_active(1559));
+    try std.testing.expect(custom_berlin.is_eip_active(3198));
+    try std.testing.expect(custom_berlin.is_eip_active(3529));
+    try std.testing.expect(custom_berlin.eip_1559_is_enabled());
+    try std.testing.expect(custom_berlin.eip_3198_basefee_opcode_enabled());
+
+    // Check disabled Berlin feature
+    try std.testing.expect(!custom_berlin.is_eip_active(2929));
+    // Gas costs should revert to pre-Berlin values
+    try std.testing.expectEqual(@as(u64, 200), custom_berlin.eip_2929_cold_sload_cost());
+    try std.testing.expectEqual(@as(u64, 700), custom_berlin.eip_2929_cold_account_access_cost());
+
+    // Check that overrides affect dependent functionality
+    try std.testing.expectEqual(@as(u64, 20), custom_berlin.eip_3529_gas_refund_cap(100, 100)); // 1/5 due to EIP-3529
+}
+
+test "EIP overrides - gas cost implications" {
+    // Test that overrides properly affect gas calculations
+    const istanbul_with_berlin_gas = Eips{
+        .hardfork = Hardfork.ISTANBUL,
+        .overrides = &[_]EipOverride{
+            .{ .eip = 2929, .enabled = true }, // Enable Berlin gas changes
+        },
+    };
+
+    const plain_istanbul = Eips{ .hardfork = Hardfork.ISTANBUL };
+
+    // Istanbul normally has old gas costs
+    try std.testing.expectEqual(@as(u64, 200), plain_istanbul.eip_2929_cold_sload_cost());
+
+    // With override, should have Berlin gas costs
+    try std.testing.expectEqual(@as(u64, 2100), istanbul_with_berlin_gas.eip_2929_cold_sload_cost());
+    try std.testing.expectEqual(@as(u64, 100), istanbul_with_berlin_gas.eip_2929_warm_storage_read_cost());
+    try std.testing.expectEqual(@as(u64, 2600), istanbul_with_berlin_gas.eip_2929_cold_account_access_cost());
+    try std.testing.expectEqual(@as(u64, 100), istanbul_with_berlin_gas.eip_2929_warm_account_access_cost());
+}
+
+test "EIP overrides - no overrides" {
+    // Test that empty overrides don't affect behavior
+    const cancun_no_overrides = Eips{
+        .hardfork = Hardfork.CANCUN,
+        .overrides = &.{}, // Empty overrides
+    };
+
+    const cancun_default = Eips{ .hardfork = Hardfork.CANCUN };
+
+    // Both should behave identically
+    try std.testing.expectEqual(cancun_default.is_eip_active(1559), cancun_no_overrides.is_eip_active(1559));
+    try std.testing.expectEqual(cancun_default.is_eip_active(3855), cancun_no_overrides.is_eip_active(3855));
+    try std.testing.expectEqual(cancun_default.is_eip_active(4844), cancun_no_overrides.is_eip_active(4844));
+    try std.testing.expectEqual(cancun_default.eip_1559_is_enabled(), cancun_no_overrides.eip_1559_is_enabled());
+    try std.testing.expectEqual(cancun_default.eip_3855_push0_enabled(), cancun_no_overrides.eip_3855_push0_enabled());
 }
