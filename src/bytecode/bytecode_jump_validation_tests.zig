@@ -205,41 +205,6 @@ test "iterator usage patterns" {
     // (This test documents the intended usage pattern)
 }
 
-// Test that dispatch should use pre-analyzed data, not iterator
-test "dispatch uses pre-analyzed data" {
-    const allocator = std.testing.allocator;
-    
-    // The Dispatch module should build its schedule from pre-analyzed data
-    // not by re-iterating through bytecode with the iterator
-    
-    // This is a documentation test - the actual refactoring would involve:
-    // 1. Having bytecode.analyze() return structured data
-    // 2. Dispatch.init() consuming that structured data
-    // 3. No createIterator() calls in the execution hot path
-    
-    // For now, we just verify that the analysis data is available
-    const code = [_]u8{
-        0x60, 0x01,     // PUSH1 1
-        0x60, 0x02,     // PUSH1 2
-        0x01,           // ADD
-        0x5b,           // JUMPDEST
-        0x00,           // STOP
-    };
-    
-    var bytecode = try BytecodeDefault.init(allocator, &code);
-    defer bytecode.deinit();
-    
-    // The analyze function provides structured data
-    var analysis = try bytecode.analyze(allocator);
-    defer analysis.deinit(allocator);
-    
-    // Analysis should have found the JUMPDEST and PUSH instructions
-    try std.testing.expect(analysis.jump_destinations.items.len == 1);
-    try std.testing.expect(analysis.push_data.items.len == 2);
-    
-    // This data should be sufficient for Dispatch to build its schedule
-    // without needing to re-parse the bytecode
-}
 
 // Test that we don't need readImmediateJumpTarget anymore
 test "no backward scanning needed" {

@@ -48,35 +48,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             is_fusion_candidate: bool,
         };
 
-        // TODO: I'm pretty sure this is dead code. we should investiage
-        // Delete if it is dead code. If it's not dead code we need to
-        // document every place this is used and why it exists so we can figure out
-        // if it's still code we need to delete and then refactor the other code
-
-        /// Simple bytecode analysis for Schedule generation
-        /// This replaces complex planner logic with straightforward analysis
-        pub const Analysis = struct {
-            jump_destinations: std.ArrayList(JumpDestInfo),
-            push_data: std.ArrayList(PushInfo),
-
-            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-                self.jump_destinations.deinit(allocator);
-                self.push_data.deinit(allocator);
-            }
-        };
-
-        pub const JumpDestInfo = struct {
-            pc: PcType,
-            gas_cost: u32 = 1,
-        };
-
-        pub const PushInfo = struct {
-            pc: PcType,
-            size: u8, // 1-32 bytes
-            value: u256, // The actual pushed value
-            is_inline: bool, // true if <= 8 bytes (can inline)
-        };
-
         // Basic block information for gas calculation
         pub const BasicBlock = struct {
             start: PcType,
@@ -1062,76 +1033,6 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             }
         }
 
-        pub fn analyze(self: Self, allocator: std.mem.Allocator) !Analysis {
-            var analysis = Analysis{
-                .jump_destinations = try std.ArrayList(JumpDestInfo).initCapacity(allocator, 0),
-                .push_data = try std.ArrayList(PushInfo).initCapacity(allocator, 0),
-            };
-            errdefer analysis.deinit(allocator);
-
-            var pc: PcType = 0;
-            while (pc < self.runtime_code.len) {
-                // Skip if not an opcode start
-                if (!self.packed_bitmap[pc].is_op_start) {
-                    pc += 1;
-                    continue;
-                }
-
-                const opcode_byte = self.runtime_code[pc];
-                const opcode = std.meta.intToEnum(Opcode, opcode_byte) catch {
-                    pc += 1;
-                    continue;
-                };
-
-                switch (opcode) {
-                    .JUMPDEST => {
-                        try analysis.jump_destinations.append(allocator, .{
-                            .pc = pc,
-                            .gas_cost = 1,
-                        });
-                        pc += 1;
-                    },
-                    .PUSH0 => {
-                        // EIP-3855: PUSH0 pushes zero onto the stack
-                        try analysis.push_data.append(allocator, .{
-                            .pc = pc,
-                            .size = 0,
-                            .value = 0,
-                            .is_inline = true,
-                        });
-                        pc += 1;
-                    },
-                    .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
-                        const push_size = @intFromEnum(opcode) - @intFromEnum(Opcode.PUSH1) + 1;
-
-                        // Extract the push value
-                        var value: u256 = 0;
-                        const data_start = pc + 1;
-                        const data_end = @min(data_start + push_size, @as(PcType, @intCast(self.runtime_code.len)));
-
-                        for (data_start..data_end) |byte_pc| {
-                            if (byte_pc < self.runtime_code.len) {
-                                value = std.math.shl(u256, value, 8) | self.runtime_code[byte_pc];
-                            }
-                        }
-
-                        try analysis.push_data.append(allocator, .{
-                            .pc = pc,
-                            .size = push_size,
-                            .value = value,
-                            .is_inline = push_size <= 8,
-                        });
-
-                        pc += 1 + push_size;
-                    },
-                    else => {
-                        pc += 1;
-                    },
-                }
-            }
-
-            return analysis;
-        }
 
         /// Pretty print bytecode with human-readable formatting, colors, and metadata
         pub fn pretty_print(self: Self, allocator: std.mem.Allocator) ![]u8 {
