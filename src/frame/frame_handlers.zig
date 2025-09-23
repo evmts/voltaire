@@ -218,7 +218,6 @@ pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) Frame
         @intFromEnum(OpcodeSynthetic.PUSH0_REVERT) => &AdvancedSyntheticHandlers.push0_revert,
         @intFromEnum(OpcodeSynthetic.PUSH_ADD_DUP1) => &AdvancedSyntheticHandlers.push_add_dup1,
         @intFromEnum(OpcodeSynthetic.MLOAD_SWAP1_DUP2) => &AdvancedSyntheticHandlers.mload_swap1_dup2,
-        // TODO we should Frame.tracer.panic instead
-        else => @panic("Invalid synthetic opcode"),
+        else => unreachable, // Invalid synthetic opcode
     };
 }

@@ -2,8 +2,9 @@ pub fn CallResult(comptime config: anytype) type {
     // We can add config-specific customizations here in the future
     _ = config; // Currently unused but reserved for future enhancements
 
-    // TODO: do const Self = @This() instead of inlining return @This()
     return struct {
+        const Self = @This();
+
         success: bool,
         gas_left: u64,
         output: []const u8,
@@ -15,8 +16,8 @@ pub fn CallResult(comptime config: anytype) type {
         error_info: ?[]const u8 = null,
         created_address: ?Address = null,
 
-        pub fn success_with_output(gas_left: u64, output: []const u8) @This() {
-            return @This(){
+        pub fn success_with_output(gas_left: u64, output: []const u8) Self {
+            return Self{
                 .success = true,
                 .gas_left = gas_left,
                 .output = output,
@@ -27,8 +28,8 @@ pub fn CallResult(comptime config: anytype) type {
             };
         }
 
-        pub fn success_empty(gas_left: u64) @This() {
-            return @This(){
+        pub fn success_empty(gas_left: u64) Self {
+            return Self{
                 .success = true,
                 .gas_left = gas_left,
                 .output = &[_]u8{},
@@ -39,8 +40,8 @@ pub fn CallResult(comptime config: anytype) type {
             };
         }
 
-        pub fn failure(gas_left: u64) @This() {
-            return @This(){
+        pub fn failure(gas_left: u64) Self {
+            return Self{
                 .success = false,
                 .gas_left = gas_left,
                 .output = &[_]u8{},
@@ -52,8 +53,8 @@ pub fn CallResult(comptime config: anytype) type {
         }
 
         /// Create a failed call result with error info
-        pub fn failure_with_error(gas_left: u64, error_info: []const u8) @This() {
-            return @This(){
+        pub fn failure_with_error(gas_left: u64, error_info: []const u8) Self {
+            return Self{
                 .success = false,
                 .gas_left = gas_left,
                 .output = &[_]u8{},
@@ -66,8 +67,8 @@ pub fn CallResult(comptime config: anytype) type {
         }
 
         /// Create a reverted call result with revert data
-        pub fn revert_with_data(gas_left: u64, revert_data: []const u8) @This() {
-            return @This(){
+        pub fn revert_with_data(gas_left: u64, revert_data: []const u8) Self {
+            return Self{
                 .success = false,
                 .gas_left = gas_left,
                 .output = revert_data,
@@ -80,8 +81,8 @@ pub fn CallResult(comptime config: anytype) type {
         }
 
         /// Create a successful call result with output and logs
-        pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) @This() {
-            return @This(){
+        pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) Self {
+            return Self{
                 .success = true,
                 .gas_left = gas_left,
                 .output = output,
@@ -93,29 +94,29 @@ pub fn CallResult(comptime config: anytype) type {
         }
 
         /// Check if the call succeeded
-        pub fn isSuccess(self: @This()) bool {
+        pub fn isSuccess(self: Self) bool {
             return self.success;
         }
 
         /// Check if the call failed
-        pub fn isFailure(self: @This()) bool {
+        pub fn isFailure(self: Self) bool {
             return !self.success;
         }
 
         /// Check if the call has output data
-        pub fn hasOutput(self: @This()) bool {
+        pub fn hasOutput(self: Self) bool {
             return self.output.len > 0;
         }
 
         /// Get the amount of gas consumed (assuming original_gas was provided)
-        pub fn gasConsumed(self: @This(), original_gas: u64) u64 {
+        pub fn gasConsumed(self: Self, original_gas: u64) u64 {
             if (self.gas_left > original_gas) return 0; // Sanity check
             return original_gas - self.gas_left;
         }
 
         /// Clean up all memory associated with logs
         /// Must be called when CallResult contains owned log data
-        pub fn deinitLogs(self: *@This(), allocator: std.mem.Allocator) void {
+        pub fn deinitLogs(self: *Self, allocator: std.mem.Allocator) void {
             for (self.logs) |log| {
                 allocator.free(log.topics);
                 allocator.free(log.data);
@@ -136,7 +137,7 @@ pub fn CallResult(comptime config: anytype) type {
 
         /// Clean up all allocated memory in the CallResult
         /// Call this when the CallResult contains owned data that needs to be freed
-        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             // Free output buffer if it's allocated
             if (self.output.len > 0) {
                 allocator.free(self.output);
@@ -193,7 +194,7 @@ pub fn CallResult(comptime config: anytype) type {
         /// Create an owned copy of this CallResult
         /// All dynamically allocated data (output, logs, etc.) is duplicated
         /// The caller owns the returned result and must call deinit() when done
-        pub fn toOwnedResult(self: @This(), allocator: std.mem.Allocator) !@This() {
+        pub fn toOwnedResult(self: Self, allocator: std.mem.Allocator) !Self {
             // Copy output data
             const output_copy = if (self.output.len > 0)
                 try allocator.dupe(u8, self.output)
@@ -301,7 +302,7 @@ pub fn CallResult(comptime config: anytype) type {
                 };
             } else null;
 
-            return @This(){
+            return Self{
                 .success = self.success,
                 .gas_left = self.gas_left,
                 .output = output_copy,

@@ -67,11 +67,6 @@ pub const DispatchCache = struct {
     }
 
     pub fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
-        // TODO: Low priority. We just did vibe based threshold instead of measuring
-        // TODO: But this shouldn't even be necessary here if we never cached it we will fall through remove unnecessary branching here
-        // Skip cache for small bytecode - compute on-demand is faster
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) return null;
-
         self.mutex.lock();
         defer self.mutex.unlock();
 
