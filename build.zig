@@ -172,22 +172,6 @@ pub fn build(b: *std.Build) void {
     const shared_lib_step = b.step("shared", "Build shared library for FFI");
     shared_lib_step.dependOn(&b.addInstallArtifact(shared_lib, .{}).step);
 
-    // Also create a static library for Rust FFI
-    const static_lib = b.addLibrary(.{
-        .name = "guillotine_ffi_static",
-        .linkage = .static,
-        .root_module = shared_lib_mod,
-        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
-        .use_llvm = true,
-    });
-    static_lib.linkLibrary(c_kzg_lib);
-    static_lib.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| static_lib.linkLibrary(bn254);
-    static_lib.linkLibC();
-    b.installArtifact(static_lib);
-
-    const static_lib_step = b.step("static", "Build static library for FFI");
-    static_lib_step.dependOn(&b.addInstallArtifact(static_lib, .{}).step);
 
     // Tests
     const tests_pkg = build_pkg.Tests;

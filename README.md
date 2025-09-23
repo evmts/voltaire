@@ -61,7 +61,6 @@ See [test report](specs/test_report.md) for detailed results. For an in-depth un
   - **C**
   - **TypeScript** - Wasm or Bun
   - **Python**
-  - **Rust**
   - **Swift**
   - **Wasm**
   - **🚧 Kotlin**
@@ -84,7 +83,6 @@ All SDKs in this repo are vibecoded proof-of-concepts. APIs are unstable and may
 - [Bun](sdks/bun) — Native Bun bindings around the Zig EVM
 - [C](sdks/c) — C/C++ FFI surface for embedding
 - [Python](sdks/python) — Python bindings and primitives
-- [Rust](sdks/rust) — Idiomatic Rust wrapper over FFI
 - [Swift](sdks/swift) — Swift bindings for Apple platforms
 - [TypeScript](sdks/typescript) — WASM/TS APIs for Node, Bun, Browser
 
