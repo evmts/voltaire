@@ -36,11 +36,29 @@ pub const DispatchCacheEntry = struct {
     ref_count: u32,
 };
 
+/// Context for hashing bytecode pointers in HashMap
+const BytecodeContext = struct {
+    pub fn hash(self: @This(), key: []const u8) u64 {
+        _ = self;
+        // Hash the bytecode pointer address for O(1) lookup
+        // This is safe because we use pointer comparison in eql
+        const ptr_int = @intFromPtr(key.ptr);
+        return std.hash.Wyhash.hash(0, std.mem.asBytes(&ptr_int));
+    }
+    pub fn eql(self: @This(), a: []const u8, b: []const u8) bool {
+        _ = self;
+        // Direct pointer comparison for bytecode keys
+        // This is safe because we store pointers to the original bytecode
+        return a.ptr == b.ptr and a.len == b.len;
+    }
+};
+
 pub const DispatchCache = struct {
     const CACHE_SIZE = 256; // Number of cached contracts
     const SMALL_BYTECODE_THRESHOLD = 256; // Compute on-demand for bytecode smaller than this
 
-    entries: [CACHE_SIZE]?DispatchCacheEntry = [_]?DispatchCacheEntry{null} ** CACHE_SIZE,
+    // Use HashMap for O(1) lookups instead of linear search
+    entries: std.hash_map.HashMap([]const u8, DispatchCacheEntry, BytecodeContext, 80),
     allocator: std.mem.Allocator,
     access_counter: u64 = 0,
     hits: u64 = 0,
@@ -49,6 +67,7 @@ pub const DispatchCache = struct {
 
     fn init(allocator: std.mem.Allocator) DispatchCache {
         return .{
+            .entries = std.hash_map.HashMap([]const u8, DispatchCacheEntry, BytecodeContext, 80).init(allocator),
             .allocator = allocator,
         };
     }
@@ -57,13 +76,12 @@ pub const DispatchCache = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                self.allocator.free(entry.schedule);
-                self.allocator.free(entry.jump_table_entries);
-                entry_opt.* = null;
-            }
+        var iter = self.entries.iterator();
+        while (iter.next()) |kv| {
+            self.allocator.free(kv.value_ptr.schedule);
+            self.allocator.free(kv.value_ptr.jump_table_entries);
         }
+        self.entries.deinit();
     }
 
     pub fn lookup(self: *DispatchCache, bytecode: []const u8) ?struct { schedule: []const u8, jump_table: []const u8 } {
@@ -72,22 +90,16 @@ pub const DispatchCache = struct {
 
         self.access_counter += 1;
 
-        // TODO: why do we have to do a linear search? This should be constant time lookup
-        // Search for matching entry
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                // Direct bytecode comparison - safe from collision attacks
-                if (std.mem.eql(u8, entry.bytecode_key, bytecode)) {
-                    // Found a hit
-                    self.hits += 1;
-                    entry.last_access = self.access_counter;
-                    entry.ref_count += 1;
-                    return .{
-                        .schedule = entry.schedule,
-                        .jump_table = entry.jump_table_entries,
-                    };
-                }
-            }
+        // O(1) HashMap lookup using bytecode pointer as key
+        if (self.entries.getPtr(bytecode)) |entry| {
+            // Found a hit
+            self.hits += 1;
+            entry.last_access = self.access_counter;
+            entry.ref_count += 1;
+            return .{
+                .schedule = entry.schedule,
+                .jump_table = entry.jump_table_entries,
+            };
         }
 
         self.misses += 1;
@@ -100,56 +112,57 @@ pub const DispatchCache = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var lru_idx: usize = 0;
-        var lru_access: u64 = std.math.maxInt(u64);
-        var empty_idx: ?usize = null;
+        // Check if cache is at capacity
+        if (self.entries.count() >= CACHE_SIZE) {
+            // Find LRU entry to evict
+            var lru_key: ?[]const u8 = null;
+            var lru_access: u64 = std.math.maxInt(u64);
 
-        for (&self.entries, 0..) |*entry_opt, i| {
-            if (entry_opt.* == null) {
-                empty_idx = i;
-                break;
-            } else if (entry_opt.*.?.ref_count == 0 and entry_opt.*.?.last_access < lru_access) {
-                lru_idx = i;
-                lru_access = entry_opt.*.?.last_access;
+            var iter = self.entries.iterator();
+            while (iter.next()) |kv| {
+                if (kv.value_ptr.ref_count == 0 and kv.value_ptr.last_access < lru_access) {
+                    lru_key = kv.key_ptr.*;
+                    lru_access = kv.value_ptr.last_access;
+                }
             }
-        }
 
-        const target_idx = empty_idx orelse lru_idx;
-
-        if (self.entries[target_idx]) |*old_entry| {
-            if (old_entry.ref_count > 0) return;
-            self.allocator.free(old_entry.schedule);
-            self.allocator.free(old_entry.jump_table_entries);
+            // Evict LRU entry if found
+            if (lru_key) |key| {
+                if (self.entries.fetchRemove(key)) |removed| {
+                    self.allocator.free(removed.value.schedule);
+                    self.allocator.free(removed.value.jump_table_entries);
+                }
+            } else {
+                // All entries are in use, cannot insert
+                return;
+            }
         }
 
         const schedule_copy = try self.allocator.dupe(u8, schedule);
         errdefer self.allocator.free(schedule_copy);
 
         const jump_table_copy = try self.allocator.dupe(u8, jump_table);
+        errdefer self.allocator.free(jump_table_copy);
 
-        self.entries[target_idx] = DispatchCacheEntry{
+        try self.entries.put(bytecode, DispatchCacheEntry{
             .bytecode_key = bytecode,
             .schedule = schedule_copy,
             .jump_table_entries = jump_table_copy,
             .last_access = self.access_counter,
             .ref_count = 0,
-        };
+        });
     }
 
-    // TODO: I wasn't able to remember what this code does and why it exists intuitively at first glance
+    /// Decrements the reference count for a cached bytecode entry.
+    /// Called when a frame is done using a cached dispatch schedule.
     pub fn release(self: *DispatchCache, bytecode: []const u8) void {
         if (bytecode.len < SMALL_BYTECODE_THRESHOLD) return;
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                if (std.mem.eql(u8, entry.bytecode_key, bytecode)) {
-                    if (entry.ref_count > 0) entry.ref_count -= 1;
-                    return;
-                }
-            }
+        if (self.entries.getPtr(bytecode)) |entry| {
+            if (entry.ref_count > 0) entry.ref_count -= 1;
         }
     }
 
@@ -167,13 +180,22 @@ pub const DispatchCache = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        for (&self.entries) |*entry_opt| {
-            if (entry_opt.*) |*entry| {
-                if (entry.ref_count == 0) {
-                    self.allocator.free(entry.schedule);
-                    self.allocator.free(entry.jump_table_entries);
-                    entry_opt.* = null;
-                }
+        // Collect keys to remove (can't modify while iterating)
+        var keys_to_remove = std.ArrayList([]const u8){};
+        defer keys_to_remove.deinit(self.allocator);
+
+        var iter = self.entries.iterator();
+        while (iter.next()) |kv| {
+            if (kv.value_ptr.ref_count == 0) {
+                keys_to_remove.append(self.allocator, kv.key_ptr.*) catch continue;
+            }
+        }
+
+        // Remove collected entries
+        for (keys_to_remove.items) |key| {
+            if (self.entries.fetchRemove(key)) |removed| {
+                self.allocator.free(removed.value.schedule);
+                self.allocator.free(removed.value.jump_table_entries);
             }
         }
 
