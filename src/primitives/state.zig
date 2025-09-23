@@ -16,6 +16,7 @@ pub const EMPTY_CODE_HASH = [32]u8{
 };
 
 comptime {
+    @setEvalBranchQuota(10000);
     // Validate that the hardcoded empty code hash matches Keccak256("")
     var hasher = Keccak256.init(.{});
     hasher.update(&.{});
@@ -44,6 +45,7 @@ pub const EMPTY_TRIE_ROOT = [32]u8{
 };
 
 comptime {
+    @setEvalBranchQuota(10000);
     // Validate that the hardcoded empty trie root matches the expected value
     // The empty trie root is the Keccak256 hash of RLP(null) = 0x80
     var hasher = Keccak256.init(.{});
