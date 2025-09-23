@@ -365,6 +365,97 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.gas_refund_counter = 0;
             }
 
+            // Deduct gas fees from sender's balance and pay coinbase
+            const gas_consumed = initial_gas - result.gas_left;
+            if (gas_consumed > 0 and self.gas_price > 0) {
+                const gas_consumed_u256: u256 = @intCast(gas_consumed);
+                const total_gas_fee = self.gas_price * gas_consumed_u256;
+                
+                // Get origin account
+                var origin_account = self.database.get_account(self.origin.bytes) catch |err| {
+                    log.debug("Failed to get origin account for gas fee deduction: {}", .{err});
+                    return result;
+                } orelse Account.zero();
+                
+                // Check if origin has sufficient balance for gas fees
+                if (comptime !config.disable_balance_checks) {
+                    if (origin_account.balance < total_gas_fee) {
+                        log.debug("Insufficient balance for gas fees: balance={d}, fee={d}", 
+                                 .{origin_account.balance, total_gas_fee});
+                        result.success = false;
+                        result.gas_left = 0;
+                        return result;
+                    }
+                }
+                
+                // Record balance change in journal for potential revert
+                self.journal.record_balance_change(0, self.origin, origin_account.balance) catch |err| {
+                    log.debug("Failed to record balance change for gas fees: {}", .{err});
+                    return result;
+                };
+                
+                // Deduct gas fees from origin
+                origin_account.balance -= total_gas_fee;
+                self.database.set_account(self.origin.bytes, origin_account) catch |err| {
+                    log.debug("Failed to update origin balance for gas fees: {}", .{err});
+                    return result;
+                };
+                
+                // Handle coinbase rewards (miner/validator payment)
+                const eips_instance_fee = eips.Eips{ .hardfork = self.hardfork_config };
+                if (eips_instance_fee.eip_1559_is_enabled()) {
+                    // EIP-1559: Only priority fee goes to coinbase, base fee is burned
+                    const base_fee = self.block_info.base_fee;
+                    const priority_fee_per_gas = if (self.gas_price > base_fee) 
+                        self.gas_price - base_fee 
+                    else 
+                        0;
+                    const coinbase_reward = priority_fee_per_gas * gas_consumed_u256;
+                    
+                    if (coinbase_reward > 0) {
+                        var coinbase_account = self.database.get_account(
+                            self.block_info.coinbase.bytes
+                        ) catch {
+                            // If we can't get coinbase, still continue (fees are burned)
+                            return result;
+                        } orelse Account.zero();
+                        
+                        // Record coinbase balance change
+                        self.journal.record_balance_change(0, self.block_info.coinbase, 
+                                                          coinbase_account.balance) catch {
+                            // Non-critical: coinbase reward failure doesn't invalidate transaction
+                            return result;
+                        };
+                        
+                        coinbase_account.balance += coinbase_reward;
+                        self.database.set_account(self.block_info.coinbase.bytes, 
+                                                 coinbase_account) catch {
+                            // Non-critical: continue even if coinbase update fails
+                            return result;
+                        };
+                    }
+                    // Base fee (total_gas_fee - coinbase_reward) is effectively burned
+                } else {
+                    // Pre-EIP-1559: All fees go to coinbase
+                    var coinbase_account = self.database.get_account(
+                        self.block_info.coinbase.bytes
+                    ) catch {
+                        return result;
+                    } orelse Account.zero();
+                    
+                    self.journal.record_balance_change(0, self.block_info.coinbase, 
+                                                      coinbase_account.balance) catch {
+                        return result;
+                    };
+                    
+                    coinbase_account.balance += total_gas_fee;
+                    self.database.set_account(self.block_info.coinbase.bytes, 
+                                             coinbase_account) catch {
+                        return result;
+                    };
+                }
+            }
+
             // Extract logs for top-level calls
             // Transfer logs to result - the CallResult now owns them and will free on deinit
             result.logs = self.logs.toOwnedSlice(self.allocator) catch &.{};
