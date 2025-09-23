@@ -160,6 +160,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             // Convert to WordType (truncate if necessary for smaller word types)
             const word_typed = @as(WordType, @truncate(word));
+            log.debug("[CALLDATALOAD] offset=0x{x}, loaded=0x{x:0>64}, calldata_len={d}", .{ offset, word_typed, calldata.len });
             self.stack.set_top_unsafe(word_typed);
             const op_data = dispatch.getOpData(.CALLDATALOAD); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });

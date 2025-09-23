@@ -71,12 +71,21 @@ pub fn Handlers(comptime FrameType: type) type {
         /// EQ opcode (0x14) - Equality comparison.
         pub fn eq(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.EQ, cursor);
+            
+            // Get values before the operation for logging
+            const value1 = self.stack.stack_ptr[0];  // Top of stack
+            const value2 = self.stack.stack_ptr[1];  // Second on stack
+            
             // EVM: pops top, then second, and pushes (top == second)
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
                     return @intFromBool(top == second);
                 }
             }.op);
+            
+            const result = self.stack.stack_ptr[0];  // Result is now at top
+            log.debug("[EQ] 0x{x:0>16} == 0x{x:0>16} = {}", .{ value1, value2, result });
+            
             return next_instruction(self, cursor, .EQ);
         }
 

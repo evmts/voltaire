@@ -21,11 +21,20 @@ pub fn Handlers(comptime FrameType: type) type {
         /// AND opcode (0x16) - Bitwise AND operation.
         pub fn @"and"(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.AND, cursor);
+            
+            // Get values before the operation for logging
+            const value1 = self.stack.stack_ptr[0];  // Top of stack
+            const value2 = self.stack.stack_ptr[1];  // Second on stack
+            
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
                     return top & second;
                 }
             }.op);
+            
+            const result = self.stack.stack_ptr[0];  // Result is now at top
+            log.debug("[AND] 0x{x:0>64} & 0x{x:0>64} = 0x{x:0>64}", .{ value2, value1, result });
+            
             return next_instruction(self, cursor, .AND);
         }
 

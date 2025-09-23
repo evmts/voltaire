@@ -1,6 +1,7 @@
 const std = @import("std");
 const FrameConfig = @import("../frame/frame_config.zig").FrameConfig;
 const GasConstants = @import("primitives").GasConstants;
+const log = @import("../log.zig");
 
 /// Arithmetic opcode handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.
@@ -63,12 +64,19 @@ pub fn Handlers(comptime FrameType: type) type {
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.DIV, cursor);
+            
+            // Get values before the operation for logging
+            const divisor = self.stack.stack_ptr[0];  // Top of stack
+            const dividend = self.stack.stack_ptr[1]; // Second on stack
 
             self.stack.binary_op_unsafe(struct {
                 fn op(top: WordType, second: WordType) WordType {
                     return from_native(top).wrapping_div(from_native(second)).to_native();
                 }
             }.op);
+            
+            const result = self.stack.stack_ptr[0];  // Result is now at top
+            log.debug("[DIV] 0x{x:0>64} / 0x{x:0>64} = 0x{x:0>64}", .{ dividend, divisor, result });
 
             return next_instruction(self, cursor, .DIV);
         }
