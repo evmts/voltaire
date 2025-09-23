@@ -91,12 +91,6 @@ pub fn execute_precompile(
     input: []const u8,
     gas_limit: u64,
 ) PrecompileError!PrecompileOutput {
-    // TODO this should be removed and this method considered unsafe in ReleaseFast
-    if (!is_precompile(address)) return PrecompileOutput{
-        .output = &.{},
-        .gas_used = 0,
-        .success = false,
-    };
     std.debug.assert(is_precompile(address));
     const precompile_id = address.bytes[19];
     return switch (precompile_id) {

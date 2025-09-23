@@ -1091,21 +1091,6 @@ const MockEvm = struct {
     pub fn mark_for_destruction(self: *MockEvm, _: Address, _: Address) !void {
         _ = self;
     }
-
-    // TODO: Update to work without Host
-    // pub fn to_host(self: *MockEvm) host_mod.Host {
-    //     return .{
-    //         .ptr = self,
-    //         .vtable = &.{
-    //             .get_is_static = @ptrCast(&get_is_static),
-    //             .call = @ptrCast(&call),
-    //             .delegatecall = @ptrCast(&delegatecall),
-    //             .create = @ptrCast(&create),
-    //             .mark_for_destruction = @ptrCast(&mark_for_destruction),
-    //             // Add other required vtable entries...
-    //         },
-    //     };
-    // }
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: ?*MockEvm) !TestFrame {

@@ -55,6 +55,10 @@ pub fn CallParams(comptime config: anytype) type {
 
         pub const ValidationError = error{
             GasZeroError,
+            InvalidInputSize,
+            InvalidInitCodeSize,
+            InvalidCreateValue,
+            InvalidStaticCallValue,
         };
 
         /// Validate call parameters to ensure they meet EVM requirements.
@@ -64,12 +68,40 @@ pub fn CallParams(comptime config: anytype) type {
             // Gas must be non-zero to execute any operation
             if (self.getGas() == 0) return ValidationError.GasZeroError;
 
-            // TODO: Validate everything though!
-            // Additional validation could be added here for:
-            // - Input data size limits
-            // - Address validity
-            // - Value constraints for specific call types
-            // Currently only gas validation is implemented as it's the most critical
+            // EIP-3860: Limit init code size to 49152 bytes (2 * max contract size)
+            const MAX_INITCODE_SIZE = 49152;
+            const MAX_INPUT_SIZE = 1024 * 1024 * 4; // 4MB practical limit for input data
+
+            switch (self) {
+                .call => |params| {
+                    // Validate input data size
+                    if (params.input.len > MAX_INPUT_SIZE) return ValidationError.InvalidInputSize;
+                },
+                .callcode => |params| {
+                    // Validate input data size
+                    if (params.input.len > MAX_INPUT_SIZE) return ValidationError.InvalidInputSize;
+                },
+                .delegatecall => |params| {
+                    // Validate input data size
+                    if (params.input.len > MAX_INPUT_SIZE) return ValidationError.InvalidInputSize;
+                    // DELEGATECALL doesn't transfer value, validation happens at protocol level
+                },
+                .staticcall => |params| {
+                    // Validate input data size
+                    if (params.input.len > MAX_INPUT_SIZE) return ValidationError.InvalidInputSize;
+                    // STATICCALL cannot have value (enforced by not having value field)
+                },
+                .create => |params| {
+                    // Validate init code size (EIP-3860)
+                    if (params.init_code.len > MAX_INITCODE_SIZE) return ValidationError.InvalidInitCodeSize;
+                    // CREATE can have any value, no special validation needed
+                },
+                .create2 => |params| {
+                    // Validate init code size (EIP-3860)
+                    if (params.init_code.len > MAX_INITCODE_SIZE) return ValidationError.InvalidInitCodeSize;
+                    // CREATE2 can have any value, no special validation needed
+                },
+            }
         }
 
         /// Get the gas limit for this call operation
@@ -767,6 +799,117 @@ test "call params gas limit edge cases" {
             try std.testing.expectEqual(gas_val, op.getGas());
         }
     }
+}
+
+test "call params validation - input size limits" {
+    const caller = primitives.ZERO_ADDRESS;
+    const to: Address = .{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const MAX_INPUT_SIZE = 1024 * 1024 * 4; // 4MB
+
+    // Test with maximum allowed input size
+    const max_input = try std.testing.allocator.alloc(u8, MAX_INPUT_SIZE);
+    defer std.testing.allocator.free(max_input);
+    @memset(max_input, 0xAA);
+
+    const call_max = DefaultCallParams{ .call = .{
+        .caller = caller,
+        .to = to,
+        .value = 0,
+        .input = max_input,
+        .gas = 1000000,
+    } };
+    try call_max.validate(); // Should pass
+
+    // Test with oversized input
+    const oversized_input = try std.testing.allocator.alloc(u8, MAX_INPUT_SIZE + 1);
+    defer std.testing.allocator.free(oversized_input);
+    @memset(oversized_input, 0xBB);
+
+    const call_oversized = DefaultCallParams{ .call = .{
+        .caller = caller,
+        .to = to,
+        .value = 0,
+        .input = oversized_input,
+        .gas = 1000000,
+    } };
+    try std.testing.expectError(DefaultCallParams.ValidationError.InvalidInputSize, call_oversized.validate());
+
+    // Test DELEGATECALL with oversized input
+    const delegatecall_oversized = DefaultCallParams{ .delegatecall = .{
+        .caller = caller,
+        .to = to,
+        .input = oversized_input,
+        .gas = 1000000,
+    } };
+    try std.testing.expectError(DefaultCallParams.ValidationError.InvalidInputSize, delegatecall_oversized.validate());
+
+    // Test STATICCALL with oversized input
+    const staticcall_oversized = DefaultCallParams{ .staticcall = .{
+        .caller = caller,
+        .to = to,
+        .input = oversized_input,
+        .gas = 1000000,
+    } };
+    try std.testing.expectError(DefaultCallParams.ValidationError.InvalidInputSize, staticcall_oversized.validate());
+
+    // Test CALLCODE with oversized input
+    const callcode_oversized = DefaultCallParams{ .callcode = .{
+        .caller = caller,
+        .to = to,
+        .value = 0,
+        .input = oversized_input,
+        .gas = 1000000,
+    } };
+    try std.testing.expectError(DefaultCallParams.ValidationError.InvalidInputSize, callcode_oversized.validate());
+}
+
+test "call params validation - init code size limits" {
+    const caller = primitives.ZERO_ADDRESS;
+    const MAX_INITCODE_SIZE = 49152; // EIP-3860 limit
+
+    // Test with maximum allowed init code size
+    const max_init_code = try std.testing.allocator.alloc(u8, MAX_INITCODE_SIZE);
+    defer std.testing.allocator.free(max_init_code);
+    @memset(max_init_code, 0x60); // PUSH1
+
+    const create_max = DefaultCallParams{ .create = .{
+        .caller = caller,
+        .value = 0,
+        .init_code = max_init_code,
+        .gas = 1000000,
+    } };
+    try create_max.validate(); // Should pass
+
+    const create2_max = DefaultCallParams{ .create2 = .{
+        .caller = caller,
+        .value = 0,
+        .init_code = max_init_code,
+        .salt = 0x123456,
+        .gas = 1000000,
+    } };
+    try create2_max.validate(); // Should pass
+
+    // Test with oversized init code
+    const oversized_init_code = try std.testing.allocator.alloc(u8, MAX_INITCODE_SIZE + 1);
+    defer std.testing.allocator.free(oversized_init_code);
+    @memset(oversized_init_code, 0x60);
+
+    const create_oversized = DefaultCallParams{ .create = .{
+        .caller = caller,
+        .value = 0,
+        .init_code = oversized_init_code,
+        .gas = 1000000,
+    } };
+    try std.testing.expectError(DefaultCallParams.ValidationError.InvalidInitCodeSize, create_oversized.validate());
+
+    const create2_oversized = DefaultCallParams{ .create2 = .{
+        .caller = caller,
+        .value = 0,
+        .init_code = oversized_init_code,
+        .salt = 0x789ABC,
+        .gas = 1000000,
+    } };
+    try std.testing.expectError(DefaultCallParams.ValidationError.InvalidInitCodeSize, create2_oversized.validate());
 }
 
 test "call params all operation types coverage" {
