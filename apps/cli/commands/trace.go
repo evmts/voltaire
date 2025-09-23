@@ -12,6 +12,11 @@ import (
 
 // RunTrace executes a CALL operation with tracing enabled and outputs JSON trace
 func RunTrace(c *cli.Context) error {
+	return RunTraceWithOutput(c, "")
+}
+
+// RunTraceWithOutput executes a CALL operation with tracing enabled and outputs to file or stdout
+func RunTraceWithOutput(c *cli.Context, outputPath string) error {
 	// Check if a fixture name is provided as positional argument
 	if c.Args().Len() > 0 {
 		fixtureName := c.Args().Get(0)
@@ -79,6 +84,11 @@ func RunTrace(c *cli.Context) error {
 
 // runTraceWithSetup executes a traced call with optional bytecode deployment
 func runTraceWithSetup(callerStr, toStr, valueStr string, input []byte, gasStr string, deployBytecode []byte) error {
+	return RunTraceWithSetupToFile(callerStr, toStr, valueStr, input, gasStr, deployBytecode, "")
+}
+
+// RunTraceWithSetupToFile executes a traced call with optional bytecode deployment and file output (exported for differential)
+func RunTraceWithSetupToFile(callerStr, toStr, valueStr string, input []byte, gasStr string, deployBytecode []byte, outputPath string) error {
 	// Parse addresses
 	caller, err := primitives.AddressFromHex(callerStr)
 	if err != nil {
@@ -138,11 +148,20 @@ func runTraceWithSetup(callerStr, toStr, valueStr string, input []byte, gasStr s
 		return fmt.Errorf("call execution failed: %w", err)
 	}
 	
-	// Output JSON trace to stdout
-	if len(res.TraceJSON) == 0 {
-		fmt.Print("{}") // Empty trace
+	// Output JSON trace
+	if outputPath != "" {
+		// Write to file
+		if len(res.TraceJSON) == 0 {
+			return os.WriteFile(outputPath, []byte("{}"), 0644)
+		}
+		return os.WriteFile(outputPath, res.TraceJSON, 0644)
 	} else {
-		os.Stdout.Write(res.TraceJSON)
+		// Write to stdout
+		if len(res.TraceJSON) == 0 {
+			fmt.Print("{}") // Empty trace
+		} else {
+			os.Stdout.Write(res.TraceJSON)
+		}
 	}
 	
 	return nil

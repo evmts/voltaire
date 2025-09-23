@@ -136,6 +136,12 @@ func main() {
 				Action: commands.RunTrace,
 			},
 			{
+				Name:      "differential",
+				Usage:     "Run differential test between Guillotine and revme",
+				ArgsUsage: "<fixture-name>",
+				Action:    commands.RunDifferential,
+			},
+			{
 				Name:  "compile",
 				Usage: "Compile Solidity source code",
 				Flags: []cli.Flag{
