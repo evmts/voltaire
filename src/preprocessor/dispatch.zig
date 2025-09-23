@@ -39,38 +39,12 @@ pub fn Preprocessor(comptime FrameType: type) type {
             first_block_gas: Metadata.FirstBlockMetadata,
         };
 
-        /// Storage for deduplicated u256 constants
-        const U256Storage = struct {
-            values: ArrayList(FrameType.WordType, null),
-            dedup_map: std.hash_map.HashMap(FrameType.WordType, u32, std.hash_map.AutoContext(FrameType.WordType), 80),
-
-            fn init(allocator: std.mem.Allocator) U256Storage {
-                return .{
-                    .values = ArrayList(FrameType.WordType, null){},
-                    .dedup_map = std.hash_map.HashMap(FrameType.WordType, u32, std.hash_map.AutoContext(FrameType.WordType), 80).init(allocator),
-                };
-            }
-
-            fn deinit(self: *U256Storage, allocator: std.mem.Allocator) void {
-                self.values.deinit(allocator);
-                self.dedup_map.deinit();
-            }
-
-            fn getOrAdd(self: *U256Storage, allocator: std.mem.Allocator, value: FrameType.WordType) !u32 {
-                if (self.dedup_map.get(value)) |index| return index;
-                const index = @as(u32, @intCast(self.values.items.len));
-                try self.values.append(allocator, value);
-                try self.dedup_map.put(value, index);
-                return index;
-            }
-        };
 
         fn processPushOpcode(
             schedule_items: anytype,
             allocator: std.mem.Allocator,
             opcode_handlers: *const [256]OpcodeHandler,
             data: anytype,
-            u256_storage: *U256Storage,
         ) !void {
             const push_opcode = 0x60 + data.size - 1;
 
@@ -80,8 +54,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                 const inline_value: u64 = @intCast(data.value);
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_value } });
             } else {
-                const index = try u256_storage.getOrAdd(allocator, data.value);
-                const value_ptr = &u256_storage.values.items[index];
+                // Allocate individual u256 value on heap
+                const value_ptr = try allocator.create(FrameType.WordType);
+                errdefer allocator.destroy(value_ptr);
+                value_ptr.* = data.value;
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
             }
         }
@@ -508,8 +484,6 @@ pub fn Preprocessor(comptime FrameType: type) type {
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
-            var u256_storage = U256Storage.init(allocator);
-            errdefer u256_storage.deinit(allocator);
 
             var jumpdest_entries = ArrayList(JumpDestEntry, null){};
             defer jumpdest_entries.deinit(allocator);
@@ -550,7 +524,7 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
                     },
                     .push => |data| {
-                        try processPushOpcode(&schedule_items, allocator, opcode_handlers, data, &u256_storage);
+                        try processPushOpcode(&schedule_items, allocator, opcode_handlers, data);
                     },
                     .jumpdest => |data| {
                         // Record this JUMPDEST's location in schedule for single-pass resolution
@@ -566,42 +540,42 @@ pub fn Preprocessor(comptime FrameType: type) type {
                     },
                     .push_add_fusion => |data| {
                         if (tracer) |t| t.onFusionDetected(@intCast(instr_pc), "push_add", 2);
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_add, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_add);
                     },
                     .push_mul_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_mul, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_mul);
                     },
                     .push_sub_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_sub, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_sub);
                     },
                     .push_div_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_div, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_div);
                     },
                     .push_and_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_and, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_and);
                     },
                     .push_or_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_or, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_or);
                     },
                     .push_xor_fusion => |data| {
-                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor, &u256_storage);
+                        try Self.handleFusionOperation(&schedule_items, allocator, data.value, .push_xor);
                     },
                     .push_jump_fusion => |data| {
                         if (tracer) |t| t.onFusionDetected(@intCast(instr_pc), "push_jump", 2);
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jump, &u256_storage, tracer, @intCast(instr_pc));
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jump, tracer, @intCast(instr_pc));
                     },
                     .push_jumpi_fusion => |data| {
                         if (tracer) |t| t.onFusionDetected(@intCast(instr_pc), "push_jumpi", 3);
-                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jumpi, &u256_storage, tracer, @intCast(instr_pc));
+                        try Self.handleStaticJumpFusion(&schedule_items, &unresolved_jumps, allocator, data.value, .push_jumpi, tracer, @intCast(instr_pc));
                     },
                     .push_mload_fusion => |data| {
-                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mload, &u256_storage);
+                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mload);
                     },
                     .push_mstore_fusion => |data| {
-                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore, &u256_storage);
+                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore);
                     },
                     .push_mstore8_fusion => |data| {
-                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore8, &u256_storage);
+                        try Self.handleMemoryFusion(&schedule_items, allocator, data.value, .push_mstore8);
                     },
                     .stop => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.STOP)] });
@@ -624,8 +598,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                             if (value <= std.math.maxInt(u64)) {
                                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(value) } });
                             } else {
-                                const index = try u256_storage.getOrAdd(allocator, value);
-                                const value_ptr = &u256_storage.values.items[index];
+                                // Allocate individual u256 value on heap
+                                const value_ptr = try allocator.create(FrameType.WordType);
+                                errdefer allocator.destroy(value_ptr);
+                                value_ptr.* = value;
                                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
                             }
                         }
@@ -646,8 +622,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         if (ij.target <= std.math.maxInt(u64)) {
                             try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(ij.target) } });
                         } else {
-                            const index = try u256_storage.getOrAdd(allocator, ij.target);
-                            const value_ptr = &u256_storage.values.items[index];
+                            // Allocate individual u256 value on heap
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            errdefer allocator.destroy(value_ptr);
+                            value_ptr.* = ij.target;
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
                         }
                     },
@@ -659,8 +637,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         if (dmp.push_value <= std.math.maxInt(u64)) {
                             try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(dmp.push_value) } });
                         } else {
-                            const index = try u256_storage.getOrAdd(allocator, dmp.push_value);
-                            const value_ptr = &u256_storage.values.items[index];
+                            // Allocate individual u256 value on heap
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            errdefer allocator.destroy(value_ptr);
+                            value_ptr.* = dmp.push_value;
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
                         }
                     },
@@ -682,8 +662,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         if (pda.value <= std.math.maxInt(u64)) {
                             try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(pda.value) } });
                         } else {
-                            const index = try u256_storage.getOrAdd(allocator, pda.value);
-                            const value_ptr = &u256_storage.values.items[index];
+                            // Allocate individual u256 value on heap
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            errdefer allocator.destroy(value_ptr);
+                            value_ptr.* = pda.value;
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
                         }
                     },
@@ -697,8 +679,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         if (fd.target <= std.math.maxInt(u64)) {
                             try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(fd.target) } });
                         } else {
-                            const index = try u256_storage.getOrAdd(allocator, fd.target);
-                            const value_ptr = &u256_storage.values.items[index];
+                            // Allocate individual u256 value on heap
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            errdefer allocator.destroy(value_ptr);
+                            value_ptr.* = fd.target;
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
                         }
                     },
@@ -721,8 +705,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         if (pad.value <= std.math.maxInt(u64)) {
                             try schedule_items.append(allocator, .{ .push_inline = .{ .value = @intCast(pad.value) } });
                         } else {
-                            const index = try u256_storage.getOrAdd(allocator, pad.value);
-                            const value_ptr = &u256_storage.values.items[index];
+                            // Allocate individual u256 value on heap
+                            const value_ptr = try allocator.create(FrameType.WordType);
+                            errdefer allocator.destroy(value_ptr);
+                            value_ptr.* = pad.value;
                             try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
                         }
                     },
@@ -746,13 +732,12 @@ pub fn Preprocessor(comptime FrameType: type) type {
             try resolveStaticJumpsWithArray(final_schedule, &unresolved_jumps, jumpdest_array, tracer);
 
             if (tracer) |t| {
-                t.onScheduleBuildComplete(final_schedule.len, u256_storage.values.items.len);
+                t.onScheduleBuildComplete(final_schedule.len, 0); // No longer tracking u256 count
                 t.onJumpTableCreated(jumpdest_array.len);
             }
 
             return DispatchSchedule{
                 .items = final_schedule,
-                .u256_values = u256_storage.values.items,
                 .allocator = allocator,
             };
         }
@@ -762,7 +747,6 @@ pub fn Preprocessor(comptime FrameType: type) type {
             allocator: std.mem.Allocator,
             value: FrameType.WordType,
             fusion_type: FusionType,
-            u256_storage: *U256Storage,
         ) !void {
             const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
             const frame_handlers = @import("../frame/frame_handlers.zig");
@@ -773,8 +757,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                 const inline_val: u64 = @intCast(value);
                 try schedule_items.append(allocator, .{ .push_inline = .{ .value = inline_val } });
             } else {
-                const index = try u256_storage.getOrAdd(allocator, value);
-                const value_ptr = &u256_storage.values.items[index];
+                // Allocate individual u256 value on heap
+                const value_ptr = try allocator.create(FrameType.WordType);
+                errdefer allocator.destroy(value_ptr);
+                value_ptr.* = value;
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
             }
         }
@@ -784,7 +770,6 @@ pub fn Preprocessor(comptime FrameType: type) type {
             allocator: std.mem.Allocator,
             value: FrameType.WordType,
             fusion_type: FusionType,
-            u256_storage: *U256Storage,
         ) !void {
             // Import gas constants for static calculation
             const GasConstants = @import("primitives").GasConstants;
@@ -824,8 +809,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
                     },
                 });
             } else {
-                const index = try u256_storage.getOrAdd(allocator, value);
-                const value_ptr = &u256_storage.values.items[index];
+                // Allocate individual u256 value on heap
+                const value_ptr = try allocator.create(FrameType.WordType);
+                errdefer allocator.destroy(value_ptr);
+                value_ptr.* = value;
                 try schedule_items.append(allocator, .{ .push_pointer = .{ .value_ptr = value_ptr } });
             }
         }
@@ -836,11 +823,9 @@ pub fn Preprocessor(comptime FrameType: type) type {
             allocator: std.mem.Allocator,
             value: FrameType.WordType,
             fusion_type: FusionType,
-            u256_storage: *U256Storage,
             tracer: anytype,
             jump_pc: u32,
         ) !void {
-            _ = u256_storage;
 
             if (value > std.math.maxInt(FrameType.PcType)) {
                 if (tracer) |t| t.onInvalidStaticJump(jump_pc, @intCast(value & 0xFFFFFFFF));
@@ -1065,7 +1050,6 @@ pub fn Preprocessor(comptime FrameType: type) type {
 
         pub const DispatchSchedule = struct {
             items: []Item,
-            u256_values: []FrameType.WordType,
             allocator: std.mem.Allocator,
 
             pub fn init(allocator: std.mem.Allocator, bytecode: anytype, opcode_handlers: *const [256]OpcodeHandler, tracer: anytype) !DispatchSchedule {
@@ -1073,18 +1057,22 @@ pub fn Preprocessor(comptime FrameType: type) type {
             }
 
             pub fn deinit(self: *DispatchSchedule) void {
+                // Free individually allocated u256 values
+                for (self.items) |item| {
+                    switch (item) {
+                        .push_pointer => |push_data| {
+                            self.allocator.destroy(push_data.value_ptr);
+                        },
+                        else => {},
+                    }
+                }
                 self.allocator.free(self.items);
-                self.allocator.free(self.u256_values);
             }
 
             pub fn getDispatch(self: *const DispatchSchedule) Self {
                 return Self{
                     .cursor = self.items.ptr,
                 };
-            }
-
-            pub fn getU256Value(self: *const DispatchSchedule, index: u32) FrameType.WordType {
-                return self.u256_values[index];
             }
 
             /// Validates the dispatch schedule structure for correctness.
