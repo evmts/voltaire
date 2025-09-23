@@ -6351,3 +6351,359 @@ test "E2E CALL failure scenarios" {
         try std.testing.expectError(DefaultEvm.CallParams.ValidationError.GasZeroError, call_params.validate());
     }
 }
+
+test "top-level CALL increments sender nonce" {
+    const allocator = std.testing.allocator;
+    
+    // Create test database
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    // Create sender account with initial nonce
+    const sender: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
+    const initial_nonce: u64 = 5;
+    try db.set_account(sender.bytes, Account{
+        .balance = 1000000,
+        .nonce = initial_nonce,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, sender, .CANCUN);
+    defer evm.deinit();
+    
+    // Execute CALL transaction
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    // Verify nonce was incremented
+    const account_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(initial_nonce + 1, account_after.nonce);
+}
+
+test "top-level CREATE increments sender nonce once" {
+    const allocator = std.testing.allocator;
+    
+    // Create test database
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    // Create sender account with initial nonce
+    const sender: primitives.Address = .{ .bytes = [_]u8{0x02} ++ [_]u8{0} ** 19 };
+    const initial_nonce: u64 = 5;
+    try db.set_account(sender.bytes, Account{
+        .balance = 1000000,
+        .nonce = initial_nonce,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, sender, .CANCUN);
+    defer evm.deinit();
+    
+    // Simple contract creation bytecode (just returns empty code)
+    const init_code = [_]u8{
+        0x60, 0x00, // PUSH1 0  
+        0x60, 0x00, // PUSH1 0  
+        0xF3,       // RETURN
+    };
+    
+    // Execute CREATE transaction
+    const call_params = DefaultEvm.CallParams{
+        .create = .{
+            .caller = sender,
+            .value = 0,
+            .init_code = &init_code,
+            .gas = 100000,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    // Verify nonce was incremented only once (not double-incremented)
+    const account_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(initial_nonce + 1, account_after.nonce);
+}
+
+test "failed CALL transaction still increments nonce" {
+    const allocator = std.testing.allocator;
+    
+    // Create test database
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    // Create sender account with insufficient balance
+    const sender: primitives.Address = .{ .bytes = [_]u8{0x03} ++ [_]u8{0} ** 19 };
+    const initial_nonce: u64 = 3;
+    try db.set_account(sender.bytes, Account{
+        .balance = 100, // Insufficient for value transfer
+        .nonce = initial_nonce,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, sender, .CANCUN);
+    defer evm.deinit();
+    
+    // Execute CALL with value transfer that will fail
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 1000, // More than balance
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(!result.success); // Transaction should fail
+    
+    // Verify nonce was still incremented despite failure
+    const account_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(initial_nonce + 1, account_after.nonce);
+}
+
+test "sequential transactions increment nonce correctly" {
+    const allocator = std.testing.allocator;
+    
+    // Create test database
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    // Create sender account
+    const sender: primitives.Address = .{ .bytes = [_]u8{0x04} ++ [_]u8{0} ** 19 };
+    const initial_nonce: u64 = 0;
+    try db.set_account(sender.bytes, Account{
+        .balance = 10000000,
+        .nonce = initial_nonce,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    // Execute 3 CALL transactions
+    var i: u32 = 0;
+    while (i < 3) : (i += 1) {
+        var evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, sender, .CANCUN);
+        defer evm.deinit();
+        
+        const call_params = DefaultEvm.CallParams{
+            .call = .{
+                .caller = sender,
+                .to = primitives.ZERO_ADDRESS,
+                .value = 0,
+                .input = &.{},
+                .gas = 100000,
+            },
+        };
+        
+        const result = evm.call(call_params);
+        try std.testing.expect(result.success);
+    }
+    
+    // Execute 2 CREATE transactions
+    const init_code = [_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+    
+    i = 0;
+    while (i < 2) : (i += 1) {
+        var evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, sender, .CANCUN);
+        defer evm.deinit();
+        
+        const call_params = DefaultEvm.CallParams{
+            .create = .{
+                .caller = sender,
+                .value = 0,
+                .init_code = &init_code,
+                .gas = 100000,
+            },
+        };
+        
+        const result = evm.call(call_params);
+        try std.testing.expect(result.success);
+    }
+    
+    // Verify final nonce is 5 (3 CALLs + 2 CREATEs)
+    const account_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(@as(u64, 5), account_after.nonce);
+}
+
+test "nested calls don't increment origin nonce" {
+    const allocator = std.testing.allocator;
+    
+    // Create test database
+    var db = MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    // Create sender account
+    const sender: primitives.Address = .{ .bytes = [_]u8{0x05} ++ [_]u8{0} ** 19 };
+    const initial_nonce: u64 = 10;
+    try db.set_account(sender.bytes, Account{
+        .balance = 1000000,
+        .nonce = initial_nonce,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Create contract A that calls contract B
+    // Contract A bytecode: PUSH20 <B_addr> PUSH1 0 PUSH1 0 PUSH1 0 PUSH1 0 PUSH1 0 PUSH1 0 CALL
+    const contract_a_address: primitives.Address = .{ .bytes = [_]u8{0xA0} ++ [_]u8{0} ** 19 };
+    const contract_b_address: primitives.Address = .{ .bytes = [_]u8{0xB0} ++ [_]u8{0} ** 19 };
+    
+    // Contract A calls Contract B
+    const contract_a_bytecode = [_]u8{0x73} ++ contract_b_address.bytes ++ // PUSH20 B_address
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0 (gas)
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0 (ret size)
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0 (ret offset)  
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0 (args size)
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0 (args offset)
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0 (value)
+        [_]u8{ 0x5A } ++ // GAS
+        [_]u8{ 0xF1 } ++ // CALL
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0
+        [_]u8{ 0x60, 0x00 } ++ // PUSH1 0
+        [_]u8{ 0xF3 }; // RETURN
+    
+    // Contract B just returns
+    const contract_b_bytecode = [_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+    
+    const a_code_hash = try db.set_code(&contract_a_bytecode);
+    try db.set_account(contract_a_address.bytes, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = a_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const b_code_hash = try db.set_code(&contract_b_bytecode);
+    try db.set_account(contract_b_address.bytes, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code_hash = b_code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, &db, block_info, context, 0, sender, .CANCUN);
+    defer evm.deinit();
+    
+    // Execute top-level call to Contract A (which calls Contract B)
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = contract_a_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 500000,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    // Verify nonce was incremented only once (for the top-level call)
+    const account_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(initial_nonce + 1, account_after.nonce);
+}
