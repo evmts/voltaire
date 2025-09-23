@@ -612,27 +612,10 @@ pub const Tracer = struct {
                     log.debug("[EVM2]   Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
                 }
             } else {
-                // For regular opcodes, allow reasonable gas differences due to block vs opcode charging
-                // Frame may consume gas in larger chunks at block boundaries
-                const gas_diff = @as(i64, evm_gas_remaining) - @as(i64, frame_gas_remaining);
-
-                // TODO: This gas tolerance check is fragile and arbitrary. Frame pre-charges gas
-                // in blocks while MinimalEvm charges per-opcode, causing legitimate divergences.
-                // Need a proper way to track and compare gas consumption that accounts for these
-                // different charging strategies without hardcoded magic numbers.
-                const tolerance = 50;
-                if (gas_diff > tolerance) {
-                    // Gas divergence during execution, debug log only
-                    log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed too much less gas than Frame after {s}:", .{opcode_name});
-                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    log.debug("[EVM2]   Gas difference: {d} (exceeds {d} gas tolerance)", .{ gas_diff, tolerance });
-                } else if (gas_diff < -20) {
-                    log.debug("[EVM2] [GAS DIVERGENCE] MinimalEvm consumed more gas than Frame after {s}:", .{opcode_name});
-                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    self.warn("  MinimalEvm over-consumed by: {d}", .{-gas_diff});
-                }
+                // For regular opcodes, we don't validate gas due to different charging strategies:
+                // Frame pre-charges gas in blocks while MinimalEvm charges per-opcode.
+                // This causes legitimate divergences during execution that don't indicate bugs.
+                // Gas validation is only meaningful at terminal opcodes where both should be synchronized.
             }
         }
     }
