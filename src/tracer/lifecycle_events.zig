@@ -105,10 +105,11 @@ pub fn Handlers(comptime TracerType: type) type {
 
         /// Called when an allocation is made
         pub fn onArenaAlloc(self: *TracerType, size: usize, alignment: usize, current_capacity: usize) void {
-            if (!self.config.enabled) return;
-            if (comptime (builtin.mode == .Debug)) {
-                log.debug("[ARENA] Alloc: size={d} align={d} capacity={d}", .{ size, alignment, current_capacity });
-            }
+            _ = self;
+            _ = size;
+            _ = alignment;
+            _ = current_capacity;
+            // Allocation logging disabled - too noisy
         }
 
         /// Event: Frame bytecode initialization
