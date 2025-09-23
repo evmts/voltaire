@@ -2,9 +2,12 @@ const std = @import("std");
 const log = @import("../log.zig");
 const primitives = @import("primitives");
 const pc_tracker_mod = @import("pc_tracker.zig");
-pub const MinimalEvm = @import("minimal_evm.zig").MinimalEvm;
+const minimal_evm_mod = @import("minimal_evm.zig");
+pub const MinimalEvm = minimal_evm_mod.MinimalEvm;
+pub const MinimalEvmError = MinimalEvm.Error;
+pub const StorageSlotKey = minimal_evm_mod.StorageSlotKey;
 const MinimalFrame = @import("minimal_frame.zig").MinimalFrame;
-const Host = @import("minimal_evm.zig").Host;
+const Host = minimal_evm_mod.Host;
 const UnifiedOpcode = @import("../opcodes/opcode.zig").UnifiedOpcode;
 const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthetic;
@@ -176,6 +179,7 @@ pub const Tracer = struct {
                 const block_info = evm_instance.get_block_info();
                 evm.setBlockchainContext(evm_instance.get_chain_id(), block_info.number, block_info.timestamp, block_info.difficulty, block_info.difficulty, block_info.coinbase, block_info.gas_limit, block_info.base_fee, block_info.blob_base_fee);
                 evm.setTransactionContext(evm_instance.get_tx_origin(), evm_instance.gas_price);
+                evm.setHardfork(evm_instance.get_hardfork());
                 var caller = primitives.ZERO_ADDRESS;
                 var address = primitives.ZERO_ADDRESS;
                 var value: u256 = 0;
@@ -200,6 +204,7 @@ pub const Tracer = struct {
                     value,
                     calldata,
                     @as(*anyopaque, @ptrCast(evm)),
+                    evm.hardfork,
                 ) catch return;
 
                 evm.frames.append(evm.allocator, minimal_frame) catch return;
