@@ -53,7 +53,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.ADDRESS, cursor);
             const addr_u256 = to_u256(self.contract_address);
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ADDRESS requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ADDRESS requires stack space");
             }
             self.stack.push_unsafe(addr_u256);
             return next_instruction(self, cursor, .ADDRESS);
@@ -64,7 +64,7 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn balance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.BALANCE, cursor);
             {
-                self.getTracer().assert(self.stack.size() >= 1, "BALANCE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "BALANCE requires 1 stack item");
             }
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
@@ -99,7 +99,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const tx_origin = self.getEvm().get_tx_origin();
             const origin_u256 = to_u256(tx_origin);
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ORIGIN requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "ORIGIN requires stack space");
             }
             self.stack.push_unsafe(origin_u256);
             return next_instruction(self, cursor, .ORIGIN);
@@ -111,7 +111,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CALLER, cursor);
             const caller_u256 = to_u256(self.caller);
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLER requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLER requires stack space");
             }
             self.stack.push_unsafe(caller_u256);
             return next_instruction(self, cursor, .CALLER);
@@ -123,7 +123,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CALLVALUE, cursor);
             const value = self.value;
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLVALUE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLVALUE requires stack space");
             }
             self.stack.push_unsafe(value);
             return next_instruction(self, cursor, .CALLVALUE);
@@ -135,7 +135,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CALLDATALOAD, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 1, "CALLDATALOAD requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "CALLDATALOAD requires 1 stack item");
             }
             const offset = self.stack.peek_unsafe();
             // Convert u256 to usize, checking for overflow
@@ -146,7 +146,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
             const offset_usize = @as(usize, @intCast(offset));
 
-            const calldata = self.calldata();
+            const calldata = self.calldata_slice;
             // Load 32 bytes from calldata, zero-padding if needed
             var word: u256 = 0;
             for (0..32) |i| {
@@ -170,10 +170,10 @@ pub fn Handlers(comptime FrameType: type) type {
         pub fn calldatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.CALLDATASIZE, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
-            const calldata = self.calldata();
+            const calldata = self.calldata_slice;
             const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLDATASIZE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CALLDATASIZE requires stack space");
             }
             self.stack.push_unsafe(calldata_len);
             const op_data = dispatch.getOpData(.CALLDATASIZE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -186,7 +186,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CALLDATACOPY, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 3, "CALLDATACOPY requires 3 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 3, "CALLDATACOPY requires 3 stack items");
             }
             const length = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Second from top
@@ -224,19 +224,19 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
 
-            const calldata = self.calldata();
+            const calldata = self.calldata_slice;
 
             // Copy calldata to memory with proper zero-padding
             var i: usize = 0;
             while (i < length_usize) : (i += 1) {
                 const src_index = offset_usize + i;
                 const byte_val = if (src_index < calldata.len) calldata[src_index] else 0;
-                self.memory.set_byte(self.getAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
+                self.memory.set_byte(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
             const op_data = dispatch.getOpData(.CALLDATACOPY); // Use op_data.next_handler and op_data.next_cursor directly
@@ -250,7 +250,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get codesize from frame's code
             const bytecode_len = @as(WordType, @intCast(self.code.len));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CODESIZE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CODESIZE requires stack space");
             }
             self.stack.push_unsafe(bytecode_len);
             const op_data = dispatch_opcode_data.getOpData(.CODESIZE, Dispatch, Dispatch.Item, cursor);
@@ -263,7 +263,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.CODECOPY, cursor);
             // EVM stack order: [destOffset, offset, length] with dest on top
             {
-                self.getTracer().assert(self.stack.size() >= 3, "CODECOPY requires 3 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 3, "CODECOPY requires 3 stack items");
             }
             const dest_offset = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Next
@@ -301,7 +301,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -314,7 +314,7 @@ pub fn Handlers(comptime FrameType: type) type {
             while (i < length_usize) : (i += 1) {
                 const src_index = offset_usize + i;
                 const byte_val = if (src_index < code_data.len) code_data[src_index] else 0;
-                self.memory.set_byte(self.getAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
+                self.memory.set_byte(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
             const op_data = dispatch_opcode_data.getOpData(.CODECOPY, Dispatch, Dispatch.Item, cursor);
@@ -329,7 +329,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const gas_price = self.getEvm().get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASPRICE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASPRICE requires stack space");
             }
             self.stack.push_unsafe(gas_price_truncated);
             const op_data = dispatch.getOpData(.GASPRICE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -342,7 +342,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.before_instruction(self, .EXTCODESIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 1, "EXTCODESIZE requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "EXTCODESIZE requires 1 stack item");
             }
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
@@ -373,7 +373,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.before_instruction(self, .EXTCODECOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 4, "EXTCODECOPY requires 4 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 4, "EXTCODECOPY requires 4 stack items");
             }
             const length = self.stack.pop_unsafe(); // Top of stack
             const offset = self.stack.pop_unsafe(); // Second from top
@@ -426,7 +426,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -438,7 +438,7 @@ pub fn Handlers(comptime FrameType: type) type {
             while (i < length_usize) : (i += 1) {
                 const src_index = offset_usize + i;
                 const byte_val = if (src_index < code.len) code[src_index] else 0;
-                self.memory.set_byte(self.getAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
+                self.memory.set_byte(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(dest_offset_usize + i)), byte_val) catch return Error.OutOfBounds;
             }
 
             const op_data = dispatch.getOpData(.EXTCODECOPY); // Use op_data.next_handler and op_data.next_cursor directly
@@ -451,7 +451,7 @@ pub fn Handlers(comptime FrameType: type) type {
             log.before_instruction(self, .EXTCODEHASH);
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 1, "EXTCODEHASH requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "EXTCODEHASH requires 1 stack item");
             }
             const address_u256 = self.stack.peek_unsafe();
             const addr = from_u256(address_u256);
@@ -511,7 +511,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const return_data = self.getEvm().get_return_data();
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
             }
             self.stack.push_unsafe(return_data_len);
             const op_data = dispatch.getOpData(.RETURNDATASIZE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -525,7 +525,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // EVM stack order: [destOffset, offset, length] with dest on top
             {
-                self.getTracer().assert(self.stack.size() >= 3, "RETURNDATACOPY requires 3 stack items");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 3, "RETURNDATACOPY requires 3 stack items");
             }
             const dest_offset = self.stack.pop_unsafe();
             const offset = self.stack.pop_unsafe();
@@ -573,14 +573,14 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Ensure memory capacity
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
 
             // Copy return data to memory (no zero-padding needed since bounds are checked)
             const src_slice = return_data[offset_usize..][0..length_usize];
-            self.memory.set_data(self.getAllocator(), @as(u24, @intCast(dest_offset_usize)), src_slice) catch return Error.OutOfBounds;
+            self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(dest_offset_usize)), src_slice) catch return Error.OutOfBounds;
 
             const op_data = dispatch.getOpData(.RETURNDATACOPY); // Use op_data.next_handler and op_data.next_cursor directly
             return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
@@ -600,7 +600,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 1, "BLOCKHASH requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "BLOCKHASH requires 1 stack item");
             }
             const block_number = self.stack.peek_unsafe();
             // Cast to u64 - EVM spec says only last 256 blocks are accessible
@@ -641,7 +641,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const coinbase_u256 = to_u256(block_info.coinbase);
             const coinbase_word = @as(WordType, @truncate(coinbase_u256));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "COINBASE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "COINBASE requires stack space");
             }
             self.stack.push_unsafe(coinbase_word);
             const op_data = dispatch.getOpData(.COINBASE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -664,7 +664,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "TIMESTAMP requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "TIMESTAMP requires stack space");
             }
             self.stack.push_unsafe(timestamp_word);
             const op_data = dispatch.getOpData(.TIMESTAMP); // Use op_data.next_handler and op_data.next_cursor directly
@@ -687,7 +687,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "NUMBER requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "NUMBER requires stack space");
             }
             self.stack.push_unsafe(block_number_word);
             const op_data = dispatch.getOpData(.NUMBER); // Use op_data.next_handler and op_data.next_cursor directly
@@ -710,7 +710,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "DIFFICULTY requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "DIFFICULTY requires stack space");
             }
             self.stack.push_unsafe(difficulty_word);
             const op_data = dispatch.getOpData(.PREVRANDAO); // Use op_data.next_handler and op_data.next_cursor directly
@@ -733,7 +733,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASLIMIT requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASLIMIT requires stack space");
             }
             self.stack.push_unsafe(gas_limit_word);
             const op_data = dispatch.getOpData(.GASLIMIT); // Use op_data.next_handler and op_data.next_cursor directly
@@ -748,7 +748,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const chain_id = self.getEvm().get_chain_id();
             const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CHAINID requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "CHAINID requires stack space");
             }
             self.stack.push_unsafe(chain_id_word);
             const op_data = dispatch.getOpData(.CHAINID); // Use op_data.next_handler and op_data.next_cursor directly
@@ -763,7 +763,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "SELFBALANCE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "SELFBALANCE requires stack space");
             }
             self.stack.push_unsafe(balance_word);
             const op_data = dispatch.getOpData(.SELFBALANCE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -778,7 +778,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BASEFEE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BASEFEE requires stack space");
             }
             self.stack.push_unsafe(base_fee_word);
             const op_data = dispatch.getOpData(.BASEFEE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -791,7 +791,7 @@ pub fn Handlers(comptime FrameType: type) type {
             self.beforeInstruction(.BLOBHASH, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             {
-                self.getTracer().assert(self.stack.size() >= 1, "BLOBHASH requires 1 stack item");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "BLOBHASH requires 1 stack item");
             }
             const index = self.stack.peek_unsafe();
             // Convert u256 to usize for array access
@@ -829,7 +829,7 @@ pub fn Handlers(comptime FrameType: type) type {
             const blob_base_fee = block_info.blob_base_fee;
             const blob_base_fee_word = @as(WordType, @truncate(blob_base_fee));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BLOBBASEFEE requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BLOBBASEFEE requires stack space");
             }
             self.stack.push_unsafe(blob_base_fee_word);
             const op_data = dispatch.getOpData(.BLOBBASEFEE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -845,7 +845,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // The dispatch system handles the gas consumption before calling this handler
             const gas_value = @as(WordType, @max(self.gas_remaining, 0));
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
             }
             self.stack.push_unsafe(gas_value);
             const op_data = dispatch.getOpData(.GAS);
@@ -861,7 +861,7 @@ pub fn Handlers(comptime FrameType: type) type {
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);
             {
-                self.getTracer().assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PC requires stack space");
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PC requires stack space");
             }
             self.stack.push_unsafe(op_data.metadata.value);
             return @call(FrameType.Dispatch.getTailCallModifier(), op_data.op_data.next_handler, .{ self, op_data.op_data.next_cursor.cursor });
