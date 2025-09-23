@@ -20,11 +20,18 @@ const stack_frame_memory_synthetic = @import("../instructions/handlers_memory_sy
 const stack_frame_jump_synthetic = @import("../instructions/handlers_jump_synthetic.zig");
 const stack_frame_advanced_synthetic = @import("../instructions/handlers_advanced_synthetic.zig");
 
+/// Type for handler overrides that depends on FrameType
+pub fn HandlerOverride(comptime FrameType: type) type {
+    return struct {
+        opcode: u8,
+        handler: FrameType.OpcodeHandler,
+    };
+}
+
 /// Returns opcode handlers array with optional custom overrides
 pub fn getOpcodeHandlers(
     comptime FrameType: type,
-    // TODO see if zig supports changing anyOpaque to FrameType.OpcodeHandler
-    comptime overrides: []const struct { opcode: u8, handler: *const anyopaque },
+    comptime overrides: []const HandlerOverride(FrameType),
 ) [256]FrameType.OpcodeHandler {
     // Import handler modules with FrameType
     const ArithmeticHandlers = stack_frame_arithmetic.Handlers(FrameType);
@@ -165,7 +172,7 @@ pub fn getOpcodeHandlers(
 
     // Apply custom overrides
     inline for (overrides) |override| {
-        h[override.opcode] = @as(FrameType.OpcodeHandler, @ptrCast(override.handler));
+        h[override.opcode] = override.handler;
     }
 
     return h;

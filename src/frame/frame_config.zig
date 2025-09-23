@@ -57,11 +57,38 @@ pub const FrameConfig = struct {
     /// These will override the default handlers in frame_handlers.zig
     opcode_overrides: []const struct { opcode: u8, handler: *const anyopaque } = &.{},
 
-    // TODO we should have more validation here such making sure the memory allowed is large enough
     pub fn validate(comptime self: Self) void {
         if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
         if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
         if (self.max_bytecode_size > 65535) @compileError("max_bytecode_size must be at most 65535");
+
+        // Validate memory configuration
+        const min_memory_for_stack = self.get_requested_alloc();
+        if (self.memory_limit < min_memory_for_stack) {
+            @compileError(std.fmt.comptimePrint("memory_limit ({d}) is too small for stack_size ({d}) * WordType ({d} bytes) = {d} bytes minimum required", .{
+                self.memory_limit,
+                self.stack_size,
+                @sizeOf(self.WordType),
+                min_memory_for_stack,
+            }));
+        }
+
+        if (self.memory_initial_capacity > self.memory_limit) {
+            @compileError(std.fmt.comptimePrint("memory_initial_capacity ({d}) cannot exceed memory_limit ({d})", .{
+                self.memory_initial_capacity,
+                self.memory_limit,
+            }));
+        }
+
+        // Ensure memory limit is reasonable for initcode size
+        const min_memory_for_initcode = self.max_initcode_size * 2; // Account for code + potential memory expansion
+        if (self.memory_limit < min_memory_for_initcode) {
+            @compileError(std.fmt.comptimePrint("memory_limit ({d}) may be insufficient for max_initcode_size ({d}). Consider at least {d} bytes", .{
+                self.memory_limit,
+                self.max_initcode_size,
+                min_memory_for_initcode,
+            }));
+        }
     }
     // Below are derived properties that are derived from other config options
 
