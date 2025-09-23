@@ -181,27 +181,27 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
         /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            self.getTracer().debug("Frame.deinit: Starting cleanup", .{});
+            (&self.getEvm().tracer).debug("Frame.deinit: Starting cleanup", .{});
             self.stack.deinit(allocator);
             self.memory.deinit(allocator);
-            self.getTracer().debug("Frame.deinit: Cleanup complete", .{});
+            (&self.getEvm().tracer).debug("Frame.deinit: Cleanup complete", .{});
         }
 
         pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
             @branchHint(.likely);
-            self.getTracer().onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
+            (&self.getEvm().tracer).onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
 
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
-                self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
+                (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
                 return Error.BytecodeTooLarge;
             }
-            self.getTracer().onFrameBytecodeInit(bytecode_raw.len, true, null);
+            (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, true, null);
             self.code = bytecode_raw;
 
-            self.getTracer().initPcTracker(bytecode_raw);
+            (&self.getEvm().tracer).initPcTracker(bytecode_raw);
 
-            const allocator = self.getAllocator();
+            const allocator = self.getEvm().getCallArenaAllocator();
 
             var schedule: []const Dispatch.Item = undefined;
             var jump_table_ptr: *Dispatch.JumpTable = undefined;
@@ -212,7 +212,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             // TODO: Why is global_dispatch_cache optional? I don't remember if this is intentional or not
             if (dispatch_cache.global_dispatch_cache) |*cache| {
                 if (cache.lookup(bytecode_raw)) |cached_data| {
-                    self.getTracer().debug("Frame: Using cached dispatch schedule", .{});
+                    (&self.getEvm().tracer).debug("Frame: Using cached dispatch schedule", .{});
                     schedule = @as([*]const Dispatch.Item, @ptrCast(@alignCast(cached_data.schedule.ptr)))[0 .. cached_data.schedule.len / @sizeOf(Dispatch.Item)];
                     const jump_table_entries = @as([*]const Dispatch.JumpTable.JumpTableEntry, @ptrCast(@alignCast(cached_data.jump_table.ptr)))[0 .. cached_data.jump_table.len / @sizeOf(Dispatch.JumpTable.JumpTableEntry)];
                     const cached_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
@@ -222,10 +222,10 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
                     defer cache.release(bytecode_raw);
                 } else {
-                    self.getTracer().debug("Frame: Cache miss, creating new dispatch", .{});
-                    const bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(self.getTracer()), self.getTracer())) catch |e| {
+                    (&self.getEvm().tracer).debug("Frame: Cache miss, creating new dispatch", .{});
+                    const bytecode = Bytecode.initWithTracer(allocator, bytecode_raw, @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer)) catch |e| {
                         @branchHint(.cold);
-                        self.getTracer().onFrameBytecodeInit(bytecode_raw.len, false, e);
+                        (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, false, e);
                         return switch (e) {
                             error.BytecodeTooLarge => Error.BytecodeTooLarge,
                             error.InvalidOpcode => Error.InvalidOpcode,
@@ -236,7 +236,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                         };
                     };
                     const handlers = &Self.opcode_handlers;
-                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, @as(?@TypeOf(self.getTracer()), self.getTracer())) catch {
+                    owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer)) catch {
                         return Error.AllocationError;
                     };
                     schedule = owned_schedule.?.items;
@@ -252,7 +252,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                         ) catch null;
                         if (pretty_output) |output| {
                             defer allocator.free(output);
-                            self.getTracer().debug("\n{s}", .{output});
+                            (&self.getEvm().tracer).debug("\n{s}", .{output});
                         }
                     }
 
@@ -302,7 +302,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                     ) catch null;
                     if (pretty_output) |output| {
                         defer allocator.free(output);
-                        self.getTracer().debug("\n{s}", .{output});
+                        (&self.getEvm().tracer).debug("\n{s}", .{output});
                     }
                 }
 
@@ -326,9 +326,9 @@ pub fn Frame(comptime _config: FrameConfig) type {
             var start_index: usize = 0;
             var first_block_gas_amount: u32 = 0;
 
-            self.getTracer().assert(schedule.len > 0, "Fatal unexpected error: the opcode execution schedule is length 0 which should be impossible");
+            (&self.getEvm().tracer).assert(schedule.len > 0, "Fatal unexpected error: the opcode execution schedule is length 0 which should be impossible");
             const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
-            self.getTracer().assert(schedule.len >= 2 or schedule[schedule.len - 1].opcode_handler != stop_handler or schedule[schedule.len - 2].opcode_handler != stop_handler, "Frame.interpret: Bytecode stream does not end with 2 stop handlers");
+            (&self.getEvm().tracer).assert(schedule.len >= 2 or schedule[schedule.len - 1].opcode_handler != stop_handler or schedule[schedule.len - 2].opcode_handler != stop_handler, "Frame.interpret: Bytecode stream does not end with 2 stop handlers");
 
             // TODO: this could just be a schedule.validate() method along with more validation
             switch (schedule[0]) {
@@ -340,7 +340,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                     start_index = 1;
                 },
                 else => {
-                    self.getTracer().assert(false, "Schedule doesn't start with .first_block_gas which is completely unexpected");
+                    (&self.getEvm().tracer).assert(false, "Schedule doesn't start with .first_block_gas which is completely unexpected");
                 },
             }
 
@@ -350,13 +350,13 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
             try self.dispatch.cursor[0].opcode_handler(self, self.dispatch.cursor);
 
-            self.getTracer().assert(false, "Handlers should never return normally");
+            (&self.getEvm().tracer).assert(false, "Handlers should never return normally");
         }
 
         /// Create a deep copy of the frame.
         /// This is used by DebugPlan to create a sidecar frame for validation.
         pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
-            self.getTracer().debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}", .{ self.stack.get_slice().len, self.memory.size() });
+            (&self.getEvm().tracer).debug("Frame.copy: Creating deep copy, stack_size={}, memory_size={}", .{ self.stack.get_slice().len, self.memory.size() });
             var new_stack = Stack.init(allocator, @as(?*anyopaque, @ptrCast(&self.getEvm().tracer))) catch return Error.AllocationError;
             errdefer new_stack.deinit(allocator);
             const src_stack_slice = self.stack.get_slice();
@@ -376,7 +376,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 try new_memory.set_data(0, bytes);
             }
 
-            self.getTracer().debug("Frame.copy: Deep copy complete", .{});
+            (&self.getEvm().tracer).debug("Frame.copy: Deep copy complete", .{});
             return Self{
                 .stack = new_stack,
                 .gas_remaining = self.gas_remaining,
@@ -402,24 +402,17 @@ pub fn Frame(comptime _config: FrameConfig) type {
             if (comptime config.disable_gas_checks) return;
 
             const amt = std.math.cast(GasType, amount) orelse {
-                self.getTracer().panic("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
+                (&self.getEvm().tracer).panic("Frame.consumeGasChecked: Gas overflow, amount={} doesn't fit in GasType", .{amount});
                 return Error.GasOverflow;
             };
 
             // Check if we have enough gas
             if (amt > self.gas_remaining) {
-                self.getTracer().debug("Frame.consumeGasChecked: Out of gas, required={}, remaining={}", .{ amt, self.gas_remaining });
+                (&self.getEvm().tracer).debug("Frame.consumeGasChecked: Out of gas, required={}, remaining={}", .{ amt, self.gas_remaining });
                 return Error.OutOfGas;
             }
 
             self.gas_remaining -= amt;
-        }
-
-        // TODO: Remove useless method
-        /// Get calldata as a slice.
-        /// Returns the calldata slice directly.
-        pub inline fn calldata(self: *const Self) []const u8 {
-            return self.calldata_slice;
         }
 
         // TODO: DefaultEvm should not exist! This is a bug and a relic from an old version of this.
@@ -430,20 +423,6 @@ pub fn Frame(comptime _config: FrameConfig) type {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
         }
 
-        // TODO: Remove this useless method in favor of just being explicit and inlining the self.getEvm().getCallArenaAllocator()
-        /// Get the arena allocator for temporary allocations during execution
-        pub inline fn getAllocator(self: *const Self) std.mem.Allocator {
-            return self.getEvm().getCallArenaAllocator();
-        }
-
-        // TODO: Remove this useless method in favor of just being explicit and inlining the self.getEvm().getCallArenaAllocator()
-        /// Get the tracer for logging and debugging
-        /// Returns the tracer instance from the EVM
-        pub inline fn getTracer(self: *const Self) *@import("../tracer/tracer.zig").Tracer {
-            return &self.getEvm().tracer;
-        }
-
-        // TODO: Remove this useless method just inline it
         /// Validate that the current dispatch cursor points to the expected handler and metadata.
         /// This provides extra validation that cursor logic is working as expected.
         /// Only runs in Debug and ReleaseSafe modes, no-op in ReleaseSmall/ReleaseFast.
@@ -465,7 +444,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             cursor: [*]const Dispatch.Item,
         ) void {
             if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) return;
-            self.getTracer().before_instruction(self, opcode, cursor);
+            (&self.getEvm().tracer).before_instruction(self, opcode, cursor);
             self.validateOpcodeHandler(opcode, cursor);
         }
 
@@ -477,7 +456,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             next_handler: OpcodeHandler,
             next_cursor: [*]const Dispatch.Item,
         ) void {
-            self.getTracer().after_instruction(self, opcode, next_handler, next_cursor);
+            (&self.getEvm().tracer).after_instruction(self, opcode, next_handler, next_cursor);
         }
 
         /// Called when an instruction completes with a terminal state
@@ -486,7 +465,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             self: *Self,
             comptime opcode: Dispatch.UnifiedOpcode,
         ) void {
-            self.getTracer().after_complete(self, opcode);
+            (&self.getEvm().tracer).after_complete(self, opcode);
         }
 
         /// Pretty print the frame state for debugging and visualization.
@@ -590,7 +569,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 try writer.print("  {s}(empty){s}\n", .{ Colors.dim, Colors.reset });
             }
 
-            const calldata_slice = self.calldata();
+            const calldata_slice = self.calldata_slice;
             if (calldata_slice.len > 0) {
                 try writer.print("\n{s}📥 Calldata [{d} bytes]:{s} ", .{ Colors.yellow, calldata_slice.len, Colors.reset });
 
