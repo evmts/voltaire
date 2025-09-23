@@ -330,6 +330,26 @@ pub fn Evm(comptime config: EvmConfig) type {
                 break :blk params.getGas() - intrinsic_gas;
             };
 
+            // Increment origin nonce for top-level transactions (EIP-2718)
+            // This must happen after gas deduction but before inner_call execution
+            {
+                var origin_account = self.database.get_account(self.origin.bytes) catch {
+                    return CallResult.failure(0);
+                } orelse Account.zero();
+                
+                // Record the nonce change for potential revert
+                // Using current_snapshot_id (0 at transaction level)
+                self.journal.record_nonce_change(self.current_snapshot_id, self.origin, origin_account.nonce) catch {
+                    return CallResult.failure(0);
+                };
+                
+                // Increment and persist the nonce
+                origin_account.nonce += 1;
+                self.database.set_account(self.origin.bytes, origin_account) catch {
+                    return CallResult.failure(0);
+                };
+            }
+
             var modified_params = params;
             modified_params.setGas(@as(u64, @intCast(execution_gas)));
 
@@ -763,12 +783,15 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
 
-            try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
-            caller_account.nonce += 1;
-            self.database.set_account(params.caller.bytes, caller_account) catch {
-                self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(0);
-            };
+            // Only increment nonce for contract creators (not EOAs at top level)
+            if (self.depth > 0) {
+                try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
+                caller_account.nonce += 1;
+                self.database.set_account(params.caller.bytes, caller_account) catch {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return CallResult.failure(0);
+                };
+            }
 
             const existed_before = self.database.account_exists(contract_address.bytes);
             if (existed_before) {
@@ -815,7 +838,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             const snapshot_id = self.journal.create_snapshot();
 
-            const caller_account = self.database.get_account(params.caller.bytes) catch {
+            var caller_account = self.database.get_account(params.caller.bytes) catch {
                 log.debug("CREATE2: get_account failed", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
@@ -825,6 +848,16 @@ pub fn Evm(comptime config: EvmConfig) type {
                 log.debug("CREATE2: insufficient balance", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
+            }
+
+            // Only increment nonce for contract creators (not EOAs at top level)
+            if (self.depth > 0) {
+                try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
+                caller_account.nonce += 1;
+                self.database.set_account(params.caller.bytes, caller_account) catch {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return CallResult.failure(0);
+                };
             }
 
             const keccak_asm = @import("crypto").keccak_asm;
