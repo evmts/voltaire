@@ -61,7 +61,7 @@ test "fusion dispatch: verify jump resolution for ten-thousand-hashes" {
 
     // Build opcode handlers and dispatch schedule
     const frame_handlers = @import("evm").frame_handlers;
-    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame);
+    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
     var schedule = try TestDispatch.DispatchSchedule.init(allocator, bc, &opcode_handlers);
     defer schedule.deinit();
 
@@ -101,7 +101,7 @@ test "fusion dispatch: simple PUSH+JUMPI resolution" {
 
     // Create dispatch
     const frame_handlers = @import("evm").frame_handlers;
-    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame);
+    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
     var schedule = try TestDispatch.DispatchSchedule.init(allocator, bc, &opcode_handlers);
     defer schedule.deinit();
 

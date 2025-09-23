@@ -52,7 +52,7 @@ test "static jump optimization - valid jump to JUMPDEST" {
     defer analyzed.deinit(allocator);
 
     // Create dispatch schedule
-    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame);
+    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
     const schedule = try Dispatch.init(allocator, analyzed, &opcode_handlers);
     defer allocator.free(schedule);
 
@@ -97,7 +97,7 @@ test "static jump optimization - invalid jump falls back to inline" {
     defer analyzed.deinit(allocator);
 
     // Create dispatch schedule
-    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame);
+    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
     const schedule = try Dispatch.init(allocator, analyzed, &opcode_handlers);
     defer allocator.free(schedule);
 
@@ -147,7 +147,7 @@ test "static jumpi optimization - conditional jump to valid JUMPDEST" {
     defer analyzed.deinit(allocator);
 
     // Create dispatch schedule
-    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame);
+    const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
     const schedule = try Dispatch.init(allocator, analyzed, &opcode_handlers);
     defer allocator.free(schedule);
 
