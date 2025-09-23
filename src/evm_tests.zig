@@ -6707,3 +6707,341 @@ test "nested calls don't increment origin nonce" {
     const account_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
     try std.testing.expectEqual(initial_nonce + 1, account_after.nonce);
 }
+
+test "Gas fees deducted from sender balance" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+    
+    const sender = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const coinbase = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const initial_balance: u256 = 1_000_000_000_000_000_000; // 1 ETH
+    const gas_price: u256 = 20_000_000_000; // 20 gwei
+    const gas_limit: u64 = 21_000;
+    
+    // Set up sender account
+    const sender_account = Account{
+        .balance = initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+        .delegated_address = null,
+    };
+    try db.set_account(sender.bytes, sender_account);
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = coinbase,
+        .base_fee = 10_000_000_000, // 10 gwei
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = gas_limit,
+        .coinbase = coinbase,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, gas_price, sender, .LONDON);
+    defer evm.deinit();
+    
+    // Execute simple transfer
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = gas_limit,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    // Verify gas was consumed
+    const gas_consumed = gas_limit - result.gas_left;
+    try std.testing.expect(gas_consumed > 0);
+    
+    // Verify sender balance reduced by gas fees
+    const sender_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    const expected_gas_fee = gas_price * @as(u256, @intCast(gas_consumed));
+    const expected_balance = initial_balance - expected_gas_fee;
+    try std.testing.expectEqual(expected_balance, sender_after.balance);
+    
+    // Verify coinbase received priority fee (gas_price - base_fee) * gas_consumed
+    const coinbase_after = db.get_account(coinbase.bytes) catch unreachable orelse unreachable;
+    const priority_fee = gas_price - block_info.base_fee;
+    const expected_coinbase_balance = priority_fee * @as(u256, @intCast(gas_consumed));
+    try std.testing.expectEqual(expected_coinbase_balance, coinbase_after.balance);
+}
+
+test "Transaction fails if insufficient balance for gas" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+    
+    const sender = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const coinbase = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const gas_price: u256 = 20_000_000_000; // 20 gwei
+    const gas_limit: u64 = 21_000;
+    const insufficient_balance: u256 = 100; // Not enough for gas
+    
+    // Set up sender account with insufficient balance
+    const sender_account = Account{
+        .balance = insufficient_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+        .delegated_address = null,
+    };
+    try db.set_account(sender.bytes, sender_account);
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = coinbase,
+        .base_fee = 10_000_000_000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = gas_limit,
+        .coinbase = coinbase,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, gas_price, sender, .LONDON);
+    defer evm.deinit();
+    
+    // Execute call
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = gas_limit,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    
+    // Transaction should fail due to insufficient gas
+    try std.testing.expect(!result.success);
+    try std.testing.expectEqual(@as(u64, 0), result.gas_left);
+    
+    // Balance should remain unchanged
+    const sender_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(insufficient_balance, sender_after.balance);
+}
+
+test "EIP-1559 correctly splits base fee and priority fee" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+    
+    const sender = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const coinbase = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const initial_balance: u256 = 1_000_000_000_000_000_000; // 1 ETH
+    const base_fee: u256 = 10_000_000_000; // 10 gwei
+    const gas_price: u256 = 15_000_000_000; // 15 gwei
+    const gas_limit: u64 = 21_000;
+    
+    // Set up sender account
+    const sender_account = Account{
+        .balance = initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+        .delegated_address = null,
+    };
+    try db.set_account(sender.bytes, sender_account);
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = coinbase,
+        .base_fee = base_fee,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = gas_limit,
+        .coinbase = coinbase,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, gas_price, sender, .LONDON);
+    defer evm.deinit();
+    
+    // Execute simple call
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = gas_limit,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    const gas_consumed = gas_limit - result.gas_left;
+    const gas_consumed_u256: u256 = @intCast(gas_consumed);
+    
+    // Verify sender loses full gas_price * gas_consumed
+    const sender_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    const total_fee = gas_price * gas_consumed_u256;
+    try std.testing.expectEqual(initial_balance - total_fee, sender_after.balance);
+    
+    // Verify coinbase only receives priority fee (gas_price - base_fee) * gas_consumed
+    const coinbase_after = db.get_account(coinbase.bytes) catch unreachable orelse unreachable;
+    const priority_fee = gas_price - base_fee;
+    const expected_coinbase_reward = priority_fee * gas_consumed_u256;
+    try std.testing.expectEqual(expected_coinbase_reward, coinbase_after.balance);
+    
+    // The base fee portion (base_fee * gas_consumed) is effectively burned
+}
+
+test "Pre-EIP-1559 all fees go to coinbase" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+    
+    const sender = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const coinbase = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const initial_balance: u256 = 1_000_000_000_000_000_000; // 1 ETH
+    const gas_price: u256 = 20_000_000_000; // 20 gwei
+    const gas_limit: u64 = 21_000;
+    
+    // Set up sender account
+    const sender_account = Account{
+        .balance = initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+        .delegated_address = null,
+    };
+    try db.set_account(sender.bytes, sender_account);
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = coinbase,
+        .base_fee = 0, // Pre-EIP-1559
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = gas_limit,
+        .coinbase = coinbase,
+        .chain_id = 1,
+    };
+    
+    // Use BERLIN hardfork (pre-EIP-1559)
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, gas_price, sender, .BERLIN);
+    defer evm.deinit();
+    
+    // Execute simple call
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = gas_limit,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    const gas_consumed = gas_limit - result.gas_left;
+    const gas_consumed_u256: u256 = @intCast(gas_consumed);
+    
+    // Verify sender loses gas_price * gas_consumed
+    const sender_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    const total_fee = gas_price * gas_consumed_u256;
+    try std.testing.expectEqual(initial_balance - total_fee, sender_after.balance);
+    
+    // Verify coinbase receives ALL fees (no burning)
+    const coinbase_after = db.get_account(coinbase.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(total_fee, coinbase_after.balance);
+}
+
+test "Zero gas price transactions work without balance changes" {
+    var db = Database.init(std.testing.allocator);
+    defer db.deinit();
+    
+    const sender = primitives.Address.from_hex("0x1111111111111111111111111111111111111111") catch unreachable;
+    const coinbase = primitives.Address.from_hex("0x2222222222222222222222222222222222222222") catch unreachable;
+    const initial_balance: u256 = 1_000_000_000_000_000_000; // 1 ETH
+    const gas_price: u256 = 0; // Zero gas price
+    const gas_limit: u64 = 21_000;
+    
+    // Set up sender account
+    const sender_account = Account{
+        .balance = initial_balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+        .delegated_address = null,
+    };
+    try db.set_account(sender.bytes, sender_account);
+    
+    const block_info = BlockInfo{
+        .chain_id = 1,
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = coinbase,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = gas_limit,
+        .coinbase = coinbase,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(std.testing.allocator, &db, block_info, context, gas_price, sender, .CANCUN);
+    defer evm.deinit();
+    
+    // Execute simple call
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = sender,
+            .to = primitives.ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = gas_limit,
+        },
+    };
+    
+    const result = evm.call(call_params);
+    try std.testing.expect(result.success);
+    
+    // Verify no balance changes for gas fees
+    const sender_after = db.get_account(sender.bytes) catch unreachable orelse unreachable;
+    try std.testing.expectEqual(initial_balance, sender_after.balance);
+    
+    // Verify coinbase received nothing
+    const coinbase_after = db.get_account(coinbase.bytes) catch unreachable;
+    if (coinbase_after) |acc| {
+        try std.testing.expectEqual(@as(u256, 0), acc.balance);
+    }
+}
