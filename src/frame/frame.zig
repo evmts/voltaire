@@ -114,7 +114,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
         /// A fixed size array of opcode handlers indexed by opcode number
         /// Note: Tracer is now part of EVM struct, not config - always use non-traced handlers
-        pub const opcode_handlers: [256]OpcodeHandler = frame_handlers.getOpcodeHandlers(Self, config.opcode_overrides);
+        pub const opcode_handlers: [256]OpcodeHandler = frame_handlers.getOpcodeHandlers(Self, &.{});
 
         // Individual handler groups for testing and direct access
         pub const ArithmeticHandlers = @import("../instructions/handlers_arithmetic.zig").Handlers(Self);

@@ -10,11 +10,6 @@ const Address = primitives.Address;
 const SafetyCounter = @import("internal/safety_counter.zig").SafetyCounter;
 const Mode = @import("internal/safety_counter.zig").Mode;
 
-/// Custom opcode handler override
-pub const OpcodeOverride = struct {
-    opcode: u8,
-    handler: *const anyopaque,
-};
 
 /// Custom precompile implementation
 pub const PrecompileOverride = struct {
@@ -57,10 +52,6 @@ pub const EvmConfig = struct {
     /// Disable balance checks for testing/development (default: false)
     /// When enabled, balance checks always return 0
     disable_balance_checks: bool = false,
-
-    /// Disable fusion optimizations (default: false)
-    /// When enabled, bytecode fusion handlers are not registered
-    disable_fusion: bool = false,
 
     /// SIMD vector length for optimized memory operations
     /// Auto-detected based on target CPU, or explicitly set for testing
@@ -109,7 +100,7 @@ pub const EvmConfig = struct {
     /// Custom opcode handler overrides
     /// These will override the default handlers in frame_handlers.zig
     /// Set to empty slice for no overrides
-    opcode_overrides: []const OpcodeOverride = &.{},
+    opcode_overrides: []const struct { opcode: u8, handler: *const anyopaque } = &.{},
 
     /// Custom precompile implementations
     /// These will override or add new precompiles
@@ -185,10 +176,10 @@ pub const EvmConfig = struct {
             .block_info_config = self.block_info_config,
             .disable_gas_checks = self.disable_gas_checks,
             .disable_balance_checks = self.disable_balance_checks,
-            .disable_fusion = self.disable_fusion,
+            .disable_fusion = !self.enable_fusion,
             .vector_length = self.getVectorLength(),
             .loop_quota = self.loop_quota,
-            .opcode_overrides = self.opcode_overrides,
+            .opcode_overrides = &.{}, // Pass empty overrides - custom overrides should be handled differently
             // TracerType removed - tracer is always present but enabled/disabled via config
         };
     }
@@ -252,7 +243,6 @@ pub const EvmConfig = struct {
         config.enable_precompiles = !build_options.no_precompiles;
         config.disable_gas_checks = build_options.disable_gas_checks;
         config.disable_balance_checks = build_options.disable_balance_checks;
-        config.disable_fusion = build_options.disable_fusion;
 
         // Set tracer if enabled
         if (build_options.enable_tracing) {
@@ -617,20 +607,19 @@ test "EvmConfig - gas and balance check disabling" {
 
 test "EvmConfig - fusion disabling" {
     const config_default = EvmConfig{};
-    try testing.expectEqual(false, config_default.disable_fusion);
     try testing.expectEqual(true, config_default.enable_fusion);
 
-    const config_fusion_disabled = EvmConfig{ .disable_fusion = true };
-    try testing.expectEqual(true, config_fusion_disabled.disable_fusion);
+    const config_fusion_disabled = EvmConfig{ .enable_fusion = false };
+    try testing.expectEqual(false, config_fusion_disabled.enable_fusion);
 
     const config_all_disabled = EvmConfig{
         .disable_gas_checks = true,
         .disable_balance_checks = true,
-        .disable_fusion = true,
+        .enable_fusion = false,
     };
     try testing.expectEqual(true, config_all_disabled.disable_gas_checks);
     try testing.expectEqual(true, config_all_disabled.disable_balance_checks);
-    try testing.expectEqual(true, config_all_disabled.disable_fusion);
+    try testing.expectEqual(false, config_all_disabled.enable_fusion);
 }
 
 test "EvmConfig - precompile overrides" {

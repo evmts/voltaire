@@ -30,7 +30,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         pub const Bytecode = @import("bytecode/bytecode.zig").Bytecode(.{
             .max_bytecode_size = config.max_bytecode_size,
-            .fusions_enabled = !config.disable_fusion,
+            .fusions_enabled = config.enable_fusion,
         });
         pub const Journal: type = @import("storage/journal.zig").Journal(.{
             .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,

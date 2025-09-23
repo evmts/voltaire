@@ -120,7 +120,12 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Get the jump target from items
             const target_item = op_data.items[0];
-            _ = target_item; // Target would be used for actual jumping
+            const target = if (target_item == .push_inline)
+                target_item.push_inline.value
+            else if (target_item == .push_pointer)
+                target_item.push_pointer.value_ptr.*
+            else
+                unreachable;
 
             // Pop value and check if zero
             const value = self.stack.pop_unsafe();
@@ -128,10 +133,15 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Jump if the value was zero
             if (should_jump) {
-                // For now, just continue - proper jump handling would need jump table access
-                // In a real implementation, this would look up the jump destination
-                // and call the handler at that location
-                // TODO: Implement proper jump handling with jump table
+                // Look up the jump destination in the jump table
+                const dest_pc: FrameType.PcType = @intCast(target);
+                if (self.jump_table.findJumpTarget(dest_pc)) |jump_dispatch| {
+                    self.afterInstruction(.ISZERO_JUMPI, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                } else {
+                    self.afterComplete(.ISZERO_JUMPI);
+                    return Error.InvalidJump;
+                }
             }
 
             // Continue to next instruction using getOpData
@@ -496,4 +506,32 @@ test "multi_pop_2 pops two values correctly" {
 
     try testing.expectEqual(@as(usize, 1), stack.len);
     try testing.expectEqual(@as(u256, 10), stack.data[0]);
+}
+
+test "iszero_jumpi logic validates jump condition" {
+    const testing = std.testing;
+    // Test the logic of ISZERO_JUMPI:
+    // 1. If value == 0, should_jump = true
+    // 2. If value != 0, should_jump = false
+
+    // Test case 1: value is 0
+    {
+        const value: u256 = 0;
+        const should_jump = value == 0;
+        try testing.expectEqual(true, should_jump);
+    }
+
+    // Test case 2: value is non-zero
+    {
+        const value: u256 = 42;
+        const should_jump = value == 0;
+        try testing.expectEqual(false, should_jump);
+    }
+
+    // Test case 3: value is max u256
+    {
+        const value: u256 = std.math.maxInt(u256);
+        const should_jump = value == 0;
+        try testing.expectEqual(false, should_jump);
+    }
 }

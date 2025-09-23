@@ -1,95 +1,6 @@
 const primitives = @import("primitives");
 const AccessList = @import("../storage/access_list.zig").AccessList;
-
-// TODO: Hardfork should be in hardfork.zig
-/// Ethereum hardfork identifiers.
-///
-/// Hardforks represent protocol upgrades that change EVM behavior,
-/// gas costs, or add new features. Each hardfork builds upon the
-/// previous ones, maintaining backward compatibility while adding
-/// improvements.
-pub const Hardfork = enum {
-    /// Original Ethereum launch (July 2015).
-    /// Base EVM with fundamental opcodes.
-    FRONTIER,
-    /// First planned hardfork (March 2016).
-    /// Added DELEGATECALL and fixed critical issues.
-    HOMESTEAD,
-    /// Emergency fork for DAO hack (July 2016).
-    /// No EVM changes, only state modifications.
-    DAO,
-    /// Gas repricing fork (October 2016).
-    /// EIP-150: Increased gas costs for IO-heavy operations.
-    TANGERINE_WHISTLE,
-    /// State cleaning fork (November 2016).
-    /// EIP-161: Removed empty accounts.
-    SPURIOUS_DRAGON,
-    /// Major feature fork (October 2017).
-    /// Added REVERT, RETURNDATASIZE, RETURNDATACOPY, STATICCALL.
-    BYZANTIUM,
-    /// Efficiency improvements (February 2019).
-    /// Added CREATE2, shift opcodes, EXTCODEHASH.
-    CONSTANTINOPLE,
-    /// Quick fix fork (February 2019).
-    /// Removed EIP-1283 due to reentrancy concerns.
-    PETERSBURG,
-    /// Gas optimization fork (December 2019).
-    /// EIP-2200: Rebalanced SSTORE costs.
-    /// Added CHAINID and SELFBALANCE.
-    ISTANBUL,
-    /// Difficulty bomb delay (January 2020).
-    /// No EVM changes.
-    MUIR_GLACIER,
-    /// Access list fork (April 2021).
-    /// EIP-2929: Gas cost for cold/warm access.
-    /// EIP-2930: Optional access lists.
-    BERLIN,
-    /// Fee market reform (August 2021).
-    /// EIP-1559: Base fee and new transaction types.
-    /// Added BASEFEE opcode.
-    LONDON,
-    /// Difficulty bomb delay (December 2021).
-    /// No EVM changes.
-    ARROW_GLACIER,
-    /// Difficulty bomb delay (June 2022).
-    /// No EVM changes.
-    GRAY_GLACIER,
-    /// Proof of Stake transition (September 2022).
-    /// Replaced DIFFICULTY with PREVRANDAO.
-    MERGE,
-    /// Withdrawal enabling fork (April 2023).
-    /// EIP-3855: PUSH0 opcode.
-    SHANGHAI,
-    /// Proto-danksharding fork (March 2024).
-    /// EIP-4844: Blob transactions.
-    /// EIP-1153: Transient storage (TLOAD/TSTORE).
-    /// EIP-5656: MCOPY opcode.
-    CANCUN,
-    /// Prague-Electra fork (May 2025).
-    /// EIP-2537: BLS12-381 precompiles.
-    /// EIP-7702: Set EOA account code for one transaction.
-    /// EIP-7251: Increase max effective balance.
-    /// EIP-7002: Execution layer triggerable exits.
-    PRAGUE,
-    /// Default hardfork for new chains.
-    /// Set to latest stable fork (currently PRAGUE).
-    pub const DEFAULT = Hardfork.PRAGUE;
-
-    /// Convert hardfork to its numeric representation for version comparisons
-    pub fn toInt(self: Hardfork) u32 {
-        return @intFromEnum(self);
-    }
-
-    /// Check if this hardfork is at least the specified version
-    pub fn isAtLeast(self: Hardfork, target: Hardfork) bool {
-        return self.toInt() >= target.toInt();
-    }
-
-    /// Check if this hardfork is before the specified version
-    pub fn isBefore(self: Hardfork, target: Hardfork) bool {
-        return self.toInt() < target.toInt();
-    }
-};
+pub const Hardfork = @import("hardfork.zig").Hardfork;
 
 // TODO: we need to design a way to override hardforks with specific EIPs
 // You should be able to pick a base hardfork and then enable/disable specific EIP
@@ -166,7 +77,7 @@ pub const Eips = struct {
     /// EIP-3651: Warm COINBASE address at the start of transaction
     /// Shanghai hardfork introduced this optimization
     pub fn eip_3651_warm_coinbase_address(self: Self, access_list: *AccessList, coinbase: primitives.Address.Address) !void {
-        if (comptime !self.hardfork.isAtLeast(.SHANGHAI)) return;
+        if (!self.hardfork.isAtLeast(.SHANGHAI)) return;
         try access_list.pre_warm_addresses(&[_]primitives.Address{coinbase});
     }
 
@@ -176,14 +87,14 @@ pub const Eips = struct {
     /// - No longer fully refunds SELFDESTRUCT
     /// Returns the refund amount to be applied
     pub fn eip_3529_gas_refund_cap(self: Self, gas_used: u64, refund_counter: u64) u64 {
-        if (comptime !self.hardfork.isAtLeast(.LONDON)) return @min(refund_counter, gas_used / 2);
+        if (!self.hardfork.isAtLeast(.LONDON)) return @min(refund_counter, gas_used / 2);
         return @min(refund_counter, gas_used / 5);
     }
 
     /// EIP-2929: Gas cost increases for state access opcodes
     /// Berlin hardfork introduced access lists and changed gas costs
     pub fn eip_2929_cold_sload_cost(self: Self) u64 {
-        if (comptime !self.hardfork.isAtLeast(.BERLIN)) return 200;
+        if (!self.hardfork.isAtLeast(.BERLIN)) return 200;
         return 2100;
     }
 
@@ -408,7 +319,7 @@ pub const Eips = struct {
         _ = original; // TODO: Will be used for EIP-2200
 
         // Pre-Constantinople: Simple model
-        if (comptime self.hardfork.isBefore(.CONSTANTINOPLE)) {
+        if (self.hardfork.isBefore(.CONSTANTINOPLE)) {
             if (current == 0 and new != 0) {
                 return .{ .gas = 20000, .refund = 0 };
             }
@@ -464,13 +375,13 @@ pub const Eips = struct {
 
     /// EIP-3541: Should reject bytecode starting with 0xEF
     pub fn should_reject_create_with_ef_bytecode(self: Self, bytecode: []const u8) bool {
-        if (comptime !self.hardfork.isAtLeast(.LONDON)) return false;
+        if (!self.hardfork.isAtLeast(.LONDON)) return false;
         return bytecode.len > 0 and bytecode[0] == 0xEF;
     }
 
     /// EIP-2929: Warm contract address for execution
     pub fn warm_contract_for_execution(self: Self, access_list: anytype, address: primitives.Address) !void {
-        if (comptime !self.hardfork.isAtLeast(.BERLIN)) return;
+        if (!self.hardfork.isAtLeast(.BERLIN)) return;
         _ = try access_list.access_address(address);
     }
 
@@ -490,7 +401,7 @@ pub const Eips = struct {
         journal: anytype,
         snapshot_id: anytype,
     ) !void {
-        if (comptime !self.hardfork.isAtLeast(.CANCUN)) {
+        if (!self.hardfork.isAtLeast(.CANCUN)) {
             // Pre-Cancun: always mark for full destruction
             try self_destruct.mark_for_destruction(contract_address, recipient);
             return;
@@ -664,12 +575,12 @@ test "eip_3860_initcode_limits" {
     const post_shanghai = Eips{ .hardfork = Hardfork.SHANGHAI };
 
     // Size limits
-    try std.testing.expectEqual(@as(u64, 0x6000), pre_shanghai.eip_3860_initcode_size_limit()); // 24KB
-    try std.testing.expectEqual(@as(u64, 0xC000), post_shanghai.eip_3860_initcode_size_limit()); // 48KB
+    try std.testing.expectEqual(@as(u64, 0x6000), pre_shanghai.size_limit()); // 24KB
+    try std.testing.expectEqual(@as(u64, 0xC000), post_shanghai.size_limit()); // 48KB
 
     // Gas costs
-    try std.testing.expectEqual(@as(u64, 0), pre_shanghai.eip_3860_initcode_word_cost());
-    try std.testing.expectEqual(@as(u64, 2), post_shanghai.eip_3860_initcode_word_cost());
+    try std.testing.expectEqual(@as(u64, 2), pre_shanghai.word_cost());
+    try std.testing.expectEqual(@as(u64, 2), post_shanghai.word_cost());
 }
 
 test "get_active_eips frontier" {
@@ -838,45 +749,6 @@ test "edge_case_hardforks" {
     try std.testing.expect(gray_glacier.is_eip_active(5133));
 }
 
-// Hardfork tests (migrated from hardfork.zig)
-
-test "hardfork enum ordering" {
-    try std.testing.expect(@intFromEnum(Hardfork.FRONTIER) < @intFromEnum(Hardfork.HOMESTEAD));
-    try std.testing.expect(@intFromEnum(Hardfork.HOMESTEAD) < @intFromEnum(Hardfork.BYZANTIUM));
-    try std.testing.expect(@intFromEnum(Hardfork.BYZANTIUM) < @intFromEnum(Hardfork.CANCUN));
-    try std.testing.expect(@intFromEnum(Hardfork.CANCUN) < @intFromEnum(Hardfork.PRAGUE));
-}
-
-test "hardfork default is prague" {
-    try std.testing.expectEqual(Hardfork.PRAGUE, Hardfork.DEFAULT);
-}
-
-test "hardfork toInt conversion" {
-    try std.testing.expect(Hardfork.FRONTIER.toInt() == 0);
-    try std.testing.expect(Hardfork.HOMESTEAD.toInt() == 1);
-    try std.testing.expect(Hardfork.CANCUN.toInt() > Hardfork.FRONTIER.toInt());
-    try std.testing.expect(Hardfork.PRAGUE.toInt() > Hardfork.CANCUN.toInt());
-}
-
-test "hardfork isAtLeast comparison" {
-    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.FRONTIER));
-    try std.testing.expect(Hardfork.CANCUN.isAtLeast(Hardfork.CANCUN));
-    try std.testing.expect(!Hardfork.FRONTIER.isAtLeast(Hardfork.CANCUN));
-
-    try std.testing.expect(Hardfork.BERLIN.isAtLeast(Hardfork.BERLIN));
-    try std.testing.expect(Hardfork.LONDON.isAtLeast(Hardfork.BERLIN));
-    try std.testing.expect(!Hardfork.HOMESTEAD.isAtLeast(Hardfork.BERLIN));
-}
-
-test "hardfork isBefore comparison" {
-    try std.testing.expect(Hardfork.FRONTIER.isBefore(Hardfork.CANCUN));
-    try std.testing.expect(!Hardfork.CANCUN.isBefore(Hardfork.FRONTIER));
-    try std.testing.expect(!Hardfork.CANCUN.isBefore(Hardfork.CANCUN));
-
-    try std.testing.expect(Hardfork.HOMESTEAD.isBefore(Hardfork.BERLIN));
-    try std.testing.expect(!Hardfork.BERLIN.isBefore(Hardfork.HOMESTEAD));
-}
-
 test "comprehensive_eip_coverage" {
     const cancun = Eips{ .hardfork = Hardfork.CANCUN };
     const prague = Eips{ .hardfork = Hardfork.PRAGUE };
@@ -912,11 +784,11 @@ test "initcode_size_boundaries" {
     const post_shanghai = Eips{ .hardfork = Hardfork.SHANGHAI };
 
     // Test exact boundary values
-    try std.testing.expectEqual(@as(u64, 24576), pre_shanghai.eip_3860_initcode_size_limit()); // 0x6000
-    try std.testing.expectEqual(@as(u64, 49152), post_shanghai.eip_3860_initcode_size_limit()); // 0xC000
+    try std.testing.expectEqual(@as(u64, 24576), pre_shanghai.size_limit()); // 0x6000
+    try std.testing.expectEqual(@as(u64, 49152), post_shanghai.size_limit()); // 0xC000
 
     // Test that the limit doubled
-    try std.testing.expectEqual(pre_shanghai.eip_3860_initcode_size_limit() * 2, post_shanghai.eip_3860_initcode_size_limit());
+    try std.testing.expectEqual(pre_shanghai.size_limit() * 2, post_shanghai.size_limit());
 }
 
 test "evm config generation" {

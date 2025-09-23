@@ -382,7 +382,7 @@ pub fn getDebugInfo(
     
     // Build reverse handler map from opcode handlers
     const frame_handlers = @import("../frame/frame_handlers.zig");
-    const opcode_handlers = frame_handlers.getOpcodeHandlers(FrameType);
+    const opcode_handlers = frame_handlers.getOpcodeHandlers(FrameType, &.{});
     
     // Map regular opcodes
     for (0..256) |i| {

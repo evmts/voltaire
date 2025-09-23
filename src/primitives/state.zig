@@ -1,6 +1,6 @@
 const std = @import("std");
+const Keccak256 = std.crypto.hash.sha3.Keccak256;
 
-// TODO: We should add a comptime block validating the hardcoded hash matches the derived one
 /// Hash of empty EVM bytecode (Keccak256 of empty bytes).
 ///
 /// This is a well-known constant in Ethereum representing the Keccak256 hash
@@ -15,7 +15,20 @@ pub const EMPTY_CODE_HASH = [32]u8{
     0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70,
 };
 
-// TODO: We should add a comptime block validating the hardcoded hash matches the derived one
+comptime {
+    // Validate that the hardcoded empty code hash matches Keccak256("")
+    var hasher = Keccak256.init(.{});
+    hasher.update(&.{});
+    var computed_hash: [32]u8 = undefined;
+    hasher.final(&computed_hash);
+
+    for (computed_hash, EMPTY_CODE_HASH) |computed, expected| {
+        if (computed != expected) {
+            @compileError("EMPTY_CODE_HASH does not match Keccak256 of empty bytes");
+        }
+    }
+}
+
 /// Root hash of an empty Merkle Patricia Trie.
 ///
 /// This is the root hash of an empty trie structure in Ethereum, used as
@@ -29,6 +42,21 @@ pub const EMPTY_TRIE_ROOT = [32]u8{
     0x5b, 0x48, 0xe0, 0x1b, 0x99, 0x6c, 0xad, 0xc0,
     0x01, 0x62, 0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21,
 };
+
+comptime {
+    // Validate that the hardcoded empty trie root matches the expected value
+    // The empty trie root is the Keccak256 hash of RLP(null) = 0x80
+    var hasher = Keccak256.init(.{});
+    hasher.update(&[_]u8{0x80}); // RLP encoding of empty/null
+    var computed_hash: [32]u8 = undefined;
+    hasher.final(&computed_hash);
+
+    for (computed_hash, EMPTY_TRIE_ROOT) |computed, expected| {
+        if (computed != expected) {
+            @compileError("EMPTY_TRIE_ROOT does not match Keccak256 of RLP(null)");
+        }
+    }
+}
 
 /// Composite key for EVM storage operations combining address and slot.
 ///

@@ -844,7 +844,7 @@ pub fn Preprocessor(comptime FrameType: type) type {
 
             if (value > std.math.maxInt(FrameType.PcType)) {
                 if (tracer) |t| t.onInvalidStaticJump(jump_pc, @intCast(value & 0xFFFFFFFF));
-                const opcode_handlers = @import("../frame/frame_handlers.zig").getOpcodeHandlers(FrameType);
+                const opcode_handlers = @import("../frame/frame_handlers.zig").getOpcodeHandlers(FrameType, &.{});
                 try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers[@intFromEnum(@import("../opcodes/opcode.zig").Opcode.INVALID)] });
                 return;
             }
