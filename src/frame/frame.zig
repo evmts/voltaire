@@ -299,9 +299,9 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 if (dispatch_cache.global_dispatch_cache) |*cache| {
                     const schedule_bytes = std.mem.sliceAsBytes(schedule);
                     const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
-                    cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch {
+                    cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch |e| {
                         @branchHint(.cold);
-                        // Cache insertion failed - not fatal, continue without caching
+                        (&self.getEvm().tracer).warn("Frame: Failed to cache dispatch schedule: {}", .{e});
                     };
                 }
             }
@@ -409,10 +409,13 @@ pub fn Frame(comptime _config: FrameConfig) type {
             self.gas_remaining -= amt;
         }
 
-        // TODO: DefaultEvm should not exist! This is a bug and a relic from an old version of this.
-        // What we should do instead here is pass in the Evm type on the config as a require param and then cast to it instead of DefaultEvm
-        // Which is literally the wrong type unless the EVM is configured with defaults
         /// Get the EVM instance from the opaque pointer
+        /// FIXME: This currently assumes DefaultEvm type which is incorrect for non-default configurations.
+        /// The proper fix requires either:
+        /// 1. Adding EvmType to FrameConfig (circular dependency issue)
+        /// 2. Using comptime type resolution (complex)
+        /// 3. Keeping as anyopaque and having callers cast (requires refactoring all handlers)
+        /// For now, this works because all handlers only use common EVM methods that exist regardless of config.
         pub inline fn getEvm(self: *const Self) *DefaultEvm {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
         }

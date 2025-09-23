@@ -206,8 +206,11 @@ pub const DispatchCache = struct {
 };
 
 // TODO: We need to properly think about threads. I think it's possible we want to handle threads via violently erroring if we detect the same EVM instance
-// // is on more than 1 thread
-/// Global dispatch cache instance
+// is on more than 1 thread
+
+/// Global dispatch cache instance - optional because it must be explicitly initialized via initGlobalCache()
+/// This is an opt-in performance optimization. When not initialized, bytecode is recompiled each time.
+/// To enable caching, call initGlobalCache(allocator) at startup and deinitGlobalCache() at shutdown.
 pub var global_dispatch_cache: ?DispatchCache = null;
 var cache_mutex: std.Thread.Mutex = .{};
 
