@@ -227,39 +227,6 @@ pub const Eips = struct {
         return false;
     }
 
-    // TODO: I think this is currently completely unused dead code that should be removed
-    /// Get configuration for EVM features based on hardfork
-    pub fn get_evm_config(self: Self) EvmConfig {
-        return EvmConfig{
-            .eip_214_enabled = self.hardfork.isAtLeast(.BYZANTIUM),
-            .eip_2929_enabled = self.hardfork.isAtLeast(.BERLIN),
-            .eip_3541_enabled = self.hardfork.isAtLeast(.LONDON),
-            .eip_3855_enabled = self.hardfork.isAtLeast(.SHANGHAI),
-            .eip_3860_enabled = self.hardfork.isAtLeast(.SHANGHAI),
-            .eip_4788_enabled = self.hardfork.isAtLeast(.CANCUN),
-            .eip_2935_enabled = self.hardfork.isAtLeast(.PRAGUE),
-            .eip_4844_enabled = self.hardfork.isAtLeast(.CANCUN),
-            .eip_5656_enabled = self.hardfork.isAtLeast(.CANCUN),
-            .eip_6780_enabled = self.hardfork.isAtLeast(.CANCUN),
-            .eip_7702_enabled = self.hardfork.isAtLeast(.PRAGUE),
-        };
-    }
-
-    // TODO: I think this is currently completely unused dead code that should be removed
-    /// Configuration struct for EVM features
-    pub const EvmConfig = struct {
-        eip_214_enabled: bool, // Static call restrictions
-        eip_2929_enabled: bool, // Access list
-        eip_3541_enabled: bool, // 0xEF prefix rejection
-        eip_3855_enabled: bool, // PUSH0 opcode
-        eip_3860_enabled: bool, // Initcode size limit
-        eip_4788_enabled: bool, // Beacon roots contract
-        eip_2935_enabled: bool, // Historical block hashes
-        eip_4844_enabled: bool, // Blob transactions
-        eip_5656_enabled: bool, // MCOPY opcode
-        eip_6780_enabled: bool, // SELFDESTRUCT restrictions
-        eip_7702_enabled: bool, // EOA code execution
-    };
 
     /// EIP-170: Get maximum contract code size based on hardfork
     pub fn eip_170_max_code_size(self: Self) u32 {
@@ -795,48 +762,6 @@ test "initcode_size_boundaries" {
     try std.testing.expectEqual(pre_shanghai.size_limit() * 2, post_shanghai.size_limit());
 }
 
-test "evm config generation" {
-    const frontier = Eips{ .hardfork = Hardfork.FRONTIER };
-    const berlin = Eips{ .hardfork = Hardfork.BERLIN };
-    const london = Eips{ .hardfork = Hardfork.LONDON };
-    const shanghai = Eips{ .hardfork = Hardfork.SHANGHAI };
-    const cancun = Eips{ .hardfork = Hardfork.CANCUN };
-    const prague = Eips{ .hardfork = Hardfork.PRAGUE };
-
-    // Test Frontier has no EIPs enabled
-    const frontier_config = frontier.get_evm_config();
-    try std.testing.expect(!frontier_config.eip_2929_enabled);
-    try std.testing.expect(!frontier_config.eip_3541_enabled);
-    try std.testing.expect(!frontier_config.eip_3855_enabled);
-
-    // Test Berlin enables EIP-2929
-    const berlin_config = berlin.get_evm_config();
-    try std.testing.expect(berlin_config.eip_2929_enabled);
-    try std.testing.expect(!berlin_config.eip_3541_enabled);
-
-    // Test London adds EIP-3541
-    const london_config = london.get_evm_config();
-    try std.testing.expect(london_config.eip_2929_enabled);
-    try std.testing.expect(london_config.eip_3541_enabled);
-    try std.testing.expect(!london_config.eip_3855_enabled);
-
-    // Test Shanghai adds PUSH0
-    const shanghai_config = shanghai.get_evm_config();
-    try std.testing.expect(shanghai_config.eip_3855_enabled);
-    try std.testing.expect(shanghai_config.eip_3860_enabled);
-
-    // Test Cancun adds multiple features
-    const cancun_config = cancun.get_evm_config();
-    try std.testing.expect(cancun_config.eip_4844_enabled);
-    try std.testing.expect(cancun_config.eip_5656_enabled);
-    try std.testing.expect(cancun_config.eip_6780_enabled);
-    try std.testing.expect(!cancun_config.eip_7702_enabled);
-
-    // Test Prague adds EIP-7702
-    const prague_config = prague.get_evm_config();
-    try std.testing.expect(prague_config.eip_7702_enabled);
-    try std.testing.expect(prague_config.eip_4844_enabled); // Includes all Cancun features
-}
 
 test "specific eip helper functions" {
     const frontier = Eips{ .hardfork = Hardfork.FRONTIER };
