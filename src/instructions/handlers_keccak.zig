@@ -109,7 +109,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             // Ensure memory is available
-            self.memory.ensure_capacity(self.getAllocator(), @as(u24, @intCast(end))) catch |err| switch (err) {
+            self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(end))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => {
                     self.afterComplete(.KECCAK256);
                     return Error.OutOfBounds;

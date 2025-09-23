@@ -68,7 +68,7 @@ pub fn Handlers(comptime FrameType: type) type {
             }
 
             // Read 32 bytes from memory (EVM-compliant with automatic expansion)
-            const value_u256 = self.memory.get_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.MLOAD);
                     return Error.OutOfBounds;
@@ -126,7 +126,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Convert to u256 if necessary and store
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.MSTORE);
                     return Error.OutOfBounds;
@@ -178,7 +178,7 @@ pub fn Handlers(comptime FrameType: type) type {
 
             // Store the least significant byte
             const byte_value = @as(u8, @truncate(value));
-            self.memory.set_byte_evm(self.getAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
+            self.memory.set_byte_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.MSTORE8);
                     return Error.OutOfBounds;
@@ -261,7 +261,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             // Create a temporary buffer to handle overlapping regions correctly
-            const temp_buffer = self.getAllocator().alloc(u8, size_u24) catch {
+            const temp_buffer = self.getEvm().getCallArenaAllocator().alloc(u8, size_u24) catch {
                 self.afterComplete(.MCOPY);
                 return Error.AllocationError;
             };
@@ -269,14 +269,14 @@ pub fn Handlers(comptime FrameType: type) type {
             @memcpy(temp_buffer, src_data);
 
             // Write to destination
-            self.memory.set_data_evm(self.getAllocator(), dest_u24, temp_buffer) catch {
-                self.getAllocator().free(temp_buffer);
+            self.memory.set_data_evm(self.getEvm().getCallArenaAllocator(), dest_u24, temp_buffer) catch {
+                self.getEvm().getCallArenaAllocator().free(temp_buffer);
                 self.afterComplete(.MCOPY);
                 return Error.AllocationError;
             };
 
             // Free the temporary buffer before tail call
-            self.getAllocator().free(temp_buffer);
+            self.getEvm().getCallArenaAllocator().free(temp_buffer);
 
             return next_instruction(self, cursor, .MCOPY);
         }
