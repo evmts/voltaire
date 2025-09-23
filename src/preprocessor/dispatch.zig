@@ -1086,6 +1086,60 @@ pub fn Preprocessor(comptime FrameType: type) type {
             pub fn getU256Value(self: *const DispatchSchedule, index: u32) FrameType.WordType {
                 return self.u256_values[index];
             }
+
+            /// Validates the dispatch schedule structure for correctness.
+            /// Ensures:
+            /// 1. Schedule has at least minimal structure
+            /// 2. Schedule ends with two STOP handlers
+            /// 3. No orphaned metadata items (metadata without preceding handler)
+            pub fn validate(self: *const DispatchSchedule) bool {
+                if (self.items.len == 0) return false;
+
+                // Validate schedule ends with two STOP handlers
+                if (self.items.len < 2) return false;
+                const stop_handler = FrameType.opcode_handlers[@intFromEnum(Opcode.STOP)];
+                if (self.items[self.items.len - 1] != .opcode_handler or
+                    self.items[self.items.len - 1].opcode_handler != stop_handler) return false;
+                if (self.items[self.items.len - 2] != .opcode_handler or
+                    self.items[self.items.len - 2].opcode_handler != stop_handler) return false;
+
+                // Validate no orphaned metadata items
+                var idx: usize = 0;
+
+                // Skip first_block_gas if present (it's allowed at the beginning)
+                if (self.items[0] == .first_block_gas) {
+                    idx = 1;
+                }
+
+                while (idx < self.items.len - 2) { // -2 because we already validated the last two STOP handlers
+                    const item = self.items[idx];
+                    switch (item) {
+                        .opcode_handler => {
+                            // Handler is valid, check if it has metadata
+                            idx += 1;
+                            if (idx < self.items.len) {
+                                // Skip any following metadata (it belongs to this handler)
+                                switch (self.items[idx]) {
+                                    .jump_dest, .push_inline, .push_pointer, .pc, .jump_static => {
+                                        idx += 1;
+                                    },
+                                    else => {},
+                                }
+                            }
+                        },
+                        // These should never appear without a preceding handler
+                        .jump_dest, .push_inline, .push_pointer, .pc, .jump_static => {
+                            return false; // Orphaned metadata
+                        },
+                        .first_block_gas => {
+                            // Should only appear at the beginning
+                            return false;
+                        },
+                    }
+                }
+
+                return true;
+            }
         };
 
         pub const ScheduleIterator = struct {

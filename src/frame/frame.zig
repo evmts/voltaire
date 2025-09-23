@@ -330,7 +330,11 @@ pub fn Frame(comptime _config: FrameConfig) type {
             const stop_handler = Self.opcode_handlers[@intFromEnum(Opcode.STOP)];
             (&self.getEvm().tracer).assert(schedule.len >= 2 or schedule[schedule.len - 1].opcode_handler != stop_handler or schedule[schedule.len - 2].opcode_handler != stop_handler, "Frame.interpret: Bytecode stream does not end with 2 stop handlers");
 
-            // TODO: this could just be a schedule.validate() method along with more validation
+            // Validate the schedule structure if we have an owned schedule (for better error reporting)
+            if (owned_schedule) |*s| {
+                (&self.getEvm().tracer).assert(s.validate(), "Frame.interpret: Invalid dispatch schedule structure");
+            }
+
             switch (schedule[0]) {
                 .first_block_gas => |meta| {
                     if (meta.gas > 0) {
