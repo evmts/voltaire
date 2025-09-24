@@ -138,8 +138,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
         // CACHE LINE 1
         stack: Stack, // 16B
         gas_remaining: GasType, // 8B
-        /// Inner calls are handled by recursively calling back into the EVM which will execute that call in a new StackFrame
         evm_ptr: *anyopaque, // 8B
+        database: ?*anyopaque, // 8B - Direct database pointer for hot path (storage ops), nullable for tests
         memory: Memory, // 16B -
         contract_address: Address, // 20B
         caller: Address, // 20B
@@ -162,12 +162,16 @@ pub fn Frame(comptime _config: FrameConfig) type {
             errdefer stack.deinit(allocator);
             var memory = Memory.init(allocator) catch return Error.AllocationError;
             errdefer memory.deinit(allocator);
+            // Database pointer will be set in interpret() when we have proper EVM context
+            // For tests, it remains null and they use getEvm() path
+
             return Self{
                 .stack = stack,
                 .gas_remaining = std.math.cast(GasType, @max(gas_remaining, 0)) orelse return Error.InvalidAmount,
                 .dispatch = Dispatch{ .cursor = undefined }, // Will be set during interpret
                 .memory = memory,
                 .evm_ptr = evm_ptr,
+                .database = null, // Will be set in interpret()
                 .contract_address = Address.ZERO_ADDRESS,
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
                 .caller = caller,
@@ -189,17 +193,20 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
         pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
             @branchHint(.likely);
-            (&self.getEvm().tracer).onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
+            const evm = self.getEvm();
+            // Set the database pointer now that we have proper EVM context
+            self.database = @as(*anyopaque, @ptrCast(evm.database));
+            (&evm.tracer).onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
 
             if (bytecode_raw.len > config.max_bytecode_size) {
                 @branchHint(.cold);
-                (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
+                (&evm.tracer).onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
                 return Error.BytecodeTooLarge;
             }
-            (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, true, null);
+            (&evm.tracer).onFrameBytecodeInit(bytecode_raw.len, true, null);
             self.code = bytecode_raw;
 
-            (&self.getEvm().tracer).initPcTracker(bytecode_raw);
+            (&evm.tracer).initPcTracker(bytecode_raw);
 
             const allocator = self.getEvm().getCallArenaAllocator();
 
@@ -377,6 +384,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .dispatch = self.dispatch,
                 .memory = new_memory,
                 .evm_ptr = self.evm_ptr,
+                .database = self.database,
                 .contract_address = self.contract_address,
                 .jump_table = self.jump_table,
                 .caller = self.caller,
@@ -418,6 +426,19 @@ pub fn Frame(comptime _config: FrameConfig) type {
         /// For now, this works because all handlers only use common EVM methods that exist regardless of config.
         pub inline fn getEvm(self: *const Self) *DefaultEvm {
             return @as(*DefaultEvm, @ptrCast(@alignCast(self.evm_ptr)));
+        }
+
+        /// Get the database directly (for hot path storage operations)
+        /// This avoids double pointer dereference: self -> evm -> database
+        /// Instead we go directly: self -> database
+        /// Falls back to getEvm().database if direct pointer not set (for tests)
+        pub inline fn getDatabase(self: *const Self) *Database {
+            if (self.database) |db| {
+                return @as(*Database, @ptrCast(@alignCast(db)));
+            }
+            // Fallback for tests that don't set database directly
+            const evm = self.getEvm();
+            return evm.database;
         }
 
         /// Validate that the current dispatch cursor points to the expected handler and metadata.

@@ -33,11 +33,8 @@ pub fn Handlers(comptime FrameType: type) type {
             @branchHint(.likely);
             self.beforeInstruction(.PUSH_ADD_INLINE, cursor);
             validate_stack(self);
-
             const op_data = dispatch_opcode_data.getOpData(.PUSH_ADD_INLINE, Dispatch, Dispatch.Item, cursor);
-            const top = self.stack.peek_unsafe();
-            self.stack.set_top_unsafe(op_data.metadata.value +% top);
-
+            self.stack.set_top_unsafe(op_data.metadata.value +% self.stack.peek_unsafe());
             return next_instruction(self, cursor, .PUSH_ADD_INLINE);
         }
 

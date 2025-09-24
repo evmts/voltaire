@@ -49,8 +49,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Load value from storage through EVM's database for better cache locality
-            const value = evm.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
+            // Load value from storage through direct database pointer for better cache locality
+            const database = self.getDatabase();
+            const value = database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => {
                     self.afterComplete(.SLOAD);
                     return Error.AllocationError;
@@ -82,11 +83,13 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
 
-            // Get EVM instance once for all storage operations (better cache locality)
+            // Get EVM instance for access list and journaling
             const evm = self.getEvm();
+            // Get database directly for storage operations (better cache locality)
+            const database = self.getDatabase();
 
-            // Get current value for gas calculation (through EVM's database)
-            const current_value = evm.database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
+            // Get current value for gas calculation (through direct database pointer)
+            const current_value = database.get_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => {
                     self.afterComplete(.SSTORE);
                     return Error.AllocationError;
@@ -131,8 +134,8 @@ pub fn Handlers(comptime FrameType: type) type {
                 };
             }
 
-            // Store the value through EVM's database (better cache locality)
-            evm.database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
+            // Store the value through direct database pointer (better cache locality)
+            database.set_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => {
                     self.afterComplete(.SSTORE);
                     return Error.WriteProtection;
@@ -161,9 +164,9 @@ pub fn Handlers(comptime FrameType: type) type {
             // Use the currently executing contract's address
             const contract_addr = self.contract_address;
 
-            // Load value from transient storage through EVM's database
-            const evm = self.getEvm();
-            const value = evm.database.get_transient_storage(contract_addr.bytes, slot) catch |err| switch (err) {
+            // Load value from transient storage through direct database pointer
+            const database = self.getDatabase();
+            const value = database.get_transient_storage(contract_addr.bytes, slot) catch |err| switch (err) {
                 else => {
                     self.afterComplete(.TLOAD);
                     return Error.AllocationError;
@@ -199,9 +202,9 @@ pub fn Handlers(comptime FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Store the value in transient storage through EVM's database
-            const evm = self.getEvm();
-            evm.database.set_transient_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
+            // Store the value in transient storage through direct database pointer
+            const database = self.getDatabase();
+            database.set_transient_storage(contract_addr.bytes, slot, value) catch |err| switch (err) {
                 error.WriteProtection => {
                     self.afterComplete(.TSTORE);
                     return Error.WriteProtection;
@@ -245,6 +248,7 @@ const MockEvm = struct {
     transient_storage: std.AutoHashMap(StorageKey, u256),
     accessed_slots: std.AutoHashMap(StorageKey, void),
     is_static: bool = false,
+    database: MockDatabase, // Mock database for Frame.init compatibility
 
     const StorageKey = struct {
         address: Address,
@@ -256,6 +260,7 @@ const MockEvm = struct {
             .storage = std.AutoHashMap(StorageKey, u256).init(allocator),
             .transient_storage = std.AutoHashMap(StorageKey, u256).init(allocator),
             .accessed_slots = std.AutoHashMap(StorageKey, void).init(allocator),
+            .database = MockDatabase{},
         };
     }
 
@@ -294,6 +299,39 @@ const MockEvm = struct {
     pub fn get_is_static(self: *const MockEvm) bool {
         return self.is_static;
     }
+
+    // Mock database struct for compatibility
+    const MockDatabase = struct {
+        pub fn get_storage(self: *const MockDatabase, address: [20]u8, slot: u256) !u256 {
+            _ = self;
+            _ = address;
+            _ = slot;
+            return 0; // Mock implementation
+        }
+
+        pub fn set_storage(self: *MockDatabase, address: [20]u8, slot: u256, value: u256) !void {
+            _ = self;
+            _ = address;
+            _ = slot;
+            _ = value;
+            // Mock implementation
+        }
+
+        pub fn get_transient_storage(self: *const MockDatabase, address: [20]u8, slot: u256) !u256 {
+            _ = self;
+            _ = address;
+            _ = slot;
+            return 0; // Mock implementation
+        }
+
+        pub fn set_transient_storage(self: *MockDatabase, address: [20]u8, slot: u256, value: u256) !void {
+            _ = self;
+            _ = address;
+            _ = slot;
+            _ = value;
+            // Mock implementation
+        }
+    };
 };
 
 fn createTestFrame(allocator: std.mem.Allocator, evm: *MockEvm) !TestFrame {
