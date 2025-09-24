@@ -50,6 +50,7 @@ fn runTestCase(allocator: std.mem.Allocator, test_case: std.json.Value) !void {
         block_number,
         block_timestamp,
         if (difficulty_str.len > 0) try primitives.Hex.hex_to_u256(difficulty_str) else 0,
+        0, // block_prevrandao (use 0 for older tests)
         primitives.ZERO_ADDRESS, // coinbase
         block_gas_limit,
         if (base_fee_str.len > 0) try primitives.Hex.hex_to_u256(base_fee_str) else 0,
