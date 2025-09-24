@@ -94,7 +94,7 @@ pub fn Handlers(comptime FrameType: type) type {
             };
 
             // Access storage slot once to both warm it and get cost
-            const access_cost = evm.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
+            const access_cost = evm.access_list.access_storage_slot(contract_addr, slot) catch |err| switch (err) {
                 else => {
                     self.afterComplete(.SSTORE);
                     return Error.AllocationError;
