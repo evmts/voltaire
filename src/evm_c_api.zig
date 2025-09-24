@@ -157,6 +157,7 @@ export fn guillotine_init() void {
     defer pool_mutex.unlock();
 
     if (ffi_allocator == null) {
+        // TODO: Use GPA not c allocator
         ffi_allocator = std.heap.c_allocator;
     }
 
@@ -353,7 +354,6 @@ export fn guillotine_evm_create_mainnet(block_info_ptr: *const BlockInfoFFI) ?*E
         tx_context,
         0, // gas_price
         primitives.Address.ZERO_ADDRESS, // origin
-        .CANCUN, // Latest hardfork
     ) catch {
         setError("Failed to initialize EVM", .{});
         db.deinit();
@@ -441,7 +441,6 @@ export fn guillotine_evm_create_tracing(block_info_ptr: *const BlockInfoFFI) ?*E
         tx_context,
         0,
         primitives.Address.ZERO_ADDRESS,
-        .CANCUN,
     ) catch {
         setError("Failed to initialize TracerEvm", .{});
         db.deinit();
@@ -547,7 +546,6 @@ export fn guillotine_evm_create_test(block_info_ptr: *const BlockInfoFFI) ?*EvmH
         tx_context,
         0,
         primitives.Address.ZERO_ADDRESS,
-        .CANCUN,
     ) catch {
         setError("Failed to initialize TestEvm", .{});
         db.deinit();

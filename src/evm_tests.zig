@@ -862,7 +862,7 @@ test "Evm initialization with all parameters" {
     try std.testing.expectEqual(context.chain_id, evm.context.chain_id);
     try std.testing.expectEqual(gas_price, evm.gas_price);
     try std.testing.expectEqual(origin, evm.origin);
-    try std.testing.expectEqual(Hardfork.LONDON, evm.hardfork_config);
+    try std.testing.expectEqual(Hardfork.LONDON, evm.get_hardfork());
 
     // Verify sub-components initialized
     try std.testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);

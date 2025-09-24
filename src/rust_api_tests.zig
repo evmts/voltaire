@@ -139,7 +139,7 @@ test "EvmBuilder - default configuration" {
         .build();
     defer evm.deinit();
     
-    try std.testing.expectEqual(Hardfork.CANCUN, evm.evm.hardfork_config);
+    try std.testing.expectEqual(Hardfork.CANCUN, evm.evm.get_hardfork());
     try std.testing.expectEqual(@as(u256, 0), evm.evm.gas_price);
 }
 
@@ -176,7 +176,7 @@ test "EvmBuilder - custom configuration" {
         .build();
     defer evm.deinit();
     
-    try std.testing.expectEqual(Hardfork.LONDON, evm.evm.hardfork_config);
+    try std.testing.expectEqual(Hardfork.LONDON, evm.evm.get_hardfork());
     try std.testing.expectEqual(@as(u256, 30_000_000_000), evm.evm.gas_price);
     try std.testing.expectEqual(origin, evm.evm.origin);
     try std.testing.expectEqual(@as(u64, 15_000_000), evm.evm.block_info.number);
@@ -192,7 +192,7 @@ test "EvmBuilder - build_mainnet convenience method" {
         .build_mainnet();
     defer evm.deinit();
     
-    try std.testing.expectEqual(Hardfork.CANCUN, evm.evm.hardfork_config);
+    try std.testing.expectEqual(Hardfork.CANCUN, evm.evm.get_hardfork());
 }
 
 test "EvmBuilder - with custom EVM config" {

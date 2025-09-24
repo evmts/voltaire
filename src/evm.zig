@@ -116,8 +116,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         gas_price: u256,
         /// Origin address (sender of the transaction)
         origin: primitives.Address,
-        /// Hardfork configuration
-        hardfork_config: Hardfork,
 
         // Cache line 5+ - COLD PATH: Large data structures accessed infrequently
         /// Growing arena allocator for per-call temporary allocations with 50% growth strategy
@@ -134,7 +132,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Sets up the execution environment with state storage, block context,
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
-        pub fn init(allocator: std.mem.Allocator, database: ?*Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
+        pub fn init(allocator: std.mem.Allocator, database: ?*Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address) !Self {
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
@@ -161,7 +159,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .context = context,
                 .gas_price = gas_price,
                 .origin = origin,
-                .hardfork_config = hardfork_config,
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
                 .tracer = @import("tracer/tracer.zig").Tracer.init(allocator, config.tracer_config),
@@ -169,7 +166,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             self.call_arena.tracer = @as(*anyopaque, @ptrCast(&self.tracer));
             self.tracer.onArenaInit(config.arena_capacity_limit, config.arena_capacity_limit, config.arena_growth_factor);
-            self.tracer.onEvmInit(gas_price, origin, @tagName(hardfork_config));
+            self.tracer.onEvmInit(gas_price, origin, @tagName(config.eips.hardfork));
 
             // Process system contract updates based on configuration
             if (comptime config.enable_beacon_roots) {
@@ -264,10 +261,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
 
-            params.validate() catch |err| {
-                log.err("CallParams validation failed: {s}", .{@errorName(err)});
-                return CallResult.failure(0);
-            };
+            if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
+                params.validate() catch |err| {
+                    log.err("CallParams validation failed: {s}", .{@errorName(err)});
+                    return CallResult.failure(0);
+                };
+            }
 
             defer {
                 self.depth = 0;
@@ -302,12 +301,12 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
 
             // Pre-warm addresses for top-level calls (EIP-2929 & EIP-3651)
-            const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
-            eips_instance.pre_warm_transaction_addresses(
+            config.eips.pre_warm_transaction_addresses(
                 &self.access_list,
                 self.origin,
                 params.get_to(),
                 self.block_info.coinbase,
+            // TODO: don't swallow errors this should return a real error!
             ) catch {};
 
             const call_gas = params.getGas();
@@ -359,8 +358,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Apply EIP-3529 gas refund cap if transaction succeeded
             if (result.success) {
-                const eips_for_refund = eips.Eips{ .hardfork = self.hardfork_config };
-                result.gas_left = eips_for_refund.eip_3529_apply_gas_refund(initial_gas, result.gas_left, self.gas_refund_counter);
+                result.gas_left = config.eips.eip_3529_apply_gas_refund(initial_gas, result.gas_left, self.gas_refund_counter);
                 // Reset refund counter for next transaction
                 self.gas_refund_counter = 0;
             }
@@ -401,8 +399,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
 
                 // Handle coinbase rewards (miner/validator payment)
-                const eips_instance_fee = eips.Eips{ .hardfork = self.hardfork_config };
-                if (eips_instance_fee.eip_1559_is_enabled()) {
+                if (comptime config.eips.eip_1559_is_enabled()) {
                     // EIP-1559: Only priority fee goes to coinbase, base fee is burned
                     const base_fee = self.block_info.base_fee;
                     const priority_fee_per_gas = if (self.gas_price > base_fee)
@@ -548,8 +545,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Handle EIP-4788 beacon roots contract
             const beacon_roots = @import("eips_and_hardforks/beacon_roots.zig");
-            const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
-            if (eips_instance.eip_4788_is_beacon_roots_address(to)) {
+            if (config.eips.eip_4788_is_beacon_roots_address(to)) {
                 var contract = beacon_roots.BeaconRootsContract{ .database = self.database, .allocator = self.allocator };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
 
@@ -579,7 +575,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Handle EIP-2935 historical block hashes contract
             const historical_block_hashes = @import("eips_and_hardforks/historical_block_hashes.zig");
-            if (eips_instance.eip_2935_is_historical_block_hashes_address(to)) {
+            if (config.eips.eip_2935_is_historical_block_hashes_address(to)) {
                 var contract = historical_block_hashes.HistoricalBlockHashesContract{ .database = self.database };
                 const caller = if (self.depth > 0) self.call_stack[self.depth - 1].caller else primitives.ZERO_ADDRESS;
 
@@ -614,7 +610,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
 
             // Get the effective code address (handles delegation)
-            const code_address = eips_instance.eip_7702_get_effective_code_address(account, to);
+            const code_address = config.eips.eip_7702_get_effective_code_address(account, to);
             if (account) |acc| {
                 if (acc.get_effective_code_address()) |delegated| {
                     log.debug("Account {x} has delegation to {x}", .{ to.bytes, delegated.bytes });
@@ -1027,8 +1023,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             if (result.output.len > 0) {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
-                const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
-                if (eips_instance.eip_3541_should_reject_create_with_ef_bytecode(result.output)) {
+                if (config.eips.eip_3541_should_reject_create_with_ef_bytecode(result.output)) {
                     self.journal.revert_to_snapshot(args.snapshot_id);
                     return CallResult.failure(0);
                 }
@@ -1134,8 +1129,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             defer frame.deinit(arena_allocator);
 
             // EIP-2929: Warm the contract address being executed
-            const eips_for_warm = eips.Eips{ .hardfork = self.hardfork_config };
-            eips_for_warm.warm_contract_for_execution(&self.access_list, address) catch {};
+            config.eips.warm_contract_for_execution(&self.access_list, address) catch {};
 
             var execution_trace: ?@import("frame/call_result.zig").ExecutionTrace = null;
             const Termination = error{ Stop, Return, SelfDestruct };
@@ -1417,9 +1411,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (self.is_static_context()) return error.StaticCallViolation;
 
             // EIP-6780: Handle SELFDESTRUCT based on creation in same transaction
-            const eips_instance = eips.Eips{ .hardfork = self.hardfork_config };
             const created_in_tx = self.created_contracts.was_created_in_tx(contract_address);
-            try eips_instance.handle_selfdestruct(
+            try config.eips.handle_selfdestruct(
                 created_in_tx,
                 contract_address,
                 recipient,
@@ -1437,13 +1430,13 @@ pub fn Evm(comptime config: EvmConfig) type {
         }
 
         /// Check if hardfork is at least the target
-        pub fn is_hardfork_at_least(self: *Self, target: Hardfork) bool {
-            return @intFromEnum(self.hardfork_config) >= @intFromEnum(target);
+        pub fn is_hardfork_at_least(_: *Self, target: Hardfork) bool {
+            return @intFromEnum(config.eips.hardfork) >= @intFromEnum(target);
         }
 
         /// Get current hardfork (deprecated - use EIPs)
-        pub fn get_hardfork(self: *Self) Hardfork {
-            return self.hardfork_config;
+        pub fn get_hardfork(_: *Self) Hardfork {
+            return config.eips.hardfork;
         }
 
         /// Get the call depth for the current frame
@@ -1663,7 +1656,8 @@ test "EVM call() entry point method" {
         .chain_id = 1,
     };
 
-    var evm = try TestEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
+    const BerlinEvm = Evm(.{ .eips = eips.Eips{ .hardfork = .BERLIN } });
+    var evm = try BerlinEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test that call method exists and has correct signature
@@ -1716,7 +1710,8 @@ test "EVM call() method routes to different handlers" {
         .chain_id = 1,
     };
 
-    var evm = try TestEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .BERLIN);
+    const BerlinEvm = Evm(.{ .eips = eips.Eips{ .hardfork = .BERLIN } });
+    var evm = try BerlinEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test CALL routing
@@ -1806,7 +1801,7 @@ test "Evm creation with custom config" {
         .chain_id = 1,
     };
 
-    var evm = try CustomEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try CustomEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     try std.testing.expectEqual(@as(u9, 0), evm.depth);
@@ -1834,7 +1829,7 @@ test "Evm call depth limit" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Set depth to max
@@ -1879,7 +1874,7 @@ test "call method basic functionality - simple STOP" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     _ = [_]u8{0x00};
@@ -1923,7 +1918,7 @@ test "call method loads contract code from state" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Set up contract with bytecode [0x00] (STOP)
@@ -1978,7 +1973,7 @@ test "call method handles CREATE operation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Create contract with simple init code that returns [0x00] (STOP)
@@ -2021,7 +2016,7 @@ test "call method handles gas limit properly" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Call with very low gas (should fail or return with low gas left)
@@ -2229,7 +2224,7 @@ test "EvmConfig - custom configurations" {
         .chain_id = 1,
     };
 
-    var evm = try CustomEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try CustomEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     try std.testing.expectEqual(@as(u10, 0), evm.depth); // Should be u10 for 512 max depth
@@ -2271,7 +2266,8 @@ test "Evm initialization with all parameters" {
     const gas_price: u256 = 30000000000; // 30 gwei
     const origin = primitives.ZERO_ADDRESS;
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, gas_price, origin, .LONDON);
+    const LondonEvm = Evm(.{ .eips = eips.Eips{ .hardfork = .LONDON } });
+    var evm = try LondonEvm.init(std.testing.allocator, &db, block_info, context, gas_price, origin);
     defer evm.deinit();
 
     // Verify all fields were set correctly
@@ -2280,7 +2276,7 @@ test "Evm initialization with all parameters" {
     try std.testing.expectEqual(context.chain_id, evm.context.chain_id);
     try std.testing.expectEqual(gas_price, evm.gas_price);
     try std.testing.expectEqual(origin, evm.origin);
-    try std.testing.expectEqual(Hardfork.LONDON, evm.hardfork_config);
+    try std.testing.expectEqual(Hardfork.LONDON, evm.get_hardfork());
 
     // Verify sub-components initialized
     try std.testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);
@@ -2309,7 +2305,7 @@ test "Host interface - get_balance functionality" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const address = primitives.ZERO_ADDRESS;
@@ -2353,7 +2349,7 @@ test "Host interface - storage operations" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const address = primitives.ZERO_ADDRESS;
@@ -2397,7 +2393,7 @@ test "Host interface - account_exists functionality" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const address = primitives.ZERO_ADDRESS;
@@ -2438,7 +2434,7 @@ test "Host interface - call type differentiation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const call_params = Evm(.{}).CallParams{
@@ -2502,7 +2498,7 @@ test "EVM CREATE operation - basic contract creation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Set up caller with balance
@@ -2581,7 +2577,7 @@ test "EVM CREATE operation - with value transfer" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Set up caller with balance
@@ -2645,7 +2641,7 @@ test "EVM CREATE operation - insufficient balance fails" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
@@ -2694,7 +2690,7 @@ test "EVM CREATE2 operation - deterministic address creation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
@@ -2772,7 +2768,7 @@ test "EVM CREATE2 operation - same parameters produce same address" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
@@ -2835,7 +2831,7 @@ test "EVM CREATE operation - collision detection" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
@@ -2900,7 +2896,7 @@ test "EVM CREATE operation - init code execution and storage" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const caller_address: primitives.Address = .{ .bytes = [_]u8{0x01} ++ [_]u8{0} ** 19 };
@@ -2981,7 +2977,7 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Create a factory contract that creates another contract
@@ -3066,7 +3062,7 @@ test "EVM logs - emit_log functionality" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test emit_log functionality
@@ -3114,7 +3110,7 @@ test "EVM logs - included in CallResult" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Create bytecode that emits LOG0 (0xA0 opcode)
@@ -3181,7 +3177,8 @@ test "Host interface - hardfork compatibility checks" {
     };
 
     // Test with different hardfork configurations
-    var london_evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .LONDON);
+    const LondonEvm = Evm(.{ .eips = eips.Eips{ .hardfork = .LONDON } });
+    var london_evm = try LondonEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer london_evm.deinit();
 
     try std.testing.expectEqual(Hardfork.LONDON, london_evm.get_hardfork());
@@ -3189,7 +3186,8 @@ test "Host interface - hardfork compatibility checks" {
     try std.testing.expect(london_evm.is_hardfork_at_least(.LONDON));
     try std.testing.expect(!london_evm.is_hardfork_at_least(.CANCUN));
 
-    var cancun_evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    const CancunEvm = Evm(.{ .eips = eips.Eips{ .hardfork = .CANCUN } });
+    var cancun_evm = try CancunEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer cancun_evm.deinit();
 
     try std.testing.expectEqual(Hardfork.CANCUN, cancun_evm.get_hardfork());
@@ -3254,7 +3252,7 @@ test "Host interface - input size validation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Create input that exceeds max_input_size (131072 bytes)
@@ -3300,7 +3298,7 @@ test "Call types - CREATE2 with salt" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // PUSH1 0 PUSH1 0 RETURN (empty contract)
@@ -3345,7 +3343,7 @@ test "Error handling - nested call depth tracking" {
         .chain_id = 1,
     };
 
-    var evm = try TestEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try TestEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     try std.testing.expectEqual(@as(u2, 0), evm.depth);
@@ -3394,7 +3392,7 @@ test "Error handling - precompile execution" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test calling ECRECOVER precompile (address 0x01)
@@ -3682,7 +3680,7 @@ test "Precompiles - IDENTITY precompile (0x04)" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test IDENTITY precompile - should return input data unchanged
@@ -3732,7 +3730,7 @@ test "Precompiles - SHA256 precompile (0x02)" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test SHA256 precompile
@@ -3781,7 +3779,7 @@ test "Precompiles - disabled configuration" {
         .chain_id = 1,
     };
 
-    var evm = try NoPrecompileEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try NoPrecompileEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Try to call IDENTITY precompile - should be treated as regular call
@@ -3826,7 +3824,7 @@ test "Precompiles - invalid precompile addresses" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test invalid precompile address (0x0B - beyond supported range)
@@ -3876,7 +3874,7 @@ test "Debug - Gas limit affects execution" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Deploy a simple infinite loop contract
@@ -3972,7 +3970,7 @@ test "Debug - Contract deployment and execution" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test 1: Call to non-existent contract
@@ -4083,7 +4081,7 @@ test "Debug - Bytecode size affects execution time" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Create a large contract that does simple operations
@@ -4159,7 +4157,7 @@ test "Security - bounds checking and edge cases" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test maximum gas limit
@@ -4219,7 +4217,7 @@ test "EVM with minimal planner strategy" {
         .chain_id = 1,
     };
 
-    var evm = try MinimalEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try MinimalEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test basic execution with minimal planner
@@ -4270,7 +4268,7 @@ test "EVM with advanced planner strategy" {
         .chain_id = 1,
     };
 
-    var evm = try AdvancedEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try AdvancedEvm.init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test basic execution with advanced planner
@@ -4321,7 +4319,7 @@ test "journal state application - storage change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const test_address = primitives.Address{ .bytes = [_]u8{0x12} ++ [_]u8{0} ** 19 };
@@ -4380,7 +4378,7 @@ test "journal state application - balance change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const test_address = primitives.Address{ .bytes = [_]u8{0x34} ++ [_]u8{0} ** 19 };
@@ -4441,7 +4439,7 @@ test "journal state application - nonce change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const test_address = primitives.Address{ .bytes = [_]u8{0x56} ++ [_]u8{0} ** 19 };
@@ -4502,7 +4500,7 @@ test "journal state application - code change rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const test_address = primitives.Address{ .bytes = [_]u8{0x78} ++ [_]u8{0} ** 19 };
@@ -4556,7 +4554,7 @@ test "journal state application - multiple changes rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const test_address: primitives.Address = .{ .bytes = [_]u8{0x9A} ++ [_]u8{0} ** 19 };
@@ -4641,7 +4639,7 @@ test "journal state application - nested snapshots rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const test_address: primitives.Address = .{ .bytes = [_]u8{0xBE} ++ [_]u8{0} ** 19 };
@@ -4707,7 +4705,7 @@ test "journal state application - empty journal rollback" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Create snapshot with no changes
@@ -4742,7 +4740,7 @@ test "EVM contract execution - minimal benchmark reproduction" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Simple test contract bytecode: PUSH1 0x42 PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
@@ -4809,7 +4807,7 @@ test "Precompile - IDENTITY (0x04) basic functionality" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test calling IDENTITY precompile (0x04) - should return input as-is
@@ -4857,7 +4855,7 @@ test "Precompile - SHA256 (0x02) basic functionality" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test calling SHA256 precompile (0x02)
@@ -4911,7 +4909,7 @@ test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test ECRECOVER with invalid signature (all zeros)
@@ -4960,7 +4958,7 @@ test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{3} };
@@ -5009,7 +5007,7 @@ test "Precompile diagnosis - MODEXP (0x05) basic case works" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{5} };
@@ -5061,7 +5059,7 @@ test "Precompile diagnosis - BN254 operations disabled" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test ECADD (0x06)
@@ -5116,7 +5114,7 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     const precompile_address: primitives.Address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{9} };
@@ -5179,7 +5177,7 @@ test "EVM benchmark scenario - reproduces segfault" {
         .chain_id = 1,
     };
 
-    var evm_instance = try Evm(.{}).init(allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm_instance = try Evm(.{}).init(allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm_instance.deinit();
 
     // Simple calldata
@@ -5202,7 +5200,7 @@ test "EVM benchmark scenario - reproduces segfault" {
     // The segfault happens in deinit, so let's explicitly test that
     // by creating and destroying multiple times
     for (0..3) |_| {
-        var temp_evm = try Evm(.{}).init(allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+        var temp_evm = try Evm(.{}).init(allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
         const temp_result = temp_evm.call(call_params);
         try std.testing.expect(temp_result.success);
         temp_evm.deinit(); // This is where the segfault happens
@@ -5842,7 +5840,7 @@ test "Arena allocator - resets between calls" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Simple contract that emits a log
@@ -5920,7 +5918,7 @@ test "Arena allocator - handles multiple logs efficiently" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Contract that emits 100 logs
@@ -5988,7 +5986,7 @@ test "Arena allocator - precompile outputs use arena" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Call SHA256 precompile (address 0x02)
@@ -6045,7 +6043,7 @@ test "Arena allocator - memory efficiency with nested calls" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Parent contract that calls child and emits log
@@ -6248,7 +6246,7 @@ test "CREATE stores deployed code bytes" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(allocator, &db, block_info, tx_context, 20_000_000_000, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(allocator, &db, block_info, tx_context, 20_000_000_000, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Give creator account some balance
@@ -6408,7 +6406,7 @@ test "CREATE2 stores deployed code bytes" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(allocator, &db, block_info, tx_context, 20_000_000_000, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(allocator, &db, block_info, tx_context, 20_000_000_000, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Give creator account some balance
@@ -6568,7 +6566,7 @@ test "EVM bytecode iterator execution - simple STOP" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test bytecode iterator execution with simple STOP
@@ -6622,7 +6620,7 @@ test "EVM bytecode iterator execution - PUSH and RETURN" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test bytecode that pushes a value and returns it
@@ -6690,7 +6688,7 @@ test "EVM bytecode iterator execution - handles jumps" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Test bytecode with JUMP
@@ -6753,7 +6751,7 @@ test "Minimal ERC20 deployment reproduction - benchmark runner issue" {
         .chain_id = 1,
     };
 
-    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm(.{}).init(std.testing.allocator, &db, block_info, context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
 
     // Set up caller with large balance (same as benchmark runner)
