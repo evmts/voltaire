@@ -123,9 +123,11 @@ const char* guillotine_get_last_error(void);
 */
 import "C"
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"runtime"
 	"sync"
 	"unsafe"
@@ -417,7 +419,25 @@ func (vm *VMHandle) Call(params *CallParams) (*CallResult, error) {
 
 	// Copy trace JSON if present
 	if cResult.trace_json_len > 0 && cResult.trace_json != nil {
-		result.TraceJSON = C.GoBytes(unsafe.Pointer(cResult.trace_json), C.int(cResult.trace_json_len))
+		traceData := C.GoBytes(unsafe.Pointer(cResult.trace_json), C.int(cResult.trace_json_len))
+		
+		// Check if this is a file path (starts with "file://")
+		if bytes.HasPrefix(traceData, []byte("file://")) {
+			// Read trace from file
+			filePath := string(traceData[7:]) // Skip "file://" prefix
+			fileContent, err := os.ReadFile(filePath)
+			if err != nil {
+				// If we can't read the file, store the path as-is
+				result.TraceJSON = traceData
+			} else {
+				result.TraceJSON = fileContent
+				// Clean up temp file after reading
+				os.Remove(filePath)
+			}
+		} else {
+			// Regular in-memory trace
+			result.TraceJSON = traceData
+		}
 	}
 	
 	return result, nil
