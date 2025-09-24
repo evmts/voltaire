@@ -117,9 +117,8 @@ pub fn executeMinimalEvmForOpcode(
         if (evm.getCurrentFrame()) |mf| {
             // For regular opcodes, captureStep expects u8. Skip step capture for synthetic opcodes.
             const step_before = if (tracer.config.enable_step_capture and opcode_value <= 0xFF) tracer.captureStep(mf, @intCast(opcode_value)) catch null else null;
-            defer if (step_before) |step| {
-                if (step.stack_before.len > 0) tracer.allocator.free(step.stack_before);
-            };
+            // Note: We don't free stack_before here because it will be owned by the step
+            // that gets added to tracer.steps, and will be freed in tracer.deinit()
 
             // Special handling: JUMPDEST in Frame pre-charges entire basic-block gas.
             // MinimalEvm's JUMPDEST charges only JumpdestGas, so we reconcile here.
