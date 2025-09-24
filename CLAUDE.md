@@ -8,6 +8,10 @@ Every line of code must be correct. Zero error tolerance.
 
 ## Core Protocols
 
+### Working Directory
+
+**ALWAYS run commands from the repository root directory.** Never use `cd` except when debugging a submodule. All commands, builds, and tests are designed to run from root.
+
 ### Security
 
 - Sensitive data detected (API keys/passwords/tokens): abort, explain, request sanitized prompt
@@ -169,7 +173,28 @@ const Contract = @import("../frame/contract.zig");
 
 ## Commands
 
-`zig build test-opcodes` (test), `zig build` (build), `zig build test-snailtracer` (differential), `zig build wasm` (WASM), `zig build test-synthetic` (synthetic)
+### Basic Commands
+- `zig build` - Build the project
+- `zig build test` - Run all tests
+- `zig build test-opcodes` - Run opcode differential tests
+
+### Test Filtering
+Use `-Dtest-filter='<pattern>'` to run specific tests:
+```bash
+# Run specific test by name
+zig build test-opcodes -Dtest-filter='ADD opcode'
+
+# Run tests matching a pattern
+zig build test -Dtest-filter='trace validation'
+
+# Run multiple specific tests
+zig build test-opcodes -Dtest-filter='ADD' -Dtest-filter='SUB'
+```
+
+### Other Test Commands
+- `zig build test-snailtracer` - Snailtracer differential test
+- `zig build test-synthetic` - Synthetic opcode tests
+- `zig build test-fusions` - Fusion optimization tests
 
 ## EVM Architecture
 
@@ -356,14 +381,15 @@ Required for: creating, commenting, closing, updating issues and all GitHub API 
 Usage: `zig build [steps] [options]`
 
 Key Steps:
+  test                         Run all tests
   test-opcodes                 Run all per-opcode differential tests
   test-snailtracer             Run snailtracer differential test
   test-synthetic               Test synthetic opcodes
   test-fixtures-differential   Run differential tests
+  test-fusions                 Run focused fusion tests (unit + dispatch + differential)
   wasm                         Build WASM library and show bundle size
   wasm-minimal-evm             Build MinimalEvm WASM and show bundle size
   wasm-debug                   Build debug WASM for analysis
-  test-fusions                 Run focused fusion tests (unit + dispatch + differential)
   devtool                      Build and run the Ethereum devtool
   python                       Build Python bindings
   swift                        Build Swift bindings
@@ -373,6 +399,7 @@ Key Steps:
 Options:
   --release[=mode]             Release mode: fast, safe, small
   -Doptimize=[enum]            Debug, ReleaseSafe, ReleaseFast, ReleaseSmall
+  -Dtest-filter=[string]       Filter tests by pattern (e.g., -Dtest-filter='ADD opcode')
   -Devm-hardfork=[string]      FRONTIER, HOMESTEAD, BYZANTIUM, BERLIN, LONDON, SHANGHAI, CANCUN (default: CANCUN)
   -Devm-disable-gas=[bool]     Disable gas checks (testing only)
   -Devm-enable-fusion=[bool]   Enable bytecode fusion (default: true)

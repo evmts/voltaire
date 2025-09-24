@@ -206,8 +206,29 @@ zig build test-opcodes
 # Build the project
 zig build
 
-# Run tests
+# Run all tests
+zig build test
+
+# Run specific opcode tests
 zig build test-opcodes
+```
+
+#### Test Filtering
+
+You can run specific tests using the `-Dtest-filter` option:
+
+```bash
+# Run tests matching a specific pattern
+zig build test -Dtest-filter='trace validation'
+
+# Run specific opcode tests
+zig build test-opcodes -Dtest-filter='ADD opcode'
+
+# Run multiple specific tests (repeat the flag)
+zig build test-opcodes -Dtest-filter='ADD' -Dtest-filter='SUB'
+
+# Run tests for a specific function
+zig build test -Dtest-filter='get_balance'
 ```
 
 ### Development Workflow
