@@ -211,10 +211,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
             const allocator = self.getEvm().getCallArenaAllocator();
 
             // Try to get cached dispatch data first
-            const cached_data = if (dispatch_cache.global_dispatch_cache) |*cache|
-                cache.lookup(bytecode_raw)
-            else
-                null;
+            const cache = dispatch_cache.getGlobalCacheUnsafe();
+            const cached_data = cache.lookup(bytecode_raw);
 
             var schedule: []const Dispatch.Item = undefined;
             var jump_table_ptr: *Dispatch.JumpTable = undefined;
@@ -223,7 +221,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
             // Use cached data if available
             if (cached_data) |data| {
-                defer if (dispatch_cache.global_dispatch_cache) |*cache| cache.release(bytecode_raw);
+                defer cache.release(bytecode_raw);
 
                 (&self.getEvm().tracer).debug("Frame: Using cached dispatch schedule", .{});
 
@@ -241,10 +239,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 (&self.getEvm().tracer).debug("Frame: Building new dispatch schedule", .{});
 
                 // Initialize bytecode with appropriate tracer
-                const tracer = if (dispatch_cache.global_dispatch_cache != null)
-                    @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer)
-                else
-                    null;
+                const tracer = @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer);
 
                 const bytecode = if (tracer != null)
                     Bytecode.initWithTracer(allocator, bytecode_raw, tracer) catch |e| {
@@ -303,14 +298,12 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 owned_jump_table = heap_jump_table;
 
                 // Try to cache the results
-                if (dispatch_cache.global_dispatch_cache) |*cache| {
-                    const schedule_bytes = std.mem.sliceAsBytes(schedule);
-                    const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
-                    cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch |e| {
-                        @branchHint(.cold);
-                        (&self.getEvm().tracer).warn("Frame: Failed to cache dispatch schedule: {}", .{e});
-                    };
-                }
+                const schedule_bytes = std.mem.sliceAsBytes(schedule);
+                const jump_table_bytes = std.mem.sliceAsBytes(jump_table_ptr.entries);
+                cache.insert(bytecode_raw, schedule_bytes, jump_table_bytes) catch |e| {
+                    @branchHint(.cold);
+                    (&self.getEvm().tracer).warn("Frame: Failed to cache dispatch schedule: {}", .{e});
+                };
             }
 
             defer {

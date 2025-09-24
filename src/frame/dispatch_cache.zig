@@ -208,16 +208,31 @@ pub const DispatchCache = struct {
 // TODO: We need to properly think about threads. I think it's possible we want to handle threads via violently erroring if we detect the same EVM instance
 // is on more than 1 thread
 
-/// Global dispatch cache instance - optional because it must be explicitly initialized via initGlobalCache()
-/// This is an opt-in performance optimization. When not initialized, bytecode is recompiled each time.
-/// To enable caching, call initGlobalCache(allocator) at startup and deinitGlobalCache() at shutdown.
-pub var global_dispatch_cache: ?DispatchCache = null;
+/// Global dispatch cache instance - initialized by Evm.init()
+/// This is required for performance optimization. Bytecode is compiled once and cached.
+var global_dispatch_cache: ?DispatchCache = null;
 var cache_mutex: std.Thread.Mutex = .{};
 
+/// Initialize the global cache if not already initialized.
+/// Called by Evm.init() to ensure cache is available.
+/// Safe to call multiple times - will only initialize once.
 pub fn initGlobalCache(allocator: std.mem.Allocator) void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
-    if (global_dispatch_cache == null) global_dispatch_cache = DispatchCache.init(allocator);
+    if (global_dispatch_cache == null) {
+        global_dispatch_cache = DispatchCache.init(allocator);
+        if (builtin.mode == .Debug) {
+            std.debug.print("DispatchCache: Initialized global cache\n", .{});
+        }
+    }
+}
+
+/// Get the global cache. Panics if not initialized.
+/// Frame.interpret() uses this to get the required cache.
+pub fn getGlobalCacheUnsafe() *DispatchCache {
+    cache_mutex.lock();
+    defer cache_mutex.unlock();
+    return &(global_dispatch_cache orelse unreachable);
 }
 
 pub fn deinitGlobalCache() void {
@@ -240,4 +255,54 @@ pub fn clearGlobalCache() void {
     cache_mutex.lock();
     defer cache_mutex.unlock();
     if (global_dispatch_cache) |*cache| cache.clear();
+}
+
+test "dispatch cache basic functionality" {
+    const allocator = std.testing.allocator;
+
+    // Initialize the cache
+    initGlobalCache(allocator);
+    defer deinitGlobalCache();
+
+    // Get the cache
+    const cache = getGlobalCacheUnsafe();
+
+    // Create some test bytecode
+    const bytecode: []const u8 = &[_]u8{0x60, 0x01, 0x60, 0x02, 0x01}; // PUSH1 1 PUSH1 2 ADD
+    const schedule: []const u8 = &[_]u8{1, 2, 3, 4, 5, 6, 7, 8};
+    const jump_table: []const u8 = &[_]u8{10, 20, 30, 40};
+
+    // Should not be in cache initially
+    const initial_lookup = cache.lookup(bytecode);
+    try std.testing.expect(initial_lookup == null);
+
+    // Insert into cache (only works for bytecode > 256 bytes, so this should be a no-op)
+    try cache.insert(bytecode, schedule, jump_table);
+
+    // Should still not be in cache (too small)
+    const after_insert = cache.lookup(bytecode);
+    try std.testing.expect(after_insert == null);
+
+    // Create larger bytecode that will be cached
+    const large_bytecode = try allocator.alloc(u8, 300);
+    defer allocator.free(large_bytecode);
+    @memset(large_bytecode, 0x60); // Fill with PUSH1
+
+    // Insert large bytecode
+    try cache.insert(large_bytecode, schedule, jump_table);
+
+    // Should now be in cache
+    const cached = cache.lookup(large_bytecode);
+    try std.testing.expect(cached != null);
+    try std.testing.expectEqualSlices(u8, cached.?.schedule, schedule);
+    try std.testing.expectEqualSlices(u8, cached.?.jump_table, jump_table);
+
+    // Release the cached entry
+    cache.release(large_bytecode);
+
+    // Check statistics
+    const stats = getCacheStatistics();
+    try std.testing.expect(stats != null);
+    try std.testing.expect(stats.?.hits == 1);
+    try std.testing.expect(stats.?.misses == 2); // Two misses for small bytecode
 }

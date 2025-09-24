@@ -15,6 +15,7 @@ const TransactionContext = @import("block/transaction_context.zig").TransactionC
 const GrowingArenaAllocator = @import("evm_arena_allocator.zig").GrowingArenaAllocator;
 const call_result_module = @import("frame/call_result.zig");
 const call_params_module = @import("frame/call_params.zig");
+const dispatch_cache = @import("frame/dispatch_cache.zig");
 
 /// Creates a configured EVM instance type.
 pub fn Evm(comptime config: EvmConfig) type {
@@ -133,6 +134,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
         pub fn init(allocator: std.mem.Allocator, database: ?*Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address) !Self {
+            // Initialize global dispatch cache if not already initialized
+            dispatch_cache.initGlobalCache(allocator);
+
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
@@ -261,12 +265,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
 
-            if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
-                params.validate() catch |err| {
-                    log.err("CallParams validation failed: {s}", .{@errorName(err)});
-                    return CallResult.failure(0);
-                };
-            }
+            params.validate() catch |err| {
+                log.err("CallParams validation failed: {s}", .{@errorName(err)});
+                return CallResult.failure(0);
+            };
 
             defer {
                 self.depth = 0;
@@ -285,6 +287,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.created_contracts.clear();
                 // Clear self destruct list
                 self.self_destruct.clear();
+
                 // Reset call stack to initial state
                 // This is critical when reusing EVM instances across multiple transactions
                 self.call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth;
@@ -474,10 +477,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             result.accessed_storage = storage_access;
 
-            // Reset internal accumulators (logs and access data already transferred)
-            self.self_destruct.clear();
-            self.access_list.clear();
-
             return result;
         }
 
@@ -485,7 +484,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// This handles nested calls and manages depth tracking.
         pub fn inner_call(self: *Self, params: CallParams) CallResult {
             @branchHint(.likely);
-            params.validate() catch return CallResult.failure(0);
+            if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
+                params.validate() catch return CallResult.failure(0);
+            }
 
             if (comptime !config.disable_gas_checks) {
                 if (params.getGas() == 0) return CallResult.failure(0);
