@@ -290,9 +290,9 @@ func TestIntegrationScenarios(t *testing.T) {
 		caller := primitives.ZeroAddress()
 		
 		// Set up caller and contract A with balance
-		err = evm.SetBalance(caller, big.NewInt(LargeBalance))
+		err = evm.SetBalance(caller, LargeBalance)
 		require.NoError(t, err)
-		err = evm.SetBalance(contractA, big.NewInt(LargeBalance))
+		err = evm.SetBalance(contractA, LargeBalance)
 		require.NoError(t, err)
 		
 		contractBCode := []byte{0x60, 0xaa, 0x5f, 0x55, 0x60, 0x01, 0x5f, 0x52, 0x60, 0x20, 0x5f, 0xf3}
@@ -330,9 +330,9 @@ func TestIntegrationScenarios(t *testing.T) {
 		caller := primitives.ZeroAddress()
 		
 		// Set up caller and lender with balance
-		err = evm.SetBalance(caller, big.NewInt(LargeBalance))
+		err = evm.SetBalance(caller, LargeBalance)
 		require.NoError(t, err)
-		err = evm.SetBalance(lenderAddr, big.NewInt(LargeBalance))
+		err = evm.SetBalance(lenderAddr, LargeBalance)
 		require.NoError(t, err)
 		
 		borrowerCode := []byte{0x34, 0x61, 0x03, 0xe8, 0x01, 0x5f, 0x52, 0x60, 0x20, 0x5f, 0xf3}

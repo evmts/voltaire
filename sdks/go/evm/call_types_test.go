@@ -19,7 +19,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x01})
 		calleeAddr := primitives.NewAddress([20]byte{0x02})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		
@@ -50,7 +50,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x03})
 		calleeAddr := primitives.NewAddress([20]byte{0x04})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		
@@ -77,7 +77,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x05})
 		delegateAddr := primitives.NewAddress([20]byte{0x06})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		
@@ -117,7 +117,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x07})
 		staticAddr := primitives.NewAddress([20]byte{0x08})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		
@@ -144,7 +144,7 @@ func TestCallTypes(t *testing.T) {
 		intermediateAddr := primitives.NewAddress([20]byte{0x0c})
 		finalAddr := primitives.NewAddress([20]byte{0x0d})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		
@@ -177,7 +177,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x10})
 		calleeAddr := primitives.NewAddress([20]byte{0x11})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		
@@ -204,7 +204,7 @@ func TestCallTypes(t *testing.T) {
 		defer evm.Destroy()
 
 		recursiveAddr := primitives.NewAddress([20]byte{0x14})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(recursiveAddr, balance)
 		require.NoError(t, err)
 		
@@ -232,7 +232,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x15})
 		nonExistentAddr := primitives.NewAddress([20]byte{0x99})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 
@@ -255,7 +255,7 @@ func TestCallTypes(t *testing.T) {
 		callerAddr := primitives.NewAddress([20]byte{0x16})
 		calleeAddr := primitives.NewAddress([20]byte{0x17})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(callerAddr, balance)
 		require.NoError(t, err)
 		

@@ -17,7 +17,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x01})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -40,7 +40,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x02})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -65,7 +65,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x03})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -95,7 +95,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x04})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x05})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -153,7 +153,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x06})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -176,7 +176,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x07})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -200,7 +200,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x08})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -237,7 +237,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x09})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -273,7 +273,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		factoryAddr := primitives.NewAddress([20]byte{0x0a})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(factoryAddr, balance)
 		require.NoError(t, err)
 
@@ -326,7 +326,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x0b})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -352,7 +352,7 @@ func TestContractCreation(t *testing.T) {
 
 		deployerAddr := primitives.NewAddress([20]byte{0x0c})
 		beneficiary := primitives.NewAddress([20]byte{0x0d})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -379,7 +379,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x0e})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -425,7 +425,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x0f})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -457,7 +457,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x10})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -497,7 +497,7 @@ func TestContractCreation(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x17})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -522,7 +522,7 @@ func TestContractInteraction(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x11})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -598,7 +598,7 @@ func TestContractInteraction(t *testing.T) {
 		defer evm.Destroy()
 
 		factoryAddr := primitives.NewAddress([20]byte{0x12})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(factoryAddr, balance)
 		require.NoError(t, err)
 
@@ -658,7 +658,7 @@ func TestContractUpgradePatterns(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x13})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -709,7 +709,7 @@ func TestContractUpgradePatterns(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x14})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -768,7 +768,7 @@ func TestContractSecurityPatterns(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x15})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -798,7 +798,7 @@ func TestContractSecurityPatterns(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x16})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -830,7 +830,7 @@ func TestContractDeploymentEdgeCases(t *testing.T) {
 		defer evm.Destroy()
 
 		deployerAddr := primitives.NewAddress([20]byte{0x18})
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 
@@ -868,7 +868,7 @@ func TestContractDeploymentEdgeCases(t *testing.T) {
 		deployerAddr := primitives.NewAddress([20]byte{0x19})
 		existingAddr := primitives.NewAddress([20]byte{0x20})
 		
-		balance := big.NewInt(LargeBalance)
+		balance := LargeBalance
 		err = evm.SetBalance(deployerAddr, balance)
 		require.NoError(t, err)
 		

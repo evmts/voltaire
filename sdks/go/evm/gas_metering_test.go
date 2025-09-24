@@ -183,7 +183,7 @@ func TestGasMetering(t *testing.T) {
 		contractAddr := primitives.NewAddress([20]byte{0x03})
 		
 		// Set up caller with balance
-		err = evm.SetBalance(callerAddr, big.NewInt(LargeBalance))
+		err = evm.SetBalance(callerAddr, LargeBalance)
 		require.NoError(t, err)
 
 		callWithValue := "5f5f5f5f600173" + hex.EncodeToString(calleeAddr.Bytes()) + "5af1"

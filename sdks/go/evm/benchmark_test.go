@@ -408,7 +408,7 @@ func BenchmarkCallOperations(b *testing.B) {
 				evm, _ := New()
 				callerAddr := primitives.NewAddress([20]byte{0x01})
 				calleeAddr := primitives.NewAddress([20]byte{0x02})
-				balance := big.NewInt(LargeBalance)
+				balance := LargeBalance
 				if err := evm.SetBalance(callerAddr, balance); err != nil {
 					panic(err)
 				}
@@ -425,7 +425,7 @@ func BenchmarkCallOperations(b *testing.B) {
 				evm, _ := New()
 				callerAddr := primitives.NewAddress([20]byte{0x03})
 				delegateAddr := primitives.NewAddress([20]byte{0x04})
-				balance := big.NewInt(LargeBalance)
+				balance := LargeBalance
 				if err := evm.SetBalance(callerAddr, balance); err != nil {
 					panic(err)
 				}
@@ -442,7 +442,7 @@ func BenchmarkCallOperations(b *testing.B) {
 				evm, _ := New()
 				callerAddr := primitives.NewAddress([20]byte{0x05})
 				staticAddr := primitives.NewAddress([20]byte{0x06})
-				balance := big.NewInt(LargeBalance)
+				balance := LargeBalance
 				if err := evm.SetBalance(callerAddr, balance); err != nil {
 					panic(err)
 				}
@@ -515,7 +515,7 @@ func BenchmarkContractCreation(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				evm, _ := New()
 				addr := primitives.NewAddress([20]byte{byte(i)})
-				balance := big.NewInt(LargeBalance)
+				balance := LargeBalance
 				if err := evm.SetBalance(addr, balance); err != nil {
 					panic(err)
 				}

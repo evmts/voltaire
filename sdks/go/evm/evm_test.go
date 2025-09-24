@@ -10,7 +10,7 @@ import (
 	"github.com/evmts/guillotine/sdks/go/primitives"
 )
 
-func TestEVM(t *testing.T) {
+func TestEVMBasic(t *testing.T) {
 	t.Run("NewEVM", func(t *testing.T) {
 		evm, err := New()
 		require.NoError(t, err)
