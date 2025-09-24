@@ -43,6 +43,13 @@ pub fn build(b: *std.Build) void {
 
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    
+    // Test filter option for filtering specific tests
+    const test_filters = b.option(
+        [][]const u8,
+        "test-filter",
+        "Filter for tests. Only applies to Zig tests. Example: -Dtest-filter='trace validation'",
+    ) orelse &[0][]const u8{};
 
     // Download KZG trusted setup if it doesn't exist
     const kzg_path = "src/kzg/trusted_setup.txt";
@@ -177,6 +184,7 @@ pub fn build(b: *std.Build) void {
     const tests_pkg = build_pkg.Tests;
     const lib_unit_tests = b.addTest(.{ 
         .root_module = modules.lib_mod,
+        .filters = test_filters,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
     });
@@ -192,6 +200,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         }),
+        .filters = test_filters,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
     });
@@ -202,6 +211,8 @@ pub fn build(b: *std.Build) void {
     root_tests.root_module.addImport("provider", modules.provider_mod);
     root_tests.root_module.addImport("trie", modules.trie_mod);
     root_tests.root_module.addImport("Guillotine_lib", modules.lib_mod);
+    // Link the shared library for C FFI testing
+    root_tests.linkLibrary(shared_lib);
     // Using MinimalEvm for differential testing (REVM removed)
     root_tests.linkLibrary(c_kzg_lib);
     root_tests.linkLibrary(blst_lib);
@@ -496,62 +507,40 @@ pub fn build(b: *std.Build) void {
 
     // Per-opcode differential tests discovered in test/evm/opcodes
     // We dynamically scan the directory and add a test target for each file matching *_test.zig
-    const opcode_tests_step = b.step("test-opcodes", "Run all per-opcode differential tests");
-    if (std.fs.cwd().openDir("test/evm/opcodes", .{ .iterate = true }) catch null) |op_dir_val| {
-        var op_dir = op_dir_val; // make mutable for close()
-        defer op_dir.close();
-        var it = op_dir.iterate();
-        while (it.next() catch null) |entry| {
-            if (entry.kind != .file) continue;
-            if (!std.mem.endsWith(u8, entry.name, "_test.zig")) continue;
-
-            const file_path = b.fmt("test/evm/opcodes/{s}", .{entry.name});
-            const test_name = b.fmt("opcode-{s}", .{entry.name});
-
-            // Extract opcode hex from filename (e.g., "01_test.zig" -> "0x01")
-            const opcode_hex = entry.name[0 .. std.mem.indexOf(u8, entry.name, "_") orelse continue];
-            const individual_step_name = b.fmt("test-opcodes-0x{s}", .{opcode_hex});
-            const individual_step_desc = b.fmt("Test opcode 0x{s}", .{opcode_hex});
-
-            const t = b.addTest(.{
-                .name = test_name,
-                .root_module = b.createModule(.{
-                    .root_source_file = b.path(file_path),
-                    .target = target,
-                    .optimize = .Debug,
-                }),
-                // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
-                .use_llvm = true,
-            });
-            // Inject module dependencies used by the differential harness
-            t.root_module.addImport("evm", modules.evm_mod);
-            t.root_module.addImport("primitives", modules.primitives_mod);
-            t.root_module.addImport("crypto", modules.crypto_mod);
-            t.root_module.addImport("build_options", config.options_mod);
-            t.root_module.addImport("log", b.createModule(.{ 
-                .root_source_file = b.path("src/log.zig"), 
-                .target = target, 
-                .optimize = .Debug, 
-            }));
-
-            // Link external libs
-            t.linkLibrary(c_kzg_lib);
-            t.linkLibrary(blst_lib);
-            if (bn254_lib) |bn254| t.linkLibrary(bn254);
-            t.linkLibC();
-
-            // Using MinimalEvm for differential testing (REVM removed)
-
-            const run_t = b.addRunArtifact(t);
-
-            // Add to the "all opcodes" step
-            opcode_tests_step.dependOn(&run_t.step);
-
-            // Create individual test step for this opcode
-            const individual_step = b.step(individual_step_name, individual_step_desc);
-            individual_step.dependOn(&run_t.step);
-        }
-    }
+    const opcode_tests_step = b.step("test-opcodes", "Run all per-opcode differential tests. Use -Dtest-filter='<pattern>' to filter tests");
+    
+    // Create a single test executable that includes all opcode tests
+    const all_opcodes_test = b.addTest(.{
+        .name = "all-opcodes-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/evm/opcodes/all_opcodes.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+        .filters = test_filters,
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
+    });
+    
+    // Add module dependencies
+    all_opcodes_test.root_module.addImport("evm", modules.evm_mod);
+    all_opcodes_test.root_module.addImport("primitives", modules.primitives_mod);
+    all_opcodes_test.root_module.addImport("crypto", modules.crypto_mod);
+    all_opcodes_test.root_module.addImport("build_options", config.options_mod);
+    all_opcodes_test.root_module.addImport("log", b.createModule(.{ 
+        .root_source_file = b.path("src/log.zig"), 
+        .target = target, 
+        .optimize = .Debug, 
+    }));
+    
+    // Link external libs
+    all_opcodes_test.linkLibrary(c_kzg_lib);
+    all_opcodes_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| all_opcodes_test.linkLibrary(bn254);
+    all_opcodes_test.linkLibC();
+    
+    const run_opcodes_test = b.addRunArtifact(all_opcodes_test);
+    opcode_tests_step.dependOn(&run_opcodes_test.step);
 
     // ERC20 mint differential test
     {

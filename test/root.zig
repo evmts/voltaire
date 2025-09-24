@@ -103,6 +103,12 @@ test {
     
     // Opcode differential tests
     _ = @import("evm/opcodes/all_opcodes.zig");
+    
+    // Trace validation tests
+    _ = @import("trace_validation_test.zig");
+    
+    // C FFI API tracing tests
+    _ = @import("evm_c_api_tracing_test.zig");
 
     // Benchmarks
     // _ = @import("benchmark/baseline_benchmark.zig");
