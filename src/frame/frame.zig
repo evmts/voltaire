@@ -453,6 +453,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             next_handler: OpcodeHandler,
             next_cursor: [*]const Dispatch.Item,
         ) void {
+            if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) return;
             (&self.getEvm().tracer).after_instruction(self, opcode, next_handler, next_cursor);
         }
 
@@ -462,6 +463,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             self: *Self,
             comptime opcode: Dispatch.UnifiedOpcode,
         ) void {
+            if (comptime (builtin.mode != .Debug and builtin.mode != .ReleaseSafe)) return;
             (&self.getEvm().tracer).after_complete(self, opcode);
         }
 
