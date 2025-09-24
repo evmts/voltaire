@@ -66,7 +66,17 @@ fn run_and_test(allocator: std.mem.Allocator, a: u256, b: u256, expected: u256) 
         .chain_id = 1,
     };
     
-    var guillotine_evm = try evm.Evm(.{}).init(
+    var guillotine_evm = try evm.Evm(.{
+        .tracer_config = .{
+            .enabled = true,
+            .enable_validation = true,
+            .enable_step_capture = true,
+            .enable_pc_tracking = true,
+            .enable_gas_tracking = true,
+            .enable_debug_logging = true,
+            .enable_advanced_trace = true,
+        },
+    }).init(
         allocator,
         &database,
         block_info,
@@ -164,7 +174,17 @@ fn run_and_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, expect
         .chain_id = 1,
     };
     
-    var guillotine_evm = try evm.Evm(.{}).init(
+    var guillotine_evm = try evm.Evm(.{
+        .tracer_config = .{
+            .enabled = true,
+            .enable_validation = true,
+            .enable_step_capture = true,
+            .enable_pc_tracking = true,
+            .enable_gas_tracking = true,
+            .enable_debug_logging = true,
+            .enable_advanced_trace = true,
+        },
+    }).init(
         allocator,
         &database,
         block_info,
@@ -355,7 +375,17 @@ test "opcode 0x16 differential test" {
         .chain_id = 1,
     };
     
-    var guillotine_evm = try evm.Evm(.{}).init(
+    var guillotine_evm = try evm.Evm(.{
+        .tracer_config = .{
+            .enabled = true,
+            .enable_validation = true,
+            .enable_step_capture = true,
+            .enable_pc_tracking = true,
+            .enable_gas_tracking = true,
+            .enable_debug_logging = true,
+            .enable_advanced_trace = true,
+        },
+    }).init(
         allocator,
         &database,
         block_info,
