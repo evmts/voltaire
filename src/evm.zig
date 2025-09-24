@@ -76,6 +76,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             OutOfBounds,
             WriteProtection,
             BytecodeTooLarge,
+            DatabaseRequired,
         };
 
         // Cache line 1 - EXECUTION CONTROL: Accessed frequently during execution
@@ -133,7 +134,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Sets up the execution environment with state storage, block context,
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
-        pub fn init(allocator: std.mem.Allocator, database: *Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
+        pub fn init(allocator: std.mem.Allocator, database: ?*Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address, hardfork_config: Hardfork) !Self {
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
@@ -149,7 +150,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .call_stack = [_]CallStackEntry{CallStackEntry{ .caller = primitives.Address.ZERO_ADDRESS, .value = 0, .is_static = false }} ** config.max_call_depth,
                 .return_data = &.{},
                 .allocator = allocator,
-                .database = database,
+                .database = database orelse return error.DatabaseRequired,
                 .access_list = access_list,
                 .current_snapshot_id = 0,
                 .gas_refund_counter = 0,
@@ -173,25 +174,25 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Process system contract updates based on configuration
             if (comptime config.enable_beacon_roots) {
                 // Process beacon root update for EIP-4788 if applicable
-                @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database, &block_info) catch |err| {
+                @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onBeaconRootUpdate(false, err);
                 };
             }
 
             if (comptime config.enable_historical_block_hashes) {
-                @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database, &block_info) catch |err| {
+                @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onHistoricalBlockHashUpdate(false, err);
                 };
             }
 
             if (comptime config.enable_validator_deposits) {
-                @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database, &block_info) catch |err| {
+                @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onValidatorDeposits(false, err);
                 };
             }
 
             if (comptime config.enable_validator_withdrawals) {
-                @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database, &block_info) catch |err| {
+                @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onValidatorWithdrawals(false, err);
                 };
             }
@@ -238,10 +239,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// returning the result as if the call had been executed. Useful for
         /// gas estimation, testing outcomes, or previewing transaction effects.
         pub fn simulate(self: *Self, params: CallParams) CallResult {
-            const snapshot_id = self.journal.create_snapshot();
-            defer {
-                self.journal.revert_to_snapshot(snapshot_id);
-            }
+            // Use database ephemeral overlay to avoid mutating base state
+            self.database.begin_ephemeral_view();
+            defer self.database.discard_ephemeral_view();
             return self.call(params);
         }
 
@@ -336,13 +336,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 var origin_account = self.database.get_account(self.origin.bytes) catch {
                     return CallResult.failure(0);
                 } orelse Account.zero();
-                
+
                 // Record the nonce change for potential revert
                 // Using current_snapshot_id (0 at transaction level)
                 self.journal.record_nonce_change(self.current_snapshot_id, self.origin, origin_account.nonce) catch {
                     return CallResult.failure(0);
                 };
-                
+
                 // Increment and persist the nonce
                 origin_account.nonce += 1;
                 self.database.set_account(self.origin.bytes, origin_account) catch {
@@ -370,66 +370,61 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (gas_consumed > 0 and self.gas_price > 0) {
                 const gas_consumed_u256: u256 = @intCast(gas_consumed);
                 const total_gas_fee = self.gas_price * gas_consumed_u256;
-                
+
                 // Get origin account
                 var origin_account = self.database.get_account(self.origin.bytes) catch |err| {
                     log.debug("Failed to get origin account for gas fee deduction: {}", .{err});
                     return result;
                 } orelse Account.zero();
-                
+
                 // Check if origin has sufficient balance for gas fees
                 if (comptime !config.disable_balance_checks) {
                     if (origin_account.balance < total_gas_fee) {
-                        log.debug("Insufficient balance for gas fees: balance={d}, fee={d}", 
-                                 .{origin_account.balance, total_gas_fee});
+                        log.debug("Insufficient balance for gas fees: balance={d}, fee={d}", .{ origin_account.balance, total_gas_fee });
                         result.success = false;
                         result.gas_left = 0;
                         return result;
                     }
                 }
-                
+
                 // Record balance change in journal for potential revert
                 self.journal.record_balance_change(0, self.origin, origin_account.balance) catch |err| {
                     log.debug("Failed to record balance change for gas fees: {}", .{err});
                     return result;
                 };
-                
+
                 // Deduct gas fees from origin
                 origin_account.balance -= total_gas_fee;
                 self.database.set_account(self.origin.bytes, origin_account) catch |err| {
                     log.debug("Failed to update origin balance for gas fees: {}", .{err});
                     return result;
                 };
-                
+
                 // Handle coinbase rewards (miner/validator payment)
                 const eips_instance_fee = eips.Eips{ .hardfork = self.hardfork_config };
                 if (eips_instance_fee.eip_1559_is_enabled()) {
                     // EIP-1559: Only priority fee goes to coinbase, base fee is burned
                     const base_fee = self.block_info.base_fee;
-                    const priority_fee_per_gas = if (self.gas_price > base_fee) 
-                        self.gas_price - base_fee 
-                    else 
+                    const priority_fee_per_gas = if (self.gas_price > base_fee)
+                        self.gas_price - base_fee
+                    else
                         0;
                     const coinbase_reward = priority_fee_per_gas * gas_consumed_u256;
-                    
+
                     if (coinbase_reward > 0) {
-                        var coinbase_account = self.database.get_account(
-                            self.block_info.coinbase.bytes
-                        ) catch {
+                        var coinbase_account = self.database.get_account(self.block_info.coinbase.bytes) catch {
                             // If we can't get coinbase, still continue (fees are burned)
                             return result;
                         } orelse Account.zero();
-                        
+
                         // Record coinbase balance change
-                        self.journal.record_balance_change(0, self.block_info.coinbase, 
-                                                          coinbase_account.balance) catch {
+                        self.journal.record_balance_change(0, self.block_info.coinbase, coinbase_account.balance) catch {
                             // Non-critical: coinbase reward failure doesn't invalidate transaction
                             return result;
                         };
-                        
+
                         coinbase_account.balance += coinbase_reward;
-                        self.database.set_account(self.block_info.coinbase.bytes, 
-                                                 coinbase_account) catch {
+                        self.database.set_account(self.block_info.coinbase.bytes, coinbase_account) catch {
                             // Non-critical: continue even if coinbase update fails
                             return result;
                         };
@@ -437,20 +432,16 @@ pub fn Evm(comptime config: EvmConfig) type {
                     // Base fee (total_gas_fee - coinbase_reward) is effectively burned
                 } else {
                     // Pre-EIP-1559: All fees go to coinbase
-                    var coinbase_account = self.database.get_account(
-                        self.block_info.coinbase.bytes
-                    ) catch {
+                    var coinbase_account = self.database.get_account(self.block_info.coinbase.bytes) catch {
                         return result;
                     } orelse Account.zero();
-                    
-                    self.journal.record_balance_change(0, self.block_info.coinbase, 
-                                                      coinbase_account.balance) catch {
+
+                    self.journal.record_balance_change(0, self.block_info.coinbase, coinbase_account.balance) catch {
                         return result;
                     };
-                    
+
                     coinbase_account.balance += total_gas_fee;
-                    self.database.set_account(self.block_info.coinbase.bytes, 
-                                             coinbase_account) catch {
+                    self.database.set_account(self.block_info.coinbase.bytes, coinbase_account) catch {
                         return result;
                     };
                 }
@@ -766,7 +757,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             return result;
         }
-
         /// Execute DELEGATECALL operation (inlined)
         fn executeDelegatecall(self: *Self, params: struct {
             caller: primitives.Address,
@@ -1513,7 +1503,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn get_chain_id(self: *Self) u64 {
             return self.block_info.chain_id;
         }
-
         /// Get block hash by number
         pub fn get_block_hash(self: *Self, block_number: u64) ?[32]u8 {
             const current_block = self.block_info.number;
@@ -2297,7 +2286,6 @@ test "Evm initialization with all parameters" {
     try std.testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);
     try std.testing.expectEqual(@as(usize, 0), evm.journal.entry_count());
 }
-
 // Duplicate test removed - see earlier occurrence
 
 test "Host interface - get_balance functionality" {
@@ -3057,7 +3045,6 @@ test "EVM CREATE/CREATE2 - nested contract creation" {
     try std.testing.expect(child_account != null);
     try std.testing.expectEqual(@as(u64, 1), child_account.?.nonce);
 }
-
 test "EVM logs - emit_log functionality" {
     var db = Database.init(std.testing.allocator);
     defer db.deinit();
@@ -3818,7 +3805,6 @@ test "Precompiles - disabled configuration" {
     try std.testing.expectEqual(@as(usize, 0), result.output.len); // No precompile output
     try std.testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
 }
-
 test "Precompiles - invalid precompile addresses" {
     var db = Database.init(std.testing.allocator);
     defer db.deinit();
@@ -4548,7 +4534,6 @@ test "journal state application - code change rollback" {
     const reverted_account = (try evm.database.get_account(test_address.bytes)).?;
     try std.testing.expectEqualSlices(u8, &original_code_hash, &reverted_account.code_hash);
 }
-
 test "journal state application - multiple changes rollback" {
     // Create test database
     var db = Database.init(std.testing.allocator);
@@ -5328,7 +5313,6 @@ test "CREATE interaction - deployed contract can be called" {
     }
     try std.testing.expectEqual(@as(u256, 42), returned_value);
 }
-
 test "CREATE interaction - factory creates and initializes child contracts" {
     const allocator = std.testing.allocator;
 
@@ -6040,7 +6024,6 @@ test "Arena allocator - precompile outputs use arena" {
     try std.testing.expect(result2.success);
     try std.testing.expectEqual(@as(usize, 32), result2.output.len);
 }
-
 test "Arena allocator - memory efficiency with nested calls" {
     var db = Database.init(std.testing.allocator);
     defer db.deinit();
