@@ -688,15 +688,22 @@ func LoadFixtureBytecodeAndCalldata(fixtureName string) (bytecode []byte, callda
 		return nil, nil, fmt.Errorf("fixture directory not found: %s", fixturePath)
 	}
 	
-	// Read bytecode file
-	bytecodePath := filepath.Join(fixturePath, "bytecode.txt")
+	// Read bytecode file - prefer deployed/runtime bytecode over deployment bytecode
+	// Try deployed_bytecode.txt first (runtime code without constructor)
+	bytecodePath := filepath.Join(fixturePath, "deployed_bytecode.txt")
 	bcData, err := os.ReadFile(bytecodePath)
 	if err != nil {
-		// Try alternate names
+		// Try runtime_bytecode.txt
 		bytecodePath = filepath.Join(fixturePath, "runtime_bytecode.txt")
 		bcData, err = os.ReadFile(bytecodePath)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read bytecode: %w", err)
+			// Fall back to bytecode.txt (deployment bytecode with constructor)
+			// Note: This includes constructor and won't work for CALL operations
+			bytecodePath = filepath.Join(fixturePath, "bytecode.txt")
+			bcData, err = os.ReadFile(bytecodePath)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to read bytecode: %w", err)
+			}
 		}
 	}
 	
