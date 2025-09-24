@@ -19,7 +19,7 @@ pub fn Preprocessor(comptime FrameType: type) type {
         /// WebAssembly doesn't support tail calls by default, so we use .auto for wasm targets.
         pub inline fn getTailCallModifier() std.builtin.CallModifier {
             const builtin = @import("builtin");
-            return if (builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64)
+            return if (comptime builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64)
                 .auto
             else
                 .always_tail;
