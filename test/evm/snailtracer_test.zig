@@ -9,7 +9,7 @@ test {
     std.testing.log_level = .warn;
 }
 
-test "snailtracer differential test" {
+test "snailtracer differential test without tracing" {
     std.debug.print("\n=== Starting snailtracer test ===\n", .{});
     const allocator = std.testing.allocator;
     std.debug.print("Allocator created\n", .{});
@@ -206,4 +206,198 @@ test "snailtracer differential test" {
     // Verify result
     try std.testing.expect(result.success);
     std.debug.print("=== Test passed ===\n", .{});
+}
+
+test "snailtracer with tracing enabled" {
+    std.debug.print("\n=== Starting snailtracer test WITH TRACING ===\n", .{});
+    const allocator = std.testing.allocator;
+    
+    // Read bytecode from fixture file
+    const bytecode_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/bytecode.txt", .{});
+    defer bytecode_file.close();
+    
+    const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 1024 * 1024);
+    defer allocator.free(bytecode_hex);
+    
+    // Count valid hex characters
+    var valid_count: usize = 0;
+    for (bytecode_hex) |c| {
+        if (c != ' ' and c != '\n' and c != '\r' and c != '\t') {
+            valid_count += 1;
+        }
+    }
+    
+    // Allocate clean buffer
+    const bytecode_clean = try allocator.alloc(u8, valid_count);
+    defer allocator.free(bytecode_clean);
+    
+    // Copy valid characters
+    var clean_idx: usize = 0;
+    for (bytecode_hex) |c| {
+        if (c != ' ' and c != '\n' and c != '\r' and c != '\t') {
+            bytecode_clean[clean_idx] = c;
+            clean_idx += 1;
+        }
+    }
+    
+    // Convert hex string to bytes
+    const bytecode_len = bytecode_clean.len / 2;
+    const bytecode = try allocator.alloc(u8, bytecode_len);
+    defer allocator.free(bytecode);
+    
+    var i: usize = 0;
+    while (i < bytecode_clean.len) : (i += 2) {
+        const hex_byte = bytecode_clean[i..i+2];
+        bytecode[i/2] = try std.fmt.parseInt(u8, hex_byte, 16);
+    }
+    
+    // Extract runtime code (skip first 32 bytes)
+    const runtime_code = if (bytecode.len > 32) bytecode[32..] else bytecode;
+    
+    // Read calldata
+    const calldata_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/calldata.txt", .{});
+    defer calldata_file.close();
+    
+    const calldata_hex = try calldata_file.readToEndAlloc(allocator, 1024);
+    defer allocator.free(calldata_hex);
+    
+    // Count valid hex characters for calldata
+    valid_count = 0;
+    for (calldata_hex) |c| {
+        if (c != ' ' and c != '\n' and c != '\r' and c != '\t') {
+            valid_count += 1;
+        }
+    }
+    
+    // Allocate clean buffer for calldata
+    const calldata_clean = try allocator.alloc(u8, valid_count);
+    defer allocator.free(calldata_clean);
+    
+    // Copy valid characters
+    clean_idx = 0;
+    for (calldata_hex) |c| {
+        if (c != ' ' and c != '\n' and c != '\r' and c != '\t') {
+            calldata_clean[clean_idx] = c;
+            clean_idx += 1;
+        }
+    }
+    
+    const calldata_len = calldata_clean.len / 2;
+    const calldata = try allocator.alloc(u8, calldata_len);
+    defer allocator.free(calldata);
+    
+    i = 0;
+    while (i < calldata_clean.len) : (i += 2) {
+        const hex_byte = calldata_clean[i..i+2];
+        calldata[i/2] = try std.fmt.parseInt(u8, hex_byte, 16);
+    }
+    
+    // Setup test environment
+    const contract_address = primitives.Address.Address{ .bytes = [_]u8{0x10} ++ [_]u8{0} ** 18 ++ [_]u8{0x01} };
+    const caller_address = primitives.Address.Address{ .bytes = [_]u8{0xCA} ++ [_]u8{0x11} ** 18 ++ [_]u8{0xE5} };
+    
+    // Create database
+    var database = evm.Database.init(allocator);
+    defer database.deinit();
+    
+    // Deploy contract
+    const code_hash = try database.set_code(runtime_code);
+    const contract_account = evm.Account{
+        .nonce = 1,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    
+    try database.set_account(contract_address.bytes, contract_account);
+    
+    // Setup caller account
+    const caller_account = evm.Account{
+        .nonce = 1,
+        .balance = 1000000000000000000, // 1 ETH
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    
+    try database.set_account(caller_address.bytes, caller_account);
+    
+    // Setup block info
+    const block_info = evm.BlockInfo{
+        .number = 19426587,
+        .timestamp = 1710338135,
+        .gas_limit = 3_000_000_000,
+        .base_fee = 24_095_923_408,
+        .difficulty = 0,
+        .coinbase = primitives.Address.ZERO,
+        .chain_id = 1,
+        .prev_randao = [_]u8{0} ** 32,
+        .blob_base_fee = 1,
+        .blob_versioned_hashes = &[_][32]u8{},
+    };
+    
+    // Setup transaction context
+    const tx_context = evm.TransactionContext{
+        .gas_limit = 3_000_000_000,
+        .coinbase = primitives.Address.ZERO,
+        .chain_id = 1,
+    };
+    
+    // Create EVM WITH TRACING
+    std.debug.print("Creating EVM with tracing enabled...\n", .{});
+    
+    // Use the tracer configuration
+    const TracerEvm = evm.Evm(.{
+        .tracer_config = evm.tracer.TracerConfig{
+            .enabled = true,
+            .enable_validation = true,
+            .enable_step_capture = true,
+            .enable_pc_tracking = true,
+            .enable_gas_tracking = true,
+            .enable_debug_logging = true,
+            .enable_advanced_trace = false,
+        },
+    });
+    
+    var vm = try TracerEvm.init(
+        allocator,
+        &database,
+        block_info,
+        tx_context,
+        0, // gas_price
+        caller_address, // origin
+        evm.Hardfork.CANCUN, // hardfork_config
+    );
+    defer vm.deinit();
+    std.debug.print("Tracer EVM created\n", .{});
+
+    // Setup call parameters
+    const call_params = TracerEvm.CallParams{
+        .call = .{
+            .caller = caller_address,
+            .to = contract_address,
+            .value = 0,
+            .input = calldata,
+            .gas = 3_000_000_000,
+        },
+    };
+
+    // Run test
+    std.debug.print("Starting EVM call with tracing...\n", .{});
+    
+    var result = vm.call(call_params);
+    defer result.deinit(allocator);
+
+    std.debug.print("EVM call complete, success={}\n", .{result.success});
+    
+    // Check if we got a trace
+    if (result.trace) |trace| {
+        std.debug.print("Trace captured: {} steps\n", .{trace.steps.len});
+        try std.testing.expect(trace.steps.len > 0);
+    } else {
+        std.debug.print("Warning: No trace captured\n", .{});
+    }
+    
+    // Verify result
+    try std.testing.expect(result.success);
+    std.debug.print("=== Test with tracing passed ===\n", .{});
 }
