@@ -139,7 +139,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
         stack: Stack, // 16B
         gas_remaining: GasType, // 8B
         evm_ptr: *anyopaque, // 8B
-        database: ?*anyopaque, // 8B - Direct database pointer for hot path (storage ops), nullable for tests
+        database: *anyopaque, // 8B - Direct database pointer for hot path (storage ops)
         memory: Memory, // 16B -
         contract_address: Address, // 20B
         caller: Address, // 20B
@@ -162,8 +162,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
             errdefer stack.deinit(allocator);
             var memory = Memory.init(allocator) catch return Error.AllocationError;
             errdefer memory.deinit(allocator);
-            // Database pointer will be set in interpret() when we have proper EVM context
-            // For tests, it remains null and they use getEvm() path
+            // Resolve the database pointer immediately from the provided EVM pointer
+            const evm = @as(*DefaultEvm, @ptrCast(@alignCast(evm_ptr)));
 
             return Self{
                 .stack = stack,
@@ -171,7 +171,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
                 .dispatch = Dispatch{ .cursor = undefined }, // Will be set during interpret
                 .memory = memory,
                 .evm_ptr = evm_ptr,
-                .database = null, // Will be set in interpret()
+                .database = @as(*anyopaque, @ptrCast(evm.database)),
                 .contract_address = Address.ZERO_ADDRESS,
                 .jump_table = &Dispatch.JumpTable{ .entries = &[_]Dispatch.JumpTable.JumpTableEntry{} }, // Pointer to empty jump table
                 .caller = caller,
@@ -221,7 +221,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
 
             // Use cached data if available
             if (cached_data) |data| {
-                defer cache.release(bytecode_raw);
+                // Cache entries persist for the lifetime of the cache
+                // No individual release needed - only cleaned up on deinitGlobalCache
 
                 (&self.getEvm().tracer).debug("Frame: Using cached dispatch schedule", .{});
 
@@ -424,14 +425,8 @@ pub fn Frame(comptime _config: FrameConfig) type {
         /// Get the database directly (for hot path storage operations)
         /// This avoids double pointer dereference: self -> evm -> database
         /// Instead we go directly: self -> database
-        /// Falls back to getEvm().database if direct pointer not set (for tests)
         pub inline fn getDatabase(self: *const Self) *Database {
-            if (self.database) |db| {
-                return @as(*Database, @ptrCast(@alignCast(db)));
-            }
-            // Fallback for tests that don't set database directly
-            const evm = self.getEvm();
-            return evm.database;
+            return @as(*Database, @ptrCast(@alignCast(self.database)));
         }
 
         /// Validate that the current dispatch cursor points to the expected handler and metadata.

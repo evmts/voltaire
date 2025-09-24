@@ -33,7 +33,6 @@ pub const DispatchCacheEntry = struct {
     jump_table_entries: []const u8, // Store as raw bytes
     /// Last access timestamp for LRU eviction
     last_access: u64,
-    ref_count: u32,
 };
 
 /// Context for hashing bytecode pointers in HashMap
@@ -95,7 +94,6 @@ pub const DispatchCache = struct {
             // Found a hit
             self.hits += 1;
             entry.last_access = self.access_counter;
-            entry.ref_count += 1;
             return .{
                 .schedule = entry.schedule,
                 .jump_table = entry.jump_table_entries,
@@ -120,7 +118,7 @@ pub const DispatchCache = struct {
 
             var iter = self.entries.iterator();
             while (iter.next()) |kv| {
-                if (kv.value_ptr.ref_count == 0 and kv.value_ptr.last_access < lru_access) {
+                if (kv.value_ptr.last_access < lru_access) {
                     lru_key = kv.key_ptr.*;
                     lru_access = kv.value_ptr.last_access;
                 }
@@ -132,9 +130,6 @@ pub const DispatchCache = struct {
                     self.allocator.free(removed.value.schedule);
                     self.allocator.free(removed.value.jump_table_entries);
                 }
-            } else {
-                // All entries are in use, cannot insert
-                return;
             }
         }
 
@@ -149,22 +144,9 @@ pub const DispatchCache = struct {
             .schedule = schedule_copy,
             .jump_table_entries = jump_table_copy,
             .last_access = self.access_counter,
-            .ref_count = 0,
         });
     }
 
-    /// Decrements the reference count for a cached bytecode entry.
-    /// Called when a frame is done using a cached dispatch schedule.
-    pub fn release(self: *DispatchCache, bytecode: []const u8) void {
-        if (bytecode.len < SMALL_BYTECODE_THRESHOLD) return;
-
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        if (self.entries.getPtr(bytecode)) |entry| {
-            if (entry.ref_count > 0) entry.ref_count -= 1;
-        }
-    }
 
     fn getStatistics(self: *const DispatchCache) struct { hits: u64, misses: u64, hit_rate: f64 } {
         const total = self.hits + self.misses;
@@ -180,24 +162,13 @@ pub const DispatchCache = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        // Collect keys to remove (can't modify while iterating)
-        var keys_to_remove = std.ArrayList([]const u8){};
-        defer keys_to_remove.deinit(self.allocator);
-
+        // Clear all entries
         var iter = self.entries.iterator();
         while (iter.next()) |kv| {
-            if (kv.value_ptr.ref_count == 0) {
-                keys_to_remove.append(self.allocator, kv.key_ptr.*) catch continue;
-            }
+            self.allocator.free(kv.value_ptr.schedule);
+            self.allocator.free(kv.value_ptr.jump_table_entries);
         }
-
-        // Remove collected entries
-        for (keys_to_remove.items) |key| {
-            if (self.entries.fetchRemove(key)) |removed| {
-                self.allocator.free(removed.value.schedule);
-                self.allocator.free(removed.value.jump_table_entries);
-            }
-        }
+        self.entries.clearRetainingCapacity();
 
         self.hits = 0;
         self.misses = 0;
@@ -296,9 +267,6 @@ test "dispatch cache basic functionality" {
     try std.testing.expect(cached != null);
     try std.testing.expectEqualSlices(u8, cached.?.schedule, schedule);
     try std.testing.expectEqualSlices(u8, cached.?.jump_table, jump_table);
-
-    // Release the cached entry
-    cache.release(large_bytecode);
 
     // Check statistics
     const stats = getCacheStatistics();
