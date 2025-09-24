@@ -117,6 +117,8 @@ pub const Tracer = struct {
 
     pub fn deinit(self: *Tracer) void {
         for (self.steps.items) |step| {
+            // Only free if allocated (non-empty arrays that were actually allocated)
+            // Empty array literals (&[_]u256{}) shouldn't be freed
             if (step.stack_before.len > 0) self.allocator.free(step.stack_before);
             if (step.stack_after.len > 0) self.allocator.free(step.stack_after);
         }
