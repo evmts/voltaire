@@ -91,8 +91,8 @@ fn run_slt_test(allocator: std.mem.Allocator, a: u256, b: u256, expected: u256) 
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -223,8 +223,8 @@ fn run_slt_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, expect
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -436,8 +436,8 @@ test "opcode 0x12 differential test" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

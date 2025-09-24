@@ -76,8 +76,8 @@ fn run_iszero_test(allocator: std.mem.Allocator, value: u256, expected: u256) !v
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -178,8 +178,8 @@ fn run_iszero_test_with_jump(allocator: std.mem.Allocator, value: u256, expected
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -356,8 +356,8 @@ test "opcode 0x15 differential test" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

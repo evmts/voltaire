@@ -116,8 +116,8 @@ fn run_lt_test(allocator: std.mem.Allocator, a: u256, b: u256, expected: u256) !
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -373,8 +373,8 @@ fn run_lt_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, expecte
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

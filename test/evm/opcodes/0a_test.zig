@@ -116,8 +116,8 @@ fn run_exp_test(allocator: std.mem.Allocator, base: u256, exponent: u256, expect
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -406,8 +406,8 @@ fn run_exp_test_with_jump(allocator: std.mem.Allocator, base: u256, exponent: u2
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

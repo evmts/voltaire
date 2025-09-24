@@ -131,8 +131,8 @@ fn run_mulmod_test(allocator: std.mem.Allocator, a: u256, b: u256, n: u256) !voi
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -407,8 +407,8 @@ fn run_mulmod_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, n: 
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

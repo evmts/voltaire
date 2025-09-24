@@ -131,8 +131,8 @@ fn run_sdiv_test(allocator: std.mem.Allocator, a: u256, b: u256) !void {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -436,8 +436,8 @@ fn run_sdiv_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256) !void
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

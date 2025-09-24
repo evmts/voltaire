@@ -70,8 +70,8 @@ test "opcode 0x6e differential test" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     

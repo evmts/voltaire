@@ -116,8 +116,8 @@ fn run_signextend_test(allocator: std.mem.Allocator, byte_num: u256, value: u256
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
@@ -371,8 +371,8 @@ fn run_signextend_test_with_jump(allocator: std.mem.Allocator, byte_num: u256, v
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
+
     );
     defer guillotine_evm.deinit();
     
