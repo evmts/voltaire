@@ -149,12 +149,9 @@ pub const Tracer = struct {
             const main_evm = frame.getEvm();
             _ = main_evm.depth; // Currently unused but may be needed for inner frame handling
 
-            if (self.minimal_evm != null) {
-                self.debug("MinimalEvm already initialized, skipping", .{});
-                return;
-            }
-
+            // Clean up existing MinimalEvm if present
             if (self.minimal_evm) |evm| {
+                self.debug("Cleaning up existing MinimalEvm", .{});
                 evm.deinitPtr(self.allocator);
                 self.minimal_evm = null;
             }

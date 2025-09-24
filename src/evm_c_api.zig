@@ -924,20 +924,11 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
     evm_result.trace_json = @as([*]const u8, @ptrCast(&empty_error));
     evm_result.trace_json_len = 0;
     if (result.trace) |*trace| {
-        // For large traces (>1000 steps), use file-based approach
-        if (trace.steps.len > 1000) {
-            // Create temp file
-            const tmp_dir = std.fs.tmpDir(.{});
-            const tmp_name = "guillotine_trace_XXXXXX.json";
-            var tmp_file = tmp_dir.createFile(tmp_name, .{ .exclusive = false }) catch {
-                setError("Failed to create temp trace file", .{});
-                allocator.destroy(evm_result);
-                return null;
-            };
-            defer tmp_file.close();
-
-            // Write trace to file
-            const w = tmp_file.writer();
+        // Always use in-memory approach for now
+        // TODO: Re-implement file-based approach for large traces
+        if (false) {
+            // Disabled file-based approach
+            const w = undefined;
             w.writeAll("{\"structLogs\":[") catch {};
             for (trace.steps, 0..) |step, i| {
                 if (i > 0) w.writeAll(",") catch {};
@@ -960,9 +951,9 @@ fn convertCallResultToEvmResult(result: anytype, allocator: std.mem.Allocator) ?
 
             // Store file path as the "trace" (prefixed with "file://")
             const path_prefix = "file://";
-            const real_path = tmp_file.getEndPos() catch 0; // Dummy to ensure file is written
+            const real_path = 0; // Disabled
             _ = real_path;
-            const tmp_path = tmp_dir.realpathAlloc(allocator, tmp_name) catch {
+            const tmp_path = allocator.alloc(u8, 0) catch {
                 setError("Failed to get temp file path", .{});
                 allocator.destroy(evm_result);
                 return null;
