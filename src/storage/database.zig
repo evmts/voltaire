@@ -16,6 +16,7 @@ const std = @import("std");
 const log = @import("../log.zig");
 const primitives = @import("primitives");
 pub const Account = @import("database_interface_account.zig").Account;
+// Ephemeral overlay support for simulate() O(1) revert
 
 /// All-zero code hash for EOA detection
 const ZERO_CODE_HASH = [_]u8{0} ** 32;
@@ -29,6 +30,11 @@ pub const Database = struct {
     snapshots: std.ArrayList(Snapshot),
     next_snapshot_id: u64,
     allocator: std.mem.Allocator,
+    // Ephemeral overlay state (active only during simulate)
+    overlay_active: bool = false,
+    overlay_accounts: std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage),
+    overlay_storage: std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage),
+    overlay_code: std.HashMap([32]u8, []const u8, ArrayHashContext, std.hash_map.default_max_load_percentage),
 
     /// Database operation errors
     pub const Error = error{
@@ -100,7 +106,6 @@ pub const Database = struct {
         var transient_map = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator);
         // Reserve initial capacity to prevent HashMap growth during typical TSTORE operations
         transient_map.ensureTotalCapacity(16) catch {};
-        
         return Database{
             .accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
             .storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
@@ -109,7 +114,33 @@ pub const Database = struct {
             .snapshots = .{ .items = &[_]Snapshot{}, .capacity = 0 },
             .next_snapshot_id = 1,
             .allocator = allocator,
+            .overlay_active = false,
+            .overlay_accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .overlay_storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .overlay_code = std.HashMap([32]u8, []const u8, ArrayHashContext, std.hash_map.default_max_load_percentage).init(allocator),
         };
+    }
+
+    pub fn begin_ephemeral_view(self: *Database) void {
+        if (self.overlay_active) return;
+        self.overlay_active = true;
+        // Clear any stale overlays
+        self.overlay_accounts.clearRetainingCapacity();
+        self.overlay_storage.clearRetainingCapacity();
+        // Free overlay code buffers if any
+        var it = self.overlay_code.iterator();
+        while (it.next()) |entry| self.allocator.free(entry.value_ptr.*);
+        self.overlay_code.clearRetainingCapacity();
+    }
+
+    pub fn discard_ephemeral_view(self: *Database) void {
+        if (!self.overlay_active) return;
+        self.overlay_active = false;
+        self.overlay_accounts.clearRetainingCapacity();
+        self.overlay_storage.clearRetainingCapacity();
+        var it = self.overlay_code.iterator();
+        while (it.next()) |entry| self.allocator.free(entry.value_ptr.*);
+        self.overlay_code.clearRetainingCapacity();
     }
 
     /// Clean up database resources
@@ -117,7 +148,7 @@ pub const Database = struct {
         self.accounts.deinit();
         self.storage.deinit();
         self.transient_storage.deinit();
-        
+
         // Free all allocated code before deinitializing the hashmap
         var code_iter = self.code_storage.iterator();
         while (code_iter.next()) |entry| {
@@ -130,23 +161,39 @@ pub const Database = struct {
             snapshot.storage.deinit();
         }
         self.snapshots.deinit(self.allocator);
+        // Deinit overlay
+        var it = self.overlay_code.iterator();
+        while (it.next()) |entry| self.allocator.free(entry.value_ptr.*);
+        self.overlay_code.deinit();
+        self.overlay_accounts.deinit();
+        self.overlay_storage.deinit();
     }
 
     // Account operations
 
     /// Get account data for the given address
     pub fn get_account(self: *Database, address: [20]u8) Error!?Account {
+        if (self.overlay_active) {
+            if (self.overlay_accounts.get(address)) |acc| return acc;
+        }
         return self.accounts.get(address);
     }
 
     /// Set account data for the given address
     pub fn set_account(self: *Database, address: [20]u8, account: Account) Error!void {
-        // log.debug("set_account: Setting account for address {x} with code_hash {x}", .{ address, account.code_hash });
+        if (self.overlay_active) {
+            try self.overlay_accounts.put(address, account);
+            return;
+        }
         try self.accounts.put(address, account);
     }
 
     /// Delete account and all associated data
     pub fn delete_account(self: *Database, address: [20]u8) Error!void {
+        if (self.overlay_active) {
+            _ = self.overlay_accounts.remove(address);
+            return;
+        }
         _ = self.accounts.remove(address);
     }
 
@@ -168,12 +215,19 @@ pub const Database = struct {
     /// Get storage value for the given address and key
     pub fn get_storage(self: *Database, address: [20]u8, key: u256) Error!u256 {
         const storage_key = StorageKey{ .address = address, .key = key };
+        if (self.overlay_active) {
+            if (self.overlay_storage.get(storage_key)) |v| return v;
+        }
         return self.storage.get(storage_key) orelse 0;
     }
 
     /// Set storage value for the given address and key
     pub fn set_storage(self: *Database, address: [20]u8, key: u256, value: u256) Error!void {
         const storage_key = StorageKey{ .address = address, .key = key };
+        if (self.overlay_active) {
+            try self.overlay_storage.put(storage_key, value);
+            return;
+        }
         try self.storage.put(storage_key, value);
     }
 
@@ -195,6 +249,9 @@ pub const Database = struct {
 
     /// Get contract code by hash
     pub fn get_code(self: *Database, code_hash: [32]u8) Error![]const u8 {
+        if (self.overlay_active) {
+            if (self.overlay_code.get(code_hash)) |buf| return buf;
+        }
         const code = self.code_storage.get(code_hash) orelse {
             // log.debug("get_code: Code not found for hash {x}", .{code_hash});
             return Error.CodeNotFound;
@@ -206,7 +263,7 @@ pub const Database = struct {
     /// Get contract code by address (supports EIP-7702 delegation)
     pub fn get_code_by_address(self: *Database, address: [20]u8) Error![]const u8 {
         // log.debug("get_code_by_address: Looking for address {x}", .{address});
-        
+
         if (self.accounts.get(address)) |account| {
             // EIP-7702: Check if this EOA has delegated code
             if (account.get_effective_code_address()) |delegated_addr| {
@@ -214,18 +271,19 @@ pub const Database = struct {
                 // Recursively get code from delegated address
                 return self.get_code_by_address(delegated_addr.bytes);
             }
-            
+
             // Check if this is an EOA (all-zero code_hash or EMPTY_CODE_HASH)
             // EOAs don't have code stored, return empty code
             if (std.mem.eql(u8, &account.code_hash, &ZERO_CODE_HASH) or
-                std.mem.eql(u8, &account.code_hash, &primitives.EMPTY_CODE_HASH)) {
+                std.mem.eql(u8, &account.code_hash, &primitives.EMPTY_CODE_HASH))
+            {
                 return &.{};
             }
-            
+
             // log.debug("get_code_by_address: Found account with code_hash {x}", .{account.code_hash});
             return self.get_code(account.code_hash);
         }
-        
+
         // log.debug("get_code_by_address: Account not found for address {x}", .{address});
         return Error.AccountNotFound;
     }
@@ -235,12 +293,16 @@ pub const Database = struct {
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
         // log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
-        
+
         // Make a copy of the code to own it
         const code_copy = self.allocator.alloc(u8, code.len) catch return Error.OutOfMemory;
         @memcpy(code_copy, code);
-        
-        try self.code_storage.put(hash, code_copy);
+
+        if (self.overlay_active) {
+            try self.overlay_code.put(hash, code_copy);
+        } else {
+            try self.code_storage.put(hash, code_copy);
+        }
         return hash;
     }
 
@@ -259,29 +321,17 @@ pub const Database = struct {
 
     // Snapshot operations
 
-    /// Create a state snapshot and return its ID
+    /// Create a state snapshot and return its ID (legacy tests support)
     pub fn create_snapshot(self: *Database) Error!u64 {
         const snapshot_id = self.next_snapshot_id;
         self.next_snapshot_id += 1;
-
         var snapshot_accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(self.allocator);
         var accounts_iter = self.accounts.iterator();
-        while (accounts_iter.next()) |entry| {
-            try snapshot_accounts.put(entry.key_ptr.*, entry.value_ptr.*);
-        }
-
+        while (accounts_iter.next()) |entry| try snapshot_accounts.put(entry.key_ptr.*, entry.value_ptr.*);
         var snapshot_storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(self.allocator);
         var storage_iter = self.storage.iterator();
-        while (storage_iter.next()) |entry| {
-            try snapshot_storage.put(entry.key_ptr.*, entry.value_ptr.*);
-        }
-
-        try self.snapshots.append(self.allocator, Snapshot{
-            .id = snapshot_id,
-            .accounts = snapshot_accounts,
-            .storage = snapshot_storage,
-        });
-
+        while (storage_iter.next()) |entry| try snapshot_storage.put(entry.key_ptr.*, entry.value_ptr.*);
+        try self.snapshots.append(self.allocator, Snapshot{ .id = snapshot_id, .accounts = snapshot_accounts, .storage = snapshot_storage });
         return snapshot_id;
     }
 
@@ -294,27 +344,16 @@ pub const Database = struct {
                 break;
             }
         }
-
         const index = snapshot_index orelse return Error.SnapshotNotFound;
         const snapshot = &self.snapshots.items[index];
-
         self.accounts.deinit();
         self.storage.deinit();
-
         self.accounts = std.HashMap([20]u8, Account, ArrayHashContext, std.hash_map.default_max_load_percentage).init(self.allocator);
         self.storage = std.HashMap(StorageKey, u256, StorageKeyContext, std.hash_map.default_max_load_percentage).init(self.allocator);
-
         var accounts_iter = snapshot.accounts.iterator();
-        while (accounts_iter.next()) |entry| {
-            try self.accounts.put(entry.key_ptr.*, entry.value_ptr.*);
-        }
-
+        while (accounts_iter.next()) |entry| try self.accounts.put(entry.key_ptr.*, entry.value_ptr.*);
         var storage_iter = snapshot.storage.iterator();
-        while (storage_iter.next()) |entry| {
-            try self.storage.put(entry.key_ptr.*, entry.value_ptr.*);
-        }
-
-        // Remove this snapshot and all later ones
+        while (storage_iter.next()) |entry| try self.storage.put(entry.key_ptr.*, entry.value_ptr.*);
         for (self.snapshots.items[index..]) |*snap| {
             snap.accounts.deinit();
             snap.storage.deinit();
@@ -331,10 +370,7 @@ pub const Database = struct {
                 break;
             }
         }
-
         const index = snapshot_index orelse return Error.SnapshotNotFound;
-
-        // Clean up this snapshot and all later ones
         for (self.snapshots.items[index..]) |*snapshot| {
             snapshot.accounts.deinit();
             snapshot.storage.deinit();
@@ -346,28 +382,27 @@ pub const Database = struct {
 
     /// Set delegation for an EOA to execute another address's code
     pub fn set_delegation(self: *Database, eoa_address: [20]u8, delegated_address: [20]u8) Error!void {
-        
+
         // Get or create the EOA account
         var account = (try self.get_account(eoa_address)) orelse Account.zero();
-        
+
         // Only EOAs can have delegations (no existing code)
         if (!std.mem.eql(u8, &account.code_hash, &ZERO_CODE_HASH)) {
             log.debug("set_delegation: Address {x} is a contract, cannot set delegation", .{eoa_address});
             return Error.InvalidAddress;
         }
-        
+
         // Convert to Address type for the delegation
         const delegate_addr = primitives.Address.Address{ .bytes = delegated_address };
-        
+
         account.set_delegation(delegate_addr);
         try self.set_account(eoa_address, account);
-        
+
         log.debug("set_delegation: Set delegation for EOA {x} to {x}", .{ eoa_address, delegated_address });
     }
 
     /// Clear delegation for an EOA
     pub fn clear_delegation(self: *Database, eoa_address: [20]u8) Error!void {
-        
         if (try self.get_account(eoa_address)) |account| {
             var mutable_account = account;
             mutable_account.clear_delegation();
@@ -514,7 +549,7 @@ test "Database code operations" {
 
     // Store code and get hash
     const code_hash = try db.set_code(test_bytes);
-    
+
     // Verify code can be retrieved by hash
     const retrieved_code = try db.get_code(code_hash);
     try testing.expectEqualSlices(u8, test_bytes, retrieved_code);
@@ -529,7 +564,7 @@ test "Database code operations" {
     };
 
     try db.set_account(test_address, account);
-    
+
     // Get code by address should work
     const code_by_addr = try db.get_code_by_address(test_address);
     try testing.expectEqualSlices(u8, test_bytes, code_by_addr);
@@ -621,7 +656,7 @@ test "Database account operations" {
         .code_hash = [_]u8{0xAA} ** 32,
         .storage_root = [_]u8{0xBB} ** 32,
     };
-    
+
     try db.set_account(addr1, account1);
     try testing.expect(db.account_exists(addr1));
     try testing.expectEqual(@as(u256, 1000), try db.get_balance(addr1));
@@ -689,7 +724,7 @@ test "Database multiple snapshots" {
     defer db.deinit();
 
     const addr = [_]u8{0x01} ++ [_]u8{0} ** 19;
-    
+
     // Initial state
     const initial_account = Account{ .balance = 100, .nonce = 0, .code_hash = [_]u8{0} ** 32, .storage_root = [_]u8{0} ** 32 };
     try db.set_account(addr, initial_account);
@@ -722,7 +757,7 @@ test "Database commit snapshot" {
     defer db.deinit();
 
     const addr = [_]u8{0x01} ++ [_]u8{0} ** 19;
-    
+
     // Initial state
     const account = Account{ .balance = 100, .nonce = 0, .code_hash = [_]u8{0} ** 32, .storage_root = [_]u8{0} ** 32 };
     try db.set_account(addr, account);
@@ -737,7 +772,7 @@ test "Database commit snapshot" {
 
     // Changes should remain
     try testing.expectEqual(@as(u256, 200), try db.get_balance(addr));
-    
+
     // Cannot revert to committed snapshot
     try testing.expectError(Database.Error.SnapshotNotFound, db.revert_to_snapshot(snapshot_id));
 }
@@ -777,7 +812,7 @@ test "Database snapshot operations - detailed" {
 
     const addr1 = [_]u8{0xA1} ++ [_]u8{0} ** 19;
     const addr2 = [_]u8{0xA2} ++ [_]u8{0} ** 19;
-    
+
     const account1 = Account{
         .balance = 100,
         .nonce = 1,
@@ -831,7 +866,7 @@ test "Database commit snapshot operations - detailed" {
     };
 
     try db.set_account(addr1, account1);
-    
+
     // Create snapshot
     const snapshot_id = try db.create_snapshot();
 
@@ -967,7 +1002,7 @@ test "Database large values" {
     const addr = [_]u8{0xFF} ** 20;
     const large_value: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     const large_key: u256 = 0x123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF1234;
-    
+
     // Test with maximum values
     const account = Account{
         .balance = large_value,
@@ -996,7 +1031,7 @@ test "Database max values" {
     const max_address = [_]u8{0xFF} ** 20;
     const max_u256 = std.math.maxInt(u256);
     const max_nonce = std.math.maxInt(u64);
-    
+
     const max_account = Account{
         .balance = max_u256,
         .nonce = max_nonce,
@@ -1087,7 +1122,7 @@ test "Database storage key collision resistance" {
     // Test keys that might cause hash collisions
     const addr = [_]u8{0x33} ++ [_]u8{0} ** 19;
     const keys = [_]u256{ 0, 1, 0x100, 0x10000, 0x100000000, std.math.maxInt(u256) };
-    
+
     // Set different values for each key
     for (keys, 0..) |key, i| {
         try db.set_storage(addr, key, @intCast(i + 1000));
@@ -1149,10 +1184,10 @@ test "Database empty code hash handling" {
 
     const empty_code = [_]u8{};
     const code_hash = try db.set_code(&empty_code);
-    
+
     // Empty code should still have a hash
     try testing.expect(code_hash.len == 32);
-    
+
     const retrieved_code = try db.get_code(code_hash);
     try testing.expectEqualSlices(u8, &empty_code, retrieved_code);
 }
@@ -1166,7 +1201,7 @@ test "Database large code storage" {
     const large_code_size = 24576;
     const large_code = try allocator.alloc(u8, large_code_size);
     defer allocator.free(large_code);
-    
+
     // Fill with pattern
     for (large_code, 0..) |*byte, i| {
         byte.* = @intCast(i % 256);
@@ -1185,7 +1220,7 @@ test "Database empty code handling" {
     // Store empty code
     const empty_code: []const u8 = &.{};
     const code_hash = try db.set_code(empty_code);
-    
+
     // Should be able to retrieve empty code
     const retrieved = try db.get_code(code_hash);
     try testing.expectEqual(@as(usize, 0), retrieved.len);
@@ -1194,7 +1229,7 @@ test "Database empty code handling" {
 test "Database validation function" {
     // Test compile-time validation
     validate_database_implementation(Database);
-    
+
     // This would fail to compile if Database was missing required methods
     // validate_database_implementation(struct {}); // Uncomment to test failure
 }
@@ -1244,7 +1279,7 @@ test "EIP-7702: Cannot set delegation on contract" {
 
     const contract_address = [_]u8{0x03} ++ [_]u8{0} ** 19;
     const delegate_address = [_]u8{0x04} ++ [_]u8{0} ** 19;
-    
+
     // Create a contract account (has code)
     const code_hash = try db.set_code(&[_]u8{0x60});
     const contract_account = Account{
@@ -1283,7 +1318,7 @@ test "EIP-7702: Delegation chain resolution" {
 
     // EOA1 delegates to EOA2
     try db.set_delegation(eoa1_address, eoa2_address);
-    
+
     // EOA2 delegates to contract
     try db.set_delegation(eoa2_address, contract_address);
 
@@ -1308,29 +1343,29 @@ test "Database state persistence across operations" {
     // Complex sequence of operations
     try db.set_storage(addr1, 1, 100);
     try db.set_transient_storage(addr1, 1, 200);
-    
+
     _ = try db.create_snapshot(); // snapshot1 - used for state setup
-    
+
     try db.set_storage(addr2, 1, 300);
     try db.set_transient_storage(addr2, 1, 400);
-    
+
     const snapshot2 = try db.create_snapshot();
-    
+
     try db.set_storage(addr1, 2, 500);
-    
+
     // Verify intermediate state
     try testing.expectEqual(@as(u256, 100), try db.get_storage(addr1, 1));
     try testing.expectEqual(@as(u256, 200), try db.get_transient_storage(addr1, 1));
     try testing.expectEqual(@as(u256, 300), try db.get_storage(addr2, 1));
     try testing.expectEqual(@as(u256, 400), try db.get_transient_storage(addr2, 1));
     try testing.expectEqual(@as(u256, 500), try db.get_storage(addr1, 2));
-    
+
     // Revert to snapshot2
     try db.revert_to_snapshot(snapshot2);
     try testing.expectEqual(@as(u256, 100), try db.get_storage(addr1, 1));
     try testing.expectEqual(@as(u256, 300), try db.get_storage(addr2, 1));
     try testing.expectEqual(@as(u256, 0), try db.get_storage(addr1, 2)); // Should be zero after revert
-    
+
     // Note: transient storage behavior during snapshots might need clarification
     // as EIP-1153 specifies transient storage is cleared between transactions
 }
