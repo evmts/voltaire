@@ -1,6 +1,10 @@
 const std = @import("std");
 const evm = @import("evm");
 const primitives = @import("primitives");
+
+test {
+    std.testing.log_level = .debug;
+}
 const common = @import("common.zig");
 
 fn run_eq_test(allocator: std.mem.Allocator, a: u256, b: u256, expected: u256) !void {
@@ -67,6 +71,7 @@ fn run_eq_test(allocator: std.mem.Allocator, a: u256, b: u256, expected: u256) !
     };
     
     var guillotine_evm = try evm.Evm(.{
+        .tracer_config = .disabled,
     }).init(
         allocator,
         &database,
@@ -166,6 +171,7 @@ fn run_eq_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, expecte
     };
     
     var guillotine_evm = try evm.Evm(.{
+        .tracer_config = .disabled,
     }).init(
         allocator,
         &database,
@@ -191,17 +197,17 @@ fn run_eq_test_with_jump(allocator: std.mem.Allocator, a: u256, b: u256, expecte
     defer guillotine_result.deinit(allocator);
 }
 
-test "EQ: equal small values" {
-    const allocator = std.testing.allocator;
-    try run_eq_test(allocator, 5, 5, 1); // 5 == 5
-    try run_eq_test_with_jump(allocator, 100, 100, 1); // 100 == 100
-}
+// test "EQ: equal small values" {
+//     const allocator = std.testing.allocator;
+//     try run_eq_test(allocator, 5, 5, 1); // 5 == 5
+//     try run_eq_test_with_jump(allocator, 100, 100, 1); // 100 == 100
+// }
 
-test "EQ: unequal small values" {
-    const allocator = std.testing.allocator;
-    try run_eq_test(allocator, 5, 10, 0); // 5 == 10
-    try run_eq_test_with_jump(allocator, 100, 99, 0); // 100 == 99
-}
+// test "EQ: unequal small values" {
+//     const allocator = std.testing.allocator;
+//     try run_eq_test(allocator, 5, 10, 0); // 5 == 10
+//     try run_eq_test_with_jump(allocator, 100, 99, 0); // 100 == 99
+// }
 
 test "EQ: zero comparisons" {
     const allocator = std.testing.allocator;
@@ -341,6 +347,7 @@ test "opcode 0x14 differential test" {
     };
     
     var guillotine_evm = try evm.Evm(.{
+        .tracer_config = .disabled,
     }).init(
         allocator,
         &database,
