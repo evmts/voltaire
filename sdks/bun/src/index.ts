@@ -165,11 +165,18 @@ export class GuillotineEVM {
   private blockInfoView: DataView;
 
   constructor(blockInfo: BlockInfo) {
-    // Create block info structure
-    this.blockInfoBuffer = new ArrayBuffer(136); // Size of BlockInfoFFI struct
+    // Create block info structure matching BlockInfoFFI in evm_c_api.zig
+    // Total size: 104 bytes (with padding for alignment)
+    // Actual offsets (from Zig @offsetOf):
+    // number: 0, timestamp: 8, gas_limit: 16, coinbase: 24,
+    // base_fee: 48, chain_id: 56, difficulty: 64, prev_randao: 72
+    this.blockInfoBuffer = new ArrayBuffer(104);
     this.blockInfoView = new DataView(this.blockInfoBuffer);
     
-    // Set block info fields
+    // Initialize buffer to zeros
+    new Uint8Array(this.blockInfoBuffer).fill(0);
+    
+    // Set block info fields with correct offsets
     this.blockInfoView.setBigUint64(0, blockInfo.number, true);
     this.blockInfoView.setBigUint64(8, blockInfo.timestamp, true);
     this.blockInfoView.setBigUint64(16, blockInfo.gasLimit, true);
@@ -178,13 +185,17 @@ export class GuillotineEVM {
     const coinbaseBytes = addressToBytes(blockInfo.coinbase);
     new Uint8Array(this.blockInfoBuffer, 24, 20).set(coinbaseBytes);
     
-    this.blockInfoView.setBigUint64(44, blockInfo.baseFee, true);
-    this.blockInfoView.setBigUint64(52, blockInfo.chainId, true);
-    this.blockInfoView.setBigUint64(60, blockInfo.difficulty || 0n, true);
+    // Note: 4 bytes of padding after coinbase (44-47)
+    this.blockInfoView.setBigUint64(48, blockInfo.baseFee, true);
+    this.blockInfoView.setBigUint64(56, blockInfo.chainId, true);
+    this.blockInfoView.setBigUint64(64, blockInfo.difficulty || 0n, true);
     
-    // Set prevRandao (32 bytes at offset 68)
+    // Set prevRandao (32 bytes at offset 72)
     const prevRandao = blockInfo.prevRandao || new Uint8Array(32);
-    new Uint8Array(this.blockInfoBuffer, 68, 32).set(prevRandao);
+    new Uint8Array(this.blockInfoBuffer, 72, 32).set(prevRandao);
+    
+    // Initialize the FFI library if not already done
+    lib.symbols.guillotine_init();
     
     // Create EVM instance
     this.handle = lib.symbols.guillotine_evm_create(ptr(this.blockInfoBuffer));
