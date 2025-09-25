@@ -399,9 +399,20 @@ pub fn Preprocessor(comptime FrameType: type) type {
         }
 
         pub fn calculateFirstBlockGas(bytecode: anytype) u64 {
+            const info = calculateFirstBlockInfo(bytecode);
+            return info.gas;
+        }
+
+        /// Calculate gas and stack requirements for the first basic block
+        /// Returns metadata suitable for FirstBlockMetadata
+        pub fn calculateFirstBlockInfo(bytecode: anytype) FirstBlockMetadata {
             var gas: u64 = 0;
+            var stack_effect: i32 = 0;
+            var min_stack: i32 = 0;
+            var max_stack: i32 = 0;
+            
             const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
-                bytecode catch return 0
+                bytecode catch return .{ .gas = 0, .min_stack = 0, .max_stack = 0 }
             else
                 bytecode;
             var iter = actual_bytecode.createIterator();
@@ -422,10 +433,23 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
                         const new_gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         gas = new_gas;
+                        
+                        // Update stack effect for this opcode
+                        if (data.opcode < opcode_info.len) {
+                            stack_effect -= opcode_info[data.opcode].stack_inputs;
+                            if (stack_effect < min_stack) min_stack = stack_effect;
+                            stack_effect += opcode_info[data.opcode].stack_outputs;
+                            if (stack_effect > max_stack) max_stack = stack_effect;
+                        }
+                        
                         switch (data.opcode) {
                             0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
                                 if (data.opcode == 0x57) {}
-                                return gas;
+                                return .{
+                                    .gas = @intCast(gas),
+                                    .min_stack = @intCast(@abs(min_stack)),
+                                    .max_stack = @intCast(@max(0, max_stack)),
+                                };
                             },
                             else => {},
                         }
@@ -435,23 +459,42 @@ pub fn Preprocessor(comptime FrameType: type) type {
                         const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
                         const new_gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         gas = new_gas;
+                        
+                        // PUSH operations: 0 inputs, 1 output
+                        // stack_effect -= 0; (no inputs)
+                        stack_effect += 1; // 1 output
+                        if (stack_effect > max_stack) max_stack = stack_effect;
                     },
                     .jumpdest => {
-                        return gas;
+                        return .{
+                            .gas = @intCast(gas),
+                            .min_stack = @intCast(@abs(min_stack)),
+                            .max_stack = @intCast(@max(0, max_stack)),
+                        };
                     },
                     .stop, .invalid => {
                         const gas_to_add = @as(u64, opcode_info[0x00].gas_cost);
                         gas = std.math.add(u64, gas, gas_to_add) catch gas;
-                        return gas;
+                        return .{
+                            .gas = @intCast(gas),
+                            .min_stack = @intCast(@abs(min_stack)),
+                            .max_stack = @intCast(@max(0, max_stack)),
+                        };
                     },
                     else => {
                         const new_gas = std.math.add(u64, gas, 6) catch gas;
                         gas = new_gas;
+                        // For other instructions, assume minimal stack effect
+                        // This is conservative - real implementation would need detailed analysis
                     },
                 }
             }
 
-            return gas;
+            return .{
+                .gas = @intCast(gas),
+                .min_stack = @intCast(@abs(min_stack)),
+                .max_stack = @intCast(@max(0, max_stack)),
+            };
         }
 
         const UnresolvedJump = struct {
@@ -493,9 +536,9 @@ pub fn Preprocessor(comptime FrameType: type) type {
 
             var iter = bytecode.createIterator();
 
-            const first_block_gas = calculateFirstBlockGas(bytecode);
+            const first_block_info = calculateFirstBlockInfo(bytecode);
 
-            if (first_block_gas > 0) try schedule_items.append(allocator, .{ .first_block_gas = .{ .gas = @intCast(first_block_gas) } });
+            if (first_block_info.gas > 0) try schedule_items.append(allocator, .{ .first_block_gas = first_block_info });
 
             var opcode_count: usize = 0;
             var loop_counter = FrameType.config.createLoopSafetyCounter().init(FrameType.config.loop_quota orelse 0);
