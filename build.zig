@@ -757,17 +757,6 @@ pub fn build(b: *std.Build) void {
         synthetic_step.dependOn(&run_synthetic_test.step);
     }
 
-    // Python specs runner
-    const python_check = b.addSystemCommand(&[_][]const u8{ "which", "python3" });
-    python_check.addCheck(.{ .expect_stdout_match = "python3" });
-
-    const run_specs = b.addSystemCommand(&[_][]const u8{ "python3", "spec_runner.py" });
-    run_specs.setCwd(b.path("specs"));
-    run_specs.step.dependOn(&python_check.step);
-
-    const specs_report_step = b.step("specs-report", "Run Python script to produce test report");
-    specs_report_step.dependOn(&run_specs.step);
-
     // Bun specs runner
     const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
     bun_check.addCheck(.{ .expect_stdout_match = "bun" });
