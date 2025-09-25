@@ -70,6 +70,16 @@ class SpecTestRunner:
         if hex_str.startswith('0x'):
             return int(hex_str, 16)
         return int(hex_str, 16) if hex_str else 0
+    
+    def replace_contract_placeholders(self, data: str) -> str:
+        """Replace contract placeholders in bytecode with actual addresses."""
+        # Replace contract placeholders: <contract:0xADDRESS> or <contract:name:0xADDRESS>
+        data = re.sub(r'<contract:(?:[^:>]+:)?0x([0-9a-fA-F]+)>', lambda m: m.group(1).zfill(40), data)
+        
+        # Replace EOA placeholders: <eoa:sender:0xADDRESS> etc
+        data = re.sub(r'<eoa:(?:[^:>]+:)?0x([0-9a-fA-F]+)>', lambda m: m.group(1).zfill(40), data)
+        
+        return data
 
     def parse_address(self, addr_str: str) -> Address:
         """Parse address from various formats."""
@@ -131,6 +141,10 @@ class SpecTestRunner:
                     code = account_data['code']
                     if code.startswith(':raw '):
                         code = code[5:]  # Remove ":raw " prefix
+                    
+                    # Replace contract placeholders with actual addresses
+                    code = self.replace_contract_placeholders(code)
+                    
                     if code.startswith('0x'):
                         code = code[2:]
 
@@ -224,6 +238,10 @@ class SpecTestRunner:
                     if isinstance(data, str):
                         if data.startswith(':raw '):
                             data = data[5:]  # Remove ":raw " prefix
+                        
+                        # Replace contract placeholders with actual addresses
+                        data = self.replace_contract_placeholders(data)
+                        
                         if data.startswith('0x'):
                             data = data[2:]
 

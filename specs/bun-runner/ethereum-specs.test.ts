@@ -81,6 +81,19 @@ function parseHexData(data: string): string {
     data = parts.map(p => p.replace(/^0x/, "")).join("");
     data = "0x" + data;
   }
+  
+  // Replace contract placeholders with actual addresses
+  // Format: <contract:0xADDRESS> or <contract:name:0xADDRESS>
+  data = data.replace(/<contract:(?:[^:>]+:)?0x([0-9a-fA-F]+)>/g, (match, addr) => {
+    // Return the address padded to 20 bytes (40 hex chars)
+    return addr.padStart(40, '0');
+  });
+  
+  // Replace EOA placeholders
+  data = data.replace(/<eoa:(?:[^:>]+:)?0x([0-9a-fA-F]+)>/g, (match, addr) => {
+    return addr.padStart(40, '0');
+  });
+  
   if (!data.startsWith("0x")) data = "0x" + data;
   return data;
 }
