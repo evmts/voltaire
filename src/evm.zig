@@ -22,16 +22,16 @@ pub fn Evm(comptime config: EvmConfig) type {
         const Self = @This();
 
         pub const Frame = @import("frame/frame.zig").Frame(config.frame_config());
+        pub const Bytecode = @import("bytecode/bytecode.zig").Bytecode(.{
+            .max_bytecode_size = config.max_bytecode_size,
+            .max_initcode_size = config.max_initcode_size,
+            .fusions_enabled = config.enable_fusion,
+        });
 
         pub const CallResult = call_result_module.CallResult(config);
         pub const CallParams = call_params_module.CallParams(config);
 
         const StaticDatabase = @import("storage/static_wrappers.zig").StaticDatabase;
-
-        pub const Bytecode = @import("bytecode/bytecode.zig").Bytecode(.{
-            .max_bytecode_size = config.max_bytecode_size,
-            .fusions_enabled = config.enable_fusion,
-        });
         pub const Journal: type = @import("storage/journal.zig").Journal(.{
             .SnapshotIdType = if (config.max_call_depth <= 255) u8 else u16,
             .WordType = config.WordType,
@@ -1128,11 +1128,56 @@ pub fn Evm(comptime config: EvmConfig) type {
             // EIP-2929: Warm the contract address being executed
             config.eips.warm_contract_for_execution(&self.access_list, address) catch {};
 
+            // Build dispatch schedule before frame execution
+            if (code.len > config.max_bytecode_size) {
+                return error.BytecodeTooLarge;
+            }
+
+            const tracer_ptr = @as(?@TypeOf(&self.tracer), &self.tracer);
+            const bytecode = if (tracer_ptr != null)
+                Bytecode.initWithTracer(arena_allocator, code, tracer_ptr) catch |e| {
+                    return switch (e) {
+                        error.BytecodeTooLarge => error.BytecodeTooLarge,
+                        error.InvalidOpcode => error.InvalidOpcode,
+                        error.InvalidJumpDestination => error.InvalidJumpDestination,
+                        error.TruncatedPush => error.InvalidOpcode,
+                        error.OutOfMemory => error.AllocationError,
+                        else => error.AllocationError,
+                    };
+                }
+            else
+                Bytecode.init(arena_allocator, code) catch |e| {
+                    return switch (e) {
+                        error.BytecodeTooLarge => error.BytecodeTooLarge,
+                        error.InvalidOpcode => error.InvalidOpcode,
+                        error.InvalidJumpDestination => error.InvalidJumpDestination,
+                        error.TruncatedPush => error.InvalidOpcode,
+                        error.OutOfMemory => error.AllocationError,
+                        else => error.AllocationError,
+                    };
+                };
+
+            // Create dispatch schedule
+            const handlers = &Frame.opcode_handlers;
+            var dispatch_schedule = Frame.Dispatch.DispatchSchedule.init(arena_allocator, bytecode, handlers, tracer_ptr) catch {
+                return error.AllocationError;
+            };
+            defer dispatch_schedule.deinit();
+
+            // Create jump table
+            const jt = Frame.Dispatch.createJumpTable(arena_allocator, dispatch_schedule.items, bytecode) catch return error.AllocationError;
+            const heap_jump_table = arena_allocator.create(Frame.Dispatch.JumpTable) catch return error.AllocationError;
+            heap_jump_table.* = jt;
+            defer {
+                if (heap_jump_table.entries.len > 0) arena_allocator.free(heap_jump_table.entries);
+                arena_allocator.destroy(heap_jump_table);
+            }
+
             var execution_trace: ?@import("frame/call_result.zig").ExecutionTrace = null;
             const Termination = error{ Stop, Return, SelfDestruct };
             var termination_reason: ?Termination = null;
 
-            frame.interpret(code) catch |err| switch (err) {
+            frame.interpret(&dispatch_schedule, heap_jump_table, code) catch |err| switch (err) {
                 error.Stop => termination_reason = error.Stop,
                 error.Return => termination_reason = error.Return,
                 error.SelfDestruct => termination_reason = error.SelfDestruct,

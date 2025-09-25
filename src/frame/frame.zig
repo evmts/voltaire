@@ -189,93 +189,20 @@ pub fn Frame(comptime _config: FrameConfig) type {
             (&self.getEvm().tracer).debug("Frame.deinit: Cleanup complete", .{});
         }
 
-        pub fn interpret(self: *Self, bytecode_raw: []const u8) Error!void {
+        pub fn interpret(self: *Self, dispatch_schedule: *const Dispatch.DispatchSchedule, jump_table: *const Dispatch.JumpTable, bytecode_raw: []const u8) Error!void {
             @branchHint(.likely);
             const evm = self.getEvm();
             // Set the database pointer now that we have proper EVM context
             self.database = @as(*anyopaque, @ptrCast(evm.database));
             (&evm.tracer).onInterpret(self, bytecode_raw, @as(i64, @intCast(self.gas_remaining)));
 
-            if (bytecode_raw.len > config.max_bytecode_size) {
-                @branchHint(.cold);
-                (&evm.tracer).onFrameBytecodeInit(bytecode_raw.len, false, error.BytecodeTooLarge);
-                return Error.BytecodeTooLarge;
-            }
             (&evm.tracer).onFrameBytecodeInit(bytecode_raw.len, true, null);
             self.code = bytecode_raw;
 
             (&evm.tracer).initPcTracker(bytecode_raw);
 
-            const allocator = self.getEvm().getCallArenaAllocator();
-
-            // Build new dispatch schedule (no caching)
-            (&self.getEvm().tracer).debug("Frame: Building dispatch schedule", .{});
-
-            // Initialize bytecode with appropriate tracer
-            const tracer = @as(?@TypeOf(&self.getEvm().tracer), &self.getEvm().tracer);
-
-            const bytecode = if (tracer != null)
-                Bytecode.initWithTracer(allocator, bytecode_raw, tracer) catch |e| {
-                    @branchHint(.cold);
-                    (&self.getEvm().tracer).onFrameBytecodeInit(bytecode_raw.len, false, e);
-                    return switch (e) {
-                        error.BytecodeTooLarge => Error.BytecodeTooLarge,
-                        error.InvalidOpcode => Error.InvalidOpcode,
-                        error.InvalidJumpDestination => Error.InvalidJump,
-                        error.TruncatedPush => Error.InvalidOpcode,
-                        error.OutOfMemory => Error.AllocationError,
-                        else => Error.AllocationError,
-                    };
-                }
-            else
-                Bytecode.init(allocator, bytecode_raw) catch |e| {
-                    @branchHint(.unlikely);
-                    return switch (e) {
-                        error.BytecodeTooLarge => Error.BytecodeTooLarge,
-                        error.InvalidOpcode => Error.InvalidOpcode,
-                        error.InvalidJumpDestination => Error.InvalidJump,
-                        error.TruncatedPush => Error.InvalidOpcode,
-                        error.OutOfMemory => Error.AllocationError,
-                        else => Error.AllocationError,
-                    };
-                };
-
-            // Create dispatch schedule
-            const handlers = &Self.opcode_handlers;
-            var owned_schedule = Dispatch.DispatchSchedule.init(allocator, bytecode, handlers, tracer) catch {
-                return Error.AllocationError;
-            };
-            defer owned_schedule.deinit();
-            const schedule = owned_schedule.items;
-
-            // Pretty print in debug modes
-            if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
-                const dispatch_pretty_print = @import("../preprocessor/dispatch_pretty_print.zig");
-                const pretty_output = dispatch_pretty_print.pretty_print(
-                    allocator,
-                    schedule,
-                    bytecode,
-                    Self,
-                    Dispatch.Item,
-                ) catch null;
-                if (pretty_output) |output| {
-                    defer allocator.free(output);
-                    (&self.getEvm().tracer).debug("\n{s}", .{output});
-                }
-            }
-
-            // Create jump table
-            const jt = Dispatch.createJumpTable(allocator, schedule, bytecode) catch return Error.AllocationError;
-            const heap_jump_table = allocator.create(Dispatch.JumpTable) catch return Error.AllocationError;
-            heap_jump_table.* = jt;
-            const jump_table_ptr = heap_jump_table;
-
-            defer {
-                if (jump_table_ptr.entries.len > 0) allocator.free(jump_table_ptr.entries);
-                allocator.destroy(jump_table_ptr);
-            }
-
-            self.jump_table = jump_table_ptr;
+            self.jump_table = jump_table;
+            const schedule = dispatch_schedule.items;
 
             var start_index: usize = 0;
             var first_block_gas_amount: u32 = 0;
@@ -285,7 +212,7 @@ pub fn Frame(comptime _config: FrameConfig) type {
             (&self.getEvm().tracer).assert(schedule.len >= 2 or schedule[schedule.len - 1].opcode_handler != stop_handler or schedule[schedule.len - 2].opcode_handler != stop_handler, "Frame.interpret: Bytecode stream does not end with 2 stop handlers");
 
             // Validate the schedule structure (for better error reporting)
-            (&self.getEvm().tracer).assert(owned_schedule.validate(), "Frame.interpret: Invalid dispatch schedule structure");
+            (&self.getEvm().tracer).assert(dispatch_schedule.validate(), "Frame.interpret: Invalid dispatch schedule structure");
 
             // Check if schedule starts with first_block_gas (it may not if gas is 0)
             if (schedule.len > 0 and schedule[0] == .first_block_gas) {
