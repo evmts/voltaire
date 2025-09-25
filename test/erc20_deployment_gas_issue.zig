@@ -61,9 +61,7 @@ test "ERC20 deployment gas consumption issue" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
-    );
+        caller_address);
     defer evm_instance.deinit();
     
     // Read the actual ERC20 bytecode from fixtures
@@ -110,9 +108,7 @@ test "ERC20 deployment gas consumption issue" {
             block_info,
             tx_context,
             0,
-            caller_address,
-            .CANCUN
-        );
+            caller_address);
         defer test_evm.deinit();
         
         // Deploy contract using CREATE
@@ -182,9 +178,7 @@ test "ERC20 deployment gas consumption issue" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
-    );
+        caller_address);
     defer minimal_evm.deinit();
     
     const minimal_create = CallParams{

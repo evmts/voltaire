@@ -61,7 +61,7 @@ test "EVM msg.sender propagation in CALL" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, original_caller, .BERLIN);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, original_caller);
     defer evm.deinit();
     
     // Test CALL - new msg.sender should be the calling contract
@@ -134,7 +134,7 @@ test "EVM msg.sender preservation in DELEGATECALL" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, original_caller, .BERLIN);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, original_caller);
     defer evm.deinit();
     
     // Test DELEGATECALL - should preserve original caller
@@ -215,7 +215,7 @@ test "EVM msg.value propagation" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, caller_address, .BERLIN);
+    var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, caller_address);
     defer evm.deinit();
     
     // Test CALL with value

@@ -170,8 +170,7 @@ test "snailtracer differential test without tracing" {
         block_info,
         tx_context,
         0, // gas_price
-        caller_address, // origin
-        evm.Hardfork.CANCUN, // hardfork_config
+        caller_address // origin
     );
     defer vm.deinit();
     std.debug.print("EVM created\n", .{});
@@ -364,8 +363,7 @@ test "snailtracer with tracing enabled" {
         block_info,
         tx_context,
         0, // gas_price
-        caller_address, // origin
-        evm.Hardfork.CANCUN, // hardfork_config
+        caller_address // origin
     );
     defer vm.deinit();
     std.debug.print("Tracer EVM created\n", .{});

@@ -41,7 +41,7 @@ test "STATICCALL should fail when attempting state modifications" {
         .chain_id = 1,
     };
     
-    var vm = try evm.Evm(.{}).init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .BERLIN);
+    var vm = try evm.Evm(.{}).init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS);
     defer vm.deinit();
     
     // Create two addresses: caller and target
@@ -126,7 +126,7 @@ test "STATICCALL should succeed for read-only operations" {
         .chain_id = 1,
     };
     
-    var vm = try evm.Evm(.{}).init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .BERLIN);
+    var vm = try evm.Evm(.{}).init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS);
     defer vm.deinit();
     
     const caller_addr = primitives.Address{ .bytes = [_]u8{0x09} ** 20 };

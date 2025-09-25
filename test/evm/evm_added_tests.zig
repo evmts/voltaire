@@ -35,7 +35,7 @@ fn setup_evm(allocator: std.mem.Allocator) !struct {
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
     };
-    var instance = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .CANCUN);
+    var instance = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS);
 
     return .{ .evm = instance, .db = &memory_db };
 }

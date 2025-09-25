@@ -76,8 +76,7 @@ test "ERC20 deployment with standard EVM" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
     );
     defer deploy_evm.deinit();
 
@@ -163,8 +162,7 @@ test "Simple contract deployment test" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
     );
     defer deploy_evm.deinit();
 
@@ -246,8 +244,7 @@ test "Snailtracer deployment comparison" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
     );
     defer deploy_evm.deinit();
     

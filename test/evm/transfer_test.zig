@@ -56,9 +56,7 @@ test "self-transfer should not change balance" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
-    );
+        caller_address);
     defer evm_instance.deinit();
     
     // Create a simple contract that transfers value to itself
@@ -148,9 +146,7 @@ test "normal transfer between different accounts works correctly" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
-    );
+        caller_address);
     defer evm_instance.deinit();
     
     // Make a call to different account with value

@@ -45,9 +45,7 @@ test "SELFDESTRUCT records should be tracked in CallResult" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .LONDON
-    );
+        caller_address);
     defer evm_instance.deinit();
     
     // Create bytecode: PUSH20 beneficiary, SELFDESTRUCT
@@ -141,9 +139,7 @@ test "SELFDESTRUCT multiple contracts in single call" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .LONDON
-    );
+        caller_address);
     defer evm_instance.deinit();
     
     // Create bytecode for contract1: PUSH20 beneficiary1, SELFDESTRUCT
@@ -264,9 +260,7 @@ test "EIP-6780: SELFDESTRUCT only destroys contracts created in same transaction
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
-    );
+        caller_address);
     defer evm_instance.deinit();
     
     // Create bytecode: PUSH20 beneficiary, SELFDESTRUCT

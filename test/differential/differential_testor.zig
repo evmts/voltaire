@@ -170,7 +170,6 @@ pub const DifferentialTestor = struct {
                 tx_context,
                 0,
                 caller,
-                .CANCUN,
             );
         }
 
@@ -181,7 +180,6 @@ pub const DifferentialTestor = struct {
             tx_context,
             0,
             caller,
-            .CANCUN,
         );
 
         const testor = DifferentialTestor{

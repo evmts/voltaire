@@ -41,18 +41,18 @@ test "Hardfork C API: Hardfork validation and latest" {
 
 test "Hardfork C API: Hardfork comparison" {
     // Test greater than or equal comparison
-    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_gte(.LONDON, .BERLIN));
-    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_gte(.LONDON, .LONDON));
-    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_gte(.BERLIN, .LONDON));
+    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_gte(.LONDON));
+    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_gte(.LONDON));
+    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_gte(.BERLIN));
     
     // Test less than comparison
-    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_lt(.BERLIN, .LONDON));
-    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_lt(.LONDON, .BERLIN));
-    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_lt(.LONDON, .LONDON));
+    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_lt(.BERLIN));
+    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_lt(.LONDON));
+    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_lt(.LONDON));
     
     // Test equality comparison
-    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_eq(.LONDON, .LONDON));
-    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_eq(.LONDON, .BERLIN));
+    try testing.expectEqual(@as(c_int, 1), hardfork_c.evm_hardfork_eq(.LONDON));
+    try testing.expectEqual(@as(c_int, 0), hardfork_c.evm_hardfork_eq(.LONDON));
 }
 
 test "Hardfork C API: Feature support detection" {

@@ -54,7 +54,7 @@ test "integration: constant folding executes correctly" {
     };
     
     // Create EVM instance
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Deploy contract with our bytecode
@@ -128,7 +128,7 @@ test "integration: multi-PUSH executes correctly" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
     
     const create_params = DefaultEvm.CallParams{
@@ -205,7 +205,7 @@ test "integration: multi-POP executes correctly" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
     
     const create_params = DefaultEvm.CallParams{
@@ -291,7 +291,7 @@ test "integration: ISZERO-JUMPI fusion executes correctly" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
     
     const create_params = DefaultEvm.CallParams{
@@ -363,7 +363,7 @@ test "integration: complex pattern with SHL executes correctly" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
     
     const create_params = DefaultEvm.CallParams{

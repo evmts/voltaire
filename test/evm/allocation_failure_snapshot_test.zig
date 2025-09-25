@@ -101,7 +101,7 @@ test "snapshot should be reverted on allocation failure during self-destruct ext
     const allocator = failing_alloc.allocator();
 
     // Create EVM instance with CANCUN hardfork (with EIP-6780)
-    var evm_instance = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address, .CANCUN);
+    var evm_instance = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address);
     defer evm_instance.deinit();
 
     // Create bytecode: PUSH20 beneficiary, SELFDESTRUCT
@@ -210,7 +210,7 @@ test "snapshot should be reverted on allocation failure during log extraction" {
     const allocator = failing_alloc.allocator();
 
     // Create EVM instance
-    var evm_instance = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address, .CANCUN);
+    var evm_instance = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address);
     defer evm_instance.deinit();
 
     // Create bytecode that emits a log: LOG0 with some data

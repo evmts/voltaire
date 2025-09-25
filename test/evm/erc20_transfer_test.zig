@@ -102,7 +102,7 @@ test "ERC20 transfer fixture test" {
     // Try CREATE deployment first
     std.debug.print("\n--- Attempting CREATE deployment ---\n", .{});
     
-    var deploy_evm = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address, .CANCUN);
+    var deploy_evm = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address);
     defer deploy_evm.deinit();
     
     const create_params = evm.CallParams{ 
@@ -186,7 +186,7 @@ test "ERC20 transfer fixture test" {
     }
     std.debug.print("\n", .{});
     
-    var call_evm = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address, .CANCUN);
+    var call_evm = try evm.Evm(.{}).init(allocator, &database, block_info, tx_context, 0, caller_address);
     defer call_evm.deinit();
     
     const call_params = evm.CallParams{

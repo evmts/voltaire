@@ -57,8 +57,7 @@ test "Access lists should be populated in CallResult" {
         block_info,
         tx_context,
         0,
-        caller_address,
-        .CANCUN
+        caller_address
     );
     defer evm_instance.deinit();
     

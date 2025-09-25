@@ -83,7 +83,7 @@ test "fusion: PUSH+ADD fusion detection and execution" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Create contract with our bytecode
@@ -591,7 +591,7 @@ test "fusion: ten-thousand-hashes bytecode with PUSH+JUMP fusion" {
         .chain_id = 1,
     };
     
-    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO, .CANCUN);
+    var evm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO);
     defer evm.deinit();
     
     // Step 1: Deploy the contract using CREATE (deployment bytecode)

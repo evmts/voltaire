@@ -47,7 +47,7 @@ test "trace validation - basic trace population on successful call" {
         .chain_id = 1,
     };
     
-    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Create simple contract that executes a few opcodes
@@ -136,7 +136,7 @@ test "trace validation - trace step details are correct" {
         .chain_id = 1,
     };
     
-    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Simple arithmetic: PUSH1 0x03, PUSH1 0x02, ADD, STOP
@@ -233,7 +233,7 @@ test "trace validation - REVERT produces trace" {
         .chain_id = 1,
     };
     
-    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Bytecode that stores "FAIL" and reverts
@@ -319,7 +319,7 @@ test "trace validation - gas consumption tracking" {
         .chain_id = 1,
     };
     
-    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Bytecode with known gas costs
@@ -407,7 +407,7 @@ test "trace validation - snapshot test" {
         .chain_id = 1,
     };
     
-    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Simple ADD operation: PUSH1 3, PUSH1 2, ADD, STOP
@@ -517,7 +517,7 @@ test "trace validation - CREATE operation produces trace" {
         .chain_id = 1,
     };
     
-    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS, .CANCUN);
+    var evm = try Evm.init(allocator, &db, block_info, tx_context, 0, Address.ZERO_ADDRESS);
     defer evm.deinit();
     
     // Simple init code that returns empty (creates empty contract)

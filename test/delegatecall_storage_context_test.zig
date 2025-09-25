@@ -40,7 +40,7 @@ test "DELEGATECALL should store in caller's context, not delegate's context" {
         .chain_id = 1,
     };
     
-    var vm = try evm.Evm(.{}).init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS, .BERLIN);
+    var vm = try evm.Evm(.{}).init(allocator, &db, block_info, tx_context, 0, primitives.Address.ZERO_ADDRESS);
     defer vm.deinit();
     
     // Create two addresses: caller and delegate
