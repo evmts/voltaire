@@ -169,6 +169,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                 while (current) |entry| {
                     const next = entry.next;
                     entry.schedule.deinit();
+                    if (entry.jump_table.entries.len > 0) {
+                        self.allocator.free(entry.jump_table.entries);
+                    }
                     entry.arena.deinit();
                     self.allocator.destroy(entry);
                     current = next;
@@ -201,7 +204,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 if (self.tail) |tail| {
                     // Remove from map
                     _ = self.map.remove(tail.hash);
-                    
+
                     // Update list
                     if (tail.prev) |prev| {
                         prev.next = null;
@@ -213,6 +216,9 @@ pub fn Evm(comptime config: EvmConfig) type {
 
                     // Clean up entry
                     tail.schedule.deinit();
+                    if (tail.jump_table.entries.len > 0) {
+                        self.allocator.free(tail.jump_table.entries);
+                    }
                     tail.arena.deinit();
                     self.allocator.destroy(tail);
                     self.count -= 1;
