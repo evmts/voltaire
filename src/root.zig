@@ -30,10 +30,7 @@ pub const BuildConfiguredEvm = Evm(EvmConfig.fromBuildOptions());
 
 // Pre-configured EVM types for FFI
 // These are concrete types that can be stored at runtime
-pub const MainnetEvm = Evm(EvmConfig{
-    .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },
-    .tracer_config = @import("tracer/tracer.zig").TracerConfig.disabled,
-});
+pub const MainnetEvm = Evm(.{});
 
 pub const MainnetEvmWithTracer = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },

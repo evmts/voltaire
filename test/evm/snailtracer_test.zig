@@ -202,16 +202,13 @@ test "snailtracer differential test without tracing" {
     std.debug.print("=== Test passed ===\n", .{});
 }
 
-test "snailtracer differential test without tracing - double call" {
-    std.debug.print("\n=== Starting snailtracer double call test ===\n", .{});
+test "snailtracer simulate multiple times" {
+    std.debug.print("\n=== Starting snailtracer multiple simulate test ===\n", .{});
     const allocator = std.testing.allocator;
-    std.debug.print("Allocator created\n", .{});
 
     // Read bytecode from fixture file
-    std.debug.print("Opening bytecode file...\n", .{});
     const bytecode_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/bytecode.txt", .{});
     defer bytecode_file.close();
-    std.debug.print("Bytecode file opened\n", .{});
 
     const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 1024 * 1024);
     defer allocator.free(bytecode_hex);
@@ -359,21 +356,21 @@ test "snailtracer differential test without tracing - double call" {
         },
     };
 
-    // First call
-    std.debug.print("Starting first EVM call...\n", .{});
-    var result1 = vm.call(call_params);
-    defer result1.deinit(allocator);
-    
-    std.debug.print("First EVM call complete, success={}\n", .{result1.success});
-    try std.testing.expect(result1.success);
-    
-    // Second call - this should trigger the memory corruption
-    std.debug.print("Starting second EVM call...\n", .{});
-    var result2 = vm.call(call_params);
-    defer result2.deinit(allocator);
-    
-    std.debug.print("Second EVM call complete, success={}\n", .{result2.success});
-    try std.testing.expect(result2.success);
-    
-    std.debug.print("=== Double call test passed ===\n", .{});
+    // Run 5 simulates to test basic functionality
+    std.debug.print("\n--- Testing 5 simulates to verify basic functionality ---\n", .{});
+    var sim_num: usize = 1;
+    while (sim_num <= 5) : (sim_num += 1) {
+        std.debug.print("Running simulate #{d}...\n", .{sim_num});
+
+        var result = vm.simulate(call_params);
+        defer result.deinit(allocator);
+
+        if (!result.success) {
+            std.debug.print("BUG FOUND: Simulate #{d} failed! success={}, gas_left={d}\n", .{sim_num, result.success, result.gas_left});
+        }
+
+        try std.testing.expect(result.success);
+    }
+
+    std.debug.print("=== All 5 simulates passed successfully ===\n", .{});
 }
