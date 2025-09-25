@@ -26,18 +26,13 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 
 ### 📊 Ethereum Specification Test Results
 
-**Latest Test Run**: 159 tests executed
-- ✅ **35 passing** (22.0% pass rate)
-- ❌ **124 failing** (78.0% fail rate)
+**Latest Test Run**: 3167 tests executed
+- ✅ **2124 passing** (67.1% pass rate)
+- ❌ **1043 failing** (32.9% fail rate)
 
-**Failure Categories**:
-- `AccountNotFound` errors: ~30% of failures (account state management issues in Zig EVM)
-- `EVM execution failed`: ~25% of failures (gas/execution issues in Zig EVM)
-- Assembly syntax tests: ~20% of failures (Python test infrastructure limitation - not yet implemented)
-- Invalid hex data: ~15% of failures (Python SDK spec compatibility issue)
-- File parsing errors: ~10% of failures (Python test infrastructure - YAML format not yet supported)
+Run specs with: `zig build specs`
 
-Note: Some failures are due to the Python SDK and test infrastructure not being fully spec-compliant yet, rather than issues in the core Zig EVM implementation.
+See [specs/README.md](specs/README.md) for detailed instructions on running the test suite.
 
 **Current Development Focus**: Our primary goal is achieving 100% Ethereum specification compliance while ensuring complete safety, debuggability, and observability through our tracer system ([`src/tracer/tracer.zig`](src/tracer/tracer.zig)). The tracer provides comprehensive execution monitoring, differential testing against a reference implementation, and detailed error reporting for every opcode.
 
