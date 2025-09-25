@@ -25,8 +25,10 @@ const dispatch_mod = @import("../preprocessor/dispatch.zig");
 
 /// LRU cache for dispatch schedules to avoid recompiling bytecode
 pub const DispatchCacheEntry = struct {
-    /// Full bytecode used as key (points to bytecode directly)
-    bytecode_key: []const u8,
+    /// Hash of the bytecode for content-based matching
+    bytecode_hash: u64,
+    /// Length of the original bytecode
+    bytecode_len: usize,
     /// Cached dispatch schedule (owned by cache)
     schedule: []const u8, // Store as raw bytes
     /// Cached jump table (owned by cache)
@@ -35,20 +37,26 @@ pub const DispatchCacheEntry = struct {
     last_access: u64,
 };
 
-/// Context for hashing bytecode pointers in HashMap
+/// Key type for cache lookups - combines hash and length
+const CacheKey = struct {
+    hash: u64,
+    len: usize,
+};
+
+/// Context for hashing bytecode content in HashMap
 const BytecodeContext = struct {
-    pub fn hash(self: @This(), key: []const u8) u64 {
+    pub fn hash(self: @This(), key: CacheKey) u64 {
         _ = self;
-        // Hash the bytecode pointer address for O(1) lookup
-        // This is safe because we use pointer comparison in eql
-        const ptr_int = @intFromPtr(key.ptr);
-        return std.hash.Wyhash.hash(0, std.mem.asBytes(&ptr_int));
+        // Combine hash and length for the HashMap key
+        var hasher = std.hash.Wyhash.init(0);
+        hasher.update(std.mem.asBytes(&key.hash));
+        hasher.update(std.mem.asBytes(&key.len));
+        return hasher.final();
     }
-    pub fn eql(self: @This(), a: []const u8, b: []const u8) bool {
+    pub fn eql(self: @This(), a: CacheKey, b: CacheKey) bool {
         _ = self;
-        // Direct pointer comparison for bytecode keys
-        // This is safe because we store pointers to the original bytecode
-        return a.ptr == b.ptr and a.len == b.len;
+        // Compare by content hash and length
+        return a.hash == b.hash and a.len == b.len;
     }
 };
 
@@ -56,8 +64,8 @@ pub const DispatchCache = struct {
     const CACHE_SIZE = 256; // Number of cached contracts
     const SMALL_BYTECODE_THRESHOLD = 256; // Compute on-demand for bytecode smaller than this
 
-    // Use HashMap for O(1) lookups instead of linear search
-    entries: std.hash_map.HashMap([]const u8, DispatchCacheEntry, BytecodeContext, 80),
+    // Use HashMap for O(1) lookups with content-based keys
+    entries: std.hash_map.HashMap(CacheKey, DispatchCacheEntry, BytecodeContext, 80),
     allocator: std.mem.Allocator,
     access_counter: u64 = 0,
     hits: u64 = 0,
@@ -66,7 +74,7 @@ pub const DispatchCache = struct {
 
     fn init(allocator: std.mem.Allocator) DispatchCache {
         return .{
-            .entries = std.hash_map.HashMap([]const u8, DispatchCacheEntry, BytecodeContext, 80).init(allocator),
+            .entries = std.hash_map.HashMap(CacheKey, DispatchCacheEntry, BytecodeContext, 80).init(allocator),
             .allocator = allocator,
         };
     }
@@ -89,8 +97,14 @@ pub const DispatchCache = struct {
 
         self.access_counter += 1;
 
-        // O(1) HashMap lookup using bytecode pointer as key
-        if (self.entries.getPtr(bytecode)) |entry| {
+        // Create content-based key
+        const key = CacheKey{
+            .hash = std.hash.Wyhash.hash(0, bytecode),
+            .len = bytecode.len,
+        };
+
+        // O(1) HashMap lookup using content hash as key
+        if (self.entries.getPtr(key)) |entry| {
             // Found a hit
             self.hits += 1;
             entry.last_access = self.access_counter;
@@ -110,10 +124,16 @@ pub const DispatchCache = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
+        // Create content-based key
+        const key = CacheKey{
+            .hash = std.hash.Wyhash.hash(0, bytecode),
+            .len = bytecode.len,
+        };
+
         // Check if cache is at capacity
         if (self.entries.count() >= CACHE_SIZE) {
             // Find LRU entry to evict
-            var lru_key: ?[]const u8 = null;
+            var lru_key: ?CacheKey = null;
             var lru_access: u64 = std.math.maxInt(u64);
 
             var iter = self.entries.iterator();
@@ -125,8 +145,8 @@ pub const DispatchCache = struct {
             }
 
             // Evict LRU entry if found
-            if (lru_key) |key| {
-                if (self.entries.fetchRemove(key)) |removed| {
+            if (lru_key) |evict_key| {
+                if (self.entries.fetchRemove(evict_key)) |removed| {
                     self.allocator.free(removed.value.schedule);
                     self.allocator.free(removed.value.jump_table_entries);
                 }
@@ -139,8 +159,9 @@ pub const DispatchCache = struct {
         const jump_table_copy = try self.allocator.dupe(u8, jump_table);
         errdefer self.allocator.free(jump_table_copy);
 
-        try self.entries.put(bytecode, DispatchCacheEntry{
-            .bytecode_key = bytecode,
+        try self.entries.put(key, DispatchCacheEntry{
+            .bytecode_hash = key.hash,
+            .bytecode_len = key.len,
             .schedule = schedule_copy,
             .jump_table_entries = jump_table_copy,
             .last_access = self.access_counter,
