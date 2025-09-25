@@ -1,6 +1,6 @@
 # 🧪 Guillotine EVM Specification Test Report
 
-**Generated**: 2025-09-25 15:11:41
+**Generated**: 2025-09-25 15:49:54
 
 ## 📊 Test Summary
 
@@ -10,8 +10,8 @@
 | **✅ Passed** | 6 |
 | **❌ Failed** | 94 |
 | **📈 Pass Rate** | 6.0% |
-| **⏱️ Total Time** | 0.25s |
-| **🚀 Avg Speed** | 407.0 tests/sec |
+| **⏱️ Total Time** | 0.34s |
+| **🚀 Avg Speed** | 296.9 tests/sec |
 
 ## 📁 Test Suite Results
 
@@ -130,7 +130,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest121 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest121 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest116Filler.json
 
@@ -139,7 +139,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest116 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 424` |
+| randomStatetest116 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest248Filler.json
 
@@ -184,7 +184,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest59 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest59 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest280Filler.json
 
@@ -202,7 +202,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest263 | ✅ PASS | 0.011s | Gas: 2,038,920,405 |
+| randomStatetest263 | ✅ PASS | 0.012s | Gas: 2,038,920,405 |
 
 ### ❌ randomStatetest254Filler.json
 
@@ -220,7 +220,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest340 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
+| randomStatetest340 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest201Filler.json
 
@@ -247,7 +247,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest315 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
+| randomStatetest315 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest322Filler.json
 
@@ -265,7 +265,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest72 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 226` |
+| randomStatetest72 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest45Filler.json
 
@@ -274,7 +274,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest45 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest45 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest197Filler.json
 
@@ -310,7 +310,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest27 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest27 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest36Filler.json
 
@@ -328,7 +328,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest54 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest54 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest63Filler.json
 
@@ -346,7 +346,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest333 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 224` |
+| randomStatetest333 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest179Filler.json
 
@@ -355,7 +355,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest179 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 92` |
+| randomStatetest179 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest304Filler.json
 
@@ -373,7 +373,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest227 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
+| randomStatetest227 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest210Filler.json
 
@@ -400,7 +400,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest366 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest366 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest245Filler.json
 
@@ -409,7 +409,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest245 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest245 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest291Filler.json
 
@@ -445,7 +445,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest318 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 160` |
+| randomStatetest318 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ✅ randomStatetest80Filler.json
 
@@ -463,7 +463,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest259 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 92` |
+| randomStatetest259 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ✅ randomStatetest107Filler.json
 
@@ -481,7 +481,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest130 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 226` |
+| randomStatetest130 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest215Filler.json
 
@@ -490,7 +490,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest215 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
+| randomStatetest215 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest222Filler.json
 
@@ -499,7 +499,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest222 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest222 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest301Filler.json
 
@@ -526,7 +526,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest363 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest363 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest129Filler.json
 
@@ -535,7 +535,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest129 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 356` |
+| randomStatetest129 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest354Filler.json
 
@@ -544,7 +544,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest354 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 92` |
+| randomStatetest354 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest33Filler.json
 
@@ -562,7 +562,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest288 | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest288 | ❌ FAIL | 0.008s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ✅ randomStatetest66Filler.json
 
@@ -580,7 +580,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest51 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest51 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest183Filler.json
 
@@ -589,7 +589,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest183 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 290` |
+| randomStatetest183 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest85Filler.json
 
@@ -598,7 +598,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest85 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 290` |
+| randomStatetest85 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest157Filler.json
 
@@ -625,7 +625,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest135 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 226` |
+| randomStatetest135 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest348Filler.json
 
@@ -634,7 +634,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest348 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 224` |
+| randomStatetest348 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest102Filler.json
 
@@ -643,7 +643,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest102 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 28` |
+| randomStatetest102 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest294Filler.json
 
@@ -652,7 +652,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest294 | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest294 | ❌ FAIL | 0.011s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest380Filler.json
 
@@ -706,7 +706,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest171 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 292` |
+| randomStatetest171 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest146Filler.json
 
@@ -733,7 +733,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest1 | ✅ PASS | 0.004s | Gas: 4,173,174 |
+| randomStatetest1 | ✅ PASS | 0.003s | Gas: 4,173,174 |
 
 ### ❌ randomStatetest77Filler.json
 
@@ -742,7 +742,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest77 | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest77 | ❌ FAIL | 0.008s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest299Filler.json
 
@@ -751,7 +751,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest299 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest299 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest22Filler.json
 
@@ -769,7 +769,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest15 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 92` |
+| randomStatetest15 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest138Filler.json
 
@@ -796,7 +796,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest372 | ✅ PASS | 0.004s | Gas: 56,759 |
+| randomStatetest372 | ✅ PASS | 0.003s | Gas: 56,759 |
 
 ### ❌ randomStatetest251Filler.json
 
@@ -823,7 +823,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest327 | ❌ FAIL | 0.005s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest327 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest88Filler.json
 
@@ -832,7 +832,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest88 | ❌ FAIL | 0.005s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 26` |
+| randomStatetest88 | ❌ FAIL | 0.009s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest310Filler.json
 
@@ -859,7 +859,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest204 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 158` |
+| randomStatetest204 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest261Filler.json
 
@@ -868,7 +868,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest261 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 358` |
+| randomStatetest261 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest342Filler.json
 
@@ -895,7 +895,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest320 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 92` |
+| randomStatetest320 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest195Filler.json
 
@@ -904,7 +904,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest195 | ❌ FAIL | 0.004s | `EVM execution failed (success=False, gas_left=0)` |
+| randomStatetest195 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ### ❌ randomStatetest6Filler.json
 
@@ -913,7 +913,7 @@
 
 | Test | Status | Time | Details |
 |------|--------|------|----------|
-| randomStatetest6 | ❌ FAIL | 0.000s | `Invalid hex data: non-hexadecimal number found in fromhex() arg at position 290` |
+| randomStatetest6 | ❌ FAIL | 0.003s | `EVM execution failed (success=False, gas_left=0)` |
 
 ## ❌ Failed Tests (94)
 
@@ -959,9 +959,9 @@
 
 ## ⚡ Performance Insights
 
-- **Average test time**: 0.002s
-- **Slowest test**: randomStatetest263 (0.011s)
-- **Throughput**: 407.0 tests/second
+- **Average test time**: 0.003s
+- **Slowest test**: randomStatetest263 (0.012s)
+- **Throughput**: 296.9 tests/second
 
 ---
 *Report generated by Guillotine EVM Spec Test Runner*

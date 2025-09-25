@@ -22,6 +22,42 @@ zig build specs -- -Dspec-isolated=true
 zig build specs -- -Dspec-pattern='add*.json'
 ```
 
+### Optimization Modes
+
+**IMPORTANT**: Tests should be run in multiple optimization modes as different code paths may be taken:
+
+```bash
+# Debug mode (default) - Best for debugging, includes assertions and stack traces
+zig build specs -Doptimize=Debug
+
+# ReleaseFast mode - Optimized for speed, some code paths differ
+zig build specs -Doptimize=ReleaseFast
+
+# ReleaseSmall mode - Optimized for size, may have different behavior
+zig build specs -Doptimize=ReleaseSmall
+
+# ReleaseSafe mode - Safety checks enabled with optimizations
+zig build specs -Doptimize=ReleaseSafe
+```
+
+**CI/CD Note**: All optimization modes should be tested in CI/CD pipelines since:
+- Debug mode catches assertion failures and provides better diagnostics
+- ReleaseFast/ReleaseSmall modes may take different code paths (e.g., fusion optimizations)
+- Some bugs only manifest in specific optimization levels
+
+**Combining with other options:**
+```bash
+# Fast mode with limited tests for quick iteration
+zig build specs -Doptimize=ReleaseFast -Dspec-max-files=10
+
+# Debug mode with specific pattern for detailed debugging
+zig build specs -Doptimize=Debug -Dspec-pattern='*add*.json'
+
+# Native Zig runner in different modes
+zig build test-execution-spec-guillotine -Doptimize=ReleaseFast
+zig build test-execution-spec-minimal-evm -Doptimize=Debug
+```
+
 ## Current Status
 
 - **2124 tests passing**
