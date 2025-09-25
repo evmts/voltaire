@@ -765,8 +765,52 @@ pub fn build(b: *std.Build) void {
     run_specs.setCwd(b.path("specs"));
     run_specs.step.dependOn(&python_check.step);
 
-    const specs_step = b.step("specs", "Run Python execution specs");
-    specs_step.dependOn(&run_specs.step);
+    const specs_report_step = b.step("specs-report", "Run Python script to produce test report");
+    specs_report_step.dependOn(&run_specs.step);
+
+    // Bun specs runner
+    const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
+    bun_check.addCheck(.{ .expect_stdout_match = "bun" });
+
+    const run_bun_specs = b.addSystemCommand(&[_][]const u8{ "bun", "test" });
+    run_bun_specs.setCwd(b.path("specs/bun-runner"));
+    run_bun_specs.step.dependOn(&bun_check.step);
+
+    // Add options for controlling the spec tests
+    const spec_max_files = b.option([]const u8, "spec-max-files", "Maximum number of spec files to run (default: all)");
+    const spec_isolated = b.option(bool, "spec-isolated", "Run tests in isolated mode to handle panics (default: true)") orelse true;
+    const spec_pattern = b.option([]const u8, "spec-pattern", "Pattern to match test files (default: *.json)");
+    const spec_args = b.option([]const []const u8, "spec-args", "Additional arguments to pass to bun test");
+
+    // Set environment variables based on options
+    if (spec_max_files) |max_files| {
+        run_bun_specs.setEnvironmentVariable("MAX_SPEC_FILES", max_files);
+    } else {
+        run_bun_specs.setEnvironmentVariable("MAX_SPEC_FILES", "10000");  // Large number to run all
+    }
+
+    run_bun_specs.setEnvironmentVariable("RUN_ISOLATED", if (spec_isolated) "true" else "false");
+
+    if (spec_pattern) |pattern| {
+        run_bun_specs.setEnvironmentVariable("SPEC_PATTERN", pattern);
+    }
+
+    // Choose which test file to run based on isolation mode
+    if (spec_isolated) {
+        run_bun_specs.addArg("ethereum-specs-safe.test.ts");
+    } else {
+        run_bun_specs.addArg("ethereum-specs.test.ts");
+    }
+
+    // Add any additional arguments passed through
+    if (spec_args) |args| {
+        for (args) |arg| {
+            run_bun_specs.addArg(arg);
+        }
+    }
+
+    const bun_specs_step = b.step("specs", "Run Bun execution spec tests (use -Dspec-max-files=N, -Dspec-isolated=false, -Dspec-pattern='*.json', -Dspec-args for options)");
+    bun_specs_step.dependOn(&run_bun_specs.step);
 
     // Fetch test fixtures command (moved here to be available for tests)
     const fetch_fixtures_step = b.step("fetch-test-fixtures", "Download Ethereum execution spec test fixtures");
