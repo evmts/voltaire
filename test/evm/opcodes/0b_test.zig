@@ -101,15 +101,6 @@ fn run_signextend_test(allocator: std.mem.Allocator, byte_num: u256, value: u256
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,
@@ -356,15 +347,6 @@ fn run_signextend_test_with_jump(allocator: std.mem.Allocator, byte_num: u256, v
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,

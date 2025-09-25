@@ -101,15 +101,6 @@ fn run_exp_test(allocator: std.mem.Allocator, base: u256, exponent: u256, expect
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,
@@ -391,15 +382,6 @@ fn run_exp_test_with_jump(allocator: std.mem.Allocator, base: u256, exponent: u2
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,

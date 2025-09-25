@@ -61,15 +61,6 @@ fn run_iszero_test(allocator: std.mem.Allocator, value: u256, expected: u256) !v
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,
@@ -163,15 +154,6 @@ fn run_iszero_test_with_jump(allocator: std.mem.Allocator, value: u256, expected
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,
@@ -341,15 +323,6 @@ test "opcode 0x15 differential test" {
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,

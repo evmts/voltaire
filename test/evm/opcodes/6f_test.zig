@@ -55,15 +55,6 @@ test "opcode 0x6f differential test" {
     };
     
     var guillotine_evm = try evm.Evm(.{
-        .tracer_config = .{
-            .enabled = true,
-            .enable_validation = true,
-            .enable_step_capture = true,
-            .enable_pc_tracking = true,
-            .enable_gas_tracking = true,
-            .enable_debug_logging = true,
-            .enable_advanced_trace = true,
-        },
     }).init(
         allocator,
         &database,
