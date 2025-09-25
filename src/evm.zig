@@ -123,9 +123,148 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Contracts marked for self-destruction (cold - only used in old hardforks)
         self_destruct: SelfDestruct,
 
+        // Dispatch cache - LRU cache storing compiled dispatch schedules for bytecode
+        dispatch_cache: DispatchLRUCache,
+
         // Tracer - at the very bottom of memory layout for minimal impact on cache performance
         /// Tracer for debugging and logging - can be accessed via evm.tracer or frame.evm_ptr.tracer
         tracer: @import("tracer/tracer.zig").Tracer,
+
+        /// LRU Cache for dispatch schedules with per-entry arena allocators
+        const DispatchLRUCache = struct {
+            const max_entries = 128; // Maximum number of cached entries
+            const arena_size = 64 * 1024; // 64KB per dispatch entry
+
+            const CacheEntry = struct {
+                hash: u64,
+                schedule: Frame.Dispatch.DispatchSchedule,
+                jump_table: Frame.Dispatch.JumpTable,
+                arena: std.heap.ArenaAllocator,
+                prev: ?*CacheEntry,
+                next: ?*CacheEntry,
+                generation: u64, // For LRU tracking
+            };
+
+            allocator: std.mem.Allocator,
+            map: std.hash_map.HashMap(u64, *CacheEntry, std.hash_map.AutoContext(u64), 80),
+            head: ?*CacheEntry, // Most recently used
+            tail: ?*CacheEntry, // Least recently used
+            count: usize,
+            generation: u64, // Global generation counter
+
+            fn init(allocator: std.mem.Allocator) DispatchLRUCache {
+                return .{
+                    .allocator = allocator,
+                    .map = std.hash_map.HashMap(u64, *CacheEntry, std.hash_map.AutoContext(u64), 80).init(allocator),
+                    .head = null,
+                    .tail = null,
+                    .count = 0,
+                    .generation = 0,
+                };
+            }
+
+            fn deinit(self: *DispatchLRUCache) void {
+                // Clean up all entries
+                var current = self.head;
+                while (current) |entry| {
+                    const next = entry.next;
+                    entry.schedule.deinit();
+                    entry.arena.deinit();
+                    self.allocator.destroy(entry);
+                    current = next;
+                }
+                self.map.deinit();
+            }
+
+            fn moveToFront(self: *DispatchLRUCache, entry: *CacheEntry) void {
+                // Already at front
+                if (self.head == entry) return;
+
+                // Remove from current position
+                if (entry.prev) |prev| prev.next = entry.next;
+                if (entry.next) |next| next.prev = entry.prev;
+                if (self.tail == entry) self.tail = entry.prev;
+
+                // Move to front
+                entry.prev = null;
+                entry.next = self.head;
+                if (self.head) |head| head.prev = entry;
+                self.head = entry;
+                if (self.tail == null) self.tail = entry;
+
+                // Update generation
+                self.generation += 1;
+                entry.generation = self.generation;
+            }
+
+            fn evictLRU(self: *DispatchLRUCache) void {
+                if (self.tail) |tail| {
+                    // Remove from map
+                    _ = self.map.remove(tail.hash);
+                    
+                    // Update list
+                    if (tail.prev) |prev| {
+                        prev.next = null;
+                        self.tail = prev;
+                    } else {
+                        self.head = null;
+                        self.tail = null;
+                    }
+
+                    // Clean up entry
+                    tail.schedule.deinit();
+                    tail.arena.deinit();
+                    self.allocator.destroy(tail);
+                    self.count -= 1;
+                }
+            }
+
+            fn get(self: *DispatchLRUCache, hash: u64) ?*CacheEntry {
+                if (self.map.get(hash)) |entry| {
+                    self.moveToFront(entry);
+                    return entry;
+                }
+                return null;
+            }
+
+            fn put(self: *DispatchLRUCache, hash: u64, schedule: Frame.Dispatch.DispatchSchedule, jump_table: Frame.Dispatch.JumpTable) !void {
+                // Check if already exists
+                if (self.map.get(hash)) |existing| {
+                    self.moveToFront(existing);
+                    return;
+                }
+
+                // Evict if at capacity
+                if (self.count >= max_entries) {
+                    self.evictLRU();
+                }
+
+                // Create new entry with its own arena
+                const entry = try self.allocator.create(CacheEntry);
+                errdefer self.allocator.destroy(entry);
+
+                entry.* = .{
+                    .hash = hash,
+                    .schedule = schedule,
+                    .jump_table = jump_table,
+                    .arena = std.heap.ArenaAllocator.init(self.allocator),
+                    .prev = null,
+                    .next = self.head,
+                    .generation = self.generation + 1,
+                };
+
+                // Add to map
+                try self.map.put(hash, entry);
+
+                // Update list
+                if (self.head) |head| head.prev = entry;
+                self.head = entry;
+                if (self.tail == null) self.tail = entry;
+
+                self.count += 1;
+                self.generation += 1;
+            }
+        };
 
         /// Initialize a new EVM instance.
         ///
@@ -161,6 +300,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .origin = origin,
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
+                .dispatch_cache = DispatchLRUCache.init(allocator),
                 .tracer = @import("tracer/tracer.zig").Tracer.init(allocator, config.tracer_config),
             };
 
@@ -210,6 +350,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.self_destruct.deinit();
             self.access_list.deinit();
             self.logs.deinit(self.allocator);
+            
+            // Clean up dispatch cache
+            self.dispatch_cache.deinit();
+            
             self.call_arena.deinit();
         }
 
@@ -1133,43 +1277,91 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return error.BytecodeTooLarge;
             }
 
-            const tracer_ptr = @as(?@TypeOf(&self.tracer), &self.tracer);
-            const bytecode = if (tracer_ptr != null)
-                Bytecode.initWithTracer(arena_allocator, code, tracer_ptr) catch |e| {
-                    return switch (e) {
-                        error.BytecodeTooLarge => error.BytecodeTooLarge,
-                        error.InvalidOpcode => error.InvalidOpcode,
-                        error.InvalidJumpDestination => error.InvalidJumpDestination,
-                        error.TruncatedPush => error.InvalidOpcode,
-                        error.OutOfMemory => error.AllocationError,
-                        else => error.AllocationError,
+            // Calculate hash of bytecode for cache lookup
+            const bytecode_hash = std.hash.Wyhash.hash(0, code);
+            
+            // Try to get cached dispatch schedule
+            const cached_entry = self.dispatch_cache.get(bytecode_hash);
+            
+            var dispatch_schedule: Frame.Dispatch.DispatchSchedule = undefined;
+            var heap_jump_table: *Frame.Dispatch.JumpTable = undefined;
+            
+            if (cached_entry) |cached| {
+                // Use cached dispatch schedule
+                dispatch_schedule = cached.schedule;
+                heap_jump_table = arena_allocator.create(Frame.Dispatch.JumpTable) catch return error.AllocationError;
+                heap_jump_table.* = cached.jump_table;
+            } else {
+                // Build new dispatch schedule
+                const tracer_ptr = @as(?@TypeOf(&self.tracer), &self.tracer);
+                const bytecode = if (tracer_ptr != null)
+                    Bytecode.initWithTracer(arena_allocator, code, tracer_ptr) catch |e| {
+                        return switch (e) {
+                            error.BytecodeTooLarge => error.BytecodeTooLarge,
+                            error.InvalidOpcode => error.InvalidOpcode,
+                            error.InvalidJumpDestination => error.InvalidJumpDestination,
+                            error.TruncatedPush => error.InvalidOpcode,
+                            error.OutOfMemory => error.AllocationError,
+                            else => error.AllocationError,
+                        };
+                    }
+                else
+                    Bytecode.init(arena_allocator, code) catch |e| {
+                        return switch (e) {
+                            error.BytecodeTooLarge => error.BytecodeTooLarge,
+                            error.InvalidOpcode => error.InvalidOpcode,
+                            error.InvalidJumpDestination => error.InvalidJumpDestination,
+                            error.TruncatedPush => error.InvalidOpcode,
+                            error.OutOfMemory => error.AllocationError,
+                            else => error.AllocationError,
+                        };
                     };
-                }
-            else
-                Bytecode.init(arena_allocator, code) catch |e| {
-                    return switch (e) {
-                        error.BytecodeTooLarge => error.BytecodeTooLarge,
-                        error.InvalidOpcode => error.InvalidOpcode,
-                        error.InvalidJumpDestination => error.InvalidJumpDestination,
-                        error.TruncatedPush => error.InvalidOpcode,
-                        error.OutOfMemory => error.AllocationError,
-                        else => error.AllocationError,
-                    };
+
+                // Build with cache's allocator for persistent storage
+                const handlers = &Frame.opcode_handlers;
+                
+                // Create a temporary entry to get its arena allocator
+                var temp_schedule = Frame.Dispatch.DispatchSchedule.init(self.allocator, bytecode, handlers, tracer_ptr) catch {
+                    return error.AllocationError;
                 };
-
-            // Create dispatch schedule
-            const handlers = &Frame.opcode_handlers;
-            var dispatch_schedule = Frame.Dispatch.DispatchSchedule.init(arena_allocator, bytecode, handlers, tracer_ptr) catch {
-                return error.AllocationError;
-            };
-            defer dispatch_schedule.deinit();
-
-            // Create jump table
-            const jt = Frame.Dispatch.createJumpTable(arena_allocator, dispatch_schedule.items, bytecode) catch return error.AllocationError;
-            const heap_jump_table = arena_allocator.create(Frame.Dispatch.JumpTable) catch return error.AllocationError;
-            heap_jump_table.* = jt;
+                
+                // Create jump table
+                const temp_jt = Frame.Dispatch.createJumpTable(self.allocator, temp_schedule.items, bytecode) catch {
+                    temp_schedule.deinit();
+                    return error.AllocationError;
+                };
+                
+                // Store in cache (cache takes ownership)
+                self.dispatch_cache.put(bytecode_hash, temp_schedule, temp_jt) catch {
+                    // If caching fails, use temporary schedule directly
+                    dispatch_schedule = temp_schedule;
+                    heap_jump_table = arena_allocator.create(Frame.Dispatch.JumpTable) catch {
+                        temp_schedule.deinit();
+                        if (temp_jt.entries.len > 0) self.allocator.free(temp_jt.entries);
+                        return error.AllocationError;
+                    };
+                    heap_jump_table.* = temp_jt;
+                };
+                
+                // If caching succeeded, get the cached entry
+                if (self.dispatch_cache.get(bytecode_hash)) |cached| {
+                    dispatch_schedule = cached.schedule;
+                    heap_jump_table = arena_allocator.create(Frame.Dispatch.JumpTable) catch return error.AllocationError;
+                    heap_jump_table.* = cached.jump_table;
+                } else {
+                    // Should not happen, but handle gracefully
+                    dispatch_schedule = temp_schedule;
+                    heap_jump_table = arena_allocator.create(Frame.Dispatch.JumpTable) catch {
+                        temp_schedule.deinit();
+                        if (temp_jt.entries.len > 0) self.allocator.free(temp_jt.entries);
+                        return error.AllocationError;
+                    };
+                    heap_jump_table.* = temp_jt;
+                }
+            }
+            
             defer {
-                if (heap_jump_table.entries.len > 0) arena_allocator.free(heap_jump_table.entries);
+                // Always destroy the heap-allocated wrapper
                 arena_allocator.destroy(heap_jump_table);
             }
 
