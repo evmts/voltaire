@@ -693,10 +693,10 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.AllocationError;
                 };
                 @memcpy(new_output, return_data);
-                FrameType.frame_output = new_output;
+                self.output_data = new_output;
             } else {
                 // Empty return data
-                FrameType.frame_output = &.{};
+                self.output_data = &.{};
             }
 
             // Return indicates successful execution
@@ -746,10 +746,10 @@ pub fn Handlers(comptime FrameType: type) type {
                     return Error.AllocationError;
                 };
                 @memcpy(revert_output, revert_data);
-                FrameType.frame_output = revert_output;
+                self.output_data = revert_output;
             } else {
                 // Empty revert data
-                FrameType.frame_output = &[_]u8{};
+                self.output_data = &[_]u8{};
             }
 
             // Reduce log noise: no verbose REVERT logging

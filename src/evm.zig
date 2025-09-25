@@ -15,7 +15,6 @@ const TransactionContext = @import("block/transaction_context.zig").TransactionC
 const GrowingArenaAllocator = @import("evm_arena_allocator.zig").GrowingArenaAllocator;
 const call_result_module = @import("frame/call_result.zig");
 const call_params_module = @import("frame/call_params.zig");
-const dispatch_cache = @import("frame/dispatch_cache.zig");
 
 /// Creates a configured EVM instance type.
 pub fn Evm(comptime config: EvmConfig) type {
@@ -134,9 +133,6 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// and transaction parameters. The planner cache is initialized with
         /// a default size for bytecode optimization.
         pub fn init(allocator: std.mem.Allocator, database: ?*Database, block_info: BlockInfo, context: TransactionContext, gas_price: u256, origin: primitives.Address) !Self {
-            // Initialize global dispatch cache if not already initialized
-            dispatch_cache.initGlobalCache(allocator);
-
             var access_list = AccessList.init(allocator);
             errdefer access_list.deinit();
 
@@ -1143,8 +1139,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 error.REVERT => {
                     execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
                     const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-                    // Get output from thread-local storage
-                    const output_data = Frame.frame_output;
+                    // Get output from frame
+                    const output_data = frame.output_data;
                     const out_copy = if (output_data.len > 0) blk: {
                         // Handle allocation errors by reverting snapshot and returning failure
                         const buf = try self.allocator.alloc(u8, output_data.len);
@@ -1172,8 +1168,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             execution_trace = try convertTracerToExecutionTrace(self.allocator, &self.tracer);
 
             const gas_left: u64 = @intCast(@max(frame.gas_remaining, 0));
-            // Get output from thread-local storage (set by RETURN/REVERT handlers)
-            const output_data = Frame.frame_output;
+            // Get output from frame (set by RETURN/REVERT handlers)
+            const output_data = frame.output_data;
             const out_buf = if (output_data.len > 0) blk: {
                 // Handle allocation errors by reverting and returning appropriate error
                 const b = try self.allocator.alloc(u8, output_data.len);
