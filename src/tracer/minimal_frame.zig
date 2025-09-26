@@ -1042,14 +1042,8 @@ pub const MinimalFrame = struct {
 
                 // EIP-2929: charge warm/cold storage access cost and warm the slot
                 const access_cost = try evm.access_storage_slot(self.address, key);
-                // Access list returns 2100 for cold and 100 for warm
-                // SLOAD total cost is 100 when warm and 2100 + 100 when cold
-                // Add the 100 base only for the cold case to avoid double-charging on warm
-                const total_cost: u64 = if (access_cost == GasConstants.ColdSloadCost)
-                    access_cost + GasConstants.SloadGas
-                else
-                    access_cost;
-                try self.consumeGas(total_cost);
+                // Access cost already includes the full SLOAD gas cost (100 for warm, 2100 for cold)
+                try self.consumeGas(access_cost);
 
                 const value = evm.get_storage(self.address, key);
                 try self.pushStack(value);
@@ -1061,10 +1055,22 @@ pub const MinimalFrame = struct {
                 const key = try self.popStack();
                 const value = try self.popStack();
 
-                // Simplified gas cost (actual is complex with refunds)
-                // TODO: Implement full EIP-2200/EIP-3529 metering using
-                // original value tracking and refund logic, reusing warm/cold state.
-                try self.consumeGas(GasConstants.SstoreResetGas);
+                // Get current and original values for gas calculation
+                const current_value = evm.get_storage(self.address, key);
+                const original_value = evm.get_original_storage(self.address, key);
+
+                // EIP-2929: Check if storage slot is cold and warm it
+                const access_cost = try evm.access_storage_slot(self.address, key);
+                const is_cold = access_cost == GasConstants.ColdSloadCost;
+
+                // Calculate SSTORE gas cost using proper EIP-2200/EIP-3529 logic
+                const gas_cost = GasConstants.sstore_gas_cost(current_value, original_value, value, is_cold);
+                try self.consumeGas(gas_cost);
+
+                // EIP-3529: Only clearing (non-zero -> zero) is eligible for refund
+                if (current_value != 0 and value == 0) {
+                    evm.add_refund(GasConstants.SstoreRefundGas);
+                }
 
                 try evm.set_storage(self.address, key, value);
                 self.pc += 1;
@@ -1085,8 +1091,8 @@ pub const MinimalFrame = struct {
             // JUMPI
             0x57 => {
                 try self.consumeGas(GasConstants.GasSlowStep);
-                const condition = try self.popStack();
                 const dest = try self.popStack();
+                const condition = try self.popStack();
 
                 if (condition != 0) {
                     const dest_pc = std.math.cast(u32, dest) orelse return error.OutOfBounds;
@@ -1226,7 +1232,8 @@ pub const MinimalFrame = struct {
                 }
 
                 // Gas cost
-                const log_cost = logGasCost(topic_count, @as(u32, @intCast(length)));
+                const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
+                const log_cost = logGasCost(topic_count, length_u32);
                 try self.consumeGas(log_cost);
 
                 // In minimal implementation, we don't actually emit logs
@@ -1284,8 +1291,8 @@ pub const MinimalFrame = struct {
                 // Read input data from memory
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
-                    const in_off = @as(u32, @intCast(in_offset));
-                    const in_len = @as(u32, @intCast(in_length));
+                    const in_off = std.math.cast(u32, in_offset) orelse return error.OutOfBounds;
+                    const in_len = std.math.cast(u32, in_length) orelse return error.OutOfBounds;
                     const data = try self.allocator.alloc(u8, in_len);
                     var j: u32 = 0;
                     while (j < in_len) : (j += 1) {
@@ -1305,8 +1312,10 @@ pub const MinimalFrame = struct {
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
-                    const out_off = @as(u32, @intCast(out_offset));
-                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                    const out_off = std.math.cast(u32, out_offset) orelse return error.OutOfBounds;
+                    const out_len_u32 = std.math.cast(u32, out_length) orelse return error.OutOfBounds;
+                    const result_len_u32 = std.math.cast(u32, result.output.len) orelse return error.OutOfBounds;
+                    const copy_len = @min(out_len_u32, result_len_u32);
 
                     const end_bytes_callcopy: u64 = @as(u64, out_off) + @as(u64, copy_len);
                     const mem_cost_out = self.memoryExpansionCost(end_bytes_callcopy);
@@ -1364,8 +1373,8 @@ pub const MinimalFrame = struct {
                 // Read input data from memory
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
-                    const in_off = @as(u32, @intCast(in_offset));
-                    const in_len = @as(u32, @intCast(in_length));
+                    const in_off = std.math.cast(u32, in_offset) orelse return error.OutOfBounds;
+                    const in_len = std.math.cast(u32, in_length) orelse return error.OutOfBounds;
                     const data = try self.allocator.alloc(u8, in_len);
                     var j: u32 = 0;
                     while (j < in_len) : (j += 1) {
@@ -1385,8 +1394,10 @@ pub const MinimalFrame = struct {
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
-                    const out_off = @as(u32, @intCast(out_offset));
-                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                    const out_off = std.math.cast(u32, out_offset) orelse return error.OutOfBounds;
+                    const out_len_u32 = std.math.cast(u32, out_length) orelse return error.OutOfBounds;
+                    const result_len_u32 = std.math.cast(u32, result.output.len) orelse return error.OutOfBounds;
+                    const copy_len = @min(out_len_u32, result_len_u32);
 
                     const end_bytes_callcode: u64 = @as(u64, out_off) + @as(u64, copy_len);
                     const mem_cost_out = self.memoryExpansionCost(end_bytes_callcode);
@@ -1462,8 +1473,8 @@ pub const MinimalFrame = struct {
                 // Read input data from memory
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
-                    const in_off = @as(u32, @intCast(in_offset));
-                    const in_len = @as(u32, @intCast(in_length));
+                    const in_off = std.math.cast(u32, in_offset) orelse return error.OutOfBounds;
+                    const in_len = std.math.cast(u32, in_length) orelse return error.OutOfBounds;
                     const data = try self.allocator.alloc(u8, in_len);
                     var j: u32 = 0;
                     while (j < in_len) : (j += 1) {
@@ -1483,8 +1494,10 @@ pub const MinimalFrame = struct {
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
-                    const out_off = @as(u32, @intCast(out_offset));
-                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                    const out_off = std.math.cast(u32, out_offset) orelse return error.OutOfBounds;
+                    const out_len_u32 = std.math.cast(u32, out_length) orelse return error.OutOfBounds;
+                    const result_len_u32 = std.math.cast(u32, result.output.len) orelse return error.OutOfBounds;
+                    const copy_len = @min(out_len_u32, result_len_u32);
 
                     const end_bytes_delegate: u64 = @as(u64, out_off) + @as(u64, copy_len);
                     const mem_cost_out = self.memoryExpansionCost(end_bytes_delegate);
@@ -1561,8 +1574,8 @@ pub const MinimalFrame = struct {
                 // Read input data from memory
                 var input_data: []const u8 = &.{};
                 if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
-                    const in_off = @as(u32, @intCast(in_offset));
-                    const in_len = @as(u32, @intCast(in_length));
+                    const in_off = std.math.cast(u32, in_offset) orelse return error.OutOfBounds;
+                    const in_len = std.math.cast(u32, in_length) orelse return error.OutOfBounds;
                     const data = try self.allocator.alloc(u8, in_len);
                     var j: u32 = 0;
                     while (j < in_len) : (j += 1) {
@@ -1582,8 +1595,10 @@ pub const MinimalFrame = struct {
 
                 // Write output to memory
                 if (out_length > 0 and result.output.len > 0) {
-                    const out_off = @as(u32, @intCast(out_offset));
-                    const copy_len = @min(@as(u32, @intCast(out_length)), @as(u32, @intCast(result.output.len)));
+                    const out_off = std.math.cast(u32, out_offset) orelse return error.OutOfBounds;
+                    const out_len_u32 = std.math.cast(u32, out_length) orelse return error.OutOfBounds;
+                    const result_len_u32 = std.math.cast(u32, result.output.len) orelse return error.OutOfBounds;
+                    const copy_len = @min(out_len_u32, result_len_u32);
 
                     const end_bytes_static: u64 = @as(u64, out_off) + @as(u64, copy_len);
                     const mem_cost_out = self.memoryExpansionCost(end_bytes_static);
@@ -1712,14 +1727,15 @@ pub const MinimalFrame = struct {
 
                 // Gas cost calculation
                 if (size > 0) {
-                    const copy_cost = copyGasCost(@as(u32, @intCast(size)));
+                    const size_u32 = std.math.cast(u32, size) orelse return error.OutOfBounds;
+                    const copy_cost = copyGasCost(size_u32);
 
                     // EIP-150/EIP-2929: hardfork-aware account access
                     const access_cost = try self.externalAccountGasCost(ext_addr);
                     try self.consumeGas(access_cost + copy_cost);
 
                     const dest = std.math.cast(u32, dest_offset) orelse return error.OutOfBounds;
-                    const len = std.math.cast(u32, size) orelse return error.OutOfBounds;
+                    const len = size_u32;
                     const end = @as(u64, dest) + @as(u64, len);
                     const mem_cost = self.memoryExpansionCost(end);
                     try self.consumeGas(mem_cost);
@@ -1858,7 +1874,8 @@ pub const MinimalFrame = struct {
                         self.pc += 1;
                         return;
                     }
-                    const mem_cost = self.memoryExpansionCost(@as(u32, @intCast(in_end)));
+                    const in_end_u32 = std.math.cast(u32, in_end) orelse return error.OutOfBounds;
+                    const mem_cost = self.memoryExpansionCost(in_end_u32);
                     try self.consumeGas(mem_cost);
                 }
 
@@ -1874,7 +1891,8 @@ pub const MinimalFrame = struct {
                         self.pc += 1;
                         return;
                     }
-                    const mem_cost = self.memoryExpansionCost(@as(u32, @intCast(out_end)));
+                    const out_end_u32 = std.math.cast(u32, out_end) orelse return error.OutOfBounds;
+                    const mem_cost = self.memoryExpansionCost(out_end_u32);
                     try self.consumeGas(mem_cost);
                 }
 

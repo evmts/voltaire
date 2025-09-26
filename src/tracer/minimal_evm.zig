@@ -89,6 +89,7 @@ pub const MinimalEvm = struct {
 
     frames: std.ArrayList(*MinimalFrame),
     storage: std.AutoHashMap(StorageSlotKey, u256),
+    original_storage: std.AutoHashMap(StorageSlotKey, u256),
     balances: std.AutoHashMap(Address, u256),
     code: std.AutoHashMap(Address, []const u8),
     // EIP-2929 warm/cold tracking (minimal)
@@ -168,6 +169,7 @@ pub const MinimalEvm = struct {
 
         self.frames = std.ArrayList(*MinimalFrame){}; // Unmanaged ArrayList, default init
         self.storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
+        self.original_storage = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
         self.balances = std.AutoHashMap(Address, u256).init(arena_allocator);
         self.code = std.AutoHashMap(Address, []const u8).init(arena_allocator);
         self.warm_addresses = std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false).init(arena_allocator);
@@ -522,7 +524,30 @@ pub const MinimalEvm = struct {
             return;
         }
         const key = StorageSlotKey{ .address = address, .slot = slot };
+
+        // Track original value on first write in transaction
+        if (!self.original_storage.contains(key)) {
+            const current = self.storage.get(key) orelse 0;
+            try self.original_storage.put(key, current);
+        }
+
         try self.storage.put(key, value);
+    }
+
+    /// Get original storage value (before transaction modifications)
+    pub fn get_original_storage(self: *Self, address: Address, slot: u256) u256 {
+        const key = StorageSlotKey{ .address = address, .slot = slot };
+        // If we have tracked the original, return it
+        if (self.original_storage.get(key)) |original| {
+            return original;
+        }
+        // Otherwise return current value (unchanged in this transaction)
+        return self.storage.get(key) orelse 0;
+    }
+
+    /// Add gas refund
+    pub fn add_refund(self: *Self, amount: u64) void {
+        self.gas_refund +%= amount;
     }
 
     /// Check if an address is a precompile
