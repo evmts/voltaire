@@ -466,7 +466,6 @@ export fn guillotine_evm_create_tracing(block_info_ptr: *const BlockInfoFFI) ?*E
         tx_context,
         0, // gas_price
         primitives.Address.ZERO_ADDRESS, // origin
-        .CANCUN, // Latest hardfork
     ) catch {
         db.deinit();
         alloc.destroy(db);
