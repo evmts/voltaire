@@ -170,8 +170,11 @@ pub fn Handlers(FrameType: type) type {
             }
             const value = self.stack.pop_unsafe();
 
-            {
-                (&self.getEvm().tracer).assert(offset <= std.math.maxInt(usize), "PUSH_MSTORE offset must fit in usize");
+            // Check if offset fits in usize
+            if (offset > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
+                self.afterComplete(.PUSH_MSTORE_POINTER);
+                return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
 
