@@ -9,6 +9,7 @@ pub const Modules = @import("modules.zig");
 // Executables
 pub const GuillotineExe = @import("executables/guillotine.zig");
 pub const DevtoolExe = @import("../apps/devtool/build.zig");
+pub const CliExe = @import("../apps/cli/build.zig");
 pub const EvmRunnerExe = @import("executables/evm_runner.zig");
 pub const BenchmarksExe = @import("executables/benchmarks.zig");
 

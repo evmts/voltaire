@@ -23,18 +23,14 @@ pub fn build(b: *std.Build) void {
     const zbench_dep = b.dependency("zbench", .{ .target = target, .optimize = optimize }); // retained for module wiring; not used to build benches
 
     const blst_lib = lib_build.createBlstLibrary(b, target, optimize);
+    b.installArtifact(blst_lib);
     const c_kzg_lib = lib_build.createCKzgLibrary(b, target, optimize, blst_lib);
-
+    b.installArtifact(c_kzg_lib);
     const rust_build_step = lib_build.createRustBuildStep(b, rust_target, optimize);
     const bn254_lib = lib_build.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
+    if (bn254_lib) |bn254| b.installArtifact(bn254);
     const foundry_lib = lib_build.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
     
-    // Install BLS libraries to zig-out/lib for stable paths
-    b.installArtifact(blst_lib);
-    b.installArtifact(c_kzg_lib);
-    if (bn254_lib) |bn254| b.installArtifact(bn254);
-
-    // Modules
     const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
 
     // Executables
@@ -855,6 +851,7 @@ pub fn build(b: *std.Build) void {
     build_pkg.GoBindings.createGoSteps(b);
     build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
     build_pkg.BunBindings.createBunSteps(b);
+    build_pkg.CliExe.createCliSteps(b);
 
     // Focused fusion tests aggregator
     {
