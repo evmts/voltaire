@@ -25,8 +25,8 @@ const dispatch_mod = @import("../preprocessor/dispatch.zig");
 
 /// The core most important datastructure of the entire EVM
 /// Holds the StackFrame state along with an `interpret` method for executing a stack frame
-pub fn Frame(comptime _config: FrameConfig) type {
-    comptime _config.validate();
+pub fn Frame(_config: FrameConfig) type {
+    _config.validate();
 
     return struct {
         const Self = @This();

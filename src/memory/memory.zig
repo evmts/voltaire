@@ -30,7 +30,7 @@ pub const MemoryError = error{
 ///
 /// Memory configuration controls initial capacity and maximum size limits.
 /// The implementation uses ArrayList for dynamic growth with efficient resizing.
-pub fn Memory(comptime config: MemoryConfig) type {
+pub fn Memory(config: MemoryConfig) type {
     config.validate();
 
     return struct {
@@ -121,7 +121,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
                     self.buffer_ptr.*.items.len = required_total;
                     
                     // Use SIMD for zeroing if vector_length > 1 and data is large enough
-                    if (comptime (config.vector_length > 1)) {
+                    if (config.vector_length > 1) {
                         const slice = self.buffer_ptr.*.items[old_len..required_total];
                         // Only use SIMD if we have enough data AND proper alignment
                         const ptr_addr = @intFromPtr(slice.ptr);
@@ -158,7 +158,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
             self.buffer_ptr.*.items.len = required_total;
 
             // Zero only the new portion with SIMD if applicable
-            if (comptime (config.vector_length > 1)) {
+            if (config.vector_length > 1) {
                 const slice = self.buffer_ptr.*.items[old_len..required_total];
                 if (slice.len >= config.vector_length * 4) { // Only use SIMD for larger buffers
                     // Check alignment before attempting SIMD
@@ -202,7 +202,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
             const start_idx = checkpoint_usize + offset_usize;
             
             // Use SIMD for copying if vector_length > 1 and data is large enough
-            if (comptime (config.vector_length > 1)) {
+            if (config.vector_length > 1) {
                 if (data.len >= config.vector_length * 4) { // Only use SIMD for larger copies
                     const dst = self.buffer_ptr.*.items[start_idx .. start_idx + data.len];
                     // Check alignment before attempting SIMD

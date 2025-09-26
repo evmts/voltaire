@@ -21,7 +21,7 @@ const StackConfig = @import("stack_config.zig").StackConfig;
 ///
 /// The stack grows downward: push decrements pointer, pop increments.
 /// This design optimizes for CPU cache locality and branch prediction.
-pub fn Stack(comptime config: StackConfig) type {
+pub fn Stack(config: StackConfig) type {
     config.validate();
 
     return struct {

@@ -17,7 +17,7 @@ const call_result_module = @import("frame/call_result.zig");
 const call_params_module = @import("frame/call_params.zig");
 
 /// Creates a configured EVM instance type.
-pub fn Evm(comptime config: EvmConfig) type {
+pub fn Evm(config: EvmConfig) type {
     return struct {
         const Self = @This();
 
@@ -178,26 +178,26 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.tracer.onEvmInit(gas_price, origin, @tagName(config.eips.hardfork));
 
             // Process system contract updates based on configuration
-            if (comptime config.enable_beacon_roots) {
+            if (config.enable_beacon_roots) {
                 // Process beacon root update for EIP-4788 if applicable
                 @import("eips_and_hardforks/beacon_roots.zig").BeaconRootsContract.processBeaconRootUpdate(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onBeaconRootUpdate(false, err);
                 };
             }
 
-            if (comptime config.enable_historical_block_hashes) {
+            if (config.enable_historical_block_hashes) {
                 @import("eips_and_hardforks/historical_block_hashes.zig").HistoricalBlockHashesContract.processBlockHashUpdate(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onHistoricalBlockHashUpdate(false, err);
                 };
             }
 
-            if (comptime config.enable_validator_deposits) {
+            if (config.enable_validator_deposits) {
                 @import("eips_and_hardforks/validator_deposits.zig").ValidatorDepositsContract.processBlockDeposits(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onValidatorDeposits(false, err);
                 };
             }
 
-            if (comptime config.enable_validator_withdrawals) {
+            if (config.enable_validator_withdrawals) {
                 @import("eips_and_hardforks/validator_withdrawals.zig").ValidatorWithdrawalsContract.processBlockWithdrawals(database orelse return error.DatabaseRequired, &block_info) catch |err| {
                     self.tracer.onValidatorWithdrawals(false, err);
                 };
@@ -232,7 +232,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Transfer value between accounts with proper balance checks and error handling
         fn transferWithBalanceChecks(self: *Self, from: primitives.Address, to: primitives.Address, value: u256, snapshot_id: Journal.SnapshotIdType) !void {
             var from_account = try self.database.get_account(from.bytes) orelse Account.zero();
-            if (comptime !config.disable_balance_checks) {
+            if (!config.disable_balance_checks) {
                 if (from_account.balance < value) return error.InsufficientBalance;
             }
             if (from.equals(to)) return;
@@ -427,7 +427,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             ) catch {};
 
             const call_gas = params.getGas();
-            if (comptime !config.disable_gas_checks) {
+            if (!config.disable_gas_checks) {
                 if (call_gas == 0) return CallResult.failure(0);
             }
 
@@ -493,7 +493,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 } orelse Account.zero();
 
                 // Check if origin has sufficient balance for gas fees
-                if (comptime !config.disable_balance_checks) {
+                if (!config.disable_balance_checks) {
                     if (origin_account.balance < total_gas_fee) {
                         log.debug("Insufficient balance for gas fees: balance={d}, fee={d}", .{ origin_account.balance, total_gas_fee });
                         result.success = false;
@@ -516,7 +516,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
 
                 // Handle coinbase rewards (miner/validator payment)
-                if (comptime config.eips.eip_1559_is_enabled()) {
+                if (config.eips.eip_1559_is_enabled()) {
                     // EIP-1559: Only priority fee goes to coinbase, base fee is burned
                     const base_fee = self.block_info.base_fee;
                     const priority_fee_per_gas = if (self.gas_price > base_fee)
@@ -570,7 +570,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Extract self-destruct records if self-destruct is enabled
             // EIP-6780 restricts SELFDESTRUCT behavior in Cancun+
-            if (comptime config.eips.eip_6780_selfdestruct_same_transaction_only()) {
+            if (config.eips.eip_6780_selfdestruct_same_transaction_only()) {
                 result.selfdestructs = self.self_destruct.toOwnedSlice(self.allocator) catch &.{};
             } else {
                 result.selfdestructs = &.{};
@@ -598,11 +598,11 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// This handles nested calls and manages depth tracking.
         pub fn inner_call(self: *Self, params: CallParams) CallResult {
             @branchHint(.likely);
-            if (comptime (@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
+            if ((@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
                 params.validate() catch return CallResult.failure(0);
             }
 
-            if (comptime !config.disable_gas_checks) {
+            if (!config.disable_gas_checks) {
                 if (params.getGas() == 0) return CallResult.failure(0);
             }
 
@@ -827,7 +827,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             const snapshot_id = self.journal.create_snapshot();
 
             if (params.value > 0) {
-                if (comptime !config.disable_balance_checks) {
+                if (!config.disable_balance_checks) {
                     const caller_account = self.database.get_account(params.caller.bytes) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
@@ -1424,7 +1424,7 @@ pub fn Evm(comptime config: EvmConfig) type {
 
         /// Get account balance
         pub fn get_balance(self: *Self, address: primitives.Address) u256 {
-            if (comptime config.disable_balance_checks) return 0;
+            if (config.disable_balance_checks) return 0;
             return self.database.get_balance(address.bytes) catch 0;
         }
 
@@ -1823,11 +1823,6 @@ test "CallParams and CallResult structures" {
 test "EVM error type definition" {
     // Test that Error type exists and contains expected error cases
     const TestEvm = Evm(.{});
-
-    // Test error type is defined
-    comptime {
-        _ = TestEvm.Error;
-    }
 
     // Test that we can create error values
     const err1: TestEvm.Error = error.InvalidJump;
