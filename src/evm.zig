@@ -1247,16 +1247,14 @@ pub fn Evm(config: EvmConfig) type {
             config.eips.warm_contract_for_execution(&self.access_list, address) catch {};
 
             // Build dispatch schedule before frame execution
-            if (code.len > config.max_bytecode_size) {
-                return error.BytecodeTooLarge;
-            }
+            // Note: Size validation is done by caller (execute_init_code checks init code size,
+            // execute_call checks runtime code size via bytecode analysis)
 
             // Always build dispatch schedule from scratch (no caching)
             const tracer_ptr = @as(?@TypeOf(&self.tracer), &self.tracer);
             const bytecode = if (tracer_ptr != null)
                 Bytecode.initWithTracer(arena_allocator, code, tracer_ptr) catch |e| {
                     return switch (e) {
-                        error.BytecodeTooLarge => error.BytecodeTooLarge,
                         error.InvalidOpcode => error.InvalidOpcode,
                         error.InvalidJumpDestination => error.InvalidJumpDestination,
                         error.TruncatedPush => error.InvalidOpcode,
@@ -1267,7 +1265,6 @@ pub fn Evm(config: EvmConfig) type {
             else
                 Bytecode.init(arena_allocator, code) catch |e| {
                     return switch (e) {
-                        error.BytecodeTooLarge => error.BytecodeTooLarge,
                         error.InvalidOpcode => error.InvalidOpcode,
                         error.InvalidJumpDestination => error.InvalidJumpDestination,
                         error.TruncatedPush => error.InvalidOpcode,
@@ -1698,6 +1695,19 @@ pub fn Evm(config: EvmConfig) type {
         /// Get return data from last call
         pub fn get_return_data(self: *Self) []const u8 {
             return self.return_data;
+        }
+
+        /// Clear return data buffer (for CREATE/CREATE2 per EIP-211)
+        pub fn clear_return_data(self: *Self) void {
+            if (self.return_data.len > 0) {
+                self.allocator.free(self.return_data);
+            }
+            self.return_data = &.{};
+        }
+
+        /// Check if returndata should be cleared after CREATE/CREATE2 (EIP-211)
+        pub fn should_clear_returndata_on_create(_: *Self) bool {
+            return config.eips.eip_211_should_clear_returndata_on_create();
         }
 
         /// Get chain ID

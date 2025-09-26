@@ -541,6 +541,11 @@ pub fn Handlers(FrameType: type) type {
             var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getEvm().getCallArenaAllocator());
 
+            // EIP-211: Clear return data buffer after CREATE (Byzantium+)
+            if (self.getEvm().should_clear_returndata_on_create()) {
+                self.getEvm().clear_return_data();
+            }
+
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);
 
@@ -625,6 +630,11 @@ pub fn Handlers(FrameType: type) type {
             };
             var result = self.getEvm().inner_call(params);
             defer result.deinit(self.getEvm().getCallArenaAllocator());
+
+            // EIP-211/EIP-1014: Clear return data buffer after CREATE2 (Byzantium+)
+            if (self.getEvm().should_clear_returndata_on_create()) {
+                self.getEvm().clear_return_data();
+            }
 
             // Update gas remaining
             self.gas_remaining = @intCast(result.gas_left);

@@ -406,8 +406,11 @@ test "Bytecode EIP-170 runtime size validation" {
     defer allocator.free(oversized);
     @memset(oversized, 0x00);
 
-    const res = BytecodeDefault.init(allocator, oversized);
-    try std.testing.expectError(error.BytecodeTooLarge, res);
+    // Size validation is now done by EVM layer, not bytecode module
+    // Bytecode module can analyze code of any size
+    var bytecode = try BytecodeDefault.init(allocator, oversized);
+    defer bytecode.deinit();
+    try std.testing.expect(bytecode.len() == default_config.max_bytecode_size + 1);
 }
 
 test "Bytecode initcode validation - EIP-3860" {

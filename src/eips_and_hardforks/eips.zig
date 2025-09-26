@@ -173,7 +173,7 @@ pub const Eips = struct {
     // Post-Shanghai: 2 gas per word
     pub fn word_cost(self: Self) u64 {
         if (self.is_eip_active(3860)) return 2;
-        return 2;
+        return 0;
     }
 
     /// EIP-7702: Base gas cost per authorization
@@ -355,6 +355,12 @@ pub const Eips = struct {
     pub fn warm_contract_for_execution(self: Self, access_list: anytype, address: primitives.Address) !void {
         if (!self.is_eip_active(2929)) return;
         _ = try access_list.access_address(address);
+    }
+
+    /// EIP-211: Clear returndata buffer after CREATE/CREATE2
+    /// Byzantium hardfork introduced RETURNDATA opcodes and clearing rules
+    pub fn eip_211_should_clear_returndata_on_create(self: Self) bool {
+        return self.is_eip_active(211);
     }
 
     /// EIP-214: Check if log emission is allowed (not in static context)

@@ -35,7 +35,6 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
             InvalidJumpDestination,
             OutOfMemory,
             InitcodeTooLarge,
-            BytecodeTooLarge,
         };
 
         pub const Stats = @import("bytecode_stats.zig").BytecodeStats;
@@ -302,10 +301,9 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
                 t.onBytecodeAnalysisStart(code.len);
             }
 
-            // Enforce EIP-170: maximum runtime bytecode size
-            if (code.len > cfg.max_bytecode_size) {
-                return error.BytecodeTooLarge;
-            }
+            // Note: Size validation is done by the caller (EVM) based on context:
+            // - execute_init_code checks against max_initcode_size (49KB)
+            // - runtime code is checked against max_bytecode_size (24KB)
 
             // Validate bytecode length fits in PcType (required for len() method)
             if (tracer) |t| {
