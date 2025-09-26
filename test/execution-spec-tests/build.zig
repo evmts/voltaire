@@ -1,5 +1,10 @@
 const std = @import("std");
 
+const ExecutionSpecTestSteps = struct {
+    minimal_evm: *std.Build.Step,
+    guillotine: *std.Build.Step,
+};
+
 pub fn createExecutionSpecTests(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
@@ -9,7 +14,7 @@ pub fn createExecutionSpecTests(
     blst_lib: *std.Build.Step.Compile,
     bn254_lib: ?*std.Build.Step.Compile,
     fetch_fixtures_step: *std.Build.Step,
-) void {
+) ExecutionSpecTestSteps {
     const spec_path = b.option([]const u8, "spec-path", "Path to specific test file or directory");
 
     // MinimalEvm version

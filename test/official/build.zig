@@ -1,5 +1,10 @@
 const std = @import("std");
 
+const OfficialTestSteps = struct {
+    state: *std.Build.Step,
+    blockchain: *std.Build.Step,
+};
+
 pub fn createOfficialTests(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
@@ -9,8 +14,9 @@ pub fn createOfficialTests(
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     bn254_lib: ?*std.Build.Step.Compile,
-) void {
+) OfficialTestSteps {
     // Official execution-spec state fixture smoke test
+    var official_state_step: *std.Build.Step = undefined;
     {
         const official_state_test = b.addTest(.{
             .name = "official_state_fixtures_smoke",
@@ -37,7 +43,7 @@ pub fn createOfficialTests(
         const run_official_state_test = b.addRunArtifact(official_state_test);
         // Non-strict by default to avoid failing on WIP EVM differences
         run_official_state_test.setEnvironmentVariable("OFFICIAL_STRICT", "0");
-        const official_state_step = b.step("test-official", "Run execution-spec state fixture smoke test (non-strict)");
+        official_state_step = b.step("test-official", "Run execution-spec state fixture smoke test (non-strict)");
         official_state_step.dependOn(&run_official_state_test.step);
 
         // Strict mode (will compare post-state and likely fail until parity improves)
@@ -48,6 +54,7 @@ pub fn createOfficialTests(
     }
 
     // Official execution-spec blockchain fixture smoke test
+    var official_chain_step: *std.Build.Step = undefined;
     {
         const official_chain_test = b.addTest(.{
             .name = "official_blockchain_fixtures_smoke",
@@ -71,7 +78,7 @@ pub fn createOfficialTests(
 
         const run_official_chain_test = b.addRunArtifact(official_chain_test);
         run_official_chain_test.setEnvironmentVariable("OFFICIAL_STRICT", "0");
-        const official_chain_step = b.step("test-official-blockchain", "Run execution-spec blockchain fixture smoke test (non-strict)");
+        official_chain_step = b.step("test-official-blockchain", "Run execution-spec blockchain fixture smoke test (non-strict)");
         official_chain_step.dependOn(&run_official_chain_test.step);
 
         const run_official_chain_test_strict = b.addRunArtifact(official_chain_test);
@@ -79,4 +86,10 @@ pub fn createOfficialTests(
         const official_chain_strict_step = b.step("test-official-blockchain-strict", "Run execution-spec blockchain fixture smoke test (strict)");
         official_chain_strict_step.dependOn(&run_official_chain_test_strict.step);
     }
+
+    // Return the non-strict steps for main test
+    return .{
+        .state = official_state_step,
+        .blockchain = official_chain_step,
+    };
 }
