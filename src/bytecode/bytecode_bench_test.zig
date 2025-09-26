@@ -46,7 +46,7 @@ pub fn main() !void {
     
     // Test 3: Large bytecode
     {
-        var code = try allocator.alloc(u8, 1000);
+        const code = try allocator.alloc(u8, 1000);
         defer allocator.free(code);
         
         // Fill with various opcodes
