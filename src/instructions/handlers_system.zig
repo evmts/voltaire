@@ -10,7 +10,7 @@ const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
 /// System opcode handlers for the EVM stack frame.
 /// These handle calls, contract creation, and execution control.
-pub fn Handlers(comptime FrameType: type) type {
+pub fn Handlers(FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;

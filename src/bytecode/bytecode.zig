@@ -22,8 +22,8 @@ const OPCODE_TABLE_SIZE = 256; // Total possible opcode values (0x00-0xFF)
 const CACHE_LINE_SIZE = 64; // Common cache line size for x86-64 and ARM64
 const PREFETCH_DISTANCE = 256; // How far ahead to prefetch in bytes
 
-pub fn Bytecode(comptime cfg: BytecodeConfig) type {
-    comptime cfg.validate();
+pub fn Bytecode(cfg: BytecodeConfig) type {
+    cfg.validate();
 
     return struct {
         const Self = @This();
