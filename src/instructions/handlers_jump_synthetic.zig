@@ -5,7 +5,7 @@ const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthet
 
 /// Synthetic jump opcode handlers for the EVM stack frame.
 /// These handle statically optimized jump operations.
-pub fn Handlers(comptime FrameType: type) type {
+pub fn Handlers(FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;

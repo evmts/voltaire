@@ -14,7 +14,7 @@ const GasConstants = @import("primitives").GasConstants;
 /// - u64:  Keccak-512 (64 bytes fit in single word)
 /// - u32:  Keccak-224 (28 bytes fit in single word)
 /// - Other sizes: Keccak-256 (truncated)
-pub fn Handlers(comptime FrameType: type) type {
+pub fn Handlers(FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;

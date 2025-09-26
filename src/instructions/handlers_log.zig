@@ -9,7 +9,7 @@ const Opcode = @import("../opcodes/opcode_data.zig").Opcode;
 
 /// Log opcode handlers for the EVM stack frame.
 /// These handle event emission (LOG0-LOG4).
-pub fn Handlers(comptime FrameType: type) type {
+pub fn Handlers(FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
@@ -24,7 +24,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// Generate a log handler for LOG0-LOG4
-        pub fn generateLogHandler(comptime topic_count: u8) FrameType.OpcodeHandler {
+        pub fn generateLogHandler(topic_count: u8) FrameType.OpcodeHandler {
             if (topic_count > 4) @compileError("Only LOG0 to LOG4 is supported");
             return &struct {
                 pub fn logHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {

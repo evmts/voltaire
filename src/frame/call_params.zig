@@ -1,7 +1,7 @@
 const primitives = @import("primitives");
 const Address = primitives.Address;
 
-pub fn CallParams(comptime config: anytype) type {
+pub fn CallParams(config: anytype) type {
     // We can add config-specific customizations here in the future
     _ = config; // Currently unused but reserved for future enhancements
 

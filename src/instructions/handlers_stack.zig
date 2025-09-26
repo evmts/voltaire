@@ -4,7 +4,7 @@ const log = @import("../log.zig");
 
 /// Stack manipulation opcode handlers for the EVM stack frame.
 /// These are generic structs that return static handlers for a given FrameType.
-pub fn Handlers(comptime FrameType: type) type {
+pub fn Handlers(FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
@@ -33,7 +33,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// Generate a push handler for PUSH1-PUSH32
-        pub fn generatePushHandler(comptime push_n: u8) FrameType.OpcodeHandler {
+        pub fn generatePushHandler(push_n: u8) FrameType.OpcodeHandler {
             if (push_n > 32) @compileError("Only PUSH1 to PUSH32 is supported");
             if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
             return &struct {
@@ -130,7 +130,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// Generate a dup handler for DUP1-DUP16
-        pub fn generateDupHandler(comptime dup_n: u8) FrameType.OpcodeHandler {
+        pub fn generateDupHandler(dup_n: u8) FrameType.OpcodeHandler {
             if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
@@ -183,7 +183,7 @@ pub fn Handlers(comptime FrameType: type) type {
         }
 
         /// Generate a swap handler for SWAP1-SWAP16
-        pub fn generateSwapHandler(comptime swap_n: u8) FrameType.OpcodeHandler {
+        pub fn generateSwapHandler(swap_n: u8) FrameType.OpcodeHandler {
             if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {

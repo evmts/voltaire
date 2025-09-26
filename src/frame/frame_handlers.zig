@@ -21,7 +21,7 @@ const stack_frame_jump_synthetic = @import("../instructions/handlers_jump_synthe
 const stack_frame_advanced_synthetic = @import("../instructions/handlers_advanced_synthetic.zig");
 
 /// Type for handler overrides that depends on FrameType
-pub fn HandlerOverride(comptime FrameType: type) type {
+pub fn HandlerOverride(FrameType: type) type {
     return struct {
         opcode: u8,
         handler: FrameType.OpcodeHandler,
@@ -180,7 +180,7 @@ pub fn getOpcodeHandlers(
 
 /// Get a synthetic opcode handler by its opcode value.
 /// This is separate from the main handlers array to ensure synthetic opcodes are only used internally.
-pub fn getSyntheticHandler(comptime FrameType: type, synthetic_opcode: u8) FrameType.OpcodeHandler {
+pub fn getSyntheticHandler(FrameType: type, synthetic_opcode: u8) FrameType.OpcodeHandler {
     // Import synthetic handler modules
     const ArithmeticSyntheticHandlers = stack_frame_arithmetic_synthetic.Handlers(FrameType);
     const BitwiseSyntheticHandlers = stack_frame_bitwise_synthetic.Handlers(FrameType);

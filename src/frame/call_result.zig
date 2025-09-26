@@ -1,4 +1,4 @@
-pub fn CallResult(comptime config: anytype) type {
+pub fn CallResult(config: anytype) type {
     // We can add config-specific customizations here in the future
     _ = config; // Currently unused but reserved for future enhancements
 

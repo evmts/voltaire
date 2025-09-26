@@ -57,7 +57,7 @@ pub const FrameConfig = struct {
     /// These will override the default handlers in frame_handlers.zig
     opcode_overrides: []const struct { opcode: u8, handler: *const anyopaque } = &.{},
 
-    pub fn validate(comptime self: Self) void {
+    pub fn validate(self: Self) void {
         if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
         if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
         if (self.max_bytecode_size > 65535) @compileError("max_bytecode_size must be at most 65535");
@@ -93,7 +93,7 @@ pub const FrameConfig = struct {
     // Below are derived properties that are derived from other config options
 
     /// PcType: chosen PC integer type from max_bytecode_size
-    pub fn PcType(comptime self: Self) type {
+    pub fn PcType(self: Self) type {
         return if (self.max_bytecode_size <= std.math.maxInt(u8))
             u8
         else if (self.max_bytecode_size <= std.math.maxInt(u12))
@@ -107,7 +107,7 @@ pub const FrameConfig = struct {
     }
 
     /// StackIndexType: minimal integer type to index the configured stack
-    pub fn StackIndexType(comptime self: Self) type {
+    pub fn StackIndexType(self: Self) type {
         return if (self.stack_size <= std.math.maxInt(u4))
             u4
         else if (self.stack_size <= std.math.maxInt(u8))
@@ -118,7 +118,7 @@ pub const FrameConfig = struct {
             @compileError("FrameConfig stack_size is too large! It must fit in a u12 bytes");
     }
     /// GasType: minimal signed integer type to track gas remaining
-    pub fn GasType(comptime self: Self) type {
+    pub fn GasType(self: Self) type {
         return if (self.block_gas_limit <= std.math.maxInt(i32))
             i32
         else
@@ -126,14 +126,14 @@ pub const FrameConfig = struct {
     }
 
     /// The amount of data the frame plans on allocating based on config
-    pub fn get_requested_alloc(comptime self: Self) u32 {
+    pub fn get_requested_alloc(self: Self) u32 {
         return @as(u32, self.stack_size) * @as(u32, @intCast(@sizeOf(self.WordType)));
     }
 
     /// Create a loop safety counter based on the configuration
     /// Returns either an enabled or disabled counter depending on loop_quota
     /// Automatically selects the smallest type that can hold the quota
-    pub fn createLoopSafetyCounter(comptime self: Self) type {
+    pub fn createLoopSafetyCounter(self: Self) type {
         const mode: Mode = if (self.loop_quota != null) .enabled else .disabled;
         const limit = self.loop_quota orelse 0;
 

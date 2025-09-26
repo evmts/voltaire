@@ -5,7 +5,7 @@ const OpcodeSynthetic = @import("../opcodes/opcode_synthetic.zig").OpcodeSynthet
 
 /// Synthetic bitwise opcode handlers for the EVM stack frame.
 /// These handle fused PUSH+bitwise operations for optimization.
-pub fn Handlers(comptime FrameType: type) type {
+pub fn Handlers(FrameType: type) type {
     return struct {
         pub const Error = FrameType.Error;
         pub const Dispatch = FrameType.Dispatch;
