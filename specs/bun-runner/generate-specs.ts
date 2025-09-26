@@ -2,6 +2,7 @@
 import { readdir, readFile, mkdir, writeFile } from "fs/promises";
 import { join, basename, dirname } from "path";
 import { existsSync } from "fs";
+import { compileAssembly } from "./lll-compiler";
 
 const SPECS_DIR = join(import.meta.dir, "../execution-specs/tests");
 const OUTPUT_DIR = join(import.meta.dir, "./generated-tests");
@@ -73,8 +74,14 @@ async function findTestFiles(dir: string, pattern: string): Promise<string[]> {
         await walk(fullPath);
       } else if (entry.isFile() && entry.name.endsWith(".json")) {
         // Simple pattern matching
-        if (pattern === "*.json" || 
-            (pattern.includes("*") && entry.name.includes(pattern.replace(/\*/g, "")))) {
+        if (pattern === "*.json") {
+          files.push(fullPath);
+        } else if (pattern.includes("*")) {
+          const searchPattern = pattern.replace(/\*/g, "").toLowerCase();
+          if (entry.name.toLowerCase().includes(searchPattern)) {
+            files.push(fullPath);
+          }
+        } else if (entry.name.toLowerCase().includes(pattern.toLowerCase())) {
           files.push(fullPath);
         }
       }
@@ -190,6 +197,14 @@ function generateTestCode(testName: string, testCase: TestCase, filePath: string
       if (state.balance) {
         code.push(`    evm.setBalance("${cleanAddr}", BigInt("${state.balance}"));`);
       }
+      if (state.nonce) {
+        code.push(`    evm.setNonce("${cleanAddr}", BigInt("${state.nonce}"));`);
+      }
+      if (state.storage) {
+        for (const [key, value] of Object.entries(state.storage)) {
+          code.push(`    evm.setStorage("${cleanAddr}", BigInt("${key}"), BigInt("${value}"));`);
+        }
+      }
       if (state.code) {
         // Handle assembly syntax or hex code
         if (state.code.startsWith("0x")) {
@@ -197,15 +212,18 @@ function generateTestCode(testName: string, testCase: TestCase, filePath: string
         } else if (state.code.startsWith(":raw ")) {
           const hexData = parseHexData(state.code);
           code.push(`    evm.setCode("${cleanAddr}", hexToBytes("${hexData}"));`);
-        } else if (state.code.startsWith("{")) {
-          code.push(`    // Assembly code not yet supported: ${state.code.substring(0, 50)}...`);
-          code.push(`    // Skipping this test due to assembly syntax`);
-          code.push(`    expect(true).toBe(true); // Placeholder`);
-          code.push(`    evm.destroy();`);
-          code.push(`    return;`);
-          code.push(`  });`);
-          code.push(``);
-          return code.join("\n");
+        } else if (state.code.startsWith("{") || state.code.startsWith(":yul")) {
+          // Compile assembly to bytecode
+          try {
+            const bytecode = compileAssembly(state.code);
+            code.push(`    // Compiled from assembly: ${state.code.substring(0, 50)}...`);
+            code.push(`    evm.setCode("${cleanAddr}", hexToBytes("${bytecode}"));`);
+          } catch (error) {
+            code.push(`    // Failed to compile assembly: ${error}`);
+            code.push(`    // Original code: ${state.code.substring(0, 50)}...`);
+            code.push(`    // Using empty bytecode as fallback`);
+            code.push(`    evm.setCode("${cleanAddr}", hexToBytes("0x"));`);
+          }
         }
       }
     }
@@ -238,14 +256,77 @@ function generateTestCode(testName: string, testCase: TestCase, filePath: string
     }
   }
   
-  // Add expectations
-  if (testCase.expect && testCase.expect.length > 0) {
-    code.push(`    // Verify expectations`);
-    code.push(`    // TODO: Implement state verification`);
-    code.push(`    expect(true).toBe(true);`);
+  // Validate post-state
+  if (testCase.post) {
+    code.push(`    // Verify post-state expectations`);
+    code.push(`    const stateDump = evm.dumpState();`);
+    code.push(`    `);
+    
+    for (const [address, expectedState] of Object.entries(testCase.post)) {
+      const cleanAddr = parseAddress(address);
+      code.push(`    // Check account ${cleanAddr}`);
+      code.push(`    {`);
+      code.push(`      const account = stateDump.accounts.get("${cleanAddr}");`);
+      
+      if (expectedState.balance !== undefined) {
+        code.push(`      expect(account?.balance || 0n).toBe(BigInt("${expectedState.balance}"));`);
+      }
+      
+      if (expectedState.nonce !== undefined) {
+        code.push(`      expect(account?.nonce || 0n).toBe(BigInt("${expectedState.nonce}"));`);
+      }
+      
+      if (expectedState.code && expectedState.code !== "" && expectedState.code !== "0x") {
+        const expectedCode = parseHexData(expectedState.code);
+        code.push(`      expect(bytesToHex(account?.code || new Uint8Array(0))).toBe("${expectedCode.toLowerCase()}");`);
+      }
+      
+      if (expectedState.storage) {
+        for (const [key, value] of Object.entries(expectedState.storage)) {
+          const storageKey = `0x${BigInt(key).toString(16).padStart(64, '0')}`;
+          code.push(`      expect(account?.storage.get("${storageKey}") || 0n).toBe(BigInt("${value}"));`);
+        }
+      }
+      
+      code.push(`    }`);
+    }
+  } else if (testCase.expect && testCase.expect.length > 0) {
+    code.push(`    // Verify expect-format expectations`);
+    code.push(`    const stateDump = evm.dumpState();`);
+    code.push(`    `);
+    
+    // Handle expect format (some tests use this instead of post)
+    for (const expectation of testCase.expect) {
+      if (expectation.result) {
+        for (const [address, expectedState] of Object.entries(expectation.result)) {
+          const cleanAddr = parseAddress(address);
+          code.push(`    // Check account ${cleanAddr}`);
+          code.push(`    {`);
+          code.push(`      const account = stateDump.accounts.get("${cleanAddr}");`);
+          
+          if (expectedState.balance !== undefined) {
+            code.push(`      expect(account?.balance || 0n).toBe(BigInt("${expectedState.balance}"));`);
+          }
+          
+          if (expectedState.nonce !== undefined) {
+            code.push(`      expect(account?.nonce || 0n).toBe(BigInt("${expectedState.nonce}"));`);
+          }
+          
+          if (expectedState.storage) {
+            for (const [key, value] of Object.entries(expectedState.storage)) {
+              const storageKey = `0x${BigInt(key).toString(16).padStart(64, '0')}`;
+              code.push(`      expect(account?.storage.get("${storageKey}") || 0n).toBe(BigInt("${value}"));`);
+            }
+          }
+          
+          code.push(`    }`);
+        }
+        break; // Only use first expectation for now
+      }
+    }
   } else {
-    code.push(`    // No specific expectations, checking execution succeeded`);
-    code.push(`    expect(true).toBe(true);`);
+    code.push(`    // No post-state expectations to verify`);
+    code.push(`    expect(result0).toBeDefined();`);
   }
   
   code.push(`    `);
@@ -268,7 +349,9 @@ import {
   CallType,
   type BlockInfo,
   type CallParams,
-  type EvmResult 
+  type EvmResult,
+  type StateDump,
+  type AccountState
 } from "../../../sdks/bun/src";
 
 function createDefaultEVM(): GuillotineEVM {

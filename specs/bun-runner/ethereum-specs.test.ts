@@ -219,6 +219,10 @@ for (const [category, files] of categories) {
                     evm.setBalance(cleanAddr, BigInt(state.balance));
                   }
                   
+                  if (state.nonce) {
+                    evm.setNonce(cleanAddr, BigInt(state.nonce));
+                  }
+                  
                   if (state.code && state.code !== "" && state.code !== "0x") {
                     let codeBytes: Uint8Array;
                     
@@ -234,6 +238,12 @@ for (const [category, files] of categories) {
                     // Only set code if we have actual bytes
                     if (codeBytes && codeBytes.length > 0) {
                       evm.setCode(cleanAddr, codeBytes);
+                    }
+                  }
+                  
+                  if (state.storage) {
+                    for (const [key, value] of Object.entries(state.storage)) {
+                      evm.setStorage(cleanAddr, BigInt(key), BigInt(value));
                     }
                   }
                 }
@@ -285,9 +295,105 @@ for (const [category, files] of categories) {
                 }
               }
               
-              // If we have expectations, we could validate them here
-              // For now, just check that we got this far without crashing
-              expect(true).toBe(true);
+              // Validate post-state if specified
+              if (testCase.post) {
+                const stateDump = evm.dumpState();
+                
+                // Check each expected account state
+                for (const [address, expectedState] of Object.entries(testCase.post)) {
+                  const cleanAddr = parseAddress(address);
+                  const actualAccount = stateDump.accounts.get(cleanAddr);
+                  
+                  // Check if account exists when it should
+                  if (!actualAccount && (expectedState.balance !== "0" || 
+                      expectedState.nonce !== "0" || 
+                      expectedState.code || 
+                      expectedState.storage)) {
+                    expect(actualAccount).toBeDefined();
+                    continue;
+                  }
+                  
+                  if (expectedState.balance !== undefined) {
+                    const expectedBalance = BigInt(expectedState.balance);
+                    const actualBalance = actualAccount?.balance || 0n;
+                    expect(actualBalance).toBe(expectedBalance);
+                  }
+                  
+                  if (expectedState.nonce !== undefined) {
+                    const expectedNonce = BigInt(expectedState.nonce);
+                    const actualNonce = actualAccount?.nonce || 0n;
+                    expect(actualNonce).toBe(expectedNonce);
+                  }
+                  
+                  if (expectedState.code !== undefined && expectedState.code !== "" && expectedState.code !== "0x") {
+                    const expectedCode = parseHexData(expectedState.code);
+                    const actualCode = actualAccount?.code || new Uint8Array(0);
+                    const actualCodeHex = bytesToHex(actualCode);
+                    expect(actualCodeHex).toBe(expectedCode.toLowerCase());
+                  }
+                  
+                  if (expectedState.storage) {
+                    for (const [key, value] of Object.entries(expectedState.storage)) {
+                      const expectedValue = BigInt(value);
+                      const storageKey = `0x${BigInt(key).toString(16).padStart(64, '0')}`;
+                      const actualValue = actualAccount?.storage.get(storageKey) || 0n;
+                      expect(actualValue).toBe(expectedValue);
+                    }
+                  }
+                }
+              } else if (testCase.expect) {
+                // Handle expect format (some tests use this instead of post)
+                for (const expectation of testCase.expect) {
+                  if (expectation.result) {
+                    const stateDump = evm.dumpState();
+                    
+                    for (const [address, expectedState] of Object.entries(expectation.result)) {
+                      const cleanAddr = parseAddress(address);
+                      const actualAccount = stateDump.accounts.get(cleanAddr);
+                      
+                      // Check if account exists when it should
+                      if (!actualAccount && (expectedState.balance !== "0" || 
+                          expectedState.nonce !== "0" || 
+                          expectedState.code || 
+                          expectedState.storage)) {
+                        expect(actualAccount).toBeDefined();
+                        continue;
+                      }
+                      
+                      if (expectedState.balance !== undefined) {
+                        const expectedBalance = BigInt(expectedState.balance);
+                        const actualBalance = actualAccount?.balance || 0n;
+                        expect(actualBalance).toBe(expectedBalance);
+                      }
+                      
+                      if (expectedState.nonce !== undefined) {
+                        const expectedNonce = BigInt(expectedState.nonce);
+                        const actualNonce = actualAccount?.nonce || 0n;
+                        expect(actualNonce).toBe(expectedNonce);
+                      }
+                      
+                      if (expectedState.code !== undefined && expectedState.code !== "" && expectedState.code !== "0x") {
+                        const expectedCode = parseHexData(expectedState.code);
+                        const actualCode = actualAccount?.code || new Uint8Array(0);
+                        const actualCodeHex = bytesToHex(actualCode);
+                        expect(actualCodeHex).toBe(expectedCode.toLowerCase());
+                      }
+                      
+                      if (expectedState.storage) {
+                        for (const [key, value] of Object.entries(expectedState.storage)) {
+                          const expectedValue = BigInt(value);
+                          const storageKey = `0x${BigInt(key).toString(16).padStart(64, '0')}`;
+                          const actualValue = actualAccount?.storage.get(storageKey) || 0n;
+                          expect(actualValue).toBe(expectedValue);
+                        }
+                      }
+                    }
+                  }
+                }
+              } else {
+                // No post-state to validate, just ensure execution completed
+                expect(true).toBe(true);
+              }
               
             } finally {
               evm.destroy();
