@@ -975,15 +975,13 @@ pub fn Evm(config: EvmConfig) type {
 
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
 
-            // Only increment nonce for contract creators (not EOAs at top level)
-            if (self.depth > 0) {
-                try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
-                caller_account.nonce += 1;
-                self.database.set_account(params.caller.bytes, caller_account) catch {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
-            }
+            // Always increment nonce for CREATE operations
+            try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
+            caller_account.nonce += 1;
+            self.database.set_account(params.caller.bytes, caller_account) catch {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return CallResult.failure(0);
+            };
 
             const existed_before = self.database.account_exists(contract_address.bytes);
             if (existed_before) {
@@ -1042,15 +1040,13 @@ pub fn Evm(config: EvmConfig) type {
                 return CallResult.failure(0);
             }
 
-            // Only increment nonce for contract creators (not EOAs at top level)
-            if (self.depth > 0) {
-                try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
-                caller_account.nonce += 1;
-                self.database.set_account(params.caller.bytes, caller_account) catch {
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
-            }
+            // Always increment nonce for CREATE operations
+            try self.journal.record_nonce_change(snapshot_id, params.caller, caller_account.nonce);
+            caller_account.nonce += 1;
+            self.database.set_account(params.caller.bytes, caller_account) catch {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return CallResult.failure(0);
+            };
 
             const keccak_asm = @import("crypto").keccak_asm;
             var init_code_hash_bytes: [32]u8 = undefined;

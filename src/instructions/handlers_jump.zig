@@ -47,8 +47,30 @@ pub fn Handlers(FrameType: type) type {
                     frame_handlers.setCurrentPc(dest_pc);
                 }
 
-                self.afterInstruction(.JUMP, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
-                return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                // The cursor might point to different types of items depending on the jump target
+                // Check what kind of item we have at the cursor
+                const next_handler = switch (jump_dispatch.cursor[0]) {
+                    .opcode_handler => |handler| handler,
+                    .jump_dest => jump_dispatch.cursor[1].opcode_handler, // Metadata followed by handler
+                    .jump_static => |meta| blk: {
+                        // Static jump points directly to the target
+                        const target_dispatch = @as(*const FrameType.Dispatch, @ptrCast(@alignCast(meta.dispatch)));
+                        break :blk target_dispatch.cursor[0].opcode_handler;
+                    },
+                    else => {
+                        log.warn("JUMP: Unexpected dispatch item type at jump target", .{});
+                        self.afterComplete(.JUMP);
+                        return Error.InvalidJump;
+                    },
+                };
+                const next_cursor = switch (jump_dispatch.cursor[0]) {
+                    .opcode_handler => jump_dispatch.cursor,
+                    .jump_dest => jump_dispatch.cursor + 1,
+                    .jump_static => |meta| @as(*const FrameType.Dispatch, @ptrCast(@alignCast(meta.dispatch))).cursor,
+                    else => unreachable,
+                };
+                self.afterInstruction(.JUMP, next_handler, next_cursor);
+                return @call(FrameType.Dispatch.getTailCallModifier(), next_handler, .{ self, next_cursor });
             } else {
                 // Not a valid JUMPDEST
                 log.warn("JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
@@ -83,8 +105,30 @@ pub fn Handlers(FrameType: type) type {
                         frame_handlers.setCurrentPc(dest_pc);
                     }
 
-                    self.afterInstruction(.JUMPI, jump_dispatch.cursor[0].opcode_handler, jump_dispatch.cursor);
-                    return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch.cursor[0].opcode_handler, .{ self, jump_dispatch.cursor });
+                    // The cursor might point to different types of items depending on the jump target
+                    // Check what kind of item we have at the cursor
+                    const next_handler = switch (jump_dispatch.cursor[0]) {
+                        .opcode_handler => |handler| handler,
+                        .jump_dest => jump_dispatch.cursor[1].opcode_handler, // Metadata followed by handler
+                        .jump_static => |meta| blk: {
+                            // Static jump points directly to the target
+                            const target_dispatch = @as(*const FrameType.Dispatch, @ptrCast(@alignCast(meta.dispatch)));
+                            break :blk target_dispatch.cursor[0].opcode_handler;
+                        },
+                        else => {
+                            log.warn("JUMPI: Unexpected dispatch item type at jump target", .{});
+                            self.afterComplete(.JUMPI);
+                            return Error.InvalidJump;
+                        },
+                    };
+                    const next_cursor = switch (jump_dispatch.cursor[0]) {
+                        .opcode_handler => jump_dispatch.cursor,
+                        .jump_dest => jump_dispatch.cursor + 1,
+                        .jump_static => |meta| @as(*const FrameType.Dispatch, @ptrCast(@alignCast(meta.dispatch))).cursor,
+                        else => unreachable,
+                    };
+                    self.afterInstruction(.JUMPI, next_handler, next_cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), next_handler, .{ self, next_cursor });
                 } else {
                     // Not a valid JUMPDEST
                     log.warn("JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
