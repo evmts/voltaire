@@ -81,6 +81,18 @@ const lib = dlopen(libPath, {
     args: [],
     returns: FFIType.cstring,
   },
+  guillotine_dump_state: {
+    args: [FFIType.ptr], // EvmHandle*
+    returns: FFIType.ptr, // StateDumpFFI*
+  },
+  guillotine_free_state_dump: {
+    args: [FFIType.ptr], // StateDumpFFI*
+    returns: FFIType.void,
+  },
+  guillotine_set_storage: {
+    args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], // EvmHandle*, address[20], key[32], value[32]
+    returns: FFIType.bool,
+  },
 });
 
 // Initialize the FFI
@@ -159,6 +171,18 @@ export interface EvmResult {
   error?: string;
 }
 
+export interface AccountState {
+  address: string;
+  balance: bigint;
+  nonce: bigint;
+  code: Uint8Array;
+  storage: Map<string, bigint>;
+}
+
+export interface StateDump {
+  accounts: Map<string, AccountState>;
+}
+
 export class GuillotineEVM {
   private handle: any;
   private blockInfoBuffer: ArrayBuffer;
@@ -231,6 +255,24 @@ export class GuillotineEVM {
   setCode(address: string, code: Uint8Array): void {
     const addrBytes = addressToBytes(address);
     
+    // Handle empty code (EOAs have no code)
+    if (code.length === 0) {
+      // For empty code, we can either skip or pass a dummy pointer
+      // The EVM should handle this correctly
+      const success = lib.symbols.guillotine_set_code(
+        this.handle,
+        ptr(addrBytes),
+        ptr(new Uint8Array([0])), // dummy pointer for empty code
+        0 // length is 0 to indicate empty
+      );
+      
+      if (!success) {
+        const error = lib.symbols.guillotine_get_last_error();
+        throw new Error(`Failed to set code: ${error}`);
+      }
+      return;
+    }
+    
     const success = lib.symbols.guillotine_set_code(
       this.handle,
       ptr(addrBytes),
@@ -241,6 +283,31 @@ export class GuillotineEVM {
     if (!success) {
       const error = lib.symbols.guillotine_get_last_error();
       throw new Error(`Failed to set code: ${error}`);
+    }
+  }
+
+  setNonce(address: string, nonce: bigint): void {
+    // For now, we'll need to implement this in the C API
+    // But we can provide a stub that throws an informative error
+    console.warn(`setNonce not yet implemented for address ${address}, nonce ${nonce}`);
+    // TODO: Implement guillotine_set_nonce in C API
+  }
+
+  setStorage(address: string, key: bigint, value: bigint): void {
+    const addrBytes = addressToBytes(address);
+    const keyBytes = u256ToBytes(key);
+    const valueBytes = u256ToBytes(value);
+    
+    const success = lib.symbols.guillotine_set_storage(
+      this.handle,
+      ptr(addrBytes),
+      ptr(keyBytes),
+      ptr(valueBytes)
+    );
+    
+    if (!success) {
+      const error = lib.symbols.guillotine_get_last_error();
+      throw new Error(`Failed to set storage: ${error}`);
     }
   }
 
@@ -397,6 +464,117 @@ export class GuillotineEVM {
       output,
       error,
     };
+  }
+
+  dumpState(): StateDump {
+    // Get state dump from EVM
+    const dumpPtr = lib.symbols.guillotine_dump_state(this.handle);
+    if (!dumpPtr) {
+      const error = lib.symbols.guillotine_get_last_error();
+      throw new Error(`Failed to dump state: ${error}`);
+    }
+
+    // Read StateDumpFFI structure
+    // accounts: [*]const AccountStateFFI (ptr at offset 0)
+    // accounts_count: usize (8 bytes at offset 8)
+    const accountsPtr = read.ptr(dumpPtr, 0);
+    const accountsCount = Number(read.u64(dumpPtr, 8));
+
+    const accounts = new Map<string, AccountState>();
+
+    // Read each account
+    // AccountStateFFI size = 56 bytes:
+    // address: [20]u8 (20 bytes)
+    // balance: [32]u8 (32 bytes) 
+    // nonce: u64 (8 bytes)
+    // code: [*]const u8 (8 bytes)
+    // code_len: usize (8 bytes)
+    // storage_keys: [*]const [32]u8 (8 bytes)
+    // storage_values: [*]const [32]u8 (8 bytes)
+    // storage_count: usize (8 bytes)
+    const accountSize = 104; // Actual struct size with padding
+
+    for (let i = 0; i < accountsCount; i++) {
+      const offset = i * accountSize;
+      
+      // Read address (20 bytes)
+      const addressBytes = new Uint8Array(20);
+      for (let j = 0; j < 20; j++) {
+        addressBytes[j] = read.u8(accountsPtr, offset + j);
+      }
+      const address = bytesToHex(addressBytes);
+
+      // Read balance (32 bytes at offset 20)
+      const balanceBytes = new Uint8Array(32);
+      for (let j = 0; j < 32; j++) {
+        balanceBytes[j] = read.u8(accountsPtr, offset + 20 + j);
+      }
+      let balance = 0n;
+      for (let j = 0; j < 32; j++) {
+        balance = (balance << 8n) | BigInt(balanceBytes[j]);
+      }
+
+      // Read nonce (8 bytes at offset 56, after padding)
+      const nonce = read.u64(accountsPtr, offset + 56);
+
+      // Read code pointer and length (at offset 64 and 72)
+      const codePtr = read.ptr(accountsPtr, offset + 64);
+      const codeLen = Number(read.u64(accountsPtr, offset + 72));
+      
+      let code = new Uint8Array(0);
+      if (codeLen > 0 && codePtr) {
+        code = new Uint8Array(codeLen);
+        for (let j = 0; j < codeLen; j++) {
+          code[j] = read.u8(codePtr, j);
+        }
+      }
+
+      // Read storage (at offset 80, 88, 96)
+      const storageKeysPtr = read.ptr(accountsPtr, offset + 80);
+      const storageValuesPtr = read.ptr(accountsPtr, offset + 88);
+      const storageCount = Number(read.u64(accountsPtr, offset + 96));
+
+      const storage = new Map<string, bigint>();
+      if (storageCount > 0 && storageKeysPtr && storageValuesPtr) {
+        for (let j = 0; j < storageCount; j++) {
+          // Read key (32 bytes)
+          const keyBytes = new Uint8Array(32);
+          for (let k = 0; k < 32; k++) {
+            keyBytes[k] = read.u8(storageKeysPtr, j * 32 + k);
+          }
+          let key = 0n;
+          for (let k = 0; k < 32; k++) {
+            key = (key << 8n) | BigInt(keyBytes[k]);
+          }
+
+          // Read value (32 bytes)
+          const valueBytes = new Uint8Array(32);
+          for (let k = 0; k < 32; k++) {
+            valueBytes[k] = read.u8(storageValuesPtr, j * 32 + k);
+          }
+          let value = 0n;
+          for (let k = 0; k < 32; k++) {
+            value = (value << 8n) | BigInt(valueBytes[k]);
+          }
+
+          // Store as hex string key for consistency
+          storage.set(`0x${key.toString(16).padStart(64, '0')}`, value);
+        }
+      }
+
+      accounts.set(address, {
+        address,
+        balance,
+        nonce,
+        code,
+        storage,
+      });
+    }
+
+    // Free the state dump
+    lib.symbols.guillotine_free_state_dump(dumpPtr);
+
+    return { accounts };
   }
 }
 
