@@ -77,9 +77,6 @@ pub fn createAllTests(
     test_step.dependOn(exec_spec_steps.minimal_evm);
     test_step.dependOn(exec_spec_steps.guillotine);
 
-    // Synthetic opcodes test - returns the step
-    const synthetic_step = createSyntheticOpcodeTests(b, target, optimize, modules, config.options_mod, libs);
-    test_step.dependOn(synthetic_step);
     if (b.top_level_steps.get("test-erc20-mint")) |erc20_mint_step| {
         test_step.dependOn(&erc20_mint_step.step);
     }
@@ -233,11 +230,7 @@ fn createOpcodeTests(
     all_opcodes_test.root_module.addImport("primitives", modules.primitives_mod);
     all_opcodes_test.root_module.addImport("crypto", modules.crypto_mod);
     all_opcodes_test.root_module.addImport("build_options", config_options_mod);
-    all_opcodes_test.root_module.addImport("log", b.createModule(.{
-        .root_source_file = b.path("src/log.zig"),
-        .target = target,
-        .optimize = .Debug,
-    }));
+    // log module is already part of evm module (evm.log)
 
     all_opcodes_test.linkLibrary(libs.c_kzg_lib);
     all_opcodes_test.linkLibrary(libs.blst_lib);
@@ -575,58 +568,21 @@ fn createDebugTests(
     }
 }
 
-fn createSyntheticOpcodeTests(
-    b: *std.Build,
-    target: std.Build.ResolvedTarget,
-    optimize: std.builtin.OptimizeMode,
-    modules: anytype,
-    config_options_mod: *std.Build.Module,
-    libs: anytype,
-) *std.Build.Step {
-    const synthetic_test = b.addTest(.{
-        .name = "synthetic_opcodes_test",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/evm/test_synthetic_opcodes.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-        .use_llvm = true,
-    });
-
-    synthetic_test.root_module.addImport("primitives", modules.primitives_mod);
-    synthetic_test.root_module.addImport("crypto", modules.crypto_mod);
-    synthetic_test.root_module.addImport("build_options", config_options_mod);
-
-    synthetic_test.linkLibrary(libs.c_kzg_lib);
-    synthetic_test.linkLibrary(libs.blst_lib);
-    if (libs.bn254_lib) |bn254| synthetic_test.linkLibrary(bn254);
-    synthetic_test.linkLibC();
-
-    const run_synthetic_test = b.addRunArtifact(synthetic_test);
-    const synthetic_step = b.step("test-synthetic", "Test synthetic opcodes");
-    synthetic_step.dependOn(&run_synthetic_test.step);
-    return synthetic_step;
-}
-
 // Helper function to configure common EVM test dependencies
 fn configureEvmTest(
-    b: *std.Build,
+    _: *std.Build,
     test_exe: *std.Build.Step.Compile,
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-    target: std.Build.ResolvedTarget,
-    optimize: std.builtin.OptimizeMode,
+    _: std.Build.ResolvedTarget,
+    _: std.builtin.OptimizeMode,
 ) void {
     test_exe.root_module.addImport("evm", modules.evm_mod);
     test_exe.root_module.addImport("primitives", modules.primitives_mod);
     test_exe.root_module.addImport("crypto", modules.crypto_mod);
     test_exe.root_module.addImport("build_options", config_options_mod);
-    test_exe.root_module.addImport("log", b.createModule(.{
-        .root_source_file = b.path("src/log.zig"),
-        .target = target,
-        .optimize = optimize,
-    }));
+    // log module is already part of evm module (evm.log)
     test_exe.linkLibrary(libs.c_kzg_lib);
     test_exe.linkLibrary(libs.blst_lib);
     if (libs.bn254_lib) |bn254| test_exe.linkLibrary(bn254);
