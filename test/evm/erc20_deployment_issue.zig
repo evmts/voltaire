@@ -4,7 +4,7 @@ const primitives = @import("primitives");
 const log = std.log;
 
 test {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
 }
 
 fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
@@ -24,7 +24,7 @@ fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
 }
 
 test "ERC20 deployment with standard EVM" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = std.testing.allocator;
 
     // Read the ERC20 transfer bytecode
@@ -109,7 +109,7 @@ test "ERC20 deployment with standard EVM" {
 
 
 test "Simple contract deployment test" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = std.testing.allocator;
 
     // Use a very simple contract that just stores 42 and returns empty code
@@ -193,7 +193,7 @@ test "Simple contract deployment test" {
 }
 
 test "Snailtracer deployment comparison" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = std.testing.allocator;
     
     // Test with snailtracer which we know works

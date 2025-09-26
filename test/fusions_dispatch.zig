@@ -25,7 +25,7 @@ const TestBytecode = evm.Bytecode(.{ .max_bytecode_size = test_config.max_byteco
 const TestDispatch = evm.FrameDispatch(TestFrame);
 
 test "fusion dispatch: verify jump resolution for ten-thousand-hashes" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = testing.allocator;
 
     // Deployment bytecode for ten-thousand-hashes from benches
@@ -75,7 +75,7 @@ test "fusion dispatch: verify jump resolution for ten-thousand-hashes" {
 }
 
 test "fusion dispatch: simple PUSH+JUMPI resolution" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = testing.allocator;
 
     // Simple bytecode with PUSH+JUMPI that should be fused

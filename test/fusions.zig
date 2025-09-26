@@ -496,7 +496,7 @@ test "fusion: Multiple fusions in sequence" {
 }
 
 test "fusion: ten-thousand-hashes bytecode with PUSH+JUMP fusion" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     log.info("Testing ten-thousand-hashes bytecode with fusion", .{});
     const allocator = testing.allocator;
     

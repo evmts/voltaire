@@ -5,7 +5,7 @@ const bytecode_mod = @import("../src/bytecode/bytecode.zig");
 const dispatch_mod = @import("../src/preprocessor/dispatch.zig");
 
 test "dispatch building observability for CALL bytecode" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = std.testing.allocator;
 
     // The exact bytecode from failing CALL test

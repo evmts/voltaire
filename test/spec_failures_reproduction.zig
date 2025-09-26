@@ -4,7 +4,7 @@ const primitives = @import("primitives");
 
 // Enable debug logging to see tracer output
 test {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
 }
 
 // Minimal test to reproduce the synchronization issue

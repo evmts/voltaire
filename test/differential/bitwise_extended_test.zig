@@ -80,7 +80,7 @@ test "differential: SIGNEXTEND edge cases" {
 }
 
 test "differential: SIGNEXTEND with large values" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = testing.allocator;
     
     var testor = try DifferentialTestor.init(allocator);

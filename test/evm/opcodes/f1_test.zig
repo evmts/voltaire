@@ -4,7 +4,7 @@ const primitives = @import("primitives");
 const common = @import("common.zig");
 
 test "opcode 0xf1 differential test" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = std.testing.allocator;
     std.log.debug("Starting CALL (0xf1) test", .{});
     

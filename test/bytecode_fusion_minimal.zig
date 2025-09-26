@@ -1,7 +1,7 @@
 const std = @import("std");
 
 test "minimal bytecode fusion detection" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
 
     std.debug.print("\n=== Minimal fusion test ===\n", .{});
 

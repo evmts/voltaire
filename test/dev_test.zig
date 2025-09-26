@@ -6,7 +6,7 @@ const log = std.log.scoped(.dev_test);
 
 test "simple trace generation" {
     // Enable debug logging for this test
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     
     const allocator = testing.allocator;
     
@@ -89,7 +89,7 @@ test "simple trace generation" {
 }
 
 test "trace with dispatch analysis" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     
     const allocator = testing.allocator;
     
@@ -174,7 +174,7 @@ test "trace with dispatch analysis" {
 }
 
 test "erc20 mint trace - minimal" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     
     const allocator = testing.allocator;
     

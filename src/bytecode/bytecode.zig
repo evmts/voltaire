@@ -1702,7 +1702,7 @@ test "pretty_print: should format bytecode with colors and metadata" {
 }
 
 test "pretty_print: enhanced visualization with JUMP/JUMPDEST/fusions" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = std.testing.allocator;
 
     // Complex bytecode with JUMPs, JUMPDESTs and fusion patterns
@@ -1745,7 +1745,7 @@ test "pretty_print: enhanced visualization with JUMP/JUMPDEST/fusions" {
 const testing = std.testing;
 
 test "debug: fusion detection for CALL bytecode" {
-    std.testing.log_level = .debug;
+    std.testing.log_level = .err;
     const allocator = testing.allocator;
 
     // The exact bytecode from failing CALL test
