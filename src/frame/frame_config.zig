@@ -62,6 +62,14 @@ pub const FrameConfig = struct {
         if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
         if (self.max_bytecode_size > 65535) @compileError("max_bytecode_size must be at most 65535");
 
+        // Validate gas limit fits in i64
+        if (self.block_gas_limit > std.math.maxInt(i64)) {
+            @compileError(std.fmt.comptimePrint("block_gas_limit ({d}) must fit in i64 (max {d})", .{
+                self.block_gas_limit,
+                std.math.maxInt(i64),
+            }));
+        }
+
         // Validate memory configuration
         const min_memory_for_stack = self.get_requested_alloc();
         if (self.memory_limit < min_memory_for_stack) {

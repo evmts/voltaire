@@ -550,7 +550,9 @@ pub fn Handlers(FrameType: type) type {
             }
 
             // Update gas remaining
-            self.gas_remaining = @intCast(result.gas_left);
+            // Safety check: gas_left should never exceed what we started with
+            const safe_gas_left = @min(result.gas_left, @as(u64, @intCast(@max(0, self.gas_remaining))));
+            self.gas_remaining = @as(FrameType.GasType, @intCast(safe_gas_left));
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
@@ -640,7 +642,9 @@ pub fn Handlers(FrameType: type) type {
             }
 
             // Update gas remaining
-            self.gas_remaining = @intCast(result.gas_left);
+            // Safety check: gas_left should never exceed what we started with
+            const safe_gas_left_c2 = @min(result.gas_left, @as(u64, @intCast(@max(0, self.gas_remaining))));
+            self.gas_remaining = @as(FrameType.GasType, @intCast(safe_gas_left_c2));
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
