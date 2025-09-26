@@ -1,4 +1,5 @@
 const std = @import("std");
+const primitives = @import("primitives");
 
 // Event metadata
 pub const EventMetadata = struct {
