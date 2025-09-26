@@ -18,6 +18,7 @@ pub fn createExecutionSpecTests(
     const spec_path = b.option([]const u8, "spec-path", "Path to specific test file or directory");
 
     // MinimalEvm version
+    var exec_spec_step: *std.Build.Step = undefined;
     {
         const minimal_evm_options = b.addOptions();
         minimal_evm_options.addOption([]const u8, "runner_type", "minimal_evm");
@@ -49,7 +50,7 @@ pub fn createExecutionSpecTests(
         // Make tests depend on fixture downloading
         run_exec_spec_tests.step.dependOn(fetch_fixtures_step);
 
-        const exec_spec_step = b.step("test-execution-spec-minimal-evm", "Run execution spec tests with MinimalEvm");
+        exec_spec_step = b.step("test-execution-spec-minimal-evm", "Run execution spec tests with MinimalEvm");
         exec_spec_step.dependOn(&run_exec_spec_tests.step);
 
         // Backwards compatibility alias
@@ -63,6 +64,7 @@ pub fn createExecutionSpecTests(
     }
 
     // Guillotine version
+    var exec_spec_main_step: *std.Build.Step = undefined;
     {
         const guillotine_options = b.addOptions();
         guillotine_options.addOption([]const u8, "runner_type", "guillotine");
@@ -94,7 +96,7 @@ pub fn createExecutionSpecTests(
         // Make tests depend on fixture downloading
         run_exec_spec_tests_main.step.dependOn(fetch_fixtures_step);
 
-        const exec_spec_main_step = b.step("test-execution-spec-guillotine", "Run execution spec tests with Guillotine EVM");
+        exec_spec_main_step = b.step("test-execution-spec-guillotine", "Run execution spec tests with Guillotine EVM");
         exec_spec_main_step.dependOn(&run_exec_spec_tests_main.step);
 
         // Use the shared spec-path option
@@ -102,6 +104,11 @@ pub fn createExecutionSpecTests(
             run_exec_spec_tests_main.addArg(path);
         }
     }
+
+    return .{
+        .minimal_evm = exec_spec_step,
+        .guillotine = exec_spec_main_step,
+    };
 }
 
 pub fn createFetchFixturesStep(b: *std.Build) *std.Build.Step {
