@@ -166,8 +166,8 @@ test {
     _ = @import("trie/test_simple_update.zig");
     _ = @import("trie/known_roots_test.zig");
 
-    // Provider tests
-    _ = @import("provider/test_provider.zig");
+    // Provider tests - removed to avoid module conflict
+    // Provider module handles its own tests
 
     // C API modules are not compiled in tests in this configuration
     // _ = @import("root_c.zig");
