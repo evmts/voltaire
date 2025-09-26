@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn createGoSteps(b: *std.Build) void {
+pub fn createGoSteps(b: *std.Build) *std.Build.Step {
     const go_mod_tidy_cmd = b.addSystemCommand(&[_][]const u8{ "go", "mod", "tidy" });
     go_mod_tidy_cmd.setCwd(b.path("sdks/go"));
     go_mod_tidy_cmd.step.dependOn(b.getInstallStep());
@@ -37,4 +37,7 @@ pub fn createGoSteps(b: *std.Build) void {
 
     const go_fmt_step = b.step("go-fmt", "Format Go code");
     go_fmt_step.dependOn(&go_fmt_cmd.step);
+
+    // Return the main build step
+    return go_build_step;
 }

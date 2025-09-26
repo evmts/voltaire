@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn createPythonSteps(b: *std.Build) void {
+pub fn createPythonSteps(b: *std.Build) *std.Build.Step {
     const python_build_cmd = b.addSystemCommand(&[_][]const u8{ "python3", "build.py" });
     python_build_cmd.setCwd(b.path("sdks/python"));
     python_build_cmd.step.dependOn(b.getInstallStep());
@@ -28,4 +28,7 @@ pub fn createPythonSteps(b: *std.Build) void {
 
     const python_examples_step = b.step("python-examples", "Run Python binding examples");
     python_examples_step.dependOn(&python_examples_cmd.step);
+
+    // Return the main build step
+    return python_build_step;
 }

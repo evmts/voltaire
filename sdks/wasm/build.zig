@@ -4,7 +4,7 @@ pub fn createWasmSteps(
     b: *std.Build,
     optimize: std.builtin.OptimizeMode,
     build_options_mod: *std.Build.Module,
-) void {
+) *std.Build.Step {
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
         .os_tag = .freestanding,
@@ -101,6 +101,9 @@ pub fn createWasmSteps(
 
     // MinimalEvm WASM build
     createMinimalEvmWasm(b, wasm_target, build_options_mod);
+
+    // Return the main wasm build step
+    return wasm_step;
 }
 
 fn addWasmSizeReport(

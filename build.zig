@@ -119,12 +119,19 @@ pub fn build(b: *std.Build) void {
     SpecsBuild.createSpecsCli(b, target, optimize, modules, config.options_mod, c_kzg_lib, blst_lib, bn254_lib);
     SpecsBuild.createBunSpecsRunner(b);
 
-    // Language bindings
-    build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
-    build_pkg.PythonBindings.createPythonSteps(b);
-    build_pkg.GoBindings.createGoSteps(b);
-    build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
-    build_pkg.BunBindings.createBunSteps(b);
-    build_pkg.CliExe.createCliSteps(b);
-}
+    // Language bindings - capture build steps
+    const wasm_step = build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
+    const python_step = build_pkg.PythonBindings.createPythonSteps(b);
+    const go_step = build_pkg.GoBindings.createGoSteps(b);
+    const ts_step = build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
+    const bun_step = build_pkg.BunBindings.createBunSteps(b);
+    const cli_step = build_pkg.CliExe.createCliSteps(b);
 
+    // Make 'zig build' comprehensive - add SDK builds to the default install
+    b.getInstallStep().dependOn(wasm_step);
+    b.getInstallStep().dependOn(python_step);
+    b.getInstallStep().dependOn(go_step);
+    b.getInstallStep().dependOn(ts_step);
+    b.getInstallStep().dependOn(bun_step);
+    b.getInstallStep().dependOn(cli_step);
+}

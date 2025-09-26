@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn createBunSteps(b: *std.Build) void {
+pub fn createBunSteps(b: *std.Build) *std.Build.Step {
     // Check if bun is available
     const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
     bun_check.addCheck(.{ .expect_stdout_match = "bun" });
@@ -57,4 +57,7 @@ pub fn createBunSteps(b: *std.Build) void {
 
     const bun_clean_step = b.step("bun-clean", "Clean Bun SDK build artifacts");
     bun_clean_step.dependOn(&bun_clean.step);
+
+    // Return the main build step
+    return bun_build_step;
 }

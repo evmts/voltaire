@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn createCliSteps(b: *std.Build) void {
+pub fn createCliSteps(b: *std.Build) *std.Build.Step {
     // Build the Go CLI binary
     const cli_build_cmd = b.addSystemCommand(&[_][]const u8{
         "go", "build", "-o", "guillotine-cli", ".",
@@ -29,7 +29,7 @@ pub fn createCliSteps(b: *std.Build) void {
     cli_test_cmd.setCwd(b.path("apps/cli"));
     cli_test_cmd.step.dependOn(&cli_build_cmd.step);
 
-    const cli_test_step = b.step("cli-test", "Run CLI tests");
+    const cli_test_step = b.step("cli-test", "Test the Guillotine CLI");
     cli_test_step.dependOn(&cli_test_cmd.step);
 
     // Clean the CLI build artifacts
@@ -76,6 +76,9 @@ pub fn createCliSteps(b: *std.Build) void {
 
     const cli_deps_step = b.step("cli-deps", "Update CLI Go dependencies");
     cli_deps_step.dependOn(&cli_deps_cmd.step);
+
+    // Return the main build step
+    return cli_build_step;
 }
 
 // Helper to create the CLI executable with proper library paths

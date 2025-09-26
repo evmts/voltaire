@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn createTypeScriptSteps(b: *std.Build) void {
+pub fn createTypeScriptSteps(b: *std.Build) *std.Build.Step {
     // Note: TypeScript bindings are in src/guillotine-ts, not sdks/typescript
     const ts_install_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "install" });
     ts_install_cmd.setCwd(b.path("src/guillotine-ts"));
@@ -64,4 +64,7 @@ pub fn createTypeScriptSteps(b: *std.Build) void {
 
     const ts_clean_step = b.step("ts-clean", "Clean TypeScript build artifacts");
     ts_clean_step.dependOn(&ts_clean_cmd.step);
+
+    // Return the main build step
+    return ts_build_step;
 }

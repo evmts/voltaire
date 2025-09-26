@@ -38,26 +38,50 @@ pub fn createAllTests(
     // Compiler tests
     createCompilerTests(b, target, optimize, modules, libs.bn254_lib, test_step);
 
-    // Opcode differential tests
-    createOpcodeTests(b, target, optimize, modules, config.options_mod, libs, test_filters);
+    // Opcode differential tests - returns the step
+    const opcodes_step = createOpcodeTests(b, target, optimize, modules, config.options_mod, libs, test_filters);
+    test_step.dependOn(opcodes_step);
 
-    // EVM-specific tests
-    createEvmTests(b, target, optimize, modules, config.options_mod, libs);
+    // EVM-specific tests - returns multiple steps
+    const evm_steps = createEvmTests(b, target, optimize, modules, config.options_mod, libs);
+    test_step.dependOn(evm_steps.snailtracer);
+    test_step.dependOn(evm_steps.fixtures_differential);
+    test_step.dependOn(evm_steps.codecopy_return);
+    test_step.dependOn(evm_steps.jump_table);
 
-    // Fusion tests
-    createFusionTests(b, target, optimize, modules, config.options_mod, libs);
+    // Fusion tests - returns the step
+    const fusions_step = createFusionTests(b, target, optimize, modules, config.options_mod, libs);
+    test_step.dependOn(fusions_step);
 
-    // Development and debug tests
+    // Development and debug tests - no need to add to main test step
     createDebugTests(b, target, optimize, modules, config.options_mod, libs);
 
-    // Official and execution spec tests
-    OfficialTests.createOfficialTests(b, target, optimize, modules, config.options_mod, libs.c_kzg_lib, libs.blst_lib, libs.bn254_lib);
+    // Official tests - returns both steps
+    const official_steps = OfficialTests.createOfficialTests(b, target, optimize, modules, config.options_mod, libs.c_kzg_lib, libs.blst_lib, libs.bn254_lib);
+    test_step.dependOn(official_steps.state);
+    test_step.dependOn(official_steps.blockchain);
 
+    // Execution spec tests - returns both steps
     const fetch_fixtures_step = ExecutionSpecTests.createFetchFixturesStep(b);
-    ExecutionSpecTests.createExecutionSpecTests(b, target, optimize, modules, libs.c_kzg_lib, libs.blst_lib, libs.bn254_lib, fetch_fixtures_step);
+    const exec_spec_steps = ExecutionSpecTests.createExecutionSpecTests(b, target, optimize, modules, libs.c_kzg_lib, libs.blst_lib, libs.bn254_lib, fetch_fixtures_step);
+    test_step.dependOn(exec_spec_steps.minimal_evm);
+    test_step.dependOn(exec_spec_steps.guillotine);
 
-    // Synthetic opcodes test
-    createSyntheticOpcodeTests(b, target, optimize, modules, config.options_mod, libs);
+    // Synthetic opcodes test - returns the step
+    const synthetic_step = createSyntheticOpcodeTests(b, target, optimize, modules, config.options_mod, libs);
+    test_step.dependOn(synthetic_step);
+    if (b.top_level_steps.get("test-erc20-mint")) |erc20_mint_step| {
+        test_step.dependOn(&erc20_mint_step.step);
+    }
+    if (b.top_level_steps.get("test-erc20-transfer")) |erc20_transfer_step| {
+        test_step.dependOn(&erc20_transfer_step.step);
+    }
+    if (b.top_level_steps.get("test-codecopy-return")) |codecopy_step| {
+        test_step.dependOn(&codecopy_step.step);
+    }
+    if (b.top_level_steps.get("test-fixtures-differential")) |fixtures_step| {
+        test_step.dependOn(&fixtures_step.step);
+    }
 }
 
 pub fn createIntegrationTests(
@@ -174,7 +198,7 @@ fn createOpcodeTests(
     config_options_mod: *std.Build.Module,
     libs: anytype,
     test_filters: []const []const u8,
-) void {
+) *std.Build.Step {
     _ = optimize;
     const opcode_tests_step = b.step("test-opcodes", "Run all per-opcode differential tests. Use -Dtest-filter='<pattern>' to filter tests");
 
@@ -206,7 +230,15 @@ fn createOpcodeTests(
 
     const run_opcodes_test = b.addRunArtifact(all_opcodes_test);
     opcode_tests_step.dependOn(&run_opcodes_test.step);
+    return opcode_tests_step;
 }
+
+const EvmTestSteps = struct {
+    snailtracer: *std.Build.Step,
+    fixtures_differential: *std.Build.Step,
+    codecopy_return: *std.Build.Step,
+    jump_table: *std.Build.Step,
+};
 
 fn createEvmTests(
     b: *std.Build,
@@ -215,21 +247,28 @@ fn createEvmTests(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
-    // ERC20 tests
+) EvmTestSteps {
+    // ERC20 tests (don't need to be in main test)
     createErc20Tests(b, target, optimize, modules, config_options_mod, libs);
 
     // Snailtracer test
-    createSnailTracerTest(b, target, optimize, modules, config_options_mod, libs);
+    const snailtracer_step = createSnailTracerTest(b, target, optimize, modules, config_options_mod, libs);
 
     // Jump table test
-    createJumpTableTest(b, target, .Debug, modules, config_options_mod, libs);
+    const jump_table_step = createJumpTableTest(b, target, .Debug, modules, config_options_mod, libs);
 
     // CODECOPY+RETURN test
-    createCodecopyTest(b, target, optimize, modules, config_options_mod, libs);
+    const codecopy_step = createCodecopyTest(b, target, optimize, modules, config_options_mod, libs);
 
     // Fixtures differential test
-    createFixturesDifferentialTest(b, target, .Debug, modules, config_options_mod, libs);
+    const fixtures_step = createFixturesDifferentialTest(b, target, .Debug, modules, config_options_mod, libs);
+
+    return .{
+        .snailtracer = snailtracer_step,
+        .fixtures_differential = fixtures_step,
+        .codecopy_return = codecopy_step,
+        .jump_table = jump_table_step,
+    };
 }
 
 fn createErc20Tests(
@@ -327,7 +366,7 @@ fn createSnailTracerTest(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
+) *std.Build.Step {
     _ = optimize;
     const test_exe = b.addTest(.{
         .name = "snailtracer-test",
@@ -341,6 +380,7 @@ fn createSnailTracerTest(
     configureEvmTest(b, test_exe, modules, config_options_mod, libs, target, .Debug);
     const step = b.step("test-snailtracer", "Run snailtracer differential test");
     step.dependOn(&b.addRunArtifact(test_exe).step);
+    return step;
 }
 
 fn createJumpTableTest(
@@ -350,7 +390,7 @@ fn createJumpTableTest(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
+) *std.Build.Step {
     const test_exe = b.addTest(.{
         .name = "test-jump-table",
         .root_module = b.createModule(.{
@@ -363,6 +403,7 @@ fn createJumpTableTest(
     configureEvmTest(b, test_exe, modules, config_options_mod, libs, target, optimize);
     const step = b.step("test-jump-table", "Test jump table JUMPDEST recognition");
     step.dependOn(&b.addRunArtifact(test_exe).step);
+    return step;
 }
 
 fn createCodecopyTest(
@@ -372,7 +413,7 @@ fn createCodecopyTest(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
+) *std.Build.Step {
     _ = libs;
     const test_exe = b.addTest(.{
         .name = "codecopy_return_test",
@@ -390,6 +431,7 @@ fn createCodecopyTest(
 
     const step = b.step("test-codecopy-return", "Test CODECOPY and RETURN opcodes");
     step.dependOn(&b.addRunArtifact(test_exe).step);
+    return step;
 }
 
 fn createFixturesDifferentialTest(
@@ -399,7 +441,7 @@ fn createFixturesDifferentialTest(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
+) *std.Build.Step {
     const test_exe = b.addTest(.{
         .name = "fixtures-differential-test",
         .root_module = b.createModule(.{
@@ -412,6 +454,7 @@ fn createFixturesDifferentialTest(
     configureEvmTest(b, test_exe, modules, config_options_mod, libs, target, optimize);
     const step = b.step("test-fixtures-differential", "Run differential tests for benchmark fixtures (ERC20, snailtracer, etc.)");
     step.dependOn(&b.addRunArtifact(test_exe).step);
+    return step;
 }
 
 fn createFusionTests(
@@ -421,7 +464,7 @@ fn createFusionTests(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
+) *std.Build.Step {
     _ = optimize;
     // Basic fusion detection and execution tests
     const fusions_basic = b.addTest(.{
@@ -463,6 +506,7 @@ fn createFusionTests(
     test_fusions_step.dependOn(&b.addRunArtifact(fusions_basic).step);
     test_fusions_step.dependOn(&b.addRunArtifact(fusions_dispatch).step);
     test_fusions_step.dependOn(&b.addRunArtifact(fusions_diff_toggle).step);
+    return test_fusions_step;
 }
 
 fn createDebugTests(
@@ -522,7 +566,7 @@ fn createSyntheticOpcodeTests(
     modules: anytype,
     config_options_mod: *std.Build.Module,
     libs: anytype,
-) void {
+) *std.Build.Step {
     const synthetic_test = b.addTest(.{
         .name = "synthetic_opcodes_test",
         .root_module = b.createModule(.{
@@ -545,6 +589,7 @@ fn createSyntheticOpcodeTests(
     const run_synthetic_test = b.addRunArtifact(synthetic_test);
     const synthetic_step = b.step("test-synthetic", "Test synthetic opcodes");
     synthetic_step.dependOn(&run_synthetic_test.step);
+    return synthetic_step;
 }
 
 // Helper function to configure common EVM test dependencies
