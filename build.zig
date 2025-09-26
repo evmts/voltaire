@@ -788,11 +788,19 @@ pub fn build(b: *std.Build) void {
     const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
     bun_check.addCheck(.{ .expect_stdout_match = "bun" });
 
-    const run_specs = b.addSystemCommand(&[_][]const u8{ "bun", "test" });
+    const run_specs = b.addSystemCommand(&[_][]const u8{ "bun", "test", "ethereum-specs.test.ts" });
     run_specs.setCwd(b.path("specs/bun-runner"));
     run_specs.step.dependOn(&bun_check.step);
 
-    const specs_step = b.step("specs", "Run bun test specs");
+    // Set MAX_SPEC_FILES to run all tests by default
+    const spec_max_files = b.option([]const u8, "spec-max-files", "Maximum number of spec files to run (default: all)");
+    if (spec_max_files) |max_files| {
+        run_specs.setEnvironmentVariable("MAX_SPEC_FILES", max_files);
+    } else {
+        run_specs.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
+    }
+
+    const specs_step = b.step("specs", "Run ALL Ethereum execution spec tests (use -Dspec-max-files=N to limit)");
     specs_step.dependOn(&run_specs.step);
 
     // Language bindings
